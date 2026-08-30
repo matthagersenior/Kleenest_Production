@@ -1,0 +1,12 @@
+{
+  "name": "Kleenest",
+  "short_name": "Kleenest",
+  "description": "Find a restroom, build a route, and keep moving.",
+  "start_url": "/Kleenest_Production/",
+  "scope": "/Kleenest_Production/",
+  "display": "standalone",
+  "background_color": "#f4f7f5",
+  "theme_color": "#173d2b",
+  "orientation": "portrait-primary",
+  "categories": ["navigation", "travel", "lifestyle"]
+}
