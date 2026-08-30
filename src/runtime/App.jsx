@@ -2,6 +2,7 @@ import { NavLink, Navigate, Route, Routes, useNavigate, useParams } from 'react-
 import ActivityPage from './ActivityPage.jsx';
 import ExplorePage from './ExplorePage.jsx';
 import LocationPage from './LocationPage.jsx';
+import MembershipPage from './MembershipPage.jsx';
 import NotificationsPage from './NotificationsPage.jsx';
 import ProfilePage from './ProfilePage.jsx';
 import RoutePage from './RoutePage.jsx';
@@ -22,6 +23,7 @@ function Home() {
 const WrappedActivity=()=> <Layout><ActivityPage/></Layout>;
 const WrappedExplore=()=> <Layout><ExplorePage/></Layout>;
 const WrappedLocation=()=> <Layout><LocationPage/></Layout>;
+const WrappedMembership=()=> <Layout><MembershipPage/></Layout>;
 const WrappedNotifications=()=> <Layout><NotificationsPage/></Layout>;
 const WrappedRoute=()=> <Layout><RoutePage/></Layout>;
 const WrappedSaved=()=> <Layout><SavedPage/></Layout>;
@@ -29,4 +31,4 @@ const WrappedSocial=()=> <Layout><SocialPage/></Layout>;
 const WrappedProfile=()=> <Layout><ProfilePage/></Layout>;
 function LegacyPlaceRedirect(){const {id}=useParams();return <Navigate to={`/location/${encodeURIComponent(id||'')}`} replace/>;}
 
-export default function App(){return <Routes><Route path="/" element={<Home/>}/><Route path="/nearby" element={<WrappedExplore/>}/><Route path="/map" element={<Navigate to="/nearby" replace/>}/><Route path="/discover" element={<Navigate to="/nearby" replace/>}/><Route path="/location/:id" element={<WrappedLocation/>}/><Route path="/place/:id" element={<LegacyPlaceRedirect/>}/><Route path="/route" element={<WrappedRoute/>}/><Route path="/saved" element={<WrappedSaved/>}/><Route path="/activity" element={<WrappedActivity/>}/><Route path="/social" element={<WrappedSocial/>}/><Route path="/notifications" element={<WrappedNotifications/>}/><Route path="/profile" element={<WrappedProfile/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes>;}
+export default function App(){return <Routes><Route path="/" element={<Home/>}/><Route path="/nearby" element={<WrappedExplore/>}/><Route path="/map" element={<Navigate to="/nearby" replace/>}/><Route path="/discover" element={<Navigate to="/nearby" replace/>}/><Route path="/location/:id" element={<WrappedLocation/>}/><Route path="/place/:id" element={<LegacyPlaceRedirect/>}/><Route path="/route" element={<WrappedRoute/>}/><Route path="/saved" element={<WrappedSaved/>}/><Route path="/activity" element={<WrappedActivity/>}/><Route path="/social" element={<WrappedSocial/>}/><Route path="/notifications" element={<WrappedNotifications/>}/><Route path="/membership" element={<WrappedMembership/>}/><Route path="/profile" element={<WrappedProfile/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes>;}
