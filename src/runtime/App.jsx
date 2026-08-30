@@ -4,8 +4,9 @@ import { findNearbyRestrooms } from '../services/nearby.js';
 import LocationPage from './LocationPage.jsx';
 import ProfilePage from './ProfilePage.jsx';
 import RoutePage from './RoutePage.jsx';
+import SavedPage from './SavedPage.jsx';
 
-const navItems = [['/', 'Home'], ['/nearby', 'Explore'], ['/route', 'Route'], ['/profile', 'Profile']];
+const navItems = [['/', 'Home'], ['/nearby', 'Explore'], ['/route', 'Route'], ['/saved', 'Saved'], ['/profile', 'Profile']];
 
 function Layout({ children }) {
   return <div className="app-shell"><header className="topbar"><div><div className="eyebrow">KLEENEST</div><div className="brand">Find a restroom. Get moving.</div></div></header><main>{children}</main><nav className="bottom-nav" aria-label="Primary navigation">{navItems.map(([to,label])=><NavLink key={to} to={to} end={to==='/' } className={({isActive})=>isActive?'nav-link active':'nav-link'}>{label}</NavLink>)}</nav></div>;
@@ -24,7 +25,8 @@ function Nearby() {
 
 const WrappedLocation=()=> <Layout><LocationPage/></Layout>;
 const WrappedRoute=()=> <Layout><RoutePage/></Layout>;
+const WrappedSaved=()=> <Layout><SavedPage/></Layout>;
 const WrappedProfile=()=> <Layout><ProfilePage/></Layout>;
 function LegacyPlaceRedirect(){const {id}=useParams();return <Navigate to={`/location/${encodeURIComponent(id||'')}`} replace/>;}
 
-export default function App(){return <Routes><Route path="/" element={<Home/>}/><Route path="/nearby" element={<Nearby/>}/><Route path="/map" element={<Navigate to="/nearby" replace/>}/><Route path="/discover" element={<Navigate to="/nearby" replace/>}/><Route path="/location/:id" element={<WrappedLocation/>}/><Route path="/place/:id" element={<LegacyPlaceRedirect/>}/><Route path="/route" element={<WrappedRoute/>}/><Route path="/profile" element={<WrappedProfile/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes>;}
+export default function App(){return <Routes><Route path="/" element={<Home/>}/><Route path="/nearby" element={<Nearby/>}/><Route path="/map" element={<Navigate to="/nearby" replace/>}/><Route path="/discover" element={<Navigate to="/nearby" replace/>}/><Route path="/location/:id" element={<WrappedLocation/>}/><Route path="/place/:id" element={<LegacyPlaceRedirect/>}/><Route path="/route" element={<WrappedRoute/>}/><Route path="/saved" element={<WrappedSaved/>}/><Route path="/profile" element={<WrappedProfile/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes>;}
