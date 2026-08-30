@@ -64,3 +64,16 @@ export async function getEnterpriseWorkspaceOverview(businessId){
   if(!authorized.data)throw new Error('Enterprise access is not enabled for this business.');
   return {snapshot:snapshot.data||{},networks:networks.data||[],partners:partners.data||[]};
 }
+
+export async function getPlatformWorkspaceOverview(){
+  const context=await getWorkspaceContext();
+  if(!context.access.platform)throw new Error('Platform workspace access is restricted to platform owners and administrators.');
+  const client=getSupabase();
+  const [pending,activity,reports]=await Promise.all([
+    client.rpc('admin_list_pending_businesses'),
+    client.rpc('admin_list_activity_events',{p_limit:50}),
+    client.rpc('admin_list_review_reports',{p_status:'open'}),
+  ]);
+  for(const result of [pending,activity,reports])if(result.error)throw result.error;
+  return {pendingBusinesses:pending.data||[],activity:activity.data||[],reviewReports:reports.data||[]};
+}
