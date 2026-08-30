@@ -1,0 +1,11 @@
+import { useEffect,useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getPlatformWorkspaceOverview } from '../services/workspaces.js';
+
+export default function PlatformWorkspacePage(){
+ const navigate=useNavigate();const[data,setData]=useState(null);const[status,setStatus]=useState('loading');const[error,setError]=useState('');
+ useEffect(()=>{let active=true;getPlatformWorkspaceOverview().then(value=>{if(active){setData(value);setStatus('ready');}}).catch(err=>{if(active){setError(err?.message||'Platform workspace could not be loaded.');setStatus('error');}});return()=>{active=false;};},[]);
+ if(status==='loading')return <section className="panel"><div className="eyebrow">PLATFORM</div><h1>Platform workspace</h1><p>Loading administrator operations…</p></section>;
+ if(status==='error')return <section className="panel"><div className="eyebrow">PLATFORM</div><h1>Platform workspace</h1><div className="notice error">{error}</div><button className="secondary" onClick={()=>navigate('/workspace')}>Back to workspaces</button></section>;
+ return <><section className="panel"><div className="eyebrow">PLATFORM</div><h1>Platform operations</h1><p>Administrator-only review, business verification, and platform activity queues.</p><div className="detail-grid"><div><span>Pending businesses</span><strong>{data.pendingBusinesses.length}</strong></div><div><span>Recent activity</span><strong>{data.activity.length}</strong></div><div><span>Open review reports</span><strong>{Array.isArray(data.reviewReports)?data.reviewReports.length:Object.keys(data.reviewReports||{}).length}</strong></div><div><span>Authority</span><strong>Admin RPCs</strong></div></div><button className="secondary" onClick={()=>navigate('/workspace')}>Switch workspace</button></section><section className="workspace-data-grid"><article className="panel compact"><h2>Pending businesses</h2><pre className="data-preview">{JSON.stringify(data.pendingBusinesses,null,2)}</pre></article><article className="panel compact"><h2>Review reports</h2><pre className="data-preview">{JSON.stringify(data.reviewReports,null,2)}</pre></article><article className="panel compact"><h2>Platform activity</h2><pre className="data-preview">{JSON.stringify(data.activity,null,2)}</pre></article></section></>;
+}
