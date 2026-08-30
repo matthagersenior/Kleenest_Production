@@ -5,6 +5,7 @@ import LocationPage from './LocationPage.jsx';
 import ProfilePage from './ProfilePage.jsx';
 import RoutePage from './RoutePage.jsx';
 import SavedPage from './SavedPage.jsx';
+import SocialPage from './SocialPage.jsx';
 
 const navItems = [['/', 'Home'], ['/nearby', 'Explore'], ['/route', 'Route'], ['/saved', 'Saved'], ['/profile', 'Profile']];
 
@@ -14,7 +15,7 @@ function Layout({ children }) {
 
 function Home() {
   const navigate=useNavigate();
-  return <Layout><section className="hero panel"><div className="eyebrow">NEAREST-FIRST</div><h1>Find a bathroom without the detour.</h1><p>Kleenest starts with the fastest useful action: find nearby restroom options, choose one, and start navigation.</p><button className="primary" onClick={()=>navigate('/nearby')}>Find nearby restrooms</button></section><section className="panel compact"><h2>Simple by default</h2><p>Use Explore for one-stop discovery. Open Route when you actually need multiple ordered stops.</p></section></Layout>;
+  return <Layout><section className="hero panel"><div className="eyebrow">NEAREST-FIRST</div><h1>Find a bathroom without the detour.</h1><p>Kleenest starts with the fastest useful action: find nearby restroom options, choose one, and start navigation.</p><button className="primary" onClick={()=>navigate('/nearby')}>Find nearby restrooms</button></section><section className="panel compact"><h2>Simple by default</h2><p>Use Explore for one-stop discovery. Open Route when you actually need multiple ordered stops.</p><button className="secondary" onClick={()=>navigate('/social')}>Find people</button></section></Layout>;
 }
 
 function Nearby() {
@@ -26,7 +27,8 @@ function Nearby() {
 const WrappedLocation=()=> <Layout><LocationPage/></Layout>;
 const WrappedRoute=()=> <Layout><RoutePage/></Layout>;
 const WrappedSaved=()=> <Layout><SavedPage/></Layout>;
+const WrappedSocial=()=> <Layout><SocialPage/></Layout>;
 const WrappedProfile=()=> <Layout><ProfilePage/></Layout>;
 function LegacyPlaceRedirect(){const {id}=useParams();return <Navigate to={`/location/${encodeURIComponent(id||'')}`} replace/>;}
 
-export default function App(){return <Routes><Route path="/" element={<Home/>}/><Route path="/nearby" element={<Nearby/>}/><Route path="/map" element={<Navigate to="/nearby" replace/>}/><Route path="/discover" element={<Navigate to="/nearby" replace/>}/><Route path="/location/:id" element={<WrappedLocation/>}/><Route path="/place/:id" element={<LegacyPlaceRedirect/>}/><Route path="/route" element={<WrappedRoute/>}/><Route path="/saved" element={<WrappedSaved/>}/><Route path="/profile" element={<WrappedProfile/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes>;}
+export default function App(){return <Routes><Route path="/" element={<Home/>}/><Route path="/nearby" element={<Nearby/>}/><Route path="/map" element={<Navigate to="/nearby" replace/>}/><Route path="/discover" element={<Navigate to="/nearby" replace/>}/><Route path="/location/:id" element={<WrappedLocation/>}/><Route path="/place/:id" element={<LegacyPlaceRedirect/>}/><Route path="/route" element={<WrappedRoute/>}/><Route path="/saved" element={<WrappedSaved/>}/><Route path="/social" element={<WrappedSocial/>}/><Route path="/profile" element={<WrappedProfile/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes>;}
