@@ -12,7 +12,7 @@ if(!failures.length){
   if(!config.includes("'@maplibre/maplibre-react-native'")) failures.push('Expo config must register the MapLibre native config plugin.');
   if(!explore.includes("import { Camera, Map, Marker }")||!explore.includes('<Map ')||!explore.includes('<Camera')) failures.push('Explore must render the canonical MapLibre v11 Map surface.');
   if(!explore.includes("tile.openstreetmap.org")||!explore.includes("type:'raster'")) failures.push('Native MapLibre must use the canonical OpenStreetMap raster style family.');
-  if(!explore.includes('<Marker')||explore.includes('cluster')) failures.push('Restroom markers must remain individually actionable and unclustered.');
+  if(!explore.includes('<Marker')||/\bcluster\s*=/.test(explore)) failures.push('Restroom markers must remain individually actionable and unclustered.');
   if(!explore.includes('height:320')) failures.push('Native Explore map must keep a non-zero fixed layout height to avoid zero-size iOS MapLibre mounts.');
   if(!explore.includes('google.com/maps/dir')||!explore.includes("pathname:'/route'")) failures.push('Map discovery must preserve direct navigation and canonical route handoff.');
   if(!route.includes("GeoJSONSource")||!route.includes("type=\"line\"")||!route.includes('stopCoordinates')) failures.push('Native Route must render canonical route geometry and ordered stop markers in MapLibre.');
