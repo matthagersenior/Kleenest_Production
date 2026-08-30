@@ -3,10 +3,14 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "audit": "node scripts/production-authority-audit.mjs && node scripts/commerce-authority-audit.mjs && node scripts/workspace-authority-audit.mjs"
+    "audit": "node scripts/production-authority-audit.mjs && node scripts/commerce-authority-audit.mjs && node scripts/workspace-authority-audit.mjs && node scripts/native-authority-audit.mjs",
+    "native:start": "npm run start --workspace @kleenest/consumer-mobile",
+    "native:android": "npm run android --workspace @kleenest/consumer-mobile",
+    "native:ios": "npm run ios --workspace @kleenest/consumer-mobile"
   },
   "dependencies": {
     "@maplibre/maplibre-gl-style-spec": "^24.3.0",

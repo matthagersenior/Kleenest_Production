@@ -1,0 +1,12 @@
+{
+  "name": "@kleenest/mobile-core",
+  "private": true,
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.0",
+    "expo-secure-store": "~57.0.0",
+    "react-native-url-polyfill": "^2.0.0"
+  }
+}

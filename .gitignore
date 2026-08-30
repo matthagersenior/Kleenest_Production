@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.expo/
+.env
+.env.*
+!.env.example
+apps/consumer-mobile/.expo/
+apps/consumer-mobile/android/
+apps/consumer-mobile/ios/
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+.DS_Store
