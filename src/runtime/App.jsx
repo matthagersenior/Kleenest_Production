@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { findNearbyRestrooms } from '../services/nearby.js';
+import ProfilePage from './ProfilePage.jsx';
 
 const navItems = [
   ['/', 'Home'],
@@ -155,15 +156,7 @@ function RoutePlanner() {
 }
 
 function Profile() {
-  return (
-    <Layout>
-      <section className="panel">
-        <div className="eyebrow">ACCOUNT</div>
-        <h1>Profile</h1>
-        <p>Identity, membership, saved places, activity, notifications, and account lifecycle will converge here as their canonical services migrate.</p>
-      </section>
-    </Layout>
-  );
+  return <Layout><ProfilePage /></Layout>;
 }
 
 export default function App() {
