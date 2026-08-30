@@ -29,10 +29,15 @@ export async function getMobileAccountSummary() {
 export async function getMobileLocations(ids: string[]) {
   const unique=[...new Set(ids.filter(Boolean).map(String))];
   if(!unique.length)return [];
-  const {data,error}=await getKleenestSupabaseClient().from('locations').select('id,name,address,city,state,postal_code,latitude,longitude,rating,cleanliness_pct,accessible').in('id',unique);
+  const {data,error}=await getKleenestSupabaseClient().from('locations').select('id,name,address,city,state,postal_code,latitude,longitude,rating,review_count,cleanliness_pct,accessible,changing_table,verification_status').in('id',unique);
   if(error)throw error;
   return data||[];
 }
+export async function getMobileLocation(id:string){const rows=await getMobileLocations([id]);return rows[0]||null;}
+export async function listMobileLocationReviews(locationId:string,limit=30){const {data,error}=await getKleenestSupabaseClient().from('reviews').select('id,location_id,user_id,check_in_id,stars,cleanliness_pct,comment,status,business_reply,business_replied_at,created_at').eq('location_id',locationId).eq('status','published').order('created_at',{ascending:false}).limit(limit);if(error)throw error;return data||[];}
+export async function toggleMobileFavorite(locationId:string){const {data,error}=await getKleenestSupabaseClient().rpc('kleenest_toggle_favorite',{p_location_id:locationId});if(error)throw error;return data;}
+export async function mobileCheckIn(locationId:string,latitude:number,longitude:number){const {data,error}=await getKleenestSupabaseClient().rpc('kleenest_map_check_in',{p_location_id:locationId,p_lat:latitude,p_lng:longitude});if(error)throw error;return data;}
+export async function createMobileReview(input:{locationId:string;checkInId?:string|null;stars:number;cleanlinessPct?:number|null;comment?:string}){const {data,error}=await getKleenestSupabaseClient().rpc('create_review',{p_location_id:input.locationId,p_check_in_id:input.checkInId||null,p_stars:Number(input.stars),p_cleanliness_pct:input.cleanlinessPct==null?null:Number(input.cleanlinessPct),p_comment:input.comment?.trim()||null});if(error)throw error;return data;}
 export async function buildMobileRoute(originCoordinates:[number,number], stopLocationIds:string[]) {
   const ids=[...new Set(stopLocationIds.filter(Boolean).map(String))];
   if(!ids.length)throw new Error('Add at least one stop before building the route.');
