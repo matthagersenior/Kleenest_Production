@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root=process.cwd();
-const required=['index.html','src/main.jsx','src/runtime/App.jsx','src/runtime/ProfilePage.jsx','src/runtime/LocationPage.jsx','src/runtime/RoutePage.jsx','src/runtime/SavedPage.jsx','src/lib/supabase.js','src/services/nearby.js','src/services/locations.js','src/services/favorites.js','src/services/identity.js','src/services/account.js','src/styles.css'];
+const required=['index.html','src/main.jsx','src/runtime/App.jsx','src/runtime/ProfilePage.jsx','src/runtime/LocationPage.jsx','src/runtime/RoutePage.jsx','src/runtime/SavedPage.jsx','src/runtime/SocialPage.jsx','src/lib/supabase.js','src/services/nearby.js','src/services/locations.js','src/services/favorites.js','src/services/social.js','src/services/identity.js','src/services/account.js','src/styles.css'];
 const failures=[];
 for(const file of required) if(!fs.existsSync(path.join(root,file))) failures.push(`missing required production file: ${file}`);
 const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
@@ -10,10 +10,12 @@ const app=read('src/runtime/App.jsx');
 const route=read('src/runtime/RoutePage.jsx');
 const location=read('src/runtime/LocationPage.jsx');
 const saved=read('src/runtime/SavedPage.jsx');
+const socialPage=read('src/runtime/SocialPage.jsx');
 const profile=read('src/runtime/ProfilePage.jsx');
 const nearby=read('src/services/nearby.js');
 const locations=read('src/services/locations.js');
 const favorites=read('src/services/favorites.js');
+const social=read('src/services/social.js');
 const identity=read('src/services/identity.js');
 const account=read('src/services/account.js');
 const client=read('src/lib/supabase.js');
@@ -21,6 +23,7 @@ const contracts=[
   [app.includes('to="/nearby" replace'), 'compatibility discovery routes must redirect to the canonical Nearby surface'],
   [app.includes('LegacyPlaceRedirect'), 'legacy place route must parameterize its canonical redirect'],
   [app.includes("['/saved', 'Saved']"), 'Saved must be part of canonical consumer navigation'],
+  [app.includes('path="/social"'), 'Social discovery must be attached to the canonical runtime'],
   [route.includes('Starting location + ordered stops'), 'route contract must use starting location plus ordered stops'],
   [!route.includes('Destination'), 'route UI must not introduce a Destination field'],
   [route.includes('getLocations'), 'route stops must hydrate through the canonical location service'],
@@ -30,6 +33,11 @@ const contracts=[
   [favorites.includes("rpc('kleenest_toggle_favorite'"), 'Saved writes must use kleenest_toggle_favorite authority'],
   [saved.includes('listFavoriteLocations'), 'Saved surface must consume canonical favorites service'],
   [location.includes('toggleFavorite'), 'Location details must expose canonical favorite mutation'],
+  [social.includes("rpc('list_following_users'"), 'Following reads must use list_following_users RPC authority'],
+  [social.includes("rpc('list_follower_users'"), 'Follower reads must use list_follower_users RPC authority'],
+  [social.includes("rpc('toggle_follow_user'"), 'Follow writes must use toggle_follow_user RPC authority'],
+  [!social.includes("from('follows')"), 'Social service must never read the follows table directly'],
+  [socialPage.includes('searchPeople')&&socialPage.includes('toggleFollow'), 'Social surface must consume canonical discovery and follow services'],
   [account.includes("rpc('user_subscription_summary'"), 'Profile membership must use user_subscription_summary authority'],
   [identity.includes('signInWithPassword')&&identity.includes('signInWithOtp'), 'identity service must expose password and magic-link authentication'],
   [profile.includes('getAccountSummary')&&profile.includes('identity.getSession'), 'Profile surface must consume canonical identity and membership services'],
