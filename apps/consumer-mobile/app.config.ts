@@ -17,7 +17,7 @@ const config: ExpoConfig = {
     package: 'com.kleenest.app',
     permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION'],
   },
-  plugins: ['expo-router', 'expo-location', 'expo-secure-store'],
+  plugins: ['expo-router', 'expo-location', 'expo-secure-store', ['expo-notifications', { defaultChannel: 'kleenest-updates' }]],
   experiments: { typedRoutes: true },
   extra: { appRole: 'consumer', eas: { projectId: process.env.EAS_PROJECT_ID } },
 };
