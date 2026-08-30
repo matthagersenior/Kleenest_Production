@@ -49,3 +49,11 @@ export function navigationUrl(route){
   const params=new URLSearchParams({api:'1',origin,destination,travelmode:'driving'}); if(waypoints)params.set('waypoints',waypoints);
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
+
+export function directNavigationUrl(place){
+  const lat=Number(place?.latitude),lon=Number(place?.longitude);
+  const destination=Number.isFinite(lat)&&Number.isFinite(lon)?`${lat},${lon}`:[place?.name,place?.address,place?.city,place?.state].filter(Boolean).join(', ');
+  if(!destination)return '';
+  const params=new URLSearchParams({api:'1',destination,travelmode:'driving'});
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
