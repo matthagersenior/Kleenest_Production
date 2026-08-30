@@ -7,7 +7,6 @@ const config: ExpoConfig = {
   orientation: 'portrait',
   scheme: 'kleenest',
   userInterfaceStyle: 'automatic',
-  newArchEnabled: true,
   ios: {
     bundleIdentifier: 'com.kleenest.app',
     supportsTablet: true,
