@@ -1,0 +1,25 @@
+import { toggleMobileFollow } from '@kleenest/mobile-core';
+import { getContributorProfile } from '../../services/contributors';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+export default function ContributorProfileScreen(){
+  const {id}=useLocalSearchParams<{id:string}>();
+  const userId=String(id||'');
+  const [data,setData]=useState<any>(null),[message,setMessage]=useState('Loading contributor…');
+  async function load(){try{const next=await getContributorProfile(userId);setData(next);setMessage('')}catch(error:any){setMessage(error?.message||'Contributor could not be loaded.')}}
+  useEffect(()=>{load()},[userId]);
+  async function follow(){try{await toggleMobileFollow(userId);setMessage('Follow state updated.')}catch(error:any){setMessage(error?.message||'Follow state could not be changed.')}}
+  const profile=data?.profile||{},reputation=data?.reputation||{},badges=Array.isArray(data?.badges)?data.badges:[],reviews=Array.isArray(data?.reviews)?data.reviews:[];
+  return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content}><Text style={s.eyebrow}>CONTRIBUTOR</Text><Text style={s.title}>{profile.display_name||profile.username||'Kleenest contributor'}</Text>{profile.username?<Text style={s.handle}>@{profile.username}</Text>:null}{profile.bio?<Text style={s.body}>{profile.bio}</Text>:null}
+    <View style={s.stats}><Stat value={profile.points??0} label="points"/><Stat value={profile.level??1} label="level"/><Stat value={`${profile.streak??0}d`} label="streak"/></View>
+    <View style={s.stats}><Stat value={profile.total_check_ins??0} label="check-ins"/><Stat value={profile.total_reviews??0} label="reviews"/><Stat value={data?.helpful_received??0} label="helpful votes"/></View>
+    <View style={s.reputation}><Text style={s.cardTitle}>Community reputation</Text><Text style={s.reputationScore}>{reputation.score??0}</Text><Text style={s.meta}>{String(reputation.level||'new').replaceAll('_',' ')}</Text><Pressable style={s.primary} onPress={follow}><Text style={s.primaryText}>Follow / Unfollow</Text></Pressable></View>
+    {message?<Text style={s.message}>{message}</Text>:null}
+    <View style={s.section}><Text style={s.sectionTitle}>Badges</Text>{badges.length?<View style={s.badgeGrid}>{badges.map((badge:any)=><View style={s.badge} key={badge.id}><Text style={s.badgeIcon}>{badge.icon||'🏅'}</Text><Text style={s.badgeName}>{badge.name}</Text><Text style={s.meta}>{badge.description||'Community achievement'}</Text></View>)}</View>:<Text style={s.body}>No public badges earned yet.</Text>}</View>
+    <View style={s.section}><Text style={s.sectionTitle}>Published reviews</Text>{reviews.length?reviews.map((review:any)=><Pressable style={s.review} key={review.id} onPress={()=>review.location_id&&router.push(`/location/${review.location_id}`)}><View style={s.reviewTop}><Text style={s.cardTitle}>{review.stars} ★</Text><Text style={s.meta}>{review.helpful_count??0} helpful</Text></View>{review.comment?<Text style={s.body}>{review.comment}</Text>:null}<Text style={s.meta}>{review.cleanliness_pct!=null?`${review.cleanliness_pct}% clean · `:''}{new Date(review.created_at).toLocaleDateString()}</Text></Pressable>):<Text style={s.body}>No published reviews yet.</Text>}</View>
+  </ScrollView></SafeAreaView>;
+}
+function Stat({value,label}:{value:any;label:string}){return <View style={s.stat}><Text style={s.statValue}>{value}</Text><Text style={s.meta}>{label}</Text></View>}
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:'#f4f7f5'},content:{padding:22,paddingBottom:42,gap:10},eyebrow:{fontSize:12,fontWeight:'800',letterSpacing:2,color:'#4d6658'},title:{fontSize:34,lineHeight:38,fontWeight:'900',color:'#14231b'},handle:{fontWeight:'800',color:'#65756b'},body:{fontSize:15,lineHeight:22,color:'#53645a'},stats:{flexDirection:'row',gap:9},stat:{flex:1,backgroundColor:'#fff',padding:13,borderRadius:16,borderWidth:1,borderColor:'#dde7e0'},statValue:{fontSize:20,fontWeight:'900',color:'#173d2b'},meta:{fontSize:12,color:'#6c7c72',fontWeight:'700'},reputation:{backgroundColor:'#173d2b',padding:18,borderRadius:20,gap:5},reputationScore:{fontSize:30,fontWeight:'900',color:'#fff'},cardTitle:{fontSize:16,fontWeight:'800',color:'#14231b'},reputation:{backgroundColor:'#fff',padding:18,borderRadius:20,borderWidth:1,borderColor:'#dde7e0',gap:6},primary:{alignSelf:'flex-start',backgroundColor:'#173d2b',paddingHorizontal:14,paddingVertical:11,borderRadius:12,marginTop:5},primaryText:{color:'#fff',fontWeight:'800'},message:{color:'#53645a',fontWeight:'700'},section:{gap:10,marginTop:12},sectionTitle:{fontSize:21,fontWeight:'900',color:'#14231b'},badgeGrid:{gap:8},badge:{backgroundColor:'#fff',padding:14,borderRadius:16,borderWidth:1,borderColor:'#dde7e0'},badgeIcon:{fontSize:28},badgeName:{fontWeight:'900',color:'#14231b',marginTop:4},review:{backgroundColor:'#fff',padding:15,borderRadius:17,borderWidth:1,borderColor:'#dde7e0',gap:6},reviewTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}});
