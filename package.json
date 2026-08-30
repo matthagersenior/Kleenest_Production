@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "audit": "node scripts/production-authority-audit.mjs && node scripts/commerce-authority-audit.mjs && node scripts/workspace-authority-audit.mjs && node scripts/native-authority-audit.mjs && node scripts/native-push-authority-audit.mjs",
+    "audit": "node scripts/production-authority-audit.mjs && node scripts/commerce-authority-audit.mjs && node scripts/workspace-authority-audit.mjs && node scripts/native-authority-audit.mjs && node scripts/native-push-authority-audit.mjs && node scripts/native-community-authority-audit.mjs",
     "native:typecheck": "npm run typecheck --workspace @kleenest/consumer-mobile",
     "native:start": "npm run start --workspace @kleenest/consumer-mobile",
     "native:android": "npm run android --workspace @kleenest/consumer-mobile",
