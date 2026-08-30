@@ -1,7 +1,9 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { findNearbyRestrooms } from '../services/nearby.js';
+import LocationPage from './LocationPage.jsx';
 import ProfilePage from './ProfilePage.jsx';
+import RoutePage from './RoutePage.jsx';
 
 const navItems = [
   ['/', 'Home'],
@@ -99,7 +101,10 @@ function Nearby() {
                 <p>{[place.address, place.city, place.state].filter(Boolean).join(', ') || 'Address unavailable'}</p>
                 <div className="meta">{[miles, place.is_verified ? 'Verified' : null, place.rating ? `${place.rating} ★` : null].filter(Boolean).join(' · ')}</div>
               </div>
-              <button className="secondary" onClick={() => navigate(`/route?add=${encodeURIComponent(id || '')}`)} disabled={!id}>Add to route</button>
+              <div className="card-actions">
+                <button className="secondary" onClick={() => navigate(`/location/${encodeURIComponent(id || '')}`)} disabled={!id}>Details</button>
+                <button className="primary" onClick={() => navigate(`/route?add=${encodeURIComponent(id || '')}`)} disabled={!id}>Add to route</button>
+              </div>
             </article>
           );
         })}
@@ -108,56 +113,9 @@ function Nearby() {
   );
 }
 
-function RoutePlanner() {
-  const params = useMemo(() => new URLSearchParams(window.location.search), []);
-  const seededStop = params.get('add');
-  const [start, setStart] = useState('My Location');
-  const [stops, setStops] = useState(seededStop ? [seededStop] : []);
-  const [draft, setDraft] = useState('');
-
-  const addStop = () => {
-    const value = draft.trim();
-    if (!value) return;
-    setStops((current) => [...current, value]);
-    setDraft('');
-  };
-
-  const move = (index, offset) => {
-    const target = index + offset;
-    if (target < 0 || target >= stops.length) return;
-    setStops((current) => {
-      const next = [...current];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
-  };
-
-  return (
-    <Layout>
-      <section className="panel">
-        <div className="eyebrow">ROUTE</div>
-        <h1>Starting location + ordered stops</h1>
-        <label>Starting location<input value={start} onChange={(event) => setStart(event.target.value)} placeholder="My Location or enter a starting place" /></label>
-        <div className="inline-form">
-          <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Add a stop" />
-          <button className="primary" onClick={addStop}>Add stop</button>
-        </div>
-      </section>
-      <section className="panel compact">
-        {stops.length === 0 ? <p>No stops yet. Add places when you need a multi-stop route.</p> : stops.map((stop, index) => (
-          <div className="stop-row" key={`${stop}-${index}`}>
-            <span><strong>{index + 1}.</strong> {stop}</span>
-            <span className="stop-actions"><button onClick={() => move(index, -1)} disabled={index === 0}>↑</button><button onClick={() => move(index, 1)} disabled={index === stops.length - 1}>↓</button><button onClick={() => setStops((current) => current.filter((_, i) => i !== index))}>Remove</button></span>
-          </div>
-        ))}
-      </section>
-    </Layout>
-  );
-}
-
-function Profile() {
-  return <Layout><ProfilePage /></Layout>;
-}
+const WrappedLocation = () => <Layout><LocationPage /></Layout>;
+const WrappedRoute = () => <Layout><RoutePage /></Layout>;
+const WrappedProfile = () => <Layout><ProfilePage /></Layout>;
 
 export default function App() {
   return (
@@ -166,8 +124,10 @@ export default function App() {
       <Route path="/nearby" element={<Nearby />} />
       <Route path="/map" element={<Navigate to="/nearby" replace />} />
       <Route path="/discover" element={<Navigate to="/nearby" replace />} />
-      <Route path="/route" element={<RoutePlanner />} />
-      <Route path="/profile" element={<Profile />} />
+      <Route path="/location/:id" element={<WrappedLocation />} />
+      <Route path="/place/:id" element={<Navigate to="/location/:id" replace />} />
+      <Route path="/route" element={<WrappedRoute />} />
+      <Route path="/profile" element={<WrappedProfile />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
