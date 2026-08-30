@@ -3,6 +3,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { findNearbyRestrooms } from '../services/nearby.js';
+import { directNavigationUrl } from '../services/routing.js';
 
 const DEFAULT_CENTER = [38.627, -90.199];
 const OSM_RASTER = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -110,10 +111,12 @@ export default function ExplorePage() {
     }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
   }
 
+  const startNavigation=(place)=>{const href=directNavigationUrl(place);if(href)window.location.assign(href);};
+
   return <>
     <section className="panel map-controls"><div><div className="eyebrow">EXPLORE</div><h1>Nearby restrooms</h1><p>One canonical MapLibre discovery surface backed by the production map network.</p></div><div className="map-search-row"><input value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && load()} placeholder="Search places or brands"/><select value={radiusMeters} onChange={(event) => setRadiusMeters(Number(event.target.value))}>{RADII.map((meters) => <option value={meters} key={meters}>{Math.round(meters / 1609.344)} mi</option>)}</select></div><div className="card-actions"><button className="primary" onClick={locate} disabled={status === 'loading'}>{status === 'loading' ? 'Finding…' : 'Use my location'}</button><button className="secondary" onClick={() => load()} disabled={status === 'loading'}>Refresh</button></div>{error && <div className="notice error">{error}</div>}</section>
     <section className="map-frame"><div ref={hostRef} className="map-canvas" aria-label="Kleenest restroom map"/></section>
-    {selected && <section className="panel compact map-selection"><div><div className="eyebrow">SELECTED PLACE</div><h2>{selected.name || 'Restroom location'}</h2><p>{[selected.address, selected.city, selected.state].filter(Boolean).join(', ') || 'Address unavailable'}</p><div className="meta">{[selected.distance_meters != null ? `${(Number(selected.distance_meters)/1609.344).toFixed(1)} mi` : null, selected.is_verified ? 'Verified' : null, selected.rating ? `${selected.rating} ★` : null].filter(Boolean).join(' · ')}</div></div><div className="card-actions"><button className="secondary" onClick={() => navigate(`/location/${selected.location_id || selected.place_id}`)}>Details</button><button className="primary" onClick={() => navigate(`/route?add=${selected.location_id || selected.place_id}`)}>Add to route</button></div></section>}
+    {selected && <section className="panel compact map-selection"><div><div className="eyebrow">SELECTED PLACE</div><h2>{selected.name || 'Restroom location'}</h2><p>{[selected.address, selected.city, selected.state].filter(Boolean).join(', ') || 'Address unavailable'}</p><div className="meta">{[selected.distance_meters != null ? `${(Number(selected.distance_meters)/1609.344).toFixed(1)} mi` : null, selected.is_verified ? 'Verified' : null, selected.rating ? `${selected.rating} ★` : null].filter(Boolean).join(' · ')}</div></div><div className="card-actions"><button className="secondary" onClick={() => navigate(`/location/${selected.location_id || selected.place_id}`)}>Details</button><button className="primary" onClick={()=>startNavigation(selected)}>Navigate</button><button className="secondary" onClick={() => navigate(`/route?add=${selected.location_id || selected.place_id}`)}>Add to route</button></div></section>}
     <section className="results">{status === 'ready' && places.length === 0 ? <div className="notice">No nearby restrooms were returned.</div> : places.map((place) => { const id = place.location_id || place.place_id; return <article className={id === selectedId ? 'place-card selected-card' : 'place-card'} key={id || `${place.name}-${place.latitude}-${place.longitude}`} onClick={() => setSelectedId(id)}><div className="place-main"><h2>{place.name || 'Restroom location'}</h2><p>{[place.address, place.city, place.state].filter(Boolean).join(', ') || 'Address unavailable'}</p><div className="meta">{[place.distance_meters != null ? `${(Number(place.distance_meters)/1609.344).toFixed(1)} mi` : null, place.is_verified ? 'Verified' : null].filter(Boolean).join(' · ')}</div></div></article>; })}</section>
   </>;
 }
