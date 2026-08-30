@@ -9,7 +9,7 @@ if(!failures.length){
   const explore=fs.readFileSync(required[2],'utf8');
   if(!pkg.includes('@maplibre/maplibre-react-native')) failures.push('Native consumer app must depend on MapLibre React Native.');
   if(!config.includes("'@maplibre/maplibre-react-native'")) failures.push('Expo config must register the MapLibre native config plugin.');
-  if(!explore.includes("from '@maplibre/maplibre-react-native'")||!explore.includes('<MapView')||!explore.includes('<Camera')) failures.push('Explore must render the canonical native MapLibre surface.');
+  if(!explore.includes("import { Camera, Map, Marker }")||!explore.includes('<Map ')||!explore.includes('<Camera')) failures.push('Explore must render the canonical MapLibre v11 Map surface.');
   if(!explore.includes("tile.openstreetmap.org")||!explore.includes("type:'raster'")) failures.push('Native MapLibre must use the canonical OpenStreetMap raster style family.');
   if(!explore.includes('<Marker')||explore.includes('cluster')) failures.push('Restroom markers must remain individually actionable and unclustered.');
   if(!explore.includes('height:320')) failures.push('Native map must keep a non-zero fixed layout height to avoid zero-size iOS MapLibre mounts.');
