@@ -12,6 +12,15 @@ export type ReviewAmenityInventoryItem = {
   sentiment: 'good' | 'needs_attention';
 };
 
+export type LocationAmenityInventoryItem = {
+  amenity_id: string;
+  name: string;
+  category: string | null;
+  observed_quantity: number | null;
+  sample_count: number;
+  freshest_observed_at: string | null;
+};
+
 export async function listAmenityCatalog(): Promise<AmenityCatalogItem[]> {
   const { data, error } = await getKleenestSupabaseClient()
     .from('amenities')
@@ -20,6 +29,14 @@ export async function listAmenityCatalog(): Promise<AmenityCatalogItem[]> {
     .order('name');
   if (error) throw error;
   return (data || []) as AmenityCatalogItem[];
+}
+
+export async function listLocationAmenityInventory(locationId: string): Promise<LocationAmenityInventoryItem[]> {
+  const { data, error } = await getKleenestSupabaseClient().rpc('get_location_amenity_inventory', {
+    p_location_id: locationId,
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? (data as LocationAmenityInventoryItem[]) : [];
 }
 
 export async function recordReviewAmenityInventory(
