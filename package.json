@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "audit": "node scripts/production-authority-audit.mjs && node scripts/commerce-authority-audit.mjs"
+    "audit": "node scripts/production-authority-audit.mjs && node scripts/commerce-authority-audit.mjs && node scripts/workspace-authority-audit.mjs"
   },
   "dependencies": {
     "@maplibre/maplibre-gl-style-spec": "^24.3.0",
