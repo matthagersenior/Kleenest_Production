@@ -7,6 +7,23 @@ export function getBusinessReverificationQueue(businessId){
   return rpc('business_reverification_queue',{p_business_id:requireId(businessId,'Business id')});
 }
 
+export function getBusinessReverificationOperations(businessId){
+  return rpc('business_reverification_operations',{p_business_id:requireId(businessId,'Business id')});
+}
+
+export function manageBusinessReverificationCase(businessId,caseId,action){
+  return rpc('business_manage_reverification_case',{
+    p_business_id:requireId(businessId,'Business id'),
+    p_case_id:requireId(caseId,'Reverification case id'),
+    p_action:String(action||'').trim(),
+  });
+}
+
+export const assignBusinessReverificationCase=(businessId,caseId)=>manageBusinessReverificationCase(businessId,caseId,'assign_to_me');
+export const releaseBusinessReverificationCase=(businessId,caseId)=>manageBusinessReverificationCase(businessId,caseId,'release');
+export const dismissBusinessReverificationCase=(businessId,caseId)=>manageBusinessReverificationCase(businessId,caseId,'dismiss');
+export const reopenBusinessReverificationCase=(businessId,caseId)=>manageBusinessReverificationCase(businessId,caseId,'reopen');
+
 export function createBusinessReverificationQr(businessId,locationId){
   return rpc('business_create_reverification_qr',{
     p_business_id:requireId(businessId,'Business id'),
