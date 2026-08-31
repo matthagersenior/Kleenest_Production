@@ -25,6 +25,8 @@ jobs:
         run: node scripts/trust-quality-convergence-audit.mjs
       - name: Reverification workflow convergence
         run: node scripts/reverification-workflow-convergence-audit.mjs
+      - name: Reverification operations lifecycle
+        run: node scripts/reverification-operations-lifecycle-audit.mjs
       - name: Trust mission compatibility
         run: node scripts/native-trust-mission-platform-audit.mjs
       - name: Core and commerce authority
