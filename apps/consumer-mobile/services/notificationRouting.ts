@@ -16,6 +16,7 @@ export function notificationDestination(notification: NotificationLike): string 
   const contributorId = stringValue(data.contributor_id) || stringValue(data.user_id) || stringValue(data.actor_user_id);
   if (contributorId) return `/contributor/${encodeURIComponent(contributorId)}`;
 
+  if (stringValue(data.support_request_id) || type.includes('support')) return '/support';
   if (stringValue(data.game_challenge_id) || type.includes('game') || type.includes('challenge')) return '/games';
   if (stringValue(data.contest_id) || stringValue(data.quest_id) || type.includes('contest') || type.includes('quest') || type.includes('progress') || type.includes('badge') || type.includes('reward')) return '/play';
   if (stringValue(data.route_id) || type.includes('route')) return '/route';
