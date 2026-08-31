@@ -1,0 +1,32 @@
+alter function public.business_create_location_canonical(uuid,text,text,text,text,text,numeric,numeric,text,text) set search_path = '';
+alter function public.business_create_promotion_canonical(uuid,text,text,numeric,uuid,timestamp with time zone,timestamp with time zone) set search_path = '';
+alter function public.business_dashboard_secure_summary(uuid,timestamp with time zone,timestamp with time zone) set search_path = '';
+alter function public.business_manage_campaign(uuid,uuid,text,text,text,text,text) set search_path = '';
+alter function public.business_manage_event(uuid,uuid,text,jsonb) set search_path = '';
+alter function public.business_manage_location(uuid,uuid,text,jsonb) set search_path = '';
+alter function public.business_manage_promotion(uuid,uuid,text,jsonb) set search_path = '';
+alter function public.business_set_location_active_canonical(uuid,boolean) set search_path = '';
+alter function public.business_set_promotion_active_canonical(uuid,boolean) set search_path = '';
+alter function public.business_update_location_canonical(uuid,text,text,text,text,boolean) set search_path = '';
+
+revoke all on function public.business_create_location_canonical(uuid,text,text,text,text,text,numeric,numeric,text,text) from public, anon;
+revoke all on function public.business_create_promotion_canonical(uuid,text,text,numeric,uuid,timestamp with time zone,timestamp with time zone) from public, anon;
+revoke all on function public.business_dashboard_secure_summary(uuid,timestamp with time zone,timestamp with time zone) from public, anon;
+revoke all on function public.business_manage_campaign(uuid,uuid,text,text,text,text,text) from public, anon;
+revoke all on function public.business_manage_event(uuid,uuid,text,jsonb) from public, anon;
+revoke all on function public.business_manage_location(uuid,uuid,text,jsonb) from public, anon;
+revoke all on function public.business_manage_promotion(uuid,uuid,text,jsonb) from public, anon;
+revoke all on function public.business_set_location_active_canonical(uuid,boolean) from public, anon;
+revoke all on function public.business_set_promotion_active_canonical(uuid,boolean) from public, anon;
+revoke all on function public.business_update_location_canonical(uuid,text,text,text,text,boolean) from public, anon;
+
+grant execute on function public.business_create_location_canonical(uuid,text,text,text,text,text,numeric,numeric,text,text) to authenticated, service_role;
+grant execute on function public.business_create_promotion_canonical(uuid,text,text,numeric,uuid,timestamp with time zone,timestamp with time zone) to authenticated, service_role;
+grant execute on function public.business_dashboard_secure_summary(uuid,timestamp with time zone,timestamp with time zone) to authenticated, service_role;
+grant execute on function public.business_manage_campaign(uuid,uuid,text,text,text,text,text) to authenticated, service_role;
+grant execute on function public.business_manage_event(uuid,uuid,text,jsonb) to authenticated, service_role;
+grant execute on function public.business_manage_location(uuid,uuid,text,jsonb) to authenticated, service_role;
+grant execute on function public.business_manage_promotion(uuid,uuid,text,jsonb) to authenticated, service_role;
+grant execute on function public.business_set_location_active_canonical(uuid,boolean) to authenticated, service_role;
+grant execute on function public.business_set_promotion_active_canonical(uuid,boolean) to authenticated, service_role;
+grant execute on function public.business_update_location_canonical(uuid,text,text,text,text,boolean) to authenticated, service_role;
