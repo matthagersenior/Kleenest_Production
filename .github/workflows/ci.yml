@@ -23,6 +23,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Consumer product boundary
         run: node scripts/consumer-product-boundary-audit.mjs
+      - name: Consumer activation loop
+        run: node scripts/consumer-activation-loop-audit.mjs
       - name: Trust quality convergence
         run: node scripts/trust-quality-convergence-audit.mjs
       - name: Reverification workflow convergence
