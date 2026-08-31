@@ -3,7 +3,7 @@ export type NotificationLike = {
   data?: Record<string, unknown> | null;
 };
 
-export type NotificationContext='Restroom'|'Community'|'Support'|'Route'|'Progress'|'Kleenest';
+export type NotificationContext='Restroom'|'Community'|'Support'|'Route'|'Progress'|'Intelligence'|'Kleenest';
 
 function stringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
@@ -19,9 +19,10 @@ export function notificationContext(notification:NotificationLike):NotificationC
   const {data,type}=notificationParts(notification);
   if(stringValue(data.support_request_id)||type.includes('support'))return'Support';
   if(stringValue(data.location_id)||stringValue(data.locationId))return'Restroom';
-  if(stringValue(data.contributor_id)||stringValue(data.user_id)||stringValue(data.actor_user_id)||type.includes('follow')||type.includes('helpful')||type.includes('community'))return'Community';
   if(stringValue(data.route_id)||type.includes('route'))return'Route';
   if(stringValue(data.game_challenge_id)||stringValue(data.contest_id)||stringValue(data.quest_id)||type.includes('game')||type.includes('challenge')||type.includes('contest')||type.includes('quest')||type.includes('progress')||type.includes('badge')||type.includes('reward'))return'Progress';
+  if(type==='scheduled_report'||type.includes('intelligence')||type.startsWith('report_')||type.includes('trusted_place')||type.includes('popular_place')||type.includes('operational_attention')||type.includes('demand_opportunity')||type.includes('high_activity_zone'))return'Intelligence';
+  if(stringValue(data.contributor_id)||stringValue(data.user_id)||stringValue(data.actor_user_id)||type==='review'||type.includes('follow')||type.includes('helpful')||type.includes('reply')||type.includes('community'))return'Community';
   return'Kleenest';
 }
 
