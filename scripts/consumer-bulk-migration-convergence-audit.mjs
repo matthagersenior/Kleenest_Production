@@ -16,12 +16,14 @@ const required=[
   'apps/consumer-mobile/app/notifications.tsx',
   'apps/consumer-mobile/app/membership.tsx',
   'apps/consumer-mobile/app/account-deletion.tsx',
-  'packages/mobile-core/src/index.ts'
+  'packages/mobile-core/src/index.ts',
+  'apps/consumer-mobile/package.json',
+  'apps/consumer-mobile/app.config.ts'
 ];
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing consumer migration file: ${file}`);
 if(!failures.length){
   const read=file=>fs.readFileSync(file,'utf8');
-  const [layout,home,explore,location,profile,play,social,saved,route,qr,activity,notifications,membership,deletion,core]=required.map(read);
+  const [layout,home,explore,location,profile,play,social,saved,route,qr,activity,notifications,membership,deletion,core,mobilePackage,appConfig]=required.map(read);
   for(const [name,title] of [['index','Home'],['explore','Explore'],['play','Play'],['social','Community'],['profile','Profile']])if(!layout.includes(`<Tabs.Screen name="${name}" options={{ title: '${title}' }}/>`)&&!layout.includes(`<Tabs.Screen name="${name}" options={{ title: "${title}" }}/>`)&&!layout.includes(`<Tabs.Screen name="${name}" options={{ title: '${title}'`))failures.push(`primary consumer tab missing or renamed: ${title}`);
   for(const hidden of ['games','route','qr','saved','activity','notifications','membership','support','account-deletion'])if(!layout.includes(`name="${hidden}" options={{ href: null }}`))failures.push(`secondary consumer route must remain reachable but hidden from primary tabs: ${hidden}`);
   for(const forbidden of ['Business','Fleet','Enterprise','Admin','Owner Control'])if(layout.includes(`title: '${forbidden}'`)||layout.includes(`title: "${forbidden}"`))failures.push(`consumer tab shell must not expose operations workspace: ${forbidden}`);
@@ -34,7 +36,10 @@ if(!failures.length){
   for(const token of ['listMobileCommunityActivity','listMobileFollowing','listMobileFollowers','toggleMobileFollow'])if(!social.includes(token))failures.push(`Community missing relationship/evidence capability: ${token}`);
   for(const token of ['listMobileFavoriteLocations','applyTrustDiscoveryControls','readTrustMission','Add to route'])if(!saved.includes(token))failures.push(`Saved missing mature consumer capability: ${token}`);
   for(const token of ['buildMobileRoute','persistMobileRoute','GeoJSONSource','mobileNavigationUrl'])if(!route.includes(token))failures.push(`Route missing canonical navigation capability: ${token}`);
-  for(const token of ['resolveQrAction','executeQrAction','TextInput','Enter QR code','Resolve','trust_mission'])if(!qr.includes(token))failures.push(`QR consumer entry missing usable canonical fallback: ${token}`);
+  for(const token of ['resolveQrAction','executeQrAction','TextInput','Enter QR code','Resolve','trust_mission','CameraView','useCameraPermissions',"barcodeTypes:['qr']",'onBarcodeScanned','scanLocked'])if(!qr.includes(token))failures.push(`QR consumer entry missing canonical camera/fallback capability: ${token}`);
+  if(!qr.includes('void resolve(data)')||!qr.includes('executeQrAction(value)'))failures.push('Camera scans must converge through the same QR resolver and execution authority as deep links/manual entry.');
+  if(!mobilePackage.includes('"expo-camera": "~57.0.4"'))failures.push('Consumer mobile must pin the Expo 57-compatible camera dependency.');
+  if(!appConfig.includes("['expo-camera', { cameraPermission: 'Kleenest uses your camera to scan Kleenest restroom QR codes.' }]")||!appConfig.includes("'CAMERA'"))failures.push('Native app configuration must declare explicit QR camera permission and plugin configuration.');
   if(!activity.includes('Activity')&&!activity.includes('ACTIVITY'))failures.push('Activity consumer surface missing.');
   if(!notifications.includes('notification'))failures.push('Notification inbox missing.');
   if(!membership.includes('pricing')&&!membership.includes('Membership'))failures.push('Membership consumer surface missing.');
