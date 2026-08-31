@@ -21,6 +21,19 @@ export type LocationAmenityInventoryItem = {
   freshest_observed_at: string | null;
 };
 
+export type AmenityProgressionAward = {
+  awarded?: boolean;
+  points?: number;
+  total_points?: number;
+  level?: number;
+  streak?: number;
+  reason?: string;
+  review_id?: string;
+  location_id?: string;
+  check_in_id?: string;
+  amenity_observations?: number;
+};
+
 export async function listAmenityCatalog(): Promise<AmenityCatalogItem[]> {
   const { data, error } = await getKleenestSupabaseClient()
     .from('amenities')
@@ -61,4 +74,12 @@ export async function recordReviewAmenityInventory(
   });
   if (error) throw error;
   return data;
+}
+
+export async function awardReviewAmenityProgression(reviewId: string): Promise<AmenityProgressionAward> {
+  const { data, error } = await getKleenestSupabaseClient().rpc('award_review_amenity_progression', {
+    p_review_id: reviewId,
+  });
+  if (error) throw error;
+  return (data || {}) as AmenityProgressionAward;
 }
