@@ -11,6 +11,7 @@ const fallback=read('public/404.html');
 const manifest=read('public/manifest.webmanifest');
 const serviceWorkerRegistration=read('src/runtime/registerServiceWorker.js');
 if(!fs.existsSync('public/.nojekyll'))throw new Error('Static Pages marker public/.nojekyll is missing.');
+if(fs.existsSync('.github/workflows/static.yml'))throw new Error('Competing GitHub-generated static Pages workflow must not exist.');
 
 for(const token of ['workflow_dispatch','workflow_run','Production CI','types: [completed]','conclusion == \'success\'','head_branch == \'main\'','github.event.workflow_run.head_sha','actions/configure-pages@v5','actions/upload-pages-artifact@v3','actions/deploy-pages@v4','path: dist'])requireToken(pages,token,'Pages workflow');
 requireToken(vite,"base: '/Kleenest_Production/'",'Vite Pages base');
