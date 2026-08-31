@@ -3,6 +3,7 @@ const failures=[];
 const required=[
   'apps/consumer-mobile/services/trustMissions.ts',
   'apps/consumer-mobile/services/activity.ts',
+  'apps/consumer-mobile/app/activity.tsx',
   'apps/consumer-mobile/app/play.tsx',
   'apps/consumer-mobile/services/notificationRouting.ts',
   'apps/consumer-mobile/app/explore.tsx',
@@ -15,25 +16,29 @@ const required=[
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing trust mission platform file: ${file}`);
 if(!failures.length){
   const read=file=>fs.readFileSync(file,'utf8');
-  const service=read(required[0]),activity=read(required[1]),play=read(required[2]),routing=read(required[3]),explore=read(required[4]),saved=read(required[5]),location=read(required[6]),base=read(required[7]),tiered=read(required[8]),preserve=read(required[9]);
+  const service=read(required[0]),activityService=read(required[1]),activityScreen=read(required[2]),play=read(required[3]),routing=read(required[4]),explore=read(required[5]),saved=read(required[6]),location=read(required[7]),base=read(required[8]),tiered=read(required[9]),preserve=read(required[10]);
   for(const rpc of ['start_my_trust_mission','my_trust_mission','my_trust_mission_history','complete_my_trust_mission','cancel_my_trust_mission'])if(!service.includes(rpc))failures.push(`mobile trust mission service missing RPC: ${rpc}`);
-  if(!service.includes("getKleenestSupabaseClient")||!service.includes('SecureStore')||!service.includes('offlineMirror'))failures.push('Trust mission service must use server authority with SecureStore only as an offline mirror.');
+  if(!service.includes('getKleenestSupabaseClient')||!service.includes('SecureStore')||!service.includes('offlineMirror'))failures.push('Trust mission service must use server authority with SecureStore only as an offline mirror.');
   if(!service.includes("client.from('reviews')")||!service.includes(".not('check_in_id','is',null)"))failures.push('Mission completion must resolve a published verified review before calling server completion authority.');
   if(!service.includes("TrustMissionAction='start'|'resume'|'active_elsewhere'")||!service.includes('trustMissionAction(active')||!service.includes("return active.locationId===locationId?'resume':'active_elsewhere'"))failures.push('Mission service must model start, resume, and active-elsewhere states explicitly.');
+  if(!service.includes('cancelledAt')||!service.includes('trustMissionRewardTier')||!service.includes('trustMissionRewardLabel')||!service.includes('trustMissionStatusLine'))failures.push('Mission service must centralize history timestamps and reward/status semantics.');
   if(!service.includes("if(active.locationId===locationId)return active")||!service.includes('Resume it or clear it from Play before starting another.'))failures.push('Mission service must preserve an active mission rather than silently replacing it.');
   for(const token of ['create table if not exists public.user_trust_missions','user_trust_missions_one_active_idx','enable row level security','revoke all on table public.user_trust_missions from public, anon, authenticated'])if(!base.includes(token))failures.push(`Base mission authority missing: ${token}`);
   for(const fn of ['start_my_trust_mission','my_trust_mission','my_trust_mission_history','cancel_my_trust_mission','complete_my_trust_mission'])if(!base.includes(`function public.${fn}`))failures.push(`Base mission migration missing function ${fn}`);
   if(!base.includes("set search_path=''"))failures.push('Mission RPCs must be hardened with an empty search path.');
   if(!tiered.includes('trust_mission_visit_bonus')||!tiered.includes('v_goal_satisfied')||!tiered.includes("case when v_goal_satisfied then 'trust_mission_bonus' else 'trust_mission_visit_bonus' end"))failures.push('Tiered mission rewards must distinguish full evidence goals from verified-visit completion.');
   if(!tiered.includes("'trust_mission_completed','trust_mission'")||!tiered.includes('quest_dispatch_event')||!tiered.includes("'trust_mission_completed'"))failures.push('Mission completion must converge progression metrics, quests, and activity.');
-  if(!tiered.includes("'progress_trust_mission_completed'")||!tiered.includes("'goal_satisfied',v_goal_satisfied"))failures.push('Mission completion notification must preserve progress routing and goal-satisfaction context.');
+  if(!tiered.includes("'progress_trust_mission_completed'")||!tiered.includes("'goal_satisfied',v_goal_satisfied")||!tiered.includes("'location_id',v_mission.location_id"))failures.push('Mission completion notification must preserve progress, location, and goal-satisfaction context.');
   if(!preserve.includes('select * into v_active')||!preserve.includes("where user_id=v_user and status='active'")||!preserve.includes('for update'))failures.push('Server mission start must lock and inspect the current active mission before creating another.');
   if(!preserve.includes('if v_active.location_id=p_location_id then')||!preserve.includes('An active trust mission already exists at'))failures.push('Server mission start must resume the same location and reject a different active mission.');
   if(/set status='cancelled'.*status='active'/is.test(preserve))failures.push('Server mission start must never cancel an active mission as a side effect of starting another.');
   if(!preserve.includes("set search_path=''" )||!preserve.includes('revoke all on function public.start_my_trust_mission(uuid,text) from public,anon'))failures.push('Server mission-start preservation authority must keep the hardened execution boundary.');
-  if(!activity.includes("activityType==='trust_mission_completed'")||!activity.includes('Completed a trust mission')||!activity.includes('bonus points'))failures.push('Personal Activity must present mission completion explicitly.');
-  if(!play.includes('listTrustMissionHistory')||!play.includes('completedTrustMissions')||!play.includes('Active trust mission'))failures.push('Play must surface authoritative active mission state and completion history.');
-  if(!routing.includes("type.includes('progress')")||!routing.includes("return'/play'"))failures.push('Progress notifications must route to Play.');
+  if(!activityService.includes("activityType==='trust_mission_completed'")||!activityService.includes('Completed a trust mission')||!activityService.includes('Full evidence goal')||!activityService.includes('Verified visit goal')||!activityService.includes('goalSatisfied')||!activityService.includes('rewardPoints'))failures.push('Personal Activity service must preserve mission completion tier and reward context.');
+  if(!activityScreen.includes('TRUST MISSION')||!activityScreen.includes('FULL EVIDENCE')||!activityScreen.includes('VERIFIED VISIT')||!activityScreen.includes('View strengthened restroom'))failures.push('Activity must visibly distinguish mission reward tiers and deep-link to the strengthened restroom.');
+  if(!play.includes('listTrustMissionHistory')||!play.includes('completedTrustMissions')||!play.includes('Active trust mission')||!play.includes('FULL EVIDENCE')||!play.includes('VERIFIED VISIT')||!play.includes('View strengthened restroom'))failures.push('Play must surface authoritative active mission state, reward tiers, history, and restroom navigation.');
+  if(!play.includes('No replacement happens automatically; cancellation is explicit.'))failures.push('Play must explain that cancelled missions are explicit rather than replacement side effects.');
+  if(!routing.includes('isTrustMission')||!routing.includes("if(isTrustMission(data,type)&&locationId)return`/location/${encodeURIComponent(locationId)}`"))failures.push('Trust mission notifications with a location must deep-link to that restroom before generic progress routing.');
+  if(!routing.includes("if(isProgress(data,type))return stringValue(data.game_challenge_id)||type.includes('game')||type.includes('challenge')?'/games':'/play'"))failures.push('Non-location progression notifications must continue routing to Play or Game Center.');
   for(const [name,screen] of [['Explore',explore],['Saved',saved]]){
     if(!screen.includes('readTrustMission')||!screen.includes('trustMissionAction'))failures.push(`${name} must load and evaluate the active trust mission.`);
     if(!screen.includes('Resume mission')||!screen.includes('View active mission')||!screen.includes('Resume active mission'))failures.push(`${name} must expose active/resume mission states clearly.`);
