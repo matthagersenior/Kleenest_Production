@@ -76,12 +76,12 @@ begin
     from public.business_restroom_remediation_cases c
     where c.business_id=p_business_id and c.opened_at>=now()-make_interval(days=>v_days)
   ), grouped as (
-    select l.id location_id,l.name location_name,count(c.*)::int opened,
-      count(c.*) filter(where c.status in('open','assigned','in_progress'))::int active,
-      count(c.*) filter(where c.status='resolved')::int resolved,
-      count(c.*) filter(where coalesce(c.escalation_level,0)>0)::int escalated,
-      count(c.*) filter(where c.status='resolved' and c.resolution_media_id is not null)::int proof_backed,
-      case when count(c.*) filter(where c.status='resolved')=0 then null else round(100.0*(count(c.*) filter(where c.status='resolved' and coalesce((c.resolution_snapshot->>'sla_met')::boolean,false)))::numeric/(count(c.*) filter(where c.status='resolved'))::numeric,1) end sla_met_pct,
+    select l.id location_id,l.name location_name,count(c.id)::int opened,
+      count(c.id) filter(where c.status in('open','assigned','in_progress'))::int active,
+      count(c.id) filter(where c.status='resolved')::int resolved,
+      count(c.id) filter(where coalesce(c.escalation_level,0)>0)::int escalated,
+      count(c.id) filter(where c.status='resolved' and c.resolution_media_id is not null)::int proof_backed,
+      case when count(c.id) filter(where c.status='resolved')=0 then null else round(100.0*(count(c.id) filter(where c.status='resolved' and coalesce((c.resolution_snapshot->>'sla_met')::boolean,false)))::numeric/(count(c.id) filter(where c.status='resolved'))::numeric,1) end sla_met_pct,
       round((avg(c.resolution_minutes) filter(where c.status='resolved'))::numeric,1) average_resolution_minutes
     from public.locations l left join cases c on c.location_id=l.id
     where l.business_id=p_business_id
