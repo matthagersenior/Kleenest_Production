@@ -82,6 +82,10 @@ export async function recordReviewAmenityInventory(
   });
   if (error) throw error;
 
-  const progression = normalized.length ? await awardReviewAmenityProgression(reviewId) : null;
+  // Inventory persistence is the canonical user action. Progression is an optional,
+  // eligibility-gated bonus and must never make a successfully saved review appear failed.
+  const progression = normalized.length
+    ? await awardReviewAmenityProgression(reviewId).catch(() => null)
+    : null;
   return { inventory: data, progression };
 }
