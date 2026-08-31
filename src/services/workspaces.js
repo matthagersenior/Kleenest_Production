@@ -26,15 +26,16 @@ export async function getWorkspaceContext(){
 export async function getBusinessWorkspaceOverview(businessId){
   if(!businessId)throw new Error('Business workspace id is required.');
   const client=getSupabase();const now=new Date();const start=new Date(now.getTime()-30*86400000);
-  const [access,summary,locations,management,profile]=await Promise.all([
+  const [access,summary,locations,management,profile,restroomHealth]=await Promise.all([
     client.rpc('get_business_product_access',{p_business_id:businessId}),
     client.rpc('business_dashboard_secure_summary',{p_business_id:businessId,p_start:start.toISOString(),p_end:now.toISOString()}),
     client.rpc('business_list_locations',{p_business_id:businessId}),
     client.rpc('business_management_context',{p_business_id:businessId}),
     client.rpc('business_get_profile',{p_business_id:businessId}),
+    client.rpc('business_restroom_health_score',{p_business_id:businessId,p_location_id:null}),
   ]);
-  for(const result of [access,summary,locations,management,profile])if(result.error)throw result.error;
-  return {access:access.data?.[0]||null,summary:summary.data||{},locations:locations.data||[],management:management.data||{},profile:profile.data||{}};
+  for(const result of [access,summary,locations,management,profile,restroomHealth])if(result.error)throw result.error;
+  return {access:access.data?.[0]||null,summary:summary.data||{},locations:locations.data||[],management:management.data||{},profile:profile.data||{},restroomHealth:restroomHealth.data||{}};
 }
 
 export async function getBusinessAnalyticsOverview(businessId,{days=30}={}){
