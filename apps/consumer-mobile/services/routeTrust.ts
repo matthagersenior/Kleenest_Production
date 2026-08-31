@@ -15,11 +15,29 @@ export function routeTrustScore(summary:LocationTrustSummary|null|undefined){
   return verified+photos+amenities+freshness;
 }
 
+export function trustConfidenceLabel(summary:LocationTrustSummary|null|undefined){
+  const score=routeTrustScore(summary);
+  if(!summary?.verified_visit_count)return'Needs verification';
+  if(score>=70)return'Strong evidence';
+  if(score>=45)return'Recent evidence';
+  if(score>=20)return'Limited evidence';
+  return'Needs verification';
+}
+
 export function routeTrustLabel(summary:LocationTrustSummary|null|undefined){
   if(!summary?.verified_visit_count)return'Needs verified evidence';
   const fresh=visitFreshness(summary.latest_verified_at);
   const count=Number(summary.verified_visit_count||0);
   return `${count} verified visit${count===1?'':'s'}${fresh?` · ${fresh}`:''}`;
+}
+
+export function trustEvidenceLine(summary:LocationTrustSummary|null|undefined){
+  if(!summary)return'No published verified evidence yet';
+  const parts=[routeTrustLabel(summary)];
+  const photos=Number(summary.photo_evidence_count||0),amenities=Number(summary.amenity_evidence_count||0);
+  if(photos)parts.push(`${photos} photo${photos===1?'':'s'}`);
+  if(amenities)parts.push(`${amenities} observed amenit${amenities===1?'y':'ies'}`);
+  return parts.join(' · ');
 }
 
 export function bestEvidencedStop<T extends {trust?:LocationTrustSummary|null}>(rows:T[]){
