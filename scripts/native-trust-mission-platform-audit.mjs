@@ -7,13 +7,14 @@ const required=[
   'apps/consumer-mobile/services/notificationRouting.ts',
   'apps/consumer-mobile/app/explore.tsx',
   'apps/consumer-mobile/app/saved.tsx',
+  'apps/consumer-mobile/app/location/[id].tsx',
   'supabase/migrations/20260831082000_mobile_trust_mission_platform_authority.sql',
   'supabase/migrations/20260831082500_mobile_trust_mission_tiered_rewards.sql'
 ];
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing trust mission platform file: ${file}`);
 if(!failures.length){
   const read=file=>fs.readFileSync(file,'utf8');
-  const service=read(required[0]),activity=read(required[1]),play=read(required[2]),routing=read(required[3]),explore=read(required[4]),saved=read(required[5]),base=read(required[6]),tiered=read(required[7]);
+  const service=read(required[0]),activity=read(required[1]),play=read(required[2]),routing=read(required[3]),explore=read(required[4]),saved=read(required[5]),location=read(required[6]),base=read(required[7]),tiered=read(required[8]);
   for(const rpc of ['start_my_trust_mission','my_trust_mission','my_trust_mission_history','complete_my_trust_mission','cancel_my_trust_mission'])if(!service.includes(rpc))failures.push(`mobile trust mission service missing RPC: ${rpc}`);
   if(!service.includes("getKleenestSupabaseClient")||!service.includes('SecureStore')||!service.includes('offlineMirror'))failures.push('Trust mission service must use server authority with SecureStore only as an offline mirror.');
   if(!service.includes("client.from('reviews')")||!service.includes(".not('check_in_id','is',null)"))failures.push('Mission completion must resolve a published verified review before calling server completion authority.');
@@ -35,6 +36,10 @@ if(!failures.length){
   }
   if(!explore.includes('markerActive')||!explore.includes("{isActive?'A':isBest?'✓':isMission?'!':'WC'}"))failures.push('Explore map must distinguish the active mission from evidence and candidate mission markers.');
   if(!saved.includes('ACTIVE MISSION')||!saved.includes('activeCard'))failures.push('Saved must visibly distinguish its active mission restroom.');
+  if(!location.includes('readTrustMission')||!location.includes('missionEvidenceRequirement')||!location.includes("activeMission.locationId===locationId"))failures.push('Location mission mode must bind the route request to the authoritative active mission location.');
+  if(!location.includes('MISSION CONTEXT CHECK')||!location.includes('This restroom cannot replace it silently.')||!location.includes("router.push('/play')"))failures.push('Location must expose stale or mismatched mission context without replacing the active mission.');
+  if(!location.includes('FULL EVIDENCE GOAL')||!location.includes('A verified review completes the mission; satisfying this evidence goal earns the full mission bonus.'))failures.push('Location must explain the server-derived full evidence goal and tiered reward semantics.');
+  if(!location.includes("const completed=missionMatches?await completeTrustMission(locationId):null"))failures.push('Location may complete a mission only when the current restroom matches the authoritative active mission.');
   if(/grant\s+(select|insert|update|delete).*authenticated/i.test(base))failures.push('Authenticated clients must not receive direct trust mission table mutation authority.');
 }
 if(failures.length){console.error('Native trust mission platform audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
