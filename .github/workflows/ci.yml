@@ -21,6 +21,8 @@ jobs:
           cache-dependency-path: package.json
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Consumer product boundary
+        run: node scripts/consumer-product-boundary-audit.mjs
       - name: Trust quality convergence
         run: node scripts/trust-quality-convergence-audit.mjs
       - name: Reverification workflow convergence
