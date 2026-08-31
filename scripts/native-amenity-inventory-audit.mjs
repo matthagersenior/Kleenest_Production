@@ -29,7 +29,9 @@ if(!failures.length){
   if(!eligibility.includes("from('check_ins')")||!eligibility.includes("from('reviews')")||!eligibility.includes('progression_eligible === true')) failures.push('Verified review recovery must use self-scoped check-ins and exclude already-used review check-ins.');
   if(!eligibility.includes(".eq('user_id', user.id)")||!eligibility.includes(".eq('location_id', locationId)")) failures.push('Verified review recovery must remain user- and location-scoped under RLS.');
   if(!location.includes('findLatestEligibleReviewCheckIn')||!location.includes('Verified review ready')) failures.push('Location detail must restore unused verified review eligibility after reload.');
-  if(!location.includes('disabled={submitting||!checkInId}')||!location.includes("'Check in to review'")) failures.push('Review submission must remain disabled until a qualifying check-in exists.');
+  const submitButton=/disabled=\{\s*submitting\s*\|\|\s*!checkInId\s*\}/.test(location);
+  const submitGuard=/async function submit\(\)\{if\(submitting\|\|!checkInId\)return;/.test(location);
+  if(!submitButton||!submitGuard||!location.includes("'Check in to review'")) failures.push('Review submission must remain disabled until a qualifying check-in exists.');
   if(!location.includes('AMENITIES DISCOVERED')||!location.includes('What is here, and how many?')) failures.push('Location review must expose amenity type and count collection.');
   if(!location.includes('selectedAmenities')||!location.includes('recordReviewAmenityInventory')) failures.push('Selected amenity counts must persist with the created review.');
   if(!location.includes('Count')||!location.includes('Needs attention')) failures.push('Each selected amenity must expose count and condition controls.');
