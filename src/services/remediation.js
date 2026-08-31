@@ -17,6 +17,11 @@ export function getBusinessRestroomReliability(businessId,days=90){
   return rpc('business_restroom_reliability',{p_business_id:requireId(businessId,'Business id'),p_days:bounded});
 }
 
+export function getBusinessRestroomPreventionRecommendations(businessId,days=90){
+  const bounded=Math.min(Math.max(Number(days)||90,30),365);
+  return rpc('business_restroom_prevention_recommendations',{p_business_id:requireId(businessId,'Business id'),p_days:bounded});
+}
+
 export function manageBusinessRestroomRemediation(businessId,caseId,action,{assignedTo=null,notes=null,proofMediaId=null}={}){
   return rpc('business_manage_restroom_remediation',{
     p_business_id:requireId(businessId,'Business id'),
