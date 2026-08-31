@@ -6,6 +6,7 @@ const required=[
   'apps/consumer-mobile/components/LocationAmenityInventory.tsx',
   'apps/consumer-mobile/app/location/[id].tsx',
   'supabase/migrations/20260831000500_mobile_review_amenity_progression.sql',
+  'supabase/migrations/20260831164500_review_amenity_evidence_convergence.sql',
 ];
 const failures=[];
 for(const file of required) if(!fs.existsSync(file)) failures.push(`missing native amenity/review file: ${file}`);
@@ -14,18 +15,13 @@ if(!failures.length){
   const eligibility=fs.readFileSync(required[1],'utf8');
   const inventory=fs.readFileSync(required[2],'utf8');
   const location=fs.readFileSync(required[3],'utf8');
-  const migration=fs.readFileSync(required[4],'utf8');
-  if(!service.includes("from('amenities')")||!service.includes("rpc('record_review_amenity_inventory'")) failures.push('Mobile amenity inventory must use canonical amenity catalog and review inventory RPC.');
+  const progressionMigration=fs.readFileSync(required[4],'utf8');
+  const convergenceMigration=fs.readFileSync(required[5],'utf8');
+  if(!service.includes("from('amenities')")||!service.includes("rpc('record_review_amenity_inventory'")) failures.push('Mobile amenity inventory must use canonical amenity catalog and review evidence RPC.');
   if(!service.includes("rpc('get_location_amenity_inventory'")) failures.push('Mobile amenity inventory must read canonical aggregated location quantities.');
   if(!service.includes('quantity')||!service.includes('0 to 1000')) failures.push('Mobile amenity inventory must preserve quantity validation.');
-  if(!service.includes("rpc('award_review_amenity_progression'")) failures.push('Verified amenity inventory must request the protected progression award after persistence.');
-  const recordStart=service.indexOf('export async function recordReviewAmenityInventory');
-  const recordBody=recordStart>=0?service.slice(recordStart):'';
-  const persistCall=recordBody.indexOf("rpc('record_review_amenity_inventory'");
-  const persistGuard=recordBody.indexOf('if (error) throw error;',persistCall);
-  const awardCall=recordBody.indexOf('awardReviewAmenityProgression(reviewId)',persistGuard);
-  if(persistCall<0||persistGuard<0||awardCall<0||!(persistCall<persistGuard&&persistGuard<awardCall)) failures.push('Amenity progression must never be requested before canonical inventory persistence succeeds.');
-  if(!recordBody.includes('awardReviewAmenityProgression(reviewId).catch(() => null)')) failures.push('Optional amenity progression failure must not make persisted review inventory appear failed.');
+  if(service.includes("rpc('award_review_amenity_progression'")) failures.push('Client must not trigger amenity progression separately from canonical evidence persistence.');
+  if(!service.includes('canonical_observations')||!service.includes('progression_error')) failures.push('Amenity service must preserve the server evidence/progression result contract.');
   if(!eligibility.includes("from('check_ins')")||!eligibility.includes("from('reviews')")||!eligibility.includes('progression_eligible === true')) failures.push('Verified review recovery must use self-scoped check-ins and exclude already-used review check-ins.');
   if(!eligibility.includes(".eq('user_id', user.id)")||!eligibility.includes(".eq('location_id', locationId)")) failures.push('Verified review recovery must remain user- and location-scoped under RLS.');
   if(!location.includes('findLatestEligibleReviewCheckIn')||!location.includes('Verified review ready')) failures.push('Location detail must restore unused verified review eligibility after reload.');
@@ -37,7 +33,10 @@ if(!failures.length){
   if(!location.includes('Count')||!location.includes('Needs attention')) failures.push('Each selected amenity must expose count and condition controls.');
   if(!location.includes('LocationAmenityInventory')||!inventory.includes('COMMUNITY AMENITY INVENTORY')||!inventory.includes('observed_quantity')) failures.push('Location detail must read back community amenity quantities.');
   for(const token of ["'amenity_inventory'","security definer","progression_eligible","review_amenity_feedback","record_progression_action('amenity_inventory'","revoke all on function public.award_review_amenity_progression(uuid) from public, anon","grant execute on function public.award_review_amenity_progression(uuid) to authenticated"]){
-    if(!migration.toLowerCase().includes(token.toLowerCase())) failures.push(`Amenity progression migration missing security/progression token: ${token}`);
+    if(!progressionMigration.toLowerCase().includes(token.toLowerCase())) failures.push(`Amenity progression migration missing security/progression token: ${token}`);
+  }
+  for(const token of ['location_amenity_observations','review_amenity_inventory','award_review_amenity_progression','canonical_observations','server_authoritative','on conflict (user_id,location_id,check_in_id,amenity_id,status)','revoke all on function public.record_review_amenity_inventory(uuid,jsonb) from public,anon','grant execute on function public.record_review_amenity_inventory(uuid,jsonb) to authenticated,service_role']){
+    if(!convergenceMigration.toLowerCase().includes(token.toLowerCase())) failures.push(`Amenity evidence convergence migration missing authority token: ${token}`);
   }
 }
 if(failures.length){console.error('Native amenity inventory audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
