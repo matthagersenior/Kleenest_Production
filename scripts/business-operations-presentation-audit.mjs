@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+const service=fs.readFileSync('src/services/businessOperations.js','utf8');
+const panel=fs.readFileSync('src/runtime/BusinessOperationsPanel.jsx','utf8');
+const page=fs.readFileSync('src/runtime/BusinessWorkspacePage.jsx','utf8');
+const requiredRpcs=['business_manage_location','business_manage_promotion','business_manage_campaign','business_manage_event','business_manage_qr','business_reply_review'];
+for(const name of requiredRpcs)if(!service.includes(`'${name}'`))throw new Error(`business operations service missing ${name}`);
+const requiredControls=['Add location','Create promotion','Create campaign','Create event','Create location QR','Reply to review','CAMPAIGN CONTROL','QR LIFECYCLE','LOCATION CONTROL'];
+for(const label of requiredControls)if(!panel.includes(label))throw new Error(`business operations panel missing ${label}`);
+if(!panel.includes('onChanged?.()'))throw new Error('business operations must refresh canonical workspace data after mutations');
+if(!page.includes('<BusinessOperationsPanel')||!page.includes('management={management}')||!page.includes('onChanged={refresh}'))throw new Error('business workspace must bind operational controls to management authority and refresh');
+console.log(`Business operations presentation audit passed for ${requiredRpcs.length} canonical RPC families and ${requiredControls.length} operator controls.`);
