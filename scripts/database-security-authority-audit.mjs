@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 const internalMigration='supabase/migrations/20260831040000_internal_trigger_authority_hardening.sql';
 const fleetMigration='supabase/migrations/20260831043000_fleet_operational_rpc_authority_hardening.sql';
+const purchaseMigration='supabase/migrations/20260831044500_single_use_purchase_authority_hardening.sql';
 const failures=[];
-for(const migration of [internalMigration,fleetMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
+for(const migration of [internalMigration,fleetMigration,purchaseMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
 if(!failures.length){
   const internalSql=fs.readFileSync(internalMigration,'utf8');
   const triggerFunctions=['converge_fleet_operational_event_to_intelligence','materialize_fleet_geofence_notification','materialize_fleet_operational_notification','sync_external_location_address'];
@@ -24,6 +25,11 @@ if(!failures.length){
     if(!fleetSql.includes(`revoke all on function public.${fn}(${args}) from public, anon;`))failures.push(`${fn} must reject public and anonymous execution`);
     if(!fleetSql.includes(`grant execute on function public.${fn}(${args}) to authenticated;`))failures.push(`${fn} must preserve authenticated execution`);
   }
+
+  const purchaseSql=fs.readFileSync(purchaseMigration,'utf8');
+  if(!purchaseSql.includes("alter function public.list_single_use_access_purchases() set search_path = '';"))failures.push('purchase history authority must use an empty search path');
+  if(!purchaseSql.includes('revoke all on function public.list_single_use_access_purchases() from public, anon;'))failures.push('purchase history must reject public and anonymous execution');
+  if(!purchaseSql.includes('grant execute on function public.list_single_use_access_purchases() to authenticated;'))failures.push('purchase history must remain available to authenticated users');
 }
 if(failures.length){console.error('Database security authority audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
 console.log('Database security authority audit passed.');
