@@ -104,6 +104,8 @@ jobs:
         run: node scripts/remediation-prevention-confidence-convergence-audit.mjs
       - name: Preventive work order convergence
         run: node scripts/restroom-preventive-work-order-convergence-audit.mjs
+      - name: Preventive verification outcome convergence
+        run: node scripts/preventive-verification-outcome-convergence-audit.mjs
       - name: Business health convergence
         run: node scripts/review-amenity-business-health-convergence-audit.mjs
       - name: Full authority chain parity
