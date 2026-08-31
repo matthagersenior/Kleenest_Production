@@ -3,8 +3,9 @@ const internalMigration='supabase/migrations/20260831040000_internal_trigger_aut
 const fleetMigration='supabase/migrations/20260831043000_fleet_operational_rpc_authority_hardening.sql';
 const purchaseMigration='supabase/migrations/20260831044500_single_use_purchase_authority_hardening.sql';
 const viewMigration='supabase/migrations/20260831084000_mobile_live_view_security_invoker_hardening.sql';
+const fkMigration='supabase/migrations/20260831084500_mobile_live_foreign_key_index_convergence.sql';
 const failures=[];
-for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
+for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
 if(!failures.length){
   const internalSql=fs.readFileSync(internalMigration,'utf8');
   const triggerFunctions=['converge_fleet_operational_event_to_intelligence','materialize_fleet_geofence_notification','materialize_fleet_operational_notification','sync_external_location_address'];
@@ -39,12 +40,23 @@ if(!failures.length){
     if(!viewSql.includes(`revoke all on table public.${view} from public, anon, authenticated;`))failures.push(`${view} must remain closed to direct app-role access`);
   }
 
+  const fkSql=fs.readFileSync(fkMigration,'utf8');
+  const fkIndexes=[
+    'external_location_evidence_external_record_id_idx','fleet_dispatch_signal_policies_updated_by_idx','fleet_drivers_user_id_idx',
+    'fleet_route_stops_location_id_idx','fleet_route_stops_source_route_stop_id_idx','game_challenges_winner_id_idx',
+    'location_departures_location_id_idx','location_occupancy_observations_check_in_id_idx','national_ingestion_runs_market_id_idx',
+    'national_ingestion_storage_guard_resume_authorized_by_idx','qr_attribution_events_campaign_id_idx',
+    'qr_attribution_events_engagement_program_id_idx','qr_attribution_events_promotion_id_idx','review_reports_resolved_by_idx',
+    'review_reports_review_id_idx','verification_streaks_last_location_id_idx'
+  ];
+  for(const index of fkIndexes)if(!fkSql.includes(`create index if not exists ${index} on public.`))failures.push(`live foreign-key coverage migration missing index: ${index}`);
+
   const migrationDir='supabase/migrations';
   const retiredOwnerRightsViews=['locations_public','review_intelligence_signals','v_ai_business_roi'];
-  const recentMigrations=fs.readdirSync(migrationDir).filter(name=>name.endsWith('.sql')).map(name=>fs.readFileSync(`${migrationDir}/${name}`,'utf8')).join('\n');
+  const futureFacingMigrations=fs.readdirSync(migrationDir).filter(name=>name.endsWith('.sql')&&name>='20260831084000').map(name=>fs.readFileSync(`${migrationDir}/${name}`,'utf8')).join('\n');
   for(const view of retiredOwnerRightsViews){
-    const unsafeCreate=new RegExp(`create\\s+(?:or\\s+replace\\s+)?view\\s+public\\.${view}\\b`,'i').test(recentMigrations);
-    const hardened=new RegExp(`alter\\s+view\\s+public\\.${view}\\s+set\\s*\\(security_invoker\\s*=\\s*true\\)`,'i').test(recentMigrations);
+    const unsafeCreate=new RegExp(`create\\s+(?:or\\s+replace\\s+)?view\\s+public\\.${view}\\b`,'i').test(futureFacingMigrations);
+    const hardened=new RegExp(`alter\\s+view\\s+public\\.${view}\\s+set\\s*\\(security_invoker\\s*=\\s*true\\)`,'i').test(futureFacingMigrations);
     if(unsafeCreate&&!hardened)failures.push(`retired owner-rights view ${view} must not be reintroduced without security_invoker=true`);
   }
 }
