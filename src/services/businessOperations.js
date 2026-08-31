@@ -42,6 +42,30 @@ export function manageBusinessQr(businessId,{locationId=null,qrId=null,action='c
 export function createBusinessQr(businessId,locationId,payload={}){return manageBusinessQr(businessId,{locationId:requireId(locationId,'Location id'),action:'create',payload})}
 export function updateBusinessQr(businessId,qrId,payload,locationId=null){return manageBusinessQr(businessId,{locationId,qrId:requireId(qrId,'QR id'),action:'update',payload})}
 export function deactivateBusinessQr(businessId,qrId,locationId=null){return manageBusinessQr(businessId,{locationId,qrId:requireId(qrId,'QR id'),action:'deactivate'})}
+export function createCustomBusinessQr(businessId,{locationId=null,label='',purpose='checkin',actionType='checkin',actionPayload={},customization={},singleUse=false,maxRedemptions=null}={}){
+  requireId(businessId,'Business id');
+  return rpc('business_create_custom_qr',{p_business_id:businessId,p_location_id:locationId,p_label:label,p_purpose:purpose,p_action_type:actionType,p_action_payload:actionPayload,p_customization:customization,p_single_use:Boolean(singleUse),p_max_redemptions:maxRedemptions==null?null:Number(maxRedemptions)});
+}
+export function updateCustomBusinessQr(businessId,qrId,{label='',purpose='custom',actionType='custom',actionPayload={},customization={},active=true,singleUse=false,maxRedemptions=null}={}){
+  requireId(businessId,'Business id');requireId(qrId,'QR id');
+  return rpc('business_update_custom_qr',{p_business_id:businessId,p_qr_id:qrId,p_label:label,p_purpose:purpose,p_action_type:actionType,p_action_payload:actionPayload,p_customization:customization,p_active:Boolean(active),p_single_use:Boolean(singleUse),p_max_redemptions:maxRedemptions==null?null:Number(maxRedemptions)});
+}
+export function setCustomBusinessQrActive(businessId,qrId,active){return rpc('business_set_qr_active',{p_business_id:requireId(businessId,'Business id'),p_qr_id:requireId(qrId,'QR id'),p_active:Boolean(active)})}
+export function deleteCustomBusinessQr(businessId,qrId){return rpc('business_delete_qr',{p_business_id:requireId(businessId,'Business id'),p_qr_id:requireId(qrId,'QR id')})}
+
+export function listBusinessContests(businessId){return rpc('business_list_contests',{p_business_id:requireId(businessId,'Business id')})}
+export function manageBusinessContest(businessId,{contestId=null,action='create',payload={}}={}){return rpc('business_manage_contest',{p_business_id:requireId(businessId,'Business id'),p_contest_id:contestId,p_action:action,p_payload:payload})}
+export function createBusinessContest(businessId,payload){return manageBusinessContest(businessId,{action:'create',payload})}
+export function updateBusinessContest(businessId,contestId,payload){return manageBusinessContest(businessId,{contestId:requireId(contestId,'Contest id'),action:'update',payload})}
+export function setBusinessContestStatus(businessId,contestId,action){if(!['activate','pause','resume'].includes(action))throw new Error('Unsupported contest status action.');return manageBusinessContest(businessId,{contestId:requireId(contestId,'Contest id'),action})}
+export function deleteBusinessContest(businessId,contestId){return manageBusinessContest(businessId,{contestId:requireId(contestId,'Contest id'),action:'delete'})}
+
+export function listBusinessMedia(businessId){return rpc('business_list_media',{p_business_id:requireId(businessId,'Business id')})}
+export function createBusinessMedia(businessId,{locationId=null,storagePath,caption=null,mediaType='photo',mimeType=null,sizeBytes=null,width=null,height=null,sortOrder=0}={}){
+  requireId(storagePath,'Storage path');return rpc('business_create_media',{p_business_id:requireId(businessId,'Business id'),p_location_id:locationId,p_storage_path:storagePath,p_caption:caption,p_media_type:mediaType,p_mime_type:mimeType,p_size_bytes:sizeBytes,p_width:width,p_height:height,p_sort_order:Number(sortOrder)||0});
+}
+export function updateBusinessMedia(businessId,mediaId,{storagePath=null,caption=null,mediaType=null,sortOrder=0}={}){return rpc('business_update_media',{p_business_id:requireId(businessId,'Business id'),p_media_id:requireId(mediaId,'Media id'),p_storage_path:storagePath,p_caption:caption,p_media_type:mediaType,p_sort_order:Number(sortOrder)||0})}
+export function deleteBusinessMedia(businessId,mediaId){return rpc('business_delete_media',{p_business_id:requireId(businessId,'Business id'),p_media_id:requireId(mediaId,'Media id')})}
 
 export function replyToBusinessReview(businessId,reviewId,reply){
   requireId(businessId,'Business id');requireId(reviewId,'Review id');
