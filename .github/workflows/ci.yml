@@ -98,6 +98,10 @@ jobs:
         run: node scripts/restroom-remediation-sla-recovery-convergence-audit.mjs
       - name: Remediation recovery history convergence
         run: node scripts/remediation-recovery-history-convergence-audit.mjs
+      - name: Remediation confirmation reliability convergence
+        run: node scripts/remediation-confirmation-reliability-convergence-audit.mjs
+      - name: Remediation prevention confidence convergence
+        run: node scripts/remediation-prevention-confidence-convergence-audit.mjs
       - name: Business health convergence
         run: node scripts/review-amenity-business-health-convergence-audit.mjs
       - name: Full authority chain parity
