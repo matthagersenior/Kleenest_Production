@@ -19,6 +19,21 @@ export type LocationRecoveryHistoryItem = {
   sla_met: boolean | null;
 };
 
+export type LocationRecoveryConfidence={
+  location_id:string;
+  issue_count:number;
+  resolved_count:number;
+  community_confirmed:number;
+  failed_fixes:number;
+  escalated:number;
+  active_count:number;
+  affected_amenities:number;
+  latest_recovery_at:string|null;
+  recovery_confidence_score:number;
+  recovery_state:'no_recent_issues'|'recovery_unstable'|'recovery_in_progress'|'community_confirmed'|'business_reported_recovery'|'needs_attention'|string;
+  generated_at:string;
+};
+
 export type RemediationConfirmationOpportunity = {
   case_id:string;
   business_id:string;
@@ -54,6 +69,12 @@ export async function getLocationRecoveryHistory(locationId:string):Promise<Loca
   if(error)throw error;
   const rows=Array.isArray(data)?data:[];
   return rows.map((row:any)=>{const storagePath=typeof row?.proof_storage_path==='string'&&row.proof_storage_path?row.proof_storage_path:null;return {...row,proof_storage_path:storagePath,proof_url:proofUrl(storagePath)||null} as LocationRecoveryHistoryItem;});
+}
+
+export async function getLocationRecoveryConfidence(locationId:string):Promise<LocationRecoveryConfidence>{
+  const {data,error}=await getKleenestSupabaseClient().rpc('get_location_recovery_confidence',{p_location_id:locationId});
+  if(error)throw error;
+  return (data||{}) as LocationRecoveryConfidence;
 }
 
 export async function getRemediationConfirmationOpportunities(locationId:string):Promise<RemediationConfirmationOpportunity[]> {
