@@ -108,6 +108,8 @@ jobs:
         run: node scripts/preventive-verification-outcome-convergence-audit.mjs
       - name: Preventive effectiveness intelligence convergence
         run: node scripts/preventive-effectiveness-intelligence-convergence-audit.mjs
+      - name: Preventive work lifecycle convergence
+        run: node scripts/preventive-work-lifecycle-convergence-audit.mjs
       - name: GitHub Pages deployment convergence
         run: node scripts/pages-deployment-convergence-audit.mjs
       - name: Business health convergence
