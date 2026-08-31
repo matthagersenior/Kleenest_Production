@@ -17,6 +17,7 @@ const business=read('src/runtime/BusinessPreventiveMaintenancePanel.jsx');
 const performancePanel=read('src/runtime/BusinessPreventiveExecutionPerformancePanel.jsx');
 const handoffPanel=read('src/runtime/BusinessPreventiveDispatchHandoffPanel.jsx');
 const dispatchPanel=read('src/runtime/FleetPreventiveDispatchPanel.jsx');
+const driverPanel=read('src/runtime/FleetPreventiveDriverStopsPanel.jsx');
 const mobile=read('apps/consumer-mobile/components/PreventiveVerificationCard.tsx');
 const notificationRouting=read('apps/consumer-mobile/services/notificationRouting.ts');
 const fleet=read('src/runtime/FleetWorkspacePage.jsx');
@@ -31,14 +32,15 @@ for(const token of ['sync_preventive_work_from_fleet_stop','preventive_work_orde
 if(stopExecution.includes("set status='completed'"))throw new Error('Fleet route-stop execution must not auto-complete preventive maintenance.');
 for(const token of ['fleet_current_user_dispatch','preventive_stops','preventive_work_order_id','recommendation_action','route_stop_id','stop_order','stop_status','priority','due_at','to authenticated,service_role'])need(driverManifest,token,'Preventive driver dispatch manifest');
 need(service,'getBusinessRestroomPreventiveExecutionPerformance','Preventive execution performance service');
-for(const token of ['getFleetPreventiveDispatchOpportunities','attachPreventiveWorkToFleetRoute','fleet_preventive_dispatch_opportunities','fleet_attach_preventive_work_to_route','preventiveDispatch'])need(workspaces,token,'Fleet preventive dispatch service');
+for(const token of ['getFleetPreventiveDispatchOpportunities','attachPreventiveWorkToFleetRoute','fleet_preventive_dispatch_opportunities','fleet_attach_preventive_work_to_route','preventiveDispatch','recordFleetRouteStopTiming','fleet_record_route_stop_timing','service_started','completed','skipped'])need(workspaces,token,'Fleet preventive dispatch service');
 for(const token of ["params.get('work_order')",'focusPreventiveWorkOrderId','focusWorkOrderId={focusPreventiveWorkOrderId}','BusinessPreventiveExecutionPerformancePanel','<BusinessPreventiveExecutionPerformancePanel businessId={businessId}/>','BusinessPreventiveDispatchHandoffPanel','<BusinessPreventiveDispatchHandoffPanel businessId={businessId}/>'])need(businessControl,token,'Preventive alert/performance/handoff control');
 for(const token of ['focusWorkOrderId','ALERT CONTEXT','Due soon','Critical overdue','CRITICAL OVERDUE','DUE SOON','escalation_level','escalated_at','uploadBusinessLocationPhoto','createBusinessMedia','Preventive maintenance proof','proofMediaId','Maintenance photo proof (optional)','Photo proof linked'])need(business,token,'Business preventive lifecycle presentation');
 for(const token of ['PREVENTIVE EXECUTION PERFORMANCE','Completion rate','On-time completion','Escalation rate','Proof-backed','Median completion','Average start','Critical escalations','does not alter restroom trust'])need(performancePanel,token,'Business preventive execution performance presentation');
 for(const token of ['FLEET HANDOFF','Routed preventive work','Active routed work','fleet_route_stop_id','fleet_route_name','dispatch linkage only','work order remains the maintenance authority'])need(handoffPanel,token,'Business preventive dispatch handoff presentation');
 for(const token of ['PREVENTIVE DISPATCH','existing Fleet stop model','no parallel task or dispatch lifecycle','Choose planned route','Add to route','canonical Fleet route stop','assigned_route_stop_id'])need(dispatchPanel,token,'Fleet preventive dispatch presentation');
+for(const token of ['MY PREVENTIVE STOPS','Arrived','Start service','Complete stop','Skip stop','Starting service moves the preventive work order into progress','does not complete maintenance','recordFleetRouteStopTiming'])need(driverPanel,token,'Fleet preventive driver controls');
 for(const token of ['BUSINESS MAINTENANCE PHOTO','proof_available','proof_url','not restroom truth','what you observe during your verified visit'])need(mobile,token,'Mobile preventive proof');
 for(const token of ['isRestroomOperations','work_order_id',"type.includes('preventive_work')","type.includes('preventive_maintenance')",'Restroom'])need(notificationRouting,token,'Native preventive notification routing');
-for(const token of ['FleetPreventiveDispatchPanel','preventiveDispatch','Proof-backed completed','PHOTO PROOF','business photo proof','Due soon','Escalated','Critical overdue','Verified effective','CRITICAL OVERDUE','DUE SOON','scheduleSummary.critical_overdue','preventionUrl(row.id)','never substitute for visitor evidence'])need(fleet,token,'Fleet preventive lifecycle presentation');
+for(const token of ['FleetPreventiveDispatchPanel','FleetPreventiveDriverStopsPanel','dispatch={data?.dispatch}','preventiveDispatch','Proof-backed completed','PHOTO PROOF','business photo proof','Due soon','Escalated','Critical overdue','Verified effective','CRITICAL OVERDUE','DUE SOON','scheduleSummary.critical_overdue','preventionUrl(row.id)','never substitute for visitor evidence'])need(fleet,token,'Fleet preventive lifecycle presentation');
 
 console.log('Preventive work lifecycle convergence audit passed.');
