@@ -61,6 +61,12 @@ export function setBusinessContestStatus(businessId,contestId,action){if(!['acti
 export function deleteBusinessContest(businessId,contestId){return manageBusinessContest(businessId,{contestId:requireId(contestId,'Contest id'),action:'delete'})}
 
 export function listBusinessMedia(businessId){return rpc('business_list_media',{p_business_id:requireId(businessId,'Business id')})}
+export async function uploadBusinessLocationPhoto(file){
+  if(!file)throw new Error('Photo file is required.');
+  const client=getSupabase();const{data:{user},error:userError}=await client.auth.getUser();if(userError)throw userError;if(!user)throw new Error('Authentication required.');
+  const ext=String(file.name||'photo').split('.').pop()?.toLowerCase()||'jpg';const safeExt=['jpg','jpeg','png','webp'].includes(ext)?ext:'jpg';const path=`${user.id}/${crypto.randomUUID()}.${safeExt}`;
+  const{error}=await client.storage.from('location-photos').upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type||undefined});if(error)throw error;return path;
+}
 export function createBusinessMedia(businessId,{locationId=null,storagePath,caption=null,mediaType='photo',mimeType=null,sizeBytes=null,width=null,height=null,sortOrder=0}={}){
   requireId(storagePath,'Storage path');return rpc('business_create_media',{p_business_id:requireId(businessId,'Business id'),p_location_id:locationId,p_storage_path:storagePath,p_caption:caption,p_media_type:mediaType,p_mime_type:mimeType,p_size_bytes:sizeBytes,p_width:width,p_height:height,p_sort_order:Number(sortOrder)||0});
 }
