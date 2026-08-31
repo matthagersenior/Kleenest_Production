@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+const required=['apps/consumer-mobile/services/notificationInbox.ts','apps/consumer-mobile/services/notificationPreferences.ts','apps/consumer-mobile/services/notificationRouting.ts','apps/consumer-mobile/app/notifications.tsx','supabase/migrations/20260831065500_mobile_notification_inbox_preference_authority_hardening.sql'];
+const failures=[];for(const file of required)if(!fs.existsSync(file))failures.push(`missing notification inbox authority file: ${file}`);
+if(!failures.length){
+ const read=file=>fs.readFileSync(file,'utf8');
+ const inbox=read(required[0]),prefs=read(required[1]),routing=read(required[2]),screen=read(required[3]),migration=read(required[4]);
+ for(const token of ["rpc('user_notifications'","rpc('mark_notification_read'","rpc('mark_all_notifications_read'"])if(!inbox.includes(token))failures.push(`Notification inbox service missing canonical RPC token: ${token}`);
+ if(inbox.includes("from('notifications')"))failures.push('Notification inbox service must not read notifications directly.');
+ if(!prefs.includes("rpc('my_notification_preference_status'")||!prefs.includes('suppressed30d'))failures.push('Notification preferences must expose suppression telemetry through canonical RPC authority.');
+ for(const token of ["'Route'","'Intelligence'","type==='scheduled_report'","type==='review'"])if(!routing.includes(token))failures.push(`Notification routing missing complete context token: ${token}`);
+ for(const token of ["'Route'","'Intelligence'",'filtered by your settings in the last 30 days',"if(key==='push'&&value)await registerNativePush()"] )if(!screen.includes(token))failures.push(`Notification screen missing convergence token: ${token}`);
+ if(screen.includes('listMobileNotifications')||screen.includes('markMobileNotificationRead')||screen.includes('markAllMobileNotificationsRead'))failures.push('Notification screen must not use legacy mobile-core inbox authority.');
+ for(const token of ['internal.notification_preference_category','public.user_notifications','public.mark_notification_read','public.mark_all_notifications_read','public.my_notification_preference_status',"set search_path = ''",'security definer',"'review'","'scheduled_report'",'revoke all on table public.notification_preferences from authenticated','revoke select on table public.notifications from authenticated'])if(!migration.toLowerCase().includes(token.toLowerCase()))failures.push(`Notification authority migration missing token: ${token}`);
+ for(const token of ['revoke all on function public.user_notifications(integer) from public,anon','grant execute on function public.user_notifications(integer) to authenticated','revoke all on function public.mark_notification_read(uuid) from public,anon','grant execute on function public.mark_notification_read(uuid) to authenticated','revoke all on function public.my_notification_preference_status() from public,anon','grant execute on function public.my_notification_preference_status() to authenticated'])if(!migration.includes(token))failures.push(`Notification authority grant contract missing token: ${token}`);
+ if(!migration.includes("like 'support%'")||!migration.includes("? 'support_request_id'"))failures.push('Support notifications must remain outside optional suppression categories.');
+}
+if(failures.length){console.error('Native notification inbox authority audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}console.log('Native notification inbox authority audit passed.');
