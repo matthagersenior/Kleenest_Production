@@ -5,16 +5,20 @@ for(const file of files)if(!fs.existsSync(file))failures.push(`missing trust dis
 if(!failures.length){
   const [service,explore,saved]=files.map(file=>fs.readFileSync(file,'utf8'));
   for(const token of ["TrustEvidenceFilter='any'|'verified'|'fresh'","TrustSortMode='default'|'evidence'",'hasVerifiedTrustEvidence','hasFreshTrustEvidence','applyTrustDiscoveryControls'])if(!service.includes(token))failures.push(`Trust discovery service missing: ${token}`);
-  if(!service.includes("if(sort==='evidence')")||!service.includes('routeTrustScore(b.trust)-routeTrustScore(a.trust)'))failures.push('Evidence sorting must be an explicit opt-in branch using shared trust scoring.');
-  if(!service.includes("filter==='verified'")||!service.includes("filter==='fresh'"))failures.push('Verified and fresh evidence filters must be explicit.');
-  for(const [name,content] of [['Explore',explore],['Saved',saved]]){
-    if(!content.includes('applyTrustDiscoveryControls(rows,evidenceFilter,sortMode)'))failures.push(`${name} must derive a visible result set from explicit trust controls.`);
-    for(const label of ['Any','Verified','Fresh ≤30d','Evidence'])if(!content.includes(label))failures.push(`${name} missing trust control label: ${label}`);
-    if(!content.includes("sortMode==='default'")||!content.includes("sortMode==='evidence'"))failures.push(`${name} must expose both default and evidence sort states.`);
-  }
-  if(!explore.includes('Nearby order stays authoritative unless you explicitly choose Evidence.')||!explore.includes("setSortMode('default')"))failures.push('Explore must preserve nearby order by default and clearly expose restoring it.');
+  if(!service.includes("if(sort==='evidence')")||!service.includes('routeTrustScore(b.trust)-routeTrustScore(a.trust)'))failures.push('Evidence sorting must remain an explicit opt-in branch using shared trust scoring.');
+  if(!service.includes("filter==='verified'")||!service.includes("filter==='fresh'"))failures.push('Verified and fresh evidence filters must remain explicit.');
+
+  // Saved is the deliberate advanced trust-comparison surface. Explore remains the fast
+  // distance/search/amenity finder and may show lightweight trust badges without making
+  // evidence sorting part of the critical bathroom-finding path.
+  if(!saved.includes('applyTrustDiscoveryControls(rows,evidenceFilter,sortMode)'))failures.push('Saved must derive a visible result set from explicit trust controls.');
+  for(const label of ['Any','Verified','Fresh ≤30d','Evidence'])if(!saved.includes(label))failures.push(`Saved missing trust control label: ${label}`);
+  if(!saved.includes("sortMode==='default'")||!saved.includes("sortMode==='evidence'"))failures.push('Saved must expose default and evidence sort states.');
   if(!saved.includes('Your saved order stays unchanged unless you explicitly choose Evidence.')||!saved.includes("setSortMode('default')"))failures.push('Saved must preserve original order by default and clearly expose restoring it.');
-  if(!explore.includes('data={visibleRows}')||!saved.includes('data={visibleRows}'))failures.push('Explore and Saved lists must render the explicitly filtered visible set.');
+  if(!saved.includes('data={visibleRows}'))failures.push('Saved list must render the explicitly filtered visible set.');
+
+  if(explore.includes('applyTrustDiscoveryControls(')||explore.includes('Evidence filter')||explore.includes('Nearby order stays authoritative unless you explicitly choose Evidence.'))failures.push('Explore must stay bathroom-first; advanced evidence filtering/sorting belongs outside the critical finder path.');
+  for(const token of ['FIND A BATHROOM','Amenities you need','Directions',"pathname:'/route'"])if(!explore.includes(token))failures.push(`Explore bathroom-first discovery contract missing ${token}.`);
   if(/rows\.sort\(|setRows\([^)]*sort/i.test(explore+saved))failures.push('Screens must not mutate underlying discovery/saved rows when sorting by evidence.');
 }
 if(failures.length){console.error('Native trust discovery controls audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
