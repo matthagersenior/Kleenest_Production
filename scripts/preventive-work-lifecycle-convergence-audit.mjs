@@ -9,6 +9,7 @@ const performance=read('supabase/migrations/20260831221110_preventive_execution_
 const dispatch=read('supabase/migrations/20260831221433_fleet_preventive_dispatch_convergence.sql');
 const handoff=read('supabase/migrations/20260831222335_preventive_dispatch_handoff_visibility.sql');
 const stopExecution=read('supabase/migrations/20260831222611_preventive_fleet_stop_execution_handoff.sql');
+const driverManifest=read('supabase/migrations/20260831222914_fleet_current_user_preventive_dispatch_manifest.sql');
 const service=read('src/services/remediation.js');
 const workspaces=read('src/services/workspaces.js');
 const businessControl=read('src/runtime/BusinessReverificationPanel.jsx');
@@ -28,6 +29,7 @@ for(const token of ['fleet_preventive_dispatch_opportunities','fleet_attach_prev
 for(const token of ['fleet_route_stop_id','fleet_route_id','fleet_route_name','fleet_route_status','fleet_stop_status','fleet_stop_order','fleet_scheduled_for','fleet_dispatch_locked','preventive_work_order_id','to authenticated,service_role'])need(handoff,token,'Preventive dispatch handoff authority');
 for(const token of ['sync_preventive_work_from_fleet_stop','preventive_work_order_id',"new.status='servicing'","status='in_progress'",'preventive_fleet_stop_completed','maintenance signoff required','preventive_fleet_stop_skipped','work order remains active','after update of status on public.fleet_route_stops','to service_role'])need(stopExecution,token,'Fleet preventive execution handoff authority');
 if(stopExecution.includes("set status='completed'"))throw new Error('Fleet route-stop execution must not auto-complete preventive maintenance.');
+for(const token of ['fleet_current_user_dispatch','preventive_stops','preventive_work_order_id','recommendation_action','route_stop_id','stop_order','stop_status','priority','due_at','to authenticated,service_role'])need(driverManifest,token,'Preventive driver dispatch manifest');
 need(service,'getBusinessRestroomPreventiveExecutionPerformance','Preventive execution performance service');
 for(const token of ['getFleetPreventiveDispatchOpportunities','attachPreventiveWorkToFleetRoute','fleet_preventive_dispatch_opportunities','fleet_attach_preventive_work_to_route','preventiveDispatch'])need(workspaces,token,'Fleet preventive dispatch service');
 for(const token of ["params.get('work_order')",'focusPreventiveWorkOrderId','focusWorkOrderId={focusPreventiveWorkOrderId}','BusinessPreventiveExecutionPerformancePanel','<BusinessPreventiveExecutionPerformancePanel businessId={businessId}/>','BusinessPreventiveDispatchHandoffPanel','<BusinessPreventiveDispatchHandoffPanel businessId={businessId}/>'])need(businessControl,token,'Preventive alert/performance/handoff control');
