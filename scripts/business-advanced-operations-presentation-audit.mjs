@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+const service=fs.readFileSync('src/services/businessOperations.js','utf8');
+const panel=fs.readFileSync('src/runtime/BusinessAdvancedOperationsPanel.jsx','utf8');
+const workspace=fs.readFileSync('src/runtime/BusinessWorkspacePage.jsx','utf8');
+const requiredRpcs=['business_create_custom_qr','business_update_custom_qr','business_set_qr_active','business_delete_qr','business_list_contests','business_manage_contest','business_list_media','business_create_media','business_update_media','business_delete_media'];
+for(const rpc of requiredRpcs)if(!service.includes(`'${rpc}'`))throw new Error(`advanced operations service missing ${rpc}`);
+for(const fn of ['uploadBusinessLocationPhoto','createBusinessContest','setBusinessContestStatus','deleteBusinessContest','createCustomBusinessQr','setCustomBusinessQrActive','deleteCustomBusinessQr','createBusinessMedia','deleteBusinessMedia','updateBusinessLocation','updateBusinessCampaign','updateBusinessEvent','deleteBusinessEvent'])if(!service.includes(`function ${fn}`))throw new Error(`advanced operations service missing ${fn}`);
+for(const marker of ['Create contest','Contest lifecycle','Advanced QR','Advanced QR lifecycle','Location media','Media library','Edit location','Edit campaign','Edit event'])if(!panel.includes(marker))throw new Error(`advanced operations panel missing ${marker}`);
+if(!panel.includes("storage.from('location-photos').upload")&&!service.includes("storage.from('location-photos').upload"))throw new Error('business media upload must use the canonical location-photos bucket');
+if(!workspace.includes('BusinessAdvancedOperationsPanel'))throw new Error('advanced business operations panel is not wired into the business workspace');
+console.log(`Advanced business operations presentation audit passed for ${requiredRpcs.length} RPC contracts.`);
