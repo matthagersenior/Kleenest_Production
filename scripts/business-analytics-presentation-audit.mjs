@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+const service=fs.readFileSync('src/services/workspaces.js','utf8');
+const page=fs.readFileSync('src/runtime/BusinessWorkspacePage.jsx','utf8');
+const requiredRpcs=['business_campaign_analytics','business_engagement_analytics','business_location_analytics','business_location_detail','business_location_intelligence','business_qr_detail','business_review_detail','business_benchmark_analytics','business_campaign_detail','business_event_detail','business_media_detail','business_occupancy_analytics','business_partner_analytics','business_partner_detail','business_roi_analytics','business_visitors_analytics'];
+for(const rpc of requiredRpcs)if(!service.includes(`client.rpc('${rpc}'`))throw new Error(`business analytics service missing ${rpc}`);
+if(!service.includes('Promise.allSettled'))throw new Error('business analytics must degrade gracefully when an optional analytics surface is unavailable');
+for(const label of ['Authorized performance analytics','QR ATTRIBUTION','REVIEW DETAIL','CAMPAIGNS','EVENTS','MEDIA','ROI'])if(!page.includes(label))throw new Error(`business analytics presentation missing ${label}`);
+for(const days of ['[7,30,90]','setDays(value)'])if(!page.includes(days))throw new Error('business analytics date-window controls are incomplete');
+if(!page.includes('unavailableCount'))throw new Error('business analytics presentation must surface partial availability');
+console.log(`Business analytics presentation audit passed for ${requiredRpcs.length} RPC surfaces.`);
