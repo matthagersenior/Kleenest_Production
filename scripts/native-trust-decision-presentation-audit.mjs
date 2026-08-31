@@ -3,16 +3,20 @@ const files=['apps/consumer-mobile/services/routeTrust.ts','apps/consumer-mobile
 const failures=[];for(const file of files)if(!fs.existsSync(file))failures.push(`missing trust decision file: ${file}`);
 if(!failures.length){const read=file=>fs.readFileSync(file,'utf8'),trust=read(files[0]),explore=read(files[1]),saved=read(files[2]),route=read(files[3]),location=read(files[4]);
  for(const label of ['Strong evidence','Recent evidence','Limited evidence','Needs verification'])if(!trust.includes(label))failures.push(`Shared trust confidence model missing label: ${label}`);
- for(const helper of ['trustEvidenceLine','trustReason','routeTrustScore','bestEvidencedStop'])if(!trust.includes(helper))failures.push(`Trust guidance missing shared helper: ${helper}`);
+ if(!trust.includes('trustEvidenceLine')||!trust.includes('routeTrustScore')||!trust.includes('bestEvidencedStop'))failures.push('Trust guidance must centralize scoring, evidence summaries, and strongest-evidence selection.');
+ if(!trust.includes('trustContributionPriority')||!trust.includes('trustContributionMission')||!trust.includes('firstContributionOpportunity'))failures.push('Trust guidance must centralize contribution priority, mission copy, and opportunity selection.');
+ for(const priority of ["return'high'","return'medium'","return'low'","return'none'"])if(!trust.includes(priority))failures.push(`Contribution model missing priority state: ${priority}`);
+ if(!trust.includes('another verified visit')||!trust.includes('current photos')||!trust.includes('amenity observations'))failures.push('Contribution missions must derive from concrete evidence gaps.');
  if(!explore.includes('bestEvidencedStop(rows)')||!explore.includes('Best evidenced nearby')||!explore.includes("{isBest?'✓':'WC'}"))failures.push('Explore must highlight strongest evidence in list and map surfaces.');
  if(!explore.includes('does not reorder nearby results'))failures.push('Explore guidance must state that trust highlighting does not reorder nearby results.');
- if(!saved.includes('trustConfidenceLabel')||!saved.includes('trustEvidenceLine')||!saved.includes('trustReason')||!saved.includes('saved order is unchanged'))failures.push('Saved must explain shared trust confidence without reordering the shortlist.');
- for(const action of ['Navigate best','View evidence','Add best to route'])if(!saved.includes(action))failures.push(`Saved best-evidence guidance missing action: ${action}`);
- if(!route.includes('trustConfidenceLabel')||!route.includes('trustEvidenceLine')||!route.includes('trustReason')||!route.includes('keeps your stop order exactly as you arranged it unless you explicitly choose'))failures.push('Route must explain shared trust confidence while preserving manual stop order by default.');
- if(!route.includes('function move(index:number,delta:number)')||!route.includes('function moveBestFirst()')||!route.includes('Move best first'))failures.push('Route must keep manual ordering authoritative and make trust-based reordering an explicit user action only.');
- if(!route.includes("router.push(`/location/${bestStopId}`)"))failures.push('Route trust guidance must allow opening the best stop evidence directly.');
- if(!location.includes('trustConfidenceLabel')||!location.includes('trustEvidenceLine')||!location.includes('trustReason'))failures.push('Location trust snapshot must explain the shared confidence and evidence language.');
- if(!location.includes('Help strengthen this restroom')||!location.includes('verified review with current photos or amenity observations'))failures.push('Weak location evidence must tell users how to strengthen the trust network.');
+ if(!saved.includes('trustConfidenceLabel')||!saved.includes('trustEvidenceLine')||!saved.includes('saved order is unchanged'))failures.push('Saved must use shared trust confidence without reordering the shortlist.');
+ if(!saved.includes('firstContributionOpportunity(rows)')||!saved.includes('TRUST MISSION')||!saved.includes('Help verify this restroom'))failures.push('Saved must turn a weak-evidence saved restroom into an actionable trust mission.');
+ if(!saved.includes("priority==='high'")||!saved.includes('NEEDS VERIFYING'))failures.push('Saved must visibly distinguish the highest-priority evidence gap.');
+ if(!route.includes('trustConfidenceLabel')||!route.includes('trustEvidenceLine')||!route.includes('keeps your stop order exactly as you arranged it'))failures.push('Route must use shared trust confidence while preserving manual stop order.');
+ if(!route.includes('function move(index:number,delta:number)'))failures.push('Manual route ordering controls must remain authoritative.');
+ if(!route.includes('Move best first')||!route.includes('setStopIds(current=>[bestId,...current.filter(id=>id!==bestId)])'))failures.push('Route may offer a trust shortcut only through an explicit user-controlled reorder action.');
+ if(!location.includes('trustConfidenceLabel')||!location.includes('trustEvidenceLine')||!location.includes('trustContributionMission'))failures.push('Location trust snapshot must use shared confidence, evidence, and mission language.');
+ if(!location.includes('HIGH-PRIORITY TRUST MISSION')||!location.includes('1. Check in while you are physically here.'))failures.push('Location must translate weak evidence into a concrete verified-contribution sequence.');
  if(/sort\([^)]*routeTrustScore|sort\([^)]*trust/i.test(explore+saved+route))failures.push('Trust guidance must not silently sort Explore, Saved, or Route by confidence score.');
 }
 if(failures.length){console.error('Native trust decision presentation audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}console.log('Native trust decision presentation audit passed.');
