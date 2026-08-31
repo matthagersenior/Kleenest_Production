@@ -5,11 +5,11 @@ import { listReviewPhotos, type ReviewPhoto } from '../services/reviewPhotos';
 
 function visitFreshness(value:string|null){if(!value)return null;const time=new Date(value).getTime();if(!Number.isFinite(time))return null;const minutes=Math.max(0,Math.floor((Date.now()-time)/60000));if(minutes<60)return minutes<2?'just now':`${minutes}m ago`;const hours=Math.floor(minutes/60);if(hours<24)return `${hours}h ago`;const days=Math.floor(hours/24);if(days<30)return `${days}d ago`;return new Date(value).toLocaleDateString();}
 function methodLabel(value:string|null){if(!value)return null;return String(value).replaceAll('_',' ').replace(/\b\w/g,match=>match.toUpperCase());}
-export default function ReviewPhotoStrip({ reviewId, refreshToken=0 }:{ reviewId:string; refreshToken?:number }) {
+export default function ReviewPhotoStrip({ reviewId, refreshToken=0, initialEvidence=null }:{ reviewId:string; refreshToken?:number; initialEvidence?:ReviewEvidence|null }) {
   const [photos,setPhotos]=useState<ReviewPhoto[]>([]);
-  const [evidence,setEvidence]=useState<ReviewEvidence|null>(null);
+  const [evidence,setEvidence]=useState<ReviewEvidence|null>(initialEvidence);
   const [failed,setFailed]=useState(false);
-  useEffect(()=>{let active=true;setFailed(false);Promise.all([listReviewPhotos(reviewId),getReviewEvidence(reviewId)]).then(([rows,nextEvidence])=>{if(active){setPhotos(rows);setEvidence(nextEvidence)}}).catch(()=>{if(active)setFailed(true)});return()=>{active=false}},[reviewId,refreshToken]);
+  useEffect(()=>{let active=true;setFailed(false);const evidenceRequest=initialEvidence?Promise.resolve(initialEvidence):getReviewEvidence(reviewId);Promise.all([listReviewPhotos(reviewId),evidenceRequest]).then(([rows,nextEvidence])=>{if(active){setPhotos(rows);setEvidence(nextEvidence)}}).catch(()=>{if(active)setFailed(true)});return()=>{active=false}},[reviewId,refreshToken,initialEvidence]);
   if(failed)return <Text style={s.note}>Review evidence could not be loaded.</Text>;
   const verified=Boolean(evidence?.verified_checked_in_at);
   if(!photos.length&&!verified&&!evidence?.amenity_evidence_count)return null;
