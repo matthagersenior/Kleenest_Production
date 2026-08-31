@@ -1,0 +1,35 @@
+alter function public.create_check_in(uuid,text) set search_path = '';
+alter function public.create_review(uuid,uuid,smallint,numeric,text) set search_path = '';
+alter function public.kleenest_toggle_favorite(uuid) set search_path = '';
+alter function public.record_bathroom_verification(uuid,boolean,double precision,double precision,double precision) set search_path = '';
+alter function public.record_location_visit(uuid,jsonb) set search_path = '';
+alter function public.record_review_amenity_inventory(uuid,jsonb) set search_path = '';
+alter function public.redeem_qr_code(text) set search_path = '';
+alter function public.submit_amenity_observation(uuid,uuid,text,numeric,text,uuid,uuid,text,jsonb) set search_path = '';
+alter function public.submit_location_info(uuid,jsonb) set search_path = '';
+alter function public.submit_location_photo_record(uuid,text,text,text,text,bigint,integer,integer) set search_path = '';
+alter function public.submit_location_photo_record(uuid,text,text,text,text,bigint,integer,integer,uuid) set search_path = '';
+
+revoke all on function public.create_check_in(uuid,text) from public, anon;
+revoke all on function public.create_review(uuid,uuid,smallint,numeric,text) from public, anon;
+revoke all on function public.kleenest_toggle_favorite(uuid) from public, anon;
+revoke all on function public.record_bathroom_verification(uuid,boolean,double precision,double precision,double precision) from public, anon;
+revoke all on function public.record_location_visit(uuid,jsonb) from public, anon;
+revoke all on function public.record_review_amenity_inventory(uuid,jsonb) from public, anon;
+revoke all on function public.redeem_qr_code(text) from public, anon;
+revoke all on function public.submit_amenity_observation(uuid,uuid,text,numeric,text,uuid,uuid,text,jsonb) from public, anon;
+revoke all on function public.submit_location_info(uuid,jsonb) from public, anon;
+revoke all on function public.submit_location_photo_record(uuid,text,text,text,text,bigint,integer,integer) from public, anon;
+revoke all on function public.submit_location_photo_record(uuid,text,text,text,text,bigint,integer,integer,uuid) from public, anon;
+
+grant execute on function public.create_check_in(uuid,text) to authenticated, service_role;
+grant execute on function public.create_review(uuid,uuid,smallint,numeric,text) to authenticated, service_role;
+grant execute on function public.kleenest_toggle_favorite(uuid) to authenticated, service_role;
+grant execute on function public.record_bathroom_verification(uuid,boolean,double precision,double precision,double precision) to authenticated, service_role;
+grant execute on function public.record_location_visit(uuid,jsonb) to authenticated, service_role;
+grant execute on function public.record_review_amenity_inventory(uuid,jsonb) to authenticated, service_role;
+grant execute on function public.redeem_qr_code(text) to authenticated, service_role;
+grant execute on function public.submit_amenity_observation(uuid,uuid,text,numeric,text,uuid,uuid,text,jsonb) to authenticated, service_role;
+grant execute on function public.submit_location_info(uuid,jsonb) to authenticated, service_role;
+grant execute on function public.submit_location_photo_record(uuid,text,text,text,text,bigint,integer,integer) to authenticated, service_role;
+grant execute on function public.submit_location_photo_record(uuid,text,text,text,text,bigint,integer,integer,uuid) to authenticated, service_role;
