@@ -21,8 +21,10 @@ if(!failures.length){
   if(!service.includes("rpc('award_review_amenity_progression'")) failures.push('Verified amenity inventory must request the protected progression award after persistence.');
   const recordStart=service.indexOf('export async function recordReviewAmenityInventory');
   const recordBody=recordStart>=0?service.slice(recordStart):'';
-  const persistsThenAwards=/rpc\('record_review_amenity_inventory',[\s\S]*?if\s*\(error\)\s*throw\s+error;[\s\S]*?awardReviewAmenityProgression\(reviewId\)/.test(recordBody);
-  if(!persistsThenAwards) failures.push('Amenity progression must never be requested before canonical inventory persistence succeeds.');
+  const persistCall=recordBody.indexOf("rpc('record_review_amenity_inventory'");
+  const persistGuard=recordBody.indexOf('if (error) throw error;',persistCall);
+  const awardCall=recordBody.indexOf('awardReviewAmenityProgression(reviewId)',persistGuard);
+  if(persistCall<0||persistGuard<0||awardCall<0||!(persistCall<persistGuard&&persistGuard<awardCall)) failures.push('Amenity progression must never be requested before canonical inventory persistence succeeds.');
   if(!recordBody.includes('awardReviewAmenityProgression(reviewId).catch(() => null)')) failures.push('Optional amenity progression failure must not make persisted review inventory appear failed.');
   if(!eligibility.includes("from('check_ins')")||!eligibility.includes("from('reviews')")||!eligibility.includes('progression_eligible === true')) failures.push('Verified review recovery must use self-scoped check-ins and exclude already-used review check-ins.');
   if(!eligibility.includes(".eq('user_id', user.id)")||!eligibility.includes(".eq('location_id', locationId)")) failures.push('Verified review recovery must remain user- and location-scoped under RLS.');
