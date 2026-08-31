@@ -21,6 +21,12 @@ jobs:
           cache-dependency-path: package.json
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Trust quality convergence
+        run: node scripts/trust-quality-convergence-audit.mjs
+      - name: Reverification workflow convergence
+        run: node scripts/reverification-workflow-convergence-audit.mjs
+      - name: Trust mission compatibility
+        run: node scripts/native-trust-mission-platform-audit.mjs
       - name: Production authority audits
         run: npm run audit
       - name: Native typecheck
