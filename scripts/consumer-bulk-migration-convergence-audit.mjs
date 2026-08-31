@@ -34,7 +34,7 @@ if(!failures.length){
   for(const token of ['listMobileCommunityActivity','listMobileFollowing','listMobileFollowers','toggleMobileFollow'])if(!social.includes(token))failures.push(`Community missing relationship/evidence capability: ${token}`);
   for(const token of ['listMobileFavoriteLocations','applyTrustDiscoveryControls','readTrustMission','Add to route'])if(!saved.includes(token))failures.push(`Saved missing mature consumer capability: ${token}`);
   for(const token of ['buildMobileRoute','persistMobileRoute','GeoJSONSource','mobileNavigationUrl'])if(!route.includes(token))failures.push(`Route missing canonical navigation capability: ${token}`);
-  if(!qr.includes('QR')||!qr.includes('location'))failures.push('QR consumer entry must remain present and location-oriented.');
+  for(const token of ['resolveQrAction','executeQrAction','TextInput','Enter QR code','Resolve','trust_mission'])if(!qr.includes(token))failures.push(`QR consumer entry missing usable canonical fallback: ${token}`);
   if(!activity.includes('Activity')&&!activity.includes('ACTIVITY'))failures.push('Activity consumer surface missing.');
   if(!notifications.includes('notification'))failures.push('Notification inbox missing.');
   if(!membership.includes('pricing')&&!membership.includes('Membership'))failures.push('Membership consumer surface missing.');
