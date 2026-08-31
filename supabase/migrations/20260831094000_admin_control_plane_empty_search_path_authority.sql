@@ -1,0 +1,32 @@
+alter function public.admin_assign_business_member(uuid,uuid,public.business_member_role) set search_path = '';
+alter function public.admin_control_plane_history(integer) set search_path = '';
+alter function public.admin_control_plane_snapshot() set search_path = '';
+alter function public.admin_crud_gateway(text,text,uuid,jsonb) set search_path = '';
+alter function public.admin_remove_business_member(uuid,uuid) set search_path = '';
+alter function public.admin_set_account_capabilities(uuid,text,text,boolean,boolean,boolean,text) set search_path = '';
+alter function public.admin_set_business_access(uuid,public.business_tier,boolean,boolean,text) set search_path = '';
+alter function public.admin_set_business_tier(uuid,public.business_tier) set search_path = '';
+alter function public.admin_set_business_verification(uuid,public.verification_status) set search_path = '';
+alter function public.admin_set_user_access(uuid,boolean,text,text,boolean,text) set search_path = '';
+
+revoke all on function public.admin_assign_business_member(uuid,uuid,public.business_member_role) from public, anon;
+revoke all on function public.admin_control_plane_history(integer) from public, anon;
+revoke all on function public.admin_control_plane_snapshot() from public, anon;
+revoke all on function public.admin_crud_gateway(text,text,uuid,jsonb) from public, anon;
+revoke all on function public.admin_remove_business_member(uuid,uuid) from public, anon;
+revoke all on function public.admin_set_account_capabilities(uuid,text,text,boolean,boolean,boolean,text) from public, anon;
+revoke all on function public.admin_set_business_access(uuid,public.business_tier,boolean,boolean,text) from public, anon;
+revoke all on function public.admin_set_business_tier(uuid,public.business_tier) from public, anon;
+revoke all on function public.admin_set_business_verification(uuid,public.verification_status) from public, anon;
+revoke all on function public.admin_set_user_access(uuid,boolean,text,text,boolean,text) from public, anon;
+
+grant execute on function public.admin_assign_business_member(uuid,uuid,public.business_member_role) to authenticated, service_role;
+grant execute on function public.admin_control_plane_history(integer) to authenticated, service_role;
+grant execute on function public.admin_control_plane_snapshot() to authenticated, service_role;
+grant execute on function public.admin_crud_gateway(text,text,uuid,jsonb) to authenticated, service_role;
+grant execute on function public.admin_remove_business_member(uuid,uuid) to authenticated, service_role;
+grant execute on function public.admin_set_account_capabilities(uuid,text,text,boolean,boolean,boolean,text) to authenticated, service_role;
+grant execute on function public.admin_set_business_access(uuid,public.business_tier,boolean,boolean,text) to authenticated, service_role;
+grant execute on function public.admin_set_business_tier(uuid,public.business_tier) to authenticated, service_role;
+grant execute on function public.admin_set_business_verification(uuid,public.verification_status) to authenticated, service_role;
+grant execute on function public.admin_set_user_access(uuid,boolean,text,text,boolean,text) to authenticated, service_role;
