@@ -18,6 +18,9 @@ if(!failures.length){
   if(!service.includes('question.options.map((text,index)=>({text,index}))')||!service.includes('[options[i],options[j]]=[options[j],options[i]]')) failures.push('Game Center shuffle must preserve original answer identity while using Fisher-Yates.');
   if(!screen.includes('originalIndex===presented.correctIndex')||screen.includes('option.text===presented.options[0]')) failures.push('Game Center correctness must compare original answer index, not rendered position.');
   if(!screen.includes('recordGameResult')||!screen.includes('recordGameChallengeScore')) failures.push('Game Center scores must persist through canonical game authorities.');
+  if(!screen.includes('getMobileProgressionDashboard')||!screen.includes('listMobileBadges')||!screen.includes('progressionMessage')) failures.push('Game Center score saves must surface canonical progression deltas.');
+  if(!screen.includes("router.push('/play')")||!screen.includes('See your progress')) failures.push('Game Center progression feedback must hand off to Play.');
+  if(!screen.includes("pathname:'/contributor/[id]'")) failures.push('Game Center targets and opponents must link to contributor profiles.');
   if(!play.includes("router.push('/games')")||!play.includes('Game Center')) failures.push('Play must launch the hidden Game Center route.');
   if(!layout.includes('<Tabs.Screen name="games" options={{ href: null }}/>')) failures.push('Game Center must remain hidden beneath Play rather than becoming a competing primary tab.');
   if(/\.from\(['"](?:game_results|game_challenges|point_transactions)['"]\)/.test(service+screen)) failures.push('Game Center must not create a direct alternate scoring/challenge store.');
