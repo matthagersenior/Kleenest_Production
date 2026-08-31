@@ -27,7 +27,62 @@ jobs:
         run: node scripts/reverification-workflow-convergence-audit.mjs
       - name: Trust mission compatibility
         run: node scripts/native-trust-mission-platform-audit.mjs
-      - name: Production authority audits
+      - name: Core and commerce authority
+        run: |
+          node scripts/production-authority-audit.mjs
+          node scripts/commerce-authority-audit.mjs
+          node scripts/workspace-authority-audit.mjs
+          node scripts/database-security-authority-audit.mjs
+      - name: Native identity and notification authority
+        run: |
+          node scripts/native-authority-audit.mjs
+          node scripts/native-push-authority-audit.mjs
+          node scripts/native-push-context-authority-audit.mjs
+          node scripts/native-community-authority-audit.mjs
+          node scripts/native-activity-authority-audit.mjs
+          node scripts/native-notification-preferences-authority-audit.mjs
+          node scripts/native-notification-inbox-authority-audit.mjs
+          node scripts/native-public-contributor-authority-audit.mjs
+          node scripts/native-profile-mutation-authority-audit.mjs
+      - name: Native evidence and trust authority
+        run: |
+          node scripts/native-amenity-inventory-audit.mjs
+          node scripts/native-review-photo-authority-audit.mjs
+          node scripts/native-review-photo-batch-authority-audit.mjs
+          node scripts/native-evidence-presentation-audit.mjs
+          node scripts/native-map-authority-audit.mjs
+          node scripts/native-location-trust-summary-audit.mjs
+          node scripts/native-contributor-relationship-audit.mjs
+          node scripts/native-route-trust-presentation-audit.mjs
+          node scripts/native-trust-decision-presentation-audit.mjs
+          node scripts/native-trust-discovery-controls-audit.mjs
+      - name: Native gameplay and platform authority
+        run: |
+          node scripts/native-game-authority-audit.mjs
+          node scripts/native-account-control-audit.mjs
+          node scripts/native-hotpath-rls-authority-audit.mjs
+          node scripts/native-social-feed-authority-audit.mjs
+          node scripts/native-location-contribution-authority-audit.mjs
+          node scripts/native-internal-function-authority-audit.mjs
+          node scripts/native-consumer-identity-rpc-authority-audit.mjs
+          node scripts/native-social-progression-authority-audit.mjs
+          node scripts/native-public-rpc-authority-audit.mjs
+          node scripts/admin-control-plane-rpc-authority-audit.mjs
+          node scripts/native-consumer-contribution-rpc-authority-audit.mjs
+      - name: Business fleet and analytics authority
+        run: |
+          node scripts/business-canonical-rpc-authority-audit.mjs
+          node scripts/fleet-operational-rpc-authority-audit.mjs
+          node scripts/fleet-intelligence-rpc-authority-audit.mjs
+          node scripts/fleet-configuration-telemetry-rpc-authority-audit.mjs
+          node scripts/business-analytics-core-rpc-authority-audit.mjs
+          node scripts/business-legacy-analytics-authority-audit.mjs
+          node scripts/business-analytics-presentation-audit.mjs
+          node scripts/business-operations-presentation-audit.mjs
+          node scripts/business-advanced-operations-presentation-audit.mjs
+          node scripts/business-control-plane-completeness-audit.mjs
+          node scripts/review-amenity-business-health-convergence-audit.mjs
+      - name: Full authority chain parity
         run: npm run audit
       - name: Native typecheck
         run: npm run native:typecheck
