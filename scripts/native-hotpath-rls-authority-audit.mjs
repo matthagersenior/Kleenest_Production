@@ -5,6 +5,7 @@ const required=[
   'supabase/migrations/20260831073500_mobile_core_hotpath_rls_convergence.sql',
   'supabase/migrations/20260831074000_mobile_hotpath_duplicate_index_cleanup.sql',
   'supabase/migrations/20260831075000_mobile_secondary_hotpath_rls_and_streak_authority_hardening.sql',
+  'supabase/migrations/20260831075500_mobile_user_badges_duplicate_index_cleanup.sql',
 ];
 const failures=[];
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing hot-path authority migration: ${file}`);
@@ -13,6 +14,7 @@ if(!failures.length){
   const core=fs.readFileSync(required[1],'utf8');
   const indexes=fs.readFileSync(required[2],'utf8');
   const secondary=fs.readFileSync(required[3],'utf8');
+  const badgeIndexes=fs.readFileSync(required[4],'utf8');
   for(const token of [
     'notification_deliveries_own_read',
     'recipient_user_id = (select auth.uid())',
@@ -75,6 +77,8 @@ if(!failures.length){
   const secondaryUnsafe=(secondary.match(/auth\.uid\(\)/g)||[]).length;
   const secondarySafe=(secondary.match(/\(select auth\.uid\(\)\)/g)||[]).length;
   if(secondaryUnsafe!==secondarySafe)failures.push('all auth.uid() checks in secondary mobile hot-path migration must use init-plan-safe select form');
+  if(!badgeIndexes.includes('drop index if exists public.user_badges_user_earned_idx'))failures.push('duplicate user badge earned index must be removed');
+  if(badgeIndexes.includes('drop index if exists public.user_badges_user_earned_at_idx'))failures.push('canonical user badge earned_at index must be preserved');
 }
 if(failures.length){console.error('Native hot-path RLS authority audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
 console.log('Native hot-path RLS authority audit passed.');
