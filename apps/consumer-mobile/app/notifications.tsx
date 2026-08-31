@@ -2,12 +2,11 @@ import { listMobileNotifications, markAllMobileNotificationsRead, markMobileNoti
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { notificationDestination } from '../services/notificationRouting';
+import { notificationContext, notificationDestination } from '../services/notificationRouting';
 import { registerNativePush } from '../services/push';
 
 const filters=['All','Unread','Restroom','Community','Support','Progress'] as const;
 type Filter=(typeof filters)[number];
-function notificationContext(item:any){const data=item?.data&&typeof item.data==='object'?item.data:{};const type=String(item?.type||data.type||'').toLowerCase();if(data.support_request_id||type.includes('support'))return'Support';if(data.location_id||data.locationId)return'Restroom';if(data.contributor_id||data.user_id||data.actor_user_id||type.includes('follow')||type.includes('helpful')||type.includes('community'))return'Community';if(data.route_id||type.includes('route'))return'Route';if(data.game_challenge_id||data.contest_id||data.quest_id||type.includes('game')||type.includes('challenge')||type.includes('contest')||type.includes('quest')||type.includes('progress')||type.includes('badge')||type.includes('reward'))return'Progress';return'Kleenest';}
 export default function NotificationsScreen(){
   const [rows,setRows]=useState<any[]>([]),[message,setMessage]=useState('Loading notifications…'),[filter,setFilter]=useState<Filter>('All');
   async function load(){try{const data=await listMobileNotifications();setRows(data);setMessage(data.length?'':'No notifications yet.')}catch(error:any){setMessage(error?.message||'Notifications could not be loaded.')}}
