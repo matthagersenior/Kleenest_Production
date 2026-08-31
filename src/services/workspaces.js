@@ -36,6 +36,34 @@ export async function getBusinessWorkspaceOverview(businessId){
   return {access:access.data?.[0]||null,summary:summary.data||{},locations:locations.data||[],management:management.data||{}};
 }
 
+export async function getBusinessAnalyticsOverview(businessId,{days=30}={}){
+  if(!businessId)throw new Error('Business workspace id is required.');
+  const client=getSupabase();const end=new Date();const start=new Date(end.getTime()-Math.max(1,Number(days)||30)*86400000);
+  const args={p_business_id:businessId,p_start:start.toISOString(),p_end:end.toISOString()};
+  const calls={
+    campaigns:client.rpc('business_campaign_analytics',args),
+    engagement:client.rpc('business_engagement_analytics',args),
+    locations:client.rpc('business_location_analytics',args),
+    locationDetail:client.rpc('business_location_detail',args),
+    locationIntelligence:client.rpc('business_location_intelligence',args),
+    qr:client.rpc('business_qr_detail',args),
+    reviews:client.rpc('business_review_detail',args),
+    benchmark:client.rpc('business_benchmark_analytics',args),
+    campaignDetail:client.rpc('business_campaign_detail',args),
+    events:client.rpc('business_event_detail',args),
+    media:client.rpc('business_media_detail',args),
+    occupancy:client.rpc('business_occupancy_analytics',args),
+    partner:client.rpc('business_partner_analytics',args),
+    partnerDetail:client.rpc('business_partner_detail',args),
+    roi:client.rpc('business_roi_analytics',args),
+    visitors:client.rpc('business_visitors_analytics',args),
+  };
+  const entries=Object.entries(calls);const settled=await Promise.allSettled(entries.map(([,promise])=>promise));const data={};const unavailable={};
+  settled.forEach((result,index)=>{const key=entries[index][0];if(result.status==='fulfilled'&&!result.value.error)data[key]=result.value.data??null;else unavailable[key]=result.status==='rejected'?(result.reason?.message||'Unavailable'):(result.value.error?.message||'Unavailable');});
+  if(Object.keys(data).length===0)throw new Error(Object.values(unavailable)[0]||'Business analytics are unavailable.');
+  return {window:{start:start.toISOString(),end:end.toISOString(),days:Math.max(1,Number(days)||30)},...data,unavailable};
+}
+
 export async function getFleetWorkspaceOverview(businessId){
   if(!businessId)throw new Error('A Fleet-enabled business workspace is required.');
   const client=getSupabase();
