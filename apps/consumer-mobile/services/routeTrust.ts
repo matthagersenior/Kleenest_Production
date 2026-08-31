@@ -15,15 +15,6 @@ export function routeTrustScore(summary:LocationTrustSummary|null|undefined){
   return verified+photos+amenities+freshness;
 }
 
-export function trustConfidenceLabel(summary:LocationTrustSummary|null|undefined){
-  const score=routeTrustScore(summary);
-  if(!summary?.verified_visit_count)return'Needs verification';
-  if(score>=70)return'Strong evidence';
-  if(score>=45)return'Recent evidence';
-  if(score>=20)return'Limited evidence';
-  return'Needs verification';
-}
-
 export function routeTrustLabel(summary:LocationTrustSummary|null|undefined){
   if(!summary?.verified_visit_count)return'Needs verified evidence';
   const fresh=visitFreshness(summary.latest_verified_at);
@@ -31,13 +22,28 @@ export function routeTrustLabel(summary:LocationTrustSummary|null|undefined){
   return `${count} verified visit${count===1?'':'s'}${fresh?` · ${fresh}`:''}`;
 }
 
+export function trustConfidenceLabel(summary:LocationTrustSummary|null|undefined){
+  const score=routeTrustScore(summary);
+  if(score>=70)return'Strong evidence';
+  if(score>=45)return'Recent evidence';
+  if(score>0)return'Limited evidence';
+  return'Needs verification';
+}
+
 export function trustEvidenceLine(summary:LocationTrustSummary|null|undefined){
-  if(!summary)return'No published verified evidence yet';
-  const parts=[routeTrustLabel(summary)];
-  const photos=Number(summary.photo_evidence_count||0),amenities=Number(summary.amenity_evidence_count||0);
-  if(photos)parts.push(`${photos} photo${photos===1?'':'s'}`);
-  if(amenities)parts.push(`${amenities} observed amenit${amenities===1?'y':'ies'}`);
+  if(!summary)return'No published verified visit evidence yet';
+  const visits=Number(summary.verified_visit_count||0),photos=Number(summary.photo_evidence_count||0),amenities=Number(summary.amenity_evidence_count||0),fresh=visitFreshness(summary.latest_verified_at);
+  const parts=[visits?`${visits} verified visit${visits===1?'':'s'}`:'No verified visits',photos?`${photos} photo${photos===1?'':'s'}`:null,amenities?`${amenities} observed amenit${amenities===1?'y':'ies'}`:null,fresh?`updated ${fresh}`:null].filter(Boolean);
   return parts.join(' · ');
+}
+
+export function trustReason(summary:LocationTrustSummary|null|undefined){
+  if(!summary?.verified_visit_count)return'No published verified visit currently supports this restroom. A verified check-in and review would strengthen the network.';
+  const score=routeTrustScore(summary),photos=Number(summary.photo_evidence_count||0),amenities=Number(summary.amenity_evidence_count||0),fresh=visitFreshness(summary.latest_verified_at);
+  if(score>=70)return`Multiple evidence signals agree${fresh?` and the newest verified visit is ${fresh}`:''}. This is one of the stronger current trust signals in Kleenest.`;
+  if(score>=45)return`Verified visit evidence is available${fresh?` and was updated ${fresh}`:''}${photos||amenities?', with supporting photo or amenity observations':''}.`;
+  const gaps=[!photos?'photo evidence':null,!amenities?'amenity observations':null].filter(Boolean).join(' and ');
+  return `Verified evidence exists, but confidence is still limited${gaps?` because ${gaps} are sparse`:''}. More recent verified contributions would improve confidence.`;
 }
 
 export function bestEvidencedStop<T extends {trust?:LocationTrustSummary|null}>(rows:T[]){
