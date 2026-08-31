@@ -47,10 +47,7 @@ export async function chooseAndUploadAvatar() {
   const avatarUrl = publicUrl?.publicUrl;
   if (!avatarUrl) throw new Error('Profile photo URL could not be created.');
 
-  const { error: profileError } = await client
-    .from('profiles')
-    .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
-    .eq('id', user.id);
+  const { error: profileError } = await client.rpc('update_my_public_avatar', { p_avatar_url: avatarUrl });
   if (profileError) throw profileError;
 
   return { avatarUrl, objectPath };
