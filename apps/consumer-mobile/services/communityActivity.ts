@@ -1,11 +1,15 @@
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { listReviewPhotosForReviews } from './reviewPhotos';
 
 export async function listMobileCommunityActivity(limit=30){
   const bounded=Math.min(Math.max(Number(limit)||30,1),100);
   const {data,error}=await getKleenestSupabaseClient().rpc('community_following_review_activity',{p_limit:bounded});
   if(error)throw error;
-  return (Array.isArray(data)?data:[]).map((row:any)=>({
+  const source=Array.isArray(data)?data:[];
+  const photosByReview=await listReviewPhotosForReviews(source.map((row:any)=>String(row.review_id)));
+  return source.map((row:any)=>({
     id:`review:${row.review_id}`,
+    reviewId:String(row.review_id),
     kind:'review',
     locationId:row.location_id,
     createdAt:row.created_at,
@@ -17,6 +21,7 @@ export async function listMobileCommunityActivity(limit=30){
     verifiedDistanceMeters:row.verified_distance_meters==null?null:Number(row.verified_distance_meters),
     photoEvidenceCount:Number(row.photo_evidence_count||0),
     amenityEvidenceCount:Number(row.amenity_evidence_count||0),
+    photos:photosByReview[String(row.review_id)]||[],
     helpfulCount:Number(row.helpful_count||0),
     reputationLevel:row.reputation_level||'new',
     contributor:{id:row.user_id,display_name:row.display_name,username:row.username,avatar_url:row.avatar_url},
