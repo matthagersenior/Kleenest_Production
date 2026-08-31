@@ -14,13 +14,14 @@ function notificationParts(notification:NotificationLike){
   const type=String(notification?.type||data.type||'').toLowerCase();
   return {data,type};
 }
+function isProgress(data:Record<string,unknown>,type:string){return Boolean(stringValue(data.mission_id)||stringValue(data.game_challenge_id)||stringValue(data.contest_id)||stringValue(data.quest_id)||type.includes('trust_mission')||type.includes('game')||type.includes('challenge')||type.includes('contest')||type.includes('quest')||type.includes('progress')||type.includes('badge')||type.includes('reward'))}
 
 export function notificationContext(notification:NotificationLike):NotificationContext {
   const {data,type}=notificationParts(notification);
   if(stringValue(data.support_request_id)||type.includes('support'))return'Support';
-  if(stringValue(data.location_id)||stringValue(data.locationId))return'Restroom';
+  if(isProgress(data,type))return'Progress';
   if(stringValue(data.route_id)||type.includes('route'))return'Route';
-  if(stringValue(data.game_challenge_id)||stringValue(data.contest_id)||stringValue(data.quest_id)||type.includes('game')||type.includes('challenge')||type.includes('contest')||type.includes('quest')||type.includes('progress')||type.includes('badge')||type.includes('reward'))return'Progress';
+  if(stringValue(data.location_id)||stringValue(data.locationId))return'Restroom';
   if(type==='scheduled_report'||type.includes('intelligence')||type.startsWith('report_')||type.includes('trusted_place')||type.includes('popular_place')||type.includes('operational_attention')||type.includes('demand_opportunity')||type.includes('high_activity_zone'))return'Intelligence';
   if(stringValue(data.contributor_id)||stringValue(data.user_id)||stringValue(data.actor_user_id)||type==='review'||type.includes('follow')||type.includes('helpful')||type.includes('reply')||type.includes('community'))return'Community';
   return'Kleenest';
@@ -29,15 +30,13 @@ export function notificationContext(notification:NotificationLike):NotificationC
 export function notificationDestination(notification: NotificationLike): string | null {
   const {data,type}=notificationParts(notification);
   if(stringValue(data.support_request_id)||type.includes('support'))return'/support';
+  if(isProgress(data,type))return stringValue(data.game_challenge_id)||type.includes('game')||type.includes('challenge')?'/games':'/play';
+  if(stringValue(data.route_id)||type.includes('route'))return'/route';
 
   const locationId=stringValue(data.location_id)||stringValue(data.locationId);
   if(locationId)return`/location/${encodeURIComponent(locationId)}`;
 
   const contributorId=stringValue(data.contributor_id)||stringValue(data.user_id)||stringValue(data.actor_user_id);
   if(contributorId)return`/contributor/${encodeURIComponent(contributorId)}`;
-
-  if(stringValue(data.game_challenge_id)||type.includes('game')||type.includes('challenge'))return'/games';
-  if(stringValue(data.contest_id)||stringValue(data.quest_id)||type.includes('contest')||type.includes('quest')||type.includes('progress')||type.includes('badge')||type.includes('reward'))return'/play';
-  if(stringValue(data.route_id)||type.includes('route'))return'/route';
   return null;
 }
