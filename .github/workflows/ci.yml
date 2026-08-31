@@ -90,6 +90,8 @@ jobs:
         run: node scripts/business-advanced-operations-presentation-audit.mjs
       - name: Business control plane completeness
         run: node scripts/business-control-plane-completeness-audit.mjs
+      - name: Business operations inventory convergence
+        run: node scripts/business-operations-inventory-convergence-audit.mjs
       - name: Business health convergence
         run: node scripts/review-amenity-business-health-convergence-audit.mjs
       - name: Full authority chain parity
