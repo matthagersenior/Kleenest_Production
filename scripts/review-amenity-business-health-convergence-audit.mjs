@@ -19,7 +19,7 @@ if(!failures.length){
  for(const token of ['location_amenity_observations','review_amenity_feedback','award_review_amenity_progression','server_authoritative','canonical_observations'])if(!evidence.includes(token))failures.push(`evidence convergence missing ${token}`);
  for(const token of ['business_restroom_health_score','location_amenity_observations','amenity_attention_observations','v2_amenity_evidence'])if(!health.includes(token))failures.push(`health migration missing ${token}`);
  if(!workspaces.includes("client.rpc('business_restroom_health_score'"))failures.push('business workspace overview does not load restroom health authority');
- for(const token of ['RESTROOM HEALTH','portfolioHealth','amenity_attention_observations','recent_amenity_observations'])if(!page.includes(token))failures.push(`business health presentation missing ${token}`);
+ for(const token of ['RESTROOM HEALTH','portfolioHealth','attentionSignals','healthRows','health_score','RESTROOM HEALTH DETAIL'])if(!page.includes(token))failures.push(`business health presentation missing ${token}`);
 }
 if(failures.length){console.error('Review amenity → business health convergence audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
 console.log('Review amenity → canonical trust → business health convergence audit passed.');
