@@ -8,6 +8,7 @@ const required=[
   'supabase/migrations/20260831075500_mobile_user_badges_duplicate_index_cleanup.sql',
   'supabase/migrations/20260831080500_mobile_discovery_deletion_verification_authority_hardening.sql',
   'supabase/migrations/20260831081000_mobile_location_observation_duplicate_index_cleanup.sql',
+  'supabase/migrations/20260831081500_mobile_telemetry_social_evidence_rls_convergence.sql',
 ];
 const failures=[];
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing hot-path authority migration: ${file}`);
@@ -19,6 +20,7 @@ if(!failures.length){
   const badgeIndexes=fs.readFileSync(required[4],'utf8');
   const discovery=fs.readFileSync(required[5],'utf8');
   const observationIndexes=fs.readFileSync(required[6],'utf8');
+  const telemetry=fs.readFileSync(required[7],'utf8');
   for(const token of ['notification_deliveries_own_read','recipient_user_id = (select auth.uid())','notification_events_authenticated_read','actor_user_id = (select auth.uid())'])if(!support.includes(token))failures.push(`notification support RLS migration missing token: ${token}`);
   for(const token of ['reviews_public_or_own_select',"status = 'published'::public.review_status or user_id = (select auth.uid())",'reviews_own_insert','reviews_own_update','reviews_own_delete','checkins_own_select','checkins_own_insert','verification_points_own_select','point_transactions_own_select','follows_read_connected','follows_own_insert','follows_own_update','follows_own_delete'])if(!core.includes(token))failures.push(`mobile hot-path RLS migration missing token: ${token}`);
   for(const legacy of ['"published reviews are public"','"users create their own reviews"','"users update their own reviews"','"users delete their own reviews"','"users read their own checkins"','"users create their own checkins"','"users read own verification points"','"users read own point transactions"','follows_own_all'])if(!core.includes(`drop policy if exists ${legacy}`))failures.push(`mobile hot-path RLS migration must explicitly retire legacy policy: ${legacy}`);
@@ -40,6 +42,11 @@ if(!failures.length){
   if(discovery.includes('revoke insert')&&discovery.includes('location_discovery_events'))failures.push('discovery telemetry INSERT must remain available to the invoker RPC');
   if(!observationIndexes.includes('drop index if exists public.idx_location_observations_location_time'))failures.push('duplicate location observation time index must be removed');
   if(observationIndexes.includes('drop index if exists public.location_observations_location_observed_idx'))failures.push('canonical location observation index must be preserved');
+  for(const token of ['location_filter_events_insert_authenticated','location_filter_events_select_own','users create their own restroom observations','users update their own restroom observations','drop policy if exists review_likes_write','review_likes_insert_own','review_likes_update_own','review_likes_delete_own','review_reports_insert_own','review_reports_select_own_or_admin','revoke truncate on table public.review_reports from authenticated','geofence_events_own_insert','geofence_events_own_read','user_location_sessions_delete_own','user_location_sessions_insert_own','user_location_sessions_select_own','user_location_sessions_update_own','route_discovery_sessions_owner','route_discovery_cells_owner','route_discovery_locations_owner','offline_packs_owner','offline_pack_locations_owner','offline_pack_businesses_owner','offline_pack_events_owner'])if(!telemetry.includes(token))failures.push(`telemetry/social/evidence convergence missing token: ${token}`);
+  const telemetryUnsafe=(telemetry.match(/auth\.uid\(\)/g)||[]).length;
+  const telemetrySafe=(telemetry.match(/\(select auth\.uid\(\)\)/g)||[]).length;
+  if(telemetryUnsafe!==telemetrySafe)failures.push('all auth.uid() checks in telemetry/social/evidence migration must use init-plan-safe select form');
+  if(/create policy review_likes_write[\s\S]*for all/i.test(telemetry))failures.push('review likes write authority must not recreate an ALL policy that overlaps public read');
 }
 if(failures.length){console.error('Native hot-path RLS authority audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
 console.log('Native hot-path RLS authority audit passed.');
