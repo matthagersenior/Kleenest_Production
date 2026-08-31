@@ -1,14 +1,17 @@
 import fs from 'node:fs';
-const required=['apps/consumer-mobile/services/community.ts','apps/consumer-mobile/services/contributors.ts','apps/consumer-mobile/app/location/[id].tsx','apps/consumer-mobile/app/social.tsx','apps/consumer-mobile/app/contributor/[id].tsx','apps/consumer-mobile/app/profile.tsx','packages/mobile-core/src/index.ts','supabase/migrations/20260830224000_canonical_community_contributor_profiles.sql'];
+const required=['apps/consumer-mobile/services/community.ts','apps/consumer-mobile/services/contributors.ts','apps/consumer-mobile/services/avatar.ts','apps/consumer-mobile/app/location/[id].tsx','apps/consumer-mobile/app/social.tsx','apps/consumer-mobile/app/contributor/[id].tsx','apps/consumer-mobile/app/profile.tsx','apps/consumer-mobile/app.config.ts','apps/consumer-mobile/package.json','packages/mobile-core/src/index.ts','supabase/migrations/20260830224000_canonical_community_contributor_profiles.sql'];
 const failures=[];
 for(const file of required) if(!fs.existsSync(file)) failures.push(`missing native community authority file: ${file}`);
 if(!failures.length){
   const helpful=fs.readFileSync('apps/consumer-mobile/services/community.ts','utf8');
   const contributors=fs.readFileSync('apps/consumer-mobile/services/contributors.ts','utf8');
+  const avatar=fs.readFileSync('apps/consumer-mobile/services/avatar.ts','utf8');
   const location=fs.readFileSync('apps/consumer-mobile/app/location/[id].tsx','utf8');
   const community=fs.readFileSync('apps/consumer-mobile/app/social.tsx','utf8');
   const publicProfile=fs.readFileSync('apps/consumer-mobile/app/contributor/[id].tsx','utf8');
   const ownProfile=fs.readFileSync('apps/consumer-mobile/app/profile.tsx','utf8');
+  const config=fs.readFileSync('apps/consumer-mobile/app.config.ts','utf8');
+  const pkg=fs.readFileSync('apps/consumer-mobile/package.json','utf8');
   const core=fs.readFileSync('packages/mobile-core/src/index.ts','utf8');
   const migration=fs.readFileSync('supabase/migrations/20260830224000_canonical_community_contributor_profiles.sql','utf8');
   if(!helpful.includes("rpc('toggle_review_like'")) failures.push('Helpful-review mutation must use toggle_review_like RPC.');
@@ -24,6 +27,10 @@ if(!failures.length){
   if(!ownProfile.includes("from('profiles').update")||!ownProfile.includes('display_name')||!ownProfile.includes('username')||!ownProfile.includes('bio')) failures.push('Signed-in users must be able to edit their public contributor identity through self-profile RLS.');
   if(/from\('profiles'\)\.update\([^)]*(?:email|subscription_tier|role|is_admin|is_platform_owner)/s.test(ownProfile)) failures.push('Mobile public-profile editing must not write private account or authorization fields.');
   if(!ownProfile.includes('Your email remains private.')) failures.push('Profile editor must explain the public/private identity boundary.');
+  if(!pkg.includes('"expo-image-picker": "~57.0.14"')||!config.includes("'expo-image-picker'")) failures.push('Contributor avatar picking must remain on the Expo SDK 57-compatible image-picker authority.');
+  if(!avatar.includes("storage.from('avatars').upload")||!avatar.includes('`${user.id}/avatar-')||!avatar.includes('MAX_AVATAR_BYTES')) failures.push('Avatar uploads must use the existing avatars bucket, remain user-folder scoped, and enforce a size limit.');
+  if(!avatar.includes(".from('profiles')")||!avatar.includes('avatar_url')||!avatar.includes(".eq('id', user.id)")) failures.push('Avatar upload must update only the signed-in user profile avatar URL.');
+  if(!ownProfile.includes('chooseAndUploadAvatar')||!ownProfile.includes('Add profile photo')||!ownProfile.includes('Change photo')) failures.push('Profile UI must expose contributor avatar selection and replacement.');
   if(!migration.includes('security definer')||!migration.includes('revoke all on function public.community_search_contributors')||!migration.includes('grant execute on function public.community_contributor_profile(uuid) to authenticated')) failures.push('Community contributor RPCs must be locked to authenticated callers.');
   if(/email|subscription_tier|is_admin|is_platform_owner/i.test(migration)) failures.push('Community contributor RPCs must not expose private account fields.');
 }
