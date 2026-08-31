@@ -34,6 +34,16 @@ export type AmenityProgressionAward = {
   amenity_observations?: number;
 };
 
+export type ReviewAmenityInventoryResult = {
+  review_id?: string;
+  location_id?: string;
+  check_in_id?: string;
+  recorded?: number;
+  canonical_observations?: number;
+  progression?: AmenityProgressionAward | null;
+  progression_error?: string | null;
+};
+
 export async function listAmenityCatalog(): Promise<AmenityCatalogItem[]> {
   const { data, error } = await getKleenestSupabaseClient()
     .from('amenities')
@@ -52,18 +62,10 @@ export async function listLocationAmenityInventory(locationId: string): Promise<
   return Array.isArray(data) ? (data as LocationAmenityInventoryItem[]) : [];
 }
 
-export async function awardReviewAmenityProgression(reviewId: string): Promise<AmenityProgressionAward> {
-  const { data, error } = await getKleenestSupabaseClient().rpc('award_review_amenity_progression', {
-    p_review_id: reviewId,
-  });
-  if (error) throw error;
-  return (data || {}) as AmenityProgressionAward;
-}
-
 export async function recordReviewAmenityInventory(
   reviewId: string,
   items: ReviewAmenityInventoryItem[],
-) {
+): Promise<ReviewAmenityInventoryResult> {
   const normalized = items.map((item) => {
     const quantity = item.quantity == null ? null : Number(item.quantity);
     if (quantity != null && (!Number.isInteger(quantity) || quantity < 0 || quantity > 1000)) {
@@ -82,10 +84,8 @@ export async function recordReviewAmenityInventory(
   });
   if (error) throw error;
 
-  // Inventory persistence is the canonical user action. Progression is an optional,
-  // eligibility-gated bonus and must never make a successfully saved review appear failed.
-  const progression = normalized.length
-    ? await awardReviewAmenityProgression(reviewId).catch(() => null)
-    : null;
-  return { inventory: data, progression };
+  // The RPC is the single authority for review inventory, canonical amenity observations,
+  // and the optional idempotent progression award. Keeping this server-side prevents
+  // partial evidence writes and duplicate client-triggered rewards.
+  return (data || {}) as ReviewAmenityInventoryResult;
 }
