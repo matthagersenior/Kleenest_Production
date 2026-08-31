@@ -1,15 +1,19 @@
 import fs from 'node:fs';
-const required=['apps/consumer-mobile/services/activity.ts','apps/consumer-mobile/services/communityActivity.ts','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/social.tsx','supabase/migrations/20260831043000_mobile_my_activity_feed_authority.sql','supabase/migrations/20260831043500_mobile_account_scoped_social_activity.sql'];
+const required=['apps/consumer-mobile/services/activity.ts','apps/consumer-mobile/services/communityActivity.ts','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/social.tsx','packages/mobile-core/src/privateActivity.ts','packages/mobile-core/src/publicEntry.ts','supabase/migrations/20260831043000_mobile_my_activity_feed_authority.sql','supabase/migrations/20260831043500_mobile_account_scoped_social_activity.sql'];
 const failures=[];for(const file of required)if(!fs.existsSync(file))failures.push(`missing activity authority file: ${file}`);
 if(!failures.length){
   const service=fs.readFileSync(required[0],'utf8');
   const networkService=fs.readFileSync(required[1],'utf8');
   const screen=fs.readFileSync(required[2],'utf8');
   const community=fs.readFileSync(required[3],'utf8');
-  const migration=fs.readFileSync(required[4],'utf8');
-  const socialMigration=fs.readFileSync(required[5],'utf8');
+  const packageActivity=fs.readFileSync(required[4],'utf8');
+  const publicEntry=fs.readFileSync(required[5],'utf8');
+  const migration=fs.readFileSync(required[6],'utf8');
+  const socialMigration=fs.readFileSync(required[7],'utf8');
   if(!service.includes("rpc('my_activity_feed'")||service.includes("from('social_activity')"))failures.push('Personal activity must use the canonical private activity RPC and never read social_activity directly.');
   if(!service.includes('contributorId:item?.payload?.metadata?.target_user_id'))failures.push('Personal follow activity must preserve its contributor destination.');
+  if(!packageActivity.includes("rpc('my_activity_feed'")||packageActivity.includes("from('social_activity')"))failures.push('Legacy mobile-core activity override must use the private activity RPC.');
+  if(!publicEntry.includes("export { listMobileActivity } from './privateActivity'"))failures.push('Mobile-core public entry must override the legacy direct activity export.');
   if(!screen.includes('listMyActivity')||!screen.includes('listMobileCommunityActivity')||!screen.includes("type Mode='You'|'Network'"))failures.push('Activity UI must keep personal and network activity as explicit separate surfaces.');
   if(!screen.includes('Your private history stays separate')||!screen.includes('VISIT EVIDENCE')||!screen.includes('✓ VERIFIED'))failures.push('Activity UI must explain the privacy boundary and preserve verified evidence context.');
   if(!screen.includes('item.contributorId||item.contributor?.id')||!screen.includes('Open contributor →')||!screen.includes('Open restroom →'))failures.push('Activity events must deep-link to their canonical contributor or restroom context.');
