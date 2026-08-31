@@ -19,7 +19,10 @@ if(!failures.length){
   if(!location.includes('toggleHelpfulReview')||!location.includes('Helpful')) failures.push('Location community reviews must expose the canonical Helpful action.');
   if(!location.includes('Useful reviews can earn contributor badges')) failures.push('Helpful action must explain contributor-quality progression.');
   if(!location.includes("pathname:'/contributor/[id]'")) failures.push('Location reviews must link contributors to their public profile.');
+  if(!location.includes('contributor.avatar_url')||!location.includes('contributor.level')||!location.includes('contributor.points')||!location.includes('contributor.total_reviews')) failures.push('Location review cards must surface contributor avatar and public trust progression.');
+  if(!location.includes('VERIFIED VISIT')||!location.includes('item.check_in_id')) failures.push('Location review cards must distinguish evidence backed by a verified visit.');
   if(!core.includes('contributor:review.user_id?')||!core.includes('helpful_count')) failures.push('Location review service must hydrate contributor identity and helpful totals without PostgREST relationship embeds.');
+  if(!core.includes('check_in_id')) failures.push('Location review service must retain check-in provenance needed for verified-visit labeling.');
   if(!contributors.includes("rpc('community_search_contributors'")||!contributors.includes("rpc('community_contributor_profile'")) failures.push('Contributor discovery and profiles must use privacy-safe community RPCs.');
   if(community.includes("from('profiles')")||community.includes('searchMobilePeople')) failures.push('Community UI must not rely on direct profile-table discovery.');
   if(!community.includes('searchContributors')||!community.includes("pathname:'/contributor/[id]'")) failures.push('Community must use safe discovery and link to contributor profiles.');
