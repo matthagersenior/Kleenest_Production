@@ -3,12 +3,14 @@ import fs from 'node:fs';
 const required=[
   'supabase/migrations/20260831073000_mobile_notification_support_rls_initplan_hardening.sql',
   'supabase/migrations/20260831073500_mobile_core_hotpath_rls_convergence.sql',
+  'supabase/migrations/20260831074000_mobile_hotpath_duplicate_index_cleanup.sql',
 ];
 const failures=[];
-for(const file of required)if(!fs.existsSync(file))failures.push(`missing hot-path RLS migration: ${file}`);
+for(const file of required)if(!fs.existsSync(file))failures.push(`missing hot-path authority migration: ${file}`);
 if(!failures.length){
   const support=fs.readFileSync(required[0],'utf8');
   const core=fs.readFileSync(required[1],'utf8');
+  const indexes=fs.readFileSync(required[2],'utf8');
   for(const token of [
     'notification_deliveries_own_read',
     'recipient_user_id = (select auth.uid())',
@@ -44,6 +46,14 @@ if(!failures.length){
   const unsafe=(core.match(/auth\.uid\(\)/g)||[]).length;
   const safe=(core.match(/\(select auth\.uid\(\)\)/g)||[]).length;
   if(unsafe!==safe)failures.push('all auth.uid() checks in mobile hot-path RLS migration must use init-plan-safe select form');
+  for(const token of [
+    'drop index if exists public.reviews_location_idx',
+    'drop index if exists public.idx_locations_geo_lookup',
+    'drop index if exists public.qr_codes_business_idx',
+    'drop index if exists public.route_stops_route_order_unique',
+    'route_stops_route_id_stop_order_key',
+  ])if(!indexes.includes(token))failures.push(`mobile hot-path index cleanup missing token: ${token}`);
+  if(indexes.includes('drop index if exists public.route_stops_route_id_stop_order_key'))failures.push('constraint-backed route stop unique index must never be dropped');
 }
 if(failures.length){console.error('Native hot-path RLS authority audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
 console.log('Native hot-path RLS authority audit passed.');
