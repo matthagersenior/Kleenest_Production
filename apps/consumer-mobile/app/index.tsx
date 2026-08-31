@@ -1,21 +1,39 @@
-import { getMobileLeaderboardPosition, getMobileProgressionDashboard, getMobileProgressionSummary, listMobileActivity } from '@kleenest/mobile-core';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView,ScrollView,StyleSheet,Text,Pressable,View } from 'react-native';
 
 export default function HomeScreen(){
-  const [dashboard,setDashboard]=useState<any>({}),[summary,setSummary]=useState<any>({}),[position,setPosition]=useState<any>({}),[activity,setActivity]=useState<any[]>([]);
-  useEffect(()=>{Promise.all([getMobileProgressionDashboard(),getMobileProgressionSummary(),getMobileLeaderboardPosition(),listMobileActivity(4)]).then(([d,s,p,a])=>{setDashboard(d);setSummary(s);setPosition(p);setActivity(a)}).catch(()=>{})},[]);
-  const profile=summary?.profile||{},points=Number(dashboard.points??profile.points??0),next=dashboard.next_level_points==null?null:Number(dashboard.next_level_points),remaining=next==null?0:Math.max(0,next-points);
   return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.eyebrow}>KLEENEST</Text><Text style={styles.title}>Find a bathroom without the detour.</Text><Text style={styles.body}>Nearby restroom discovery stays first. Pick a place and navigate directly.</Text><Pressable style={styles.primary} onPress={()=>router.push('/explore')}><Text style={styles.primaryText}>Find nearby restrooms</Text></Pressable>
-    <View style={styles.divider}/><Text style={styles.eyebrow}>YOUR MOMENTUM</Text><Text style={styles.sectionTitle}>Play, progress, and help the community.</Text>
-    <View style={styles.progressCard}><View style={styles.progressTop}><View><Text style={styles.progressLabel}>Level {dashboard.level??profile.level??1} · {dashboard.level_name||'Kleenest contributor'}</Text><Text style={styles.progressPoints}>{points} points</Text></View><Text style={styles.rank}>{position.rank?`#${position.rank}`:'—'} rank</Text></View><Text style={styles.meta}>{next==null?'Top current level':`${remaining} points to your next level`} · {dashboard.current_streak??profile.streak??0}d streak</Text></View>
-    <View style={styles.stats}><Stat value={profile.total_check_ins??0} label="check-ins"/><Stat value={profile.total_reviews??0} label="reviews"/><Stat value={(dashboard.badges||[]).length} label="badges"/></View>
-    <Pressable style={styles.play} onPress={()=>router.push('/play')}><Text style={styles.playTitle}>Open Play + Progress</Text><Text style={styles.playBody}>Challenges · badges · contests · leaderboard</Text></Pressable>
-    <View style={styles.actions}><Pressable style={styles.secondary} onPress={()=>router.push('/social')}><Text style={styles.secondaryText}>Find people</Text></Pressable><Pressable style={styles.secondary} onPress={()=>router.push('/activity')}><Text style={styles.secondaryText}>Community activity</Text></Pressable></View>
-    {activity.length?<View style={styles.feed}><Text style={styles.feedTitle}>Fresh community activity</Text>{activity.slice(0,3).map(item=><Pressable disabled={!item.locationId} onPress={()=>item.locationId&&router.push(`/location/${String(item.locationId)}`)} key={item.id} style={[styles.feedRow,item.locationId&&styles.feedActionable]}><View style={{flex:1}}><Text style={styles.feedRowTitle}>{item.title}</Text><Text style={styles.meta}>{item.location?.name||item.detail||'Kleenest community'}</Text></View>{item.locationId?<Text style={styles.openLink}>Open →</Text>:null}</Pressable>)}</View>:null}
+    <Text style={styles.brand}>KLEENEST</Text>
+    <Text style={styles.title}>Find a bathroom. Fast.</Text>
+    <Text style={styles.body}>See nearby restrooms, compare the basics, open details, and get directions without digging through the rest of the app.</Text>
+
+    <Pressable style={styles.find} onPress={()=>router.push('/explore')}>
+      <Text style={styles.findLabel}>FIND A BATHROOM</Text>
+      <Text style={styles.findTitle}>Show nearby restrooms</Text>
+      <Text style={styles.findBody}>Use my location · map + list · directions</Text>
+    </Pressable>
+
+    <View style={styles.quickRow}>
+      <Pressable style={styles.quick} onPress={()=>router.push('/saved')}><Text style={styles.quickTitle}>Saved</Text><Text style={styles.quickBody}>Bathrooms you want to remember</Text></Pressable>
+      <Pressable style={styles.quick} onPress={()=>router.push('/qr')}><Text style={styles.quickTitle}>Scan QR</Text><Text style={styles.quickBody}>Open a restroom or check-in flow</Text></Pressable>
+    </View>
+
+    <View style={styles.section}>
+      <Text style={styles.eyebrow}>AFTER YOU FIND ONE</Text>
+      <Text style={styles.sectionTitle}>Kleenest gets smarter from real visits.</Text>
+      <Text style={styles.sectionBody}>Open a restroom to see available evidence, amenities, reviews, check in when you are there, and help keep the network current.</Text>
+      <View style={styles.linkRow}>
+        <Pressable style={styles.secondary} onPress={()=>router.push('/activity')}><Text style={styles.secondaryText}>Activity</Text></Pressable>
+        <Pressable style={styles.secondary} onPress={()=>router.push('/play')}><Text style={styles.secondaryText}>Rewards</Text></Pressable>
+        <Pressable style={styles.secondary} onPress={()=>router.push('/profile')}><Text style={styles.secondaryText}>Profile</Text></Pressable>
+      </View>
+    </View>
   </ScrollView></SafeAreaView>;
 }
-function Stat({value,label}:{value:any;label:string}){return <View style={styles.stat}><Text style={styles.statValue}>{value}</Text><Text style={styles.meta}>{label}</Text></View>}
-const styles=StyleSheet.create({safe:{flex:1,backgroundColor:'#f4f7f5'},container:{padding:24,paddingBottom:42},eyebrow:{fontSize:12,fontWeight:'800',letterSpacing:2,color:'#4d6658'},title:{fontSize:40,lineHeight:43,fontWeight:'900',color:'#14231b',marginTop:10,marginBottom:14},body:{fontSize:17,lineHeight:25,color:'#53645a',marginBottom:20},primary:{backgroundColor:'#173d2b',padding:17,borderRadius:16,alignItems:'center'},primaryText:{color:'#fff',fontWeight:'900',fontSize:16},divider:{height:1,backgroundColor:'#dce6df',marginVertical:26},sectionTitle:{fontSize:27,lineHeight:31,fontWeight:'900',color:'#14231b',marginTop:8,marginBottom:14},progressCard:{backgroundColor:'#173d2b',padding:17,borderRadius:20,gap:7},progressTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12},progressLabel:{color:'#dce9e1',fontWeight:'800'},progressPoints:{fontSize:25,fontWeight:'900',color:'#fff',marginTop:3},rank:{backgroundColor:'#fff',color:'#173d2b',fontWeight:'900',paddingHorizontal:11,paddingVertical:8,borderRadius:999,overflow:'hidden'},stats:{flexDirection:'row',gap:9,marginTop:10},stat:{flex:1,backgroundColor:'#fff',padding:14,borderRadius:16,borderWidth:1,borderColor:'#dde7e0'},statValue:{fontSize:22,fontWeight:'900',color:'#173d2b'},meta:{fontSize:12,color:'#6c7c72',fontWeight:'700'},play:{backgroundColor:'#20382b',padding:18,borderRadius:18,marginTop:12},playTitle:{fontSize:18,fontWeight:'900',color:'#fff'},playBody:{color:'#dce9e1',marginTop:4},actions:{flexDirection:'row',gap:10,marginTop:10},secondary:{flex:1,backgroundColor:'#e8f0eb',padding:13,borderRadius:14,alignItems:'center'},secondaryText:{color:'#173d2b',fontWeight:'800'},feed:{marginTop:22,gap:8},feedTitle:{fontSize:18,fontWeight:'900',color:'#14231b'},feedRow:{backgroundColor:'#fff',padding:14,borderRadius:14,flexDirection:'row',alignItems:'center',gap:8,borderWidth:1,borderColor:'transparent'},feedActionable:{borderColor:'#d5e1da'},feedRowTitle:{fontWeight:'800',color:'#14231b'},openLink:{fontSize:12,color:'#173d2b',fontWeight:'900'}});
+
+const styles=StyleSheet.create({
+  safe:{flex:1,backgroundColor:'#f3f6f4'},container:{padding:22,paddingBottom:42},brand:{fontSize:12,fontWeight:'900',letterSpacing:2.4,color:'#42614f'},title:{fontSize:42,lineHeight:45,fontWeight:'900',color:'#12251a',marginTop:10},body:{fontSize:17,lineHeight:25,color:'#5b6d62',marginTop:12,marginBottom:22},
+  find:{backgroundColor:'#173d2b',borderRadius:24,padding:22,minHeight:176,justifyContent:'center'},findLabel:{fontSize:11,fontWeight:'900',letterSpacing:1.5,color:'#bcd4c5'},findTitle:{fontSize:28,lineHeight:32,fontWeight:'900',color:'#fff',marginTop:8},findBody:{fontSize:14,fontWeight:'700',color:'#dce9e1',marginTop:10},
+  quickRow:{flexDirection:'row',gap:10,marginTop:12},quick:{flex:1,backgroundColor:'#fff',borderWidth:1,borderColor:'#dbe6df',borderRadius:18,padding:16,minHeight:104},quickTitle:{fontSize:17,fontWeight:'900',color:'#173d2b'},quickBody:{fontSize:12,lineHeight:17,color:'#6c7d72',fontWeight:'700',marginTop:5},
+  section:{marginTop:28,paddingTop:24,borderTopWidth:1,borderTopColor:'#d8e3dc'},eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1.5,color:'#567060'},sectionTitle:{fontSize:24,lineHeight:28,fontWeight:'900',color:'#15281d',marginTop:8},sectionBody:{fontSize:14,lineHeight:21,color:'#67786e',marginTop:8},linkRow:{flexDirection:'row',gap:8,marginTop:16},secondary:{flex:1,backgroundColor:'#e5eee8',paddingVertical:12,borderRadius:12,alignItems:'center'},secondaryText:{fontSize:12,fontWeight:'900',color:'#173d2b'}
+});
