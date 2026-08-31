@@ -4,6 +4,10 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 const MAX_REVIEW_PHOTO_BYTES = 8 * 1024 * 1024;
 const MAX_REVIEW_PHOTOS = 3;
 
+type PhotoWaiter={resolve:(photos:ReviewPhoto[])=>void;reject:(error:unknown)=>void};
+const pendingPhotoReads=new Map<string,PhotoWaiter[]>();
+let photoFlushScheduled=false;
+
 export type ReviewPhotoDraft = {
   uri: string;
   width: number | null;
@@ -108,7 +112,25 @@ export async function listReviewPhotosForReviews(reviewIds:string[]):Promise<Rec
   return grouped;
 }
 
-export async function listReviewPhotos(reviewId: string): Promise<ReviewPhoto[]> {
-  const grouped=await listReviewPhotosForReviews([reviewId]);
-  return grouped[String(reviewId)]||[];
+async function flushPhotoReads(){
+  photoFlushScheduled=false;
+  const batch=[...pendingPhotoReads.entries()].slice(0,100);
+  for(const[id]of batch)pendingPhotoReads.delete(id);
+  if(!batch.length)return;
+  try{
+    const grouped=await listReviewPhotosForReviews(batch.map(([id])=>id));
+    for(const[id,waiters]of batch){const rows=grouped[id]||[];for(const waiter of waiters)waiter.resolve(rows)}
+  }catch(error){for(const[,waiters]of batch)for(const waiter of waiters)waiter.reject(error)}
+  if(pendingPhotoReads.size&&!photoFlushScheduled){photoFlushScheduled=true;setTimeout(()=>void flushPhotoReads(),0)}
+}
+
+export function listReviewPhotos(reviewId: string): Promise<ReviewPhoto[]> {
+  const id=String(reviewId||'');
+  if(!id)return Promise.resolve([]);
+  return new Promise((resolve,reject)=>{
+    const waiters=pendingPhotoReads.get(id)||[];
+    waiters.push({resolve,reject});
+    pendingPhotoReads.set(id,waiters);
+    if(!photoFlushScheduled){photoFlushScheduled=true;setTimeout(()=>void flushPhotoReads(),0)}
+  });
 }
