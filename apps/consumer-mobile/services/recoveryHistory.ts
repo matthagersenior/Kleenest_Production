@@ -19,14 +19,52 @@ export type LocationRecoveryHistoryItem = {
   sla_met: boolean | null;
 };
 
+export type RemediationConfirmationOpportunity = {
+  case_id:string;
+  business_id:string;
+  location_id:string;
+  amenity_id:string;
+  amenity_name:string;
+  priority:number;
+  resolved_at:string;
+  proof_available:boolean;
+  proof_storage_path:string|null;
+  proof_url:string|null;
+  already_confirmed_by_you:boolean;
+  verified_visit_ready:boolean;
+  requires_verified_visit:boolean;
+};
+
+export type RemediationConfirmationResult={
+  case_id:string;
+  location_id:string;
+  amenity_id:string;
+  outcome:'confirmed'|'still_broken';
+  observation_id:string;
+  check_in_id:string;
+  reopened_case_id:string|null;
+  progression?:{awarded?:boolean;points?:number;reason?:string}|null;
+  confirmed_at:string;
+};
+
+function proofUrl(storagePath:string|null){if(!storagePath)return null;return getKleenestSupabaseClient().storage.from('location-photos').getPublicUrl(storagePath).data.publicUrl||null}
+
 export async function getLocationRecoveryHistory(locationId:string):Promise<LocationRecoveryHistoryItem[]> {
-  const client=getKleenestSupabaseClient();
-  const {data,error}=await client.rpc('get_location_recovery_history',{p_location_id:locationId});
+  const {data,error}=await getKleenestSupabaseClient().rpc('get_location_recovery_history',{p_location_id:locationId});
   if(error)throw error;
   const rows=Array.isArray(data)?data:[];
-  return rows.map((row:any)=>{
-    const storagePath=typeof row?.proof_storage_path==='string'&&row.proof_storage_path?row.proof_storage_path:null;
-    const proofUrl=storagePath?client.storage.from('location-photos').getPublicUrl(storagePath).data.publicUrl:null;
-    return {...row,proof_storage_path:storagePath,proof_url:proofUrl||null} as LocationRecoveryHistoryItem;
-  });
+  return rows.map((row:any)=>{const storagePath=typeof row?.proof_storage_path==='string'&&row.proof_storage_path?row.proof_storage_path:null;return {...row,proof_storage_path:storagePath,proof_url:proofUrl(storagePath)||null} as LocationRecoveryHistoryItem;});
+}
+
+export async function getRemediationConfirmationOpportunities(locationId:string):Promise<RemediationConfirmationOpportunity[]> {
+  const {data,error}=await getKleenestSupabaseClient().rpc('get_location_remediation_confirmation_opportunities',{p_location_id:locationId});
+  if(error)throw error;
+  const rows=Array.isArray(data)?data:[];
+  return rows.map((row:any)=>{const storagePath=typeof row?.proof_storage_path==='string'&&row.proof_storage_path?row.proof_storage_path:null;return {...row,proof_storage_path:storagePath,proof_url:proofUrl(storagePath)||null} as RemediationConfirmationOpportunity;});
+}
+
+export async function confirmBusinessRemediation(caseId:string,outcome:'confirmed'|'still_broken',notes:string|null=null):Promise<RemediationConfirmationResult>{
+  const {data,error}=await getKleenestSupabaseClient().rpc('confirm_business_remediation',{p_case_id:caseId,p_outcome:outcome,p_notes:notes});
+  if(error)throw error;
+  return (data||{}) as RemediationConfirmationResult;
 }
