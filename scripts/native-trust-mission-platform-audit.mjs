@@ -42,12 +42,16 @@ if(!failures.length){
   if(!play.includes("catch(error:any){setMessage(error?.message||'Trust mission could not be cancelled. Your active mission is still preserved.')"))failures.push('Play must surface cancellation failures and preserve the active mission state.');
   if(!routing.includes('isTrustMission')||!routing.includes("if(isTrustMission(data,type)&&locationId)return`/location/${encodeURIComponent(locationId)}`"))failures.push('Trust mission notifications with a location must deep-link to that restroom before generic progress routing.');
   if(!routing.includes("if(isProgress(data,type))return stringValue(data.game_challenge_id)||type.includes('game')||type.includes('challenge')?'/games':'/play'"))failures.push('Non-location progression notifications must continue routing to Play or Game Center.');
-  for(const [name,screen] of [['Explore',explore],['Saved',saved]]){
-    if(!screen.includes('readTrustMission')||!screen.includes('trustMissionAction'))failures.push(`${name} must load and evaluate the active trust mission.`);
-    if(!screen.includes('Resume mission')||!screen.includes('View active mission')||!screen.includes('Resume active mission'))failures.push(`${name} must expose active/resume mission states clearly.`);
-    if(!screen.includes("action==='active_elsewhere'")||!screen.includes("router.push('/play')"))failures.push(`${name} must preserve an active mission and route replacement decisions through Play.`);
-  }
-  if(!explore.includes('markerActive')||!explore.includes("{isActive?'A':isBest?'✓':isMission?'!':'WC'}"))failures.push('Explore map must distinguish the active mission from evidence and candidate mission markers.');
+
+  // Trust missions remain a consumer capability, but they are intentionally kept out of the
+  // critical bathroom-finding path. Saved, Play, Location, Activity, and notifications own
+  // mission lifecycle; Explore stays fast and nearby-first.
+  if(explore.includes('readTrustMission')||explore.includes('trustMissionAction')||explore.includes('ACTIVE TRUST MISSION')||explore.includes('NEARBY TRUST MISSION'))failures.push('Explore must stay bathroom-first; trust mission lifecycle belongs to Play, Saved, and Location.');
+  for(const token of ['FIND A BATHROOM','Details','Directions',"pathname:'/route'"])if(!explore.includes(token))failures.push(`Explore bathroom-first mission boundary missing ${token}.`);
+
+  if(!saved.includes('readTrustMission')||!saved.includes('trustMissionAction'))failures.push('Saved must load and evaluate the active trust mission.');
+  if(!saved.includes('Resume mission')||!saved.includes('View active mission')||!saved.includes('Resume active mission'))failures.push('Saved must expose active/resume mission states clearly.');
+  if(!saved.includes("action==='active_elsewhere'")||!saved.includes("router.push('/play')"))failures.push('Saved must preserve an active mission and route replacement decisions through Play.');
   if(!saved.includes('ACTIVE MISSION')||!saved.includes('activeCard'))failures.push('Saved must visibly distinguish its active mission restroom.');
   if(!location.includes('readTrustMission')||!location.includes('missionEvidenceRequirement')||!location.includes('activeMission.locationId===locationId'))failures.push('Location mission mode must bind the route request to the authoritative active mission location.');
   if(!location.includes('MISSION CONTEXT CHECK')||!location.includes('This restroom cannot replace it silently.')||!location.includes("router.push('/play')"))failures.push('Location must expose stale or mismatched mission context without replacing the active mission.');
