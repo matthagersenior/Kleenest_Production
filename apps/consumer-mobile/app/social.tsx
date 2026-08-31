@@ -1,14 +1,14 @@
 import { listMobileFollowers, listMobileFollowing, toggleMobileFollow } from '@kleenest/mobile-core';
 import { listMobileCommunityActivity } from '../services/communityActivity';
 import { searchContributors } from '../services/contributors';
+import { formatVisitEvidence } from '../services/evidenceFormatting';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 function Avatar({person,size=46}:{person:any;size?:number}){const initials=(person?.display_name||person?.username||'K').trim().slice(0,1).toUpperCase();return person?.avatar_url?<Image source={{uri:person.avatar_url}} style={[s.avatar,{width:size,height:size,borderRadius:size/2}]}/>:<View style={[s.avatarFallback,{width:size,height:size,borderRadius:size/2}]}><Text style={s.avatarFallbackText}>{initials}</Text></View>}
 function TrustLine({person}:{person:any}){const reputation=String(person?.reputation_level||'new').replaceAll('_',' ');return <View style={s.trustRow}><View style={s.trustBadge}><Text style={s.trustBadgeText}>{reputation.toUpperCase()}</Text></View><Text style={s.meta}>{person?.total_check_ins??0} check-ins · {person?.total_reviews??0} reviews · {person?.verified_review_count??0} verified · {person?.helpful_received??0} helpful</Text></View>}
-function visitFreshness(value:string|null){if(!value)return null;const time=new Date(value).getTime();if(!Number.isFinite(time))return null;const minutes=Math.max(0,Math.floor((Date.now()-time)/60000));if(minutes<60)return minutes<2?'just now':`${minutes}m ago`;const hours=Math.floor(minutes/60);if(hours<24)return `${hours}h ago`;const days=Math.floor(hours/24);if(days<30)return `${days}d ago`;return new Date(value).toLocaleDateString();}
-function evidenceLine(item:any){if(!item?.verified)return null;const freshness=visitFreshness(item.verifiedAt);const method=item.verificationMethod?String(item.verificationMethod).replaceAll('_',' '):null;const distance=item.verifiedDistanceMeters==null?null:`${Math.max(0,Math.round(item.verifiedDistanceMeters))} m`;const photos=`${item.photoEvidenceCount??0} photo${Number(item.photoEvidenceCount||0)===1?'':'s'}`;const amenities=`${item.amenityEvidenceCount??0} amenit${Number(item.amenityEvidenceCount||0)===1?'y':'ies'}`;return [freshness,method,distance,photos,amenities].filter(Boolean).join(' · ')}
+function evidenceLine(item:any){if(!item?.verified)return null;return formatVisitEvidence({verifiedAt:item.verifiedAt,verificationMethod:item.verificationMethod,verifiedDistanceMeters:item.verifiedDistanceMeters,photoEvidenceCount:item.photoEvidenceCount,amenityEvidenceCount:item.amenityEvidenceCount})}
 function PhotoEvidencePreview({photos}:{photos:any[]}){const visible=(Array.isArray(photos)?photos:[]).slice(0,3);if(!visible.length)return null;return <View style={s.photoPreviewRow}>{visible.map(photo=><Image key={String(photo.storage_path||photo.public_url)} source={{uri:String(photo.public_url)}} style={s.photoPreview}/>)}</View>}
 export default function CommunityScreen(){
   const [query,setQuery]=useState(''),[rows,setRows]=useState<any[]>([]),[following,setFollowing]=useState<any[]>([]),[followers,setFollowers]=useState<any[]>([]),[activity,setActivity]=useState<any[]>([]),[message,setMessage]=useState('');
