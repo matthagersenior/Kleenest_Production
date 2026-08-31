@@ -25,6 +25,9 @@ export type LocationAmenityInventoryItem = {
   confidence_score: number;
   freshness: 'fresh' | 'recent' | 'aging' | 'stale' | 'unknown';
   freshest_observed_at: string | null;
+  business_response_status: 'reported' | 'being_addressed' | 'addressed' | null;
+  business_response_at: string | null;
+  business_proof_available: boolean;
 };
 
 export type AmenityProgressionAward = {
