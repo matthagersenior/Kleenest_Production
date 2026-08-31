@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-const required=['apps/consumer-mobile/services/community.ts','apps/consumer-mobile/services/contributors.ts','apps/consumer-mobile/services/avatar.ts','apps/consumer-mobile/app/location/[id].tsx','apps/consumer-mobile/app/social.tsx','apps/consumer-mobile/app/contributor/[id].tsx','apps/consumer-mobile/app/profile.tsx','apps/consumer-mobile/app.config.ts','apps/consumer-mobile/package.json','packages/mobile-core/src/index.ts','supabase/migrations/20260830224000_canonical_community_contributor_profiles.sql'];
+const required=['apps/consumer-mobile/services/community.ts','apps/consumer-mobile/services/contributors.ts','apps/consumer-mobile/services/avatar.ts','apps/consumer-mobile/app/location/[id].tsx','apps/consumer-mobile/app/social.tsx','apps/consumer-mobile/app/contributor/[id].tsx','apps/consumer-mobile/app/profile.tsx','apps/consumer-mobile/app.config.ts','apps/consumer-mobile/package.json','packages/mobile-core/src/index.ts','supabase/migrations/20260830224000_canonical_community_contributor_profiles.sql','supabase/migrations/20260831024900_mobile_contributor_verified_evidence.sql'];
 const failures=[];
 for(const file of required) if(!fs.existsSync(file)) failures.push(`missing native community authority file: ${file}`);
 if(!failures.length){
@@ -14,6 +14,7 @@ if(!failures.length){
   const pkg=fs.readFileSync('apps/consumer-mobile/package.json','utf8');
   const core=fs.readFileSync('packages/mobile-core/src/index.ts','utf8');
   const migration=fs.readFileSync('supabase/migrations/20260830224000_canonical_community_contributor_profiles.sql','utf8');
+  const verifiedMigration=fs.readFileSync('supabase/migrations/20260831024900_mobile_contributor_verified_evidence.sql','utf8');
   if(!helpful.includes("rpc('toggle_review_like'")) failures.push('Helpful-review mutation must use toggle_review_like RPC.');
   if(helpful.includes("from('review_likes')")) failures.push('Native client must not mutate review_likes directly.');
   if(!location.includes('toggleHelpfulReview')||!location.includes('Helpful')) failures.push('Location community reviews must expose the canonical Helpful action.');
@@ -27,6 +28,8 @@ if(!failures.length){
   if(community.includes("from('profiles')")||community.includes('searchMobilePeople')) failures.push('Community UI must not rely on direct profile-table discovery.');
   if(!community.includes('searchContributors')||!community.includes("pathname:'/contributor/[id]'")) failures.push('Community must use safe discovery and link to contributor profiles.');
   if(!publicProfile.includes('getContributorProfile')||!publicProfile.includes('helpful votes')||!publicProfile.includes('Badges')||!publicProfile.includes('Published reviews')) failures.push('Contributor profile must surface public progression, helpfulness, badges and reviews.');
+  if(!publicProfile.includes('verified_review_count')||!publicProfile.includes('Verified evidence')||!publicProfile.includes('VERIFIED VISIT')) failures.push('Contributor profile must surface verified-review totals and per-review provenance.');
+  if(!verifiedMigration.includes("set search_path = ''")||!verifiedMigration.includes("'verified_review_count'")||!verifiedMigration.includes("'check_in_id',r.check_in_id")||!verifiedMigration.includes('revoke all on function public.community_contributor_profile(uuid) from public, anon')||!verifiedMigration.includes('grant execute on function public.community_contributor_profile(uuid) to authenticated')) failures.push('Verified contributor evidence RPC must be locked, search-path-safe, and provenance-aware.');
   if(!ownProfile.includes("from('profiles').update")||!ownProfile.includes('display_name')||!ownProfile.includes('username')||!ownProfile.includes('bio')) failures.push('Signed-in users must be able to edit their public contributor identity through self-profile RLS.');
   if(/from\('profiles'\)\.update\([^)]*(?:email|subscription_tier|role|is_admin|is_platform_owner)/s.test(ownProfile)) failures.push('Mobile public-profile editing must not write private account or authorization fields.');
   if(!ownProfile.includes('Your email remains private.')) failures.push('Profile editor must explain the public/private identity boundary.');
