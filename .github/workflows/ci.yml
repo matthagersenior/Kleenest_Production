@@ -69,19 +69,27 @@ jobs:
           node scripts/native-public-rpc-authority-audit.mjs
           node scripts/admin-control-plane-rpc-authority-audit.mjs
           node scripts/native-consumer-contribution-rpc-authority-audit.mjs
-      - name: Business fleet and analytics authority
+      - name: Business canonical authority
+        run: node scripts/business-canonical-rpc-authority-audit.mjs
+      - name: Fleet authority
         run: |
-          node scripts/business-canonical-rpc-authority-audit.mjs
           node scripts/fleet-operational-rpc-authority-audit.mjs
           node scripts/fleet-intelligence-rpc-authority-audit.mjs
           node scripts/fleet-configuration-telemetry-rpc-authority-audit.mjs
+      - name: Business analytics RPC authority
+        run: |
           node scripts/business-analytics-core-rpc-authority-audit.mjs
           node scripts/business-legacy-analytics-authority-audit.mjs
-          node scripts/business-analytics-presentation-audit.mjs
-          node scripts/business-operations-presentation-audit.mjs
-          node scripts/business-advanced-operations-presentation-audit.mjs
-          node scripts/business-control-plane-completeness-audit.mjs
-          node scripts/review-amenity-business-health-convergence-audit.mjs
+      - name: Business analytics presentation
+        run: node scripts/business-analytics-presentation-audit.mjs
+      - name: Business operations presentation
+        run: node scripts/business-operations-presentation-audit.mjs
+      - name: Business advanced operations presentation
+        run: node scripts/business-advanced-operations-presentation-audit.mjs
+      - name: Business control plane completeness
+        run: node scripts/business-control-plane-completeness-audit.mjs
+      - name: Business health convergence
+        run: node scripts/review-amenity-business-health-convergence-audit.mjs
       - name: Full authority chain parity
         run: npm run audit
       - name: Native typecheck
