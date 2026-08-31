@@ -14,7 +14,8 @@ function notificationParts(notification:NotificationLike){
   const type=String(notification?.type||data.type||'').toLowerCase();
   return {data,type};
 }
-function isProgress(data:Record<string,unknown>,type:string){return Boolean(stringValue(data.mission_id)||stringValue(data.game_challenge_id)||stringValue(data.contest_id)||stringValue(data.quest_id)||type.includes('trust_mission')||type.includes('game')||type.includes('challenge')||type.includes('contest')||type.includes('quest')||type.includes('progress')||type.includes('badge')||type.includes('reward'))}
+function isTrustMission(data:Record<string,unknown>,type:string){return Boolean(stringValue(data.mission_id)||type.includes('trust_mission'))}
+function isProgress(data:Record<string,unknown>,type:string){return Boolean(isTrustMission(data,type)||stringValue(data.game_challenge_id)||stringValue(data.contest_id)||stringValue(data.quest_id)||type.includes('game')||type.includes('challenge')||type.includes('contest')||type.includes('quest')||type.includes('progress')||type.includes('badge')||type.includes('reward'))}
 
 export function notificationContext(notification:NotificationLike):NotificationContext {
   const {data,type}=notificationParts(notification);
@@ -30,10 +31,11 @@ export function notificationContext(notification:NotificationLike):NotificationC
 export function notificationDestination(notification: NotificationLike): string | null {
   const {data,type}=notificationParts(notification);
   if(stringValue(data.support_request_id)||type.includes('support'))return'/support';
-  if(isProgress(data,type))return stringValue(data.game_challenge_id)||type.includes('game')||type.includes('challenge')?'/games':'/play';
-  if(stringValue(data.route_id)||type.includes('route'))return'/route';
 
   const locationId=stringValue(data.location_id)||stringValue(data.locationId);
+  if(isTrustMission(data,type)&&locationId)return`/location/${encodeURIComponent(locationId)}`;
+  if(isProgress(data,type))return stringValue(data.game_challenge_id)||type.includes('game')||type.includes('challenge')?'/games':'/play';
+  if(stringValue(data.route_id)||type.includes('route'))return'/route';
   if(locationId)return`/location/${encodeURIComponent(locationId)}`;
 
   const contributorId=stringValue(data.contributor_id)||stringValue(data.user_id)||stringValue(data.actor_user_id);
