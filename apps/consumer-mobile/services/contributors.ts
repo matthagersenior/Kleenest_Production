@@ -1,4 +1,5 @@
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { listReviewPhotosForReviews } from './reviewPhotos';
 
 export async function searchContributors(query: string, limit = 20) {
   const text = String(query || '').trim();
@@ -17,5 +18,8 @@ export async function getContributorProfile(userId: string) {
     p_user_id: userId,
   });
   if (error) throw error;
-  return data || null;
+  if(!data)return null;
+  const reviews=Array.isArray((data as any)?.reviews)?(data as any).reviews:[];
+  const photosByReview=await listReviewPhotosForReviews(reviews.map((review:any)=>String(review.id)));
+  return {...(data as any),reviews:reviews.map((review:any)=>({...review,photos:photosByReview[String(review.id)]||[]}))};
 }
