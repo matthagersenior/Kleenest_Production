@@ -27,6 +27,8 @@ jobs:
         run: node scripts/consumer-activation-loop-audit.mjs
       - name: Consumer bulk migration convergence
         run: node scripts/consumer-bulk-migration-convergence-audit.mjs
+      - name: Consumer data production
+        run: node scripts/consumer-data-production-audit.mjs
       - name: Trust quality convergence
         run: node scripts/trust-quality-convergence-audit.mjs
       - name: Reverification workflow convergence
