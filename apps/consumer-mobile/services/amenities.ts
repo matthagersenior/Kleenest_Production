@@ -52,6 +52,14 @@ export async function listLocationAmenityInventory(locationId: string): Promise<
   return Array.isArray(data) ? (data as LocationAmenityInventoryItem[]) : [];
 }
 
+export async function awardReviewAmenityProgression(reviewId: string): Promise<AmenityProgressionAward> {
+  const { data, error } = await getKleenestSupabaseClient().rpc('award_review_amenity_progression', {
+    p_review_id: reviewId,
+  });
+  if (error) throw error;
+  return (data || {}) as AmenityProgressionAward;
+}
+
 export async function recordReviewAmenityInventory(
   reviewId: string,
   items: ReviewAmenityInventoryItem[],
@@ -73,13 +81,7 @@ export async function recordReviewAmenityInventory(
     p_items: normalized,
   });
   if (error) throw error;
-  return data;
-}
 
-export async function awardReviewAmenityProgression(reviewId: string): Promise<AmenityProgressionAward> {
-  const { data, error } = await getKleenestSupabaseClient().rpc('award_review_amenity_progression', {
-    p_review_id: reviewId,
-  });
-  if (error) throw error;
-  return (data || {}) as AmenityProgressionAward;
+  const progression = normalized.length ? await awardReviewAmenityProgression(reviewId) : null;
+  return { inventory: data, progression };
 }
