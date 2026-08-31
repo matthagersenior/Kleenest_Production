@@ -30,6 +30,18 @@ function extensionFor(asset: ReviewPhotoDraft) {
   return 'jpg';
 }
 
+function publicPhoto(row:any):ReviewPhoto {
+  const client=getKleenestSupabaseClient();
+  return {
+    storage_path:String(row.storage_path),
+    public_url:client.storage.from('review-photos').getPublicUrl(String(row.storage_path)).data.publicUrl,
+    mime_type:row.mime_type||null,
+    width:row.width==null?null:Number(row.width),
+    height:row.height==null?null:Number(row.height),
+    sort_order:Number(row.sort_order||0),
+  };
+}
+
 export async function chooseReviewPhotos(): Promise<ReviewPhotoDraft[]> {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
@@ -83,16 +95,20 @@ export async function uploadReviewPhotos(reviewId: string, photos: ReviewPhotoDr
   return uploaded;
 }
 
+export async function listReviewPhotosForReviews(reviewIds:string[]):Promise<Record<string,ReviewPhoto[]>> {
+  const ids=[...new Set((reviewIds||[]).map(String).filter(Boolean))].slice(0,100);
+  if(!ids.length)return {};
+  const {data,error}=await getKleenestSupabaseClient().rpc('mobile_review_photos_for_reviews',{p_review_ids:ids});
+  if(error)throw error;
+  const grouped:Record<string,ReviewPhoto[]>={};
+  for(const row of Array.isArray(data)?data:[]){
+    const id=String(row.review_id);
+    (grouped[id] ||= []).push(publicPhoto(row));
+  }
+  return grouped;
+}
+
 export async function listReviewPhotos(reviewId: string): Promise<ReviewPhoto[]> {
-  const client = getKleenestSupabaseClient();
-  const { data, error } = await client
-    .from('review_photos')
-    .select('storage_path,mime_type,width,height,sort_order')
-    .eq('review_id', reviewId)
-    .order('sort_order', { ascending: true });
-  if (error) throw error;
-  return (data || []).map((row:any) => ({
-    ...row,
-    public_url: client.storage.from('review-photos').getPublicUrl(String(row.storage_path)).data.publicUrl,
-  }));
+  const grouped=await listReviewPhotosForReviews([reviewId]);
+  return grouped[String(reviewId)]||[];
 }
