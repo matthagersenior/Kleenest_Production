@@ -16,7 +16,8 @@ function detailFor(item:any){
   if(item?.kind==='review')return payload.comment||(payload.cleanliness_pct!=null?`${payload.cleanliness_pct}% cleanliness`:'');
   if(payload?.activity_type==='trust_mission_completed'){
     const metadata=payload?.metadata||{};
-    return [metadata.summary,metadata.reward_points?`+${metadata.reward_points} bonus points`:null].filter(Boolean).join(' · ');
+    const tier=metadata.goal_satisfied===true?'Full evidence goal':'Verified visit goal';
+    return [tier,metadata.summary,metadata.reward_points?`+${metadata.reward_points} bonus points`:null].filter(Boolean).join(' · ');
   }
   return payload?.metadata?.summary||'';
 }
@@ -28,12 +29,17 @@ export async function listMyActivity(limit=40){
   return (Array.isArray(data)?data:[]).map((item:any)=>({
     id:String(item.id),
     kind:item.kind,
+    activityType:String(item?.payload?.activity_type||''),
     locationId:item.location_id||null,
     contributorId:item?.payload?.metadata?.target_user_id||null,
     createdAt:item.created_at,
     title:titleFor(item),
     detail:detailFor(item),
     verified:Boolean(item?.payload?.verified)||item?.payload?.activity_type==='trust_mission_completed',
+    missionCompleted:item?.payload?.activity_type==='trust_mission_completed',
+    goalSatisfied:item?.payload?.metadata?.goal_satisfied===true,
+    rewardPoints:Number(item?.payload?.metadata?.reward_points||0),
+    missionId:item?.payload?.metadata?.mission_id||null,
     location:item.location_id?{id:item.location_id,name:item.location_name||'Restroom'}:null,
   }));
 }
