@@ -19,10 +19,8 @@ if(!failures.length){
   if(!service.includes("rpc('award_review_amenity_progression'")) failures.push('Verified amenity inventory must request the protected progression award after persistence.');
   const recordStart=service.indexOf('export async function recordReviewAmenityInventory');
   const recordBody=recordStart>=0?service.slice(recordStart):'';
-  const inventoryCall=recordBody.indexOf("rpc('record_review_amenity_inventory'");
-  const inventorySuccess=recordBody.indexOf('if (error) throw error;',inventoryCall);
-  const awardCall=recordBody.indexOf('awardReviewAmenityProgression(reviewId)',inventorySuccess);
-  if(inventoryCall<0||inventorySuccess<inventoryCall||awardCall<inventorySuccess) failures.push('Amenity progression must never be requested before canonical inventory persistence succeeds.');
+  const persistsThenAwards=/rpc\('record_review_amenity_inventory',[\s\S]*?if\s*\(error\)\s*throw\s+error;[\s\S]*?awardReviewAmenityProgression\(reviewId\)/.test(recordBody);
+  if(!persistsThenAwards) failures.push('Amenity progression must never be requested before canonical inventory persistence succeeds.');
   if(!recordBody.includes('awardReviewAmenityProgression(reviewId).catch(() => null)')) failures.push('Optional amenity progression failure must not make persisted review inventory appear failed.');
   if(!location.includes('AMENITIES DISCOVERED')||!location.includes('What is here, and how many?')) failures.push('Location review must expose amenity type and count collection.');
   if(!location.includes('selectedAmenities')||!location.includes('recordReviewAmenityInventory')) failures.push('Selected amenity counts must persist with the created review.');
