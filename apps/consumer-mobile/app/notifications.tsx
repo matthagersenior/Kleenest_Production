@@ -6,7 +6,7 @@ import { notificationContext, notificationDestination } from '../services/notifi
 import { getNotificationPreferenceStatus, updateNotificationPreferences, type NotificationPreferences, type NotificationSuppressionCounts } from '../services/notificationPreferences';
 import { registerNativePush } from '../services/push';
 
-const filters=['All','Unread','Restroom','Community','Support','Progress'] as const;
+const filters=['All','Unread','Restroom','Community','Support','Route','Progress','Intelligence'] as const;
 type Filter=(typeof filters)[number];
 const preferenceRows:[keyof NotificationPreferences,string,string][]=[
   ['push','Native push','Allow this device to receive Kleenest push alerts.'],
