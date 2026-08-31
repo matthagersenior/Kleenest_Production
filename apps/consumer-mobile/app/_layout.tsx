@@ -24,5 +24,22 @@ export default function RootLayout() {
     const subscription = Notifications.addNotificationResponseReceivedListener(response => { void openNotificationResponse(response); });
     return () => subscription.remove();
   }, []);
-  return <><StatusBar style="auto"/><Tabs screenOptions={{ headerTitle: 'Kleenest', tabBarLabelStyle: { fontWeight: '700' } }}><Tabs.Screen name="index" options={{ title: 'Home' }}/><Tabs.Screen name="explore" options={{ title: 'Explore' }}/><Tabs.Screen name="play" options={{ title: 'Play' }}/><Tabs.Screen name="social" options={{ title: 'Community' }}/><Tabs.Screen name="profile" options={{ title: 'Profile' }}/><Tabs.Screen name="games" options={{ href: null }}/><Tabs.Screen name="route" options={{ href: null }}/><Tabs.Screen name="location/[id]" options={{ href: null }}/><Tabs.Screen name="contributor/[id]" options={{ href: null }}/><Tabs.Screen name="saved" options={{ href: null }}/><Tabs.Screen name="activity" options={{ href: null }}/><Tabs.Screen name="notifications" options={{ href: null }}/><Tabs.Screen name="membership" options={{ href: null }}/><Tabs.Screen name="support" options={{ href: null }}/><Tabs.Screen name="account-deletion" options={{ href: null }}/></Tabs></>;
+  return <><StatusBar style="auto"/><Tabs screenOptions={{ headerTitle: 'Kleenest', tabBarLabelStyle: { fontWeight: '700' } }}>
+    <Tabs.Screen name="index" options={{ title: 'Home' }}/>
+    <Tabs.Screen name="explore" options={{ title: 'Explore' }}/>
+    <Tabs.Screen name="play" options={{ title: 'Play' }}/>
+    <Tabs.Screen name="social" options={{ title: 'Community' }}/>
+    <Tabs.Screen name="profile" options={{ title: 'Profile' }}/>
+    <Tabs.Screen name="games" options={{ href: null }}/>
+    <Tabs.Screen name="route" options={{ href: null }}/>
+    <Tabs.Screen name="qr" options={{ href: null }}/>
+    <Tabs.Screen name="location/[id]" options={{ href: null }}/>
+    <Tabs.Screen name="contributor/[id]" options={{ href: null }}/>
+    <Tabs.Screen name="saved" options={{ href: null }}/>
+    <Tabs.Screen name="activity" options={{ href: null }}/>
+    <Tabs.Screen name="notifications" options={{ href: null }}/>
+    <Tabs.Screen name="membership" options={{ href: null }}/>
+    <Tabs.Screen name="support" options={{ href: null }}/>
+    <Tabs.Screen name="account-deletion" options={{ href: null }}/>
+  </Tabs></>;
 }
