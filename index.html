@@ -10,6 +10,18 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="manifest" href="/Kleenest_Production/manifest.webmanifest" />
     <title>Kleenest</title>
+    <script>
+      (function () {
+        try {
+          var route = window.sessionStorage.getItem('kleenest:pages-route');
+          if (route) {
+            window.sessionStorage.removeItem('kleenest:pages-route');
+            var base = '/Kleenest_Production';
+            window.history.replaceState(null, '', base + (route.charAt(0) === '/' ? route : '/' + route));
+          }
+        } catch (_) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
