@@ -18,6 +18,12 @@ export type LocationAmenityInventoryItem = {
   category: string | null;
   observed_quantity: number | null;
   sample_count: number;
+  contributor_count: number;
+  present_count: number;
+  absent_count: number;
+  status_conflict: boolean;
+  confidence_score: number;
+  freshness: 'fresh' | 'recent' | 'aging' | 'stale' | 'unknown';
   freshest_observed_at: string | null;
 };
 
