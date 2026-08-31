@@ -1,7 +1,7 @@
 import fs from 'node:fs';
-const files=['apps/consumer-mobile/services/routeTrust.ts','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/app/saved.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/components/LocationAmenityInventory.tsx'];
+const files=['apps/consumer-mobile/services/routeTrust.ts','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/app/saved.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/components/LocationAmenityInventory.tsx','apps/consumer-mobile/app/location/[id].tsx'];
 const failures=[];for(const file of files)if(!fs.existsSync(file))failures.push(`missing trust decision file: ${file}`);
-if(!failures.length){const read=file=>fs.readFileSync(file,'utf8'),trust=read(files[0]),explore=read(files[1]),saved=read(files[2]),route=read(files[3]),location=read(files[4]);
+if(!failures.length){const read=file=>fs.readFileSync(file,'utf8'),trust=read(files[0]),explore=read(files[1]),saved=read(files[2]),route=read(files[3]),location=read(files[4]),locationPage=read(files[5]);
  for(const label of ['Strong evidence','Recent evidence','Limited evidence','Needs verification'])if(!trust.includes(label))failures.push(`Shared trust confidence model missing label: ${label}`);
  if(!trust.includes('trustEvidenceLine')||!trust.includes('routeTrustScore')||!trust.includes('bestEvidencedStop'))failures.push('Trust guidance must centralize scoring, evidence summaries, and strongest-evidence selection.');
  if(!trust.includes('trustContributionPriority')||!trust.includes('trustContributionMission')||!trust.includes('firstContributionOpportunity'))failures.push('Trust guidance must centralize contribution priority, mission copy, and opportunity selection.');
@@ -18,6 +18,9 @@ if(!failures.length){const read=file=>fs.readFileSync(file,'utf8'),trust=read(fi
  if(!route.includes('Move best first')||!route.includes('setStopIds(current=>[bestId,...current.filter(id=>id!==bestId)])'))failures.push('Route may offer a trust shortcut only through an explicit user-controlled reorder action.');
  if(!location.includes('trustConfidenceLabel')||!location.includes('trustEvidenceLine')||!location.includes('trustContributionMission'))failures.push('Location trust snapshot must use shared confidence, evidence, and mission language.');
  if(!location.includes('HIGH-PRIORITY TRUST MISSION')||!location.includes('1. Check in while you are physically here.'))failures.push('Location must translate weak evidence into a concrete verified-contribution sequence.');
+ if(!locationPage.includes("missionMode=String(contribute||'')==='1'")||!locationPage.includes('TRUST MISSION ACTIVE')||!locationPage.includes('Complete trust mission'))failures.push('Location contribution mode must carry users from a trust mission into verified check-in and review completion.');
+ if(!locationPage.includes('await refresh();setAmenityRefresh(value=>value+1)'))failures.push('Every successful verified review must refresh the location trust snapshot, not only amenity evidence submissions.');
+ if(!locationPage.includes('Finish the trust mission with a review')||!locationPage.includes('Trust evidence has been refreshed for this restroom.'))failures.push('Contribution-mode check-in and review completion must explain the evidence loop to the contributor.');
  if(/sort\([^)]*routeTrustScore|sort\([^)]*trust/i.test(explore+saved+route))failures.push('Trust guidance must not silently sort Explore, Saved, or Route by confidence score.');
 }
 if(failures.length){console.error('Native trust decision presentation audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}console.log('Native trust decision presentation audit passed.');
