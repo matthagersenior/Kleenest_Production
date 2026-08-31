@@ -23,6 +23,7 @@ export async function listMyActivity(limit=40){
     id:String(item.id),
     kind:item.kind,
     locationId:item.location_id||null,
+    contributorId:item?.payload?.metadata?.target_user_id||null,
     createdAt:item.created_at,
     title:titleFor(item),
     detail:detailFor(item),
