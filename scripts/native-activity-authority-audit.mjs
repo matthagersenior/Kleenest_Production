@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-const required=['apps/consumer-mobile/services/activity.ts','apps/consumer-mobile/services/communityActivity.ts','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/social.tsx','packages/mobile-core/src/privateActivity.ts','packages/mobile-core/src/publicEntry.ts','supabase/migrations/20260831043000_mobile_my_activity_feed_authority.sql','supabase/migrations/20260831043500_mobile_account_scoped_social_activity.sql'];
+const required=['apps/consumer-mobile/services/activity.ts','apps/consumer-mobile/services/communityActivity.ts','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/social.tsx','packages/mobile-core/src/privateActivity.ts','packages/mobile-core/src/publicEntry.ts','supabase/migrations/20260831043000_mobile_my_activity_feed_authority.sql','supabase/migrations/20260831043500_mobile_account_scoped_social_activity.sql','supabase/migrations/20260831065000_native_push_lifecycle_and_activity_authority_hardening.sql'];
 const failures=[];for(const file of required)if(!fs.existsSync(file))failures.push(`missing activity authority file: ${file}`);
 if(!failures.length){
   const service=fs.readFileSync(required[0],'utf8');
@@ -10,6 +10,7 @@ if(!failures.length){
   const publicEntry=fs.readFileSync(required[5],'utf8');
   const migration=fs.readFileSync(required[6],'utf8');
   const socialMigration=fs.readFileSync(required[7],'utf8');
+  const hardeningMigration=fs.readFileSync(required[8],'utf8');
   if(!service.includes("rpc('my_activity_feed'")||service.includes("from('social_activity')"))failures.push('Personal activity must use the canonical private activity RPC and never read social_activity directly.');
   if(!service.includes('contributorId:item?.payload?.metadata?.target_user_id'))failures.push('Personal follow activity must preserve its contributor destination.');
   if(!packageActivity.includes("rpc('my_activity_feed'")||packageActivity.includes("from('social_activity')"))failures.push('Legacy mobile-core activity override must use the private activity RPC.');
@@ -25,5 +26,7 @@ if(!failures.length){
   if(!migration.includes('revoke select, references, trigger on table public.social_activity from anon'))failures.push('Anonymous direct social_activity table privileges must remain removed.');
   for(const token of ["'followed_contributor'","'review_helpful_given'",'public.social_activity','target_user_id','review_owner_id',"set search_path = ''"])if(!socialMigration.includes(token))failures.push(`Account-scoped social activity migration missing token: ${token}`);
   if(!socialMigration.includes('values(v_user,v_user')||!socialMigration.includes('grant execute on function public.toggle_follow_user(uuid) to authenticated')||!socialMigration.includes('grant execute on function public.toggle_review_like(uuid) to authenticated'))failures.push('Social activity recording must stay actor-scoped and authenticated through canonical mutations.');
+  if(!hardeningMigration.includes('revoke all privileges on table public.social_activity from anon, authenticated'))failures.push('App roles must not retain direct social_activity table privileges after RPC-backed activity convergence.');
+  if(!hardeningMigration.includes('(select auth.uid()) = user_id')||!hardeningMigration.includes('user_id = (select auth.uid())'))failures.push('Retained social_activity RLS policies must use init-plan-safe authenticated identity checks.');
 }
 if(failures.length){console.error('Native activity authority audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}console.log('Native activity authority audit passed.');
