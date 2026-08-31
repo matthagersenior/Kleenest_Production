@@ -1,0 +1,8 @@
+import fs from 'node:fs';
+const path='supabase/migrations/20260831095500_fleet_intelligence_rpc_authority_hardening.sql';
+const sql=fs.readFileSync(path,'utf8');
+const signatures=[
+'fleet_asset_exception_scorecards(uuid,integer)','fleet_current_user_dispatch(uuid)','fleet_dashboard_summary_v2(uuid)','fleet_dispatch_intelligence(uuid,uuid,integer)','fleet_dispatch_signal_policy(uuid)','fleet_driver_assignment_candidates(uuid)','fleet_exception_alerts(uuid,text,integer)','fleet_exception_policy(uuid)','fleet_exception_trends(uuid,integer)','fleet_operational_signal_summary(uuid,integer)','fleet_operations_exception_intelligence(uuid,integer)','fleet_route_exception_drilldown(uuid,uuid)','fleet_service_opportunities_for_business(uuid)','get_fleet_leaderboard(uuid,text,text,integer)','get_fleet_metric_capabilities(uuid)','get_fleet_metric_configuration(uuid)','get_fleet_metric_values(uuid,date)','get_fleet_network_leaderboard(text,integer)'];
+for(const signature of signatures){const fn=`public.${signature}`;if(!sql.includes(`alter function ${fn} set search_path = '';`))throw new Error(`missing empty search_path for ${signature}`);if(!sql.includes(`revoke execute on function ${fn} from public, anon;`))throw new Error(`missing public/anon revoke for ${signature}`);if(!sql.includes(`grant execute on function ${fn} to authenticated, service_role;`))throw new Error(`missing authenticated/service grant for ${signature}`)}
+if(signatures.length!==18)throw new Error('fleet intelligence RPC audit must cover 18 signatures');
+console.log(`Fleet intelligence RPC authority audit passed for ${signatures.length} signatures.`);
