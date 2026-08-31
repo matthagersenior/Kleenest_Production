@@ -3,7 +3,7 @@ import fs from 'node:fs';
 function read(path){return fs.readFileSync(path,'utf8')}
 function requireToken(text,token,label){if(!text.includes(token))throw new Error(`${label} missing ${token}.`)}
 
-const migration=read('supabase/migrations/20260831195200_preventive_work_independent_verification_outcomes.sql');
+const migration=read('supabase/migrations/20260831195659_preventive_work_independent_verification_outcomes.sql');
 const mobileService=read('apps/consumer-mobile/services/recoveryHistory.ts');
 const mobileCard=read('apps/consumer-mobile/components/PreventiveVerificationCard.tsx');
 const inventory=read('apps/consumer-mobile/components/LocationAmenityInventory.tsx');
