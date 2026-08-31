@@ -30,15 +30,22 @@ Deno.serve(async(req)=>{
       const receipt=receipts?.[String(row.provider_message_id)];
       const now=new Date().toISOString();
       const attempts=Number(row.receipt_attempts||0)+1;
-      if(!receipt){await supabase.from('notification_native_push_deliveries').update({receipt_attempts:attempts,receipt_checked_at:now,updated_at:now}).eq('id',row.id);pending++;continue;}
+      const exhausted=attempts>=MAX_RECEIPT_ATTEMPTS;
+      if(!receipt){
+        await supabase.from('notification_native_push_deliveries').update({status:exhausted?'failed':'submitted',receipt_attempts:attempts,receipt_checked_at:now,last_error:exhausted?`Expo receipt reconciliation exhausted after ${MAX_RECEIPT_ATTEMPTS} attempts: receipt unavailable`:null,updated_at:now}).eq('id',row.id);
+        if(exhausted)failed++;else pending++;
+        continue;
+      }
       if(receipt.status==='ok'){
         await supabase.from('notification_native_push_deliveries').update({status:'delivered',receipt_attempts:attempts,receipt_checked_at:now,delivered_at:now,last_error:null,updated_at:now}).eq('id',row.id);delivered++;continue;
       }
       const errorCode=receipt?.details?.error;
       const message=String(receipt?.message??errorCode??'Expo push receipt failed').slice(0,1000);
       const isExpired=errorCode==='DeviceNotRegistered';
-      const terminal=isExpired||['MessageTooBig','MessageRateExceeded','MismatchSenderId','InvalidCredentials'].includes(String(errorCode));
-      await supabase.from('notification_native_push_deliveries').update({status:terminal?(isExpired?'expired':'failed'):'submitted',receipt_attempts:attempts,receipt_checked_at:now,last_error:message,updated_at:now}).eq('id',row.id);
+      const providerTerminal=isExpired||['MessageTooBig','MessageRateExceeded','MismatchSenderId','InvalidCredentials'].includes(String(errorCode));
+      const terminal=providerTerminal||exhausted;
+      const finalMessage=exhausted&&!providerTerminal?`Expo receipt reconciliation exhausted after ${MAX_RECEIPT_ATTEMPTS} attempts: ${message}`.slice(0,1000):message;
+      await supabase.from('notification_native_push_deliveries').update({status:terminal?(isExpired?'expired':'failed'):'submitted',receipt_attempts:attempts,receipt_checked_at:now,last_error:finalMessage,updated_at:now}).eq('id',row.id);
       if(isExpired){await supabase.from('notification_native_push_tokens').update({active:false,updated_at:now}).eq('id',row.token_id);expired++;}else if(terminal)failed++;else pending++;
     }
     return json({checked:rows.length,delivered,failed,expired,pending});
