@@ -4,6 +4,8 @@ function requireId(value,label){if(!value)throw new Error(`${label} is required.
 async function rpc(name,args){const{data,error}=await getSupabase().rpc(name,args);if(error)throw error;return data}
 function safeImageExtension(file){const ext=String(file?.name||'image').split('.').pop()?.toLowerCase()||'jpg';return ['jpg','jpeg','png','webp'].includes(ext)?ext:'jpg'}
 
+export function getBusinessOperationsInventory(businessId){return rpc('business_operations_inventory',{p_business_id:requireId(businessId,'Business id')})}
+
 export function manageBusinessLocation(businessId,{locationId=null,action='create',payload={}}={}){requireId(businessId,'Business id');return rpc('business_manage_location',{p_business_id:businessId,p_location_id:locationId,p_action:action,p_payload:payload})}
 export function createBusinessLocation(businessId,payload){return manageBusinessLocation(businessId,{action:'create',payload})}
 export function updateBusinessLocation(businessId,locationId,payload){return manageBusinessLocation(businessId,{locationId:requireId(locationId,'Location id'),action:'update',payload})}
