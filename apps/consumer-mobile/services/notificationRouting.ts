@@ -8,6 +8,7 @@ export type NotificationContext='Restroom'|'Community'|'Support'|'Route'|'Progre
 function stringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
+function safeInternalDestination(value:unknown){const next=stringValue(value);return next&&next.startsWith('/')&&!next.startsWith('//')?next:null}
 
 function notificationParts(notification:NotificationLike){
   const data=notification?.data&&typeof notification.data==='object'?notification.data:{};
@@ -22,7 +23,7 @@ export function notificationContext(notification:NotificationLike):NotificationC
   if(stringValue(data.support_request_id)||type.includes('support'))return'Support';
   if(isProgress(data,type))return'Progress';
   if(stringValue(data.route_id)||type.includes('route'))return'Route';
-  if(stringValue(data.location_id)||stringValue(data.locationId))return'Restroom';
+  if(stringValue(data.location_id)||stringValue(data.locationId)||type.includes('remediation'))return'Restroom';
   if(type==='scheduled_report'||type.includes('intelligence')||type.startsWith('report_')||type.includes('trusted_place')||type.includes('popular_place')||type.includes('operational_attention')||type.includes('demand_opportunity')||type.includes('high_activity_zone'))return'Intelligence';
   if(stringValue(data.contributor_id)||stringValue(data.user_id)||stringValue(data.actor_user_id)||type==='review'||type.includes('follow')||type.includes('helpful')||type.includes('reply')||type.includes('community'))return'Community';
   return'Kleenest';
@@ -30,6 +31,8 @@ export function notificationContext(notification:NotificationLike):NotificationC
 
 export function notificationDestination(notification: NotificationLike): string | null {
   const {data,type}=notificationParts(notification);
+  const explicit=safeInternalDestination(data.destination);
+  if(explicit)return explicit;
   if(stringValue(data.support_request_id)||type.includes('support'))return'/support';
 
   const locationId=stringValue(data.location_id)||stringValue(data.locationId);
