@@ -18,7 +18,7 @@ export async function resolveQrAction(code:string):Promise<ResolvedQrAction>{
   const client=getKleenestSupabaseClient();
   const {data,error}=await client.rpc('resolve_custom_qr_action',{p_qr_code:value});if(error)throw error;
   if(!data?.id)throw new Error('QR action could not be resolved.');
-  await client.rpc('record_qr_attribution',{p_code:value,p_action_type:'scan',p_source:'consumer_mobile',p_metadata:{purpose:data.purpose,action_type:data.action_type}}).catch(()=>null);
+  await client.rpc('record_qr_attribution',{p_code:value,p_action_type:'scan',p_source:'consumer_mobile',p_metadata:{purpose:data.purpose,action_type:data.action_type}});
   return data as ResolvedQrAction;
 }
 
