@@ -46,6 +46,30 @@ export function trustReason(summary:LocationTrustSummary|null|undefined){
   return `Verified evidence exists, but confidence is still limited${gaps?` because ${gaps} are sparse`:''}. More recent verified contributions would improve confidence.`;
 }
 
+export type TrustContributionPriority='high'|'medium'|'low'|'none';
+export function trustContributionPriority(summary:LocationTrustSummary|null|undefined):TrustContributionPriority{
+  const score=routeTrustScore(summary);
+  if(!summary?.verified_visit_count)return'high';
+  if(score<45)return'medium';
+  if(score<70)return'low';
+  return'none';
+}
+
+export function trustContributionMission(summary:LocationTrustSummary|null|undefined){
+  const visits=Number(summary?.verified_visit_count||0),photos=Number(summary?.photo_evidence_count||0),amenities=Number(summary?.amenity_evidence_count||0);
+  if(!visits)return'Be the first recent verified contributor: check in, leave a verified review, and add current photo or amenity evidence.';
+  const needs:string[]=[];
+  if(visits<2)needs.push('another verified visit');
+  if(!photos)needs.push('current photos');
+  if(!amenities)needs.push('amenity observations');
+  if(!needs.length)return'Add a fresh verified visit to keep this restroom current for the next person.';
+  return `This restroom would benefit most from ${needs.join(', ').replace(/, ([^,]*)$/, ' and $1')}.`;
+}
+
+export function firstContributionOpportunity<T extends {trust?:LocationTrustSummary|null}>(rows:T[]){
+  return rows.find(row=>trustContributionPriority(row.trust)==='high')||rows.find(row=>trustContributionPriority(row.trust)==='medium')||rows.find(row=>trustContributionPriority(row.trust)==='low')||null;
+}
+
 export function bestEvidencedStop<T extends {trust?:LocationTrustSummary|null}>(rows:T[]){
   return rows.reduce<T|null>((best,row)=>!best||routeTrustScore(row.trust)>routeTrustScore(best.trust)?row:best,null);
 }
