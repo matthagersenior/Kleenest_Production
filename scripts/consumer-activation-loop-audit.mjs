@@ -35,7 +35,9 @@ if(!failures.length){
  for(const token of ['Active trust mission','badges','quest','leaderboard'])if(!play.toLowerCase().includes(token.toLowerCase()))failures.push(`Progression surface missing ${token}.`);
  if(!activity.includes('TRUST MISSION')||!activity.includes('View strengthened restroom'))failures.push('Personal activity must connect completed evidence missions back to the strengthened restroom.');
 
- if(/business_|fleet_|enterprise_|admin_/i.test([explore,location,social,play,activity].join('\n')))failures.push('Core consumer activation screens must not directly expose Operations RPC namespaces.');
+ const screens=[explore,location,social,play,activity].join('\n');
+ if(/\.rpc\(\s*['"](?:business_|fleet_|enterprise_|admin_)/i.test(screens))failures.push('Core consumer activation screens must not directly invoke Operations RPC namespaces.');
+ if(/from\(\s*['"](?:businesses|business_members|fleet_|enterprise_|admin_)/i.test(screens))failures.push('Core consumer activation screens must not directly query Operations tables.');
 }
 if(failures.length){console.error('Consumer activation loop audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
 console.log('Consumer activation loop audit passed.');
