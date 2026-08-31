@@ -1,0 +1,7 @@
+import fs from 'node:fs';
+const path='supabase/migrations/20260831100500_business_analytics_core_rpc_authority_hardening.sql';
+const sql=fs.readFileSync(path,'utf8');
+const signatures=['business_campaign_analytics(uuid,timestamp with time zone,timestamp with time zone)','business_engagement_analytics(uuid,timestamp with time zone,timestamp with time zone)','business_location_analytics(uuid,timestamp with time zone,timestamp with time zone)','business_location_detail(uuid,timestamp with time zone,timestamp with time zone)','business_location_intelligence(uuid,timestamp with time zone,timestamp with time zone)','business_location_metrics(uuid,uuid,text,timestamp with time zone,timestamp with time zone)','business_qr_detail(uuid,timestamp with time zone,timestamp with time zone)','business_review_detail(uuid,timestamp with time zone,timestamp with time zone)'];
+for(const signature of signatures){const fn=`public.${signature}`;if(!sql.includes(`alter function ${fn} set search_path = '';`))throw new Error(`missing empty search_path for ${signature}`);if(!sql.includes(`revoke execute on function ${fn} from public, anon;`))throw new Error(`missing public/anon revoke for ${signature}`);if(!sql.includes(`grant execute on function ${fn} to authenticated, service_role;`))throw new Error(`missing authenticated/service grant for ${signature}`)}
+if(signatures.length!==8)throw new Error('business analytics core RPC audit must cover 8 signatures');
+console.log(`Business analytics core RPC authority audit passed for ${signatures.length} signatures.`);
