@@ -19,7 +19,7 @@ Deno.serve(async(req)=>{
   try{
     const payload=await req.json().catch(()=>({}));notificationId=payload?.record?.id??payload?.notification_id;if(!notificationId)return json({error:'notification_id is required'},400);
     const {data:notification,error:notificationError}=await supabase.from('notifications').select('id,user_id,type,title,body,data,created_at').eq('id',notificationId).single();if(notificationError||!notification)return json({error:notificationError?.message??'Notification not found'},404);
-    const {data:claims,error:claimError}=await supabase.schema('internal').rpc('claim_native_push_deliveries',{p_notification_id:notification.id,p_max_attempts:MAX_DELIVERY_ATTEMPTS});if(claimError)return json({error:claimError.message},500);pending=Array.isArray(claims)?claims:[];
+    const {data:claims,error:claimError}=await supabase.rpc('claim_native_push_deliveries',{p_notification_id:notification.id,p_max_attempts:MAX_DELIVERY_ATTEMPTS});if(claimError)return json({error:claimError.message},500);pending=Array.isArray(claims)?claims:[];
     if(!pending.length)return json({notification_id:notification.id,submitted:0,claimed:0});
     const messages=pending.map(claim=>({to:claim.token,sound:'default',title:notification.title,body:notification.body??'',data:{...(notification.data??{}),notification_id:notification.id,type:notification.type},priority:'default'}));
     const result=await postExpo(messages);const tickets=Array.isArray(result?.data)?result.data:[];let submitted=0;
