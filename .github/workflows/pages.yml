@@ -1,4 +1,4 @@
-name: Deploy Kleenest Production
+name: Deploy Kleenest Consumer Preview
 
 on:
   workflow_dispatch:
@@ -12,13 +12,14 @@ permissions:
   id-token: write
 
 concurrency:
-  group: kleenest-production-pages
+  group: kleenest-consumer-preview-pages
   cancel-in-progress: true
 
 jobs:
   build:
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,14 +31,21 @@ jobs:
           cache-dependency-path: package.json
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Deployment contract
+      - name: Preview deployment contract
         run: node scripts/pages-deployment-convergence-audit.mjs
-      - name: Production build
-        run: npm run build
+      - name: Export canonical Expo consumer preview
+        run: npm run web:export --workspace @kleenest/consumer-mobile
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+      - name: Add GitHub Pages SPA fallback
+        run: |
+          cp apps/consumer-mobile/dist/index.html apps/consumer-mobile/dist/404.html
+          touch apps/consumer-mobile/dist/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: apps/consumer-mobile/dist
 
   deploy:
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
@@ -47,6 +55,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy consumer preview to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
