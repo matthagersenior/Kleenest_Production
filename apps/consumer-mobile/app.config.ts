@@ -1,5 +1,11 @@
 import type { ExpoConfig } from 'expo/config';
 
+const easProjectId = process.env.EAS_PROJECT_ID;
+
+if (!easProjectId) {
+  console.warn('[Kleenest] EAS_PROJECT_ID is not set. Local Expo development can continue, but EAS-linked services require the project ID.');
+}
+
 const config: ExpoConfig = {
   name: 'Kleenest',
   slug: 'kleenest-consumer',
@@ -33,6 +39,11 @@ const config: ExpoConfig = {
     ['expo-notifications', { defaultChannel: 'kleenest-updates' }],
   ],
   experiments: { typedRoutes: true, baseUrl: '/Kleenest_Production' },
-  extra: { appRole: 'consumer', previewRole: 'non-blocking-web-preview', eas: { projectId: process.env.EAS_PROJECT_ID } },
+  extra: {
+    appRole: 'consumer',
+    previewRole: 'non-blocking-web-preview',
+    eas: easProjectId ? { projectId: easProjectId } : undefined,
+  },
 };
+
 export default config;
