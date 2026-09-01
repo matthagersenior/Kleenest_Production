@@ -35,6 +35,8 @@ jobs:
         run: node scripts/native-consumer-continuity-audit.mjs
       - name: Consumer recovery convergence
         run: node scripts/native-consumer-recovery-audit.mjs
+      - name: Consumer APK convergence
+        run: node scripts/native-consumer-apk-convergence-audit.mjs
       - name: Native device readiness
         run: node scripts/native-device-readiness-audit.mjs
       - name: Trust quality convergence
