@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "projectId": "22a65aa3-c615-4c4f-a34d-084babc28fd7",
+    "slug": "kleenest-consumer",
+    "androidPackage": "com.kleenest.app",
+    "iosBundleIdentifier": "com.kleenest.app"
+  },
+  "supabase": {
+    "projectRef": "ssgesjzdvdsqacdtasje",
+    "url": "https://ssgesjzdvdsqacdtasje.supabase.co",
+    "publishableKey": "sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL"
+  }
+}
