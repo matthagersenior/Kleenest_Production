@@ -1,0 +1,22 @@
+import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { useEffect, useState } from 'react';
+import { Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { palette } from './ConsumerUI';
+
+export default function PolicyAcceptanceGate(){
+  const client=getKleenestSupabaseClient();
+  const[visible,setVisible]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+  async function check(){const{data:{user}}=await client.auth.getUser();if(!user){setVisible(false);return}const{data,error}=await client.rpc('has_current_policy_acceptance');if(error){setMessage(error.message);setVisible(true);return}setVisible(!Boolean(data))}
+  useEffect(()=>{void check();const auth=client.auth.onAuthStateChange(()=>{void check()});return()=>auth.data.subscription.unsubscribe()},[]);
+  async function accept(){if(busy)return;setBusy(true);setMessage('');try{const{error}=await client.rpc('accept_current_policies');if(error)throw error;setVisible(false)}catch(error:any){setMessage(error?.message||'Policy acceptance could not be saved.')}finally{setBusy(false)}}
+  async function signOut(){await client.auth.signOut();setVisible(false)}
+  return <Modal visible={visible} animationType="slide" presentationStyle="fullScreen"><SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content}>
+    <Text style={s.eyebrow}>BEFORE YOU CONTINUE</Text><Text accessibilityRole="header" style={s.title}>Community terms and privacy</Text><Text style={s.body}>Kleenest includes public reviews, contributor profiles, photos, social features and direct messages. Before using a signed-in account, you must accept the current Terms of Use and Community Guidelines and acknowledge the Privacy Policy.</Text>
+    <View style={s.card}><Text style={s.cardTitle}>What you are agreeing to</Text><Text style={s.item}>• Contribute truthful, lawful content you have the right to share.</Text><Text style={s.item}>• Do not harass, threaten, hate, exploit, impersonate, scam, spam, dox, or manipulate trust information.</Text><Text style={s.item}>• Reviews and public profile content can be moderated or removed when they violate policy.</Text><Text style={s.item}>• You can report objectionable content or users and block contributors from direct messaging.</Text><Text style={s.item}>• Kleenest processes account, location, contribution, messaging, support, safety, notification and technical data as described in the Privacy Policy.</Text><Text style={s.version}>Terms 2026-09-01 · Community Guidelines 2026-09-01 · Privacy Policy 2026-09-01</Text></View>
+    <Text style={s.body}>The full Privacy Policy, Terms of Use, and Community Guidelines remain available at any time from Profile → Help & Support.</Text>
+    {message?<View accessibilityRole="alert" style={s.notice}><Text style={s.noticeText}>{message}</Text></View>:null}
+    <Pressable accessibilityRole="button" disabled={busy} onPress={accept} style={[s.primary,busy&&s.disabled]}><Text style={s.primaryText}>{busy?'Saving…':'Accept and continue'}</Text></Pressable>
+    <Pressable accessibilityRole="button" disabled={busy} onPress={signOut} style={s.secondary}><Text style={s.secondaryText}>Sign out instead</Text></Pressable>
+  </ScrollView></SafeAreaView></Modal>
+}
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:palette.canvas},content:{padding:22,paddingBottom:48,gap:13,maxWidth:720,width:'100%',alignSelf:'center'},eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1.7,color:palette.muted},title:{fontSize:34,lineHeight:39,fontWeight:'900',color:palette.ink},body:{fontSize:14,lineHeight:22,color:palette.muted},card:{backgroundColor:'#fff',padding:18,borderRadius:20,borderWidth:1,borderColor:'#dce6df',gap:9},cardTitle:{fontSize:19,fontWeight:'900',color:palette.ink},item:{fontSize:14,lineHeight:21,color:'#40584a',fontWeight:'700'},version:{fontSize:11,lineHeight:17,color:palette.muted,fontWeight:'800',marginTop:4},primary:{minHeight:50,backgroundColor:palette.green,borderRadius:14,alignItems:'center',justifyContent:'center'},primaryText:{color:'#fff',fontWeight:'900'},secondary:{minHeight:48,backgroundColor:'#edf3ef',borderRadius:14,alignItems:'center',justifyContent:'center'},secondaryText:{color:palette.green,fontWeight:'900'},disabled:{opacity:.5},notice:{backgroundColor:'#f5e9e7',borderRadius:14,padding:13},noticeText:{color:'#742d25',fontWeight:'700'}});
