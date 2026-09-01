@@ -21,6 +21,8 @@ jobs:
           cache-dependency-path: package.json
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Production environment contract
+        run: node scripts/production-environment-contract-audit.mjs
       - name: Consumer product boundary
         run: node scripts/consumer-product-boundary-audit.mjs
       - name: Consumer activation loop
