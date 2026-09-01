@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+const read=p=>fs.readFileSync(new URL(`../${p}`,import.meta.url),'utf8');
+const required=['apps/consumer-mobile/app/family.tsx','apps/consumer-mobile/app/membership.tsx','apps/consumer-mobile/app/_layout.tsx','apps/consumer-mobile/services/family.ts'];
+for(const file of required)if(!fs.existsSync(new URL(`../${file}`,import.meta.url)))throw new Error(`Family capability missing ${file}`);
+const service=read('apps/consumer-mobile/services/family.ts');
+const screen=read('apps/consumer-mobile/app/family.tsx');
+const membership=read('apps/consumer-mobile/app/membership.tsx');
+const layout=read('apps/consumer-mobile/app/_layout.tsx');
+for(const token of ['family_groups','family_members','family_invites','family_has_premium_access','create_family_group','invite_family_member','accept_family_invite'])if(!service.includes(token))throw new Error(`Family authority missing ${token}`);
+for(const token of ['seatsTotal:5','seatsAvailable','five Family seats'])if(!service.includes(token))throw new Error(`Family five-seat enforcement missing ${token}`);
+for(const token of ['5-seat','five-seat','5 total users'])if(!membership.includes(token))throw new Error(`Membership Family value missing ${token}`);
+if(!layout.includes('name="family"'))throw new Error('Family route is not registered in Consumer APK');
+if(!screen.includes('0/5')&&!screen.includes('/5'))throw new Error('Family UI does not expose five-seat utilization');
+if(/price_cents\s*[:=]\s*\d+/.test(membership))throw new Error('Family/Consumer price must come from catalog authority, not hard-coded cents');
+console.log('Consumer Family capability audit passed: canonical authority, five-seat gating, membership surface and APK route are present.');
