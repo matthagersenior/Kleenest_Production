@@ -3,22 +3,25 @@ import fs from 'node:fs';
 function read(path){return fs.readFileSync(path,'utf8')}
 function requireToken(text,token,label){if(!text.includes(token))throw new Error(`${label} missing ${token}.`)}
 
-const pages=read('.github/workflows/pages.yml');
-const vite=read('vite.config.js');
-const main=read('src/main.jsx');
-const index=read('index.html');
-const fallback=read('public/404.html');
-const manifest=read('public/manifest.webmanifest');
-const serviceWorkerRegistration=read('src/runtime/registerServiceWorker.js');
-if(!fs.existsSync('public/.nojekyll'))throw new Error('Static Pages marker public/.nojekyll is missing.');
+const required=['.github/workflows/pages.yml','apps/consumer-mobile/app.config.ts','apps/consumer-mobile/package.json','apps/consumer-mobile/metro.config.js','apps/consumer-mobile/web/maplibrePreview.tsx','apps/consumer-mobile/web/secureStorePreview.ts'];
+for(const file of required)if(!fs.existsSync(file))throw new Error(`Consumer preview file missing: ${file}.`);
 if(fs.existsSync('.github/workflows/static.yml'))throw new Error('Competing GitHub-generated static Pages workflow must not exist.');
 
-for(const token of ['workflow_dispatch','workflow_run','Production CI','types: [completed]','conclusion == \'success\'','head_branch == \'main\'','github.event.workflow_run.head_sha','actions/configure-pages@v5','actions/upload-pages-artifact@v3','actions/deploy-pages@v4','path: dist'])requireToken(pages,token,'Pages workflow');
-requireToken(vite,"base: '/Kleenest_Production/'",'Vite Pages base');
-requireToken(main,'BrowserRouter basename="/Kleenest_Production"','Router Pages base');
-for(const token of ['kleenest:pages-route','window.history.replaceState','/Kleenest_Production'])requireToken(index,token,'Pages route restoration');
-for(const token of ['kleenest:pages-route','window.sessionStorage.setItem','window.location.replace','/Kleenest_Production'])requireToken(fallback,token,'Pages SPA fallback');
-for(const token of ['"start_url": "/Kleenest_Production/"','"scope": "/Kleenest_Production/"','"display": "standalone"'])requireToken(manifest,token,'Pages PWA manifest');
-for(const token of ["register('/Kleenest_Production/sw.js'","scope:'/Kleenest_Production/'"])requireToken(serviceWorkerRegistration,token,'Pages service worker scope');
+const pages=read(required[0]);
+const appConfig=read(required[1]);
+const pkg=JSON.parse(read(required[2]));
+const metro=read(required[3]);
+const mapPreview=read(required[4]);
+const securePreview=read(required[5]);
 
-console.log('GitHub Pages deployment convergence audit passed.');
+for(const token of ['Deploy Kleenest Consumer Preview','workflow_dispatch','workflow_run','Production CI','conclusion == \'success\'','head_branch == \'main\'','github.event.workflow_run.head_sha','npm run web:export --workspace @kleenest/consumer-mobile','apps/consumer-mobile/dist/index.html','apps/consumer-mobile/dist/404.html','apps/consumer-mobile/dist/.nojekyll','actions/configure-pages@v5','actions/upload-pages-artifact@v3','path: apps/consumer-mobile/dist','actions/deploy-pages@v4'])requireToken(pages,token,'Pages consumer preview workflow');
+if(pages.includes('npm run build\n')||pages.includes('path: dist\n'))throw new Error('Pages must not deploy the competing root Vite consumer shell.');
+for(const token of ["output: 'single'","bundler: 'metro'","baseUrl: '/Kleenest_Production'","previewRole: 'non-blocking-web-preview'"])requireToken(appConfig,token,'Expo consumer preview config');
+if(pkg.scripts?.['web:export']!=='expo export --platform web')throw new Error('Consumer app must expose canonical Expo web export script.');
+for(const dep of ['react-dom','react-native-web'])if(!pkg.dependencies?.[dep])throw new Error(`Consumer web preview dependency missing ${dep}.`);
+for(const token of ["platform === 'web'","'@maplibre/maplibre-react-native'","'expo-secure-store'",'maplibrePreview.tsx','secureStorePreview.ts','context.resolveRequest(context, moduleName, platform)'])requireToken(metro,token,'Web-only Metro compatibility resolver');
+for(const token of ['Native MapLibre remains authoritative in the Android APK','MAP PREVIEW'])requireToken(mapPreview,token,'Map preview adapter');
+for(const token of ['window.localStorage','kleenest.preview.secure.'])requireToken(securePreview,token,'SecureStore preview adapter');
+if(/platform\s*!==\s*['"]web['"]/.test(metro))throw new Error('Metro preview aliases must be positively scoped to web only.');
+
+console.log('GitHub Pages canonical Expo consumer preview audit passed.');
