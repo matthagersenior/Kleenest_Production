@@ -1,0 +1,39 @@
+import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { FeatureCard, HeroCard, SectionHeader, palette } from '../components/ConsumerUI';
+
+type Prefs={profile_visibility:'community'|'followers'|'private';show_activity:boolean;show_checkins:boolean;show_reviews:boolean;allow_followers:boolean;discoverable:boolean;preferred_units:'imperial'|'metric';home_region:string};
+const defaults:Prefs={profile_visibility:'community',show_activity:true,show_checkins:true,show_reviews:true,allow_followers:true,discoverable:true,preferred_units:'imperial',home_region:''};
+const toggles:[keyof Prefs,string,string][]=[
+ ['show_activity','Show activity','Let permitted followers see your community activity.'],
+ ['show_checkins','Show check-ins','Allow your verified visit history to appear where permitted.'],
+ ['show_reviews','Show reviews','Associate your published reviews with your contributor profile.'],
+ ['allow_followers','Allow followers','Let other people follow your profile and published contributions.'],
+ ['discoverable','Discoverable','Allow your profile to appear in community search and discovery.'],
+];
+
+export default function PreferencesScreen(){
+ const client=getKleenestSupabaseClient();
+ const[prefs,setPrefs]=useState<Prefs>(defaults),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ async function load(){setLoading(true);setMessage('');try{const{data,error}=await client.rpc('get_my_profile_preferences');if(error)throw error;if(data)setPrefs({...defaults,...data,home_region:data.home_region||''})}catch(error:any){setMessage(error?.message||'Preferences could not be loaded.')}finally{setLoading(false)}}
+ useEffect(()=>{void load()},[]);
+ function patch<K extends keyof Prefs>(key:K,value:Prefs[K]){setPrefs(current=>({...current,[key]:value}))}
+ async function save(){if(busy)return;setBusy(true);setMessage('');try{const payload={...prefs,home_region:prefs.home_region.trim()||null};const{data,error}=await client.rpc('update_my_profile_preferences',{p_preferences:payload});if(error)throw error;if(data)setPrefs({...defaults,...data,home_region:data.home_region||''});setMessage('Privacy and experience preferences saved.')}catch(error:any){setMessage(error?.message||'Preferences could not be saved.')}finally{setBusy(false)}}
+ return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+   <HeroCard eyebrow="PROFILE CONTROL" title="Privacy & preferences" body="Choose how your contributor identity, activity, visits, reviews and discovery presence work across Kleenest."/>
+   {message?<View style={s.notice}><Text style={s.noticeText}>{message}</Text></View>:null}
+   <SectionHeader eyebrow="VISIBILITY" title="Who can see you?" body="These controls affect the community layer; your private account details stay private."/>
+   <View style={s.segment}>{(['community','followers','private'] as const).map(value=><Pressable key={value} disabled={loading} onPress={()=>patch('profile_visibility',value)} style={[s.segmentItem,prefs.profile_visibility===value&&s.segmentOn]}><Text style={[s.segmentText,prefs.profile_visibility===value&&s.segmentTextOn]}>{value==='community'?'Community':value==='followers'?'Followers':'Private'}</Text></Pressable>)}</View>
+   <View style={s.card}>{toggles.map(([key,title,body])=><View style={s.toggleRow} key={String(key)}><View style={{flex:1}}><Text style={s.toggleTitle}>{title}</Text><Text style={s.toggleBody}>{body}</Text></View><Switch value={Boolean(prefs[key])} disabled={loading} onValueChange={value=>patch(key,value as never)} trackColor={{false:'#cfd8d2',true:'#8fb9a0'}} thumbColor={prefs[key]?'#173d2b':'#ffffff'}/></View>)}</View>
+   <SectionHeader eyebrow="EXPERIENCE" title="Make Kleenest feel local"/>
+   <View style={s.card}><Text style={s.label}>Preferred units</Text><View style={s.segment}>{(['imperial','metric'] as const).map(value=><Pressable key={value} onPress={()=>patch('preferred_units',value)} style={[s.segmentItem,prefs.preferred_units===value&&s.segmentOn]}><Text style={[s.segmentText,prefs.preferred_units===value&&s.segmentTextOn]}>{value==='imperial'?'Miles / feet':'Kilometers / meters'}</Text></Pressable>)}</View><Text style={s.label}>Home region</Text><TextInput value={prefs.home_region} onChangeText={value=>patch('home_region',value)} placeholder="Optional city or region" style={s.input}/></View>
+   <Pressable style={[s.save,busy&&s.disabled]} disabled={busy||loading} onPress={save}><Text style={s.saveText}>{busy?'Saving…':'Save preferences'}</Text></Pressable>
+   <SectionHeader eyebrow="CONNECTED CONTROLS" title="Your account, your rules"/>
+   <View style={s.stack}><FeatureCard kicker="NOTIFICATIONS" title="Notification preferences" body="Control push, community, reward and intelligence alerts in the existing notification center." onPress={()=>router.push('/notifications')}/><FeatureCard kicker="SUPPORT" title="Help & support" body="Open a real account-linked support request and review your ticket history." onPress={()=>router.push('/support')}/><FeatureCard kicker="ACCOUNT" title="Protected account control" body="Account deletion stays a deliberate, separate protected flow." onPress={()=>router.push('/account-deletion')}/></View>
+   <Pressable style={s.back} onPress={()=>router.back()}><Text style={s.backText}>Back to profile</Text></Pressable>
+ </ScrollView></SafeAreaView>;
+}
+
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:palette.canvas},content:{padding:20,paddingBottom:44,gap:14},notice:{backgroundColor:'#e8f1eb',borderRadius:14,padding:12},noticeText:{fontSize:12,fontWeight:'800',color:palette.green},card:{backgroundColor:'#fff',borderWidth:1,borderColor:palette.line,borderRadius:20,padding:15,gap:5},toggleRow:{flexDirection:'row',alignItems:'center',gap:12,paddingVertical:10,borderBottomWidth:1,borderBottomColor:'#edf1ee'},toggleTitle:{fontSize:15,fontWeight:'900',color:palette.ink},toggleBody:{fontSize:12,lineHeight:17,color:palette.muted,marginTop:3},segment:{flexDirection:'row',gap:7,flexWrap:'wrap'},segmentItem:{flexGrow:1,minWidth:90,backgroundColor:'#e9efeb',borderRadius:12,paddingHorizontal:12,paddingVertical:10,alignItems:'center'},segmentOn:{backgroundColor:palette.green},segmentText:{fontSize:11,fontWeight:'900',color:palette.green},segmentTextOn:{color:'#fff'},label:{fontSize:11,fontWeight:'900',color:palette.green,marginTop:8},input:{backgroundColor:'#f9fbfa',borderWidth:1,borderColor:'#ccd9d1',borderRadius:13,padding:12,fontSize:14},save:{backgroundColor:palette.green,padding:15,borderRadius:14,alignItems:'center'},saveText:{color:'#fff',fontWeight:'900'},disabled:{opacity:.5},stack:{gap:9},back:{backgroundColor:'#e7efe9',padding:14,borderRadius:14,alignItems:'center',marginTop:4},backText:{fontWeight:'900',color:palette.green}});
