@@ -18,8 +18,8 @@ if(!failures.length){
  const read=file=>fs.readFileSync(file,'utf8');
  const home=read(files.home),explore=read(files.explore),location=read(files.location),social=read(files.social),play=read(files.play),activity=read(files.activity),core=read(files.core),amenities=read(files.amenities),photos=read(files.photos),community=read(files.community);
 
- for(const token of ['Find a bathroom. Fast.','Show nearby restrooms','Kleenest gets smarter from real visits.'])if(!home.includes(token))failures.push(`Home activation hierarchy missing ${token}.`);
- for(const token of ['listNearbyRestrooms','listAmenityCatalog','selectedAmenityNames','Details','Directions',"pathname:'/route'",'readNearbyCache','writeNearbyCache'])if(!explore.includes(token))failures.push(`Discovery activation missing ${token}.`);
+ for(const token of ["'/explore'",'Find a better bathroom','THE KLEENEST LOOP','PLAY + PROGRESS','YOUR NETWORK'])if(!home.includes(token))failures.push(`Home activation hierarchy missing ${token}.`);
+ for(const token of ['listNearbyRestrooms','listAmenityCatalog','selectedAmenityNames','navigateUrl','captureConsumerRouteIntent',"pathname:'/route'",'readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Discovery activation missing ${token}.`);
  for(const token of ['mobileCheckIn','findLatestEligibleReviewCheckIn','createMobileReview','recordReviewAmenityInventory','chooseReviewPhotos','uploadReviewPhotos','getMobileProgressionDashboard','listMobileActiveQuests','rewardMessage','toggleMobileFavorite'])if(!location.includes(token))failures.push(`Location contribution loop missing ${token}.`);
  if(!location.includes("permission.status!=='granted'")||!location.includes('Location.Accuracy.High'))failures.push('Verified check-in must remain bound to explicit high-accuracy device location.');
  if(!location.includes('if(submitting||!checkInId)return'))failures.push('Review submission must remain gated by an eligible check-in.');
@@ -30,9 +30,9 @@ if(!failures.length){
  if(!amenities.includes("rpc('record_review_amenity_inventory'")||!amenities.includes('progression'))failures.push('Amenity evidence must use the server authority that also returns progression context.');
  if(!photos.includes('review-photos'))failures.push('Review photo evidence must use the canonical review-photo storage boundary.');
 
- for(const token of ['COMMUNITY','People helping people.','Community pulse','VERIFIED VISIT','reputation'])if(!social.includes(token))failures.push(`Community activation missing ${token}.`);
+ for(const token of ['COMMUNITY','People helping people find better bathrooms.','COMMUNITY PULSE','VERIFIED VISIT','reputation'])if(!social.includes(token))failures.push(`Community activation missing ${token}.`);
  if(!social.includes('listMobileCommunityActivity')||!social.includes('toggleMobileFollow'))failures.push('Community must consume canonical published activity and relationship authority.');
- for(const token of ['Active trust mission','badges','quest','leaderboard'])if(!play.toLowerCase().includes(token.toLowerCase()))failures.push(`Progression surface missing ${token}.`);
+ for(const token of ['getMobileProgressionDashboard','listMobileActiveQuests','listMobileChallenges','listMobileContests','listMobileLeaderboard','ACTIVE TRUST MISSION'])if(!play.includes(token))failures.push(`Progression surface missing ${token}.`);
  if(!activity.includes('TRUST MISSION')||!activity.includes('View strengthened restroom'))failures.push('Personal activity must connect completed evidence missions back to the strengthened restroom.');
 
  const screens=[explore,location,social,play,activity].join('\n');
