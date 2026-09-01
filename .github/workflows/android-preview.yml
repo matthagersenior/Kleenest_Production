@@ -50,12 +50,14 @@ jobs:
           node scripts/native-consumer-apk-convergence-audit.mjs
           node scripts/native-device-readiness-audit.mjs
           node scripts/native-consumer-recovery-audit.mjs
+          node scripts/consumer-family-capability-audit.mjs
       - name: Report native production identity
         shell: bash
         run: |
           echo "### Production identity embedded" >> "$GITHUB_STEP_SUMMARY"
           echo "Expo/EAS project: $EAS_PROJECT_ID" >> "$GITHUB_STEP_SUMMARY"
           echo "Supabase project: ssgesjzdvdsqacdtasje" >> "$GITHUB_STEP_SUMMARY"
+          echo "Family capability: five-seat release gate passed" >> "$GITHUB_STEP_SUMMARY"
       - name: Generate Android native project
         working-directory: apps/consumer-mobile
         run: npx expo prebuild --platform android --non-interactive --clean
