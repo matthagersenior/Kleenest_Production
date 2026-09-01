@@ -3,7 +3,7 @@ import { markMobileNotificationRead } from '@kleenest/mobile-core';
 import { router, Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Text } from 'react-native';
+import { Text, type ColorValue } from 'react-native';
 import { notificationDestination } from '../services/notificationRouting';
 
 Notifications.setNotificationHandler({
@@ -23,7 +23,7 @@ async function openNotificationResponse(response: Notifications.NotificationResp
   if (destination) router.push(destination as any);
 }
 
-const tabIcon=(glyph:string)=>(props:{color:string;focused:boolean})=><Text accessible={false} style={{fontSize:props.focused?20:18,color:props.color,fontWeight:'900'}}>{glyph}</Text>;
+const tabIcon=(glyph:string)=>(props:{color:ColorValue;focused:boolean;size:number})=><Text accessible={false} style={{fontSize:props.focused?20:18,color:props.color,fontWeight:'900'}}>{glyph}</Text>;
 
 export default function RootLayout() {
   useEffect(() => {
