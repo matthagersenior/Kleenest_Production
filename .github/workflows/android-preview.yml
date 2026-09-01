@@ -1,0 +1,66 @@
+name: Build Consumer Android Preview
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Production CI"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+    steps:
+      - name: Resolve exact source SHA
+        id: source
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify exact consumer head
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ steps.source.outputs.sha }}"
+          npm run native:typecheck
+          node scripts/native-device-readiness-audit.mjs
+          node scripts/native-consumer-recovery-audit.mjs
+      - name: Generate Android native project
+        working-directory: apps/consumer-mobile
+        run: npx expo prebuild --platform android --non-interactive --clean
+      - name: Build installable debug APK
+        working-directory: apps/consumer-mobile/android
+        run: ./gradlew assembleDebug --no-daemon
+      - name: Stage canonical APK
+        run: |
+          mkdir -p artifacts
+          cp apps/consumer-mobile/android/app/build/outputs/apk/debug/app-debug.apk "artifacts/kleenest-consumer-${{ steps.source.outputs.sha }}.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kleenest-consumer-android-${{ steps.source.outputs.sha }}
+          path: artifacts/*.apk
+          if-no-files-found: error
+          retention-days: 14
