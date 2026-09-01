@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Text, type ColorValue } from 'react-native';
 import { notificationDestination } from '../services/notificationRouting';
+import PolicyAcceptanceGate from '../components/PolicyAcceptanceGate';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }),
@@ -58,5 +59,10 @@ export default function RootLayout() {
     <Tabs.Screen name="preferences" options={{ href:null,title:'Privacy & preferences' }}/>
     <Tabs.Screen name="support" options={{ href:null,title:'Help & support' }}/>
     <Tabs.Screen name="account-deletion" options={{ href:null,title:'Account control' }}/>
-  </Tabs></>;
+    <Tabs.Screen name="delete-account" options={{ href:null,title:'Delete account' }}/>
+    <Tabs.Screen name="privacy" options={{ href:null,title:'Privacy Policy' }}/>
+    <Tabs.Screen name="terms" options={{ href:null,title:'Terms of Use' }}/>
+    <Tabs.Screen name="community-guidelines" options={{ href:null,title:'Community Guidelines' }}/>
+    <Tabs.Screen name="safety" options={{ href:null,title:'Safety & moderation' }}/>
+  </Tabs><PolicyAcceptanceGate/></>;
 }
