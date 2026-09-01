@@ -21,7 +21,8 @@ if(!failures.length){
   if(!screen.includes('I understand that I am requesting deletion')||!screen.includes('disabled={!confirmed||busy}')) failures.push('Account deletion UI must require an explicit confirmation before submission.');
   if(!screen.includes('requestAccountDeletion')||!screen.includes('Optional reason')) failures.push('Account deletion UI must submit through the protected service and allow an optional reason.');
   if(!profile.includes("router.push('/account-deletion')")||!profile.includes('Account deletion request')) failures.push('Profile must expose the in-app account deletion request flow.');
-  if(!layout.includes('<Tabs.Screen name="account-deletion" options={{ href: null }}/>')) failures.push('Account deletion must remain a hidden account-control route, not a primary tab.');
+  const hiddenRoute=/name=["']account-deletion["'][^>]*options=\{\{[^}]*href\s*:\s*null/.test(layout);
+  if(!hiddenRoute) failures.push('Account deletion must remain a hidden account-control route, not a primary tab.');
   if(!migration.includes('revoke all on function public.request_account_deletion(text) from public, anon')||!migration.includes('grant execute on function public.request_account_deletion(text) to authenticated')) failures.push('Account deletion RPC execution must be restricted to authenticated users.');
 }
 if(failures.length){console.error('Native account-control audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
