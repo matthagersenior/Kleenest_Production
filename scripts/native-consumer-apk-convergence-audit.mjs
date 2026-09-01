@@ -29,6 +29,7 @@ if(!failures.length){
   const eas=JSON.parse(read(required[8]));
   const config=read(required[9]);
   const androidWorkflow=read(required[10]);
+  const projectId='22a65aa3-c615-4c4f-a34d-084babc28fd7';
 
   if(!preferences.includes("profile_visibility:'public'|'followers'|'private'"))failures.push('Profile visibility must use canonical public/followers/private values.');
   if(!preferences.includes("value==='public'?'Community'"))failures.push('Public visibility must keep the consumer-facing Community label.');
@@ -45,8 +46,9 @@ if(!failures.length){
 
   if(eas?.build?.preview?.android?.buildType!=='apk'||eas?.build?.preview?.distribution!=='internal')failures.push('Preview EAS profile must remain an internal Android APK.');
   if(eas?.build?.production?.android?.buildType!=='app-bundle'||eas?.build?.production?.autoIncrement!==true)failures.push('Production EAS profile must remain an auto-incremented Android app bundle.');
-  for(const token of ["package: 'com.kleenest.app'","bundleIdentifier: 'com.kleenest.app'","ACCESS_FINE_LOCATION","CAMERA","expo-notifications"])if(!config.includes(token))failures.push(`Native app config missing ${token}`);
-  for(const token of ['Build Consumer Android Preview','workflow_run','Production CI','github.event.workflow_run.head_sha','EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}','npm run native:typecheck','native-consumer-apk-convergence-audit.mjs','native-consumer-recovery-audit.mjs','native-device-readiness-audit.mjs','npx expo prebuild --platform android --non-interactive --clean','assembleDebug','app-debug.apk','actions/upload-artifact'])if(!androidWorkflow.includes(token))failures.push(`Android artifact workflow missing ${token}`);
+  for(const token of ["package: 'com.kleenest.app'","bundleIdentifier: 'com.kleenest.app'","ACCESS_FINE_LOCATION","CAMERA","expo-notifications",projectId])if(!config.includes(token))failures.push(`Native app config missing ${token}`);
+  for(const token of ['Build Consumer Android Preview','workflow_run','Production CI','github.event.workflow_run.head_sha',`EAS_PROJECT_ID: ${projectId}`,'npm run native:typecheck','native-consumer-apk-convergence-audit.mjs','native-consumer-recovery-audit.mjs','native-device-readiness-audit.mjs','npx expo prebuild --platform android --non-interactive --clean','assembleDebug','app-debug.apk','actions/upload-artifact'])if(!androidWorkflow.includes(token))failures.push(`Android artifact workflow missing ${token}`);
+  if(androidWorkflow.includes('secrets.EAS_PROJECT_ID'))failures.push('Android artifact workflow must not depend on a secret for the public canonical EAS project id.');
 
   if(/service_role|record_data_feature_event/.test(preferences+push+notifications+layout+route+qr+location+contributionDraft))failures.push('APK consumer surfaces must not introduce privileged backend authority.');
 }
