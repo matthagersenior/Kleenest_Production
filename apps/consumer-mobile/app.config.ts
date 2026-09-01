@@ -17,6 +17,12 @@ const config: ExpoConfig = {
     package: 'com.kleenest.app',
     permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION', 'CAMERA'],
   },
+  web: {
+    output: 'single',
+    bundler: 'metro',
+    name: 'Kleenest Consumer Preview',
+    shortName: 'Kleenest',
+  },
   plugins: [
     'expo-router',
     'expo-location',
@@ -26,7 +32,7 @@ const config: ExpoConfig = {
     ['expo-image-picker', { photosPermission: 'Kleenest uses your photo library so you can choose a public contributor profile photo.', microphonePermission: false }],
     ['expo-notifications', { defaultChannel: 'kleenest-updates' }],
   ],
-  experiments: { typedRoutes: true },
-  extra: { appRole: 'consumer', eas: { projectId: process.env.EAS_PROJECT_ID } },
+  experiments: { typedRoutes: true, baseUrl: '/Kleenest_Production' },
+  extra: { appRole: 'consumer', previewRole: 'non-blocking-web-preview', eas: { projectId: process.env.EAS_PROJECT_ID } },
 };
 export default config;
