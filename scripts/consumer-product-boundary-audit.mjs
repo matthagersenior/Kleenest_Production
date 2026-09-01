@@ -16,6 +16,7 @@ const required=[
   'apps/consumer-mobile/app/activity.tsx',
   'apps/consumer-mobile/app/notifications.tsx',
   'apps/consumer-mobile/app/profile.tsx',
+  'apps/consumer-mobile/app/preferences.tsx',
   'apps/consumer-mobile/app/qr.tsx',
   'apps/consumer-mobile/app/membership.tsx',
   'packages/mobile-core/src/index.ts'
@@ -37,8 +38,8 @@ if(!failures.length){
  const layout=fs.readFileSync('apps/consumer-mobile/app/_layout.tsx','utf8');
  const location=fs.readFileSync('apps/consumer-mobile/app/location/[id].tsx','utf8');
  const core=fs.readFileSync('packages/mobile-core/src/index.ts','utf8');
- for(const token of ['Find a bathroom. Fast.','Show nearby restrooms','Kleenest gets smarter from real visits.'])if(!home.includes(token))failures.push(`Consumer Home missing bathroom-first/data-production contract: ${token}`);
- for(const token of ['FIND A BATHROOM','listAmenityCatalog','selectedAmenityNames','Amenities you need',"pathname:'/route'",'Directions','readNearbyCache','writeNearbyCache'])if(!explore.includes(token))failures.push(`Consumer discovery missing mature capability: ${token}`);
+ for(const token of ["router.push('/explore')",'Find a better bathroom','THE KLEENEST LOOP','Verified community','PLAY + PROGRESS','YOUR NETWORK'])if(!home.includes(token))failures.push(`Consumer Home missing rich bathroom-first/data-production behavior: ${token}`);
+ for(const token of ['listNearbyRestrooms','listAmenityCatalog','selectedAmenityNames','What matters on this stop?',"pathname:'/route'",'Start directions','captureConsumerDiscovery','captureConsumerRouteIntent','readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Consumer discovery missing mature capability: ${token}`);
  for(const token of ['explore','play','social','profile'])if(!layout.includes(`name="${token}"`))failures.push(`Consumer primary navigation missing ${token}.`);
  for(const token of ['mobileCheckIn','createMobileReview'])if(!core.includes(token))failures.push(`Mobile core missing canonical consumer production authority: ${token}`);
  if(!location.includes('mobileCheckIn'))failures.push('Location details must expose canonical check-in behavior.');
