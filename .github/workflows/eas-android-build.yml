@@ -20,7 +20,6 @@ on:
       - 'config/production-environment.json'
       - 'scripts/native-device-readiness-audit.mjs'
       - 'scripts/production-environment-contract-audit.mjs'
-      - '.github/workflows/eas-android-build.yml'
 
 permissions:
   contents: read
@@ -28,7 +27,7 @@ permissions:
 jobs:
   eas-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
@@ -63,13 +62,34 @@ jobs:
           npx eas-cli@latest whoami
           npx expo config --type public > /tmp/kleenest-expo-config.txt
           grep -q "22a65aa3-c615-4c4f-a34d-084babc28fd7" /tmp/kleenest-expo-config.txt
-      - name: Queue EAS Android build
+      - name: Build Android on EAS and wait for native result
         working-directory: apps/consumer-mobile
         shell: bash
-        run: npx eas-cli@latest build --platform android --profile "$PROFILE" --non-interactive --no-wait
-      - name: Build summary
+        run: |
+          npx eas-cli@latest build \
+            --platform android \
+            --profile "$PROFILE" \
+            --non-interactive \
+            --wait \
+            --json > "$GITHUB_WORKSPACE/eas-build-result.json"
+          cat "$GITHUB_WORKSPACE/eas-build-result.json"
+      - name: Validate EAS build result
         shell: bash
         run: |
-          echo "### Kleenest EAS Android build queued" >> "$GITHUB_STEP_SUMMARY"
-          echo "Profile: $PROFILE" >> "$GITHUB_STEP_SUMMARY"
-          echo "Expo project: $EAS_PROJECT_ID" >> "$GITHUB_STEP_SUMMARY"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const raw = JSON.parse(fs.readFileSync('eas-build-result.json', 'utf8'));
+          const build = Array.isArray(raw) ? raw[0] : raw;
+          if (!build?.id) throw new Error('EAS build result did not contain a build id.');
+          const status = String(build.status || '').toLowerCase();
+          if (status && !['finished'].includes(status)) throw new Error(`EAS build ended with status ${build.status}.`);
+          const artifactUrl = build?.artifacts?.buildUrl || build?.artifacts?.applicationArchiveUrl || '';
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### Kleenest EAS Android build completed\nProfile: ${process.env.PROFILE}\nBuild ID: ${build.id}\nStatus: ${build.status || 'finished'}\n${artifactUrl ? `Artifact: ${artifactUrl}\n` : ''}`);
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eas-android-build-result-${{ github.run_id }}
+          path: eas-build-result.json
+          if-no-files-found: warn
+          retention-days: 30
