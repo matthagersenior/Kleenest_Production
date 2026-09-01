@@ -1,0 +1,68 @@
+name: EAS Android Cloud Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: EAS build profile
+        required: true
+        default: preview
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+
+permissions:
+  contents: read
+
+jobs:
+  eas-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
+      EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+      - name: Require Expo automation token
+        shell: bash
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "EXPO_TOKEN is not configured. Create an Expo access token and add it as the GitHub Actions secret EXPO_TOKEN." >&2
+            exit 1
+          fi
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify production and native contracts
+        run: |
+          node scripts/production-environment-contract-audit.mjs
+          node scripts/native-device-readiness-audit.mjs
+          npm run native:typecheck
+      - name: Verify Expo project binding
+        working-directory: apps/consumer-mobile
+        shell: bash
+        run: |
+          npx expo config --type public > /tmp/kleenest-expo-config.txt
+          grep -q "22a65aa3-c615-4c4f-a34d-084babc28fd7" /tmp/kleenest-expo-config.txt
+      - name: Queue EAS Android build
+        working-directory: apps/consumer-mobile
+        shell: bash
+        env:
+          PROFILE: ${{ inputs.profile }}
+        run: npx eas-cli@latest build --platform android --profile "$PROFILE" --non-interactive --no-wait
+      - name: Build summary
+        shell: bash
+        env:
+          PROFILE: ${{ inputs.profile }}
+        run: |
+          echo "### Kleenest EAS Android build queued" >> "$GITHUB_STEP_SUMMARY"
+          echo "Profile: $PROFILE" >> "$GITHUB_STEP_SUMMARY"
+          echo "Expo project: $EAS_PROJECT_ID" >> "$GITHUB_STEP_SUMMARY"
