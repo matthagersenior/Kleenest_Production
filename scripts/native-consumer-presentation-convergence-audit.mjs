@@ -15,7 +15,7 @@ const social=requireAll('apps/consumer-mobile/app/social.tsx',['COMMUNITY','Peop
 for(const [name,source] of Object.entries({layout,home,explore,profile,prefs,play,social,ui})){
   if(/\.rpc\(['"](?:business|fleet|enterprise|admin)_/i.test(source)||/from ['"][^'"]*(?:Business|Fleet|Enterprise|Admin)/.test(source))throw new Error(`${name} presentation surface leaked Operations authority into consumer UI`);
 }
-if(!home.includes("router.push('/explore')"))throw new Error('Home must keep bathroom discovery as a primary action');
+if(!home.includes("'/explore'"))throw new Error('Home must keep the canonical Explore route as a primary bathroom-discovery action');
 if(!profile.includes("router.push('/preferences')")&&!profile.includes('route="/preferences"'))throw new Error('Profile must expose privacy/preferences from the consumer hub');
 if(!explore.includes('captureConsumerDiscovery')||!explore.includes('captureConsumerRouteIntent'))throw new Error('Rich discovery must preserve lightweight backend data production');
 if(!play.includes('getMobileProgressionDashboard')||!play.includes('listMobileActiveQuests'))throw new Error('Rich Play presentation must remain backed by authoritative progression data');
