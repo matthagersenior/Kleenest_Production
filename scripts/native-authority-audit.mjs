@@ -92,7 +92,7 @@ if(!failures.length){
  expect(social.includes('searchContributors')&&social.includes('toggleMobileFollow')&&social.includes('listMobileFollowing')&&social.includes('listMobileFollowers')&&social.includes('listMobileCommunityActivity'),'Community must preserve contributor discovery, follow graph and activity authority');
  expect(membership.includes('listMobilePricingCatalog')&&membership.includes('getMobileAccountSummary')&&membership.includes('App Store / Google Play billing'),'Membership must preserve native store billing boundary');
  expect(profile.includes('signInWithPassword')&&profile.includes('getMobileAccountSummary')&&profile.includes("'/social'")&&profile.includes("'/preferences'")&&profile.includes('Privacy & preferences'),'Profile must remain the rich account hub');
- expect(preferences.includes("rpc('get_my_profile_preferences'")&&preferences.includes("rpc('update_my_profile_preferences'")],'Profile preferences must use canonical self-scoped preference authority');
+ expect(preferences.includes("rpc('get_my_profile_preferences'")&&preferences.includes("rpc('update_my_profile_preferences'"),'Profile preferences must use canonical self-scoped preference authority');
  expect(appConfig.includes("bundleIdentifier: 'com.kleenest.app'")&&appConfig.includes("package: 'com.kleenest.app'"),'native identifiers must remain canonical');
 }
 
