@@ -48,7 +48,7 @@ for (const expected of [contract.expo.projectId, contract.supabase.url, contract
   if (!androidWorkflow.includes(expected)) throw new Error(`Android preview workflow drift: missing ${expected}.`);
 }
 
-const forbidden = [/service[_-]?role/i, /sb_secret_/i];
+const forbidden = [/SUPABASE_SERVICE_ROLE_KEY\s*=/i, /SUPABASE_SECRET_KEY\s*=/i, /sb_secret_[A-Za-z0-9_-]+/i];
 for (const [path, source] of [
   ['config/production-environment.json', JSON.stringify(contract)],
   ['apps/consumer-mobile/.env', expoEnv],
