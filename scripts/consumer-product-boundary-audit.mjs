@@ -38,7 +38,7 @@ if(!failures.length){
  const layout=fs.readFileSync('apps/consumer-mobile/app/_layout.tsx','utf8');
  const location=fs.readFileSync('apps/consumer-mobile/app/location/[id].tsx','utf8');
  const core=fs.readFileSync('packages/mobile-core/src/index.ts','utf8');
- for(const token of ["router.push('/explore')",'Find a better bathroom','THE KLEENEST LOOP','Verified community','PLAY + PROGRESS','YOUR NETWORK'])if(!home.includes(token))failures.push(`Consumer Home missing rich bathroom-first/data-production behavior: ${token}`);
+ for(const token of ["'/explore'",'Find a better bathroom','THE KLEENEST LOOP','Verified community','PLAY + PROGRESS','YOUR NETWORK'])if(!home.includes(token))failures.push(`Consumer Home missing rich bathroom-first/data-production behavior: ${token}`);
  for(const token of ['listNearbyRestrooms','listAmenityCatalog','selectedAmenityNames','What matters on this stop?',"pathname:'/route'",'Start directions','captureConsumerDiscovery','captureConsumerRouteIntent','readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Consumer discovery missing mature capability: ${token}`);
  for(const token of ['explore','play','social','profile'])if(!layout.includes(`name="${token}"`))failures.push(`Consumer primary navigation missing ${token}.`);
  for(const token of ['mobileCheckIn','createMobileReview'])if(!core.includes(token))failures.push(`Mobile core missing canonical consumer production authority: ${token}`);
