@@ -5,6 +5,7 @@ const config = getDefaultConfig(__dirname);
 const webAliases = {
   '@maplibre/maplibre-react-native': path.resolve(__dirname, 'web/maplibrePreview.tsx'),
   'expo-secure-store': path.resolve(__dirname, 'web/secureStorePreview.ts'),
+  'expo-notifications': path.resolve(__dirname, 'web/notificationsPreview.ts'),
 };
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
