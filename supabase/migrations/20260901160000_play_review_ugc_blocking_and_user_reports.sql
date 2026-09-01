@@ -61,7 +61,7 @@ returns boolean
 language plpgsql
 security definer
 set search_path = public
-as $$;
+as $$
 begin
   if auth.uid() is null then raise exception 'Authentication required'; end if;
   delete from public.user_blocks where blocker_id = auth.uid() and blocked_id = p_user_id;
