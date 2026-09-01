@@ -17,6 +17,7 @@ jobs:
     env:
       EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+      EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
     steps:
       - name: Resolve exact source SHA
         id: source
@@ -46,8 +47,19 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "${{ steps.source.outputs.sha }}"
           npm run native:typecheck
+          node scripts/native-consumer-apk-convergence-audit.mjs
           node scripts/native-device-readiness-audit.mjs
           node scripts/native-consumer-recovery-audit.mjs
+      - name: Report native push build identity
+        shell: bash
+        run: |
+          if [ -n "$EAS_PROJECT_ID" ]; then
+            echo "### Native push identity embedded" >> "$GITHUB_STEP_SUMMARY"
+            echo "The Android preview build received EAS_PROJECT_ID for Expo push token registration." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Native push identity not configured" >> "$GITHUB_STEP_SUMMARY"
+            echo "The APK can still build and install, but Expo push registration requires the repository secret EAS_PROJECT_ID." >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Generate Android native project
         working-directory: apps/consumer-mobile
         run: npx expo prebuild --platform android --non-interactive --clean
