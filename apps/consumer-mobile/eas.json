@@ -1,5 +1,8 @@
 {
-  "cli": { "version": ">= 16.0.0" },
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
   "build": {
     "development": {
       "developmentClient": true,
@@ -7,21 +10,27 @@
       "env": {
         "EAS_PROJECT_ID": "22a65aa3-c615-4c4f-a34d-084babc28fd7"
       },
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      }
     },
     "preview": {
       "distribution": "internal",
       "env": {
         "EAS_PROJECT_ID": "22a65aa3-c615-4c4f-a34d-084babc28fd7"
       },
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "EAS_PROJECT_ID": "22a65aa3-c615-4c4f-a34d-084babc28fd7"
       },
-      "android": { "buildType": "app-bundle" }
+      "android": {
+        "buildType": "app-bundle"
+      }
     }
   },
   "submit": {
