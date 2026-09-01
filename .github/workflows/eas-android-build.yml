@@ -12,6 +12,15 @@ on:
           - development
           - preview
           - production
+  push:
+    branches: [main]
+    paths:
+      - 'apps/consumer-mobile/**'
+      - 'packages/mobile-core/**'
+      - 'config/production-environment.json'
+      - 'scripts/native-device-readiness-audit.mjs'
+      - 'scripts/production-environment-contract-audit.mjs'
+      - '.github/workflows/eas-android-build.yml'
 
 permissions:
   contents: read
@@ -25,6 +34,7 @@ jobs:
       EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
       EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+      PROFILE: ${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'preview' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,22 +56,19 @@ jobs:
           node scripts/production-environment-contract-audit.mjs
           node scripts/native-device-readiness-audit.mjs
           npm run native:typecheck
-      - name: Verify Expo project binding
+      - name: Verify Expo identity
         working-directory: apps/consumer-mobile
         shell: bash
         run: |
+          npx eas-cli@latest whoami
           npx expo config --type public > /tmp/kleenest-expo-config.txt
           grep -q "22a65aa3-c615-4c4f-a34d-084babc28fd7" /tmp/kleenest-expo-config.txt
       - name: Queue EAS Android build
         working-directory: apps/consumer-mobile
         shell: bash
-        env:
-          PROFILE: ${{ inputs.profile }}
         run: npx eas-cli@latest build --platform android --profile "$PROFILE" --non-interactive --no-wait
       - name: Build summary
         shell: bash
-        env:
-          PROFILE: ${{ inputs.profile }}
         run: |
           echo "### Kleenest EAS Android build queued" >> "$GITHUB_STEP_SUMMARY"
           echo "Profile: $PROFILE" >> "$GITHUB_STEP_SUMMARY"
