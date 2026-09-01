@@ -7,11 +7,11 @@ if(!failures.length){
  const pkg=fs.readFileSync(required[0],'utf8'),config=fs.readFileSync(required[1],'utf8'),explore=fs.readFileSync(required[2],'utf8'),route=fs.readFileSync(required[3],'utf8'),core=fs.readFileSync(required[4],'utf8');
  if(!pkg.includes('@maplibre/maplibre-react-native'))failures.push('Native consumer app must depend on MapLibre React Native.');
  if(!config.includes("'@maplibre/maplibre-react-native'"))failures.push('Expo config must register the MapLibre native config plugin.');
- for(const token of ['FIND A BATHROOM','Nearby restrooms','Use my location','Search a place or brand','Amenities you need','Directions','Add to route'])if(!explore.includes(token))failures.push(`Bathroom-first Explore missing ${token}.`);
+ for(const token of ['Find your best nearby bathroom.','Locate','Search a place, address or brand','What matters on this stop?','Start directions','Add to route','BEST NEXT DECISION'])if(!explore.includes(token))failures.push(`Bathroom-first rich Explore missing ${token}.`);
  if(!explore.includes("import { Camera, Map, Marker }")||!explore.includes('<Map ')||!explore.includes('<Camera'))failures.push('Explore must render MapLibre.');
- if(!explore.includes("tile.openstreetmap.org")||!explore.includes("type:'raster'"))failures.push('Explore must use canonical OpenStreetMap raster tiles.');
+ if(!explore.includes('tile.openstreetmap.org')||!explore.includes("type:'raster'"))failures.push('Explore must use canonical OpenStreetMap raster tiles.');
  if(!explore.includes('<Marker')||/\bcluster\s*=/.test(explore))failures.push('Nearby restroom markers must stay directly actionable and unclustered.');
- if(!explore.includes('height:320'))failures.push('Explore map requires a stable non-zero native height.');
+ const mapHeight=explore.match(/mapFrame:\{height:(\d+)/);if(!mapHeight||Number(mapHeight[1])<280)failures.push('Explore map requires a stable substantial native height.');
  if(!explore.includes('google.com/maps/dir')||!explore.includes("pathname:'/route'"))failures.push('Discovery must preserve direct directions and route-planner handoff.');
  if(!core.includes("p_category:'restroom'"))failures.push('Canonical nearby discovery must be restroom-scoped.');
  if(core.includes("p_category:null,p_search"))failures.push('Consumer restroom discovery must not become unrestricted category discovery.');
@@ -19,6 +19,7 @@ if(!failures.length){
  if(!explore.includes('listAmenityCatalog')||!explore.includes('selectedAmenityNames'))failures.push('Explore must consume canonical amenity filters.');
  if(!explore.includes('listNearbyRestrooms(current.coords.latitude,current.coords.longitude,radius,query,selectedAmenityNames)'))failures.push('Explore must use the single nearby-restroom service with radius/search/amenity inputs.');
  if(!explore.includes('canUseGenericCache=!search.trim()&&!selectedAmenityNames.length'))failures.push('Unfiltered cached results must never masquerade as filtered live results.');
+ if(!explore.includes('listLocationTrustSummaries')||!explore.includes('captureConsumerDiscovery')||!explore.includes('captureConsumerRouteIntent'))failures.push('Rich Explore must preserve batched trust context and lightweight backend data production.');
  if(!route.includes('GeoJSONSource')||!route.includes('type="line"')||!route.includes('stopCoordinates'))failures.push('Route must render canonical geometry and ordered stops.');
  if(!route.includes('setBuilt(null)')||!route.includes('if(hydrated.current)setBuilt(null)'))failures.push('Changing route stops must invalidate stale route output.');
  if(!route.includes('height:300'))failures.push('Route map must keep a stable native height.');
