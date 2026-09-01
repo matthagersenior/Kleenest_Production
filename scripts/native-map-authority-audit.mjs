@@ -21,7 +21,8 @@ if(!failures.length){
  if(!explore.includes('canUseGenericCache=!search.trim()&&!selectedAmenityNames.length'))failures.push('Unfiltered cached results must never masquerade as filtered live results.');
  if(!explore.includes('listLocationTrustSummaries')||!explore.includes('captureConsumerDiscovery')||!explore.includes('captureConsumerRouteIntent'))failures.push('Rich Explore must preserve batched trust context and lightweight backend data production.');
  if(!route.includes('GeoJSONSource')||!route.includes('type="line"')||!route.includes('stopCoordinates'))failures.push('Route must render canonical geometry and ordered stops.');
- if(!route.includes('setBuilt(null)')||!route.includes('if(hydrated.current)setBuilt(null)'))failures.push('Changing route stops must invalidate stale route output.');
+ const stateInvalidation=route.includes('setBuilt(null)')&&route.includes('[stopIds,hydrated]')&&route.includes('if(!hydrated)return;');
+ if(!stateInvalidation)failures.push('Changing route stops must invalidate stale route output after route draft hydration.');
  if(!route.includes('height:300'))failures.push('Route map must keep a stable native height.');
  if(/react-native-maps|leaflet/i.test(explore+route+pkg))failures.push('Consumer mobile must not introduce a competing map engine.');
 }
