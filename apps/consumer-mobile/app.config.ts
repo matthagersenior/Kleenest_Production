@@ -36,6 +36,7 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-location',
     'expo-secure-store',
+    ['expo-dev-client', { launchMode: 'most-recent' }],
     '@maplibre/maplibre-react-native',
     ['expo-camera', { cameraPermission: 'Kleenest uses your camera to scan Kleenest restroom QR codes.' }],
     ['expo-image-picker', { photosPermission: 'Kleenest uses your photo library so you can choose a public contributor profile photo.', microphonePermission: false }],
