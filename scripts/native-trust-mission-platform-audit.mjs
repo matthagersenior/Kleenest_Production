@@ -47,7 +47,8 @@ if(!failures.length){
   // critical bathroom-finding path. Saved, Play, Location, Activity, and notifications own
   // mission lifecycle; Explore stays fast and nearby-first.
   if(explore.includes('readTrustMission')||explore.includes('trustMissionAction')||explore.includes('ACTIVE TRUST MISSION')||explore.includes('NEARBY TRUST MISSION'))failures.push('Explore must stay bathroom-first; trust mission lifecycle belongs to Play, Saved, and Location.');
-  for(const token of ['listNearbyRestrooms','Find your best nearby bathroom.','Open bathroom','Start directions',"pathname:'/route'",'listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Explore bathroom-first mission boundary missing ${token}.`);
+  for(const token of ['listNearbyRestrooms','Find your best nearby bathroom.','Full details','Start directions',"pathname:'/route'",'listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Explore bathroom-first mission boundary missing ${token}.`);
+  if(!explore.includes('router.push(`/location/${idOf(selected)}`)'))failures.push('Explore must preserve the canonical selected-restroom detail handoff.');
 
   if(!saved.includes('readTrustMission')||!saved.includes('trustMissionAction'))failures.push('Saved must load and evaluate the active trust mission.');
   if(!saved.includes('Resume mission')||!saved.includes('View active mission')||!saved.includes('Resume active mission'))failures.push('Saved must expose active/resume mission states clearly.');
