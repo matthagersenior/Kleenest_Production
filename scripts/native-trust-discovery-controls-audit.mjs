@@ -12,13 +12,14 @@ if(!failures.length){
   // distance/search/amenity finder and may show lightweight trust badges without making
   // evidence sorting part of the critical bathroom-finding path.
   if(!saved.includes('applyTrustDiscoveryControls(rows,evidenceFilter,sortMode)'))failures.push('Saved must derive a visible result set from explicit trust controls.');
-  for(const label of ['Any','Verified','Fresh ≤30d','Evidence'])if(!saved.includes(label))failures.push(`Saved missing trust control label: ${label}`);
+  for(const label of ['Any','Verified','Fresh ≤30d','Evidence','Original'])if(!saved.includes(label))failures.push(`Saved missing trust control label: ${label}`);
   if(!saved.includes("sortMode==='default'")||!saved.includes("sortMode==='evidence'"))failures.push('Saved must expose default and evidence sort states.');
-  if(!saved.includes('Your saved order stays unchanged unless you explicitly choose Evidence.')||!saved.includes("setSortMode('default')"))failures.push('Saved must preserve original order by default and clearly expose restoring it.');
+  const preservesDefaultOrder=saved.includes('Your saved order is unchanged unless you explicitly choose Evidence.')&&saved.includes("setSortMode('default')")&&saved.includes('Switch to Original to restore your saved order.');
+  if(!preservesDefaultOrder)failures.push('Saved must preserve original order by default and clearly expose restoring it.');
   if(!saved.includes('data={visibleRows}'))failures.push('Saved list must render the explicitly filtered visible set.');
 
   if(explore.includes('applyTrustDiscoveryControls(')||explore.includes('Evidence filter')||explore.includes('Nearby order stays authoritative unless you explicitly choose Evidence.'))failures.push('Explore must stay bathroom-first; advanced evidence filtering/sorting belongs outside the critical finder path.');
-  for(const token of ['FIND A BATHROOM','Amenities you need','Directions',"pathname:'/route'"])if(!explore.includes(token))failures.push(`Explore bathroom-first discovery contract missing ${token}.`);
+  for(const token of ['Find your best nearby bathroom.','What matters on this stop?','Start directions',"pathname:'/route'",'Search a place, address or brand'])if(!explore.includes(token))failures.push(`Explore bathroom-first discovery contract missing ${token}.`);
   if(/rows\.sort\(|setRows\([^)]*sort/i.test(explore+saved))failures.push('Screens must not mutate underlying discovery/saved rows when sorting by evidence.');
 }
 if(failures.length){console.error('Native trust discovery controls audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
