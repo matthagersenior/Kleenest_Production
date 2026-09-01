@@ -10,10 +10,10 @@ if(!failures.length){const read=file=>fs.readFileSync(file,'utf8'),trust=read(fi
  for(const token of ['SecureStore','missionFromTrust','startTrustMission','readTrustMission','completeTrustMission','clearTrustMission','completedAt'])if(!missionStore.includes(token))failures.push(`Persistent trust mission store missing lifecycle token: ${token}`);
  if(!missionStore.includes('Check in while physically at this restroom')||!missionStore.includes('Publish a verified review from that eligible check-in'))failures.push('Persistent trust missions must preserve the verified check-in → review sequence.');
 
- // Explore is the lightweight bathroom finder. It supports trust decisions with compact batched evidence,
- // but mission lifecycle and advanced evidence sorting deliberately live off the critical discovery path.
- for(const token of ['listLocationTrustSummaries(data.map','attachLocationTrust(data,summaries)','trust?.verified_visit_count','trust?.photo_evidence_count','trust?.amenity_evidence_count','trust?.latest_verified_at','visitFreshness(trust?.latest_verified_at)'])if(!explore.includes(token))failures.push(`Explore lightweight trust support missing: ${token}`);
- if(!explore.includes('Nearby order stays primary; trust supports your choice.'))failures.push('Explore must explicitly preserve nearby relevance as the primary ordering contract.');
+ // Explore is the lightweight bathroom finder. Batched trust context informs the decision card,
+ // but mission lifecycle and advanced evidence sorting remain off the critical discovery path.
+ for(const token of ['listLocationTrustSummaries(data.map','attachLocationTrust(data,summaries)','trust?.verified_visit_count','trust?.photo_evidence_count','trust?.amenity_evidence_count','trust?.latest_verified_at','visitFreshness(trust?.latest_verified_at)','BEST NEXT DECISION','Start directions'])if(!explore.includes(token))failures.push(`Explore lightweight trust support missing: ${token}`);
+ if(!explore.includes('Ordered nearby · trust supports the choice')&&!explore.includes('Distance first. Trust, cleanliness, amenities and community evidence help you choose.'))failures.push('Explore must explicitly preserve nearby/distance relevance as the primary decision contract.');
  for(const forbidden of ['NEARBY TRUST MISSION','beginMission','startTrustMission(missionFromTrust','setSortMode(\'evidence\')','markerMission','markerBest'])if(explore.includes(forbidden))failures.push(`Explore must keep advanced trust workflow out of the bathroom-finding path: ${forbidden}`);
  if(!explore.includes('markerActive')||!explore.includes('active=id===idOf(selected)'))failures.push('Explore must still distinguish the user-selected bathroom marker from unselected nearby results.');
 
@@ -30,7 +30,7 @@ if(!failures.length){const read=file=>fs.readFileSync(file,'utf8'),trust=read(fi
  if(!locationPage.includes("missionMode=String(contribute||mission||'')==='1'")||!locationPage.includes('TRUST MISSION ACTIVE')||!locationPage.includes('completeTrustMission(locationId)'))failures.push('Location mission mode must resume either entry parameter and complete only through the persisted mission authority.');
  if(!locationPage.includes('await refresh();setAmenityRefresh(value=>value+1)'))failures.push('Every successful verified review must refresh the location trust snapshot, not only amenity evidence submissions.');
  if(!locationPage.includes('Trust mission completed and this restroom’s evidence has been refreshed.')||!locationPage.includes("missionCompleted=/Trust mission completed/.test(message)"))failures.push('Verified review completion must visibly close the mission and refresh trust evidence.');
- if(!play.includes('readTrustMission()')||!play.includes('Active trust mission')||!play.includes('Resume mission')||!play.includes('clearTrustMission()'))failures.push('Play must surface, resume, and clear the persisted trust mission.');
+ if(!play.includes('readTrustMission()')||!play.includes('ACTIVE TRUST MISSION')||!play.includes('Resume mission')||!play.includes('clearTrustMission()'))failures.push('Play must surface, resume, and clear the persisted trust mission.');
  if(!play.includes("pathname:'/location/[id]'" )||!play.includes("mission:'1'"))failures.push('Play must resume the persisted mission through Location mission mode.');
  if(/sort\([^)]*routeTrustScore|sort\([^)]*trust/i.test(explore+saved+route))failures.push('Screens must not silently sort Explore, Saved, or Route by trust score; explicit sorting belongs in the shared control service.');
 }
