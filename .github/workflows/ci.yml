@@ -33,6 +33,8 @@ jobs:
         run: node scripts/native-consumer-accessibility-polish-audit.mjs
       - name: Consumer discovery continuity
         run: node scripts/native-consumer-continuity-audit.mjs
+      - name: Consumer recovery convergence
+        run: node scripts/native-consumer-recovery-audit.mjs
       - name: Native device readiness
         run: node scripts/native-device-readiness-audit.mjs
       - name: Trust quality convergence
