@@ -41,6 +41,10 @@ export default function RootLayout() {
     <Tabs.Screen name="play" options={{ title:'Play',headerShown:false,tabBarIcon:tabIcon('★') }}/>
     <Tabs.Screen name="social" options={{ title:'Community',headerShown:false,tabBarIcon:tabIcon('●') }}/>
     <Tabs.Screen name="profile" options={{ title:'Profile',headerShown:false,tabBarIcon:tabIcon('◉') }}/>
+    <Tabs.Screen name="assistant" options={{ href:null,title:'Kleenest AI' }}/>
+    <Tabs.Screen name="access" options={{ href:null,title:'Access & Preferred' }}/>
+    <Tabs.Screen name="messages" options={{ href:null,title:'Messages' }}/>
+    <Tabs.Screen name="offline" options={{ href:null,title:'Offline Trips' }}/>
     <Tabs.Screen name="games" options={{ href:null,title:'Game Center' }}/>
     <Tabs.Screen name="route" options={{ href:null,title:'Routes' }}/>
     <Tabs.Screen name="qr" options={{ href:null,title:'Scan QR' }}/>
