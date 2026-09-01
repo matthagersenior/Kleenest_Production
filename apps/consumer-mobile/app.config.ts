@@ -1,10 +1,13 @@
 import type { ExpoConfig } from 'expo/config';
 
-const easProjectId = process.env.EAS_PROJECT_ID;
+const PRODUCTION_EAS_PROJECT_ID = '22a65aa3-c615-4c4f-a34d-084babc28fd7';
+const configuredEasProjectId = process.env.EAS_PROJECT_ID;
 
-if (!easProjectId) {
-  console.warn('[Kleenest] EAS_PROJECT_ID is not set. Local Expo development can continue, but EAS-linked services require the project ID.');
+if (configuredEasProjectId && configuredEasProjectId !== PRODUCTION_EAS_PROJECT_ID) {
+  throw new Error(`[Kleenest] EAS_PROJECT_ID drift detected. Expected ${PRODUCTION_EAS_PROJECT_ID}, received ${configuredEasProjectId}.`);
 }
+
+const easProjectId = configuredEasProjectId || PRODUCTION_EAS_PROJECT_ID;
 
 const config: ExpoConfig = {
   name: 'Kleenest',
@@ -42,7 +45,11 @@ const config: ExpoConfig = {
   extra: {
     appRole: 'consumer',
     previewRole: 'non-blocking-web-preview',
-    eas: easProjectId ? { projectId: easProjectId } : undefined,
+    productionEnvironment: {
+      expoProjectId: PRODUCTION_EAS_PROJECT_ID,
+      supabaseProjectRef: 'ssgesjzdvdsqacdtasje',
+    },
+    eas: { projectId: easProjectId },
   },
 };
 
