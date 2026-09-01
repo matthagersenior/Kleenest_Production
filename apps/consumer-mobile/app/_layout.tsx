@@ -10,8 +10,12 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }),
 });
 
+const handledNotificationResponses=new Set<string>();
 async function openNotificationResponse(response: Notifications.NotificationResponse | null) {
   if (!response) return;
+  const responseKey=`${response.notification.request.identifier}:${response.actionIdentifier}`;
+  if(handledNotificationResponses.has(responseKey))return;
+  handledNotificationResponses.add(responseKey);
   const data = response.notification.request.content.data || {};
   const notificationId = typeof data.notification_id === 'string' ? data.notification_id : '';
   if (notificationId) await markMobileNotificationRead(notificationId).catch(() => {});
@@ -19,13 +23,14 @@ async function openNotificationResponse(response: Notifications.NotificationResp
   if (destination) router.push(destination as any);
 }
 
-const tabIcon=(glyph:string)=>(props:{color:string;focused:boolean})=><Text style={{fontSize:props.focused?20:18,color:props.color,fontWeight:'900'}}>{glyph}</Text>;
+const tabIcon=(glyph:string)=>(props:{color:string;focused:boolean})=><Text accessible={false} style={{fontSize:props.focused?20:18,color:props.color,fontWeight:'900'}}>{glyph}</Text>;
 
 export default function RootLayout() {
   useEffect(() => {
-    Notifications.getLastNotificationResponseAsync().then(response => void openNotificationResponse(response)).catch(() => {});
+    let active=true;
+    Notifications.getLastNotificationResponseAsync().then(async response=>{if(!active)return;await openNotificationResponse(response);if(response)await Notifications.clearLastNotificationResponseAsync().catch(()=>{})}).catch(() => {});
     const subscription = Notifications.addNotificationResponseReceivedListener(response => { void openNotificationResponse(response); });
-    return () => subscription.remove();
+    return () => {active=false;subscription.remove()};
   }, []);
   return <><StatusBar style="dark"/><Tabs screenOptions={{
     headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,headerTitleStyle:{fontWeight:'900',color:'#102218'},
