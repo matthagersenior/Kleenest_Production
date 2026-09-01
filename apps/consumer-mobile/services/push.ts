@@ -9,7 +9,7 @@ const PUSH_TOKEN_KEY='kleenest.native.push.token.v1';
 
 export type NativePushStatus={
   supported:boolean;
-  permission:Notifications.PermissionStatus;
+  permission:string;
   canAskAgain:boolean;
   registeredToken:string|null;
 };
@@ -18,9 +18,9 @@ function pushError(message:string,code:string){const error=new Error(message) as
 
 export async function getNativePushStatus():Promise<NativePushStatus>{
   const supported=Platform.OS==='ios'||Platform.OS==='android';
-  if(!supported)return{supported:false,permission:Notifications.PermissionStatus.UNDETERMINED,canAskAgain:false,registeredToken:null};
+  if(!supported)return{supported:false,permission:'undetermined',canAskAgain:false,registeredToken:null};
   const [permission,registeredToken]=await Promise.all([Notifications.getPermissionsAsync(),SecureStore.getItemAsync(PUSH_TOKEN_KEY)]);
-  return{supported:true,permission:permission.status,canAskAgain:permission.canAskAgain!==false,registeredToken:registeredToken||null};
+  return{supported:true,permission:String(permission.status),canAskAgain:permission.canAskAgain!==false,registeredToken:registeredToken||null};
 }
 
 export async function registerNativePush(){
@@ -40,7 +40,7 @@ export async function registerNativePush(){
   const client=getKleenestSupabaseClient();
   const previousToken=await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
   if(previousToken&&previousToken!==token){
-    await client.rpc('remove_notification_native_push_token',{p_token:previousToken}).catch(()=>{});
+    try{await client.rpc('remove_notification_native_push_token',{p_token:previousToken})}catch{}
   }
   const {data,error}=await client.rpc('register_notification_native_push_token',{p_token:token,p_platform:Platform.OS,p_app_id:'com.kleenest.app'});
   if(error)throw error;
