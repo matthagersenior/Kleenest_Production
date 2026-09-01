@@ -54,6 +54,7 @@ export default function RootLayout() {
     <Tabs.Screen name="activity" options={{ href:null,title:'Your activity' }}/>
     <Tabs.Screen name="notifications" options={{ href:null,title:'Notifications' }}/>
     <Tabs.Screen name="membership" options={{ href:null,title:'Membership' }}/>
+    <Tabs.Screen name="family" options={{ href:null,title:'Kleenest Family' }}/>
     <Tabs.Screen name="preferences" options={{ href:null,title:'Privacy & preferences' }}/>
     <Tabs.Screen name="support" options={{ href:null,title:'Help & support' }}/>
     <Tabs.Screen name="account-deletion" options={{ href:null,title:'Account control' }}/>
