@@ -25,10 +25,23 @@
         "buildType": "apk"
       }
     },
-    "production": {
+    "candidate": {
+      "distribution": "internal",
       "autoIncrement": true,
       "env": {
-        "EAS_PROJECT_ID": "22a65aa3-c615-4c4f-a34d-084babc28fd7"
+        "EAS_PROJECT_ID": "22a65aa3-c615-4c4f-a34d-084babc28fd7",
+        "KLEENEST_RELEASE_CHANNEL": "candidate"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "autoIncrement": true,
+      "env": {
+        "EAS_PROJECT_ID": "22a65aa3-c615-4c4f-a34d-084babc28fd7",
+        "KLEENEST_RELEASE_CHANNEL": "production"
       },
       "android": {
         "buildType": "app-bundle"
