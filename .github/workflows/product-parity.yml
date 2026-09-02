@@ -1,0 +1,47 @@
+name: App Family Product Parity
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+      - name: Install monorepo dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify concrete product parity
+        run: node scripts/product-parity-audit.mjs
+      - name: Typecheck Consumer
+        run: npm run typecheck --workspace @kleenest/consumer-mobile
+      - name: Typecheck Business
+        run: npm run typecheck --workspace @kleenest/business-mobile
+      - name: Typecheck Fleet
+        run: npm run typecheck --workspace @kleenest/fleet-mobile
+      - name: Typecheck Platform
+        run: npm run typecheck --workspace @kleenest/platform-mobile
+      - name: Validate Consumer Expo config
+        working-directory: apps/consumer-mobile
+        run: npx expo config --type public >/dev/null
+      - name: Validate Business Expo config
+        working-directory: apps/business-mobile
+        run: npx expo config --type public >/dev/null
+      - name: Validate Fleet Expo config
+        working-directory: apps/fleet-mobile
+        run: npx expo config --type public >/dev/null
+      - name: Validate Platform Expo config
+        working-directory: apps/platform-mobile
+        run: npx expo config --type public >/dev/null
