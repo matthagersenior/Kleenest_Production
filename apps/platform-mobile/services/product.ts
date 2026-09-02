@@ -2,6 +2,8 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 const client=()=>getKleenestSupabaseClient();
 async function rpc(name:string,args:Record<string,unknown>={}){const{data,error}=await client().rpc(name,args);if(error)throw error;return data;}
 export async function getPlatformDashboard(){const[pending,activity,reports,snapshot,history]=await Promise.all([rpc('admin_list_pending_businesses'),rpc('admin_list_activity_events',{p_limit:100}),rpc('admin_list_review_reports',{p_status:'open'}),rpc('admin_control_plane_snapshot'),rpc('admin_control_plane_history',{p_limit:100})]);return{pending,activity,reports,snapshot,history};}
+export async function listOpenReviewReports(){return (await rpc('admin_list_review_reports',{p_status:'open'}))||[];}
+export async function resolveReviewReport(reportId:string,resolution:string,reason:string,reviewStatus:string){return rpc('admin_resolve_review_report',{p_report_id:reportId,p_resolution:resolution,p_reason:reason,p_review_status:reviewStatus});}
 export async function setBusinessVerification(businessId:string,status:string){return rpc('admin_set_business_verification',{p_business_id:businessId,p_status:status});}
 export async function setBusinessTier(businessId:string,tier:string){return rpc('admin_set_business_tier',{p_business_id:businessId,p_tier:tier});}
 export async function setBusinessAccess(businessId:string,tier:string,fleetEnabled:boolean,enterpriseEnabled:boolean,reason=''){return rpc('admin_set_business_access',{p_business_id:businessId,p_tier:tier,p_fleet_enabled:fleetEnabled,p_enterprise_enabled:enterpriseEnabled,p_reason:reason});}
