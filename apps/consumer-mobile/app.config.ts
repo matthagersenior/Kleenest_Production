@@ -2,6 +2,7 @@ import type { ExpoConfig } from 'expo/config';
 
 const PRODUCTION_EAS_PROJECT_ID = '22a65aa3-c615-4c4f-a34d-084babc28fd7';
 const configuredEasProjectId = process.env.EAS_PROJECT_ID;
+const releaseChannel = process.env.KLEENEST_RELEASE_CHANNEL || 'development';
 
 if (configuredEasProjectId && configuredEasProjectId !== PRODUCTION_EAS_PROJECT_ID) {
   throw new Error(`[Kleenest] EAS_PROJECT_ID drift detected. Expected ${PRODUCTION_EAS_PROJECT_ID}, received ${configuredEasProjectId}.`);
@@ -12,7 +13,7 @@ const easProjectId = configuredEasProjectId || PRODUCTION_EAS_PROJECT_ID;
 const config: ExpoConfig = {
   name: 'Kleenest',
   slug: 'kleenest-consumer',
-  version: '0.1.0',
+  version: '1.0.0',
   orientation: 'portrait',
   scheme: 'kleenest',
   userInterfaceStyle: 'automatic',
@@ -46,6 +47,7 @@ const config: ExpoConfig = {
   extra: {
     appRole: 'consumer',
     previewRole: 'non-blocking-web-preview',
+    releaseChannel,
     productionEnvironment: {
       expoProjectId: PRODUCTION_EAS_PROJECT_ID,
       supabaseProjectRef: 'ssgesjzdvdsqacdtasje',
