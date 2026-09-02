@@ -18,6 +18,7 @@ jobs:
       EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
       EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
+      KLEENEST_RELEASE_CHANNEL: candidate
     steps:
       - name: Resolve exact source SHA
         id: source
@@ -54,23 +55,28 @@ jobs:
       - name: Report native production identity
         shell: bash
         run: |
-          echo "### Production identity embedded" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Release-candidate identity embedded" >> "$GITHUB_STEP_SUMMARY"
+          echo "App version: 1.0.0" >> "$GITHUB_STEP_SUMMARY"
+          echo "Release channel: $KLEENEST_RELEASE_CHANNEL" >> "$GITHUB_STEP_SUMMARY"
           echo "Expo/EAS project: $EAS_PROJECT_ID" >> "$GITHUB_STEP_SUMMARY"
           echo "Supabase project: ssgesjzdvdsqacdtasje" >> "$GITHUB_STEP_SUMMARY"
           echo "Family capability: five-seat release gate passed" >> "$GITHUB_STEP_SUMMARY"
       - name: Generate Android native project
         working-directory: apps/consumer-mobile
         run: npx expo prebuild --platform android --non-interactive --clean
-      - name: Build installable debug APK
+      - name: Build optimized installable release APK
         working-directory: apps/consumer-mobile/android
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleRelease --no-daemon
       - name: Stage canonical APK
         run: |
           mkdir -p artifacts
-          cp apps/consumer-mobile/android/app/build/outputs/apk/debug/app-debug.apk "artifacts/kleenest-consumer-${{ steps.source.outputs.sha }}.apk"
+          cp apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk "artifacts/kleenest-consumer-1.0.0-${{ steps.source.outputs.sha }}.apk"
+          sha256sum artifacts/*.apk > artifacts/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: kleenest-consumer-android-${{ steps.source.outputs.sha }}
-          path: artifacts/*.apk
+          name: kleenest-consumer-android-candidate-${{ steps.source.outputs.sha }}
+          path: |
+            artifacts/*.apk
+            artifacts/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
