@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "apps": {
+    "consumer": {
+      "workspace": "apps/consumer-mobile",
+      "androidPackage": "com.kleenest.app",
+      "requiredCapabilities": ["discovery","maps","trust-signals","check-in","qr","reviews","photos","amenities","saved","routes","offline","community","messages","notifications","progression","quests","contests","games","family","membership","support","privacy","account-deletion","ugc-reporting","user-blocking"]
+    },
+    "business": {
+      "workspace": "apps/business-mobile",
+      "androidPackage": "com.kleenest.business",
+      "requiredCapabilities": ["workspace-selection","dashboard","profile","locations","reviews","review-replies","promotions","campaigns","contests","events","media","qr-management","qr-branding","analytics","occupancy","visitors","roi","benchmarks","restroom-health","trust-quality","remediation","reverification","preventive-maintenance","notifications","support","privacy","account-control"]
+    },
+    "fleet": {
+      "workspace": "apps/fleet-mobile",
+      "androidPackage": "com.kleenest.fleet",
+      "requiredCapabilities": ["workspace-selection","dispatch","routes","route-stop-timing","drivers","vehicles","maintenance","alerts","operational-signals","exceptions","remediation-risk","prevention-portfolio","preventive-schedule","prevention-effectiveness","preventive-dispatch","notifications","offline-recovery","support","privacy","account-control"]
+    },
+    "platform": {
+      "workspace": "apps/platform-mobile",
+      "androidPackage": "com.kleenest.platform",
+      "requiredCapabilities": ["admin-dashboard","pending-businesses","business-verification","account-capabilities","business-access","business-tier","member-management","review-reports","moderation","platform-activity","control-history","notifications","support","privacy","account-control"]
+    }
+  }
+}
