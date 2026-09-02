@@ -3,7 +3,7 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 
 const KEY='kleenest.fleet.offline.route-stop.v1';
 type Event={id:string;packId:string;businessId:string;routeId:string;routeStopId:string;eventType:'arrived'|'service_started'|'completed'|'departed'|'skipped';occurredAt:string;attempts:number};
-const uuid=()=>`${Date.now().toString(16).padStart(12,'0').slice(-12)}-${Math.random().toString(16).slice(2,10)}-${Math.random().toString(16).slice(2,10)}`.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12}).*$/,'$1-$2-4$3-8$4-$5').slice(0,36);
+const uuid=()=> 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.floor(Math.random()*16),v=c==='x'?r:(r&0x3)|0x8;return v.toString(16)});
 async function read():Promise<Event[]>{try{return JSON.parse((await AsyncStorage.getItem(KEY))||'[]')}catch{return[]}}
 async function write(rows:Event[]){await AsyncStorage.setItem(KEY,JSON.stringify(rows.slice(-250)))}
 export async function listOfflineRouteEvents(){return read()}
