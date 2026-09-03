@@ -60,8 +60,9 @@ jobs:
           grep -q "restaurant:{icon:'🍴'" apps/consumer-mobile/components/RestroomSignals.tsx
           grep -q "park:{icon:'🌳'" apps/consumer-mobile/components/RestroomSignals.tsx
           rm -rf apps/consumer-mobile/.preflight
-          npx expo export --platform android --output-dir apps/consumer-mobile/.preflight --clear
-          test -n "$(find apps/consumer-mobile/.preflight -type f -print -quit)"
+          cd apps/consumer-mobile
+          npx expo export --platform android --output-dir .preflight --clear
+          test -n "$(find .preflight -type f -print -quit)"
       - name: Remove Expo development runtime from standalone dependency graph
         run: |
           rm -rf \
