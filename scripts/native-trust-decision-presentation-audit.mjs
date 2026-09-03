@@ -17,6 +17,8 @@ if(!failures.length){const read=file=>fs.readFileSync(file,'utf8'),trust=read(fi
  if(!explore.includes('listNearbyRestrooms')||!explore.includes('distanceLabel(item.distance_meters)')||!explore.includes('distanceLabel(selected.distance_meters)'))failures.push('Explore must explicitly preserve nearby/distance relevance as the primary decision contract.');
  for(const forbidden of ['NEARBY TRUST MISSION','beginMission','startTrustMission(missionFromTrust','setSortMode(\'evidence\')','markerMission','markerBest'])if(explore.includes(forbidden))failures.push(`Explore must keep advanced trust workflow out of the bathroom-finding path: ${forbidden}`);
  if(!explore.includes('markerActive')||!compactExplore.includes('active=id===idOf(selected)'))failures.push('Explore must still distinguish the user-selected bathroom marker from unselected nearby results.');
+ if(!compactExplore.includes('constnextSelected="";'))failures.push('Explore cached results must not automatically reopen BEST NEXT DECISION without a new user selection.');
+ if(!explore.includes('accessibilityLabel="Close selected location"')||!/onPress=\{\(\)=>setSelectedId\(""\)\}/.test(compactExplore))failures.push('Explore selected-location card must provide an explicit close action.');
 
  if(!saved.includes('trustConfidenceLabel')||!saved.includes('trustEvidenceLine')||!saved.includes('saved order is unchanged'))failures.push('Saved must use shared trust confidence without silently reordering the shortlist.');
  if(!saved.includes('firstContributionOpportunity(rows)')||!saved.includes('TRUST MISSION')||!saved.includes('startTrustMission(missionFromTrust'))failures.push('Saved must own the persistent trust-mission start lifecycle outside Explore.');
