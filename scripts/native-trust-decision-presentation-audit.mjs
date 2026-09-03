@@ -10,12 +10,13 @@ if(!failures.length){const read=file=>fs.readFileSync(file,'utf8'),trust=read(fi
  for(const token of ['SecureStore','missionFromTrust','startTrustMission','readTrustMission','completeTrustMission','clearTrustMission','completedAt'])if(!missionStore.includes(token))failures.push(`Persistent trust mission store missing lifecycle token: ${token}`);
  if(!missionStore.includes('Check in while physically at this restroom')||!missionStore.includes('Publish a verified review from that eligible check-in'))failures.push('Persistent trust missions must preserve the verified check-in → review sequence.');
 
- // Explore is the lightweight bathroom finder. Batched trust context informs the decision card,
- // but mission lifecycle and advanced evidence sorting remain off the critical discovery path.
- for(const token of ['listLocationTrustSummaries(data.map','attachLocationTrust(data,summaries)','trust?.verified_visit_count','trust?.photo_evidence_count','trust?.amenity_evidence_count','trust?.latest_verified_at','visitFreshness(trust?.latest_verified_at)','BEST NEXT DECISION','Start directions'])if(!explore.includes(token))failures.push(`Explore lightweight trust support missing: ${token}`);
- if(!explore.includes('Ordered nearby · trust supports the choice')&&!explore.includes('Distance first. Trust, cleanliness, amenities and community evidence help you choose.'))failures.push('Explore must explicitly preserve nearby/distance relevance as the primary decision contract.');
+ // Explore is the lightweight bathroom finder. Verify behavior rather than exact formatting.
+ const compactExplore=explore.replace(/\s+/g,'');
+ for(const token of ['trust?.verified_visit_count','trust?.photo_evidence_count','trust?.amenity_evidence_count','trust?.latest_verified_at','visitFreshness(trust?.latest_verified_at)','BEST NEXT DECISION','Start directions'])if(!explore.includes(token))failures.push(`Explore lightweight trust support missing: ${token}`);
+ if(!/listLocationTrustSummaries\(data\.map\(/.test(compactExplore)||!compactExplore.includes('attachLocationTrust(data,summaries)'))failures.push('Explore must enrich nearby results with one batched trust request.');
+ if(!explore.includes('listNearbyRestrooms')||!explore.includes('distanceLabel(item.distance_meters)')||!explore.includes('distanceLabel(selected.distance_meters)'))failures.push('Explore must explicitly preserve nearby/distance relevance as the primary decision contract.');
  for(const forbidden of ['NEARBY TRUST MISSION','beginMission','startTrustMission(missionFromTrust','setSortMode(\'evidence\')','markerMission','markerBest'])if(explore.includes(forbidden))failures.push(`Explore must keep advanced trust workflow out of the bathroom-finding path: ${forbidden}`);
- if(!explore.includes('markerActive')||!explore.includes('active=id===idOf(selected)'))failures.push('Explore must still distinguish the user-selected bathroom marker from unselected nearby results.');
+ if(!explore.includes('markerActive')||!compactExplore.includes('active=id===idOf(selected)'))failures.push('Explore must still distinguish the user-selected bathroom marker from unselected nearby results.');
 
  if(!saved.includes('trustConfidenceLabel')||!saved.includes('trustEvidenceLine')||!saved.includes('saved order is unchanged'))failures.push('Saved must use shared trust confidence without silently reordering the shortlist.');
  if(!saved.includes('firstContributionOpportunity(rows)')||!saved.includes('TRUST MISSION')||!saved.includes('startTrustMission(missionFromTrust'))failures.push('Saved must own the persistent trust-mission start lifecycle outside Explore.');
