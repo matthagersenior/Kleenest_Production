@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 65
     env:
       EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
@@ -92,6 +92,8 @@ jobs:
           unzip -p apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk assets/index.android.bundle > /tmp/consumer.bundle
           test -s /tmp/consumer.bundle
           grep -a -q 'ssgesjzdvdsqacdtasje.supabase.co' /tmp/consumer.bundle
+          grep -a -q 'LOCALHOST LINK RESCUE' /tmp/consumer.bundle
+          grep -a -q 'androidView' apps/consumer-mobile/app/explore.tsx
           ! grep -a -q 'Development Build' /tmp/consumer.bundle
           ! grep -a -q 'expo-dev-launcher' /tmp/consumer.bundle
       - name: Enable KVM for Android emulator
@@ -100,10 +102,10 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm || true
           sudo chmod 666 /dev/kvm
-      - name: Boot-test standalone Consumer APK
+      - name: Android 16 Consumer startup and discovery test
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 36
           arch: x86_64
           profile: pixel_6
           disable-animations: true
@@ -111,12 +113,19 @@ jobs:
           script: |
             adb wait-for-device
             adb install -r apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk
+            adb shell pm grant com.kleenest.app android.permission.ACCESS_COARSE_LOCATION
+            adb shell pm grant com.kleenest.app android.permission.ACCESS_FINE_LOCATION
+            adb emu geo fix -89.703 38.123
             adb logcat -c
             adb shell am force-stop com.kleenest.app
             adb shell monkey -p com.kleenest.app -c android.intent.category.LAUNCHER 1
-            sleep 15
-            test -n "$(adb shell pidof com.kleenest.app | tr -d '\r' || true)" || (echo 'Consumer APK exited during startup.' >&2; adb logcat -d -v threadtime | tail -n 700 >&2; exit 1)
+            sleep 20
+            test -n "$(adb shell pidof com.kleenest.app | tr -d '\r' || true)" || (echo 'Consumer APK exited during startup.' >&2; adb logcat -d -v threadtime | tail -n 1000 >&2; exit 1)
+            adb shell am start -W -a android.intent.action.VIEW -d 'kleenest://explore' com.kleenest.app
+            sleep 30
+            test -n "$(adb shell pidof com.kleenest.app | tr -d '\r' || true)" || (echo 'Consumer APK exited on Explore.' >&2; adb logcat -d -v threadtime | tail -n 1200 >&2; exit 1)
             adb shell dumpsys activity activities | grep -F com.kleenest.app >/dev/null
+            ! adb logcat -d -v threadtime | grep -E 'Process: com\.kleenest\.app|FATAL EXCEPTION.*com\.kleenest\.app|UnsatisfiedLinkError.*com\.kleenest\.app'
       - name: Stage standalone APK
         run: |
           mkdir -p artifacts
