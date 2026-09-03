@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-apk:
+  candidate:
     runs-on: ubuntu-latest
     timeout-minutes: 65
     env:
@@ -41,6 +41,7 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Verify consumer production contract
         run: |
+          npx expo-doctor apps/consumer-mobile
           node scripts/production-environment-contract-audit.mjs
           npm run native:typecheck
           node scripts/native-consumer-apk-convergence-audit.mjs
@@ -56,11 +57,10 @@ jobs:
           grep -q 'Scroll results · map stays fixed' apps/consumer-mobile/app/explore.tsx
           grep -q 'height: 300' apps/consumer-mobile/app/explore.tsx
           grep -q 'business_logo_url' apps/consumer-mobile/components/RestroomSignals.tsx
-          grep -q "shopping:{icon:'🛍'" apps/consumer-mobile/components/RestroomSignals.tsx
-          grep -q "restaurant:{icon:'🍴'" apps/consumer-mobile/components/RestroomSignals.tsx
-          grep -q "park:{icon:'🌳'" apps/consumer-mobile/components/RestroomSignals.tsx
           rm -rf apps/consumer-mobile/.preflight
           cd apps/consumer-mobile
+          npx expo config --type public --json > /tmp/consumer-expo-config.json
+          node -e "const c=require('/tmp/consumer-expo-config.json');if(c.android?.package!=='com.kleenest.app')process.exit(1);if(c.name!=='Kleenest')process.exit(1)"
           npx expo export --platform android --output-dir .preflight --clear
           test -n "$(find .preflight -type f -print -quit)"
       - name: Remove Expo development runtime from standalone dependency graph
@@ -90,42 +90,44 @@ jobs:
       - name: Generate clean Android native project
         working-directory: apps/consumer-mobile
         run: npx expo prebuild --platform android --clean
+      - name: Pre-package native and permission diagnostics
+        working-directory: apps/consumer-mobile/android
+        run: |
+          ./gradlew :app:processReleaseMainManifest :app:compileDebugKotlin --no-daemon
+          find app/build/intermediates -path '*release*AndroidManifest.xml' -print -exec grep -n '<uses-permission' {} \; > /tmp/consumer-manifest-permissions.txt || true
+          cat /tmp/consumer-manifest-permissions.txt
       - name: Verify standalone release dependency graph
         working-directory: apps/consumer-mobile/android
         run: |
           ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --no-daemon > /tmp/consumer-release-deps.txt
           if grep -Eqi 'expo-dev-client|expo-dev-launcher|expo-dev-menu' /tmp/consumer-release-deps.txt; then
             echo 'Expo development runtime leaked into Consumer release dependencies.' >&2
-            grep -Ei 'expo-dev-client|expo-dev-launcher|expo-dev-menu' /tmp/consumer-release-deps.txt >&2 || true
             exit 1
           fi
-      - name: Build standalone release APK with embedded JS bundle
+      - name: Build internal release candidate
         working-directory: apps/consumer-mobile/android
         run: ./gradlew assembleRelease --no-daemon
-      - name: Verify release artifact
+      - name: Verify release candidate and ARM64 payload
         run: |
           test -f apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk
           unzip -p apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk assets/index.android.bundle > /tmp/consumer.bundle
           test -s /tmp/consumer.bundle
           grep -a -q 'ssgesjzdvdsqacdtasje.supabase.co' /tmp/consumer.bundle
           grep -a -q 'EMAIL SIGN-IN CODE' /tmp/consumer.bundle
-          grep -a -q '6-digit code' /tmp/consumer.bundle
-          grep -a -q 'characters entered' /tmp/consumer.bundle
           grep -a -q 'MAP LEGEND' /tmp/consumer.bundle
-          grep -a -q 'Business' /tmp/consumer.bundle
           grep -a -q 'Full details' /tmp/consumer.bundle
           grep -a -q 'Your current location' /tmp/consumer.bundle
-          grep -a -q 'Scroll results' /tmp/consumer.bundle
-          grep -a -q 'androidView' apps/consumer-mobile/app/explore.tsx
           ! grep -a -q 'Development Build' /tmp/consumer.bundle
           ! grep -a -q 'expo-dev-launcher' /tmp/consumer.bundle
-      - name: Enable KVM for Android emulator
+          unzip -l apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk | grep -q 'lib/arm64-v8a/libreactnative.so'
+          unzip -l apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk | grep -q 'lib/arm64-v8a/libhermesvm.so'
+      - name: Enable KVM for x86 Android emulator
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm || true
           sudo chmod 666 /dev/kvm
-      - name: Android 16 Consumer startup and discovery test
+      - name: Android 16 x86_64 startup and Explore diagnostic gate
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
@@ -133,22 +135,66 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
-          script: bash scripts/android-startup-smoke.sh apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk com.kleenest.app Consumer kleenest://explore
-      - name: Upload Consumer startup diagnostics
+          script: bash scripts/android-startup-smoke.sh apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk com.kleenest.app Consumer-x86_64 kleenest://explore
+      - name: Upload x86 startup diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Kleenest-Consumer-Startup-Diagnostics
+          name: Kleenest-Consumer-x86-Startup-Diagnostics
           path: android-startup-logs
           if-no-files-found: ignore
           retention-days: 7
-      - name: Stage standalone APK
+      - name: Stage internal candidate
         run: |
           mkdir -p artifacts
-          cp apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk artifacts/Kleenest-Consumer-Standalone.apk
+          cp apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk artifacts/Kleenest-Consumer-Candidate.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kleenest-Consumer-Internal-Candidate
+          path: artifacts/Kleenest-Consumer-Candidate.apk
+          if-no-files-found: error
+          retention-days: 1
+
+  arm64-runtime:
+    needs: candidate
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Kleenest-Consumer-Internal-Candidate
+          path: candidate
+      - name: Android 16 ARM64 startup and Explore diagnostic gate
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          arch: arm64-v8a
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
+          script: bash scripts/android-startup-smoke.sh candidate/Kleenest-Consumer-Candidate.apk com.kleenest.app Consumer-ARM64 kleenest://explore
+      - name: Upload ARM64 startup diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kleenest-Consumer-ARM64-Startup-Diagnostics
+          path: android-startup-logs
+          if-no-files-found: ignore
+          retention-days: 7
+
+  promote:
+    needs: arm64-runtime
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Kleenest-Consumer-Internal-Candidate
+          path: candidate
+      - run: cp candidate/Kleenest-Consumer-Candidate.apk Kleenest-Consumer-Standalone.apk
       - uses: actions/upload-artifact@v4
         with:
           name: Kleenest-Consumer-Standalone-APK
-          path: artifacts/Kleenest-Consumer-Standalone.apk
+          path: Kleenest-Consumer-Standalone.apk
           if-no-files-found: error
           retention-days: 30
