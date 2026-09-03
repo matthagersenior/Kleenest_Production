@@ -16,7 +16,10 @@ if(!failures.length){
   if(telemetry.includes('p_search')||telemetry.includes('p_query')||telemetry.includes('value_text'))failures.push('Discovery telemetry must not transmit raw search text.');
   for(const token of ["'native_mobile'","'search'","'amenity_filter'",'p_discovered_count','p_radius_km'])if(!telemetry.includes(token))failures.push(`Discovery telemetry missing privacy-safe context: ${token}.`);
   if(!telemetry.includes('void recordConsumerDiscovery(input).catch(()=>{})')||!telemetry.includes('void recordConsumerRouteIntent(locationId,options).catch(()=>{})'))failures.push('Consumer telemetry must remain fire-and-forget so analytics cannot block the user journey.');
-  if(!explore.includes('captureConsumerDiscovery({')||!explore.includes('resultCount:enriched.length')||!explore.includes('amenityCount:selectedAmenityNames.length'))failures.push('Explore must capture privacy-safe discovery outcomes after canonical nearby results resolve.');
+  const hasDiscoveryCall=/captureConsumerDiscovery\s*\(\s*\{/.test(explore);
+  const hasResultCount=/resultCount\s*:\s*enriched\.length/.test(explore);
+  const hasAmenityCount=/amenityCount\s*:\s*selectedAmenityNames\.length/.test(explore);
+  if(!hasDiscoveryCall||!hasResultCount||!hasAmenityCount)failures.push('Explore must capture privacy-safe discovery outcomes after canonical nearby results resolve.');
   if(!explore.includes('captureConsumerRouteIntent(id)')||!explore.includes('addToRoute(selected)')||!explore.includes('directions(selected)'))failures.push('Explore route and directions intent must feed the canonical route-event authority.');
   if(!saved.includes("captureConsumerRouteIntent(id,{fromFavorite:true})"))failures.push('Saved route intent must preserve favorite-origin attribution.');
   if(!location.includes('mobileCheckIn')||!location.includes('createMobileReview')||!location.includes('recordReviewAmenityInventory')||!location.includes('uploadReviewPhotos'))failures.push('High-value consumer evidence production must remain canonical and server-backed.');
