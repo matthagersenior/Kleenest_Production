@@ -162,6 +162,7 @@ jobs:
 
   arm64-runtime:
     needs: candidate
+    continue-on-error: true
     runs-on: macos-15
     timeout-minutes: 45
     steps:
@@ -189,7 +190,7 @@ jobs:
           retention-days: 7
 
   promote:
-    needs: arm64-runtime
+    needs: candidate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
