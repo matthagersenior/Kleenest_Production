@@ -1,1 +1,1 @@
-Trigger Kleenest family OTA publish after aligning Business, Fleet, and Owner Expo project slugs.
+Republish Kleenest app family OTA after Consumer Google OAuth, Explore selection fix, and Business/Fleet/Owner Google auth updates.
