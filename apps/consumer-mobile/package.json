@@ -23,7 +23,6 @@
     "expo": "~57.0.17",
     "expo-camera": "~57.0.4",
     "expo-constants": "~57.0.16",
-    "expo-dev-client": "~57.0.16",
     "expo-image-picker": "~57.0.14",
     "expo-linking": "~57.0.8",
     "expo-location": "~57.0.14",
@@ -42,6 +41,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.0",
+    "expo-dev-client": "~57.0.16",
     "typescript": "~5.9.2"
   }
 }
