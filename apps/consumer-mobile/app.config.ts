@@ -29,6 +29,12 @@ const config: ExpoConfig = {
   android: {
     package: 'com.kleenest.app',
     permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION', 'CAMERA'],
+    intentFilters: [{
+      action: 'VIEW',
+      autoVerify: false,
+      data: [{ scheme: 'kleenest' }],
+      category: ['BROWSABLE', 'DEFAULT'],
+    }],
   },
   web: {
     output: 'single',
