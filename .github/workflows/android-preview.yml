@@ -48,7 +48,7 @@ jobs:
           node scripts/consumer-family-capability-audit.mjs
       - name: Generate clean Android native project
         working-directory: apps/consumer-mobile
-        run: npx expo prebuild --platform android --clean
+        run: npx expo prebuild --platform android --non-interactive --clean
       - name: Build standalone release APK with embedded JS bundle
         working-directory: apps/consumer-mobile/android
         run: ./gradlew assembleRelease --no-daemon
