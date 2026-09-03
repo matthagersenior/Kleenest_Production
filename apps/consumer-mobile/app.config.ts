@@ -17,6 +17,14 @@ const config: ExpoConfig = {
   name: 'Kleenest',
   slug: 'kleenest-consumer',
   version: '0.1.0',
+  runtimeVersion: 'kleenest-consumer-0.1.0',
+  updates: {
+    enabled: true,
+    url: `https://u.expo.dev/${easProjectId}`,
+    checkAutomatically: 'ON_LOAD',
+    fallbackToCacheTimeout: 0,
+    requestHeaders: { 'expo-channel-name': 'consumer-production' },
+  },
   orientation: 'portrait',
   scheme: 'kleenest',
   userInterfaceStyle: 'automatic',
@@ -55,6 +63,7 @@ const config: ExpoConfig = {
   experiments: { typedRoutes: true, baseUrl: '/Kleenest_Production' },
   extra: {
     appRole: 'consumer',
+    otaChannel: 'consumer-production',
     previewRole: 'non-blocking-web-preview',
     productionEnvironment: {
       expoProjectId: PRODUCTION_EAS_PROJECT_ID,
