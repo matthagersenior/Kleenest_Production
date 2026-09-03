@@ -19,7 +19,8 @@ if(!failures.length){
  const home=read(files.home),explore=read(files.explore),location=read(files.location),social=read(files.social),play=read(files.play),activity=read(files.activity),core=read(files.core),amenities=read(files.amenities),photos=read(files.photos),community=read(files.community);
 
  for(const token of ["'/explore'",'Find a better bathroom','THE KLEENEST LOOP','PLAY + PROGRESS','YOUR NETWORK'])if(!home.includes(token))failures.push(`Home activation hierarchy missing ${token}.`);
- for(const token of ['listNearbyRestrooms','listAmenityCatalog','selectedAmenityNames','navigateUrl','captureConsumerRouteIntent',"pathname:'/route'",'readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Discovery activation missing ${token}.`);
+ for(const token of ['listNearbyRestrooms','listAmenityCatalog','selectedAmenityNames','navigateUrl','captureConsumerRouteIntent','readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Discovery activation missing ${token}.`);
+ if(!/pathname\s*:\s*['"]\/route['"]/.test(explore))failures.push('Discovery activation missing route navigation.');
  for(const token of ['mobileCheckIn','findLatestEligibleReviewCheckIn','createMobileReview','recordReviewAmenityInventory','chooseReviewPhotos','uploadReviewPhotos','getMobileProgressionDashboard','listMobileActiveQuests','rewardMessage','toggleMobileFavorite'])if(!location.includes(token))failures.push(`Location contribution loop missing ${token}.`);
  if(!location.includes("permission.status!=='granted'")||!location.includes('Location.Accuracy.High'))failures.push('Verified check-in must remain bound to explicit high-accuracy device location.');
  if(!location.includes('if(submitting||!checkInId)return'))failures.push('Review submission must remain gated by an eligible check-in.');
