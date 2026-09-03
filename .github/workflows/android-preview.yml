@@ -92,7 +92,10 @@ jobs:
           unzip -p apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk assets/index.android.bundle > /tmp/consumer.bundle
           test -s /tmp/consumer.bundle
           grep -a -q 'ssgesjzdvdsqacdtasje.supabase.co' /tmp/consumer.bundle
-          grep -a -q 'LOCALHOST LINK RESCUE' /tmp/consumer.bundle
+          grep -a -q 'EMAIL LINK RESCUE' /tmp/consumer.bundle
+          grep -a -q 'characters entered' /tmp/consumer.bundle
+          grep -a -q 'MAP LEGEND' /tmp/consumer.bundle
+          grep -a -q 'Your current location' /tmp/consumer.bundle
           grep -a -q 'androidView' apps/consumer-mobile/app/explore.tsx
           ! grep -a -q 'Development Build' /tmp/consumer.bundle
           ! grep -a -q 'expo-dev-launcher' /tmp/consumer.bundle
