@@ -61,11 +61,6 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Verify Expo authentication
         run: npx eas-cli@latest whoami --non-interactive
-      - name: Ensure OTA channel exists
-        working-directory: ${{ matrix.directory }}
-        run: |
-          npx eas-cli@latest channel:create "${{ matrix.channel }}" --branch "${{ matrix.channel }}" --non-interactive || \
-          npx eas-cli@latest channel:edit "${{ matrix.channel }}" --branch "${{ matrix.channel }}" --non-interactive
       - name: Publish OTA update
         working-directory: ${{ matrix.directory }}
         run: npx eas-cli@latest update --channel "${{ matrix.channel }}" --message "${{ matrix.app }} ${GITHUB_SHA}" --non-interactive
