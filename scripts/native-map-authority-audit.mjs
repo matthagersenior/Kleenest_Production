@@ -7,7 +7,7 @@ if(!failures.length){
  const pkg=fs.readFileSync(required[0],'utf8'),config=fs.readFileSync(required[1],'utf8'),explore=fs.readFileSync(required[2],'utf8'),route=fs.readFileSync(required[3],'utf8'),core=fs.readFileSync(required[4],'utf8');
  if(!pkg.includes('@maplibre/maplibre-react-native'))failures.push('Native consumer app must depend on MapLibre React Native.');
  if(!config.includes("'@maplibre/maplibre-react-native'"))failures.push('Expo config must register the MapLibre native config plugin.');
- for(const token of ['Find your best nearby bathroom.','Locate','Search a place, address or brand','What matters on this stop?','Start directions','Add to route','BEST NEXT DECISION'])if(!explore.includes(token))failures.push(`Bathroom-first rich Explore missing ${token}.`);
+ for(const token of ['Find a trusted bathroom.','Locate','Search a place, address or brand','What matters on this stop?','Start directions','Add to route','BEST NEXT DECISION'])if(!explore.includes(token))failures.push(`Bathroom-first rich Explore missing ${token}.`);
  if(!explore.includes("import { Camera, Map, Marker }")||!explore.includes('<Map ')||!explore.includes('<Camera'))failures.push('Explore must render MapLibre.');
  if(!explore.includes('tile.openstreetmap.org')||!explore.includes("type:'raster'"))failures.push('Explore must use canonical OpenStreetMap raster tiles.');
  if(!explore.includes('<Marker')||/\bcluster\s*=/.test(explore))failures.push('Nearby restroom markers must stay directly actionable and unclustered.');

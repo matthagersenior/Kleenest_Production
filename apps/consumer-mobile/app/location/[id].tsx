@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { createMobileReview, getMobileLocation, getMobileProgressionDashboard, listMobileActiveQuests, listMobileLocationReviews, mobileCheckIn, toggleMobileFavorite } from '@kleenest/mobile-core';
 import LocationAmenityInventory from '../../components/LocationAmenityInventory';
 import ReviewPhotoStrip from '../../components/ReviewPhotoStrip';
+import { PlaceIcon } from '../../components/RestroomSignals';
 import { TrustStrip, palette } from '../../components/ConsumerUI';
 import { listAmenityCatalog, recordReviewAmenityInventory, type AmenityCatalogItem } from '../../services/amenities';
 import { toggleHelpfulReview } from '../../services/community';
@@ -29,7 +30,7 @@ export default function LocationDetailScreen(){
   const missionMatches=missionMode&&activeMission?.status==='active'&&activeMission.locationId===locationId;
   const missionRequirement=missionMatches?missionEvidenceRequirement(activeMission):null;
   const missionSteps=missionMatches?(activeMission?.goal.steps||activeMission?.steps||[]):[];
-  async function refresh(){try{const[nextPlace,nextReviews,eligible]=await Promise.all([getMobileLocation(locationId),listMobileLocationReviews(locationId),findLatestEligibleReviewCheckIn(locationId).catch(()=>null)]);setPlace(nextPlace);setReviews(nextReviews);setCheckInId(eligible?.id||null);setCheckInAt(eligible?.checked_in_at||null)}catch(error:any){setMessage(error?.message||'Location could not be loaded.')}}
+  async function refresh(){setMessage('');try{const nextPlace=await getMobileLocation(locationId);if(!nextPlace)throw new Error('This restroom is not currently available.');setPlace(nextPlace);const[nextReviews,eligible]=await Promise.all([listMobileLocationReviews(locationId).catch(()=>[]),findLatestEligibleReviewCheckIn(locationId).catch(()=>null)]);setReviews(nextReviews);setCheckInId(eligible?.id||null);setCheckInAt(eligible?.checked_in_at||null)}catch(error:any){setMessage(error?.message||'Location could not be loaded.')}}
   async function refreshMission(){try{const current=await readTrustMission();setActiveMission(current);if(missionMode&&current&&current.locationId!==locationId)setMessage(`Your active trust mission is at ${current.locationName}. This restroom cannot replace it silently.`);else if(missionMode&&!current)setMessage('There is no active trust mission to resume. Start one from Explore or Saved.')}catch{}}
   useEffect(()=>{refresh();refreshMission()},[locationId]);
   useEffect(()=>{listAmenityCatalog().then(setAmenities).catch(error=>setMessage(error?.message||'Amenity catalog could not be loaded.'))},[]);
@@ -63,7 +64,7 @@ export default function LocationDetailScreen(){
     {message?<View style={s.reward}><Text style={s.rewardText}>{message}</Text>{earned||missionCompleted||missionMode&&!missionMatches?<Pressable onPress={()=>router.push('/play')}><Text style={s.rewardLink}>{missionCompleted?'View completed mission →':missionMode&&!missionMatches?'View active mission →':'See your progress →'}</Text></Pressable>:null}</View>:null}
 
     <View style={rich.locationFacts}>
-      <View style={rich.identityRow}>{place.business_logo_url?<Image source={{uri:place.business_logo_url}} resizeMode="contain" style={rich.businessLogo}/>:null}<View style={{flex:1}}><Text style={s.sectionEyebrow}>{place.business_name?'BUSINESS':'LOCATION DETAILS'}</Text><Text style={rich.factTitle}>{place.business_name||place.name}</Text>{place.place_type?<Text style={s.meta}>{String(place.place_type).replaceAll('_',' ')}</Text>:null}</View></View>
+      <View style={rich.identityRow}><PlaceIcon item={place} size={58}/><View style={{flex:1}}><Text style={s.sectionEyebrow}>{place.business_name?'BUSINESS':'LOCATION DETAILS'}</Text><Text style={rich.factTitle}>{place.business_name||place.name}</Text>{place.place_type?<Text style={s.meta}>{String(place.place_type).replaceAll('_',' ')}</Text>:null}</View></View>
       {place.description||place.business?.description?<Text style={rich.factBody}>{place.description||place.business.description}</Text>:null}
       <View style={rich.factGrid}>{place.phone||place.business?.phone?<Pressable style={rich.factAction} onPress={()=>Linking.openURL(`tel:${place.phone||place.business.phone}`)}><Text style={rich.factActionLabel}>CALL</Text><Text style={rich.factActionValue}>{place.phone||place.business.phone}</Text></Pressable>:null}{place.website||place.business?.website?<Pressable style={rich.factAction} onPress={()=>Linking.openURL(place.website||place.business.website)}><Text style={rich.factActionLabel}>WEBSITE</Text><Text style={rich.factActionValue}>Open site →</Text></Pressable>:null}</View>
       {place.hours?.length?<View style={rich.factSection}><Text style={rich.factLabel}>HOURS</Text>{place.hours.map((hour:any)=><Text key={String(hour.id||hour.day_of_week)} style={rich.factBody}>Day {Number(hour.day_of_week)+1}: {hour.is_24_hours?'Open 24 hours':`${String(hour.opens_at||'—').slice(0,5)}–${String(hour.closes_at||'—').slice(0,5)}`}{hour.notes?` · ${hour.notes}`:''}</Text>)}</View>:null}
