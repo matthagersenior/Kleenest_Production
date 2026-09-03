@@ -14,11 +14,11 @@ const replacements = [
   ],
   [
     `const fallbackSelected =\n          fallback.selectedId &&\n          fallback.rows.some((row: any) => idOf(row) === fallback.selectedId)\n            ? fallback.selectedId\n            : idOf(fallback.rows[0]);`,
-    `const fallbackSelected =\n          fallback.selectedId &&\n          fallback.rows.some((row: any) => idOf(row) === fallback.selectedId)\n            ? fallback.selectedId\n            : "";`,
+    `const fallbackSelected =\n          selectedId && fallback.rows.some((row: any) => idOf(row) === selectedId)\n            ? selectedId\n            : "";`,
   ],
   [
-    `const nextSelected =\n            rememberedId &&\n            cache.rows.some((row: any) => idOf(row) === rememberedId)\n              ? rememberedId\n              : idOf(cache.rows[0]);`,
-    `const nextSelected =\n            rememberedId &&\n            cache.rows.some((row: any) => idOf(row) === rememberedId)\n              ? rememberedId\n              : "";`,
+    `const rememberedId = continuity?.selectedId || cache.selectedId || "";\n          const nextSelected =\n            rememberedId &&\n            cache.rows.some((row: any) => idOf(row) === rememberedId)\n              ? rememberedId\n              : idOf(cache.rows[0]);`,
+    `const nextSelected = "";`,
   ],
   [
     '<Map androidView="texture" style={s.map} mapStyle={OSM_STYLE}>',
@@ -26,7 +26,7 @@ const replacements = [
   ],
   [
     `              >\n                <Text style={s.selectedLabel}>BEST NEXT DECISION</Text>`,
-    `              >\n                <Pressable\n                  accessibilityRole="button"\n                  accessibilityLabel="Close selected location"\n                  onPress={() => setSelectedId("")}\n                  style={{ position: "absolute", top: 6, right: 6, zIndex: 20, width: 30, height: 30, borderRadius: 15, backgroundColor: "#eef4f0", alignItems: "center", justifyContent: "center" }}\n                >\n                  <Text style={{ color: palette.green, fontSize: 18, lineHeight: 20, fontWeight: "900" }}>×</Text>\n                </Pressable>\n                <Text style={[s.selectedLabel, { paddingRight: 32 }]}>BEST NEXT DECISION</Text>`,
+    `              >\n                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>\n                  <Text style={[s.selectedLabel, { flex: 1 }]}>BEST NEXT DECISION</Text>\n                  <Pressable\n                    accessibilityRole="button"\n                    accessibilityLabel="Close selected location"\n                    hitSlop={8}\n                    onPress={() => setSelectedId("")}\n                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#eef4f0", alignItems: "center", justifyContent: "center" }}\n                  >\n                    <Text style={{ color: palette.green, fontSize: 22, lineHeight: 24, fontWeight: "900" }}>×</Text>\n                  </Pressable>\n                </View>`,
   ],
 ];
 
@@ -37,4 +37,4 @@ for (const [from, to] of replacements) {
 }
 
 fs.writeFileSync(file, source);
-console.log('Consumer Explore overlay behavior patched: explicit selection, map dismiss, close button.');
+console.log('Consumer Explore overlay behavior patched: explicit selection only, map dismiss, visible close button.');
