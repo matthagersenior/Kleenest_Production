@@ -18,7 +18,7 @@ const activity=requireAll('apps/consumer-mobile/app/activity.tsx',['See how the 
 const activitySource=read('apps/consumer-mobile/app/activity.tsx');
 for(const token of ['See how the network gets stronger.','Your Kleenest history','Your trusted network','VISIT EVIDENCE','View strengthened restroom','listMyActivity','listMobileCommunityActivity'])if(!activitySource.includes(token))throw new Error(`apps/consumer-mobile/app/activity.tsx missing presentation contract: ${token}`);
 const notifications=requireAll('apps/consumer-mobile/app/notifications.tsx',['What needs your attention.','Recent Kleenest updates','What reaches you','Enable push','Mark all read','listNotificationInbox','notificationDestination']);
-const membership=requireAll('apps/consumer-mobile/app/membership.tsx',['Every consumer gets the complete Kleenest experience.','Complete feature parity','No feature locks','Kleenest AI','offline trips','Native purchase boundary','Find a bathroom','getMobileAccountSummary','listMobilePricingCatalog']);
+const membership=requireAll('apps/consumer-mobile/app/membership.tsx',['Choose the membership that fits you.','Every Consumer capability included','Authoritative entitlement','Kleenest AI','offline trips','native store purchase boundary','Find a bathroom','getMobileAccountSummary','listMobilePricingCatalog']);
 const qr=requireAll('apps/consumer-mobile/app/qr.tsx',['Scan trust into the network.','Point, scan, continue','MANUAL FALLBACK','One canonical resolver','CameraView','resolveQrAction','executeQrAction']);
 
 for(const [name,source] of Object.entries({layout,home,explore,profile,prefs,play,social,location,saved,route,activity:activitySource,notifications,membership,qr,ui})){
@@ -31,6 +31,6 @@ if(!play.includes('getMobileProgressionDashboard')||!play.includes('listMobileAc
 if(!social.includes('listMobileCommunityActivity')||!social.includes('toggleMobileFollow'))throw new Error('Rich Community presentation must preserve canonical community authority');
 if(!location.includes('mobileCheckIn')||!location.includes('recordReviewAmenityInventory'))throw new Error('Rich Location presentation must preserve verified contribution authority');
 if(!saved.includes('applyTrustDiscoveryControls')||!route.includes('function move(index:number,delta:number)'))throw new Error('Rich personal navigation surfaces must preserve explicit user-controlled trust ordering');
-if(!notifications.includes('updateNotificationPreferences')||!membership.includes('App Store / Google Play billing'))throw new Error('Rich account surfaces must preserve notification and native commerce boundaries');
+if(!notifications.includes('updateNotificationPreferences')||!(membership.includes('native store purchase boundary')||membership.includes('App Store / Google Play billing')))throw new Error('Rich account surfaces must preserve notification and native commerce boundaries');
 
 console.log('Native consumer presentation convergence audit passed.');
