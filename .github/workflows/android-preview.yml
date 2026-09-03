@@ -24,6 +24,7 @@ jobs:
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
       EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
       NODE_ENV: production
+      CI: 1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -47,13 +48,17 @@ jobs:
           node scripts/consumer-family-capability-audit.mjs
       - name: Generate clean Android native project
         working-directory: apps/consumer-mobile
-        run: npx expo prebuild --platform android --non-interactive --clean
+        run: npx expo prebuild --platform android --clean
       - name: Build standalone release APK with embedded JS bundle
         working-directory: apps/consumer-mobile/android
         run: ./gradlew assembleRelease --no-daemon
       - name: Verify release artifact
         run: |
           test -f apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk
+          unzip -p apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk assets/index.android.bundle > /tmp/consumer.bundle
+          test -s /tmp/consumer.bundle
+          grep -a -q 'ssgesjzdvdsqacdtasje.supabase.co' /tmp/consumer.bundle
+          ! grep -a -q 'Development Build' /tmp/consumer.bundle
           mkdir -p artifacts
           cp apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk artifacts/Kleenest-Consumer-Standalone.apk
       - uses: actions/upload-artifact@v4
