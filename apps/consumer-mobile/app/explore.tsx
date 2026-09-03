@@ -1,53 +1,1098 @@
-import { Camera, Map, Marker } from '@maplibre/maplibre-react-native';
-import * as Linking from 'expo-linking';
-import * as Location from 'expo-location';
-import { router } from 'expo-router';
-import { listNearbyRestrooms } from '@kleenest/mobile-core';
-import { listAmenityCatalog, type AmenityCatalogItem } from '../services/amenities';
-import { captureConsumerDiscovery, captureConsumerRouteIntent } from '../services/consumerTelemetry';
-import { visitFreshness } from '../services/evidenceFormatting';
-import { attachLocationTrust, listLocationTrustSummaries } from '../services/locationTrust';
-import { cachedAgeLabel, readNearbyCache, readNearbyContinuity, writeNearbyCache, writeNearbyContinuity } from '../services/nearbyCache';
-import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { palette } from '../components/ConsumerUI';
-import { MapLegend, PlaceIcon, RestroomSignals, isVerifiedRestroom, restroomMarkerGlyph, restroomMarkerLabel } from '../components/RestroomSignals';
+import { Camera, Map, Marker } from "@maplibre/maplibre-react-native";
+import * as Linking from "expo-linking";
+import * as Location from "expo-location";
+import { router } from "expo-router";
+import { listNearbyRestrooms } from "@kleenest/mobile-core";
+import {
+  listAmenityCatalog,
+  type AmenityCatalogItem,
+} from "../services/amenities";
+import {
+  captureConsumerDiscovery,
+  captureConsumerRouteIntent,
+} from "../services/consumerTelemetry";
+import { visitFreshness } from "../services/evidenceFormatting";
+import {
+  attachLocationTrust,
+  listLocationTrustSummaries,
+} from "../services/locationTrust";
+import {
+  cachedAgeLabel,
+  readNearbyCache,
+  readNearbyContinuity,
+  writeNearbyCache,
+  writeNearbyContinuity,
+} from "../services/nearbyCache";
+import { useEffect, useMemo, useState } from "react";
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { palette } from "../components/ConsumerUI";
+import {
+  MapLegend,
+  PlaceIcon,
+  RestroomSignals,
+  isVerifiedRestroom,
+  restroomMarkerLabel,
+} from "../components/RestroomSignals";
 
-const OSM_STYLE:any={version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© OpenStreetMap contributors'}},layers:[{id:'osm',type:'raster',source:'osm'}]};
-const idOf=(item:any)=>String(item?.location_id||item?.place_id||'');
-const hasCoordinates=(item:any)=>Number.isFinite(Number(item?.latitude))&&Number.isFinite(Number(item?.longitude));
-const distanceLabel=(meters:any)=>{const value=Number(meters);if(!Number.isFinite(value))return'—';const miles=value/1609.344;return miles<.1?`${Math.max(100,Math.round(value/100)*100)} ft`:`${miles.toFixed(miles<10?1:0)} mi`};
-const navigateUrl=(item:any)=>`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${item.latitude},${item.longitude}`)}&travelmode=driving`;
-const radiusChoices=[{label:'1 mi',meters:1609},{label:'2 mi',meters:3219},{label:'5 mi',meters:8047}];
-const FILTER_CATEGORIES=new Set(['Accessibility','Facilities','Family','Fixtures','Hours','Hygiene','Restroom','Safety']);
+const OSM_STYLE: any = {
+  version: 8,
+  sources: {
+    osm: {
+      type: "raster",
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      attribution: "© OpenStreetMap contributors",
+    },
+  },
+  layers: [{ id: "osm", type: "raster", source: "osm" }],
+};
+const idOf = (item: any) => String(item?.location_id || item?.place_id || "");
+const hasCoordinates = (item: any) =>
+  Number.isFinite(Number(item?.latitude)) &&
+  Number.isFinite(Number(item?.longitude));
+const distanceLabel = (meters: any) => {
+  const value = Number(meters);
+  if (!Number.isFinite(value)) return "—";
+  const miles = value / 1609.344;
+  return miles < 0.1
+    ? `${Math.max(100, Math.round(value / 100) * 100)} ft`
+    : `${miles.toFixed(miles < 10 ? 1 : 0)} mi`;
+};
+const navigateUrl = (item: any) =>
+  `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${item.latitude},${item.longitude}`)}&travelmode=driving`;
+const radiusChoices = [
+  { label: "1 mi", meters: 1609 },
+  { label: "2 mi", meters: 3219 },
+  { label: "5 mi", meters: 8047 },
+];
+const FILTER_CATEGORIES = new Set([
+  "Accessibility",
+  "Facilities",
+  "Family",
+  "Fixtures",
+  "Hours",
+  "Hygiene",
+  "Restroom",
+  "Safety",
+]);
 
-function TrustSignal({item}:{item:any}){const trust=item?.trust;const visits=Number(trust?.verified_visit_count||0),photos=Number(trust?.photo_evidence_count||0),amenities=Number(trust?.amenity_evidence_count||0),fresh=visitFreshness(trust?.latest_verified_at);if(item?.is_verified)return <Text style={[s.pill,s.trust]}>✓ VERIFIED PLACE</Text>;if(!visits&&!photos&&!amenities)return <Text style={s.pill}>Evidence building</Text>;return <Text style={[s.pill,s.trust]}>{visits?`${visits} verified visit${visits===1?'':'s'}`:'Community evidence'}{fresh?` · ${fresh}`:''}{photos?` · ${photos} photo${photos===1?'':'s'}`:''}{amenities?` · ${amenities} amenities`:''}</Text>}
-function ResultCard({item,onSelect,active}:{item:any;onSelect:()=>void;active:boolean}){return <Pressable accessibilityRole="button" accessibilityState={{selected:active}} accessibilityLabel={`${item.name||'Restroom location'}, ${distanceLabel(item.distance_meters)}`} style={[s.result,active&&s.resultActive]} onPress={onSelect}><View style={s.resultTop}><View style={{flex:1}}><View style={s.resultTitleRow}><PlaceIcon item={item} size={28}/><View style={{flex:1}}><Text style={s.resultTitle}>{item.name||'Restroom location'}</Text>{item.business_name?<Text style={s.meta}>{item.business_name}</Text>:null}<Text style={s.meta}>{[item.address,item.city,item.state].filter(Boolean).join(', ')||'Address unavailable'}</Text></View></View></View><View style={s.distanceBubble}><Text style={s.distance}>{distanceLabel(item.distance_meters)}</Text></View></View><RestroomSignals item={item} compact/><View style={s.pills}><TrustSignal item={item}/>{item.rating!=null?<Text style={s.pill}>★ {Number(item.rating).toFixed(1)} · {Number(item.review_count||0)} reviews</Text>:null}</View><Text style={s.cardHint}>{active?'Selected on map · use Full details above':'Tap to preview this bathroom on the map'}</Text></Pressable>}
-
-export default function ExploreScreen(){
- const[rows,setRows]=useState<any[]>([]);const[origin,setOrigin]=useState<[number,number]|null>(null);const[mapCenter,setMapCenter]=useState<[number,number]|null>(null);const[mapZoom,setMapZoom]=useState(13);const[cameraNonce,setCameraNonce]=useState(0);const[mapTouching,setMapTouching]=useState(false);const[selectedId,setSelectedId]=useState('');const[search,setSearch]=useState('');const[radius,setRadius]=useState(8047);const[loading,setLoading]=useState(false);const[message,setMessage]=useState('');const[cached,setCached]=useState(false);const[amenities,setAmenities]=useState<AmenityCatalogItem[]>([]);const[selectedAmenityNames,setSelectedAmenityNames]=useState<string[]>([]);
- const selected=useMemo(()=>rows.find(row=>idOf(row)===selectedId)||rows[0]||null,[rows,selectedId]);
- const filterAmenities=useMemo(()=>amenities.filter(item=>FILTER_CATEGORIES.has(String(item.category||''))).slice(0,24),[amenities]);
- function toggleAmenity(name:string){setSelectedAmenityNames(current=>current.includes(name)?current.filter(value=>value!==name):[...current,name]);}
- function selectRestroom(id:string){setSelectedId(id);const next=rows.find(row=>idOf(row)===id);if(next&&hasCoordinates(next)){setMapCenter([Number(next.longitude),Number(next.latitude)]);setCameraNonce(value=>value+1)}void writeNearbyContinuity(id,radius)}
- function chooseRadius(nextRadius:number){setRadius(nextRadius);if(selectedId)void writeNearbyContinuity(selectedId,nextRadius)}
- function recenterMap(){if(!origin)return;setMapCenter(origin);setMapZoom(13);setCameraNonce(value=>value+1)}
- function changeMapZoom(delta:number){setMapZoom(current=>Math.min(18,Math.max(7,current+delta)));setCameraNonce(value=>value+1)}
- async function load(options:{clearQuery?:boolean}={}){if(loading)return;setLoading(true);setMessage('Finding bathrooms near you…');try{const permission=await Location.requestForegroundPermissionsAsync();if(permission.status!=='granted')throw new Error('Location access is needed to find bathrooms near you. Enable it in your phone settings and try again.');const current=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Balanced});const nextOrigin:[number,number]=[current.coords.longitude,current.coords.latitude];const query=options.clearQuery?'':search.trim();if(options.clearQuery)setSearch('');const data=await listNearbyRestrooms(current.coords.latitude,current.coords.longitude,radius,query,selectedAmenityNames);const summaries=data.length?await listLocationTrustSummaries(data.map((row:any)=>idOf(row)).filter(Boolean)).catch(()=>[]):[];const enriched=attachLocationTrust(data,summaries);captureConsumerDiscovery({latitude:current.coords.latitude,longitude:current.coords.longitude,radiusMeters:radius,resultCount:enriched.length,search:query,amenityCount:selectedAmenityNames.length});const preservedId=selectedId&&enriched.some((row:any)=>idOf(row)===selectedId)?selectedId:(enriched[0]?idOf(enriched[0]):'');setOrigin(nextOrigin);setMapCenter(nextOrigin);setCameraNonce(value=>value+1);setRows(enriched);setSelectedId(preservedId);if(preservedId)void writeNearbyContinuity(preservedId,radius);setCached(false);const qualifier=selectedAmenityNames.length?` matching ${selectedAmenityNames.length} need${selectedAmenityNames.length===1?'':'s'}`:'';setMessage(enriched.length?`${enriched.length} nearby bathroom candidate${enriched.length===1?'':'s'} found${qualifier}. Drag, pinch or use the map controls to explore.`:'No bathrooms match this search yet. Try a larger radius or fewer filters.');if(enriched.length&&!query&&!selectedAmenityNames.length)void writeNearbyCache(enriched,{selectedId:preservedId,origin:nextOrigin,radiusMeters:radius})}catch(error:any){const canUseGenericCache=!search.trim()&&!selectedAmenityNames.length;const fallback=canUseGenericCache?await readNearbyCache():null;if(fallback?.rows?.length){const fallbackSelected=fallback.selectedId&&fallback.rows.some((row:any)=>idOf(row)===fallback.selectedId)?fallback.selectedId:idOf(fallback.rows[0]);setRows(fallback.rows);setSelectedId(fallbackSelected);if(fallback.origin){setOrigin(fallback.origin);setMapCenter(fallback.origin)}if(fallback.radiusMeters)setRadius(fallback.radiusMeters);setCached(true);setMessage(`Live lookup failed. Showing cached bathrooms from ${cachedAgeLabel(fallback.savedAt)}.`)}else{setRows([]);setSelectedId('');setMessage(error?.message||'Bathrooms could not be loaded.')}}finally{setLoading(false)}}
- function addToRoute(item:any){const id=idOf(item);captureConsumerRouteIntent(id);router.push({pathname:'/route',params:{add:id}})}
- async function directions(item:any){const id=idOf(item);captureConsumerRouteIntent(id);await Linking.openURL(navigateUrl(item))}
- useEffect(()=>{listAmenityCatalog().then(setAmenities).catch(()=>{});let active=true;Promise.all([readNearbyCache(),readNearbyContinuity()]).then(([cache,continuity])=>{if(!active)return;if(continuity?.radiusMeters)setRadius(continuity.radiusMeters);if(cache?.rows?.length){const rememberedId=continuity?.selectedId||cache.selectedId||'';const nextSelected=rememberedId&&cache.rows.some((row:any)=>idOf(row)===rememberedId)?rememberedId:idOf(cache.rows[0]);setRows(cache.rows);setSelectedId(nextSelected);if(cache.origin){setOrigin(cache.origin);setMapCenter(cache.origin)}setCached(true);setMessage(`Showing your last nearby bathrooms from ${cachedAgeLabel(cache.savedAt)} while current results load.`)}}).finally(()=>{if(active)void load()});return()=>{active=false}},[]);
- useEffect(()=>{if(!mapTouching)return;const release=setTimeout(()=>setMapTouching(false),450);return()=>clearTimeout(release)},[mapTouching]);
- const mapVisible=Boolean(origin);
- return <SafeAreaView style={s.safe}>
-   <View style={[s.hero,{marginHorizontal:12,marginTop:8,marginBottom:0,borderRadius:18,paddingHorizontal:13,paddingVertical:9,gap:0}]}><View style={[s.heroTop,{alignItems:'center'}]}><View style={{flex:1}}><Text style={[s.eyebrow,{fontSize:8}]}>DISCOVER NEARBY</Text><Text style={[s.title,{fontSize:19,lineHeight:23,marginTop:2}]}>Find a trusted bathroom.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Find bathrooms near my current location" style={[s.locate,{minHeight:42,minWidth:62,paddingVertical:7}]} disabled={loading} onPress={()=>load({clearQuery:true})}><Text style={[s.locateIcon,{fontSize:16}]}>⌖</Text><Text style={[s.locateText,{fontSize:8,marginTop:0}]}>{loading?'Finding…':'Locate'}</Text></Pressable></View></View>
-   <View style={s.searchPanel}><View style={s.searchRow}><TextInput accessibilityLabel="Search bathrooms" style={s.input} value={search} onChangeText={setSearch} onSubmitEditing={()=>load()} returnKeyType="search" placeholder="Search a place, address or brand" placeholderTextColor="#7b8b82"/><Pressable accessibilityRole="button" style={s.searchButton} disabled={loading} onPress={()=>load()}><Text style={s.searchButtonText}>SEARCH</Text></Pressable></View><View style={s.filterLine}><View accessibilityRole="radiogroup" style={s.radiusRow}>{radiusChoices.map(choice=><Pressable accessibilityRole="radio" accessibilityState={{selected:radius===choice.meters}} key={choice.meters} style={[s.radius,radius===choice.meters&&s.radiusActive]} onPress={()=>chooseRadius(choice.meters)}><Text style={[s.radiusText,radius===choice.meters&&s.radiusTextActive]}>{choice.label}</Text></Pressable>)}</View>{selectedAmenityNames.length?<Text style={s.filterCount}>{selectedAmenityNames.length} amenity filter{selectedAmenityNames.length===1?'':'s'}</Text>:null}</View>{filterAmenities.length?<View style={s.amenitySection}><View style={s.amenityHeading}><Text style={s.amenityTitle}>What matters on this stop?</Text>{selectedAmenityNames.length?<Pressable accessibilityRole="button" onPress={()=>setSelectedAmenityNames([])}><Text style={s.clear}>Clear filters</Text></Pressable>:null}</View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.amenityRow}>{filterAmenities.map(item=><Pressable accessibilityRole="checkbox" accessibilityState={{checked:selectedAmenityNames.includes(item.name)}} key={item.id} style={[s.amenityPill,selectedAmenityNames.includes(item.name)&&s.amenityPillActive]} onPress={()=>toggleAmenity(item.name)}><Text style={[s.amenityText,selectedAmenityNames.includes(item.name)&&s.amenityTextActive]}>{item.name}</Text></Pressable>)}</ScrollView></View>:null}{message?<Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text>:null}</View>
-   <FlatList data={rows} scrollEnabled refreshControl={<RefreshControl refreshing={loading} onRefresh={()=>load()}/>} keyboardShouldPersistTaps="handled" nestedScrollEnabled keyExtractor={item=>idOf(item)} contentContainerStyle={s.list} ListHeaderComponent={<>
-     {mapVisible?<View style={s.mapFrame}><Map androidView="texture" style={s.map} mapStyle={OSM_STYLE}><Camera key={`camera-${cameraNonce}-${mapZoom}-${mapCenter?.join('-')}`} initialViewState={{center:mapCenter||origin!,zoom:mapZoom}}/><Marker id="kleenest-user-location" lngLat={origin!} anchor="center"><View accessibilityLabel="Your current location" style={s.userLocationRing}><View style={s.userLocationDot}/></View></Marker>{rows.filter(hasCoordinates).map(item=>{const id=idOf(item),active=id===idOf(selected),verified=isVerifiedRestroom(item);return <Marker key={id} id={id} lngLat={[Number(item.longitude),Number(item.latitude)]} anchor="bottom" onPress={()=>selectRestroom(id)}><View accessibilityLabel={restroomMarkerLabel(item)} style={[s.marker,verified&&s.markerVerified,active&&s.markerActive]}><PlaceIcon item={item} size={active?28:22}/></View></Marker>})}</Map><View style={s.mapBadge}><Text style={s.mapBadgeText}>{cached?'Cached · ':''}{rows.length} nearby</Text></View><View style={s.mapControls}><Pressable accessibilityRole="button" accessibilityLabel="Zoom map in" style={s.mapControl} onPress={()=>changeMapZoom(1)}><Text style={s.mapControlText}>＋</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Zoom map out" style={s.mapControl} onPress={()=>changeMapZoom(-1)}><Text style={s.mapControlText}>−</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Center map on my location" style={s.mapControl} onPress={recenterMap}><Text style={s.mapControlText}>⌖</Text></Pressable></View><View style={s.legendWrap}><MapLegend/></View><View style={s.gestureHint}><Text style={s.gestureHintText}>Drag · pinch · zoom</Text></View></View>:null}
-     {selected?<View style={s.selected}><View style={s.selectedTop}><View style={{flex:1}}><Text style={s.selectedLabel}>BEST NEXT DECISION</Text><View style={s.selectedTitleRow}><Text style={s.selectedGlyph}>{restroomMarkerGlyph(selected)}</Text><Text style={[s.selectedTitle,{flex:1}]}>{selected.name||'Restroom location'}</Text></View><Text style={s.selectedMeta}>{distanceLabel(selected.distance_meters)} · {[selected.address,selected.city].filter(Boolean).join(', ')||'Address unavailable'}</Text><RestroomSignals item={selected}/><View style={s.selectedTrust}><TrustSignal item={selected}/></View></View>{selected.cleanliness_pct!=null?<View style={s.score}><Text style={s.scoreValue}>{Math.round(Number(selected.cleanliness_pct))}%</Text><Text style={s.scoreLabel}>CLEAN</Text></View>:null}</View><View style={s.actions}><Pressable style={s.secondary} onPress={()=>router.push(`/location/${idOf(selected)}`)}><Text style={s.secondaryText}>Full details</Text></Pressable><Pressable style={s.secondary} onPress={()=>addToRoute(selected)}><Text style={s.secondaryText}>Add to route</Text></Pressable><Pressable style={s.primary} disabled={!hasCoordinates(selected)} onPress={()=>directions(selected)}><Text style={s.primaryText}>Start directions →</Text></Pressable></View></View>:null}
-     <View style={s.listHeading}><View><Text style={s.listEyebrow}>NEARBY OPTIONS</Text><Text style={s.listTitle}>Bathrooms near you</Text></View><Text style={s.listNote}>{cached?'Cached · pull to refresh live distance':'Ordered nearby · trust supports the choice'}</Text></View>
-   </>} renderItem={({item})=><ResultCard item={item} active={idOf(item)===idOf(selected)} onSelect={()=>selectRestroom(idOf(item))}/>} ListEmptyComponent={<View style={s.empty}><Text style={s.emptyTitle}>{loading?'Looking for bathrooms…':'No bathroom results yet'}</Text><Text style={s.emptyBody}>Use your location, increase the radius, clear filters, or search again.</Text><Pressable style={s.primary} onPress={()=>load({clearQuery:true})}><Text style={s.primaryText}>Find nearby bathrooms</Text></Pressable></View>}/>
- </SafeAreaView>;
+function TrustSignal({ item }: { item: any }) {
+  const trust = item?.trust;
+  const visits = Number(trust?.verified_visit_count || 0),
+    photos = Number(trust?.photo_evidence_count || 0),
+    amenities = Number(trust?.amenity_evidence_count || 0),
+    fresh = visitFreshness(trust?.latest_verified_at);
+  if (item?.is_verified)
+    return <Text style={[s.pill, s.trust]}>✓ VERIFIED PLACE</Text>;
+  if (!visits && !photos && !amenities)
+    return <Text style={s.pill}>Evidence building</Text>;
+  return (
+    <Text style={[s.pill, s.trust]}>
+      {visits
+        ? `${visits} verified visit${visits === 1 ? "" : "s"}`
+        : "Community evidence"}
+      {fresh ? ` · ${fresh}` : ""}
+      {photos ? ` · ${photos} photo${photos === 1 ? "" : "s"}` : ""}
+      {amenities ? ` · ${amenities} amenities` : ""}
+    </Text>
+  );
+}
+function ResultCard({
+  item,
+  onSelect,
+  active,
+}: {
+  item: any;
+  onSelect: () => void;
+  active: boolean;
+}) {
+  const details = [
+    item.place_type ? String(item.place_type).replaceAll("_", " ") : null,
+    item.accessible ? "Accessible" : null,
+    item.changing_table ? "Changing table" : null,
+    item.cleaning_schedule ? "Cleaning schedule available" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={`${item.name || "Restroom location"}, ${distanceLabel(item.distance_meters)}`}
+      style={[s.result, active && s.resultActive]}
+      onPress={onSelect}
+    >
+      <View style={s.resultTop}>
+        <View style={{ flex: 1 }}>
+          <View style={s.resultTitleRow}>
+            <PlaceIcon item={item} size={34} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.resultTitle}>
+                {item.name || "Restroom location"}
+              </Text>
+              {item.business_name ? (
+                <Text style={s.meta}>{item.business_name}</Text>
+              ) : null}
+              <Text style={s.meta}>
+                {[item.address, item.city, item.state]
+                  .filter(Boolean)
+                  .join(", ") || "Address unavailable"}
+              </Text>
+            </View>
+          </View>
+        </View>
+        <View style={s.distanceBubble}>
+          <Text style={s.distance}>{distanceLabel(item.distance_meters)}</Text>
+        </View>
+      </View>
+      {item.description ? (
+        <Text numberOfLines={2} style={[s.meta, { marginTop: 8 }]}>
+          {item.description}
+        </Text>
+      ) : null}
+      {details ? (
+        <Text style={[s.meta, { color: "#3f594b" }]}>{details}</Text>
+      ) : null}
+      <RestroomSignals item={item} compact />
+      <View style={s.pills}>
+        <TrustSignal item={item} />
+        {item.rating != null ? (
+          <Text style={s.pill}>
+            ★ {Number(item.rating).toFixed(1)} ·{" "}
+            {Number(item.review_count || 0)} reviews
+          </Text>
+        ) : null}
+      </View>
+      <Text style={s.cardHint}>
+        {active
+          ? "Selected on the fixed map · tap Full details"
+          : "Tap to preview this location on the map"}
+      </Text>
+    </Pressable>
+  );
 }
 
-const s=StyleSheet.create({safe:{flex:1,backgroundColor:palette.canvas},hero:{backgroundColor:palette.green,margin:12,marginBottom:0,borderRadius:23,padding:17,gap:8},heroTop:{flexDirection:'row',gap:12,alignItems:'flex-start'},eyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.7,color:'#bcd4c5'},title:{fontSize:28,lineHeight:31,fontWeight:'900',color:'#fff',marginTop:4},heroBody:{fontSize:12,lineHeight:18,color:'#dce9e1',marginTop:5},locate:{backgroundColor:'#fff',paddingHorizontal:11,paddingVertical:9,borderRadius:14,alignItems:'center',justifyContent:'center',minWidth:66,minHeight:48},locateIcon:{fontSize:18,fontWeight:'900',color:palette.green},locateText:{fontSize:9,fontWeight:'900',color:palette.green,marginTop:1},searchPanel:{paddingHorizontal:14,paddingTop:12,paddingBottom:8},searchRow:{flexDirection:'row',gap:8},input:{flex:1,minHeight:48,backgroundColor:'#fff',borderWidth:1,borderColor:'#d6e2da',borderRadius:14,paddingHorizontal:13,paddingVertical:12,fontSize:14,color:palette.ink},searchButton:{minHeight:48,backgroundColor:palette.green,borderRadius:14,paddingHorizontal:14,justifyContent:'center'},searchButtonText:{color:'#fff',fontWeight:'900',fontSize:10,letterSpacing:.5},filterLine:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,marginTop:9},radiusRow:{flexDirection:'row',gap:7},radius:{minHeight:44,paddingHorizontal:12,paddingVertical:7,borderRadius:999,backgroundColor:'#e7eee9',justifyContent:'center'},radiusActive:{backgroundColor:palette.green},radiusText:{fontSize:10,fontWeight:'900',color:'#4d6658'},radiusTextActive:{color:'#fff'},filterCount:{fontSize:9,fontWeight:'900',color:palette.green},amenitySection:{marginTop:10},amenityHeading:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},amenityTitle:{fontSize:11,fontWeight:'900',color:palette.green},clear:{fontSize:10,fontWeight:'900',color:'#567060'},amenityRow:{gap:6,paddingTop:7,paddingRight:8},amenityPill:{minHeight:44,paddingHorizontal:10,paddingVertical:7,borderRadius:999,backgroundColor:'#e8efea',justifyContent:'center'},amenityPillActive:{backgroundColor:palette.green},amenityText:{fontSize:10,fontWeight:'800',color:'#52675a'},amenityTextActive:{color:'#fff'},message:{fontSize:10,lineHeight:15,color:'#66776d',fontWeight:'700',marginTop:7},list:{paddingHorizontal:14,paddingBottom:34},mapFrame:{height:390,borderRadius:22,overflow:'hidden',borderWidth:1,borderColor:'#d4e0d8',backgroundColor:'#dde6e0',position:'relative'},map:{flex:1},mapBadge:{position:'absolute',top:10,left:10,backgroundColor:'rgba(23,61,43,.9)',paddingHorizontal:10,paddingVertical:7,borderRadius:999},mapBadgeText:{fontSize:9,fontWeight:'900',color:'#fff'},mapControls:{position:'absolute',right:10,top:10,gap:7},mapControl:{width:42,height:42,borderRadius:13,backgroundColor:'rgba(255,255,255,.97)',borderWidth:1,borderColor:'#cbd9d0',alignItems:'center',justifyContent:'center',shadowColor:'#000',shadowOpacity:.08,shadowRadius:5,elevation:2},mapControlText:{fontSize:20,fontWeight:'900',color:palette.green},legendWrap:{position:'absolute',left:10,bottom:12,right:62,alignItems:'flex-start'},gestureHint:{position:'absolute',right:10,bottom:12,backgroundColor:'rgba(23,61,43,.9)',borderRadius:999,paddingHorizontal:8,paddingVertical:6},gestureHintText:{fontSize:7,fontWeight:'900',color:'#fff'},userLocationRing:{width:30,height:30,borderRadius:15,borderWidth:3,borderColor:'rgba(43,110,214,.38)',backgroundColor:'rgba(255,255,255,.88)',alignItems:'center',justifyContent:'center'},userLocationDot:{width:13,height:13,borderRadius:7,backgroundColor:'#2b6ed6',borderWidth:2,borderColor:'#fff'},marker:{minWidth:36,minHeight:36,backgroundColor:'#fff',borderWidth:2,borderColor:'#587166',borderRadius:20,paddingHorizontal:7,paddingVertical:5,alignItems:'center',justifyContent:'center',shadowColor:'#000',shadowOpacity:.18,shadowRadius:5,elevation:3},markerVerified:{borderColor:palette.green,backgroundColor:'#eef8f1'},markerActive:{backgroundColor:palette.green,borderColor:'#fff',minWidth:44,minHeight:44},markerText:{fontSize:16,fontWeight:'900',color:palette.green},markerTextActive:{color:'#fff'},selected:{backgroundColor:'#fff',borderWidth:1,borderColor:'#cfe0d5',borderRadius:21,padding:15,marginTop:10,gap:12,shadowColor:'#000',shadowOpacity:.04,shadowRadius:8,elevation:1},selectedTop:{flexDirection:'row',gap:10},selectedLabel:{fontSize:8,fontWeight:'900',letterSpacing:1.3,color:'#597064'},selectedTitleRow:{flexDirection:'row',alignItems:'center',gap:8,marginTop:3},selectedGlyph:{fontSize:22},selectedTitle:{fontSize:20,fontWeight:'900',color:palette.ink},selectedMeta:{fontSize:11,lineHeight:16,color:'#6c7d72',fontWeight:'700',marginTop:3},selectedTrust:{marginTop:8,alignItems:'flex-start'},score:{width:60,height:60,borderRadius:30,backgroundColor:'#e4f2e8',alignItems:'center',justifyContent:'center'},scoreValue:{fontSize:17,fontWeight:'900',color:palette.green},scoreLabel:{fontSize:7,fontWeight:'900',letterSpacing:.5,color:'#557060'},actions:{flexDirection:'row',gap:8,flexWrap:'wrap'},secondary:{flexGrow:1,minHeight:48,backgroundColor:'#e7efe9',padding:11,borderRadius:12,alignItems:'center',justifyContent:'center'},secondaryText:{fontSize:11,fontWeight:'900',color:palette.green},primary:{flexGrow:1,minHeight:48,backgroundColor:palette.green,padding:11,borderRadius:12,alignItems:'center',justifyContent:'center'},primaryText:{fontSize:11,fontWeight:'900',color:'#fff'},listHeading:{marginTop:20,marginBottom:9,flexDirection:'row',justifyContent:'space-between',alignItems:'flex-end',gap:10},listEyebrow:{fontSize:8,fontWeight:'900',letterSpacing:1.3,color:'#557060'},listTitle:{fontSize:21,fontWeight:'900',color:palette.ink,marginTop:2},listNote:{maxWidth:160,fontSize:9,lineHeight:13,fontWeight:'700',color:'#718077',textAlign:'right'},result:{minHeight:48,backgroundColor:'#fff',borderWidth:1,borderColor:'#dce6df',borderRadius:18,padding:14,marginBottom:8},resultActive:{borderColor:'#8eb19b',backgroundColor:'#fbfdfc'},resultTop:{flexDirection:'row',gap:10},resultTitleRow:{flexDirection:'row',gap:9,alignItems:'center'},resultGlyph:{fontSize:22},resultTitle:{fontSize:16,fontWeight:'900',color:palette.ink},meta:{fontSize:11,lineHeight:16,color:'#6c7d72',fontWeight:'700',marginTop:3},distanceBubble:{backgroundColor:'#edf4ef',borderRadius:999,paddingHorizontal:9,paddingVertical:6,alignSelf:'flex-start'},distance:{fontSize:11,fontWeight:'900',color:palette.green},pills:{flexDirection:'row',flexWrap:'wrap',gap:5,marginTop:7},pill:{fontSize:8,fontWeight:'900',color:'#52675a',backgroundColor:'#eef3ef',paddingHorizontal:7,paddingVertical:5,borderRadius:999,overflow:'hidden'},trust:{color:'#1b6840',backgroundColor:'#e1f2e7'},cardHint:{fontSize:9,fontWeight:'800',color:'#87958d',marginTop:8},empty:{padding:24,backgroundColor:'#fff',borderRadius:18,borderWidth:1,borderColor:'#dce6df',gap:10},emptyTitle:{fontSize:20,fontWeight:'900',color:palette.green},emptyBody:{fontSize:13,lineHeight:19,color:'#697a70'}});
+export default function ExploreScreen() {
+  const [rows, setRows] = useState<any[]>([]);
+  const [origin, setOrigin] = useState<[number, number] | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  const [mapZoom, setMapZoom] = useState(13);
+  const [cameraNonce, setCameraNonce] = useState(0);
+  const [selectedId, setSelectedId] = useState("");
+  const [search, setSearch] = useState("");
+  const [radius, setRadius] = useState(8047);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [cached, setCached] = useState(false);
+  const [amenities, setAmenities] = useState<AmenityCatalogItem[]>([]);
+  const [selectedAmenityNames, setSelectedAmenityNames] = useState<string[]>(
+    [],
+  );
+  const selected = useMemo(
+    () => rows.find((row) => idOf(row) === selectedId) || rows[0] || null,
+    [rows, selectedId],
+  );
+  const filterAmenities = useMemo(
+    () =>
+      amenities
+        .filter((item) => FILTER_CATEGORIES.has(String(item.category || "")))
+        .slice(0, 24),
+    [amenities],
+  );
+  function toggleAmenity(name: string) {
+    setSelectedAmenityNames((current) =>
+      current.includes(name)
+        ? current.filter((value) => value !== name)
+        : [...current, name],
+    );
+  }
+  function selectRestroom(id: string) {
+    setSelectedId(id);
+    const next = rows.find((row) => idOf(row) === id);
+    if (next && hasCoordinates(next)) {
+      setMapCenter([Number(next.longitude), Number(next.latitude)]);
+      setCameraNonce((value) => value + 1);
+    }
+    void writeNearbyContinuity(id, radius);
+  }
+  function chooseRadius(nextRadius: number) {
+    setRadius(nextRadius);
+    if (selectedId) void writeNearbyContinuity(selectedId, nextRadius);
+  }
+  function recenterMap() {
+    if (!origin) return;
+    setMapCenter(origin);
+    setMapZoom(13);
+    setCameraNonce((value) => value + 1);
+  }
+  function changeMapZoom(delta: number) {
+    setMapZoom((current) => Math.min(18, Math.max(7, current + delta)));
+    setCameraNonce((value) => value + 1);
+  }
+  async function load(options: { clearQuery?: boolean } = {}) {
+    if (loading) return;
+    setLoading(true);
+    setMessage("Finding bathrooms near you…");
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== "granted")
+        throw new Error(
+          "Location access is needed to find bathrooms near you. Enable it in your phone settings and try again.",
+        );
+      const current = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const nextOrigin: [number, number] = [
+        current.coords.longitude,
+        current.coords.latitude,
+      ];
+      const query = options.clearQuery ? "" : search.trim();
+      if (options.clearQuery) setSearch("");
+      const data = await listNearbyRestrooms(
+        current.coords.latitude,
+        current.coords.longitude,
+        radius,
+        query,
+        selectedAmenityNames,
+      );
+      const summaries = data.length
+        ? await listLocationTrustSummaries(
+            data.map((row: any) => idOf(row)).filter(Boolean),
+          ).catch(() => [])
+        : [];
+      const enriched = attachLocationTrust(data, summaries);
+      captureConsumerDiscovery({
+        latitude: current.coords.latitude,
+        longitude: current.coords.longitude,
+        radiusMeters: radius,
+        resultCount: enriched.length,
+        search: query,
+        amenityCount: selectedAmenityNames.length,
+      });
+      const preservedId =
+        selectedId && enriched.some((row: any) => idOf(row) === selectedId)
+          ? selectedId
+          : enriched[0]
+            ? idOf(enriched[0])
+            : "";
+      setOrigin(nextOrigin);
+      setMapCenter(nextOrigin);
+      setCameraNonce((value) => value + 1);
+      setRows(enriched);
+      setSelectedId(preservedId);
+      if (preservedId) void writeNearbyContinuity(preservedId, radius);
+      setCached(false);
+      const qualifier = selectedAmenityNames.length
+        ? ` matching ${selectedAmenityNames.length} need${selectedAmenityNames.length === 1 ? "" : "s"}`
+        : "";
+      setMessage(
+        enriched.length
+          ? `${enriched.length} nearby bathroom candidate${enriched.length === 1 ? "" : "s"} found${qualifier}. Drag, pinch or use the map controls to explore.`
+          : "No bathrooms match this search yet. Try a larger radius or fewer filters.",
+      );
+      if (enriched.length && !query && !selectedAmenityNames.length)
+        void writeNearbyCache(enriched, {
+          selectedId: preservedId,
+          origin: nextOrigin,
+          radiusMeters: radius,
+        });
+    } catch (error: any) {
+      const canUseGenericCache = !search.trim() && !selectedAmenityNames.length;
+      const fallback = canUseGenericCache ? await readNearbyCache() : null;
+      if (fallback?.rows?.length) {
+        const fallbackSelected =
+          fallback.selectedId &&
+          fallback.rows.some((row: any) => idOf(row) === fallback.selectedId)
+            ? fallback.selectedId
+            : idOf(fallback.rows[0]);
+        setRows(fallback.rows);
+        setSelectedId(fallbackSelected);
+        if (fallback.origin) {
+          setOrigin(fallback.origin);
+          setMapCenter(fallback.origin);
+        }
+        if (fallback.radiusMeters) setRadius(fallback.radiusMeters);
+        setCached(true);
+        setMessage(
+          `Live lookup failed. Showing cached bathrooms from ${cachedAgeLabel(fallback.savedAt)}.`,
+        );
+      } else {
+        setRows([]);
+        setSelectedId("");
+        setMessage(error?.message || "Bathrooms could not be loaded.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+  function addToRoute(item: any) {
+    const id = idOf(item);
+    captureConsumerRouteIntent(id);
+    router.push({ pathname: "/route", params: { add: id } });
+  }
+  async function directions(item: any) {
+    const id = idOf(item);
+    captureConsumerRouteIntent(id);
+    await Linking.openURL(navigateUrl(item));
+  }
+  useEffect(() => {
+    listAmenityCatalog()
+      .then(setAmenities)
+      .catch(() => {});
+    let active = true;
+    Promise.all([readNearbyCache(), readNearbyContinuity()])
+      .then(([cache, continuity]) => {
+        if (!active) return;
+        if (continuity?.radiusMeters) setRadius(continuity.radiusMeters);
+        if (cache?.rows?.length) {
+          const rememberedId = continuity?.selectedId || cache.selectedId || "";
+          const nextSelected =
+            rememberedId &&
+            cache.rows.some((row: any) => idOf(row) === rememberedId)
+              ? rememberedId
+              : idOf(cache.rows[0]);
+          setRows(cache.rows);
+          setSelectedId(nextSelected);
+          if (cache.origin) {
+            setOrigin(cache.origin);
+            setMapCenter(cache.origin);
+          }
+          setCached(true);
+          setMessage(
+            `Showing your last nearby bathrooms from ${cachedAgeLabel(cache.savedAt)} while current results load.`,
+          );
+        }
+      })
+      .finally(() => {
+        if (active) void load();
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+  const mapVisible = Boolean(origin);
+  return (
+    <SafeAreaView style={s.safe}>
+      <View
+        style={[
+          s.hero,
+          {
+            marginHorizontal: 12,
+            marginTop: 8,
+            marginBottom: 0,
+            borderRadius: 18,
+            paddingHorizontal: 13,
+            paddingVertical: 9,
+            gap: 0,
+          },
+        ]}
+      >
+        <View style={[s.heroTop, { alignItems: "center" }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.eyebrow, { fontSize: 8 }]}>DISCOVER NEARBY</Text>
+            <Text
+              style={[s.title, { fontSize: 19, lineHeight: 23, marginTop: 2 }]}
+            >
+              Find a trusted bathroom.
+            </Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Find bathrooms near my current location"
+            style={[
+              s.locate,
+              { minHeight: 42, minWidth: 62, paddingVertical: 7 },
+            ]}
+            disabled={loading}
+            onPress={() => load({ clearQuery: true })}
+          >
+            <Text style={[s.locateIcon, { fontSize: 16 }]}>⌖</Text>
+            <Text style={[s.locateText, { fontSize: 8, marginTop: 0 }]}>
+              {loading ? "Finding…" : "Locate"}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+      <View style={s.searchPanel}>
+        <View style={s.searchRow}>
+          <TextInput
+            accessibilityLabel="Search bathrooms"
+            style={s.input}
+            value={search}
+            onChangeText={setSearch}
+            onSubmitEditing={() => load()}
+            returnKeyType="search"
+            placeholder="Search a place, address or brand"
+            placeholderTextColor="#7b8b82"
+          />
+          <Pressable
+            accessibilityRole="button"
+            style={s.searchButton}
+            disabled={loading}
+            onPress={() => load()}
+          >
+            <Text style={s.searchButtonText}>SEARCH</Text>
+          </Pressable>
+        </View>
+        <View style={s.filterLine}>
+          <View accessibilityRole="radiogroup" style={s.radiusRow}>
+            {radiusChoices.map((choice) => (
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ selected: radius === choice.meters }}
+                key={choice.meters}
+                style={[s.radius, radius === choice.meters && s.radiusActive]}
+                onPress={() => chooseRadius(choice.meters)}
+              >
+                <Text
+                  style={[
+                    s.radiusText,
+                    radius === choice.meters && s.radiusTextActive,
+                  ]}
+                >
+                  {choice.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          {selectedAmenityNames.length ? (
+            <Text style={s.filterCount}>
+              {selectedAmenityNames.length} amenity filter
+              {selectedAmenityNames.length === 1 ? "" : "s"}
+            </Text>
+          ) : null}
+        </View>
+        {filterAmenities.length ? (
+          <View style={s.amenitySection}>
+            <View style={s.amenityHeading}>
+              <Text style={s.amenityTitle}>What matters on this stop?</Text>
+              {selectedAmenityNames.length ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setSelectedAmenityNames([])}
+                >
+                  <Text style={s.clear}>Clear filters</Text>
+                </Pressable>
+              ) : null}
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.amenityRow}
+            >
+              {filterAmenities.map((item) => (
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{
+                    checked: selectedAmenityNames.includes(item.name),
+                  }}
+                  key={item.id}
+                  style={[
+                    s.amenityPill,
+                    selectedAmenityNames.includes(item.name) &&
+                      s.amenityPillActive,
+                  ]}
+                  onPress={() => toggleAmenity(item.name)}
+                >
+                  <Text
+                    style={[
+                      s.amenityText,
+                      selectedAmenityNames.includes(item.name) &&
+                        s.amenityTextActive,
+                    ]}
+                  >
+                    {item.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+        {message ? (
+          <Text accessibilityLiveRegion="polite" style={s.message}>
+            {message}
+          </Text>
+        ) : null}
+      </View>
+      {mapVisible ? (
+        <View style={{ paddingHorizontal: 14 }}>
+          <View style={[s.mapFrame, { height: 300 }]}>
+            <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE}>
+              <Camera
+                key={`camera-${cameraNonce}-${mapZoom}-${mapCenter?.join("-")}`}
+                initialViewState={{
+                  center: mapCenter || origin!,
+                  zoom: mapZoom,
+                }}
+              />
+              <Marker
+                id="kleenest-user-location"
+                lngLat={origin!}
+                anchor="center"
+              >
+                <View
+                  accessibilityLabel="Your current location"
+                  style={s.userLocationRing}
+                >
+                  <View style={s.userLocationDot} />
+                </View>
+              </Marker>
+              {rows.filter(hasCoordinates).map((item) => {
+                const id = idOf(item),
+                  active = id === idOf(selected),
+                  verified = isVerifiedRestroom(item);
+                return (
+                  <Marker
+                    key={id}
+                    id={id}
+                    lngLat={[Number(item.longitude), Number(item.latitude)]}
+                    anchor="bottom"
+                    onPress={() => selectRestroom(id)}
+                  >
+                    <View
+                      accessibilityLabel={restroomMarkerLabel(item)}
+                      style={[
+                        s.marker,
+                        verified && s.markerVerified,
+                        active && s.markerActive,
+                      ]}
+                    >
+                      <PlaceIcon item={item} size={active ? 28 : 22} />
+                    </View>
+                  </Marker>
+                );
+              })}
+            </Map>
+            <View style={s.mapBadge}>
+              <Text style={s.mapBadgeText}>
+                {cached ? "Cached · " : ""}
+                {rows.length} nearby
+              </Text>
+            </View>
+            <View style={s.mapControls}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Zoom map in"
+                style={s.mapControl}
+                onPress={() => changeMapZoom(1)}
+              >
+                <Text style={s.mapControlText}>＋</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Zoom map out"
+                style={s.mapControl}
+                onPress={() => changeMapZoom(-1)}
+              >
+                <Text style={s.mapControlText}>−</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Center map on my location"
+                style={s.mapControl}
+                onPress={recenterMap}
+              >
+                <Text style={s.mapControlText}>⌖</Text>
+              </Pressable>
+            </View>
+            <View
+              style={[s.legendWrap, { top: 48, bottom: undefined, right: 74 }]}
+            >
+              <MapLegend />
+            </View>
+            {selected ? (
+              <View
+                style={{
+                  position: "absolute",
+                  left: 9,
+                  right: 58,
+                  bottom: 9,
+                  backgroundColor: "rgba(255,255,255,.97)",
+                  borderRadius: 14,
+                  padding: 10,
+                  borderWidth: 1,
+                  borderColor: "#cfe0d5",
+                  gap: 6,
+                }}
+              >
+                <Text style={s.selectedLabel}>BEST NEXT DECISION</Text>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                >
+                  <PlaceIcon item={selected} size={34} />
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      numberOfLines={1}
+                      style={[s.selectedTitle, { fontSize: 15 }]}
+                    >
+                      {selected.name || "Restroom location"}
+                    </Text>
+                    <Text numberOfLines={1} style={s.selectedMeta}>
+                      {distanceLabel(selected.distance_meters)} ·{" "}
+                      {[selected.address, selected.city]
+                        .filter(Boolean)
+                        .join(", ") || "Address unavailable"}
+                    </Text>
+                  </View>
+                  <Pressable
+                    style={{
+                      backgroundColor: palette.green,
+                      borderRadius: 10,
+                      paddingHorizontal: 10,
+                      paddingVertical: 9,
+                    }}
+                    onPress={() => router.push(`/location/${idOf(selected)}`)}
+                  >
+                    <Text style={s.primaryText}>Full details</Text>
+                  </Pressable>
+                </View>
+                <RestroomSignals item={selected} compact />
+                <View style={{ flexDirection: "row", gap: 6 }}>
+                  <Pressable
+                    style={[s.secondary, { minHeight: 34, padding: 7 }]}
+                    onPress={() => addToRoute(selected)}
+                  >
+                    <Text style={s.secondaryText}>Add to route</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[s.primary, { minHeight: 34, padding: 7 }]}
+                    disabled={!hasCoordinates(selected)}
+                    onPress={() => directions(selected)}
+                  >
+                    <Text style={s.primaryText}>Start directions →</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+      <FlatList
+        style={{ flex: 1 }}
+        data={rows}
+        scrollEnabled
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={() => load()} />
+        }
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+        keyExtractor={(item) => idOf(item)}
+        contentContainerStyle={s.list}
+        ListHeaderComponent={
+          <View style={[s.listHeading, { marginTop: 10 }]}>
+            <View>
+              <Text style={s.listEyebrow}>NEARBY OPTIONS</Text>
+              <Text style={s.listTitle}>Bathrooms near you</Text>
+            </View>
+            <Text style={s.listNote}>
+              {cached
+                ? "Cached · pull to refresh"
+                : "Scroll results · map stays fixed"}
+            </Text>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <ResultCard
+            item={item}
+            active={idOf(item) === idOf(selected)}
+            onSelect={() => selectRestroom(idOf(item))}
+          />
+        )}
+        ListEmptyComponent={
+          <View style={s.empty}>
+            <Text style={s.emptyTitle}>
+              {loading ? "Looking for bathrooms…" : "No bathroom results yet"}
+            </Text>
+            <Text style={s.emptyBody}>
+              Use your location, increase the radius, clear filters, or search
+              again.
+            </Text>
+            <Pressable
+              style={s.primary}
+              onPress={() => load({ clearQuery: true })}
+            >
+              <Text style={s.primaryText}>Find nearby bathrooms</Text>
+            </Pressable>
+          </View>
+        }
+      />
+    </SafeAreaView>
+  );
+}
+
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: palette.canvas },
+  hero: {
+    backgroundColor: palette.green,
+    margin: 12,
+    marginBottom: 0,
+    borderRadius: 23,
+    padding: 17,
+    gap: 8,
+  },
+  heroTop: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
+  eyebrow: {
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1.7,
+    color: "#bcd4c5",
+  },
+  title: {
+    fontSize: 28,
+    lineHeight: 31,
+    fontWeight: "900",
+    color: "#fff",
+    marginTop: 4,
+  },
+  heroBody: { fontSize: 12, lineHeight: 18, color: "#dce9e1", marginTop: 5 },
+  locate: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 66,
+    minHeight: 48,
+  },
+  locateIcon: { fontSize: 18, fontWeight: "900", color: palette.green },
+  locateText: {
+    fontSize: 9,
+    fontWeight: "900",
+    color: palette.green,
+    marginTop: 1,
+  },
+  searchPanel: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 8 },
+  searchRow: { flexDirection: "row", gap: 8 },
+  input: {
+    flex: 1,
+    minHeight: 48,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#d6e2da",
+    borderRadius: 14,
+    paddingHorizontal: 13,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: palette.ink,
+  },
+  searchButton: {
+    minHeight: 48,
+    backgroundColor: palette.green,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    justifyContent: "center",
+  },
+  searchButtonText: {
+    color: "#fff",
+    fontWeight: "900",
+    fontSize: 10,
+    letterSpacing: 0.5,
+  },
+  filterLine: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 9,
+  },
+  radiusRow: { flexDirection: "row", gap: 7 },
+  radius: {
+    minHeight: 44,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: "#e7eee9",
+    justifyContent: "center",
+  },
+  radiusActive: { backgroundColor: palette.green },
+  radiusText: { fontSize: 10, fontWeight: "900", color: "#4d6658" },
+  radiusTextActive: { color: "#fff" },
+  filterCount: { fontSize: 9, fontWeight: "900", color: palette.green },
+  amenitySection: { marginTop: 10 },
+  amenityHeading: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  amenityTitle: { fontSize: 11, fontWeight: "900", color: palette.green },
+  clear: { fontSize: 10, fontWeight: "900", color: "#567060" },
+  amenityRow: { gap: 6, paddingTop: 7, paddingRight: 8 },
+  amenityPill: {
+    minHeight: 44,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: "#e8efea",
+    justifyContent: "center",
+  },
+  amenityPillActive: { backgroundColor: palette.green },
+  amenityText: { fontSize: 10, fontWeight: "800", color: "#52675a" },
+  amenityTextActive: { color: "#fff" },
+  message: {
+    fontSize: 10,
+    lineHeight: 15,
+    color: "#66776d",
+    fontWeight: "700",
+    marginTop: 7,
+  },
+  list: { paddingHorizontal: 14, paddingBottom: 34 },
+  mapFrame: {
+    height: 390,
+    borderRadius: 22,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#d4e0d8",
+    backgroundColor: "#dde6e0",
+    position: "relative",
+  },
+  map: { flex: 1 },
+  mapBadge: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    backgroundColor: "rgba(23,61,43,.9)",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+  },
+  mapBadgeText: { fontSize: 9, fontWeight: "900", color: "#fff" },
+  mapControls: { position: "absolute", right: 10, top: 10, gap: 7 },
+  mapControl: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: "rgba(255,255,255,.97)",
+    borderWidth: 1,
+    borderColor: "#cbd9d0",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  mapControlText: { fontSize: 20, fontWeight: "900", color: palette.green },
+  legendWrap: {
+    position: "absolute",
+    left: 10,
+    bottom: 12,
+    right: 62,
+    alignItems: "flex-start",
+  },
+  gestureHint: {
+    position: "absolute",
+    right: 10,
+    bottom: 12,
+    backgroundColor: "rgba(23,61,43,.9)",
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  gestureHintText: { fontSize: 7, fontWeight: "900", color: "#fff" },
+  userLocationRing: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 3,
+    borderColor: "rgba(43,110,214,.38)",
+    backgroundColor: "rgba(255,255,255,.88)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  userLocationDot: {
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: "#2b6ed6",
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  marker: {
+    minWidth: 36,
+    minHeight: 36,
+    backgroundColor: "#fff",
+    borderWidth: 2,
+    borderColor: "#587166",
+    borderRadius: 20,
+    paddingHorizontal: 7,
+    paddingVertical: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  markerVerified: { borderColor: palette.green, backgroundColor: "#eef8f1" },
+  markerActive: {
+    backgroundColor: palette.green,
+    borderColor: "#fff",
+    minWidth: 44,
+    minHeight: 44,
+  },
+  markerText: { fontSize: 16, fontWeight: "900", color: palette.green },
+  markerTextActive: { color: "#fff" },
+  selected: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#cfe0d5",
+    borderRadius: 21,
+    padding: 15,
+    marginTop: 10,
+    gap: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  selectedTop: { flexDirection: "row", gap: 10 },
+  selectedLabel: {
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.3,
+    color: "#597064",
+  },
+  selectedTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 3,
+  },
+  selectedGlyph: { fontSize: 22 },
+  selectedTitle: { fontSize: 20, fontWeight: "900", color: palette.ink },
+  selectedMeta: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: "#6c7d72",
+    fontWeight: "700",
+    marginTop: 3,
+  },
+  selectedTrust: { marginTop: 8, alignItems: "flex-start" },
+  score: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#e4f2e8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scoreValue: { fontSize: 17, fontWeight: "900", color: palette.green },
+  scoreLabel: {
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+    color: "#557060",
+  },
+  actions: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  secondary: {
+    flexGrow: 1,
+    minHeight: 48,
+    backgroundColor: "#e7efe9",
+    padding: 11,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  secondaryText: { fontSize: 11, fontWeight: "900", color: palette.green },
+  primary: {
+    flexGrow: 1,
+    minHeight: 48,
+    backgroundColor: palette.green,
+    padding: 11,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryText: { fontSize: 11, fontWeight: "900", color: "#fff" },
+  listHeading: {
+    marginTop: 20,
+    marginBottom: 9,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    gap: 10,
+  },
+  listEyebrow: {
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.3,
+    color: "#557060",
+  },
+  listTitle: {
+    fontSize: 21,
+    fontWeight: "900",
+    color: palette.ink,
+    marginTop: 2,
+  },
+  listNote: {
+    maxWidth: 160,
+    fontSize: 9,
+    lineHeight: 13,
+    fontWeight: "700",
+    color: "#718077",
+    textAlign: "right",
+  },
+  result: {
+    minHeight: 48,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#dce6df",
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 8,
+  },
+  resultActive: { borderColor: "#8eb19b", backgroundColor: "#fbfdfc" },
+  resultTop: { flexDirection: "row", gap: 10 },
+  resultTitleRow: { flexDirection: "row", gap: 9, alignItems: "center" },
+  resultGlyph: { fontSize: 22 },
+  resultTitle: { fontSize: 16, fontWeight: "900", color: palette.ink },
+  meta: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: "#6c7d72",
+    fontWeight: "700",
+    marginTop: 3,
+  },
+  distanceBubble: {
+    backgroundColor: "#edf4ef",
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    alignSelf: "flex-start",
+  },
+  distance: { fontSize: 11, fontWeight: "900", color: palette.green },
+  pills: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 7 },
+  pill: {
+    fontSize: 8,
+    fontWeight: "900",
+    color: "#52675a",
+    backgroundColor: "#eef3ef",
+    paddingHorizontal: 7,
+    paddingVertical: 5,
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  trust: { color: "#1b6840", backgroundColor: "#e1f2e7" },
+  cardHint: { fontSize: 9, fontWeight: "800", color: "#87958d", marginTop: 8 },
+  empty: {
+    padding: 24,
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#dce6df",
+    gap: 10,
+  },
+  emptyTitle: { fontSize: 20, fontWeight: "900", color: palette.green },
+  emptyBody: { fontSize: 13, lineHeight: 19, color: "#697a70" },
+});

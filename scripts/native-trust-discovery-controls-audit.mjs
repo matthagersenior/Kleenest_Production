@@ -19,7 +19,8 @@ if(!failures.length){
   if(!saved.includes('data={visibleRows}'))failures.push('Saved list must render the explicitly filtered visible set.');
 
   if(explore.includes('applyTrustDiscoveryControls(')||explore.includes('Evidence filter')||explore.includes('Nearby order stays authoritative unless you explicitly choose Evidence.'))failures.push('Explore must stay bathroom-first; advanced evidence filtering/sorting belongs outside the critical finder path.');
-  for(const token of ['Find a trusted bathroom.','What matters on this stop?','Start directions',"pathname:'/route'",'Search a place, address or brand'])if(!explore.includes(token))failures.push(`Explore bathroom-first discovery contract missing ${token}.`);
+  for(const token of ['Find a trusted bathroom.','What matters on this stop?','Start directions','Search a place, address or brand'])if(!explore.includes(token))failures.push(`Explore bathroom-first discovery contract missing ${token}.`);
+  if(!explore.replace(/\s+/g,'').includes('pathname:"/route"'))failures.push('Explore bathroom-first discovery contract missing route handoff.');
   if(/rows\.sort\(|setRows\([^)]*sort/i.test(explore+saved))failures.push('Screens must not mutate underlying discovery/saved rows when sorting by evidence.');
 }
 if(failures.length){console.error('Native trust discovery controls audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
