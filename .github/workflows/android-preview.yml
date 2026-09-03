@@ -18,11 +18,12 @@ concurrency:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
       EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
+      KLEENEST_STANDALONE_ANDROID: '1'
       NODE_ENV: production
       CI: 1
     steps:
@@ -46,9 +47,42 @@ jobs:
           node scripts/native-device-readiness-audit.mjs
           node scripts/native-consumer-recovery-audit.mjs
           node scripts/consumer-family-capability-audit.mjs
+      - name: Remove Expo development runtime from standalone dependency graph
+        run: |
+          rm -rf \
+            node_modules/expo-dev-client \
+            node_modules/expo-dev-launcher \
+            node_modules/expo-dev-menu \
+            node_modules/expo-dev-menu-interface \
+            apps/consumer-mobile/node_modules/expo-dev-client \
+            apps/consumer-mobile/node_modules/expo-dev-launcher \
+            apps/consumer-mobile/node_modules/expo-dev-menu \
+            apps/consumer-mobile/node_modules/expo-dev-menu-interface
+          node - <<'NODE'
+          const path = require('node:path');
+          const roots = [path.resolve('apps/consumer-mobile')];
+          for (const name of ['expo-dev-client','expo-dev-launcher','expo-dev-menu','expo-dev-menu-interface']) {
+            try {
+              require.resolve(`${name}/package.json`, { paths: roots });
+              throw new Error(`${name} is still resolvable from the Consumer workspace`);
+            } catch (error) {
+              if (error && error.code === 'MODULE_NOT_FOUND') continue;
+              throw error;
+            }
+          }
+          NODE
       - name: Generate clean Android native project
         working-directory: apps/consumer-mobile
-        run: npx expo prebuild --platform android --non-interactive --clean
+        run: npx expo prebuild --platform android --clean
+      - name: Verify standalone release dependency graph
+        working-directory: apps/consumer-mobile/android
+        run: |
+          ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --no-daemon > /tmp/consumer-release-deps.txt
+          if grep -Eqi 'expo-dev-client|expo-dev-launcher|expo-dev-menu' /tmp/consumer-release-deps.txt; then
+            echo 'Expo development runtime leaked into Consumer release dependencies.' >&2
+            grep -Ei 'expo-dev-client|expo-dev-launcher|expo-dev-menu' /tmp/consumer-release-deps.txt >&2 || true
+            exit 1
+          fi
       - name: Build standalone release APK with embedded JS bundle
         working-directory: apps/consumer-mobile/android
         run: ./gradlew assembleRelease --no-daemon
@@ -59,6 +93,40 @@ jobs:
           test -s /tmp/consumer.bundle
           grep -a -q 'ssgesjzdvdsqacdtasje.supabase.co' /tmp/consumer.bundle
           ! grep -a -q 'Development Build' /tmp/consumer.bundle
+          ! grep -a -q 'expo-dev-launcher' /tmp/consumer.bundle
+      - name: Enable KVM for Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm || true
+          sudo chmod 666 /dev/kvm
+      - name: Boot-test standalone Consumer APK
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
+          script: |
+            set -eu
+            APK=apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk
+            PACKAGE=com.kleenest.app
+            adb wait-for-device
+            adb install -r "$APK"
+            adb logcat -c
+            adb shell am force-stop "$PACKAGE"
+            adb shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1
+            sleep 15
+            PID="$(adb shell pidof "$PACKAGE" | tr -d '\r' || true)"
+            if [ -z "$PID" ]; then
+              echo 'Consumer APK exited during startup.' >&2
+              adb logcat -d -v threadtime | tail -n 700 >&2
+              exit 1
+            fi
+            adb shell dumpsys activity activities | grep -F "$PACKAGE" >/dev/null
+      - name: Stage standalone APK
+        run: |
           mkdir -p artifacts
           cp apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk artifacts/Kleenest-Consumer-Standalone.apk
       - uses: actions/upload-artifact@v4
