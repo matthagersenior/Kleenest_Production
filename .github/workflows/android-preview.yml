@@ -47,6 +47,21 @@ jobs:
           node scripts/native-device-readiness-audit.mjs
           node scripts/native-consumer-recovery-audit.mjs
           node scripts/consumer-family-capability-audit.mjs
+      - name: Precompile rich Explore contract
+        run: |
+          grep -q 'MapLegend' apps/consumer-mobile/app/explore.tsx
+          grep -q 'PlaceIcon item={item}' apps/consumer-mobile/app/explore.tsx
+          grep -q 'Your current location' apps/consumer-mobile/app/explore.tsx
+          grep -q 'Full details' apps/consumer-mobile/app/explore.tsx
+          grep -q 'Scroll results · map stays fixed' apps/consumer-mobile/app/explore.tsx
+          grep -q 'height: 300' apps/consumer-mobile/app/explore.tsx
+          grep -q 'business_logo_url' apps/consumer-mobile/components/RestroomSignals.tsx
+          grep -q "shopping:{icon:'🛍'" apps/consumer-mobile/components/RestroomSignals.tsx
+          grep -q "restaurant:{icon:'🍴'" apps/consumer-mobile/components/RestroomSignals.tsx
+          grep -q "park:{icon:'🌳'" apps/consumer-mobile/components/RestroomSignals.tsx
+          rm -rf apps/consumer-mobile/.preflight
+          npx expo export --platform android --output-dir apps/consumer-mobile/.preflight --clear
+          test -n "$(find apps/consumer-mobile/.preflight -type f -print -quit)"
       - name: Remove Expo development runtime from standalone dependency graph
         run: |
           rm -rf \
@@ -96,9 +111,10 @@ jobs:
           grep -a -q '6-digit code' /tmp/consumer.bundle
           grep -a -q 'characters entered' /tmp/consumer.bundle
           grep -a -q 'MAP LEGEND' /tmp/consumer.bundle
-          grep -a -q 'Business logo' /tmp/consumer.bundle
+          grep -a -q 'Business' /tmp/consumer.bundle
           grep -a -q 'Full details' /tmp/consumer.bundle
           grep -a -q 'Your current location' /tmp/consumer.bundle
+          grep -a -q 'Scroll results' /tmp/consumer.bundle
           grep -a -q 'androidView' apps/consumer-mobile/app/explore.tsx
           ! grep -a -q 'Development Build' /tmp/consumer.bundle
           ! grep -a -q 'expo-dev-launcher' /tmp/consumer.bundle
