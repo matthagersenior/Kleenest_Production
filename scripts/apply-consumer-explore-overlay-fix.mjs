@@ -36,6 +36,10 @@ const replacements = [
     `              >\n                <Text style={s.selectedLabel}>BEST NEXT DECISION</Text>`,
     `              >\n                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>\n                  <Text style={[s.selectedLabel, { flex: 1 }]}>BEST NEXT DECISION</Text>\n                  <Pressable\n                    accessibilityRole="button"\n                    accessibilityLabel="Close selected location"\n                    hitSlop={8}\n                    onPress={() => setSelectedId("")}\n                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#eef4f0", alignItems: "center", justifyContent: "center" }}\n                  >\n                    <Text style={{ color: palette.green, fontSize: 22, lineHeight: 24, fontWeight: "900" }}>×</Text>\n                  </Pressable>\n                </View>`,
   ],
+  [
+    `        renderItem={({ item }) => (`,
+    `        ListFooterComponent={rows.length ? (\n          <Pressable\n            accessibilityRole="button"\n            onPress={() => router.push('/discover')}\n            style={{ marginTop: 8, marginBottom: 12, borderRadius: 16, padding: 14, backgroundColor: "#eef4f0", borderWidth: 1, borderColor: "#d4e0d8" }}\n          >\n            <Text style={{ color: palette.green, fontSize: 11, fontWeight: "900", letterSpacing: 0.7 }}>MISSING A PLACE?</Text>\n            <Text style={{ color: palette.ink, fontSize: 16, fontWeight: "900", marginTop: 3 }}>Add a missing bathroom</Text>\n            <Text style={{ color: "#5f7468", fontSize: 12, lineHeight: 17, marginTop: 3 }}>Reached the end of nearby results? Add a missing place to the Kleenest network.</Text>\n          </Pressable>\n        ) : null}\n        renderItem={({ item }) => (`,
+  ],
 ];
 
 for (const [from, to] of replacements) {
@@ -45,4 +49,4 @@ for (const [from, to] of replacements) {
 }
 
 fs.writeFileSync(file, source);
-console.log('Consumer Explore patched: explicit pin selection, touch-safe overlays, dismissible details, and expanded result viewport.');
+console.log('Consumer Explore patched: explicit pin selection, touch-safe overlays, dismissible details, expanded result viewport, and scroll-end discovery recovery.');
