@@ -12,7 +12,11 @@ if(!failures.length){
  if(!explore.includes("import { Camera, Map, Marker }")||!explore.includes('<Map ')||!explore.includes('<Camera'))failures.push('Explore must render MapLibre.');
  if(!explore.includes('tile.openstreetmap.org')||!exploreCompact.includes('type:"raster"'))failures.push('Explore must use canonical OpenStreetMap raster tiles.');
  if(!explore.includes('<Marker')||/\bcluster\s*=/.test(explore))failures.push('Nearby restroom markers must stay directly actionable and unclustered.');
- const mapHeight=exploreCompact.match(/(?:mapFrame:\{height:|\{height:)(\d+)/);if(!mapHeight||Number(mapHeight[1])<280)failures.push('Explore map requires a stable substantial native height.');
+ const mapHeight=exploreCompact.match(/(?:mapFrame:\{height:|\{height:)(\d+)/);if(!mapHeight||Number(mapHeight[1])<220||Number(mapHeight[1])>250)failures.push('Explore map must remain substantial while reserving a meaningful result viewport (220-250px).');
+ if(/<Map[^>]*onPress=\{\(\)=>setSelectedId\(""\)\}/.test(exploreCompact))failures.push('Map background press must not swallow or immediately clear marker selection.');
+ if(!explore.includes('pointerEvents="none"')||!explore.includes('pointerEvents="box-none"'))failures.push('Explore overlays must preserve map-pin touch access.');
+ if(!explore.includes('Close selected location')||!explore.includes('Full details'))failures.push('Selected map details must be dismissible and link to full location details.');
+ if(!explore.includes('<FlatList')||!explore.includes('scrollEnabled'))failures.push('Explore search results must remain independently scrollable.');
  if(!explore.includes('google.com/maps/dir')||!exploreCompact.includes('pathname:"/route"'))failures.push('Discovery must preserve direct directions and route-planner handoff.');
  if(!core.includes("p_category:'restroom'"))failures.push('Canonical nearby discovery must be restroom-scoped.');
  if(core.includes("p_category:null,p_search"))failures.push('Consumer restroom discovery must not become unrestricted category discovery.');
