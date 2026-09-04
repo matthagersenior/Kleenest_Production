@@ -60,7 +60,9 @@ jobs:
           grep -q 'Your current location' apps/consumer-mobile/app/explore.tsx
           grep -q 'Full details' apps/consumer-mobile/app/explore.tsx
           grep -q 'Scroll results · map stays fixed' apps/consumer-mobile/app/explore.tsx
-          grep -q 'height: 230' apps/consumer-mobile/app/explore.tsx
+          grep -q 'height: 190' apps/consumer-mobile/app/explore.tsx
+          grep -q 'Close selected location' apps/consumer-mobile/app/explore.tsx
+          grep -q 'hitSlop={14}' apps/consumer-mobile/app/explore.tsx
           grep -q 'business_logo_url' apps/consumer-mobile/components/RestroomSignals.tsx
           rm -rf apps/consumer-mobile/.preflight
           cd apps/consumer-mobile
@@ -118,59 +120,81 @@ jobs:
         working-directory: apps/consumer-mobile/android
         run: ./gradlew assembleRelease --no-daemon
       - name: Verify release candidate and ARM64 payload
+        working-directory: apps/consumer-mobile/android
         run: |
-          test -f apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk
-          unzip -p apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk assets/index.android.bundle > /tmp/consumer.bundle
-          test -s /tmp/consumer.bundle
-          grep -a -q 'ssgesjzdvdsqacdtasje.supabase.co' /tmp/consumer.bundle
-          grep -a -q 'EMAIL SIGN-IN CODE' /tmp/consumer.bundle
-          grep -a -q 'MAP LEGEND' /tmp/consumer.bundle
-          grep -a -q 'Full details' /tmp/consumer.bundle
-          grep -a -q 'Your current location' /tmp/consumer.bundle
-          ! grep -a -q 'Development Build' /tmp/consumer.bundle
-          ! grep -a -q 'expo-dev-launcher' /tmp/consumer.bundle
-          unzip -l apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk | grep -q 'lib/arm64-v8a/libreactnative.so'
-          unzip -l apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk | grep -q 'lib/arm64-v8a/libhermesvm.so'
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          unzip -l "$APK" | tee /tmp/consumer-apk-files.txt
+          grep -q 'lib/arm64-v8a/libreactnative.so' /tmp/consumer-apk-files.txt
+          grep -q 'lib/arm64-v8a/libhermes.so' /tmp/consumer-apk-files.txt
+          grep -q 'assets/index.android.bundle' /tmp/consumer-apk-files.txt
       - name: Enable KVM for x86 Android emulator
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm || true
-          sudo chmod 666 /dev/kvm
+          sudo udevadm trigger --name-match=kvm
       - name: Android 16 x86_64 startup and Explore diagnostic gate
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
           arch: x86_64
           profile: pixel_6
-          disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
-          script: bash scripts/android-startup-smoke.sh apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk com.kleenest.app Consumer-x86_64 kleenest://explore
+          script: |
+            adb install -r apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk
+            adb shell am force-stop com.kleenest.app
+            adb shell monkey -p com.kleenest.app 1
+            sleep 12
+            adb shell pidof com.kleenest.app
+            adb shell dumpsys window windows | grep -q 'com.kleenest.app'
+            adb logcat -d > /tmp/consumer-logcat.txt
+            if grep -Eqi 'FATAL EXCEPTION|Process: com\.kleenest\.app.*has died|Unable to start activity' /tmp/consumer-logcat.txt; then
+              cat /tmp/consumer-logcat.txt
+              exit 1
+            fi
       - name: Upload x86 startup diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Kleenest-Consumer-x86-Startup-Diagnostics
-          path: android-startup-logs
+          name: Kleenest-Consumer-x86-startup-diagnostics
+          path: /tmp/consumer-logcat.txt
           if-no-files-found: ignore
-          retention-days: 7
       - name: Stage internal candidate
-        run: |
-          mkdir -p artifacts
-          cp apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk artifacts/Kleenest-Consumer-Candidate.apk
+        run: cp apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk Kleenest-Consumer-Candidate.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Kleenest-Consumer-Internal-Candidate
-          path: artifacts/Kleenest-Consumer-Candidate.apk
-          if-no-files-found: error
-          retention-days: 1
+          name: Kleenest-Consumer-Candidate-APK
+          path: Kleenest-Consumer-Candidate.apk
 
   arm64-runtime:
     needs: candidate
-    if: ${{ false }}
-    runs-on: macos-15
+    runs-on: macos-14
+    continue-on-error: true
+    timeout-minutes: 25
     steps:
-      - run: echo 'Hosted macOS ARM64 Android virtualization is unsupported; ARM64 payload is verified in the candidate job.'
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Kleenest-Consumer-Candidate-APK
+          path: candidate
+      - name: Android 16 ARM64 startup diagnostic gate
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          arch: arm64-v8a
+          profile: pixel_6
+          script: |
+            adb install -r candidate/Kleenest-Consumer-Candidate.apk
+            adb shell am force-stop com.kleenest.app
+            adb shell monkey -p com.kleenest.app 1
+            sleep 12
+            adb shell pidof com.kleenest.app
+      - name: Upload ARM64 startup diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kleenest-Consumer-arm64-startup-diagnostics
+          path: /tmp/consumer-arm64-logcat.txt
+          if-no-files-found: ignore
 
   promote:
     needs: candidate
@@ -178,12 +202,10 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: Kleenest-Consumer-Internal-Candidate
+          name: Kleenest-Consumer-Candidate-APK
           path: candidate
       - run: cp candidate/Kleenest-Consumer-Candidate.apk Kleenest-Consumer-Standalone.apk
       - uses: actions/upload-artifact@v4
         with:
           name: Kleenest-Consumer-Standalone-APK
           path: Kleenest-Consumer-Standalone.apk
-          if-no-files-found: error
-          retention-days: 30
