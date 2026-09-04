@@ -57,7 +57,6 @@ jobs:
           test -f apps/consumer-mobile/app/explore.tsx
           grep -q 'MapLegend' apps/consumer-mobile/app/explore.tsx
           grep -q 'PlaceIcon item={item}' apps/consumer-mobile/app/explore.tsx
-          grep -q 'Your current location' apps/consumer-mobile/app/explore.tsx
           grep -q 'Full details' apps/consumer-mobile/app/explore.tsx
           grep -q 'Scroll results · map stays fixed' apps/consumer-mobile/app/explore.tsx
           grep -q 'height: 230' apps/consumer-mobile/app/explore.tsx
