@@ -135,6 +135,24 @@ jobs:
           grep -q 'lib/arm64-v8a/libreactnative.so' /tmp/consumer-apk-files.txt
           grep -q 'lib/arm64-v8a/libhermes.so' /tmp/consumer-apk-files.txt
           grep -q 'assets/index.android.bundle' /tmp/consumer-apk-files.txt
+      - name: Trace unresolved CommonJS require in release bundle
+        working-directory: apps/consumer-mobile/android
+        run: |
+          unzip -p app/build/outputs/apk/release/app-release.apk assets/index.android.bundle > /tmp/consumer-index.android.bundle
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const bundle = fs.readFileSync('/tmp/consumer-index.android.bundle', 'utf8');
+          const bare = /(^|[^\w.$])require\s*\(/g;
+          let match;
+          let count = 0;
+          while ((match = bare.exec(bundle)) && count < 40) {
+            const i = match.index + match[1].length;
+            const start = Math.max(0, i - 260);
+            const end = Math.min(bundle.length, i + 520);
+            console.log(`\n--- bare require #${++count} at byte ${i} ---\n${bundle.slice(start, end)}`);
+          }
+          console.log(`Bare require contexts printed: ${count}`);
+          NODE
       - name: Enable KVM for x86 Android emulator
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
