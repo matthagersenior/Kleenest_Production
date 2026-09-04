@@ -95,6 +95,11 @@ jobs:
       - name: Generate clean Android native project
         working-directory: apps/consumer-mobile
         run: npx expo prebuild --platform android --clean
+      - name: Configure release build memory
+        working-directory: apps/consumer-mobile/android
+        run: |
+          printf '\norg.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8\norg.gradle.workers.max=2\n' >> gradle.properties
+          grep -E 'org.gradle.jvmargs|org.gradle.workers.max' gradle.properties
       - name: Pre-package native and permission diagnostics
         working-directory: apps/consumer-mobile/android
         run: |
