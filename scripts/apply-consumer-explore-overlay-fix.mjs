@@ -17,12 +17,12 @@ const replacements = [
     `const fallbackSelected =\n          selectedId && fallback.rows.some((row: any) => idOf(row) === selectedId)\n            ? selectedId\n            : "";`,
   ],
   [
-    `const rememberedId = continuity?.selectedId || cache.selectedId || "";\n          const nextSelected =\n            rememberedId &&\n            cache.rows.some((row: any) => idOf(row) === rememberedId)\n              ? rememberedId\n              : idOf(cache.rows[0]);`,
+    `const rememberedId = continuity?.selectedId || cache.selectedId || "";\n          const nextSelected =\n            rememberedId &&\n            cache.rows.some((row: any) => idOf(row) === rememberedId\n              ? rememberedId\n              : idOf(cache.rows[0]);`,
     `const nextSelected = "";`,
   ],
   [
     '<View style={[s.mapFrame, { height: 300 }]}>' ,
-    '<View style={[s.mapFrame, { height: 190 }]}>' ,
+    '<View style={[s.mapFrame, { height: 230 }]}>' ,
   ],
   [
     `<View style={s.mapBadge}>`,
@@ -57,4 +57,4 @@ for (const [from, to] of replacements) {
 }
 
 fs.writeFileSync(file, source);
-console.log('Consumer Explore patched: explicit pin selection, direct marker touch targets, touch-safe overlays, dismissible details, expanded result viewport, and scroll-end discovery recovery.');
+console.log('Consumer Explore patched: explicit pin selection, direct marker touch targets, touch-safe overlays, dismissible details, 230px map/results balance, and scroll-end discovery recovery.');
