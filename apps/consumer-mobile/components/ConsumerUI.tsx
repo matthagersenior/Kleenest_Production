@@ -1,3 +1,4 @@
+// Consumer UI release trigger: canonical Explore interactions are source-controlled.
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
