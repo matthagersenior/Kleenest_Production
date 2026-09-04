@@ -1,0 +1,61 @@
+name: Publish Consumer Standalone Installer
+
+on:
+  workflow_run:
+    workflows: ["Build Consumer Standalone Android APK"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: kleenest-consumer-preview-pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+      - run: npm install --no-audit --no-fund
+      - run: node scripts/pages-deployment-convergence-audit.mjs
+      - name: Export current Consumer web app
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+        run: npm run web:export --workspace @kleenest/consumer-mobile
+      - name: Download verified standalone APK from triggering run
+        uses: actions/download-artifact@v4
+        with:
+          name: Kleenest-Consumer-Standalone-APK
+          path: installer
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Publish direct installer alongside web app
+        run: |
+          test -s installer/Kleenest-Consumer.apk
+          cp installer/Kleenest-Consumer.apk apps/consumer-mobile/dist/Kleenest-Consumer.apk
+          cp apps/consumer-mobile/dist/index.html apps/consumer-mobile/dist/404.html
+          touch apps/consumer-mobile/dist/.nojekyll
+          sha256sum apps/consumer-mobile/dist/Kleenest-Consumer.apk > apps/consumer-mobile/dist/Kleenest-Consumer.apk.sha256
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/consumer-mobile/dist
+      - name: Deploy Consumer web app and direct APK
+        id: deployment
+        uses: actions/deploy-pages@v4
