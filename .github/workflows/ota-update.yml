@@ -9,6 +9,7 @@ on:
       - 'apps/consumer-mobile/components/**'
       - 'apps/consumer-mobile/services/**'
       - 'packages/mobile-core/**'
+      - 'scripts/apply-consumer-explore-overlay-fix.mjs'
       - '.github/workflows/ota-update.yml'
 
 permissions:
@@ -38,7 +39,8 @@ jobs:
         run: npx eas-cli@latest whoami --non-interactive
       - name: Verify canonical Consumer Explore contract
         run: |
-          grep -q 'height: 190' apps/consumer-mobile/app/explore.tsx
+          node scripts/native-map-authority-audit.mjs
+          grep -q 'height: 230' apps/consumer-mobile/app/explore.tsx
           grep -q 'hitSlop={14}' apps/consumer-mobile/app/explore.tsx
           grep -q 'Close selected location' apps/consumer-mobile/app/explore.tsx
           ! grep -q '|| rows\[0\] || null' apps/consumer-mobile/app/explore.tsx
