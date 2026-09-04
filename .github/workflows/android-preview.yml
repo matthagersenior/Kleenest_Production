@@ -98,6 +98,11 @@ jobs:
       - name: Generate clean Android native project
         working-directory: apps/consumer-mobile
         run: npx expo prebuild --platform android --clean
+      - name: Apply supplied Consumer launcher artwork
+        run: |
+          node scripts/apply-consumer-native-launcher-icon.mjs
+          test -s apps/consumer-mobile/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          test -s apps/consumer-mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
       - name: Configure release build memory
         working-directory: apps/consumer-mobile/android
         run: |
