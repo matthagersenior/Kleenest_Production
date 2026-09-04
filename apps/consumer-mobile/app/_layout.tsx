@@ -38,9 +38,10 @@ export default function RootLayout() {
   }}>
     <Tabs.Screen name="index" options={{ title:'Home',headerShown:false,tabBarIcon:tabIcon('⌂') }}/>
     <Tabs.Screen name="explore" options={{ title:'Explore',headerShown:false,tabBarIcon:tabIcon('⌖') }}/>
-    <Tabs.Screen name="play" options={{ title:'Play',headerShown:false,tabBarIcon:tabIcon('★') }}/>
+    <Tabs.Screen name="play" options={{ title:'Progress',headerShown:false,tabBarIcon:tabIcon('★') }}/>
     <Tabs.Screen name="social" options={{ title:'Community',headerShown:false,tabBarIcon:tabIcon('●') }}/>
     <Tabs.Screen name="profile" options={{ title:'Profile',headerShown:false,tabBarIcon:tabIcon('◉') }}/>
+    <Tabs.Screen name="discover" options={{ href:null,title:'Discover a place' }}/>
     <Tabs.Screen name="assistant" options={{ href:null,title:'Kleenest AI' }}/>
     <Tabs.Screen name="access" options={{ href:null,title:'Access & Preferred' }}/>
     <Tabs.Screen name="messages" options={{ href:null,title:'Messages' }}/>
