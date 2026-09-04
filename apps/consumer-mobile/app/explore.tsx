@@ -199,7 +199,7 @@ export default function ExploreScreen() {
     [],
   );
   const selected = useMemo(
-    () => rows.find((row) => idOf(row) === selectedId) || rows[0] || null,
+    () => rows.find((row) => idOf(row) === selectedId) || null,
     [rows, selectedId],
   );
   const filterAmenities = useMemo(
@@ -282,9 +282,7 @@ export default function ExploreScreen() {
       const preservedId =
         selectedId && enriched.some((row: any) => idOf(row) === selectedId)
           ? selectedId
-          : enriched[0]
-            ? idOf(enriched[0])
-            : "";
+          : "";
       setOrigin(nextOrigin);
       setMapCenter(nextOrigin);
       setCameraNonce((value) => value + 1);
@@ -311,10 +309,9 @@ export default function ExploreScreen() {
       const fallback = canUseGenericCache ? await readNearbyCache() : null;
       if (fallback?.rows?.length) {
         const fallbackSelected =
-          fallback.selectedId &&
-          fallback.rows.some((row: any) => idOf(row) === fallback.selectedId)
-            ? fallback.selectedId
-            : idOf(fallback.rows[0]);
+          selectedId && fallback.rows.some((row: any) => idOf(row) === selectedId)
+            ? selectedId
+            : "";
         setRows(fallback.rows);
         setSelectedId(fallbackSelected);
         if (fallback.origin) {
@@ -355,12 +352,7 @@ export default function ExploreScreen() {
         if (!active) return;
         if (continuity?.radiusMeters) setRadius(continuity.radiusMeters);
         if (cache?.rows?.length) {
-          const rememberedId = continuity?.selectedId || cache.selectedId || "";
-          const nextSelected =
-            rememberedId &&
-            cache.rows.some((row: any) => idOf(row) === rememberedId)
-              ? rememberedId
-              : idOf(cache.rows[0]);
+          const nextSelected = "";
           setRows(cache.rows);
           setSelectedId(nextSelected);
           if (cache.origin) {
@@ -526,7 +518,7 @@ export default function ExploreScreen() {
       </View>
       {mapVisible ? (
         <View style={{ paddingHorizontal: 14 }}>
-          <View style={[s.mapFrame, { height: 300 }]}>
+          <View style={[s.mapFrame, { height: 190 }]}>
             <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE}>
               <Camera
                 key={`camera-${cameraNonce}-${mapZoom}-${mapCenter?.join("-")}`}
@@ -559,8 +551,14 @@ export default function ExploreScreen() {
                     anchor="bottom"
                     onPress={() => selectRestroom(id)}
                   >
-                    <View
+                    <Pressable
+                      accessibilityRole="button"
                       accessibilityLabel={restroomMarkerLabel(item)}
+                      hitSlop={14}
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        selectRestroom(id);
+                      }}
                       style={[
                         s.marker,
                         verified && s.markerVerified,
@@ -568,12 +566,12 @@ export default function ExploreScreen() {
                       ]}
                     >
                       <PlaceIcon item={item} size={active ? 28 : 22} />
-                    </View>
+                    </Pressable>
                   </Marker>
                 );
               })}
             </Map>
-            <View style={s.mapBadge}>
+            <View pointerEvents="none" style={s.mapBadge}>
               <Text style={s.mapBadgeText}>
                 {cached ? "Cached · " : ""}
                 {rows.length} nearby
@@ -606,12 +604,14 @@ export default function ExploreScreen() {
               </Pressable>
             </View>
             <View
+              pointerEvents="none"
               style={[s.legendWrap, { top: 48, bottom: undefined, right: 74 }]}
             >
               <MapLegend />
             </View>
             {selected ? (
               <View
+                pointerEvents="box-none"
                 style={{
                   position: "absolute",
                   left: 9,
@@ -625,7 +625,18 @@ export default function ExploreScreen() {
                   gap: 6,
                 }}
               >
-                <Text style={s.selectedLabel}>BEST NEXT DECISION</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <Text style={[s.selectedLabel, { flex: 1 }]}>BEST NEXT DECISION</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Close selected location"
+                    hitSlop={8}
+                    onPress={() => setSelectedId("")}
+                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#eef4f0", alignItems: "center", justifyContent: "center" }}
+                  >
+                    <Text style={{ color: palette.green, fontSize: 22, lineHeight: 24, fontWeight: "900" }}>×</Text>
+                  </Pressable>
+                </View>
                 <View
                   style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
                 >
@@ -701,6 +712,17 @@ export default function ExploreScreen() {
             </Text>
           </View>
         }
+        ListFooterComponent={rows.length ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/discover')}
+            style={{ marginTop: 8, marginBottom: 12, borderRadius: 16, padding: 14, backgroundColor: "#eef4f0", borderWidth: 1, borderColor: "#d4e0d8" }}
+          >
+            <Text style={{ color: palette.green, fontSize: 11, fontWeight: "900", letterSpacing: 0.7 }}>MISSING A PLACE?</Text>
+            <Text style={{ color: palette.ink, fontSize: 16, fontWeight: "900", marginTop: 3 }}>Add a missing bathroom</Text>
+            <Text style={{ color: "#5f7468", fontSize: 12, lineHeight: 17, marginTop: 3 }}>Reached the end of nearby results? Add a missing place to the Kleenest network.</Text>
+          </Pressable>
+        ) : null}
         renderItem={({ item }) => (
           <ResultCard
             item={item}
