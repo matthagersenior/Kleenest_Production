@@ -1,1 +1,1 @@
-Republish Kleenest app family OTA after Consumer Google OAuth, Explore selection fix, and Business/Fleet/Owner Google auth updates.
+Republish Kleenest app family OTA after Consumer Explore canonical-behavior verification. Force current Explore interaction patch to consumer-production and keep Business/Fleet/Owner production channels aligned.
