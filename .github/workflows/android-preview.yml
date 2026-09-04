@@ -52,6 +52,7 @@ jobs:
           node scripts/native-consumer-apk-convergence-audit.mjs
           node scripts/native-device-readiness-audit.mjs
           node scripts/native-consumer-recovery-audit.mjs
+          node scripts/native-map-authority-audit.mjs
           node scripts/consumer-family-capability-audit.mjs
       - name: Precompile rich Explore contract
         run: |
@@ -60,7 +61,7 @@ jobs:
           grep -q 'Your current location' apps/consumer-mobile/app/explore.tsx
           grep -q 'Full details' apps/consumer-mobile/app/explore.tsx
           grep -q 'Scroll results · map stays fixed' apps/consumer-mobile/app/explore.tsx
-          grep -q 'height: 190' apps/consumer-mobile/app/explore.tsx
+          grep -q 'height: 230' apps/consumer-mobile/app/explore.tsx
           grep -q 'Close selected location' apps/consumer-mobile/app/explore.tsx
           grep -q 'hitSlop={14}' apps/consumer-mobile/app/explore.tsx
           grep -q 'business_logo_url' apps/consumer-mobile/components/RestroomSignals.tsx
