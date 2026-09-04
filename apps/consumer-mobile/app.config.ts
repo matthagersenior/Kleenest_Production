@@ -18,7 +18,7 @@ const config: ExpoConfig = {
   slug: 'kleenest-consumer',
   version: '0.1.0',
   runtimeVersion: 'kleenest-consumer-0.1.0',
-  icon: './assets/app-icon.png',
+  ...(standaloneAndroid ? {} : { icon: './assets/app-icon.png' }),
   updates: {
     enabled: true,
     url: `https://u.expo.dev/${easProjectId}`,
@@ -37,7 +37,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'com.kleenest.app',
-    icon: './assets/app-icon.png',
+    ...(standaloneAndroid ? {} : { icon: './assets/app-icon.png' }),
     permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION', 'CAMERA'],
     intentFilters: [{
       action: 'VIEW',
