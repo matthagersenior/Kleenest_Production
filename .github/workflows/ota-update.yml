@@ -34,11 +34,14 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Ensure Consumer OTA channel exists
-        working-directory: apps/consumer-mobile
+      - name: Verify Expo authentication
+        run: npx eas-cli@latest whoami --non-interactive
+      - name: Verify canonical Consumer Explore contract
         run: |
-          npx eas-cli@latest channel:create consumer-production --branch consumer-production --non-interactive || \
-          npx eas-cli@latest channel:edit consumer-production --branch consumer-production --non-interactive
+          grep -q 'height: 190' apps/consumer-mobile/app/explore.tsx
+          grep -q 'hitSlop={14}' apps/consumer-mobile/app/explore.tsx
+          grep -q 'Close selected location' apps/consumer-mobile/app/explore.tsx
+          ! grep -q '|| rows\[0\] || null' apps/consumer-mobile/app/explore.tsx
       - name: Publish Consumer OTA update
         working-directory: apps/consumer-mobile
         run: npx eas-cli@latest update --channel consumer-production --message "Consumer ${GITHUB_SHA}" --non-interactive
