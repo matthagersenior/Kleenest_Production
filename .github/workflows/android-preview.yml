@@ -9,6 +9,7 @@ on:
       - 'package-lock.json'
       - 'scripts/**'
       - 'apps/consumer-mobile/**'
+      - 'supabase/migrations/**'
       - '.github/workflows/android-preview.yml'
 
 permissions:
