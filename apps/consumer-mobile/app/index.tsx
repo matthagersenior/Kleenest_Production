@@ -17,7 +17,7 @@ export default function HomeScreen(){
     <View style={s.twoCol}>
       <FeatureCard kicker="NEARBY" title="Find a restroom" body="Map, search, amenities, trust, distance, details and directions." onPress={action('/explore')}/>
       <FeatureCard kicker="DISCOVER" title="Add a missing place" body="Use an address, map coordinates, remote knowledge, photos, GPS or live on-site evidence." onPress={action('/discover')}/>
-      <FeatureCard kicker="PROGRESS" title="XP + levels" body="See specialties, quests, missions, challenges, journeys, campaigns, contests, badges and rankings." onPress={action('/play')}/>
+      <FeatureCard kicker="PROGRESS" title="XP + levels" body="See specialties, quests, missions, challenges, journeys, campaigns, contests, badges and rankings." onPress={action('/progress')}/>
       <FeatureCard kicker="SCAN" title="QR check-in" body="Resolve Kleenest QR actions and verified trust missions through one canonical path." onPress={action('/qr')}/>
       <FeatureCard kicker="SAVED" title="Trusted shortlist" body="Return to bathrooms you trust or want to verify again." onPress={action('/saved')}/>
       <FeatureCard kicker="ROUTE" title="Plan smarter" body="Build a bathroom-first route around the stops that matter." onPress={action('/route')}/>
@@ -29,7 +29,7 @@ export default function HomeScreen(){
     <View style={s.loopCard}>
       {['Explore','Discover','Document','Verify','Strengthen trust','Earn XP'].map((label,index)=><View style={s.loopStep} key={label}><View style={s.loopNumber}><Text style={s.loopNumberText}>{index+1}</Text></View><Text style={s.loopLabel}>{label}</Text>{index<5?<Text style={s.loopArrow}>→</Text>:null}</View>)}
     </View>
-    <View style={s.actionBand}><View style={{flex:1}}><Text style={s.actionBandTitle}>Your contribution has a progression path</Text><Text style={s.actionBandBody}>Remote discovery earns useful XP. GPS-supported evidence earns more. Fresh on-site evidence earns the strongest discovery weighting. The same verified action advances your levels and eligible objectives without duplicate rewards.</Text></View><Pressable style={s.actionBandButton} onPress={action('/play')}><Text style={s.actionBandButtonText}>VIEW PROGRESS</Text></Pressable></View>
+    <View style={s.actionBand}><View style={{flex:1}}><Text style={s.actionBandTitle}>Your contribution has a progression path</Text><Text style={s.actionBandBody}>Remote discovery earns useful XP. GPS-supported evidence earns more. Fresh on-site evidence earns the strongest discovery weighting. The same verified action advances your levels and eligible objectives without duplicate rewards.</Text></View><Pressable style={s.actionBandButton} onPress={action('/progress')}><Text style={s.actionBandButtonText}>VIEW PROGRESS</Text></Pressable></View>
 
     <SectionHeader eyebrow="KLEENEST AI" title="Assistance without a second source of truth" body="AI interprets the canonical Kleenest context you choose. It never invents locations, trust facts, or actions."/>
     <View style={s.aiBand}><View style={{flex:1}}><Text style={s.aiTitle}>Trust guide · route guide · review drafting</Text><Text style={s.aiBody}>Explain evidence for a saved restroom, reason about saved route stops, or draft a review from facts you personally provide.</Text></View><Pressable style={s.aiButton} onPress={action('/assistant')}><Text style={s.aiButtonText}>OPEN KLEENEST AI</Text></Pressable></View>
