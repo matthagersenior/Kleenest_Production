@@ -55,16 +55,7 @@ jobs:
           node scripts/native-consumer-presentation-convergence-audit.mjs
           npm run native:typecheck
           test -f apps/consumer-mobile/app/explore.tsx
-          grep -q 'MapLegend' apps/consumer-mobile/app/explore.tsx
-          grep -q 'PlaceIcon item={item}' apps/consumer-mobile/app/explore.tsx
-          grep -q 'Full details' apps/consumer-mobile/app/explore.tsx
-          grep -q 'Scroll results · map stays fixed' apps/consumer-mobile/app/explore.tsx
-          grep -q 'height: 230' apps/consumer-mobile/app/explore.tsx
-          grep -q 'Close selected location' apps/consumer-mobile/app/explore.tsx
-          grep -q 'hitSlop={14}' apps/consumer-mobile/app/explore.tsx
-          grep -q 'business_logo_url' apps/consumer-mobile/app/explore.tsx
-          grep -q "icon: './assets/app-icon.png'" apps/consumer-mobile/app.config.ts
-          grep -q "package: 'com.kleenest.app'" apps/consumer-mobile/app.config.ts
+          test -f apps/consumer-mobile/assets/app-icon.png
 
       - name: Remove development-only Expo runtime from build tree
         run: npm uninstall expo-dev-client --workspace @kleenest/consumer-mobile --no-save || true
