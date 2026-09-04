@@ -21,7 +21,7 @@ const replacements = [
     `const nextSelected = "";`,
   ],
   [
-    '<View style={[s.mapFrame, { height: 300 }]}>' ,
+    '<View style={[s.mapFrame, { height: 190 }]}>' ,
     '<View style={[s.mapFrame, { height: 230 }]}>' ,
   ],
   [
