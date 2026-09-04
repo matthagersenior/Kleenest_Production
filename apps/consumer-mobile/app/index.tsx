@@ -6,31 +6,33 @@ const action=(route:string)=>()=>router.push(route as any);
 
 export default function HomeScreen(){
   return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-    <View style={s.brandRow}><View><Text style={s.brand}>KLEENEST</Text><Text style={s.brandSub}>Trusted restroom network</Text></View><Pressable style={s.profileChip} onPress={action('/profile')}><Text style={s.profileChipText}>PROFILE</Text></Pressable></View>
+    <View style={s.brandRow}><View><Text style={s.brand}>KLEENEST</Text><Text style={s.brandSub}>Trusted restroom discovery network</Text></View><Pressable style={s.profileChip} onPress={action('/profile')}><Text style={s.profileChipText}>PROFILE</Text></Pressable></View>
 
-    <HeroCard eyebrow="YOUR KLEENEST" title="Find a better bathroom. Make the next visit count." body="Discover nearby restrooms, see trust signals, contribute real-world evidence, and turn useful visits into progression.">
-      <TrustStrip items={['Verified community','Real-world rewards','Fresh restroom intelligence']}/>
-      <View style={s.heroActions}><Pressable style={s.heroPrimary} onPress={action('/explore')}><Text style={s.heroPrimaryLabel}>FIND A RESTROOM</Text><Text style={s.heroPrimaryTitle}>Explore nearby →</Text></Pressable><Pressable style={s.heroSecondary} onPress={action('/assistant')}><Text style={s.heroSecondaryLabel}>KLEENEST AI</Text><Text style={s.heroSecondaryTitle}>Ask with context</Text></Pressable></View>
+    <HeroCard eyebrow="YOUR KLEENEST" title="Find a better bathroom. Discover what the map is missing." body="Explore nearby restrooms, add missing places, document real-world evidence, and turn useful contributions into XP, levels, badges and standing.">
+      <TrustStrip items={['Community discovery','Evidence-weighted XP','Fresh restroom intelligence']}/>
+      <View style={s.heroActions}><Pressable style={s.heroPrimary} onPress={action('/explore')}><Text style={s.heroPrimaryLabel}>FIND A RESTROOM</Text><Text style={s.heroPrimaryTitle}>Explore nearby →</Text></Pressable><Pressable style={s.heroSecondary} onPress={action('/discover')}><Text style={s.heroSecondaryLabel}>MAP THE MISSING</Text><Text style={s.heroSecondaryTitle}>Discover a place</Text></Pressable></View>
     </HeroCard>
 
-    <SectionHeader eyebrow="QUICK ACTIONS" title="What do you need right now?" body="The core bathroom journey stays first; everything else supports it."/>
+    <SectionHeader eyebrow="QUICK ACTIONS" title="Find it, discover it, improve it." body="Kleenest grows when the community can add what nearby search missed—not only review places after arriving."/>
     <View style={s.twoCol}>
       <FeatureCard kicker="NEARBY" title="Find a restroom" body="Map, search, amenities, trust, distance, details and directions." onPress={action('/explore')}/>
+      <FeatureCard kicker="DISCOVER" title="Add a missing place" body="Use an address, map coordinates, remote knowledge, photos, GPS or live on-site evidence." onPress={action('/discover')}/>
+      <FeatureCard kicker="PROGRESS" title="XP + levels" body="See specialties, quests, missions, challenges, journeys, campaigns, contests, badges and rankings." onPress={action('/play')}/>
       <FeatureCard kicker="SCAN" title="QR check-in" body="Resolve Kleenest QR actions and verified trust missions through one canonical path." onPress={action('/qr')}/>
       <FeatureCard kicker="SAVED" title="Trusted shortlist" body="Return to bathrooms you trust or want to verify again." onPress={action('/saved')}/>
       <FeatureCard kicker="ROUTE" title="Plan smarter" body="Build a bathroom-first route around the stops that matter." onPress={action('/route')}/>
       <FeatureCard kicker="OFFLINE" title="Take routes with you" body="Prepare canonical route discovery and restroom packs before coverage gets weak." onPress={action('/offline')}/>
-      <FeatureCard kicker="ACTIVITY" title="Your impact" body="See visits, reviews, evidence, rewards and network contributions." onPress={action('/activity')}/>
+      <FeatureCard kicker="ACTIVITY" title="Your impact" body="See visits, discoveries, reviews, evidence, rewards and network contributions." onPress={action('/activity')}/>
     </View>
+
+    <SectionHeader eyebrow="THE KLEENEST LOOP" title="Discovery creates the network" body="A place can start as a remote candidate and become stronger through coordinates, photos, fresh GPS evidence and independent confirmation."/>
+    <View style={s.loopCard}>
+      {['Explore','Discover','Document','Verify','Strengthen trust','Earn XP'].map((label,index)=><View style={s.loopStep} key={label}><View style={s.loopNumber}><Text style={s.loopNumberText}>{index+1}</Text></View><Text style={s.loopLabel}>{label}</Text>{index<5?<Text style={s.loopArrow}>→</Text>:null}</View>)}
+    </View>
+    <View style={s.actionBand}><View style={{flex:1}}><Text style={s.actionBandTitle}>Your contribution has a progression path</Text><Text style={s.actionBandBody}>Remote discovery earns useful XP. GPS-supported evidence earns more. Fresh on-site evidence earns the strongest discovery weighting. The same verified action advances your levels and eligible objectives without duplicate rewards.</Text></View><Pressable style={s.actionBandButton} onPress={action('/play')}><Text style={s.actionBandButtonText}>VIEW PROGRESS</Text></Pressable></View>
 
     <SectionHeader eyebrow="KLEENEST AI" title="Assistance without a second source of truth" body="AI interprets the canonical Kleenest context you choose. It never invents locations, trust facts, or actions."/>
     <View style={s.aiBand}><View style={{flex:1}}><Text style={s.aiTitle}>Trust guide · route guide · review drafting</Text><Text style={s.aiBody}>Explain evidence for a saved restroom, reason about saved route stops, or draft a review from facts you personally provide.</Text></View><Pressable style={s.aiButton} onPress={action('/assistant')}><Text style={s.aiButtonText}>OPEN KLEENEST AI</Text></Pressable></View>
-
-    <SectionHeader eyebrow="THE KLEENEST LOOP" title="Useful visits build trust and progress" body="The consumer experience stays simple while each real-world action strengthens the backend intelligence businesses can act on."/>
-    <View style={s.loopCard}>
-      {['Find','Visit','Verify','Review','Strengthen trust','Earn progress'].map((label,index)=><View style={s.loopStep} key={label}><View style={s.loopNumber}><Text style={s.loopNumberText}>{index+1}</Text></View><Text style={s.loopLabel}>{label}</Text>{index<5?<Text style={s.loopArrow}>→</Text>:null}</View>)}
-    </View>
-    <View style={s.actionBand}><View style={{flex:1}}><Text style={s.actionBandTitle}>Turn your next stop into progress</Text><Text style={s.actionBandBody}>Quests, challenges, badges, contests, streaks and leaderboards are tied to useful Kleenest actions.</Text></View><Pressable style={s.actionBandButton} onPress={action('/play')}><Text style={s.actionBandButtonText}>PLAY + PROGRESS</Text></Pressable></View>
 
     <SectionHeader eyebrow="YOUR NETWORK" title="Community makes the map smarter" body="Follow useful contributors, inspect verified evidence, message people you trust, and see what your network is learning about local bathrooms."/>
     <View style={s.stack}>
@@ -44,10 +46,10 @@ export default function HomeScreen(){
     <SectionHeader eyebrow="MORE" title="Everything else stays close"/>
     <View style={s.moreRow}>
       <Pressable style={s.more} onPress={action('/membership')}><Text style={s.moreTitle}>Membership</Text><Text style={s.moreBody}>Ad-free Premium option</Text></Pressable>
-      <Pressable style={s.more} onPress={action('/games')}><Text style={s.moreTitle}>Game Center</Text><Text style={s.moreBody}>Challenges + play</Text></Pressable>
+      <Pressable style={s.more} onPress={action('/games')}><Text style={s.moreTitle}>Game Center</Text><Text style={s.moreBody}>Games + challenges</Text></Pressable>
       <Pressable style={s.more} onPress={action('/support')}><Text style={s.moreTitle}>Support</Text><Text style={s.moreBody}>Help + feedback</Text></Pressable>
     </View>
-    <Text style={s.footer}>Kleenest gets better when every visit makes the network smarter.</Text>
+    <Text style={s.footer}>Kleenest gets better when every useful discovery makes the network smarter.</Text>
   </ScrollView></SafeAreaView>;
 }
 
