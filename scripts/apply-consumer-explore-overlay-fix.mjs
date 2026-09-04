@@ -17,7 +17,7 @@ const replacements = [
     `const fallbackSelected =\n          selectedId && fallback.rows.some((row: any) => idOf(row) === selectedId)\n            ? selectedId\n            : "";`,
   ],
   [
-    `const rememberedId = continuity?.selectedId || cache.selectedId || "";\n          const nextSelected =\n            rememberedId &&\n            cache.rows.some((row: any) => idOf(row) === rememberedId\n              ? rememberedId\n              : idOf(cache.rows[0]);`,
+    `const rememberedId = continuity?.selectedId || cache.selectedId || "";\n          const nextSelected =\n            rememberedId &&\n            cache.rows.some((row: any) => idOf(row) === rememberedId)\n              ? rememberedId\n              : idOf(cache.rows[0]);`,
     `const nextSelected = "";`,
   ],
   [
