@@ -25,8 +25,8 @@ const replacements = [
     '<View style={[s.mapFrame, { height: 230 }]}>' ,
   ],
   [
-    '<View style={[s.legendWrap, { top: 48, bottom: undefined, right: 74 }]}>' ,
-    '<View pointerEvents="none" style={[s.legendWrap, { top: 48, bottom: undefined, right: 74 }]}>' ,
+    `<View\n              style={[s.legendWrap, { top: 48, bottom: undefined, right: 74 }]}\n            >`,
+    `<View\n              pointerEvents="none"\n              style={[s.legendWrap, { top: 48, bottom: undefined, right: 74 }]}\n            >`,
   ],
   [
     `{selected ? (\n              <View\n                style={{`,
