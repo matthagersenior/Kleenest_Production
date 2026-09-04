@@ -9,6 +9,7 @@ on:
       - 'apps/consumer-mobile/components/**'
       - 'apps/consumer-mobile/services/**'
       - 'packages/mobile-core/**'
+      - '.github/workflows/ota-update.yml'
 
 permissions:
   contents: read
@@ -31,7 +32,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Ensure Consumer OTA channel exists
