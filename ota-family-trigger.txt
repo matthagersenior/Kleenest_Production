@@ -1,1 +1,1 @@
-Publish current Kleenest app family OTA after Business home, navigation, Standard QR, Growth/Enterprise QR Studio, scannable QR rendering, sharing, templates, versions, and canonical action wiring rebuild.
+Republish the current Kleenest app family after eliminating duplicate Business sign-in navigation, rebuilding Business QR/UI authority, pinning Consumer and Fleet launcher identity, forcing Owner launcher resources after prebuild, and aligning current Expo SDK 57 patch runtimes.
