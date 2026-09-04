@@ -60,7 +60,7 @@ jobs:
           grep -q 'Your current location' apps/consumer-mobile/app/explore.tsx
           grep -q 'Full details' apps/consumer-mobile/app/explore.tsx
           grep -q 'Scroll results · map stays fixed' apps/consumer-mobile/app/explore.tsx
-          grep -q 'height: 300' apps/consumer-mobile/app/explore.tsx
+          grep -q 'height: 230' apps/consumer-mobile/app/explore.tsx
           grep -q 'business_logo_url' apps/consumer-mobile/components/RestroomSignals.tsx
           rm -rf apps/consumer-mobile/.preflight
           cd apps/consumer-mobile
