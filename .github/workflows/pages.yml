@@ -1,4 +1,4 @@
-name: Deploy Kleenest Consumer Preview
+name: Validate Kleenest Consumer Web Preview
 
 on:
   workflow_dispatch:
@@ -8,11 +8,9 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: kleenest-consumer-preview-pages
+  group: kleenest-consumer-preview-validation
   cancel-in-progress: true
 
 jobs:
@@ -37,23 +35,16 @@ jobs:
         env:
           EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
           EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
-      - name: Add GitHub Pages SPA fallback
+      - name: Validate SPA fallback
         run: |
           cp apps/consumer-mobile/dist/index.html apps/consumer-mobile/dist/404.html
           touch apps/consumer-mobile/dist/.nojekyll
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+          test -s apps/consumer-mobile/dist/index.html
+          test -s apps/consumer-mobile/dist/404.html
+      - name: Preserve web preview validation artifact
+        uses: actions/upload-artifact@v4
         with:
+          name: Kleenest-Consumer-Web-Preview
           path: apps/consumer-mobile/dist
-
-  deploy:
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy consumer preview to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          retention-days: 3
+          if-no-files-found: error
