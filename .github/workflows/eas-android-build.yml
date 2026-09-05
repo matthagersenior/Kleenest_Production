@@ -21,6 +21,7 @@ on:
       - 'scripts/production-environment-contract-audit.mjs'
       - 'scripts/apply-consumer-explore-overlay-fix.mjs'
       - 'scripts/apply-consumer-progress-canonical.mjs'
+      - '.github/workflows/eas-android-build.yml'
 
 permissions:
   contents: read
@@ -101,6 +102,43 @@ jobs:
           sha256sum "$OUTPUT" | tee "$OUTPUT.sha256"
           printf '{"profile":"%s","artifact":"%s","sha":"%s","builder":"eas-local"}\n' \
             "$PROFILE" "$(basename "$OUTPUT")" "$GITHUB_SHA" > "$GITHUB_WORKSPACE/eas-build-result.json"
+      - name: Inspect Android signing certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$PROFILE" = "production" ]; then EXT=aab; else EXT=apk; fi
+          ARTIFACT="Kleenest-Consumer-${PROFILE}.${EXT}"
+          CERT_INFO="$GITHUB_WORKSPACE/android-signing-cert.txt"
+
+          if [ "$EXT" = "apk" ]; then
+            APKSIGNER="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -n1)"
+            test -x "$APKSIGNER"
+            "$APKSIGNER" verify --print-certs "$ARTIFACT" | tee "$CERT_INFO"
+            RAW_SHA1="$(awk -F': ' '/certificate SHA-1 digest:/{print $2; exit}' "$CERT_INFO")"
+          else
+            keytool -printcert -jarfile "$ARTIFACT" | tee "$CERT_INFO"
+            RAW_SHA1="$(awk -F'SHA1: ' '/SHA1:/{print $2; exit}' "$CERT_INFO")"
+          fi
+
+          if grep -Fqi 'CN=Android Debug' "$CERT_INFO"; then
+            echo 'Refusing to publish an Android artifact signed with the Android Debug certificate.' >&2
+            exit 1
+          fi
+
+          NORMALIZED_SHA1="$(printf '%s' "$RAW_SHA1" | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]')"
+          if ! printf '%s' "$NORMALIZED_SHA1" | grep -Eq '^[0-9A-F]{40}$'; then
+            echo "Could not parse a valid SHA-1 certificate fingerprint from $ARTIFACT." >&2
+            exit 1
+          fi
+          SIGNING_SHA1="$(printf '%s' "$NORMALIZED_SHA1" | sed 's/../&:/g;s/:$//')"
+          printf 'Signing SHA-1: %s\n' "$SIGNING_SHA1" | tee -a "$CERT_INFO"
+          printf '%s\n' "$SIGNING_SHA1" > "$GITHUB_WORKSPACE/android-signing-sha1.txt"
+          {
+            echo '### Consumer Android signing identity'
+            echo "Package: com.kleenest.app"
+            echo "Profile: $PROFILE"
+            echo "Signing SHA-1: $SIGNING_SHA1"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Validate signed Android artifact
         shell: bash
         run: |
@@ -109,6 +147,7 @@ jobs:
           ARTIFACT="Kleenest-Consumer-${PROFILE}.${EXT}"
           test -s "$ARTIFACT"
           unzip -t "$ARTIFACT" >/dev/null
+          test -s android-signing-sha1.txt
           grep -q '"builder":"eas-local"' eas-build-result.json
           {
             echo '### Kleenest signed Android artifact completed'
@@ -122,5 +161,7 @@ jobs:
           path: |
             Kleenest-Consumer-${{ env.PROFILE }}.*
             eas-build-result.json
+            android-signing-cert.txt
+            android-signing-sha1.txt
           if-no-files-found: error
           retention-days: 30
