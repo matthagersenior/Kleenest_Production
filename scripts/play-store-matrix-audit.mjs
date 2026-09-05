@@ -54,6 +54,9 @@ for (const [key, app] of Object.entries(matrix.apps)) {
       read(`${root}/app/dispatch.tsx`);
     must(/background location|background.*location|location.*background/i.test(disclosure), `${key}: prominent background-location purpose disclosure missing`);
     must(/Enable|Turn on|Start/i.test(disclosure), `${key}: background location must be user-initiated`);
+    must(disclosure.includes('Alert.alert'), `${key}: prominent background-location disclosure dialog must appear before Android permission flow`);
+    must(/closed|not in use/i.test(disclosure), `${key}: prominent disclosure must explain location use while the app is closed or not in use`);
+    must(/Continue/.test(disclosure), `${key}: prominent disclosure needs an explicit continue action before the Android permission prompt`);
   } else {
     must(!config.includes("'ACCESS_BACKGROUND_LOCATION'"), `${key}: background location must not be requested`);
   }
