@@ -2,18 +2,30 @@ import type { ExpoConfig } from 'expo/config';
 
 const PRODUCTION_EAS_PROJECT_ID = '22a65aa3-c615-4c4f-a34d-084babc28fd7';
 const configuredEasProjectId = process.env.EAS_PROJECT_ID;
-const releaseChannel = process.env.KLEENEST_RELEASE_CHANNEL || 'development';
+const standaloneAndroid = process.env.KLEENEST_STANDALONE_ANDROID === '1';
 
 if (configuredEasProjectId && configuredEasProjectId !== PRODUCTION_EAS_PROJECT_ID) {
   throw new Error(`[Kleenest] EAS_PROJECT_ID drift detected. Expected ${PRODUCTION_EAS_PROJECT_ID}, received ${configuredEasProjectId}.`);
 }
 
 const easProjectId = configuredEasProjectId || PRODUCTION_EAS_PROJECT_ID;
+const devClientPlugins: NonNullable<ExpoConfig['plugins']> = standaloneAndroid
+  ? []
+  : [['expo-dev-client', { launchMode: 'most-recent' }]];
 
 const config: ExpoConfig = {
   name: 'Kleenest',
   slug: 'kleenest-consumer',
-  version: '1.0.0',
+  version: '0.1.0',
+  runtimeVersion: 'kleenest-consumer-0.1.0',
+  icon: './assets/app-icon.png',
+  updates: {
+    enabled: true,
+    url: `https://u.expo.dev/${easProjectId}`,
+    checkAutomatically: 'ON_LOAD',
+    fallbackToCacheTimeout: 0,
+    requestHeaders: { 'expo-channel-name': 'consumer-production' },
+  },
   orientation: 'portrait',
   scheme: 'kleenest',
   userInterfaceStyle: 'automatic',
@@ -21,23 +33,41 @@ const config: ExpoConfig = {
     bundleIdentifier: 'com.kleenest.app',
     supportsTablet: true,
     config: { usesNonExemptEncryption: false },
-    infoPlist: { NSLocationWhenInUseUsageDescription: 'Kleenest uses your location to find nearby restrooms and help calculate routes.' },
+    infoPlist: {
+      NSLocationWhenInUseUsageDescription: 'Kleenest uses your location to find nearby restrooms and help calculate routes.',
+      NSLocationAlwaysAndWhenInUseUsageDescription: 'Kleenest uses background location only when you enable Live Network nearby-restroom alerts.',
+      UIBackgroundModes: ['location'],
+    },
   },
   android: {
     package: 'com.kleenest.app',
-    permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION', 'CAMERA'],
+    icon: './assets/app-icon.png',
+    permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION', 'ACCESS_BACKGROUND_LOCATION', 'CAMERA'],
+    blockedPermissions: ['android.permission.RECORD_AUDIO', 'android.permission.SYSTEM_ALERT_WINDOW'],
+    intentFilters: [{
+      action: 'VIEW',
+      autoVerify: false,
+      data: [{ scheme: 'kleenest' }],
+      category: ['BROWSABLE', 'DEFAULT'],
+    }],
   },
   web: {
     output: 'single',
     bundler: 'metro',
-    name: 'Kleenest Consumer Preview',
+    name: 'Kleenest',
     shortName: 'Kleenest',
   },
   plugins: [
     'expo-router',
-    'expo-location',
+    ['expo-location', {
+      locationWhenInUsePermission: 'Kleenest uses your location to find nearby restrooms and help calculate routes.',
+      locationAlwaysAndWhenInUsePermission: 'Kleenest uses background location only when you enable Live Network nearby-restroom alerts.',
+      isAndroidBackgroundLocationEnabled: true,
+      isAndroidForegroundServiceEnabled: true,
+      isIosBackgroundLocationEnabled: true,
+    }],
     'expo-secure-store',
-    ['expo-dev-client', { launchMode: 'most-recent' }],
+    ...devClientPlugins,
     '@maplibre/maplibre-react-native',
     ['expo-camera', { cameraPermission: 'Kleenest uses your camera to scan Kleenest restroom QR codes.' }],
     ['expo-image-picker', { photosPermission: 'Kleenest uses your photo library so you can choose a public contributor profile photo.', microphonePermission: false }],
@@ -46,8 +76,8 @@ const config: ExpoConfig = {
   experiments: { typedRoutes: true, baseUrl: '/Kleenest_Production' },
   extra: {
     appRole: 'consumer',
+    otaChannel: 'consumer-production',
     previewRole: 'non-blocking-web-preview',
-    releaseChannel,
     productionEnvironment: {
       expoProjectId: PRODUCTION_EAS_PROJECT_ID,
       supabaseProjectRef: 'ssgesjzdvdsqacdtasje',
