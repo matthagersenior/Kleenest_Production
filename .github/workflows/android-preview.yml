@@ -177,6 +177,19 @@ jobs:
           fi
           echo 'Consumer release payload verified as embedded, production-configured, non-debuggable, ARM64/x86_64 Hermes release.'
 
+      - name: Enable KVM access for Android startup gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+            test -r /dev/kvm
+            test -w /dev/kvm
+            ls -l /dev/kvm
+          else
+            echo 'Runner has no /dev/kvm; emulator action will fall back to software acceleration.' >&2
+          fi
+
       - name: Android 16 startup + Explore smoke
         uses: reactivecircus/android-emulator-runner@v2
         with:
