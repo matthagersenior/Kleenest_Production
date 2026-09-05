@@ -13,63 +13,17 @@
     "matthagersenior/Kleenest",
     "matthagersenior/Kleenest-"
   ],
-  "classifications": [
-    "fully-present",
-    "equivalent",
-    "partial",
-    "missing",
-    "disconnected",
-    "duplicated",
-    "obsolete"
-  ],
-  "chainDimensions": [
-    "ui",
-    "service",
-    "backend",
-    "authorization",
-    "stateRefresh",
-    "offline"
-  ],
+  "classifications": ["fully-present","equivalent","partial","missing","disconnected","duplicated","obsolete"],
+  "chainDimensions": ["ui","service","backend","authorization","stateRefresh","offline"],
   "liveBackendSnapshot": {
     "projectRef": "ssgesjzdvdsqacdtasje",
     "publicTables": 234,
     "publicViews": 21,
-    "publicFunctions": 726,
+    "publicFunctions": 730,
     "rlsPolicies": 336,
     "realtimeTables": 21,
     "edgeFunctions": [
-      "ingest-map-candidates",
-      "admin-tools",
-      "maps-ingest",
-      "public-data-catalog",
-      "public-data-ingest",
-      "public-data-ingest-v2",
-      "admin-user-control",
-      "public-data-ingest-v3",
-      "deliver-intelligence-notification",
-      "generate-intelligence-notifications",
-      "backfill-location-addresses",
-      "deliver-push-notification",
-      "market-bathroom-ingest",
-      "network-source-ingest",
-      "market-bathroom-ingest-v2",
-      "datagov-network-ingest-v1",
-      "market-bathroom-ingest-v3",
-      "market-bathroom-ingest-v4",
-      "public-data-ingest-v4",
-      "market-bathroom-ingest-v5",
-      "ingest-map-candidates-v2",
-      "ingest-map-candidates-v3",
-      "stripe-create-checkout",
-      "stripe-billing-webhook",
-      "stripe-customer-portal",
-      "run-reporting-schedules",
-      "map-bootstrap-ingest",
-      "ai-assist",
-      "national-ingestion-orchestrator",
-      "deliver-native-push-notification",
-      "reconcile-native-push-receipts",
-      "focus-ingestion-orchestrator"
+      "ingest-map-candidates","admin-tools","maps-ingest","public-data-catalog","public-data-ingest","public-data-ingest-v2","admin-user-control","public-data-ingest-v3","deliver-intelligence-notification","generate-intelligence-notifications","backfill-location-addresses","deliver-push-notification","market-bathroom-ingest","network-source-ingest","market-bathroom-ingest-v2","datagov-network-ingest-v1","market-bathroom-ingest-v3","market-bathroom-ingest-v4","public-data-ingest-v4","market-bathroom-ingest-v5","ingest-map-candidates-v2","ingest-map-candidates-v3","stripe-create-checkout","stripe-billing-webhook","stripe-customer-portal","run-reporting-schedules","map-bootstrap-ingest","ai-assist","national-ingestion-orchestrator","deliver-native-push-notification","reconcile-native-push-receipts","focus-ingestion-orchestrator"
     ]
   },
   "items": [
@@ -77,33 +31,16 @@
       "id": "business.enterprise-economy",
       "product": "business",
       "domain": "enterprise-economy",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/Kleenest_Business",
-        "ref": "main",
-        "paths": ["app/enterprise-economy.tsx", "src/services/enterprise.ts"]
-      },
-      "classification": "partial",
-      "gap": "Production has Enterprise economy service primitives but no standalone-equivalent operator route protecting network member, campaign ROI, allocation activation and attributed outcome workflows end to end.",
-      "chain": {
-        "ui": false,
-        "service": true,
-        "backend": true,
-        "authorization": true,
-        "stateRefresh": false,
-        "offline": false
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Business","ref":"main","paths":["app/enterprise-economy.tsx","src/services/enterprise.ts"]},
+      "classification": "equivalent",
+      "gap": "",
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":true,"offline":false},
       "productionEvidence": {
-        "files": ["apps/business-mobile/services/enterpriseEconomy.ts", "apps/business-mobile/app/enterprise.tsx"],
+        "files": ["apps/business-mobile/app/enterprise.tsx","apps/business-mobile/components/EnterpriseEconomySection.tsx","apps/business-mobile/services/enterpriseEconomy.ts"],
         "markers": [
-          {
-            "file": "apps/business-mobile/services/enterpriseEconomy.ts",
-            "contains": ["enterprise_list_owned_networks", "create_partner_allocation", "activate_partner_allocation", "record_enterprise_partner_campaign_outcome"]
-          }
+          {"file":"apps/business-mobile/services/enterpriseEconomy.ts","contains":["enterprise_list_network_members","enterprise_list_network_campaigns","get_partner_campaign_roi","create_partner_allocation","activate_partner_allocation","record_enterprise_partner_campaign_outcome"]},
+          {"file":"apps/business-mobile/components/EnterpriseEconomySection.tsx","contains":["Create partner allocation","Activate newest allocation","Record campaign outcome","Load campaign ROI"]}
         ]
-      },
-      "backendEvidence": {
-        "authenticatedRpcs": ["enterprise_list_owned_networks", "enterprise_list_partner_businesses", "enterprise_list_network_members", "enterprise_list_network_campaigns", "create_partner_allocation", "activate_partner_allocation", "get_partner_allocation_roi", "get_partner_network_benchmark", "get_partner_campaign_roi", "record_enterprise_partner_campaign_outcome"]
       },
       "protect": true
     },
@@ -111,33 +48,18 @@
       "id": "business.governance-reporting",
       "product": "business",
       "domain": "governance-reporting",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/Kleenest_Business",
-        "ref": "main",
-        "paths": ["app/governance.tsx", "src/services/governance.ts"]
-      },
-      "classification": "disconnected",
-      "gap": "Production service code calls reporting_build_payload and run_due_reporting_schedules from the authenticated mobile client, but the live database currently denies authenticated EXECUTE for both RPCs and Production has no governance route.",
-      "chain": {
-        "ui": false,
-        "service": true,
-        "backend": true,
-        "authorization": false,
-        "stateRefresh": false,
-        "offline": false
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Business","ref":"main","paths":["app/governance.tsx","src/services/governance.ts"]},
+      "classification": "equivalent",
+      "gap": "",
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":true,"offline":false},
       "productionEvidence": {
-        "files": ["apps/business-mobile/services/governance.ts"],
+        "files": ["apps/business-mobile/app/governance.tsx","apps/business-mobile/services/governance.ts","supabase/functions/run-reporting-schedules/index.ts","supabase/migrations/20260905185819_harden_reporting_scope_and_user_execution.sql"],
         "markers": [
-          {
-            "file": "apps/business-mobile/services/governance.ts",
-            "contains": ["reporting_schedules", "run_due_reporting_schedules", "reporting_build_payload"]
-          }
+          {"file":"apps/business-mobile/services/governance.ts","contains":["functions.invoke('run-reporting-schedules'","business_reporting_build_payload","listReportingRuns"]},
+          {"file":"supabase/functions/run-reporting-schedules/index.ts","contains":["run_user_due_reporting_schedules","auth.getUser"]},
+          {"file":"supabase/migrations/20260905185819_harden_reporting_scope_and_user_execution.sql","contains":["reporting_schedule_scope_authorized","run_user_due_reporting_schedules","business_reporting_build_payload"]},
+          {"file":"apps/business-mobile/app/governance.tsx","contains":["Run due reports","Preview 30-day report","Recent report runs"]}
         ]
-      },
-      "backendEvidence": {
-        "presentButNotAuthenticatedExecutableRpcs": ["reporting_build_payload", "run_due_reporting_schedules"]
       },
       "protect": true
     },
@@ -145,80 +67,35 @@
       "id": "business.qr-designer",
       "product": "business",
       "domain": "qr-designer",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/Kleenest_Business",
-        "ref": "main",
-        "paths": ["app/qr-designer.tsx", "app/qr-studio.tsx"]
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Business","ref":"main","paths":["app/qr-designer.tsx","app/qr-studio.tsx"]},
       "classification": "partial",
-      "gap": "Production exposes QR Studio and QR visual services but the standalone dedicated designer workflow has not yet been reconciled action-by-action against the monorepo surface.",
-      "chain": {
-        "ui": true,
-        "service": true,
-        "backend": true,
-        "authorization": true,
-        "stateRefresh": null,
-        "offline": false
-      },
-      "productionEvidence": {
-        "files": ["apps/business-mobile/app/qr-studio.tsx", "apps/business-mobile/services/qrStudio.ts", "apps/business-mobile/services/qrVisual.ts"]
-      },
+      "gap": "Production exposes QR Studio and QR visual services, but the standalone dedicated designer workflow still needs action-by-action and refresh-path reconciliation.",
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":null,"offline":false},
+      "productionEvidence": {"files":["apps/business-mobile/app/qr-studio.tsx","apps/business-mobile/services/qrStudio.ts","apps/business-mobile/services/qrVisual.ts"]},
       "protect": true
     },
     {
       "id": "business.trust-operations",
       "product": "business",
       "domain": "trust-operations",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/Kleenest_Business",
-        "ref": "main",
-        "paths": ["app/trust-operations.tsx", "src/services/trustOps.ts"]
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Business","ref":"main","paths":["app/trust-operations.tsx","src/services/trustOps.ts"]},
       "classification": "partial",
-      "gap": "Production contains trust operations services and broader operations UI, but the standalone trust-operations workflow still requires call-level and refresh-path reconciliation.",
-      "chain": {
-        "ui": true,
-        "service": true,
-        "backend": true,
-        "authorization": true,
-        "stateRefresh": null,
-        "offline": false
-      },
-      "productionEvidence": {
-        "files": ["apps/business-mobile/app/operations.tsx", "apps/business-mobile/services/trustOps.ts"]
-      },
+      "gap": "Production contains trust operations services and broader operations UI, but the standalone trust workflow still needs call-level, mutation and refresh-path reconciliation.",
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":null,"offline":false},
+      "productionEvidence": {"files":["apps/business-mobile/app/operations.tsx","apps/business-mobile/services/trustOps.ts"]},
       "protect": true
     },
     {
       "id": "fleet.extended-crud-metrics",
       "product": "fleet",
       "domain": "extended-crud-metrics",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/Kleenest_Fleet",
-        "ref": "main",
-        "paths": ["scripts/fleet-parity-audit.mjs", "src/services/parity.ts"]
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Fleet","ref":"main","paths":["scripts/fleet-parity-audit.mjs","src/services/parity.ts"]},
       "classification": "partial",
-      "gap": "Most extended Fleet CRUD and metric authority exists in Production services, but every standalone UI action and refresh path has not yet been mechanically proven.",
-      "chain": {
-        "ui": null,
-        "service": true,
-        "backend": true,
-        "authorization": true,
-        "stateRefresh": null,
-        "offline": false
-      },
+      "gap": "Most extended Fleet CRUD and metric authority exists in Production services, but every standalone UI action and refresh path is not yet mechanically proven.",
+      "chain": {"ui":null,"service":true,"backend":true,"authorization":true,"stateRefresh":null,"offline":false},
       "productionEvidence": {
-        "files": ["apps/fleet-mobile/services/parity.ts", "apps/fleet-mobile/app/operations.tsx", "apps/fleet-mobile/app/metrics.tsx"],
-        "markers": [
-          {
-            "file": "apps/fleet-mobile/services/parity.ts",
-            "contains": ["fleet_update_vehicle", "fleet_delete_vehicle", "fleet_update_driver", "fleet_delete_driver", "fleet_update_route", "fleet_delete_route", "get_fleet_metric_configuration", "create_fleet_metric_definition", "assign_fleet_metric"]
-          }
-        ]
+        "files": ["apps/fleet-mobile/services/parity.ts","apps/fleet-mobile/app/operations.tsx","apps/fleet-mobile/app/metrics.tsx"],
+        "markers": [{"file":"apps/fleet-mobile/services/parity.ts","contains":["fleet_update_vehicle","fleet_delete_vehicle","fleet_update_driver","fleet_delete_driver","fleet_update_route","fleet_delete_route","get_fleet_metric_configuration","create_fleet_metric_definition","assign_fleet_metric"]}]
       },
       "protect": true
     },
@@ -226,349 +103,143 @@
       "id": "fleet.map-dispatch",
       "product": "fleet",
       "domain": "map-dispatch",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/Kleenest_Fleet",
-        "ref": "main",
-        "paths": ["src/components/FleetMap.tsx", "app/dispatch.tsx", "scripts/fleet-map-convergence-audit.mjs"]
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Fleet","ref":"main","paths":["src/components/FleetMap.tsx","app/dispatch.tsx","scripts/fleet-map-convergence-audit.mjs"]},
       "classification": "partial",
-      "gap": "Production has a FleetMap and dispatch surface, but standalone map interaction, brand-marker, route-stop ordering and planner behavior still require semantic parity verification.",
-      "chain": {
-        "ui": true,
-        "service": true,
-        "backend": true,
-        "authorization": true,
-        "stateRefresh": null,
-        "offline": false
-      },
-      "productionEvidence": {
-        "files": ["apps/fleet-mobile/components/FleetMap.tsx", "apps/fleet-mobile/app/dispatch.tsx", "apps/fleet-mobile/app/planner.tsx"]
-      },
+      "gap": "Production has FleetMap, dispatch and planner surfaces, but standalone map interaction, brand-marker, route-stop ordering and planner behavior still require semantic parity verification.",
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":null,"offline":false},
+      "productionEvidence": {"files":["apps/fleet-mobile/components/FleetMap.tsx","apps/fleet-mobile/app/dispatch.tsx","apps/fleet-mobile/app/planner.tsx"]},
       "protect": true
     },
     {
       "id": "fleet.live-geofence",
       "product": "fleet",
       "domain": "live-geofence",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/Kleenest_Fleet",
-        "ref": "main",
-        "paths": ["src/services/geofence.ts", "app/execution.tsx", "app/signals.tsx"]
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Fleet","ref":"main","paths":["src/services/geofence.ts","app/execution.tsx","app/signals.tsx"]},
       "classification": "partial",
-      "gap": "Production has geofence, execution and signals surfaces, but the full background/native permission, manifest, event recording and notification chain still needs parity proof.",
-      "chain": {
-        "ui": true,
-        "service": true,
-        "backend": true,
-        "authorization": true,
-        "stateRefresh": null,
-        "offline": true
-      },
-      "productionEvidence": {
-        "files": ["apps/fleet-mobile/services/geofence.ts", "apps/fleet-mobile/app/execution.tsx", "apps/fleet-mobile/app/signals.tsx"]
-      },
-      "backendEvidence": {
-        "authenticatedRpcs": ["fleet_route_geofence_manifest", "record_geofence_event"]
-      },
+      "gap": "Production has geofence, execution and signals surfaces, but the full background/native permission, manifest, event-recording and notification chain still needs parity proof.",
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":null,"offline":true},
+      "productionEvidence": {"files":["apps/fleet-mobile/services/geofence.ts","apps/fleet-mobile/app/execution.tsx","apps/fleet-mobile/app/signals.tsx"]},
       "protect": true
     },
     {
       "id": "fleet.device-offline-queue",
       "product": "fleet",
       "domain": "offline-recovery",
-      "source": {
-        "kind": "production",
-        "repo": "matthagersenior/Kleenest_Production",
-        "ref": "parity/deep-reconciliation-20260905",
-        "paths": ["apps/fleet-mobile/services/offline.ts", "apps/fleet-mobile/app/sync.tsx"]
-      },
+      "source": {"kind":"production","repo":"matthagersenior/Kleenest_Production","ref":"parity/deep-reconciliation-20260905","paths":["apps/fleet-mobile/services/offline.ts","apps/fleet-mobile/app/sync.tsx"]},
       "classification": "partial",
-      "gap": "Device-local queue and replay are now exposed in Production; final classification waits on failure-path tests proving persistence across restart/network restoration and canonical replay idempotency.",
-      "chain": {
-        "ui": true,
-        "service": true,
-        "backend": true,
-        "authorization": true,
-        "stateRefresh": true,
-        "offline": true
-      },
-      "productionEvidence": {
-        "files": ["apps/fleet-mobile/services/offline.ts", "apps/fleet-mobile/app/sync.tsx"],
-        "markers": [
-          {
-            "file": "apps/fleet-mobile/app/sync.tsx",
-            "contains": ["listOfflineRouteEvents", "replayOfflineRouteEvents", "Device offline queue", "Replay queued field events"]
-          }
-        ]
-      },
+      "gap": "Device-local queue and replay are exposed in Production; final classification waits on failure-path tests proving persistence across restart/network restoration and canonical replay idempotency.",
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":true,"offline":true},
+      "productionEvidence": {"files":["apps/fleet-mobile/services/offline.ts","apps/fleet-mobile/app/sync.tsx"],"markers":[{"file":"apps/fleet-mobile/app/sync.tsx","contains":["listOfflineRouteEvents","replayOfflineRouteEvents","Device offline queue","Replay queued field events"]}]},
       "protect": true
     },
     {
       "id": "owner.authorization-control-plane",
       "product": "owner",
       "domain": "authorization-control-plane",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/Kleenest_Owner",
-        "ref": "main",
-        "paths": ["scripts/owner-parity-audit.mjs", "src/services/ownerAuthorization.ts"]
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Owner","ref":"main","paths":["scripts/owner-parity-audit.mjs","src/services/ownerAuthorization.ts"]},
       "classification": "equivalent",
       "gap": "",
-      "chain": {
-        "ui": true,
-        "service": true,
-        "backend": true,
-        "authorization": true,
-        "stateRefresh": true,
-        "offline": false
-      },
-      "productionEvidence": {
-        "files": ["apps/platform-mobile/services/ownerAdmin.ts", "apps/platform-mobile/app/access.tsx"],
-        "markers": [
-          {
-            "file": "apps/platform-mobile/services/ownerAdmin.ts",
-            "contains": ["admin_authorization_v1", "requirePlatformOwner", "admin_user_search", "admin_set_user_access"]
-          }
-        ]
-      },
-      "backendEvidence": {
-        "authenticatedRpcs": ["admin_authorization_v1"]
-      },
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":true,"offline":false},
+      "productionEvidence": {"files":["apps/platform-mobile/services/ownerAdmin.ts","apps/platform-mobile/app/access.tsx"],"markers":[{"file":"apps/platform-mobile/services/ownerAdmin.ts","contains":["admin_authorization_v1","requirePlatformOwner","admin_user_search","admin_set_user_access"]}]},
       "protect": true
     },
     {
       "id": "owner.capability-governance",
       "product": "owner",
       "domain": "capability-governance",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/Kleenest_Owner",
-        "ref": "main",
-        "paths": ["scripts/owner-parity-audit.mjs", "scripts/kleenestos-authority-audit.mjs"]
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Owner","ref":"main","paths":["scripts/owner-parity-audit.mjs","scripts/kleenestos-authority-audit.mjs"]},
       "classification": "equivalent",
       "gap": "",
-      "chain": {
-        "ui": true,
-        "service": true,
-        "backend": true,
-        "authorization": true,
-        "stateRefresh": true,
-        "offline": false
-      },
-      "productionEvidence": {
-        "files": ["apps/platform-mobile/services/ownerAdmin.ts", "apps/platform-mobile/app/capabilities.tsx", "apps/platform-mobile/app/audit.tsx"],
-        "markers": [
-          {
-            "file": "apps/platform-mobile/services/ownerAdmin.ts",
-            "contains": ["owner_capability_domain_contracts", "owner_update_capability_domain_contract", "run_capability_audit"]
-          }
-        ]
-      },
-      "backendEvidence": {
-        "authenticatedRpcs": ["owner_capability_domain_contracts", "owner_update_capability_domain_contract"]
-      },
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":true,"offline":false},
+      "productionEvidence": {"files":["apps/platform-mobile/services/ownerAdmin.ts","apps/platform-mobile/app/capabilities.tsx","apps/platform-mobile/app/audit.tsx"],"markers":[{"file":"apps/platform-mobile/services/ownerAdmin.ts","contains":["owner_capability_domain_contracts","owner_update_capability_domain_contract","run_capability_audit"]}]},
       "protect": true
     },
     {
       "id": "owner.kleenestos-presentation",
       "product": "owner",
       "domain": "kleenestos-presentation",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/Kleenest_Owner",
-        "ref": "main",
-        "paths": ["src/components/KleenestOS.tsx", "scripts/kleenestos-authority-audit.mjs"]
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Owner","ref":"main","paths":["src/components/KleenestOS.tsx","scripts/kleenestos-authority-audit.mjs"]},
       "classification": "partial",
-      "gap": "Production has the authority surfaces but has not yet been reconciled against the standalone KleenestOS component contract and no-raw-JSON presentation audit.",
-      "chain": {
-        "ui": true,
-        "service": true,
-        "backend": true,
-        "authorization": true,
-        "stateRefresh": true,
-        "offline": false
-      },
-      "productionEvidence": {
-        "files": ["apps/platform-mobile/app/index.tsx", "apps/platform-mobile/app/operations.tsx", "apps/platform-mobile/app/progression.tsx", "apps/platform-mobile/app/moderation.tsx"]
-      },
+      "gap": "Production has the authority surfaces but is not yet reconciled against the standalone KleenestOS component contract, navigation hierarchy and no-raw-JSON presentation audit.",
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":true,"offline":false},
+      "productionEvidence": {"files":["apps/platform-mobile/app/index.tsx","apps/platform-mobile/app/operations.tsx","apps/platform-mobile/app/progression.tsx","apps/platform-mobile/app/moderation.tsx"]},
       "protect": true
     },
     {
       "id": "architecture.runtime-workspace-stabilization",
       "product": "shared",
       "domain": "workspace-runtime-contract",
-      "source": {
-        "kind": "architecture-branch",
-        "repo": "matthagersenior/Kleenest_Architecture",
-        "ref": "runtime-workspace-stabilization",
-        "paths": ["src/architecture/capabilityPresentation.js", "src/runtime/routing/routeRegistry.js", "src/runtime/workspace/useWorkspaceAccess.js", "scripts/current-interoperability-audit.mjs"]
-      },
+      "source": {"kind":"architecture-branch","repo":"matthagersenior/Kleenest_Architecture","ref":"runtime-workspace-stabilization","paths":["src/architecture/capabilityPresentation.js","src/runtime/routing/routeRegistry.js","src/runtime/workspace/useWorkspaceAccess.js","scripts/current-interoperability-audit.mjs"]},
       "classification": "partial",
-      "gap": "The branch is materially divergent and contains unique capability-presentation, route-registry, workspace-access and interoperability-audit work. Extract relevant contracts into Production rather than merging the branch wholesale.",
-      "chain": {
-        "ui": null,
-        "service": null,
-        "backend": null,
-        "authorization": null,
-        "stateRefresh": null,
-        "offline": null
-      },
-      "productionEvidence": {
-        "files": ["config/product-parity.json", "scripts/product-parity-audit.mjs"]
-      },
+      "gap": "The branch remains materially divergent and contains unique capability-presentation, route-registry, workspace-access and interoperability-audit work. Extract relevant contracts into Production rather than merging wholesale.",
+      "chain": {"ui":null,"service":null,"backend":null,"authorization":null,"stateRefresh":null,"offline":null},
+      "productionEvidence": {"files":["config/product-parity.json","scripts/product-parity-audit.mjs"]},
       "protect": true
     },
     {
       "id": "legacy.web-runtime-wiring",
       "product": "consumer-shared",
       "domain": "legacy-runtime-wiring",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/Kleenest_App",
-        "ref": "main",
-        "paths": ["docs/architecture/wiring-ledger-2026-08-22.md", "src/CanonicalConsumerRuntime.jsx", "src/services/offlinePacks.js", "src/services/intelligence.js", "src/services/community.js"]
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/Kleenest_App","ref":"main","paths":["docs/architecture/wiring-ledger-2026-08-22.md","src/CanonicalConsumerRuntime.jsx","src/services/offlinePacks.js","src/services/intelligence.js","src/services/community.js"]},
       "classification": "partial",
-      "gap": "Kleenest_App contains mature web-runtime wiring for consumer activity, offline packs, notifications, intelligence, evidence, social, gamification and route planning. Each service family must be mapped to native Production ownership before the legacy repo can be retired as a reference.",
-      "chain": {
-        "ui": null,
-        "service": null,
-        "backend": true,
-        "authorization": null,
-        "stateRefresh": null,
-        "offline": true
-      },
-      "productionEvidence": {
-        "files": ["apps/consumer-mobile", "packages/mobile-core"]
-      },
+      "gap": "Kleenest_App contains mature consumer/web wiring for activity, offline packs, notifications, intelligence, evidence, social, gamification and route planning. Each service family still needs explicit native Production ownership or obsolescence proof.",
+      "chain": {"ui":null,"service":null,"backend":true,"authorization":null,"stateRefresh":null,"offline":true},
+      "productionEvidence": {"files":["apps/consumer-mobile","packages/mobile-core"]},
       "protect": true
     },
     {
       "id": "legacy.modular-cores",
       "product": "shared",
       "domain": "legacy-modular-cores",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/KleenestApp",
-        "ref": "main",
-        "paths": ["cores/maps/maps-core.js", "cores/maps/maps-discovery-v3.js", "cores/business/business-crud-core.js", "cores/social/social-core-v2.js", "cores/admin/admin-core.js"]
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/KleenestApp","ref":"main","paths":["cores/maps/maps-core.js","cores/maps/maps-discovery-v3.js","cores/business/business-crud-core.js","cores/social/social-core-v2.js","cores/admin/admin-core.js"]},
       "classification": "partial",
-      "gap": "Older modular maps, business CRUD, social and admin cores remain an implementation-history source. They require behavior-level comparison before being classified obsolete.",
-      "chain": {
-        "ui": null,
-        "service": null,
-        "backend": null,
-        "authorization": null,
-        "stateRefresh": null,
-        "offline": null
-      },
-      "productionEvidence": {
-        "files": ["apps/consumer-mobile", "apps/business-mobile", "apps/platform-mobile"]
-      },
+      "gap": "Older modular maps, business CRUD, social and admin cores remain implementation-history sources and require behavior-level comparison before obsolescence classification.",
+      "chain": {"ui":null,"service":null,"backend":null,"authorization":null,"stateRefresh":null,"offline":null},
+      "productionEvidence": {"files":["apps/consumer-mobile","apps/business-mobile","apps/platform-mobile"]},
       "protect": true
     },
     {
       "id": "legacy.original-product-archive",
       "product": "shared",
       "domain": "original-product-archive",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/Kleenest",
-        "ref": "main",
-        "paths": ["App.jsx", "Awards.txt", "Cleanliness alerts.txt", "Business dashboard.txt"]
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/Kleenest","ref":"main","paths":["App.jsx","Awards.txt","Cleanliness alerts.txt","Business dashboard.txt"]},
       "classification": "partial",
-      "gap": "The original repository is a large product-history archive with UI/code/text artifacts. It is non-canonical but must be mined for unique user-visible behavior, rewards, alerts and business concepts before final obsolescence classification.",
-      "chain": {
-        "ui": null,
-        "service": null,
-        "backend": null,
-        "authorization": null,
-        "stateRefresh": null,
-        "offline": null
-      },
-      "productionEvidence": {
-        "files": ["apps/consumer-mobile", "apps/business-mobile"]
-      },
+      "gap": "The original repository remains a non-canonical product-history archive and must still be mined for unique visible behavior, rewards, alerts and business concepts.",
+      "chain": {"ui":null,"service":null,"backend":null,"authorization":null,"stateRefresh":null,"offline":null},
+      "productionEvidence": {"files":["apps/consumer-mobile","apps/business-mobile"]},
       "protect": true
     },
     {
       "id": "legacy.single-html-snapshot",
       "product": "shared",
       "domain": "single-html-snapshot",
-      "source": {
-        "kind": "repo",
-        "repo": "matthagersenior/Kleenest-",
-        "ref": "main",
-        "paths": ["index.html"]
-      },
+      "source": {"kind":"repo","repo":"matthagersenior/Kleenest-","ref":"main","paths":["index.html"]},
       "classification": "obsolete",
       "gap": "",
-      "chain": {
-        "ui": false,
-        "service": false,
-        "backend": false,
-        "authorization": false,
-        "stateRefresh": false,
-        "offline": false
-      },
-      "productionEvidence": {
-        "files": []
-      },
-      "notes": "Retain only as a historical visual/behavior snapshot; do not treat it as an authority source unless a unique behavior is explicitly rediscovered.",
+      "chain": {"ui":false,"service":false,"backend":false,"authorization":false,"stateRefresh":false,"offline":false},
+      "productionEvidence": {"files":[]},
       "protect": false
     },
     {
       "id": "backend.edge-function-source-drift",
       "product": "backend",
       "domain": "edge-functions",
-      "source": {
-        "kind": "supabase-live",
-        "projectRef": "ssgesjzdvdsqacdtasje"
-      },
+      "source": {"kind":"supabase-live","projectRef":"ssgesjzdvdsqacdtasje"},
       "classification": "missing",
-      "gap": "The live project exposes 32 active Edge Functions while Production source currently carries only the native-push delivery and receipt-reconciliation functions. Source ownership for the remaining live function estate must be recovered or explicitly retired.",
-      "chain": {
-        "ui": null,
-        "service": null,
-        "backend": true,
-        "authorization": null,
-        "stateRefresh": null,
-        "offline": null
-      },
-      "productionEvidence": {
-        "files": ["supabase/functions/deliver-native-push-notification/index.ts", "supabase/functions/reconcile-native-push-receipts/index.ts"]
-      },
+      "gap": "The live project exposes 32 active Edge Functions while Production now source-controls only native push delivery, native receipt reconciliation and reporting execution; source ownership for the remaining 29 live functions must be recovered or explicitly retired.",
+      "chain": {"ui":null,"service":null,"backend":true,"authorization":null,"stateRefresh":null,"offline":null},
+      "productionEvidence": {"files":["supabase/functions/deliver-native-push-notification/index.ts","supabase/functions/reconcile-native-push-receipts/index.ts","supabase/functions/run-reporting-schedules/index.ts"]},
       "protect": true
     },
     {
       "id": "backend.live-source-migration-parity",
       "product": "backend",
       "domain": "migration-history",
-      "source": {
-        "kind": "supabase-live",
-        "projectRef": "ssgesjzdvdsqacdtasje"
-      },
+      "source": {"kind":"supabase-live","projectRef":"ssgesjzdvdsqacdtasje"},
       "classification": "partial",
-      "gap": "Live migration history and repository migration files need version/content reconciliation; recent live owner capability governance and hardening changes must be proven source-controlled rather than inferred from similar filenames.",
-      "chain": {
-        "ui": false,
-        "service": false,
-        "backend": true,
-        "authorization": true,
-        "stateRefresh": false,
-        "offline": false
-      },
-      "productionEvidence": {
-        "files": ["supabase/migrations"]
-      },
+      "gap": "Live migration history and repository migration files still need exhaustive version/content reconciliation. The reporting repair is source-controlled, but other recent live changes must be proven present rather than inferred from similar filenames.",
+      "chain": {"ui":false,"service":false,"backend":true,"authorization":true,"stateRefresh":false,"offline":false},
+      "productionEvidence": {"files":["supabase/migrations","supabase/migrations/20260905185819_harden_reporting_scope_and_user_execution.sql"]},
       "protect": true
     }
   ]
