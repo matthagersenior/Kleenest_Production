@@ -1,0 +1,5 @@
+import Constants from 'expo-constants';
+import * as Notifications from 'expo-notifications';
+import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+const APP_ID='platform';
+export async function registerRolePush(){const projectId=(Constants.expoConfig?.extra as any)?.eas?.projectId||(Constants as any).easConfig?.projectId;if(!projectId)return{status:'project-id-missing' as const,message:'Link Kleenest Platform to its own Expo/EAS project before native push registration.'};let permission=await Notifications.getPermissionsAsync();if(permission.status!=='granted'&&permission.canAskAgain)permission=await Notifications.requestPermissionsAsync();if(permission.status!=='granted')return{status:'permission-denied' as const,message:'Notification permission is not granted.'};const token=(await Notifications.getExpoPushTokenAsync({projectId})).data;const{error}=await getKleenestSupabaseClient().rpc('register_notification_native_push_token',{p_token:token,p_platform:'android',p_app_id:APP_ID});if(error)throw error;return{status:'registered' as const,token};}
