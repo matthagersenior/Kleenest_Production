@@ -14,7 +14,6 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/workflows/eas-android-build.yml'
       - 'apps/consumer-mobile/**'
       - 'packages/mobile-core/**'
       - 'config/production-environment.json'
