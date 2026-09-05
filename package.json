@@ -5,7 +5,7 @@
   "type": "module",
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "postinstall": "node scripts/apply-consumer-explore-overlay-fix.mjs && node scripts/apply-consumer-progress-canonical.mjs && node scripts/apply-consumer-google-auth.mjs && node scripts/install-app-icon.mjs && node scripts/apply-consumer-review-reporting.mjs",
+    "postinstall": "node scripts/install-app-icon.mjs",
     "dev": "vite",
     "build": "vite build",
     "repo:hygiene": "node scripts/repo-hygiene-audit.mjs",
