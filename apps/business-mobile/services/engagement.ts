@@ -1,0 +1,11 @@
+import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+const client=()=>getKleenestSupabaseClient();async function rpc(name:string,args:Record<string,unknown>={}){const{data,error}=await client().rpc(name,args);if(error)throw error;return data;}
+export async function listCampaigns(businessId:string){const data=await rpc('business_list_campaigns',{p_business_id:businessId});return Array.isArray(data)?data:[];}
+export async function listContests(businessId:string){const data=await rpc('business_list_contests',{p_business_id:businessId});return Array.isArray(data)?data:[];}
+export async function listEvents(businessId:string){const data=await rpc('business_list_events',{p_business_id:businessId});return Array.isArray(data)?data:[];}
+export async function listPromotions(businessId:string){const data=await rpc('business_promotion_detail',{p_business_id:businessId,p_start:null,p_end:null});return Array.isArray(data)?data:Array.isArray((data as any)?.rows)?(data as any).rows:[];}
+export function manageCampaign(businessId:string,id:string|null,action:string,input:Record<string,any>={}){return rpc('business_manage_campaign',{p_business_id:businessId,p_campaign_id:id,p_action:action,p_name:input.name??null,p_campaign_type:input.campaignType??input.campaign_type??null,p_goal:input.goal??null,p_status:input.status??null});}
+export function manageContest(businessId:string,id:string|null,action:string,payload:Record<string,unknown>={}){return rpc('business_manage_contest',{p_business_id:businessId,p_contest_id:id,p_action:action,p_payload:payload});}
+export function manageEvent(businessId:string,id:string|null,action:string,payload:Record<string,unknown>={}){return rpc('business_manage_event',{p_business_id:businessId,p_event_id:id,p_action:action,p_payload:payload});}
+export function managePromotion(businessId:string,id:string|null,action:string,payload:Record<string,unknown>={}){return rpc('business_manage_promotion',{p_business_id:businessId,p_promotion_id:id,p_action:action,p_payload:payload});}
+export function setPromotionActive(businessId:string,id:string,active:boolean){return rpc('business_set_promotion_active',{p_business_id:businessId,p_promotion_id:id,p_active:active});}
