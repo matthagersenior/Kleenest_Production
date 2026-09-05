@@ -1,41 +1,86 @@
-name: EAS Android Store Build
+name: Build Kleenest App Family Play AABs
 
 on:
   workflow_dispatch:
-    inputs:
-      profile:
-        description: EAS build profile
-        required: true
-        default: production
-        type: choice
-        options:
-          - preview
-          - production
-  push:
-    branches: [main]
-    paths:
-      - 'apps/consumer-mobile/**'
-      - 'packages/mobile-core/**'
-      - 'config/production-environment.json'
-      - 'scripts/native-device-readiness-audit.mjs'
-      - 'scripts/production-environment-contract-audit.mjs'
-      - 'scripts/apply-consumer-explore-overlay-fix.mjs'
-      - 'scripts/apply-consumer-progress-canonical.mjs'
 
 permissions:
   contents: read
 
+concurrency:
+  group: kleenest-app-family-play-aab
+  cancel-in-progress: false
+
 jobs:
-  eas-build:
+  verify-family:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify repository, Play, and product contracts
+        run: |
+          node scripts/repo-hygiene-audit.mjs
+          node scripts/play-store-matrix-audit.mjs
+          node scripts/product-parity-audit.mjs
+          node scripts/capability-parity-ledger-audit.mjs
+          node scripts/app-family-critical-path-audit.mjs
+          node scripts/operator-functional-parity-audit.mjs
+          node scripts/fleet-extended-operator-audit.mjs
+          node scripts/fleet-offline-recovery-audit.mjs
+          npm run native:typecheck
+          npm run operator:typecheck
+
+  build-aab:
+    needs: verify-family
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: Consumer
+            directory: apps/consumer-mobile
+            workspace: '@kleenest/consumer-mobile'
+            package_id: com.kleenest.app
+            eas_project_id: 22a65aa3-c615-4c4f-a34d-084babc28fd7
+            filename: Kleenest-Consumer-production.aab
+            artifact: Kleenest-Consumer-Play-AAB
+          - app: Business
+            directory: apps/business-mobile
+            workspace: '@kleenest/business-mobile'
+            package_id: com.kleenest.business
+            eas_project_id: 15ac343b-81bf-459b-8c25-1b2fc8b293de
+            filename: Kleenest-Business-production.aab
+            artifact: Kleenest-Business-Play-AAB
+          - app: Fleet
+            directory: apps/fleet-mobile
+            workspace: '@kleenest/fleet-mobile'
+            package_id: com.kleenest.fleet
+            eas_project_id: 90d1d6ff-1376-4065-a00c-7cf0415e4347
+            filename: Kleenest-Fleet-production.aab
+            artifact: Kleenest-Fleet-Play-AAB
+          - app: KleenestOS
+            directory: apps/platform-mobile
+            workspace: '@kleenest/owner-mobile'
+            package_id: com.kleenest.platform
+            eas_project_id: 9b5527b5-c8b1-47c1-a961-3e2d5e549a62
+            filename: Kleenest-Owner-production.aab
+            artifact: Kleenest-Owner-Play-AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
     env:
+      CI: '1'
+      NODE_ENV: production
+      EXPO_NO_TELEMETRY: '1'
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-      EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
+      EAS_PROJECT_ID: ${{ matrix.eas_project_id }}
       EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
-      KLEENEST_STANDALONE_ANDROID: '1'
-      PROFILE: ${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'production' }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -50,77 +95,63 @@ jobs:
       - name: Require Expo automation token
         shell: bash
         run: |
-          if [ -z "$EXPO_TOKEN" ]; then
-            echo "EXPO_TOKEN is not configured. Create an Expo access token and add it as the GitHub Actions secret EXPO_TOKEN." >&2
-            exit 1
-          fi
-      - name: Install dependencies without mutating release lock state
-        run: npm install --no-package-lock --no-audit --no-fund
-      - name: Guard EAS local build archive from transient npm lockfiles
+          set -euo pipefail
+          test -n "$EXPO_TOKEN" || { echo 'EXPO_TOKEN is not configured.' >&2; exit 1; }
+      - name: Install workspace dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify app identity and production profile
         shell: bash
         run: |
           set -euo pipefail
-          LOCKFILE="$(find . -path './node_modules' -prune -o -name package-lock.json -print -quit)"
-          if [ -n "$LOCKFILE" ]; then
-            echo "Unexpected transient npm lockfile would make the EAS local workspace install non-reproducible: $LOCKFILE" >&2
-            exit 1
-          fi
-      - name: Verify production and native contracts
-        run: |
-          node scripts/production-environment-contract-audit.mjs
-          node scripts/native-device-readiness-audit.mjs
-          node scripts/native-consumer-presentation-convergence-audit.mjs
-          npm run native:typecheck
-      - name: Verify Expo identity and local Android toolchain
-        working-directory: apps/consumer-mobile
-        shell: bash
-        run: |
-          npx eas-cli@latest whoami
-          npx expo config --type public > /tmp/kleenest-expo-config.txt
-          grep -q "22a65aa3-c615-4c4f-a34d-084babc28fd7" /tmp/kleenest-expo-config.txt
-          test -n "$ANDROID_HOME"
-          java -version
-      - name: Build signed Android artifact locally with EAS
-        working-directory: apps/consumer-mobile
+          npm run typecheck --workspace '${{ matrix.workspace }}'
+          cd '${{ matrix.directory }}'
+          npx eas-cli@latest whoami --non-interactive
+          npx expo config --type public --json > "$RUNNER_TEMP/${{ matrix.app }}-expo-config.json"
+          node - <<'NODE'
+          const fs=require('fs');
+          const cfg=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/${{ matrix.app }}-expo-config.json','utf8'));
+          const eas=JSON.parse(fs.readFileSync('eas.json','utf8'));
+          if(cfg.android?.package!=='${{ matrix.package_id }}') throw new Error(`Wrong Android package: ${cfg.android?.package}`);
+          if(cfg.extra?.eas?.projectId!=='${{ matrix.eas_project_id }}') throw new Error(`Wrong EAS project: ${cfg.extra?.eas?.projectId}`);
+          const production=eas.build?.production;
+          if(production?.distribution!=='store') throw new Error('Production EAS profile is not store distribution.');
+          if(production?.android?.buildType!=='app-bundle') throw new Error('Production EAS profile is not app-bundle.');
+          if(production?.autoIncrement!==true) throw new Error('Production EAS profile must auto-increment version code.');
+          NODE
+      - name: Build signed production Android App Bundle locally with EAS
+        working-directory: ${{ matrix.directory }}
         shell: bash
         run: |
           set -euo pipefail
-          if [ "$PROFILE" = "production" ]; then
-            EXT=aab
-          else
-            EXT=apk
-          fi
-          OUTPUT="$GITHUB_WORKSPACE/Kleenest-Consumer-${PROFILE}.${EXT}"
+          OUTPUT="$GITHUB_WORKSPACE/${{ matrix.filename }}"
           npx eas-cli@latest build \
             --platform android \
-            --profile "$PROFILE" \
+            --profile production \
             --non-interactive \
             --local \
             --output "$OUTPUT"
           test -s "$OUTPUT"
-          sha256sum "$OUTPUT" | tee "$OUTPUT.sha256"
-          printf '{"profile":"%s","artifact":"%s","sha":"%s","builder":"eas-local"}\n' \
-            "$PROFILE" "$(basename "$OUTPUT")" "$GITHUB_SHA" > "$GITHUB_WORKSPACE/eas-build-result.json"
-      - name: Validate signed Android artifact
+      - name: Validate production AAB structure and checksum
         shell: bash
         run: |
           set -euo pipefail
-          if [ "$PROFILE" = "production" ]; then EXT=aab; else EXT=apk; fi
-          ARTIFACT="Kleenest-Consumer-${PROFILE}.${EXT}"
-          test -s "$ARTIFACT"
-          unzip -t "$ARTIFACT" >/dev/null
-          grep -q '"builder":"eas-local"' eas-build-result.json
-          {
-            echo '### Kleenest signed Android artifact completed'
-            echo "Profile: $PROFILE"
-            echo "Artifact: $ARTIFACT"
-            cat "$ARTIFACT.sha256"
-          } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+          AAB='${{ matrix.filename }}'
+          test -s "$AAB"
+          unzip -t "$AAB" >/dev/null
+          unzip -Z1 "$AAB" > "$RUNNER_TEMP/${{ matrix.app }}-aab-listing.txt"
+          grep -Fxq 'BundleConfig.pb' "$RUNNER_TEMP/${{ matrix.app }}-aab-listing.txt"
+          grep -Fxq 'base/manifest/AndroidManifest.xml' "$RUNNER_TEMP/${{ matrix.app }}-aab-listing.txt"
+          grep -q '^base/dex/' "$RUNNER_TEMP/${{ matrix.app }}-aab-listing.txt"
+          sha256sum "$AAB" | tee "$AAB.sha256"
+          printf '{"app":"%s","package":"%s","profile":"production","format":"aab","sha":"%s","eas_project_id":"%s"}\n' \
+            '${{ matrix.app }}' '${{ matrix.package_id }}' "$GITHUB_SHA" '${{ matrix.eas_project_id }}' > '${{ matrix.app }}-play-build.json'
+      - name: Upload signed Play AAB
+        uses: actions/upload-artifact@v4
         with:
-          name: Kleenest-Consumer-EAS-${{ env.PROFILE }}-${{ github.run_id }}
+          name: ${{ matrix.artifact }}
           path: |
-            Kleenest-Consumer-${{ env.PROFILE }}.*
-            eas-build-result.json
+            ${{ matrix.filename }}
+            ${{ matrix.filename }}.sha256
+            ${{ matrix.app }}-play-build.json
           if-no-files-found: error
           retention-days: 30
