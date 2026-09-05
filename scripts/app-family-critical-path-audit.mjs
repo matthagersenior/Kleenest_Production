@@ -19,6 +19,9 @@ requireFile(qr,'business');
 requireFile(qrBranding,'business');
 requireTokens(qr,'business',['Scan readiness','contrastRatio','quietZone','logoScale','pickAndUploadQrBranding','Save versioned design','Save current design as template']);
 requireTokens(qrBranding,'business',["storage.from('qr-branding')",'2_097_152','image/png','image/jpeg','image/webp','requestMediaLibraryPermissionsAsync']);
+// Business trust operations must preserve proof-sensitive remediation and the reverification QR handoff.
+requireTokens('apps/business-mobile/services/product.ts','business',['business_create_reverification_qr']);
+requireTokens('apps/business-mobile/app/operations.tsx','business',['proofMediaId','criticalProofRequired','Create reverification QR',"run('release')"]);
 
 // Fleet: managers must see the whole dispatch workspace; field execution must remain geofence + offline capable.
 requireTokens('apps/fleet-mobile/services/product.ts','fleet',['fleet_manager_dispatch']);
