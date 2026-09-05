@@ -100,6 +100,10 @@ jobs:
           node scripts/fleet-operational-rpc-authority-audit.mjs
           node scripts/fleet-intelligence-rpc-authority-audit.mjs
           node scripts/fleet-configuration-telemetry-rpc-authority-audit.mjs
+      - name: Fleet extended operator convergence
+        run: node scripts/fleet-extended-operator-audit.mjs
+      - name: Fleet offline recovery convergence
+        run: node scripts/fleet-offline-recovery-audit.mjs
       - name: Business analytics RPC authority
         run: |
           node scripts/business-analytics-core-rpc-authority-audit.mjs
