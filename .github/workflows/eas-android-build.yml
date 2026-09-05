@@ -1,4 +1,4 @@
-name: EAS Android Cloud Build
+name: EAS Android Store Build
 
 on:
   workflow_dispatch:
@@ -6,15 +6,15 @@ on:
       profile:
         description: EAS build profile
         required: true
-        default: preview
+        default: production
         type: choice
         options:
-          - development
           - preview
           - production
   push:
     branches: [main]
     paths:
+      - '.github/workflows/eas-android-build.yml'
       - 'apps/consumer-mobile/**'
       - 'packages/mobile-core/**'
       - 'config/production-environment.json'
@@ -35,7 +35,8 @@ jobs:
       EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
       EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
-      PROFILE: ${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'preview' }}
+      KLEENEST_STANDALONE_ANDROID: '1'
+      PROFILE: ${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'production' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -43,6 +44,10 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: package.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
       - name: Require Expo automation token
         shell: bash
         run: |
@@ -56,42 +61,58 @@ jobs:
         run: |
           node scripts/production-environment-contract-audit.mjs
           node scripts/native-device-readiness-audit.mjs
+          node scripts/native-consumer-presentation-convergence-audit.mjs
           npm run native:typecheck
-      - name: Verify Expo identity
+      - name: Verify Expo identity and local Android toolchain
         working-directory: apps/consumer-mobile
         shell: bash
         run: |
           npx eas-cli@latest whoami
           npx expo config --type public > /tmp/kleenest-expo-config.txt
           grep -q "22a65aa3-c615-4c4f-a34d-084babc28fd7" /tmp/kleenest-expo-config.txt
-      - name: Build Android on EAS and wait for native result
+          test -n "$ANDROID_HOME"
+          java -version
+      - name: Build signed Android artifact locally with EAS
         working-directory: apps/consumer-mobile
         shell: bash
         run: |
+          set -euo pipefail
+          if [ "$PROFILE" = "production" ]; then
+            EXT=aab
+          else
+            EXT=apk
+          fi
+          OUTPUT="$GITHUB_WORKSPACE/Kleenest-Consumer-${PROFILE}.${EXT}"
           npx eas-cli@latest build \
             --platform android \
             --profile "$PROFILE" \
             --non-interactive \
-            --wait \
-            --json > "$GITHUB_WORKSPACE/eas-build-result.json"
-          cat "$GITHUB_WORKSPACE/eas-build-result.json"
-      - name: Validate EAS build result
+            --local \
+            --output "$OUTPUT"
+          test -s "$OUTPUT"
+          sha256sum "$OUTPUT" | tee "$OUTPUT.sha256"
+          printf '{"profile":"%s","artifact":"%s","sha":"%s","builder":"eas-local"}\n' \
+            "$PROFILE" "$(basename "$OUTPUT")" "$GITHUB_SHA" > "$GITHUB_WORKSPACE/eas-build-result.json"
+      - name: Validate signed Android artifact
         shell: bash
         run: |
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          const raw = JSON.parse(fs.readFileSync('eas-build-result.json', 'utf8'));
-          const build = Array.isArray(raw) ? raw[0] : raw;
-          if (!build?.id) throw new Error('EAS build result did not contain a build id.');
-          const status = String(build.status || '').toLowerCase();
-          if (status && !['finished'].includes(status)) throw new Error(`EAS build ended with status ${build.status}.`);
-          const artifactUrl = build?.artifacts?.buildUrl || build?.artifacts?.applicationArchiveUrl || '';
-          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### Kleenest EAS Android build completed\nProfile: ${process.env.PROFILE}\nBuild ID: ${build.id}\nStatus: ${build.status || 'finished'}\n${artifactUrl ? `Artifact: ${artifactUrl}\n` : ''}`);
-          NODE
+          set -euo pipefail
+          if [ "$PROFILE" = "production" ]; then EXT=aab; else EXT=apk; fi
+          ARTIFACT="Kleenest-Consumer-${PROFILE}.${EXT}"
+          test -s "$ARTIFACT"
+          unzip -t "$ARTIFACT" >/dev/null
+          grep -q '"builder":"eas-local"' eas-build-result.json
+          {
+            echo '### Kleenest signed Android artifact completed'
+            echo "Profile: $PROFILE"
+            echo "Artifact: $ARTIFACT"
+            cat "$ARTIFACT.sha256"
+          } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: eas-android-build-result-${{ github.run_id }}
-          path: eas-build-result.json
-          if-no-files-found: warn
+          name: Kleenest-Consumer-EAS-${{ env.PROFILE }}-${{ github.run_id }}
+          path: |
+            Kleenest-Consumer-${{ env.PROFILE }}.*
+            eas-build-result.json
+          if-no-files-found: error
           retention-days: 30
