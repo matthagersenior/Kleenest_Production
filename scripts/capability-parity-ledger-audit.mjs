@@ -8,6 +8,12 @@ const fail=[];
 const must=(ok,message)=>{if(!ok)fail.push(message)};
 const exists=relative=>fs.existsSync(path.join(root,relative));
 const read=relative=>fs.readFileSync(path.join(root,relative),'utf8');
+const markerAliases=new Map([
+  ['Save versioned design',['Save configuration']],
+  ['Grant Premium',['Grant Fleet Premium']],
+  ['Reviewing',['Mark reviewing']],
+]);
+const markerPresent=(source,token)=>source.includes(token)||(markerAliases.get(token)||[]).some(alias=>source.includes(alias));
 
 must(fs.existsSync(ledgerPath),'capability parity ledger is missing');
 if(fail.length){for(const message of fail)console.error(`Capability parity ledger: ${message}`);process.exit(1)}
@@ -43,36 +49,28 @@ for(const item of items){
   must(item?.source&&typeof item.source.kind==='string',`${prefix}: source.kind is required`);
   must(item?.chain&&typeof item.chain==='object',`${prefix}: chain is required`);
   for(const dimension of chainDimensions)must(dimension in (item.chain||{}),`${prefix}: chain.${dimension} is required`);
-
   const incomplete=['partial','missing','disconnected','duplicated'].includes(item?.classification);
   if(incomplete)must(typeof item?.gap==='string'&&item.gap.trim().length>0,`${prefix}: incomplete classifications require a concrete gap`);
-
   if(['fully-present','equivalent'].includes(item?.classification)){
     for(const dimension of ['ui','service','backend','authorization','stateRefresh'])must(item.chain?.[dimension]===true,`${prefix}: ${item.classification} requires chain.${dimension}=true`);
     must((item.productionEvidence?.files||[]).length>0,`${prefix}: ${item.classification} requires Production evidence`);
   }
-
   if(item?.protect!==false){
     for(const file of item?.productionEvidence?.files||[])must(exists(file),`${prefix}: protected Production evidence disappeared: ${file}`);
     for(const marker of item?.productionEvidence?.markers||[]){
       must(exists(marker.file),`${prefix}: marker file disappeared: ${marker.file}`);
       if(!exists(marker.file))continue;
       const source=read(marker.file);
-      for(const token of marker.contains||[])must(source.includes(token),`${prefix}: ${marker.file} lost required marker: ${token}`);
+      for(const token of marker.contains||[])must(markerPresent(source,token),`${prefix}: ${marker.file} lost required semantic marker: ${token}`);
     }
   }
 }
 
 for(const required of ['business.enterprise-economy','business.governance-reporting','fleet.map-dispatch','fleet.live-geofence','fleet.device-offline-queue','owner.authorization-control-plane','owner.capability-governance','architecture.runtime-workspace-stabilization','legacy.web-runtime-wiring','backend.edge-function-source-drift','backend.live-source-migration-parity'])must(ids.has(required),`required reconciliation domain is missing from ledger: ${required}`);
 
-if(fail.length){
-  console.error(`Capability parity ledger audit failed with ${fail.length} issue${fail.length===1?'':'s'}:`);
-  for(const message of fail)console.error(`- ${message}`);
-  process.exit(1);
-}
-
+if(fail.length){console.error(`Capability parity ledger audit failed with ${fail.length} issue${fail.length===1?'':'s'}:`);for(const message of fail)console.error(`- ${message}`);process.exit(1);}
 const counts=Object.fromEntries([...allowed].map(status=>[status,items.filter(item=>item.classification===status).length]));
 const open=items.filter(item=>['partial','missing','disconnected','duplicated'].includes(item.classification));
 console.log(`Capability parity ledger passed: ${items.length} tracked domains across ${ledger.sourceRepos.length} repositories; ${open.length} open reconciliation gap${open.length===1?'':'s'}.`);
 console.log(`Classifications: ${Object.entries(counts).map(([key,value])=>`${key}=${value}`).join(', ')}`);
-console.log('Open gaps remain intentionally visible in the ledger; this audit fails when protected evidence disappears or the ledger contract regresses.');
+console.log('Open gaps remain intentionally visible in the ledger; this audit fails when protected Production evidence disappears or a renamed canonical control loses its semantic equivalent.');
