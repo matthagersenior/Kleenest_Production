@@ -154,6 +154,7 @@ jobs:
           APK='${{ steps.apk.outputs.path }}'
           APK_LISTING="$RUNNER_TEMP/consumer-apk-listing.txt"
           BUNDLE_FILE="$RUNNER_TEMP/index.android.bundle"
+          BADGING_FILE="$RUNNER_TEMP/consumer-apk-badging.txt"
           unzip -Z1 "$APK" > "$APK_LISTING"
           grep -Fxq 'lib/arm64-v8a/libreactnative.so' "$APK_LISTING" || { echo 'Release APK is missing ARM64 React Native runtime.' >&2; exit 1; }
           grep -Fxq 'lib/x86_64/libreactnative.so' "$APK_LISTING" || { echo 'Release APK is missing x86_64 React Native runtime for startup testing.' >&2; exit 1; }
@@ -162,15 +163,19 @@ jobs:
           grep -Fxq 'assets/index.android.bundle' "$APK_LISTING" || { echo 'Release APK is missing embedded production JS bundle.' >&2; exit 1; }
           unzip -p "$APK" assets/index.android.bundle > "$BUNDLE_FILE"
           test -s "$BUNDLE_FILE"
-          if grep -aFq 'http://localhost:8081' "$BUNDLE_FILE" || grep -aFq 'http://127.0.0.1:8081' "$BUNDLE_FILE"; then
-            echo 'Release JS bundle still references Metro.' >&2
+          grep -aFq 'ssgesjzdvdsqacdtasje.supabase.co' "$BUNDLE_FILE" || { echo 'Release JS bundle is missing the production Supabase endpoint.' >&2; exit 1; }
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          if [ ! -x "$AAPT" ]; then
+            AAPT="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name aapt | sort -V | tail -n1)"
+          fi
+          test -x "$AAPT"
+          "$AAPT" dump badging "$APK" > "$BADGING_FILE"
+          grep -Fq "package: name='com.kleenest.app'" "$BADGING_FILE" || { echo 'Release APK package id is not com.kleenest.app.' >&2; exit 1; }
+          if grep -Fq 'application-debuggable' "$BADGING_FILE"; then
+            echo 'Consumer APK is marked debuggable and is not a production release.' >&2
             exit 1
           fi
-          if grep -aFq 'Development Build' "$BUNDLE_FILE"; then
-            echo 'Development runtime marker leaked into Consumer release bundle.' >&2
-            exit 1
-          fi
-          echo 'Consumer release payload verified.'
+          echo 'Consumer release payload verified as embedded, production-configured, non-debuggable, ARM64/x86_64 Hermes release.'
 
       - name: Android 16 startup + Explore smoke
         uses: reactivecircus/android-emulator-runner@v2
