@@ -22,8 +22,8 @@ if(!failures.length){
     "rpc('update_my_notification_preferences_v2'",
     'p_platform_updates','p_progression','p_offers','p_sponsored','p_location_alerts','p_social',
     'p_personalized_ads','p_location_based_offers','p_quiet_hours_start','p_quiet_hours_end',
-    'ads_personalization_consent_at','location_offers_consent_at',
   ])if(!service.includes(token))failures.push(`Mobile notification preference service missing v2 authority token: ${token}`);
+  for(const token of ['ads_personalization_consent_at','location_offers_consent_at'])if(service.includes(token))failures.push(`Server-maintained consent audit field must not be exposed as a writable mobile preference: ${token}`);
 
   for(const token of [
     "['push','Native push'",
