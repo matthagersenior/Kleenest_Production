@@ -47,3 +47,4 @@ if(exists(ownerHome)&&read(ownerHome).includes('JSON.stringify('))failures.push(
 
 if(failures.length){console.error('App family critical path audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1);}
 console.log('App family critical paths verified for Consumer, Business, Fleet, and Owner with canonical versioning, offline recovery and operator controls.');
+await import('./owner-runtime-integrity-audit.mjs');
