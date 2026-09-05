@@ -27,6 +27,8 @@ jobs:
         run: node scripts/product-parity-audit.mjs
       - name: Verify cross-repository capability ledger
         run: node scripts/capability-parity-ledger-audit.mjs
+      - name: Verify four-app critical paths
+        run: node scripts/app-family-critical-path-audit.mjs
       - name: Typecheck Consumer
         run: npm run typecheck --workspace @kleenest/consumer-mobile
       - name: Typecheck Business
