@@ -8,7 +8,8 @@ on:
       - 'apps/**'
       - 'packages/mobile-core/**'
       - 'scripts/**'
-      - 'config/production-environment.json'
+      - 'config/**'
+      - 'supabase/migrations/**'
       - 'package.json'
       - '.github/workflows/android-family.yml'
 
@@ -31,7 +32,14 @@ jobs:
           cache: npm
           cache-dependency-path: package.json
       - run: npm install --no-audit --no-fund
-      - run: node scripts/product-parity-audit.mjs
+      - name: Verify app family product contract
+        run: |
+          node scripts/product-parity-audit.mjs
+          node scripts/capability-parity-ledger-audit.mjs
+          node scripts/app-family-critical-path-audit.mjs
+          node scripts/operator-functional-parity-audit.mjs
+          node scripts/fleet-extended-operator-audit.mjs
+          node scripts/fleet-offline-recovery-audit.mjs
       - run: npm run typecheck --workspace @kleenest/consumer-mobile
       - run: npm run typecheck --workspace @kleenest/business-mobile
       - run: npm run typecheck --workspace @kleenest/fleet-mobile
@@ -97,15 +105,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-
       - name: Install workspace dependencies
         run: npm install --no-audit --no-fund
-
       - name: Verify app contract
         shell: bash
         run: |
           set -euo pipefail
-          node scripts/product-parity-audit.mjs
+          node scripts/app-family-critical-path-audit.mjs
           npm run typecheck --workspace '${{ matrix.workspace }}'
           test -s '${{ matrix.app_dir }}/assets/app-icon.png'
           cd '${{ matrix.app_dir }}'
@@ -118,7 +124,6 @@ jobs:
           NODE
           npx expo export --platform android --output-dir "$RUNNER_TEMP/${{ matrix.app }}-preflight" --clear
           test -n "$(find "$RUNNER_TEMP/${{ matrix.app }}-preflight" -type f -print -quit)"
-
       - name: Remove development-only Expo runtime
         shell: bash
         run: |
@@ -131,13 +136,11 @@ jobs:
           fs.writeFileSync(path,JSON.stringify(pkg,null,2)+'\n');
           NODE
           rm -rf node_modules/expo-dev-client node_modules/expo-dev-launcher node_modules/expo-dev-menu node_modules/expo-dev-menu-interface
-
       - name: Generate clean Android native project
         working-directory: ${{ matrix.app_dir }}
         run: |
           rm -rf android
           npx expo prebuild --platform android --clean --no-install
-
       - name: Apply Kleenest launcher artwork
         shell: bash
         run: |
@@ -154,43 +157,24 @@ jobs:
             test "$(sha256sum "$dir/ic_launcher.png" | awk '{print $1}')" = "$ICON_SHA"
           done
           rm -f '${{ matrix.app_dir }}/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml' '${{ matrix.app_dir }}/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml'
-
       - name: Configure release architectures and Gradle memory
         shell: bash
         run: |
           set -euo pipefail
           PROPS='${{ matrix.app_dir }}/android/gradle.properties'
-          if grep -q '^reactNativeArchitectures=' "$PROPS"; then
-            sed -i 's/^reactNativeArchitectures=.*/reactNativeArchitectures=arm64-v8a,x86_64/' "$PROPS"
-          else
-            printf '\nreactNativeArchitectures=arm64-v8a,x86_64\n' >> "$PROPS"
-          fi
-          if grep -q '^org.gradle.jvmargs=' "$PROPS"; then
-            sed -i 's|^org.gradle.jvmargs=.*|org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8|' "$PROPS"
-          else
-            printf '\norg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8\n' >> "$PROPS"
-          fi
-          if grep -q '^org.gradle.workers.max=' "$PROPS"; then
-            sed -i 's/^org.gradle.workers.max=.*/org.gradle.workers.max=2/' "$PROPS"
-          else
-            printf '\norg.gradle.workers.max=2\n' >> "$PROPS"
-          fi
-
+          if grep -q '^reactNativeArchitectures=' "$PROPS"; then sed -i 's/^reactNativeArchitectures=.*/reactNativeArchitectures=arm64-v8a,x86_64/' "$PROPS"; else printf '\nreactNativeArchitectures=arm64-v8a,x86_64\n' >> "$PROPS"; fi
+          if grep -q '^org.gradle.jvmargs=' "$PROPS"; then sed -i 's|^org.gradle.jvmargs=.*|org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8|' "$PROPS"; else printf '\norg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8\n' >> "$PROPS"; fi
+          if grep -q '^org.gradle.workers.max=' "$PROPS"; then sed -i 's/^org.gradle.workers.max=.*/org.gradle.workers.max=2/' "$PROPS"; else printf '\norg.gradle.workers.max=2\n' >> "$PROPS"; fi
       - name: Verify release dependency graph
         working-directory: ${{ matrix.app_dir }}/android
         shell: bash
         run: |
           set -euo pipefail
           ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --no-daemon > "$RUNNER_TEMP/${{ matrix.app }}-release-deps.txt"
-          if grep -Eqi 'expo-dev-client|expo-dev-launcher|expo-dev-menu' "$RUNNER_TEMP/${{ matrix.app }}-release-deps.txt"; then
-            echo 'Development-only Expo runtime leaked into release dependencies.' >&2
-            exit 1
-          fi
-
+          if grep -Eqi 'expo-dev-client|expo-dev-launcher|expo-dev-menu' "$RUNNER_TEMP/${{ matrix.app }}-release-deps.txt"; then echo 'Development-only Expo runtime leaked into release dependencies.' >&2; exit 1; fi
       - name: Build release APK
         working-directory: ${{ matrix.app_dir }}/android
         run: ./gradlew assembleRelease --no-daemon --stacktrace
-
       - name: Locate and verify release APK
         id: apk
         shell: bash
@@ -198,7 +182,6 @@ jobs:
           set -euo pipefail
           APK="$(find '${{ matrix.app_dir }}/android/app/build/outputs/apk/release' -maxdepth 1 -type f -name '*.apk' ! -name '*androidTest*' ! -name '*test*' | sort | head -n1)"
           test -n "${APK:-}" && test -f "$APK"
-          echo "path=$APK" >> "$GITHUB_OUTPUT"
           LISTING="$RUNNER_TEMP/${{ matrix.app }}-apk-listing.txt"
           BUNDLE="$RUNNER_TEMP/${{ matrix.app }}-index.android.bundle"
           BADGING="$RUNNER_TEMP/${{ matrix.app }}-badging.txt"
@@ -217,12 +200,10 @@ jobs:
           "$AAPT" dump badging "$APK" > "$BADGING"
           grep -Fq "package: name='${{ matrix.package_id }}'" "$BADGING"
           if grep -Fq 'application-debuggable' "$BADGING"; then echo '${{ matrix.app }} APK is debuggable.' >&2; exit 1; fi
-
       - name: Enable KVM access
         shell: bash
         run: |
           if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
-
       - name: Android 16 startup smoke
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -232,7 +213,6 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
           script: bash scripts/android-startup-smoke.sh '${{ steps.apk.outputs.path }}' '${{ matrix.package_id }}' '${{ matrix.app }}' '${{ matrix.deeplink }}' 'android-startup-logs/${{ matrix.app }}'
-
       - name: Stage verified APK
         shell: bash
         run: |
@@ -240,7 +220,6 @@ jobs:
           mkdir -p dist
           cp '${{ steps.apk.outputs.path }}' 'dist/${{ matrix.filename }}'
           sha256sum 'dist/${{ matrix.filename }}' > 'dist/${{ matrix.filename }}.sha256'
-
       - name: Upload verified APK
         uses: actions/upload-artifact@v4
         with:
@@ -250,7 +229,6 @@ jobs:
             dist/${{ matrix.filename }}.sha256
           if-no-files-found: error
           retention-days: 30
-
       - name: Upload startup diagnostics
         if: always()
         uses: actions/upload-artifact@v4
