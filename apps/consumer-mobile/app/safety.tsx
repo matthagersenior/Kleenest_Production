@@ -1,17 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { blockUser, getBlockState, reportReview, reportUser, unblockUser } from '../services/safety';
+import { blockUser, getBlockState, reportReview, reportUser, unblockUser, type SafetyReportReason } from '../services/safety';
 import { palette } from '../components/ConsumerUI';
 
-const REASONS = ['Harassment or bullying', 'Hate or abusive content', 'Sexual or inappropriate content', 'Spam or scam', 'Privacy or impersonation', 'Other safety concern'];
+const REASONS:{code:SafetyReportReason;label:string}[] = [{code:'harassment',label:'Harassment or bullying'},{code:'hate',label:'Hate or abusive content'},{code:'sexual',label:'Sexual or inappropriate content'},{code:'spam',label:'Spam or scam'},{code:'privacy',label:'Privacy or impersonation'},{code:'other',label:'Other safety concern'}];
 
 export default function SafetyScreen() {
   const params = useLocalSearchParams<{ userId?: string; reviewId?: string; context?: string; name?: string }>();
   const userId = String(params.userId || '');
   const reviewId = String(params.reviewId || '');
   const targetName = String(params.name || 'this contributor');
-  const [reason, setReason] = useState(REASONS[0]);
+  const [reason, setReason] = useState<SafetyReportReason>(REASONS[0].code);
   const [details, setDetails] = useState('');
   const [blocked, setBlocked] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
@@ -53,7 +53,7 @@ export default function SafetyScreen() {
     <Text style={s.body}>Reports are private and reviewed for violations of Kleenest Community Guidelines. For immediate danger, contact local emergency services.</Text>
     <View style={s.card}>
       <Text style={s.cardTitle}>What happened?</Text>
-      <View style={s.reasons}>{REASONS.map(item => <Pressable accessibilityRole="radio" accessibilityState={{selected: reason === item}} key={item} onPress={() => setReason(item)} style={[s.reason, reason === item && s.reasonOn]}><Text style={[s.reasonText, reason === item && s.reasonTextOn]}>{item}</Text></Pressable>)}</View>
+      <View style={s.reasons}>{REASONS.map(item => <Pressable accessibilityRole="radio" accessibilityState={{selected: reason === item.code}} key={item.code} onPress={() => setReason(item.code)} style={[s.reason, reason === item.code && s.reasonOn]}><Text style={[s.reasonText, reason === item.code && s.reasonTextOn]}>{item.label}</Text></Pressable>)}</View>
       <TextInput accessibilityLabel="Report details" value={details} onChangeText={setDetails} multiline maxLength={2000} placeholder="Optional details that help our moderation team understand the issue" style={[s.input, s.textarea]} />
       <Text style={s.counter}>{details.length}/2000</Text>
       <Pressable accessibilityRole="button" disabled={busy || (!userId && !reviewId)} onPress={submitReport} style={[s.primary, busy && s.disabled]}><Text style={s.primaryText}>{busy ? 'Submitting…' : 'Submit report'}</Text></Pressable>
