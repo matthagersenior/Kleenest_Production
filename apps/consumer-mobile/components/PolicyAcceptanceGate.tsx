@@ -1,16 +1,16 @@
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
-import { useEffect, useState } from 'react';
+import { type PropsWithChildren, useEffect, useState } from 'react';
 import { Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { palette } from './ConsumerUI';
 
-export default function PolicyAcceptanceGate(){
+export default function PolicyAcceptanceGate({children}:PropsWithChildren){
   const client=getKleenestSupabaseClient();
   const[visible,setVisible]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
   async function check(){const{data:{user}}=await client.auth.getUser();if(!user){setVisible(false);return}const{data,error}=await client.rpc('has_current_policy_acceptance');if(error){setMessage(error.message);setVisible(true);return}setVisible(!Boolean(data))}
   useEffect(()=>{void check();const auth=client.auth.onAuthStateChange(()=>{void check()});return()=>auth.data.subscription.unsubscribe()},[]);
   async function accept(){if(busy)return;setBusy(true);setMessage('');try{const{error}=await client.rpc('accept_current_policies');if(error)throw error;setVisible(false)}catch(error:any){setMessage(error?.message||'Policy acceptance could not be saved.')}finally{setBusy(false)}}
   async function signOut(){await client.auth.signOut();setVisible(false)}
-  return <Modal visible={visible} animationType="slide" presentationStyle="fullScreen"><SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content}>
+  return <>{children}<Modal visible={visible} animationType="slide" presentationStyle="fullScreen"><SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content}>
     <Text style={s.eyebrow}>BEFORE YOU CONTINUE</Text><Text accessibilityRole="header" style={s.title}>Community terms and privacy</Text><Text style={s.body}>Kleenest includes public reviews, contributor profiles, photos, social features and direct messages. Before using a signed-in account, you must accept the current Terms of Use and Community Guidelines and acknowledge the Privacy Policy.</Text>
     <View style={s.card}><Text style={s.cardTitle}>What you are agreeing to</Text><Text style={s.item}>• Contribute truthful, lawful content you have the right to share.</Text><Text style={s.item}>• Do not harass, threaten, hate, exploit, impersonate, scam, spam, dox, or manipulate trust information.</Text><Text style={s.item}>• Reviews and public profile content can be moderated or removed when they violate policy.</Text><Text style={s.item}>• You can report objectionable content or users and block contributors from direct messaging.</Text><Text style={s.item}>• Kleenest processes account, location, contribution, messaging, support, safety, notification and technical data as described in the Privacy Policy.</Text><Text style={s.version}>Terms 2026-09-01 · Community Guidelines 2026-09-01 · Privacy Policy 2026-09-01</Text></View>
     <Text style={s.body}>The full Privacy Policy, Terms of Use, and Community Guidelines remain available at any time from Profile → Help & Support.</Text>
