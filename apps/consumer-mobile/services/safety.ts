@@ -53,6 +53,16 @@ export async function unblockUser(userId:string){
   return data;
 }
 
+export async function getBlockState(userId:string):Promise<{blocked:boolean;signedIn:boolean}>{
+  const client=getKleenestSupabaseClient();
+  const {data:{user},error:userError}=await client.auth.getUser();
+  if(userError)throw userError;
+  if(!user)return {blocked:false,signedIn:false};
+  const {data,error}=await client.from('user_blocks').select('blocked_id').eq('blocker_id',user.id).eq('blocked_id',userId).maybeSingle();
+  if(error)throw error;
+  return {blocked:Boolean(data),signedIn:true};
+}
+
 export async function listBlockedUsers(){
   const {data,error}=await getKleenestSupabaseClient().rpc('list_my_blocked_users');
   if(error)throw error;
