@@ -32,7 +32,7 @@ jobs:
       - name: Typecheck Fleet
         run: npm run typecheck --workspace @kleenest/fleet-mobile
       - name: Typecheck Platform
-        run: npm run typecheck --workspace @kleenest/platform-mobile
+        run: npm run typecheck --workspace @kleenest/owner-mobile
       - name: Validate Consumer Expo config
         working-directory: apps/consumer-mobile
         run: npx expo config --type public >/dev/null
