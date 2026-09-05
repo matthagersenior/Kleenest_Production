@@ -1,82 +1,228 @@
-name: Build Consumer Android Preview
+name: Build Consumer Standalone Android APK
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["Production CI"]
-    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - 'apps/consumer-mobile/**'
+      - 'packages/mobile-core/**'
+      - 'scripts/**'
+      - 'config/production-environment.json'
+      - 'package.json'
+      - '.github/workflows/android-preview.yml'
 
 permissions:
   contents: read
 
+concurrency:
+  group: consumer-standalone-apk
+  cancel-in-progress: true
+
 jobs:
-  build-apk:
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+  build-android:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 65
     env:
+      CI: true
+      NODE_ENV: production
+      EXPO_NO_TELEMETRY: 1
+      KLEENEST_STANDALONE_ANDROID: 1
+      EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
       EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
-      EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
-      KLEENEST_RELEASE_CHANNEL: candidate
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
     steps:
-      - name: Resolve exact source SHA
-        id: source
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_run" ]; then
-            echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
-          fi
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.source.outputs.sha }}
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: package.json
-      - uses: actions/setup-java@v5
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install dependencies
+
+      - name: Install workspace dependencies
         run: npm install --no-audit --no-fund
-      - name: Verify exact consumer head and production contract
-        run: |
-          test "$(git rev-parse HEAD)" = "${{ steps.source.outputs.sha }}"
-          node scripts/production-environment-contract-audit.mjs
-          npm run native:typecheck
-          node scripts/native-consumer-apk-convergence-audit.mjs
-          node scripts/native-device-readiness-audit.mjs
-          node scripts/native-consumer-recovery-audit.mjs
-          node scripts/consumer-family-capability-audit.mjs
-      - name: Report native production identity
+
+      - name: Verify current Consumer source contract
         shell: bash
         run: |
-          echo "### Release-candidate identity embedded" >> "$GITHUB_STEP_SUMMARY"
-          echo "App version: 1.0.0" >> "$GITHUB_STEP_SUMMARY"
-          echo "Release channel: $KLEENEST_RELEASE_CHANNEL" >> "$GITHUB_STEP_SUMMARY"
-          echo "Expo/EAS project: $EAS_PROJECT_ID" >> "$GITHUB_STEP_SUMMARY"
-          echo "Supabase project: ssgesjzdvdsqacdtasje" >> "$GITHUB_STEP_SUMMARY"
-          echo "Family capability: five-seat release gate passed" >> "$GITHUB_STEP_SUMMARY"
-      - name: Generate Android native project
-        working-directory: apps/consumer-mobile
-        run: npx expo prebuild --platform android --non-interactive --clean
-      - name: Build optimized installable release APK
-        working-directory: apps/consumer-mobile/android
-        run: ./gradlew assembleRelease --no-daemon
-      - name: Stage canonical APK
+          set -euo pipefail
+          node scripts/production-environment-contract-audit.mjs
+          node scripts/native-device-readiness-audit.mjs
+          node scripts/native-consumer-apk-convergence-audit.mjs
+          node scripts/native-consumer-presentation-convergence-audit.mjs
+          npm run native:typecheck
+          test -f apps/consumer-mobile/app/explore.tsx
+          test -f apps/consumer-mobile/assets/app-icon.png
+
+      - name: Remove development-only Expo runtime from standalone build tree
+        shell: bash
         run: |
-          mkdir -p artifacts
-          cp apps/consumer-mobile/android/app/build/outputs/apk/release/app-release.apk "artifacts/kleenest-consumer-1.0.0-${{ steps.source.outputs.sha }}.apk"
-          sha256sum artifacts/*.apk > artifacts/SHA256SUMS.txt
-      - uses: actions/upload-artifact@v4
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'apps/consumer-mobile/package.json';
+          const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+          for (const section of ['dependencies', 'devDependencies', 'optionalDependencies']) {
+            if (pkg[section]) delete pkg[section]['expo-dev-client'];
+          }
+          fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
+          NODE
+          rm -rf node_modules/expo-dev-client node_modules/expo-dev-launcher node_modules/expo-dev-menu node_modules/expo-dev-menu-interface
+          for pkg in expo-dev-client expo-dev-launcher expo-dev-menu expo-dev-menu-interface; do
+            if [ -e "node_modules/$pkg" ]; then
+              echo "Development-only Expo runtime still installed: $pkg" >&2
+              exit 1
+            fi
+          done
+
+      - name: Generate clean Consumer Android project
+        working-directory: apps/consumer-mobile
+        run: |
+          rm -rf android
+          npx expo prebuild --platform android --clean --no-install
+
+      - name: Apply supplied Kleenest Consumer launcher artwork
+        run: node scripts/apply-consumer-native-launcher-icon.mjs
+
+      - name: Configure release architectures and Gradle memory
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROPS=apps/consumer-mobile/android/gradle.properties
+          if grep -q '^reactNativeArchitectures=' "$PROPS"; then
+            sed -i 's/^reactNativeArchitectures=.*/reactNativeArchitectures=arm64-v8a,x86_64/' "$PROPS"
+          else
+            printf '\nreactNativeArchitectures=arm64-v8a,x86_64\n' >> "$PROPS"
+          fi
+          if grep -q '^org.gradle.jvmargs=' "$PROPS"; then
+            sed -i 's|^org.gradle.jvmargs=.*|org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8|' "$PROPS"
+          else
+            printf '\norg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8\n' >> "$PROPS"
+          fi
+          if grep -q '^org.gradle.workers.max=' "$PROPS"; then
+            sed -i 's/^org.gradle.workers.max=.*/org.gradle.workers.max=2/' "$PROPS"
+          else
+            printf '\norg.gradle.workers.max=2\n' >> "$PROPS"
+          fi
+          grep '^reactNativeArchitectures=arm64-v8a,x86_64$' "$PROPS"
+          grep '^org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8$' "$PROPS"
+          grep '^org.gradle.workers.max=2$' "$PROPS"
+
+      - name: Verify standalone release dependency graph
+        working-directory: apps/consumer-mobile/android
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --no-daemon > "$RUNNER_TEMP/consumer-release-deps.txt"
+          if grep -Eqi 'expo-dev-client|expo-dev-launcher|expo-dev-menu' "$RUNNER_TEMP/consumer-release-deps.txt"; then
+            echo 'Development-only Expo runtime leaked into Consumer release dependencies.' >&2
+            grep -Ei 'expo-dev-client|expo-dev-launcher|expo-dev-menu' "$RUNNER_TEMP/consumer-release-deps.txt" || true
+            exit 1
+          fi
+
+      - name: Build release APK once
+        working-directory: apps/consumer-mobile/android
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Locate release APK
+        id: apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find apps/consumer-mobile/android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' ! -name '*androidTest*' ! -name '*test*' | sort | head -n1)"
+          if [ -z "${APK:-}" ] || [ ! -f "$APK" ]; then
+            echo 'No Consumer release APK found.' >&2
+            find apps/consumer-mobile/android/app/build/outputs -maxdepth 8 -type f -print || true
+            exit 1
+          fi
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+          echo "Resolved Consumer release APK: $APK"
+          ls -lh "$APK"
+
+      - name: Verify release APK architecture, engine, and production bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK='${{ steps.apk.outputs.path }}'
+          APK_LISTING="$RUNNER_TEMP/consumer-apk-listing.txt"
+          BUNDLE_FILE="$RUNNER_TEMP/index.android.bundle"
+          BADGING_FILE="$RUNNER_TEMP/consumer-apk-badging.txt"
+          unzip -Z1 "$APK" > "$APK_LISTING"
+          grep -Fxq 'lib/arm64-v8a/libreactnative.so' "$APK_LISTING" || { echo 'Release APK is missing ARM64 React Native runtime.' >&2; exit 1; }
+          grep -Fxq 'lib/x86_64/libreactnative.so' "$APK_LISTING" || { echo 'Release APK is missing x86_64 React Native runtime for startup testing.' >&2; exit 1; }
+          grep -Eq '^lib/arm64-v8a/(libhermes|libhermesvm)\.so$' "$APK_LISTING" || { echo 'Release APK is missing ARM64 Hermes runtime.' >&2; exit 1; }
+          grep -Eq '^lib/x86_64/(libhermes|libhermesvm)\.so$' "$APK_LISTING" || { echo 'Release APK is missing x86_64 Hermes runtime.' >&2; exit 1; }
+          grep -Fxq 'assets/index.android.bundle' "$APK_LISTING" || { echo 'Release APK is missing embedded production JS bundle.' >&2; exit 1; }
+          unzip -p "$APK" assets/index.android.bundle > "$BUNDLE_FILE"
+          test -s "$BUNDLE_FILE"
+          grep -aFq 'ssgesjzdvdsqacdtasje.supabase.co' "$BUNDLE_FILE" || { echo 'Release JS bundle is missing the production Supabase endpoint.' >&2; exit 1; }
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          if [ ! -x "$AAPT" ]; then
+            AAPT="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name aapt | sort -V | tail -n1)"
+          fi
+          test -x "$AAPT"
+          "$AAPT" dump badging "$APK" > "$BADGING_FILE"
+          grep -Fq "package: name='com.kleenest.app'" "$BADGING_FILE" || { echo 'Release APK package id is not com.kleenest.app.' >&2; exit 1; }
+          if grep -Fq 'application-debuggable' "$BADGING_FILE"; then
+            echo 'Consumer APK is marked debuggable and is not a production release.' >&2
+            exit 1
+          fi
+          echo 'Consumer release payload verified as embedded, production-configured, non-debuggable, ARM64/x86_64 Hermes release.'
+
+      - name: Enable KVM access for Android startup gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+            test -r /dev/kvm
+            test -w /dev/kvm
+            ls -l /dev/kvm
+          else
+            echo 'Runner has no /dev/kvm; emulator action will fall back to software acceleration.' >&2
+          fi
+
+      - name: Android 16 startup + Explore smoke
+        uses: reactivecircus/android-emulator-runner@v2
         with:
-          name: kleenest-consumer-android-candidate-${{ steps.source.outputs.sha }}
+          api-level: 36
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: bash scripts/android-startup-smoke.sh '${{ steps.apk.outputs.path }}' com.kleenest.app Consumer 'kleenest://explore' android-startup-logs
+
+      - name: Stage standalone Consumer APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp '${{ steps.apk.outputs.path }}' dist/Kleenest-Consumer.apk
+          sha256sum dist/Kleenest-Consumer.apk | tee dist/Kleenest-Consumer.apk.sha256
+          ls -lh dist/Kleenest-Consumer.apk
+
+      - name: Upload Consumer standalone APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kleenest-Consumer-Standalone-APK
           path: |
-            artifacts/*.apk
-            artifacts/SHA256SUMS.txt
+            dist/Kleenest-Consumer.apk
+            dist/Kleenest-Consumer.apk.sha256
+          retention-days: 30
           if-no-files-found: error
-          retention-days: 14
+
+      - name: Upload Consumer startup diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kleenest-Consumer-Startup-Diagnostics
+          path: android-startup-logs
+          if-no-files-found: ignore
+          retention-days: 7
