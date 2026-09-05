@@ -1,0 +1,7 @@
+import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+const client=()=>getKleenestSupabaseClient();async function rpc(name:string,args:Record<string,unknown>={}){const{data,error}=await client().rpc(name,args);if(error)throw error;return data;}
+export const getPreventiveWorkOrders=(businessId:string,days=90)=>rpc('business_restroom_preventive_work_orders',{p_business_id:businessId,p_days:days});
+export const getPreventionRecommendations=(businessId:string,days=90)=>rpc('business_restroom_prevention_recommendations',{p_business_id:businessId,p_days:days});
+export const getPreventiveEffectiveness=(businessId:string,days=180)=>rpc('business_restroom_preventive_effectiveness',{p_business_id:businessId,p_days:days});
+export const getPreventiveExecutionPerformance=(businessId:string,days=90)=>rpc('business_restroom_preventive_execution_performance',{p_business_id:businessId,p_days:days});
+export function managePreventiveWorkOrder(businessId:string,workOrderId:string,action:'assign'|'claim'|'start'|'complete'|'dismiss'|'reopen',options:{assignedTo?:string|null;notes?:string|null;proofMediaId?:string|null}={}){return rpc('business_manage_restroom_preventive_work_order',{p_business_id:businessId,p_work_order_id:workOrderId,p_action:action,p_assigned_to:options.assignedTo??null,p_notes:options.notes??null,p_proof_media_id:options.proofMediaId??null});}
