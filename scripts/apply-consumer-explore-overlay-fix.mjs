@@ -29,8 +29,8 @@ const replacements = [
     `<View pointerEvents="none" style={s.mapBadge}>`,
   ],
   [
-    `<View\n              style={[s.legendWrap, { top: 48, bottom: undefined, right: 74 }]}\n            >`,
     `<View\n              pointerEvents="none"\n              style={[s.legendWrap, { top: 48, bottom: undefined, right: 74 }]}\n            >`,
+    `<View\n              pointerEvents="box-none"\n              style={[s.legendWrap, { top: 48, bottom: undefined, right: 74 }]}\n            >`,
   ],
   [
     `{selected ? (\n              <View\n                style={{`,
@@ -57,4 +57,4 @@ for (const [from, to] of replacements) {
 }
 
 fs.writeFileSync(file, source);
-console.log('Consumer Explore patched: explicit pin selection, direct marker touch targets, touch-safe overlays, dismissible details, 230px map/results balance, and scroll-end discovery recovery.');
+console.log('Consumer Explore patched: explicit pin selection, direct marker touch targets, interactive touch-safe legend, dismissible details, 230px map/results balance, and scroll-end discovery recovery.');
