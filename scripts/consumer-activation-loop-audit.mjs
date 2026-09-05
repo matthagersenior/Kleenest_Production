@@ -31,7 +31,7 @@ if(!failures.length){
 
  for(const token of ['mobileCheckIn','findLatestEligibleReviewCheckIn','createMobileReview','recordReviewAmenityInventory','chooseReviewPhotos','uploadReviewPhotos','getMobileProgressionDashboard','listMobileActiveQuests','rewardMessage','toggleMobileFavorite'])if(!location.includes(token))failures.push(`Location contribution loop missing ${token}.`);
  if(!location.includes("permission.status!=='granted'")||!location.includes('Location.Accuracy.High'))failures.push('Verified check-in must remain bound to explicit high-accuracy device location.');
- if(!location.includes('if(submitting||!checkInId)return'))failures.push('Review submission must remain gated by an eligible check-in.');
+ if(!/if\(submitting\|\|!checkInId(?:\|\|[^)]*)?\)return/.test(location))failures.push('Review submission must remain gated by an eligible check-in.');
  if(!location.includes('await refresh()')||!location.includes('setAmenityRefresh')||!location.includes('setPhotoRefresh'))failures.push('Successful contribution must refresh authoritative read models.');
  if(!location.includes('before=await progressionSnapshot()')||!location.includes('after=await progressionSnapshot()'))failures.push('Consumer contributions must surface server-derived progression changes rather than client-fabricated rewards.');
 
