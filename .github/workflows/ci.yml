@@ -136,9 +136,13 @@ jobs:
         run: node scripts/pages-deployment-convergence-audit.mjs
       - name: Business health convergence
         run: node scripts/review-amenity-business-health-convergence-audit.mjs
+      - name: Operator functional parity
+        run: node scripts/operator-functional-parity-audit.mjs
       - name: Full authority chain parity
         run: npm run audit
-      - name: Native typecheck
+      - name: Consumer native typecheck
         run: npm run native:typecheck
+      - name: Business Fleet and Owner typecheck
+        run: npm run operator:typecheck
       - name: Production web build
         run: npm run build
