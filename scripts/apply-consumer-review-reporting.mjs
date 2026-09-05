@@ -9,7 +9,7 @@ const replacements = [
     "import ReviewReportAction from '../../components/ReviewReportAction';",
   ],
   [
-    "  async function report(reviewId:string){try{await reportReview(reviewId,'other','Reported from a restroom review card.');setMessage('Review reported for moderation. Thank you for helping keep Kleenest trustworthy.')}catch(error:any){setMessage(error?.message||'Review could not be reported.')}}\n",
+    "  async function report(reviewId:string){try{await reportReview(reviewId,'other','Reported from a restroom review card.');setMessage('Review reported for moderation. Thank you for helping keep Kleenest trustworthy.')}catch(error:any){setMessage(error?.message||'Review could not be reported.')}\n",
     '',
   ],
   [
@@ -39,3 +39,4 @@ if (source.includes("reportReview(reviewId,'other'")) {
 
 fs.writeFileSync(file, source);
 console.log('Consumer review reporting patched: explicit reason selection, optional moderation context, duplicate-safe submission, and accessible review-card action.');
+await import('./apply-consumer-review-score-guidance.mjs');
