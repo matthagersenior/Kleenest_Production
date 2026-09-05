@@ -518,7 +518,7 @@ export default function ExploreScreen() {
       </View>
       {mapVisible ? (
         <View style={{ paddingHorizontal: 14 }}>
-          <View style={[s.mapFrame, { height: 190 }]}>
+          <View style={[s.mapFrame, { height: 230 }]}>
             <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE}>
               <Camera
                 key={`camera-${cameraNonce}-${mapZoom}-${mapCenter?.join("-")}`}
@@ -604,7 +604,7 @@ export default function ExploreScreen() {
               </Pressable>
             </View>
             <View
-              pointerEvents="none"
+              pointerEvents="box-none"
               style={[s.legendWrap, { top: 48, bottom: undefined, right: 74 }]}
             >
               <MapLegend />
