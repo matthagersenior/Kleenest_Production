@@ -15,7 +15,8 @@ must(Boolean(execution),'Fleet field execution surface is missing');
 all('Durable queue persistence',offline,[
   "const KEY='kleenest.fleet.offline.route-stop.v2'",
   "const LEGACY_KEY='kleenest.fleet.offline.route-stop.v1'",
-  'AsyncStorage.getItem(KEY)',
+  'AsyncStorage.getItem(key)',
+  'readRaw(KEY)',
   'AsyncStorage.setItem(KEY',
   'AsyncStorage.removeItem(LEGACY_KEY)',
   'schemaVersion:2',
@@ -51,10 +52,8 @@ all('Failed replay durability',offline,[
   'lastError:result.error.message',
   'await write(remaining)'
 ]);
-// The old broken implementation invented a local UUID for packId. Never allow that shape back.
 must(!offline.includes('packId:uuid()'),'Fleet offline replay must never invent a server pack UUID locally');
 must(!/rows\.push\(\{id:uuid\(\),packId:uuid\(\)/.test(offline),'Fleet offline queue regressed to locally fabricated pack IDs');
-// Stable client event IDs must be preserved through replay; do not regenerate during retry.
 must(!/p_client_event_id\s*:\s*uuid\(\)/.test(offline),'Fleet replay must reuse the persisted client event ID for deduplication');
 
 all('Field execution integration',execution,['recordOrQueueRouteStopTiming','replayOfflineRouteEvents']);
