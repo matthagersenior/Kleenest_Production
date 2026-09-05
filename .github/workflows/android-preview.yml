@@ -25,6 +25,7 @@ jobs:
     timeout-minutes: 65
     env:
       CI: true
+      NODE_ENV: production
       EXPO_NO_TELEMETRY: 1
       KLEENEST_STANDALONE_ANDROID: 1
       EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
@@ -41,7 +42,7 @@ jobs:
           node-version: 22
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -61,8 +62,26 @@ jobs:
           test -f apps/consumer-mobile/app/explore.tsx
           test -f apps/consumer-mobile/assets/app-icon.png
 
-      - name: Remove development-only Expo runtime from build tree
-        run: npm uninstall expo-dev-client --workspace @kleenest/consumer-mobile --no-save || true
+      - name: Remove development-only Expo runtime from standalone build tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'apps/consumer-mobile/package.json';
+          const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+          for (const section of ['dependencies', 'devDependencies', 'optionalDependencies']) {
+            if (pkg[section]) delete pkg[section]['expo-dev-client'];
+          }
+          fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
+          NODE
+          npm install --no-audit --no-fund
+          for pkg in expo-dev-client expo-dev-launcher expo-dev-menu expo-dev-menu-interface; do
+            if [ -d "node_modules/$pkg" ]; then
+              echo "Development-only Expo runtime still installed: $pkg" >&2
+              exit 1
+            fi
+          done
 
       - name: Generate clean Consumer Android project
         working-directory: apps/consumer-mobile
@@ -73,7 +92,7 @@ jobs:
       - name: Apply supplied Kleenest Consumer launcher artwork
         run: node scripts/apply-consumer-native-launcher-icon.mjs
 
-      - name: Target physical-device and startup-test architectures
+      - name: Configure release architectures and Gradle memory
         shell: bash
         run: |
           set -euo pipefail
@@ -83,7 +102,31 @@ jobs:
           else
             printf '\nreactNativeArchitectures=arm64-v8a,x86_64\n' >> "$PROPS"
           fi
+          if grep -q '^org.gradle.jvmargs=' "$PROPS"; then
+            sed -i 's|^org.gradle.jvmargs=.*|org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8|' "$PROPS"
+          else
+            printf '\norg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8\n' >> "$PROPS"
+          fi
+          if grep -q '^org.gradle.workers.max=' "$PROPS"; then
+            sed -i 's/^org.gradle.workers.max=.*/org.gradle.workers.max=2/' "$PROPS"
+          else
+            printf '\norg.gradle.workers.max=2\n' >> "$PROPS"
+          fi
           grep '^reactNativeArchitectures=arm64-v8a,x86_64$' "$PROPS"
+          grep '^org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8$' "$PROPS"
+          grep '^org.gradle.workers.max=2$' "$PROPS"
+
+      - name: Verify standalone release dependency graph
+        working-directory: apps/consumer-mobile/android
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --no-daemon > "$RUNNER_TEMP/consumer-release-deps.txt"
+          if grep -Eqi 'expo-dev-client|expo-dev-launcher|expo-dev-menu' "$RUNNER_TEMP/consumer-release-deps.txt"; then
+            echo 'Development-only Expo runtime leaked into Consumer release dependencies.' >&2
+            grep -Ei 'expo-dev-client|expo-dev-launcher|expo-dev-menu' "$RUNNER_TEMP/consumer-release-deps.txt" || true
+            exit 1
+          fi
 
       - name: Build release APK once
         working-directory: apps/consumer-mobile/android
@@ -121,6 +164,10 @@ jobs:
           test -s "$BUNDLE_FILE"
           if grep -aFq 'http://localhost:8081' "$BUNDLE_FILE" || grep -aFq 'http://127.0.0.1:8081' "$BUNDLE_FILE"; then
             echo 'Release JS bundle still references Metro.' >&2
+            exit 1
+          fi
+          if grep -aFq 'Development Build' "$BUNDLE_FILE"; then
+            echo 'Development runtime marker leaked into Consumer release bundle.' >&2
             exit 1
           fi
           echo 'Consumer release payload verified.'
