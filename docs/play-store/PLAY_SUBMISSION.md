@@ -17,10 +17,10 @@ Do not create the final production AAB until every item in this runbook is compl
 
 The repository Pages workflow publishes the Expo web export under the repository base path. Verify each URL in an incognito browser before entering it in Play Console.
 
-- Privacy Policy: `https://matthagersenior.github.io/Kleenest_Production/privacy`
-- Account deletion: `https://matthagersenior.github.io/Kleenest_Production/delete-account`
-- Terms: `https://matthagersenior.github.io/Kleenest_Production/terms`
-- Community Guidelines: `https://matthagersenior.github.io/Kleenest_Production/community-guidelines`
+- Privacy Policy: `https://matthagersenior.github.io/Kleenest_Production/legal/privacy.html`
+- Account deletion: `https://matthagersenior.github.io/Kleenest_Production/legal/account-deletion.html`
+- Terms: `https://matthagersenior.github.io/Kleenest_Production/legal/terms.html`
+- Community Guidelines: `https://matthagersenior.github.io/Kleenest_Production/legal/community-guidelines.html`
 
 If a custom domain is configured later, replace these with the stable custom-domain URLs and keep redirects from the old URLs.
 
