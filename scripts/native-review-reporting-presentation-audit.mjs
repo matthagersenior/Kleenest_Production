@@ -51,6 +51,7 @@ if (!failures.length) {
     'Consumer review-reporting patch contract drifted',
     "import ReviewReportAction from '../../components/ReviewReportAction';",
     '<ReviewReportAction reviewId={String(item.id)}',
+    "await import('./apply-consumer-review-score-guidance.mjs')",
   ]) {
     if (!patch.includes(token)) failures.push(`Review-reporting patch missing ${token}`);
   }
@@ -63,3 +64,4 @@ if (failures.length) {
 }
 
 console.log('Native review reporting presentation audit passed.');
+await import('./native-review-score-input-audit.mjs');
