@@ -74,7 +74,7 @@
       "productionEvidence": {
         "files":["apps/business-mobile/app/qr-studio.tsx","apps/business-mobile/services/qrStudio.ts","apps/business-mobile/services/qrVisual.ts","apps/business-mobile/services/qrBranding.ts"],
         "markers":[
-          {"file":"apps/business-mobile/app/qr-studio.tsx","contains":["Scan readiness","contrastRatio","quietZone","logoScale","Save versioned design","Save current design as template","setQrActive","deleteQrAsset"]},
+          {"file":"apps/business-mobile/app/qr-studio.tsx","contains":["Scan readiness","contrastRatio","quietZone","logoScale","Save configuration","Create engagement program","Share QR","Save current design as template","setQrActive","deleteQrAsset"]},
           {"file":"apps/business-mobile/services/qrBranding.ts","contains":["storage.from('qr-branding')","2_097_152","requestMediaLibraryPermissionsAsync"]}
         ]
       },
@@ -103,12 +103,18 @@
       "product": "fleet",
       "domain": "extended-crud-metrics",
       "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Fleet","ref":"main","paths":["scripts/fleet-parity-audit.mjs","src/services/parity.ts"]},
-      "classification": "partial",
-      "gap": "Most extended Fleet CRUD and metric authority exists in Production services, but every standalone UI action and refresh path is not yet mechanically proven.",
-      "chain": {"ui":null,"service":true,"backend":true,"authorization":true,"stateRefresh":null,"offline":false},
+      "classification": "equivalent",
+      "gap": "",
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":true,"offline":false},
       "productionEvidence": {
-        "files": ["apps/fleet-mobile/services/parity.ts","apps/fleet-mobile/app/operations.tsx","apps/fleet-mobile/app/metrics.tsx"],
-        "markers": [{"file":"apps/fleet-mobile/services/parity.ts","contains":["fleet_update_vehicle","fleet_delete_vehicle","fleet_update_driver","fleet_delete_driver","fleet_update_route","fleet_delete_route","get_fleet_metric_configuration","create_fleet_metric_definition","assign_fleet_metric"]}]
+        "files": ["apps/fleet-mobile/services/parity.ts","apps/fleet-mobile/app/assets.tsx","apps/fleet-mobile/app/planner.tsx","apps/fleet-mobile/app/dispatch.tsx","apps/fleet-mobile/app/maintenance.tsx","apps/fleet-mobile/app/operations.tsx","apps/fleet-mobile/app/metrics.tsx","scripts/fleet-extended-operator-audit.mjs"],
+        "markers": [
+          {"file":"apps/fleet-mobile/services/parity.ts","contains":["fleet_update_vehicle","fleet_delete_vehicle","fleet_update_driver","fleet_delete_driver","fleet_update_route","fleet_delete_route","get_fleet_metric_configuration","create_fleet_metric_definition","assign_fleet_metric"]},
+          {"file":"apps/fleet-mobile/app/assets.tsx","contains":["Add vehicle","Edit vehicle","Delete vehicle","Add driver","Edit driver","Delete driver","Assign account"]},
+          {"file":"apps/fleet-mobile/app/maintenance.tsx","contains":["Schedule maintenance","Edit maintenance","Delete maintenance","Complete maintenance"]},
+          {"file":"apps/fleet-mobile/app/metrics.tsx","contains":["Create metric","Edit metric","Assign metric"]},
+          {"file":"scripts/fleet-extended-operator-audit.mjs","contains":["Fleet extended operator audit passed","Refresh convergence"]}
+        ]
       },
       "protect": true
     },
@@ -152,11 +158,19 @@
       "id": "fleet.device-offline-queue",
       "product": "fleet",
       "domain": "offline-recovery",
-      "source": {"kind":"production","repo":"matthagersenior/Kleenest_Production","ref":"parity/deep-reconciliation-20260905","paths":["apps/fleet-mobile/services/offline.ts","apps/fleet-mobile/app/sync.tsx"]},
-      "classification": "partial",
-      "gap": "Device-local queue and replay are exposed in Production; final classification waits on failure-path tests proving persistence across restart/network restoration and canonical replay idempotency.",
+      "source": {"kind":"production","repo":"matthagersenior/Kleenest_Production","ref":"parity/deep-reconciliation-20260905","paths":["apps/fleet-mobile/services/offline.ts","apps/fleet-mobile/app/sync.tsx","scripts/fleet-offline-recovery-audit.mjs","supabase/migrations/20260905200500_source_control_fleet_offline_replay.sql"]},
+      "classification": "equivalent",
+      "gap": "",
       "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":true,"offline":true},
-      "productionEvidence": {"files":["apps/fleet-mobile/services/offline.ts","apps/fleet-mobile/app/sync.tsx"],"markers":[{"file":"apps/fleet-mobile/app/sync.tsx","contains":["listOfflineRouteEvents","replayOfflineRouteEvents","Device offline queue","Replay queued field events"]}]},
+      "productionEvidence": {
+        "files":["apps/fleet-mobile/services/offline.ts","apps/fleet-mobile/app/sync.tsx","scripts/fleet-offline-recovery-audit.mjs","supabase/migrations/20260905200500_source_control_fleet_offline_replay.sql"],
+        "markers":[
+          {"file":"apps/fleet-mobile/services/offline.ts","contains":["create_offline_pack","p_client_event_id:row.id","already_synced","PACK_KEY","LEGACY_KEY"]},
+          {"file":"apps/fleet-mobile/app/sync.tsx","contains":["Prepare replay pack","Last replay error","alreadySynced","Replay queued field events"]},
+          {"file":"scripts/fleet-offline-recovery-audit.mjs","contains":["Fleet offline recovery audit passed","packId:uuid()"]},
+          {"file":"supabase/migrations/20260905200500_source_control_fleet_offline_replay.sql","contains":["create_offline_pack","fleet_replay_route_stop_timing","client_event_id","already_synced","grant execute"]}
+        ]
+      },
       "protect": true
     },
     {
@@ -259,7 +273,7 @@
       "domain": "edge-functions",
       "source": {"kind":"supabase-live","projectRef":"ssgesjzdvdsqacdtasje"},
       "classification": "missing",
-      "gap": "The live project exposes 32 active Edge Functions while Production now source-controls only native push delivery, native receipt reconciliation and reporting execution; source ownership for the remaining 29 live functions must be recovered or explicitly retired.",
+      "gap": "The live project exposes 32 active Edge Functions while Production now source-controls only native push delivery, native receipt reconciliation and reporting execution; source ownership for the remaining live functions must be recovered or explicitly retired.",
       "chain": {"ui":null,"service":null,"backend":true,"authorization":null,"stateRefresh":null,"offline":null},
       "productionEvidence": {"files":["supabase/functions/deliver-native-push-notification/index.ts","supabase/functions/reconcile-native-push-receipts/index.ts","supabase/functions/run-reporting-schedules/index.ts"]},
       "protect": true
@@ -270,9 +284,9 @@
       "domain": "migration-history",
       "source": {"kind":"supabase-live","projectRef":"ssgesjzdvdsqacdtasje"},
       "classification": "partial",
-      "gap": "Live migration history and repository migration files still need exhaustive version/content reconciliation. The reporting and Fleet manager-dispatch repairs are source-controlled, but other recent live changes must be proven present rather than inferred from similar filenames.",
+      "gap": "Live migration history and repository migration files still need exhaustive version/content reconciliation. Reporting, Fleet manager dispatch and Fleet offline replay repairs are source-controlled, but other recent live changes must be proven present rather than inferred from similar filenames.",
       "chain": {"ui":false,"service":false,"backend":true,"authorization":true,"stateRefresh":false,"offline":false},
-      "productionEvidence": {"files":["supabase/migrations","supabase/migrations/20260905185819_harden_reporting_scope_and_user_execution.sql","supabase/migrations/20260905191032_add_manager_fleet_dispatch_overview.sql"]},
+      "productionEvidence": {"files":["supabase/migrations","supabase/migrations/20260905185819_harden_reporting_scope_and_user_execution.sql","supabase/migrations/20260905191032_add_manager_fleet_dispatch_overview.sql","supabase/migrations/20260905200500_source_control_fleet_offline_replay.sql"]},
       "protect": true
     }
   ]
