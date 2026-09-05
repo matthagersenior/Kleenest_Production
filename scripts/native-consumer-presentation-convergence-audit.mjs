@@ -37,4 +37,20 @@ if(!location.includes("import ReviewReportAction from '../../components/ReviewRe
 if(!saved.includes('applyTrustDiscoveryControls')||!route.includes('function move(index:number,delta:number)'))throw new Error('Rich personal navigation surfaces must preserve explicit user-controlled trust ordering');
 if(!notifications.includes('updateNotificationPreferences')||!(membership.includes('native store purchase boundary')||membership.includes('App Store / Google Play billing')))throw new Error('Rich account surfaces must preserve notification and native commerce boundaries');
 
+const visibleTabs=new Set(['index','explore','progress','social','profile']);
+const topLevelRoutes=fs.readdirSync('apps/consumer-mobile/app',{withFileTypes:true})
+  .filter(entry=>entry.isFile()&&entry.name.endsWith('.tsx')&&entry.name!=='_layout.tsx')
+  .map(entry=>entry.name.replace(/\.tsx$/,''));
+for(const routeName of topLevelRoutes){
+  const screenToken=`<Tabs.Screen name="${routeName}"`;
+  if(!layout.includes(screenToken))throw new Error(`Consumer route ${routeName} must be explicitly declared in Tabs to prevent accidental tab exposure`);
+  if(!visibleTabs.has(routeName)){
+    const routeStart=layout.indexOf(screenToken);
+    const routeEnd=layout.indexOf('/>',routeStart);
+    const declaration=layout.slice(routeStart,routeEnd+2);
+    if(!declaration.includes('href:null'))throw new Error(`Consumer route ${routeName} must remain hidden from the primary bottom tab bar`);
+  }
+}
+if(topLevelRoutes.filter(routeName=>visibleTabs.has(routeName)).length!==visibleTabs.size)throw new Error('Consumer bottom navigation must expose exactly Home, Explore, Progress, Community and Profile');
+
 console.log('Native consumer presentation convergence audit passed.');
