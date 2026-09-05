@@ -45,6 +45,7 @@ export default function RootLayout() {
     <Tabs.Screen name="progress" options={{ title:'Progress',headerShown:false,tabBarIcon:tabIcon('★') }}/>
     <Tabs.Screen name="social" options={{ title:'Community',headerShown:false,tabBarIcon:tabIcon('●') }}/>
     <Tabs.Screen name="profile" options={{ title:'Profile',headerShown:false,tabBarIcon:tabIcon('◉') }}/>
+    <Tabs.Screen name="signup" options={{ href:null,title:'Join Kleenest' }}/>
     <Tabs.Screen name="play" options={{ href:null,title:'Legacy progression + play' }}/>
     <Tabs.Screen name="discover" options={{ href:null,title:'Discover a place' }}/>
     <Tabs.Screen name="assistant" options={{ href:null,title:'Kleenest AI' }}/>
