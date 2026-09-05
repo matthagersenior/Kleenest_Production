@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { AppState,Text, type ColorValue } from 'react-native';
 import { notificationDestination } from '../services/notificationRouting';
 import { refreshConsumerLiveNetworkRegions } from '../services/liveNetwork';
+import PolicyAcceptanceGate from '../components/PolicyAcceptanceGate';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }),
@@ -35,7 +36,7 @@ export default function RootLayout() {
     void refreshConsumerLiveNetworkRegions().catch(()=>{});
     return () => {active=false;subscription.remove();appState.remove()};
   }, []);
-  return <><StatusBar style="dark"/><Tabs screenOptions={{
+  return <PolicyAcceptanceGate><StatusBar style="dark"/><Tabs screenOptions={{
     headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,headerTitleStyle:{fontWeight:'900',color:'#102218'},
     tabBarActiveTintColor:'#173d2b',tabBarInactiveTintColor:'#75847b',tabBarStyle:{height:68,paddingTop:6,paddingBottom:8,backgroundColor:'#ffffff',borderTopColor:'#d7e2da'},tabBarLabelStyle:{fontWeight:'900',fontSize:10},
   }}>
@@ -66,5 +67,5 @@ export default function RootLayout() {
     <Tabs.Screen name="account-deletion" options={{ href:null,title:'Account control' }}/>
     <Tabs.Screen name="legal" options={{ href:null,title:'Terms, privacy & community' }}/>
     <Tabs.Screen name="blocked-users" options={{ href:null,title:'Blocked contributors' }}/>
-  </Tabs></>;
+  </Tabs></PolicyAcceptanceGate>;
 }
