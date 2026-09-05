@@ -33,12 +33,17 @@ const config: ExpoConfig = {
     bundleIdentifier: 'com.kleenest.app',
     supportsTablet: true,
     config: { usesNonExemptEncryption: false },
-    infoPlist: { NSLocationWhenInUseUsageDescription: 'Kleenest uses your location to find nearby restrooms and help calculate routes.' },
+    infoPlist: {
+      NSLocationWhenInUseUsageDescription: 'Kleenest uses your location to find nearby restrooms and help calculate routes.',
+      NSLocationAlwaysAndWhenInUseUsageDescription: 'Kleenest uses background location only when you enable Live Network nearby-restroom alerts.',
+      UIBackgroundModes: ['location'],
+    },
   },
   android: {
     package: 'com.kleenest.app',
     icon: './assets/app-icon.png',
-    permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION', 'CAMERA'],
+    permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION', 'ACCESS_BACKGROUND_LOCATION', 'CAMERA'],
+    blockedPermissions: ['android.permission.RECORD_AUDIO', 'android.permission.SYSTEM_ALERT_WINDOW'],
     intentFilters: [{
       action: 'VIEW',
       autoVerify: false,
@@ -54,7 +59,13 @@ const config: ExpoConfig = {
   },
   plugins: [
     'expo-router',
-    'expo-location',
+    ['expo-location', {
+      locationWhenInUsePermission: 'Kleenest uses your location to find nearby restrooms and help calculate routes.',
+      locationAlwaysAndWhenInUsePermission: 'Kleenest uses background location only when you enable Live Network nearby-restroom alerts.',
+      isAndroidBackgroundLocationEnabled: true,
+      isAndroidForegroundServiceEnabled: true,
+      isIosBackgroundLocationEnabled: true,
+    }],
     'expo-secure-store',
     ...devClientPlugins,
     '@maplibre/maplibre-react-native',
