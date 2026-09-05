@@ -54,8 +54,17 @@ jobs:
             echo "EXPO_TOKEN is not configured. Create an Expo access token and add it as the GitHub Actions secret EXPO_TOKEN." >&2
             exit 1
           fi
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Install dependencies without mutating release lock state
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: Guard EAS local build archive from transient npm lockfiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOCKFILE="$(find . -path './node_modules' -prune -o -name package-lock.json -print -quit)"
+          if [ -n "$LOCKFILE" ]; then
+            echo "Unexpected transient npm lockfile would make the EAS local workspace install non-reproducible: $LOCKFILE" >&2
+            exit 1
+          fi
       - name: Verify production and native contracts
         run: |
           node scripts/production-environment-contract-audit.mjs
