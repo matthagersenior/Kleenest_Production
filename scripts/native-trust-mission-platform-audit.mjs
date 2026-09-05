@@ -4,7 +4,7 @@ const required=[
   'apps/consumer-mobile/services/trustMissions.ts',
   'apps/consumer-mobile/services/activity.ts',
   'apps/consumer-mobile/app/activity.tsx',
-  'apps/consumer-mobile/app/play.tsx',
+  'apps/consumer-mobile/app/progress.tsx',
   'apps/consumer-mobile/services/notificationRouting.ts',
   'apps/consumer-mobile/app/explore.tsx',
   'apps/consumer-mobile/app/saved.tsx',
@@ -16,13 +16,13 @@ const required=[
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing trust mission platform file: ${file}`);
 if(!failures.length){
   const read=file=>fs.readFileSync(file,'utf8');
-  const service=read(required[0]),activityService=read(required[1]),activityScreen=read(required[2]),play=read(required[3]),routing=read(required[4]),explore=read(required[5]),saved=read(required[6]),location=read(required[7]),base=read(required[8]),tiered=read(required[9]),preserve=read(required[10]);
+  const service=read(required[0]),activityService=read(required[1]),activityScreen=read(required[2]),progress=read(required[3]),routing=read(required[4]),explore=read(required[5]),saved=read(required[6]),location=read(required[7]),base=read(required[8]),tiered=read(required[9]),preserve=read(required[10]);
   for(const rpc of ['start_my_trust_mission','my_trust_mission','my_trust_mission_history','complete_my_trust_mission','cancel_my_trust_mission'])if(!service.includes(rpc))failures.push(`mobile trust mission service missing RPC: ${rpc}`);
   if(!service.includes('getKleenestSupabaseClient')||!service.includes('SecureStore')||!service.includes('offlineMirror'))failures.push('Trust mission service must use server authority with SecureStore only as an offline mirror.');
   if(!service.includes("client.from('reviews')")||!service.includes(".not('check_in_id','is',null)"))failures.push('Mission completion must resolve a published verified review before calling server completion authority.');
   if(!service.includes("TrustMissionAction='start'|'resume'|'active_elsewhere'")||!service.includes('trustMissionAction(active')||!service.includes("return active.locationId===locationId?'resume':'active_elsewhere'"))failures.push('Mission service must model start, resume, and active-elsewhere states explicitly.');
   if(!service.includes('cancelledAt')||!service.includes('trustMissionRewardTier')||!service.includes('trustMissionRewardLabel')||!service.includes('trustMissionStatusLine'))failures.push('Mission service must centralize history timestamps and reward/status semantics.');
-  if(!service.includes("if(active.locationId===locationId)return active")||!service.includes('Resume it or clear it from Play before starting another.'))failures.push('Mission service must preserve an active mission rather than silently replacing it.');
+  if(!service.includes("if(active.locationId===locationId)return active")||!service.includes('Resume it or clear it from Progress before starting another.'))failures.push('Mission service must preserve an active mission rather than silently replacing it.');
   if(!service.includes("const {error}=await client.rpc('cancel_my_trust_mission')")||!service.includes('if(error)throw error;await cache(null)'))failures.push('Mission cancellation must clear the local mirror only after the server confirms cancellation.');
   if(/clearTrustMission\(\)\{try[\s\S]*finally\{await cache\(null\)/.test(service))failures.push('Mission cancellation must not clear the local mirror from a finally block after a failed server request.');
   for(const token of ['create table if not exists public.user_trust_missions','user_trust_missions_one_active_idx','enable row level security','revoke all on table public.user_trust_missions from public, anon, authenticated'])if(!base.includes(token))failures.push(`Base mission authority missing: ${token}`);
@@ -38,29 +38,30 @@ if(!failures.length){
   if(!activityService.includes("activityType==='trust_mission_completed'")||!activityService.includes('Completed a trust mission')||!activityService.includes('Full evidence goal')||!activityService.includes('Verified visit goal')||!activityService.includes('goalSatisfied')||!activityService.includes('rewardPoints'))failures.push('Personal Activity service must preserve mission completion tier and reward context.');
   if(!activityScreen.includes('TRUST MISSION')||!activityScreen.includes('FULL EVIDENCE')||!activityScreen.includes('VERIFIED VISIT')||!activityScreen.includes('View strengthened restroom'))failures.push('Activity must visibly distinguish mission reward tiers and deep-link to the strengthened restroom.');
 
-  // Play is now the combined Game Center + progression hub. Verify behavior and mission
-  // authority without coupling the audit to old copy or local variable names.
-  if(!play.includes('listTrustMissionHistory')||!play.includes('ACTIVE TRUST MISSION')||!play.includes('missionGoalSatisfied')||!play.includes("pathname:'/location/[id]'" )||!play.includes('Resume mission →')||!play.includes('Trust mission impact'))failures.push('Play must surface authoritative active mission state, tiered mission history, and restroom navigation.');
-  if(!play.includes('clearTrustMission')||!play.includes('Cancel')||!play.includes("try{await clearTrustMission();setTrustMission(null)") )failures.push('Play cancellation must be explicit and clear local active state only after server cancellation succeeds.');
-  if(!play.includes("catch(error:any){setMessage(error?.message||'Trust mission could not be cancelled.')"))failures.push('Play must surface cancellation failures while preserving the active mission state.');
+  // Progress is the canonical progression hub. Verify active mission authority and restroom
+  // navigation without restoring legacy Play ownership of progression.
+  if(!progress.includes('readTrustMission')||!progress.includes('ACTIVE TRUST MISSION')||!progress.includes('activeMission.locationName')||!progress.includes("pathname:'/location/[id]'" )||!progress.includes('Resume mission')||!progress.includes('Clear mission'))failures.push('Progress must surface authoritative active mission state and restroom navigation.');
+  if(!progress.includes('clearTrustMission')||!progress.includes('try{await clearTrustMission();setActiveMission(null)'))failures.push('Progress mission clearing must be explicit and clear local active state only after server cancellation succeeds.');
+  if(!progress.includes("catch(error:any){setMessage(error?.message||'Trust mission could not be cleared.')"))failures.push('Progress must surface mission-clear failures while preserving active mission state.');
 
   if(!routing.includes('isTrustMission')||!routing.includes("if(isTrustMission(data,type)&&locationId)return`/location/${encodeURIComponent(locationId)}`"))failures.push('Trust mission notifications with a location must deep-link to that restroom before generic progress routing.');
-  if(!routing.includes("if(isProgress(data,type))return stringValue(data.game_challenge_id)||type.includes('game')||type.includes('challenge')?'/games':'/play'"))failures.push('Non-location progression notifications must continue routing to Play or Game Center.');
+  if(!routing.includes("if(isProgress(data,type))return stringValue(data.game_challenge_id)||type.includes('game')||type.includes('challenge')?'/games':'/progress'"))failures.push('Non-location progression notifications must route to canonical Progress or Game Center.');
+  if(!routing.includes("if(explicit)return explicit==='/play'?'/progress':explicit;"))failures.push('Legacy explicit Play notification destinations must normalize to canonical Progress.');
 
   // Trust missions remain a consumer capability, but they are intentionally kept out of the
-  // critical bathroom-finding path. Saved, Play, Location, Activity, and notifications own
+  // critical bathroom-finding path. Saved, Progress, Location, Activity, and notifications own
   // mission lifecycle; Explore stays fast and nearby-first.
-  if(explore.includes('readTrustMission')||explore.includes('trustMissionAction')||explore.includes('ACTIVE TRUST MISSION')||explore.includes('NEARBY TRUST MISSION'))failures.push('Explore must stay bathroom-first; trust mission lifecycle belongs to Play, Saved, and Location.');
+  if(explore.includes('readTrustMission')||explore.includes('trustMissionAction')||explore.includes('ACTIVE TRUST MISSION')||explore.includes('NEARBY TRUST MISSION'))failures.push('Explore must stay bathroom-first; trust mission lifecycle belongs to Progress, Saved, and Location.');
   for(const token of ['listNearbyRestrooms','Find a trusted bathroom.','Full details','Start directions','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Explore bathroom-first mission boundary missing ${token}.`);
   if(!explore.replace(/\s+/g,'').includes('pathname:"/route"'))failures.push('Explore bathroom-first mission boundary missing route handoff.');
   if(!explore.includes('router.push(`/location/${idOf(selected)}`)'))failures.push('Explore must preserve the canonical selected-restroom detail handoff.');
 
   if(!saved.includes('readTrustMission')||!saved.includes('trustMissionAction'))failures.push('Saved must load and evaluate the active trust mission.');
   if(!saved.includes('Resume mission')||!saved.includes('View active mission')||!saved.includes('Resume active mission'))failures.push('Saved must expose active/resume mission states clearly.');
-  if(!saved.includes("action==='active_elsewhere'")||!saved.includes("router.push('/play')"))failures.push('Saved must preserve an active mission and route replacement decisions through Play.');
+  if(!saved.includes("action==='active_elsewhere'")||!saved.includes("router.push('/progress')"))failures.push('Saved must preserve an active mission and route replacement decisions through Progress.');
   if(!saved.includes('ACTIVE MISSION')||!saved.includes('activeCard'))failures.push('Saved must visibly distinguish its active mission restroom.');
   if(!location.includes('readTrustMission')||!location.includes('missionEvidenceRequirement')||!location.includes('activeMission.locationId===locationId'))failures.push('Location mission mode must bind the route request to the authoritative active mission location.');
-  if(!location.includes('MISSION CONTEXT CHECK')||!location.includes('This restroom cannot replace it silently.')||!location.includes("router.push('/play')"))failures.push('Location must expose stale or mismatched mission context without replacing the active mission.');
+  if(!location.includes('MISSION CONTEXT CHECK')||!location.includes('This restroom cannot replace it silently.')||!location.includes("router.push('/progress')"))failures.push('Location must expose stale or mismatched mission context without replacing the active mission and route recovery through Progress.');
   if(!location.includes('FULL EVIDENCE GOAL')||!location.includes('A verified review completes the mission; satisfying this evidence goal earns the full mission bonus.'))failures.push('Location must explain the server-derived full evidence goal and tiered reward semantics.');
   if(!location.includes('const completed=missionMatches?await completeTrustMission(locationId):null'))failures.push('Location may complete a mission only when the current restroom matches the authoritative active mission.');
   if(/grant\s+(select|insert|update|delete).*authenticated/i.test(base))failures.push('Authenticated clients must not receive direct trust mission table mutation authority.');
