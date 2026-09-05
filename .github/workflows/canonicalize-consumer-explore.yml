@@ -1,4 +1,4 @@
-name: Canonicalize Consumer Explore Source
+name: Canonicalize Consumer Native Source
 
 on:
   workflow_dispatch:
@@ -6,13 +6,14 @@ on:
     branches: [main]
     paths:
       - 'scripts/apply-consumer-explore-overlay-fix.mjs'
+      - 'scripts/apply-consumer-progress-canonical.mjs'
       - '.github/workflows/canonicalize-consumer-explore.yml'
 
 permissions:
   contents: write
 
 concurrency:
-  group: canonicalize-consumer-explore
+  group: canonicalize-consumer-native-source
   cancel-in-progress: true
 
 jobs:
@@ -27,23 +28,30 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Apply canonical Explore behavior
-        run: node scripts/apply-consumer-explore-overlay-fix.mjs
+      - name: Apply canonical Consumer behavior
+        run: |
+          node scripts/apply-consumer-explore-overlay-fix.mjs
+          node scripts/apply-consumer-progress-canonical.mjs
       - name: Verify canonical source contract
         run: |
-          grep -q 'height: 190' apps/consumer-mobile/app/explore.tsx
+          grep -q 'height: 230' apps/consumer-mobile/app/explore.tsx
           grep -q 'Close selected location' apps/consumer-mobile/app/explore.tsx
           grep -q 'hitSlop={14}' apps/consumer-mobile/app/explore.tsx
+          grep -q 'pointerEvents="box-none"' apps/consumer-mobile/app/explore.tsx
           ! grep -q '|| rows\[0\] || null' apps/consumer-mobile/app/explore.tsx
+          grep -q "router.push('/progress')" apps/consumer-mobile/app/profile.tsx
+          grep -q 'route="/progress"' apps/consumer-mobile/app/profile.tsx
+          ! grep -q "router.push('/play')" apps/consumer-mobile/app/profile.tsx
+          ! grep -q 'route="/play"' apps/consumer-mobile/app/profile.tsx
       - name: Commit canonical source when changed
         run: |
-          if git diff --quiet -- apps/consumer-mobile/app/explore.tsx; then
-            echo 'Explore source already canonical.'
+          if git diff --quiet -- apps/consumer-mobile/app/explore.tsx apps/consumer-mobile/app/profile.tsx; then
+            echo 'Consumer native source already canonical.'
             exit 0
           fi
           git config user.name 'kleenest-release-bot'
           git config user.email 'actions@users.noreply.github.com'
-          git add apps/consumer-mobile/app/explore.tsx
-          git commit -m 'Canonicalize Consumer Explore interactions'
+          git add apps/consumer-mobile/app/explore.tsx apps/consumer-mobile/app/profile.tsx
+          git commit -m 'Canonicalize Consumer Explore and Progress interactions'
           git pull --rebase origin main
           git push origin HEAD:main
