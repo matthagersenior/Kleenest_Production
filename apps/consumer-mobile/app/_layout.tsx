@@ -64,5 +64,7 @@ export default function RootLayout() {
     <Tabs.Screen name="live-network" options={{ href:null,title:'Live Network' }}/>
     <Tabs.Screen name="support" options={{ href:null,title:'Help & support' }}/>
     <Tabs.Screen name="account-deletion" options={{ href:null,title:'Account control' }}/>
+    <Tabs.Screen name="legal" options={{ href:null,title:'Terms, privacy & community' }}/>
+    <Tabs.Screen name="blocked-users" options={{ href:null,title:'Blocked contributors' }}/>
   </Tabs></>;
 }
