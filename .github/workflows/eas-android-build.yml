@@ -20,6 +20,9 @@ on:
       - 'config/production-environment.json'
       - 'scripts/native-device-readiness-audit.mjs'
       - 'scripts/production-environment-contract-audit.mjs'
+      - 'scripts/apply-consumer-explore-overlay-fix.mjs'
+      - 'scripts/canonicalize-consumer-progress.mjs'
+      - '.github/workflows/eas-android-build.yml'
 
 permissions:
   contents: read
