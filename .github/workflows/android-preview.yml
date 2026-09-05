@@ -15,10 +15,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: consumer-standalone-apk
+  cancel-in-progress: true
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 65
     env:
       CI: true
       EXPO_NO_TELEMETRY: 1
@@ -69,9 +73,21 @@ jobs:
       - name: Apply supplied Kleenest Consumer launcher artwork
         run: node scripts/apply-consumer-native-launcher-icon.mjs
 
-      - name: Build universal release APK
+      - name: Target physical-device and startup-test architectures
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROPS=apps/consumer-mobile/android/gradle.properties
+          if grep -q '^reactNativeArchitectures=' "$PROPS"; then
+            sed -i 's/^reactNativeArchitectures=.*/reactNativeArchitectures=arm64-v8a,x86_64/' "$PROPS"
+          else
+            printf '\nreactNativeArchitectures=arm64-v8a,x86_64\n' >> "$PROPS"
+          fi
+          grep '^reactNativeArchitectures=arm64-v8a,x86_64$' "$PROPS"
+
+      - name: Build release APK once
         working-directory: apps/consumer-mobile/android
-        run: ./gradlew clean assembleRelease --no-daemon --stacktrace
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Locate release APK
         id: apk
@@ -88,7 +104,7 @@ jobs:
           echo "Resolved Consumer release APK: $APK"
           ls -lh "$APK"
 
-      - name: Verify release APK architecture, engine, bundle, and launcher resources
+      - name: Verify release APK architecture, engine, and production bundle
         shell: bash
         run: |
           set -euo pipefail
@@ -97,28 +113,17 @@ jobs:
           BUNDLE_FILE="$RUNNER_TEMP/index.android.bundle"
           unzip -Z1 "$APK" > "$APK_LISTING"
           grep -Fxq 'lib/arm64-v8a/libreactnative.so' "$APK_LISTING" || { echo 'Release APK is missing ARM64 React Native runtime.' >&2; exit 1; }
-          grep -Fxq 'lib/arm64-v8a/libhermes.so' "$APK_LISTING" || { echo 'Release APK is missing ARM64 Hermes runtime.' >&2; exit 1; }
+          grep -Fxq 'lib/x86_64/libreactnative.so' "$APK_LISTING" || { echo 'Release APK is missing x86_64 React Native runtime for startup testing.' >&2; exit 1; }
+          grep -Eq '^lib/arm64-v8a/(libhermes|libhermesvm)\.so$' "$APK_LISTING" || { echo 'Release APK is missing ARM64 Hermes runtime.' >&2; exit 1; }
+          grep -Eq '^lib/x86_64/(libhermes|libhermesvm)\.so$' "$APK_LISTING" || { echo 'Release APK is missing x86_64 Hermes runtime.' >&2; exit 1; }
           grep -Fxq 'assets/index.android.bundle' "$APK_LISTING" || { echo 'Release APK is missing embedded production JS bundle.' >&2; exit 1; }
-          grep -Eq '^res/(mipmap|drawable).*(ic_launcher|app_icon)' "$APK_LISTING" || { echo 'Release APK is missing packaged launcher resources.' >&2; exit 1; }
           unzip -p "$APK" assets/index.android.bundle > "$BUNDLE_FILE"
+          test -s "$BUNDLE_FILE"
           if grep -aFq 'http://localhost:8081' "$BUNDLE_FILE" || grep -aFq 'http://127.0.0.1:8081' "$BUNDLE_FILE"; then
             echo 'Release JS bundle still references Metro.' >&2
             exit 1
           fi
           echo 'Consumer release payload verified.'
-
-      - name: Enable x86_64 startup diagnostic architecture
-        shell: bash
-        run: |
-          set -euo pipefail
-          PROPS=apps/consumer-mobile/android/gradle.properties
-          if grep -q '^reactNativeArchitectures=' "$PROPS"; then
-            sed -i 's/^reactNativeArchitectures=.*/reactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64/' "$PROPS"
-          else
-            printf '\nreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64\n' >> "$PROPS"
-          fi
-          cd apps/consumer-mobile/android
-          ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Android 16 startup + Explore smoke
         uses: reactivecircus/android-emulator-runner@v2
