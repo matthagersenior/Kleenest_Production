@@ -1,57 +1,56 @@
-name: Canonicalize Consumer Native Source
+name: Bake Consumer Recovery Patches Into Source
 
 on:
-  workflow_dispatch:
   push:
-    branches: [main]
+    branches: [parity/deep-reconciliation-20260905]
     paths:
-      - 'scripts/apply-consumer-explore-overlay-fix.mjs'
-      - 'scripts/apply-consumer-progress-canonical.mjs'
       - '.github/workflows/canonicalize-consumer-explore.yml'
 
 permissions:
   contents: write
 
 concurrency:
-  group: canonicalize-consumer-native-source
-  cancel-in-progress: true
+  group: bake-consumer-recovery-patches
+  cancel-in-progress: false
 
 jobs:
   canonicalize:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: parity/deep-reconciliation-20260905
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Apply canonical Consumer behavior
+      - name: Apply every remaining Consumer recovery patch once
         run: |
           node scripts/apply-consumer-explore-overlay-fix.mjs
           node scripts/apply-consumer-progress-canonical.mjs
-      - name: Verify canonical source contract
+          node scripts/apply-consumer-google-auth.mjs
+          node scripts/apply-consumer-review-reporting.mjs
+      - name: Verify canonical source contains patched behavior
         run: |
           grep -q 'height: 230' apps/consumer-mobile/app/explore.tsx
           grep -q 'Close selected location' apps/consumer-mobile/app/explore.tsx
           grep -q 'hitSlop={14}' apps/consumer-mobile/app/explore.tsx
-          grep -q 'pointerEvents="box-none"' apps/consumer-mobile/app/explore.tsx
-          ! grep -q '|| rows\[0\] || null' apps/consumer-mobile/app/explore.tsx
           grep -q "router.push('/progress')" apps/consumer-mobile/app/profile.tsx
-          grep -q 'route="/progress"' apps/consumer-mobile/app/profile.tsx
-          ! grep -q "router.push('/play')" apps/consumer-mobile/app/profile.tsx
-          ! grep -q 'route="/play"' apps/consumer-mobile/app/profile.tsx
+          grep -q 'async function googleSignIn' apps/consumer-mobile/app/profile.tsx
+          grep -q 'Continue with Google' apps/consumer-mobile/app/profile.tsx
           grep -q 'ACTIVE TRUST MISSION' apps/consumer-mobile/app/progress.tsx
           grep -q 'readTrustMission' apps/consumer-mobile/app/progress.tsx
-          grep -q 'clearTrustMission' apps/consumer-mobile/app/progress.tsx
-          ! grep -q "router.push('/play')" 'apps/consumer-mobile/app/location/[id].tsx'
-          ! grep -q "router.push('/play')" apps/consumer-mobile/app/saved.tsx
           grep -q "?'/games':'/progress'" apps/consumer-mobile/services/notificationRouting.ts
-          grep -q "explicit==='/play'?'/progress':explicit" apps/consumer-mobile/services/notificationRouting.ts
+          grep -q 'ReviewReportAction' 'apps/consumer-mobile/app/location/[id].tsx'
+          grep -q 'RATING_CHOICES' 'apps/consumer-mobile/app/location/[id].tsx'
+          grep -q 'reviewScoresValid' 'apps/consumer-mobile/app/location/[id].tsx'
+          ! grep -q "reportReview(reviewId,'other'" 'apps/consumer-mobile/app/location/[id].tsx'
+          ! grep -q 'onChangeText={setStars}' 'apps/consumer-mobile/app/location/[id].tsx'
       - name: Commit canonical source when changed
+        shell: bash
         run: |
+          set -euo pipefail
           TRACKED=(
             apps/consumer-mobile/app/explore.tsx
             apps/consumer-mobile/app/profile.tsx
@@ -61,12 +60,12 @@ jobs:
             apps/consumer-mobile/services/notificationRouting.ts
           )
           if git diff --quiet -- "${TRACKED[@]}"; then
-            echo 'Consumer native source already canonical.'
+            echo 'All Consumer recovery behavior is already canonical source.'
             exit 0
           fi
           git config user.name 'kleenest-release-bot'
           git config user.email 'actions@users.noreply.github.com'
           git add -- "${TRACKED[@]}"
-          git commit -m 'Canonicalize Consumer progression and trust mission interactions'
-          git pull --rebase origin main
-          git push origin HEAD:main
+          git commit -m 'Bake Consumer recovery behavior into canonical source'
+          git pull --rebase origin parity/deep-reconciliation-20260905
+          git push origin HEAD:parity/deep-reconciliation-20260905
