@@ -33,12 +33,12 @@ export function notificationContext(notification:NotificationLike):NotificationC
 export function notificationDestination(notification: NotificationLike): string | null {
   const {data,type}=notificationParts(notification);
   const explicit=safeInternalDestination(data.destination);
-  if(explicit)return explicit;
+  if(explicit)return explicit==='/play'?'/progress':explicit;
   if(stringValue(data.support_request_id)||type.includes('support'))return'/support';
 
   const locationId=stringValue(data.location_id)||stringValue(data.locationId);
   if(isTrustMission(data,type)&&locationId)return`/location/${encodeURIComponent(locationId)}`;
-  if(isProgress(data,type))return stringValue(data.game_challenge_id)||type.includes('game')||type.includes('challenge')?'/games':'/play';
+  if(isProgress(data,type))return stringValue(data.game_challenge_id)||type.includes('game')||type.includes('challenge')?'/games':'/progress';
   if(stringValue(data.route_id)||type.includes('route'))return'/route';
   if(isRestroomOperations(data,type)&&locationId)return`/location/${encodeURIComponent(locationId)}`;
 
