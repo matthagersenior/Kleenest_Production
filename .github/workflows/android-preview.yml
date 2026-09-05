@@ -75,9 +75,9 @@ jobs:
           }
           fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
           NODE
-          npm install --no-audit --no-fund
+          rm -rf node_modules/expo-dev-client node_modules/expo-dev-launcher node_modules/expo-dev-menu node_modules/expo-dev-menu-interface
           for pkg in expo-dev-client expo-dev-launcher expo-dev-menu expo-dev-menu-interface; do
-            if [ -d "node_modules/$pkg" ]; then
+            if [ -e "node_modules/$pkg" ]; then
               echo "Development-only Expo runtime still installed: $pkg" >&2
               exit 1
             fi
