@@ -49,6 +49,10 @@ jobs:
         run: |
           test -s installer/Kleenest-Consumer.apk
           cp installer/Kleenest-Consumer.apk apps/consumer-mobile/dist/Kleenest-Consumer.apk
+          mkdir -p apps/consumer-mobile/dist/legal
+          cp public/legal/*.html apps/consumer-mobile/dist/legal/
+          test -s apps/consumer-mobile/dist/legal/privacy.html
+          test -s apps/consumer-mobile/dist/legal/account-deletion.html
           cp apps/consumer-mobile/dist/index.html apps/consumer-mobile/dist/404.html
           touch apps/consumer-mobile/dist/.nojekyll
           sha256sum apps/consumer-mobile/dist/Kleenest-Consumer.apk > apps/consumer-mobile/dist/Kleenest-Consumer.apk.sha256
