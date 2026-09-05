@@ -1,59 +1,53 @@
-import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 
-export const NATIVE_PUSH_CHANNEL='kleenest-updates';
-const PUSH_TOKEN_KEY='kleenest.native.push.token.v1';
+const APP_TARGET='consumer';
 
-export type NativePushStatus={
-  supported:boolean;
-  permission:string;
-  canAskAgain:boolean;
-  registeredToken:string|null;
-};
-
-function pushError(message:string,code:string){const error=new Error(message) as Error&{code?:string};error.code=code;return error}
+export type NativePushRegistration={status:'registered'|'unsupported'|'denied';token?:string;rotated?:boolean;message:string};
+export type NativePushStatus={permission:string;canAskAgain:boolean;registeredToken:string|null};
 
 export async function getNativePushStatus():Promise<NativePushStatus>{
-  const supported=Platform.OS==='ios'||Platform.OS==='android';
-  if(!supported)return{supported:false,permission:'undetermined',canAskAgain:false,registeredToken:null};
-  const [permission,registeredToken]=await Promise.all([Notifications.getPermissionsAsync(),SecureStore.getItemAsync(PUSH_TOKEN_KEY)]);
-  return{supported:true,permission:String(permission.status),canAskAgain:permission.canAskAgain!==false,registeredToken:registeredToken||null};
+  const permissions=await Notifications.getPermissionsAsync();
+  let registeredToken:string|null=null;
+  try{
+    const {data}=await getKleenestSupabaseClient().rpc('my_notification_push_delivery_status',{p_limit:20});
+    const rows=Array.isArray(data)?data:[];
+    const active=rows.find((row:any)=>row?.active!==false&&(row?.app_id===APP_TARGET||row?.app_id==='com.kleenest.app'));
+    registeredToken=active?.token||null;
+  }catch{}
+  return {permission:permissions.status,canAskAgain:permissions.canAskAgain,registeredToken};
 }
 
-export async function registerNativePush(){
-  if(Platform.OS!=='ios'&&Platform.OS!=='android')throw pushError('Native push is available on iOS and Android.','unsupported');
-  if(Platform.OS==='android')await Notifications.setNotificationChannelAsync(NATIVE_PUSH_CHANNEL,{name:'Kleenest updates',importance:Notifications.AndroidImportance.DEFAULT});
+export async function registerNativePush():Promise<NativePushRegistration>{
+  if(!Device.isDevice)return {status:'unsupported',message:'Native push requires a physical device.'};
   let permission=await Notifications.getPermissionsAsync();
-  if(permission.status!=='granted'&&permission.canAskAgain!==false)permission=await Notifications.requestPermissionsAsync();
+  if(permission.status!=='granted'&&permission.canAskAgain)permission=await Notifications.requestPermissionsAsync();
   if(permission.status!=='granted'){
-    if(permission.canAskAgain===false)throw pushError('Notification permission is blocked. Enable Kleenest notifications in your phone settings.','permission-blocked');
-    throw pushError('Notification permission was not granted.','permission-denied');
+    const error:any=new Error(permission.canAskAgain?'Notification permission was not granted.':'Notification permission is blocked. Enable it in Android settings to receive Kleenest alerts.');
+    error.code=permission.canAskAgain?'permission-denied':'permission-blocked';
+    throw error;
   }
-  const projectId=Constants.easConfig?.projectId??Constants.expoConfig?.extra?.eas?.projectId??process.env.EAS_PROJECT_ID;
-  if(!projectId)throw pushError('EAS project ID is required for native push registration.','missing-project-id');
+  if(Platform.OS==='android')await Notifications.setNotificationChannelAsync('default',{name:'Kleenest',importance:Notifications.AndroidImportance.DEFAULT});
+  const projectId=Constants.expoConfig?.extra?.eas?.projectId||Constants.easConfig?.projectId;
+  if(!projectId)throw new Error('Expo project identity is unavailable for native push registration.');
   const token=(await Notifications.getExpoPushTokenAsync({projectId})).data;
-  if(!token)throw pushError('This device did not return a push token.','missing-token');
-
-  const client=getKleenestSupabaseClient();
-  const previousToken=await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
-  if(previousToken&&previousToken!==token){
-    try{await client.rpc('remove_notification_native_push_token',{p_token:previousToken})}catch{}
-  }
-  const {data,error}=await client.rpc('register_notification_native_push_token',{p_token:token,p_platform:Platform.OS,p_app_id:'com.kleenest.app'});
+  const {data:existing}=await getKleenestSupabaseClient().rpc('my_notification_push_delivery_status',{p_limit:50});
+  const old=Array.isArray(existing)?existing.find((row:any)=>row?.active!==false&&(row?.app_id===APP_TARGET||row?.app_id==='com.kleenest.app')):null;
+  const {error}=await getKleenestSupabaseClient().rpc('register_notification_native_push_token',{p_token:token,p_platform:Platform.OS,p_app_id:APP_TARGET});
   if(error)throw error;
-  await SecureStore.setItemAsync(PUSH_TOKEN_KEY,token);
-  return {token,registration:data,rotated:Boolean(previousToken&&previousToken!==token)};
+  if(old?.token&&old.token!==token)await getKleenestSupabaseClient().rpc('remove_notification_native_push_token',{p_token:old.token}).catch(()=>{});
+  return {status:'registered',token,rotated:Boolean(old?.token&&old.token!==token),message:'This Consumer device is registered for Kleenest notifications.'};
 }
 
-export async function unregisterNativePush(token?:string|null){
-  const stored=await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
-  const target=token||stored;
-  if(!target)return false;
-  const {data,error}=await getKleenestSupabaseClient().rpc('remove_notification_native_push_token',{p_token:target});
+export async function unregisterNativePush(){
+  const status=await getNativePushStatus();
+  if(!status.registeredToken)return false;
+  const {data,error}=await getKleenestSupabaseClient().rpc('remove_notification_native_push_token',{p_token:status.registeredToken});
   if(error)throw error;
-  if(!stored||stored===target)await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
   return Boolean(data);
 }
+
+export function attachNativeNotificationResponseListener(handler:(response:Notifications.NotificationResponse)=>void){return Notifications.addNotificationResponseReceivedListener(handler)}
