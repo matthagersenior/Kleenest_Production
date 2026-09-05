@@ -68,5 +68,10 @@ export default function RootLayout() {
     <Tabs.Screen name="account-deletion" options={{ href:null,title:'Account control' }}/>
     <Tabs.Screen name="legal" options={{ href:null,title:'Terms, privacy & community' }}/>
     <Tabs.Screen name="blocked-users" options={{ href:null,title:'Blocked contributors' }}/>
+    <Tabs.Screen name="community-guidelines" options={{ href:null,title:'Community Guidelines' }}/>
+    <Tabs.Screen name="delete-account" options={{ href:null,title:'Delete account' }}/>
+    <Tabs.Screen name="privacy" options={{ href:null,title:'Privacy Policy' }}/>
+    <Tabs.Screen name="safety" options={{ href:null,title:'Safety' }}/>
+    <Tabs.Screen name="terms" options={{ href:null,title:'Terms of Use' }}/>
   </Tabs></PolicyAcceptanceGate>;
 }
