@@ -2,14 +2,6 @@ name: Publish Kleenest App Family OTA
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/ota-family.yml'
-      - 'ota-family-trigger.txt'
-      - 'scripts/apply-consumer-explore-overlay-fix.mjs'
-  schedule:
-    - cron: '17 * * * *'
 
 permissions:
   contents: read
@@ -19,48 +11,84 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  verify-family:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+      - run: npm install --no-audit --no-fund
+      - name: Verify OTA-compatible family source
+        run: |
+          node scripts/repo-hygiene-audit.mjs
+          node scripts/product-parity-audit.mjs
+          node scripts/app-family-critical-path-audit.mjs
+          npm run native:typecheck
+          npm run operator:typecheck
+
   publish:
+    needs: verify-family
     strategy:
       fail-fast: false
       matrix:
         include:
           - app: Consumer
-            repository: matthagersenior/Kleenest_Production
             directory: apps/consumer-mobile
+            workspace: '@kleenest/consumer-mobile'
             channel: consumer-production
+            eas_project_id: 22a65aa3-c615-4c4f-a34d-084babc28fd7
           - app: Business
-            repository: matthagersenior/Kleenest_Business
-            directory: .
+            directory: apps/business-mobile
+            workspace: '@kleenest/business-mobile'
             channel: business-production
+            eas_project_id: 15ac343b-81bf-459b-8c25-1b2fc8b293de
           - app: Fleet
-            repository: matthagersenior/Kleenest_Fleet
-            directory: .
+            directory: apps/fleet-mobile
+            workspace: '@kleenest/fleet-mobile'
             channel: fleet-production
+            eas_project_id: 90d1d6ff-1376-4065-a00c-7cf0415e4347
           - app: Owner
-            repository: matthagersenior/Kleenest_Owner
-            directory: .
+            directory: apps/platform-mobile
+            workspace: '@kleenest/owner-mobile'
             channel: owner-production
+            eas_project_id: 9b5527b5-c8b1-47c1-a961-3e2d5e549a62
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-      EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
+      EAS_PROJECT_ID: ${{ matrix.eas_project_id }}
       EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
     steps:
       - uses: actions/checkout@v4
-        with:
-          repository: ${{ matrix.repository }}
-          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
       - name: Verify OTA credential is available
         run: test -n "$EXPO_TOKEN"
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Verify Expo authentication
-        run: npx eas-cli@latest whoami --non-interactive
-      - name: Publish OTA update
+      - name: Verify app source and Expo authentication
+        run: |
+          npm run typecheck --workspace '${{ matrix.workspace }}'
+          npx eas-cli@latest whoami --non-interactive
+      - name: Verify Expo project identity
+        working-directory: ${{ matrix.directory }}
+        run: |
+          npx expo config --type public --json > "$RUNNER_TEMP/${{ matrix.app }}-expo-config.json"
+          node - <<'NODE'
+          const fs=require('fs');
+          const cfg=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/${{ matrix.app }}-expo-config.json','utf8'));
+          const actual=cfg.extra?.eas?.projectId;
+          const expected='${{ matrix.eas_project_id }}';
+          if(actual!==expected) throw new Error(`Wrong EAS project for ${{ matrix.app }}: ${actual}; expected ${expected}`);
+          NODE
+      - name: Publish verified OTA update
         working-directory: ${{ matrix.directory }}
         run: npx eas-cli@latest update --channel "${{ matrix.channel }}" --message "${{ matrix.app }} ${GITHUB_SHA}" --non-interactive
