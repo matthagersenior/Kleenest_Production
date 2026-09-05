@@ -31,6 +31,10 @@ apps/*/ios/build/
 !.env.example
 !**/.env.example
 
+# Native service credentials
+apps/*/google-services.json
+apps/*/GoogleService-Info.plist
+
 # Signing / provisioning material
 *.jks
 *.keystore
