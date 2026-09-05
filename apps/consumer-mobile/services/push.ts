@@ -20,6 +20,10 @@ async function getServerToken(){
   }catch{return null;}
 }
 
+async function removeServerToken(token:string){
+  try{await getKleenestSupabaseClient().rpc('remove_notification_native_push_token',{p_token:token});}catch{}
+}
+
 export async function getNativePushStatus():Promise<NativePushStatus>{
   const permission=await Notifications.getPermissionsAsync();
   const localToken=await SecureStore.getItemAsync(PUSH_TOKEN_KEY).catch(()=>null);
@@ -49,7 +53,7 @@ export async function registerNativePush():Promise<NativePushRegistration>{
   const oldToken=previousServer||previousLocal;
   const {error}=await getKleenestSupabaseClient().rpc('register_notification_native_push_token',{p_token:token,p_platform:Platform.OS,p_app_id:APP_TARGET});
   if(error)throw error;
-  if(oldToken&&oldToken!==token)await getKleenestSupabaseClient().rpc('remove_notification_native_push_token',{p_token:oldToken}).catch(()=>{});
+  if(oldToken&&oldToken!==token)await removeServerToken(oldToken);
   await SecureStore.setItemAsync(PUSH_TOKEN_KEY,token);
   return {status:'registered',token,rotated:Boolean(oldToken&&oldToken!==token),message:'This Consumer device is registered for Kleenest notifications.'};
 }
