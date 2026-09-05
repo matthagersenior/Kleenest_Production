@@ -32,6 +32,16 @@ for (const path of tracked) {
   }
 }
 
+const retiredRecoveryFiles = [
+  '.github/workflows/canonicalize-consumer-explore.yml',
+  'scripts/apply-consumer-explore-overlay-fix.mjs',
+  'scripts/apply-consumer-progress-canonical.mjs',
+  'scripts/apply-consumer-google-auth.mjs',
+  'scripts/apply-consumer-review-reporting.mjs',
+  'scripts/apply-consumer-review-score-guidance.mjs',
+];
+for (const path of retiredRecoveryFiles) must(!exists(path), `retired source-mutation recovery file must stay removed: ${path}`);
+
 const requiredDocs = [
   'README.md',
   '.env.example',
@@ -39,9 +49,13 @@ const requiredDocs = [
   'docs/RELEASE_READINESS.md',
   'docs/play-store/PLAY_SUBMISSION.md',
   'docs/play-store/DATA_SAFETY.md',
+  'docs/play-store/STORE_LISTINGS.md',
+  'docs/play-store/REVIEWER_ACCESS.md',
+  'docs/play-store/BACKGROUND_LOCATION.md',
   'public/legal/privacy.html',
   'public/legal/terms.html',
   'public/legal/account-deletion.html',
+  'public/legal/community-guidelines.html',
   'config/play-store-matrix.json',
 ];
 for (const path of requiredDocs) must(exists(path), `required canonical repository file missing: ${path}`);
@@ -62,8 +76,14 @@ for (const [app, packageName] of Object.entries(expectedPackages)) {
   must(matrix.apps?.[app]?.package === packageName, `${app}: canonical Android package drifted from ${packageName}`);
 }
 
+const packageJson = JSON.parse(read('package.json') || '{}');
+const postinstall = String(packageJson.scripts?.postinstall || '');
+must(!postinstall.includes('apply-consumer-'), 'postinstall must not mutate canonical Consumer source with recovery patches');
+must(postinstall === 'node scripts/install-app-icon.mjs', 'postinstall should be limited to deterministic shared launcher-artwork synchronization');
+
 const envExample = read('.env.example');
 must(!/SERVICE_ROLE|PRIVATE_KEY|SECRET_KEY|PASSWORD\s*=/i.test(envExample), '.env.example must not contain secret-value fields');
+must(envExample.includes('EAS_PROJECT_ID=YOUR_APP_EAS_PROJECT_ID'), '.env.example must not default every app to one EAS project ID');
 
 if (failures.length) {
   console.error('Repository hygiene audit failed:');
