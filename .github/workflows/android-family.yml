@@ -2,6 +2,16 @@ name: Build Kleenest App Family Android APKs
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/mobile-core/**'
+      - 'scripts/**'
+      - 'config/**'
+      - 'supabase/migrations/**'
+      - 'package.json'
+      - '.github/workflows/android-family.yml'
   push:
     branches: [main]
     paths:
@@ -17,7 +27,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: kleenest-app-family-android
+  group: kleenest-app-family-android-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
