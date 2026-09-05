@@ -192,6 +192,7 @@ jobs:
           set -euo pipefail
           APK="$(find '${{ matrix.app_dir }}/android/app/build/outputs/apk/release' -maxdepth 1 -type f -name '*.apk' ! -name '*androidTest*' ! -name '*test*' | sort | head -n1)"
           test -n "${APK:-}" && test -f "$APK"
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
           LISTING="$RUNNER_TEMP/${{ matrix.app }}-apk-listing.txt"
           BUNDLE="$RUNNER_TEMP/${{ matrix.app }}-index.android.bundle"
           BADGING="$RUNNER_TEMP/${{ matrix.app }}-badging.txt"
