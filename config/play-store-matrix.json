@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "targetSdk": 36,
+  "apps": {
+    "consumer": {
+      "workspace": "apps/consumer-mobile",
+      "package": "com.kleenest.app",
+      "accountCreation": true,
+      "accountDeletion": {"inAppRoute":"app/account-deletion.tsx","publicPath":"public/legal/account-deletion.html"},
+      "ugc": {"enabled":true,"policyAcceptance":true,"reportUser":true,"reportReview":true,"blockUser":true,"moderationOwnerSurface":true},
+      "location": {"foreground":true,"background":true,"purpose":"opt-in Live Network restroom-region awareness","prominentDisclosure":true},
+      "photos": true,
+      "notifications": true,
+      "billing": {"digitalPurchases":"google_play_only","externalCheckout":false,"familyEntitlementServerAuthoritative":true},
+      "legal": ["privacy","terms","community-guidelines","account-deletion"]
+    },
+    "business": {
+      "workspace": "apps/business-mobile",
+      "package": "com.kleenest.business",
+      "accountCreation": false,
+      "accountDeletion": {"inAppRoute":"app/account.tsx","publicPath":"public/legal/account-deletion.html"},
+      "ugc": {"enabled":false,"businessReplies":true},
+      "location": {"foreground":true,"background":true,"purpose":"opt-in Business Live Network geofence operations","prominentDisclosure":true},
+      "photos": true,
+      "notifications": true,
+      "billing": {"digitalPurchases":"google_play_only","externalCheckout":false,"standardGrowthEntitlementsServerAuthoritative":true},
+      "legal": ["privacy","terms","account-deletion"]
+    },
+    "fleet": {
+      "workspace": "apps/fleet-mobile",
+      "package": "com.kleenest.fleet",
+      "accountCreation": false,
+      "accountDeletion": {"inAppRoute":"app/account.tsx","publicPath":"public/legal/account-deletion.html"},
+      "ugc": {"enabled":false},
+      "location": {"foreground":true,"background":true,"purpose":"route execution, arrival/departure and operational geofence automation","prominentDisclosure":true},
+      "photos": false,
+      "notifications": true,
+      "billing": {"digitalPurchases":"none","externalCheckout":false},
+      "legal": ["privacy","terms","account-deletion"]
+    },
+    "owner": {
+      "workspace": "apps/platform-mobile",
+      "package": "com.kleenest.owner",
+      "accountCreation": false,
+      "accountDeletion": {"inAppRoute":"app/account.tsx","publicPath":"public/legal/account-deletion.html"},
+      "ugc": {"enabled":false,"moderation":true},
+      "location": {"foreground":false,"background":false,"purpose":null,"prominentDisclosure":false},
+      "photos": false,
+      "notifications": true,
+      "billing": {"digitalPurchases":"none","externalCheckout":false},
+      "legal": ["privacy","terms","account-deletion"]
+    }
+  }
+}
