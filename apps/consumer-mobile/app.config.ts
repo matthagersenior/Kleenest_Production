@@ -16,8 +16,8 @@ const devClientPlugins: NonNullable<ExpoConfig['plugins']> = standaloneAndroid
 const config: ExpoConfig = {
   name: 'Kleenest',
   slug: 'kleenest-consumer',
-  version: '0.1.0',
-  runtimeVersion: 'kleenest-consumer-0.1.0',
+  version: '1.0.0',
+  runtimeVersion: 'kleenest-consumer-1.0.0',
   icon: './assets/app-icon.png',
   updates: {
     enabled: true,
