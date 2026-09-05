@@ -28,7 +28,7 @@ all('Metric controls',metrics,['Create metric','Edit metric','Assign metric']);
 all('Operational bridge authority',service,['record_fleet_operational_event','fleet_preventive_dispatch_opportunities','fleet_attach_preventive_work_to_route']);
 all('Operational bridge controls',operations,['attachPreventiveWorkToRoute','Resolve alert']);
 all('Operational resilience',service,['Promise.allSettled','alertsWarning']);
-all('Android geofence identifier safety',geofence,['GEOFENCE_CONTEXT_KEY',"identifier:`kf:${row.route_stop_id}`",'AsyncStorage.setItem']);
+all('Android geofence identifier safety',geofence,['GEOFENCE_CONTEXT_KEY',"const identifier=`kf:${row.route_stop_id}`",'AsyncStorage.setItem']);
 if(geofence.includes("join('|')"))failures.push('Android geofence identifier safety: UUID tuple identifiers exceed the native requestId limit');
 all('Refresh convergence',assets+planner+dispatch+maintenance+metrics+operations,['await load()']);
 for(const [label,source] of Object.entries({assets,planner,dispatch,maintenance,operations,metrics}))noRaw(label,source);
