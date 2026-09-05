@@ -62,4 +62,3 @@ export function executeIntelligenceAction(actionId:string){return rpc('execute_i
 export function completeIntelligenceAction(actionId:string,metadata:Record<string,unknown>={}){return rpc('complete_intelligence_action',{p_action_id:actionId,p_metadata:metadata});}
 
 export async function listBusinessCertifications(businessId:string){const{data,error}=await client().from('business_certifications').select('id,business_id,status,awarded_at,expires_at,notes,certification_tiers(code,name,description,minimum_rating,minimum_reviews,minimum_check_ins,active)').eq('business_id',businessId).order('awarded_at',{ascending:false});if(error)throw error;return data||[];}
-export function runDueReportingSchedules(){return rpc('run_due_reporting_schedules',{p_requested_by:null});}
