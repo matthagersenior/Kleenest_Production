@@ -8,9 +8,11 @@ const requireAll=(label,source,tokens)=>{for(const token of tokens)must(source.i
 
 const messaging=requireFile('apps/platform-mobile/app/notifications.tsx');
 const home=requireFile('apps/platform-mobile/app/index.tsx');
+const capabilities=requireFile('apps/platform-mobile/app/capabilities.tsx');
 const ownerAdmin=requireFile('apps/platform-mobile/services/ownerAdmin.ts');
 const migration=requireFile('supabase/migrations/20260905221500_repair_owner_runtime_observability_and_audit_contracts.sql');
 const compatibility=requireFile('supabase/migrations/20260905222500_align_owner_mobile_runtime_compatibility.sql');
+const signupGrant=requireFile('supabase/migrations/20260905223500_restore_signup_profile_authenticated_execute.sql');
 const smoke=requireFile('scripts/android-startup-smoke.sh');
 
 requireAll('Owner Messaging crash containment',messaging,[
@@ -28,6 +30,20 @@ requireAll('Owner telemetry presentation',home,[
   'observed_percent',
   'disk_observed_percent',
   'wal_bytes',
+  'marked_running',
+  'stale_running',
+  'LIVE RUNS',
+  'Telemetry unavailable',
+  "'UNKNOWN'",
+]);
+requireAll('Owner capability execution semantics',capabilities,[
+  'executionNeedsReview',
+  "release_state==='enabled'&&c.exposure_state==='surface'&&!c.authenticated_execute",
+  "release_state==='internal-only'&&c.anon_execute",
+  'Execution review',
+  'Execution policy is intent-aware',
+  'Auth policy',
+  'Anon policy',
 ]);
 requireAll('Owner audit client',ownerAdmin,[
   "rpc('admin_list_activity_events'",
@@ -50,6 +66,12 @@ requireAll('Owner installed-client compatibility',compatibility,[
   "'{markets,stale_running}'",
   "'{markets,running}'",
 ]);
+requireAll('Signup profile execution policy',signupGrant,[
+  'ensure_signup_profile(text,text,text,text,boolean)',
+  'grant execute',
+  'authenticated, service_role',
+  'from public, anon',
+]);
 
 requireAll('Owner Android route smoke',smoke,[
   'com.kleenest.platform',
@@ -60,4 +82,4 @@ requireAll('Owner Android route smoke',smoke,[
 ]);
 
 if(failures.length){console.error(`Owner runtime integrity audit failed with ${failures.length} gap(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
-console.log('Owner runtime integrity audit passed: live telemetry, audit RPC compatibility, capability retirement SQL, Messaging crash containment and Android route smoke are protected.');
+console.log('Owner runtime integrity audit passed: live telemetry, audit RPC compatibility, capability execution semantics, Messaging crash containment and Android route smoke are protected.');
