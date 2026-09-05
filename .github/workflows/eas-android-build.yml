@@ -131,12 +131,39 @@ jobs:
             --local \
             --output "$OUTPUT"
           test -s "$OUTPUT"
+      - name: Inspect Android signing certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          AAB='${{ matrix.filename }}'
+          CERT_INFO="$GITHUB_WORKSPACE/${{ matrix.app }}-android-signing-cert.txt"
+          SHA1_FILE="$GITHUB_WORKSPACE/${{ matrix.app }}-android-signing-sha1.txt"
+          keytool -printcert -jarfile "$AAB" | tee "$CERT_INFO"
+          if grep -Fqi 'CN=Android Debug' "$CERT_INFO"; then
+            echo '${{ matrix.app }} AAB uses the Android Debug certificate.' >&2
+            exit 1
+          fi
+          RAW_SHA1="$(awk -F'SHA1: ' '/SHA1:/{print $2; exit}' "$CERT_INFO")"
+          NORMALIZED_SHA1="$(printf '%s' "$RAW_SHA1" | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]')"
+          if ! printf '%s' "$NORMALIZED_SHA1" | grep -Eq '^[0-9A-F]{40}$'; then
+            echo 'Could not parse a valid SHA-1 signing certificate fingerprint.' >&2
+            exit 1
+          fi
+          SIGNING_SHA1="$(printf '%s' "$NORMALIZED_SHA1" | sed 's/../&:/g;s/:$//')"
+          printf '%s\n' "$SIGNING_SHA1" > "$SHA1_FILE"
+          printf 'Signing SHA-1: %s\n' "$SIGNING_SHA1" | tee -a "$CERT_INFO"
+          {
+            echo '### ${{ matrix.app }} Android signing identity'
+            echo 'Package: ${{ matrix.package_id }}'
+            echo "Signing SHA-1: $SIGNING_SHA1"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Validate production AAB structure and checksum
         shell: bash
         run: |
           set -euo pipefail
           AAB='${{ matrix.filename }}'
           test -s "$AAB"
+          test -s '${{ matrix.app }}-android-signing-sha1.txt'
           unzip -t "$AAB" >/dev/null
           unzip -Z1 "$AAB" > "$RUNNER_TEMP/${{ matrix.app }}-aab-listing.txt"
           grep -Fxq 'BundleConfig.pb' "$RUNNER_TEMP/${{ matrix.app }}-aab-listing.txt"
@@ -153,5 +180,7 @@ jobs:
             ${{ matrix.filename }}
             ${{ matrix.filename }}.sha256
             ${{ matrix.app }}-play-build.json
+            ${{ matrix.app }}-android-signing-cert.txt
+            ${{ matrix.app }}-android-signing-sha1.txt
           if-no-files-found: error
           retention-days: 30
