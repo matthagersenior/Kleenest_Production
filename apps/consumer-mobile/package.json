@@ -13,6 +13,7 @@
     "prebuild:android": "expo prebuild --platform android --clean",
     "eas:development:android": "eas build --platform android --profile development",
     "eas:preview:android": "eas build --platform android --profile preview",
+    "eas:candidate:android": "eas build --platform android --profile candidate",
     "eas:production:android": "eas build --platform android --profile production",
     "typecheck": "tsc --noEmit"
   },
