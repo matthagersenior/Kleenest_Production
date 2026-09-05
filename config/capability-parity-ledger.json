@@ -19,7 +19,7 @@
     "projectRef": "ssgesjzdvdsqacdtasje",
     "publicTables": 234,
     "publicViews": 21,
-    "publicFunctions": 730,
+    "publicFunctions": 731,
     "rlsPolicies": 336,
     "realtimeTables": 21,
     "edgeFunctions": [
@@ -68,10 +68,16 @@
       "product": "business",
       "domain": "qr-designer",
       "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Business","ref":"main","paths":["app/qr-designer.tsx","app/qr-studio.tsx"]},
-      "classification": "partial",
-      "gap": "Production exposes QR Studio and QR visual services, but the standalone dedicated designer workflow still needs action-by-action and refresh-path reconciliation.",
-      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":null,"offline":false},
-      "productionEvidence": {"files":["apps/business-mobile/app/qr-studio.tsx","apps/business-mobile/services/qrStudio.ts","apps/business-mobile/services/qrVisual.ts"]},
+      "classification": "equivalent",
+      "gap": "",
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":true,"offline":false},
+      "productionEvidence": {
+        "files":["apps/business-mobile/app/qr-studio.tsx","apps/business-mobile/services/qrStudio.ts","apps/business-mobile/services/qrVisual.ts","apps/business-mobile/services/qrBranding.ts"],
+        "markers":[
+          {"file":"apps/business-mobile/app/qr-studio.tsx","contains":["Scan readiness","contrastRatio","quietZone","logoScale","Save versioned design","Save current design as template","setQrActive","deleteQrAsset"]},
+          {"file":"apps/business-mobile/services/qrBranding.ts","contains":["storage.from('qr-branding')","2_097_152","requestMediaLibraryPermissionsAsync"]}
+        ]
+      },
       "protect": true
     },
     {
@@ -79,10 +85,17 @@
       "product": "business",
       "domain": "trust-operations",
       "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Business","ref":"main","paths":["app/trust-operations.tsx","src/services/trustOps.ts"]},
-      "classification": "partial",
-      "gap": "Production contains trust operations services and broader operations UI, but the standalone trust workflow still needs call-level, mutation and refresh-path reconciliation.",
-      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":null,"offline":false},
-      "productionEvidence": {"files":["apps/business-mobile/app/operations.tsx","apps/business-mobile/services/trustOps.ts"]},
+      "classification": "equivalent",
+      "gap": "",
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":true,"offline":false},
+      "productionEvidence": {
+        "files":["apps/business-mobile/app/operations.tsx","apps/business-mobile/services/trustOperations.ts","apps/business-mobile/services/remediationProof.ts"],
+        "markers":[
+          {"file":"apps/business-mobile/app/operations.tsx","contains":["proofMediaId","criticalProofRequired","Add proof photo","Create reverification QR","manageRemediationCase","manageReverificationCase"]},
+          {"file":"apps/business-mobile/services/trustOperations.ts","contains":["business_create_reverification_qr"]},
+          {"file":"apps/business-mobile/services/remediationProof.ts","contains":["business_create_media","location-photos","requestMediaLibraryPermissionsAsync"]}
+        ]
+      },
       "protect": true
     },
     {
@@ -104,10 +117,18 @@
       "product": "fleet",
       "domain": "map-dispatch",
       "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Fleet","ref":"main","paths":["src/components/FleetMap.tsx","app/dispatch.tsx","scripts/fleet-map-convergence-audit.mjs"]},
-      "classification": "partial",
-      "gap": "Production has FleetMap, dispatch and planner surfaces, but standalone map interaction, brand-marker, route-stop ordering and planner behavior still require semantic parity verification.",
-      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":null,"offline":false},
-      "productionEvidence": {"files":["apps/fleet-mobile/components/FleetMap.tsx","apps/fleet-mobile/app/dispatch.tsx","apps/fleet-mobile/app/planner.tsx"]},
+      "classification": "equivalent",
+      "gap": "",
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":true,"offline":false},
+      "productionEvidence": {
+        "files":["apps/fleet-mobile/components/FleetMap.tsx","apps/fleet-mobile/app/dispatch.tsx","apps/fleet-mobile/app/planner.tsx","apps/fleet-mobile/services/product.ts","supabase/migrations/20260905191032_add_manager_fleet_dispatch_overview.sql"],
+        "markers":[
+          {"file":"apps/fleet-mobile/app/planner.tsx","contains":["['5 mi',8047]","fleet_map_planner","setRouteStops","FleetMap"]},
+          {"file":"apps/fleet-mobile/components/FleetMap.tsx","contains":["business_logo_url","routeStopIds","onInteractionChange"]},
+          {"file":"apps/fleet-mobile/services/product.ts","contains":["fleet_manager_dispatch"]},
+          {"file":"supabase/migrations/20260905191032_add_manager_fleet_dispatch_overview.sql","contains":["fleet_actor_is_manager","fleet_manager_dispatch","grant execute"]}
+        ]
+      },
       "protect": true
     },
     {
@@ -115,10 +136,16 @@
       "product": "fleet",
       "domain": "live-geofence",
       "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Fleet","ref":"main","paths":["src/services/geofence.ts","app/execution.tsx","app/signals.tsx"]},
-      "classification": "partial",
-      "gap": "Production has geofence, execution and signals surfaces, but the full background/native permission, manifest, event-recording and notification chain still needs parity proof.",
-      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":null,"offline":true},
-      "productionEvidence": {"files":["apps/fleet-mobile/services/geofence.ts","apps/fleet-mobile/app/execution.tsx","apps/fleet-mobile/app/signals.tsx"]},
+      "classification": "equivalent",
+      "gap": "",
+      "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":true,"offline":true},
+      "productionEvidence": {
+        "files":["apps/fleet-mobile/services/geofence.ts","apps/fleet-mobile/app/execution.tsx","apps/fleet-mobile/app/signals.tsx"],
+        "markers":[
+          {"file":"apps/fleet-mobile/services/geofence.ts","contains":["FLEET_GEOFENCE_TASK","requestBackgroundPermissionsAsync","startGeofencingAsync","record_geofence_event","register_notification_native_push_token"]},
+          {"file":"apps/fleet-mobile/app/execution.tsx","contains":["getFleetRouteGeofenceManifest","recordFleetGeofenceEvent","Location.watchPositionAsync","recordOrQueueRouteStopTiming","replayOfflineRouteEvents"]}
+        ]
+      },
       "protect": true
     },
     {
@@ -159,10 +186,16 @@
       "product": "owner",
       "domain": "kleenestos-presentation",
       "source": {"kind":"repo","repo":"matthagersenior/Kleenest_Owner","ref":"main","paths":["src/components/KleenestOS.tsx","scripts/kleenestos-authority-audit.mjs"]},
-      "classification": "partial",
-      "gap": "Production has the authority surfaces but is not yet reconciled against the standalone KleenestOS component contract, navigation hierarchy and no-raw-JSON presentation audit.",
+      "classification": "equivalent",
+      "gap": "",
       "chain": {"ui":true,"service":true,"backend":true,"authorization":true,"stateRefresh":true,"offline":false},
-      "productionEvidence": {"files":["apps/platform-mobile/app/index.tsx","apps/platform-mobile/app/operations.tsx","apps/platform-mobile/app/progression.tsx","apps/platform-mobile/app/moderation.tsx"]},
+      "productionEvidence": {
+        "files":["apps/platform-mobile/components/KleenestOS.tsx","apps/platform-mobile/app/index.tsx","apps/platform-mobile/services/ownerAdmin.ts","apps/platform-mobile/services/controlPlane.ts"],
+        "markers":[
+          {"file":"apps/platform-mobile/components/KleenestOS.tsx","contains":["OSHero","HealthCard","StatusPill","SectionHeader","DiagnosticDisclosure"]},
+          {"file":"apps/platform-mobile/app/index.tsx","contains":["Needs attention","ECONOMY PULSE","People & Access","Businesses & Network","Trust & Moderation","Database observed","getOwnerAuthorization"]}
+        ]
+      },
       "protect": true
     },
     {
@@ -237,9 +270,9 @@
       "domain": "migration-history",
       "source": {"kind":"supabase-live","projectRef":"ssgesjzdvdsqacdtasje"},
       "classification": "partial",
-      "gap": "Live migration history and repository migration files still need exhaustive version/content reconciliation. The reporting repair is source-controlled, but other recent live changes must be proven present rather than inferred from similar filenames.",
+      "gap": "Live migration history and repository migration files still need exhaustive version/content reconciliation. The reporting and Fleet manager-dispatch repairs are source-controlled, but other recent live changes must be proven present rather than inferred from similar filenames.",
       "chain": {"ui":false,"service":false,"backend":true,"authorization":true,"stateRefresh":false,"offline":false},
-      "productionEvidence": {"files":["supabase/migrations","supabase/migrations/20260905185819_harden_reporting_scope_and_user_execution.sql"]},
+      "productionEvidence": {"files":["supabase/migrations","supabase/migrations/20260905185819_harden_reporting_scope_and_user_execution.sql","supabase/migrations/20260905191032_add_manager_fleet_dispatch_overview.sql"]},
       "protect": true
     }
   ]
