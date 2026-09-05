@@ -1,15 +1,47 @@
+# Dependencies and package-manager state
 node_modules/
+.npm/
+
+# Web/build output
 dist/
+coverage/
+*.tsbuildinfo
+
+# Expo / React Native generated state
 .expo/
+apps/*/.expo/
+apps/*/android/
+apps/*/ios/
+apps/*/dist/
+apps/*/build/
+apps/*/.gradle/
+apps/*/android/.gradle/
+apps/*/android/app/build/
+apps/*/ios/build/
+
+# Local EAS / release artifacts
+*.apk
+*.aab
+*.ipa
+*.xcarchive
+
+# Environment files. Commit examples only.
 .env
 .env.*
 !.env.example
-apps/consumer-mobile/.expo/
-apps/consumer-mobile/android/
-apps/consumer-mobile/ios/
+!**/.env.example
+
+# Signing / provisioning material
 *.jks
 *.keystore
 *.p8
 *.p12
 *.mobileprovision
+*.pem
+*.key
+
+# Editor / OS noise
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
