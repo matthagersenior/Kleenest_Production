@@ -7,6 +7,8 @@ const required=[
   'apps/consumer-mobile/app/_layout.tsx',
   'apps/consumer-mobile/app/index.tsx',
   'apps/consumer-mobile/app/explore.tsx',
+  'apps/consumer-mobile/app/discover.tsx',
+  'apps/consumer-mobile/app/progress.tsx',
   'apps/consumer-mobile/app/location/[id].tsx',
   'apps/consumer-mobile/app/route.tsx',
   'apps/consumer-mobile/app/saved.tsx',
@@ -19,6 +21,7 @@ const required=[
   'apps/consumer-mobile/app/preferences.tsx',
   'apps/consumer-mobile/app/qr.tsx',
   'apps/consumer-mobile/app/membership.tsx',
+  'apps/consumer-mobile/services/discoveryProgression.ts',
   'packages/mobile-core/src/index.ts'
 ];
 for(const file of required)if(!fs.existsSync(file))failures.push(`Missing consumer parity surface: ${file}`);
@@ -35,12 +38,20 @@ for(const file of consumerFiles){const text=fs.readFileSync(file,'utf8');
 if(!failures.length){
  const home=fs.readFileSync('apps/consumer-mobile/app/index.tsx','utf8');
  const explore=fs.readFileSync('apps/consumer-mobile/app/explore.tsx','utf8');
+ const discover=fs.readFileSync('apps/consumer-mobile/app/discover.tsx','utf8');
+ const progress=fs.readFileSync('apps/consumer-mobile/app/progress.tsx','utf8');
+ const progressionService=fs.readFileSync('apps/consumer-mobile/services/discoveryProgression.ts','utf8');
  const layout=fs.readFileSync('apps/consumer-mobile/app/_layout.tsx','utf8');
  const location=fs.readFileSync('apps/consumer-mobile/app/location/[id].tsx','utf8');
  const core=fs.readFileSync('packages/mobile-core/src/index.ts','utf8');
- for(const token of ["'/explore'",'Find a better bathroom','THE KLEENEST LOOP','Verified community','PLAY + PROGRESS','YOUR NETWORK'])if(!home.includes(token))failures.push(`Consumer Home missing rich bathroom-first/data-production behavior: ${token}`);
- for(const token of ['listNearbyRestrooms','listAmenityCatalog','selectedAmenityNames','What matters on this stop?',"pathname:'/route'",'Start directions','captureConsumerDiscovery','captureConsumerRouteIntent','readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Consumer discovery missing mature capability: ${token}`);
- for(const token of ['explore','play','social','profile'])if(!layout.includes(`name="${token}"`))failures.push(`Consumer primary navigation missing ${token}.`);
+ for(const token of ["'/explore'",'Find a better bathroom','THE KLEENEST LOOP','Community discovery','XP + levels','YOUR NETWORK','Add a missing place'])if(!home.includes(token))failures.push(`Consumer Home missing discovery/progression behavior: ${token}`);
+ for(const token of ['listNearbyRestrooms','listAmenityCatalog','selectedAmenityNames','What matters on this stop?','Start directions','captureConsumerDiscovery','captureConsumerRouteIntent','readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Consumer discovery missing mature capability: ${token}`);
+ if(!/pathname\s*:\s*['"]\/route['"]/.test(explore))failures.push('Consumer discovery missing mature capability: route navigation');
+ for(const token of ['Remote','Address','Map pin','GPS','On-site live','Save / match discovery','Save restroom evidence','Take photo'])if(!discover.includes(token))failures.push(`Consumer contribution flow missing: ${token}`);
+ for(const token of ['SPECIALTY LEVELS','WHAT TO DO NEXT','Quests','Missions','Challenges','Journeys','Campaigns','Contests','BADGES','RANKINGS','XP HISTORY'])if(!progress.includes(token))failures.push(`Consumer Progress missing expansive progression surface: ${token}`);
+ for(const token of ['consumer_match_or_create_discovery','consumer_record_discovery_evidence','consumer_progression_overview','consumer_active_objectives','consumer_progression_rankings','consumer_nearby_progression_opportunities','attach_discovery_photo'])if(!progressionService.includes(token))failures.push(`Consumer discovery/progression service missing canonical RPC: ${token}`);
+ for(const token of ['explore','progress','social','profile'])if(!layout.includes(`name="${token}"`))failures.push(`Consumer primary navigation missing ${token}.`);
+ if(!layout.includes('name="discover"')||!layout.includes('href:null'))failures.push('Consumer Discover route must exist without creating a sixth primary tab.');
  for(const token of ['mobileCheckIn','createMobileReview'])if(!core.includes(token))failures.push(`Mobile core missing canonical consumer production authority: ${token}`);
  if(!location.includes('mobileCheckIn'))failures.push('Location details must expose canonical check-in behavior.');
 }

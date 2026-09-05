@@ -1,0 +1,72 @@
+name: Canonicalize Consumer Native Source
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/apply-consumer-explore-overlay-fix.mjs'
+      - 'scripts/apply-consumer-progress-canonical.mjs'
+      - '.github/workflows/canonicalize-consumer-explore.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: canonicalize-consumer-native-source
+  cancel-in-progress: true
+
+jobs:
+  canonicalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply canonical Consumer behavior
+        run: |
+          node scripts/apply-consumer-explore-overlay-fix.mjs
+          node scripts/apply-consumer-progress-canonical.mjs
+      - name: Verify canonical source contract
+        run: |
+          grep -q 'height: 230' apps/consumer-mobile/app/explore.tsx
+          grep -q 'Close selected location' apps/consumer-mobile/app/explore.tsx
+          grep -q 'hitSlop={14}' apps/consumer-mobile/app/explore.tsx
+          grep -q 'pointerEvents="box-none"' apps/consumer-mobile/app/explore.tsx
+          ! grep -q '|| rows\[0\] || null' apps/consumer-mobile/app/explore.tsx
+          grep -q "router.push('/progress')" apps/consumer-mobile/app/profile.tsx
+          grep -q 'route="/progress"' apps/consumer-mobile/app/profile.tsx
+          ! grep -q "router.push('/play')" apps/consumer-mobile/app/profile.tsx
+          ! grep -q 'route="/play"' apps/consumer-mobile/app/profile.tsx
+          grep -q 'ACTIVE TRUST MISSION' apps/consumer-mobile/app/progress.tsx
+          grep -q 'readTrustMission' apps/consumer-mobile/app/progress.tsx
+          grep -q 'clearTrustMission' apps/consumer-mobile/app/progress.tsx
+          ! grep -q "router.push('/play')" 'apps/consumer-mobile/app/location/[id].tsx'
+          ! grep -q "router.push('/play')" apps/consumer-mobile/app/saved.tsx
+          grep -q "?'/games':'/progress'" apps/consumer-mobile/services/notificationRouting.ts
+          grep -q "explicit==='/play'?'/progress':explicit" apps/consumer-mobile/services/notificationRouting.ts
+      - name: Commit canonical source when changed
+        run: |
+          TRACKED=(
+            apps/consumer-mobile/app/explore.tsx
+            apps/consumer-mobile/app/profile.tsx
+            'apps/consumer-mobile/app/location/[id].tsx'
+            apps/consumer-mobile/app/saved.tsx
+            apps/consumer-mobile/app/progress.tsx
+            apps/consumer-mobile/services/notificationRouting.ts
+          )
+          if git diff --quiet -- "${TRACKED[@]}"; then
+            echo 'Consumer native source already canonical.'
+            exit 0
+          fi
+          git config user.name 'kleenest-release-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -- "${TRACKED[@]}"
+          git commit -m 'Canonicalize Consumer progression and trust mission interactions'
+          git pull --rebase origin main
+          git push origin HEAD:main

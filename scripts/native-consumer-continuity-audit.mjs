@@ -10,10 +10,13 @@ if(!failures.length){
  const notifications=fs.readFileSync(files[4],'utf8');
  for(const token of ['CONTINUITY_KEY','readNearbyContinuity','writeNearbyContinuity','selectedId','radiusMeters','origin','MAX_AGE_MS'])if(!cache.includes(token))failures.push(`nearby continuity cache missing ${token}`);
  if(!cache.includes("kleenest.native.nearby.continuity.v1")||!cache.includes("kleenest.native.nearby.public.v1"))failures.push('Nearby continuity must remain separate from the public nearby result cache.');
- for(const token of ['readNearbyContinuity','writeNearbyContinuity','preservedId','RefreshControl','keyboardShouldPersistTaps','fallback.selectedId','fallback.origin','cachedAgeLabel(cache.savedAt)','accessibilityRole="radiogroup"'])if(!explore.includes(token))failures.push(`Explore continuity missing ${token}`);
- if(!explore.includes("selectedId&&enriched.some")||!explore.includes("cache.rows.some")||!explore.includes("const mapVisible=Boolean(origin&&rows.some(hasCoordinates))"))failures.push('Explore must preserve a valid selected restroom and render cached map context when coordinates are available.');
- if(!explore.includes("writeNearbyCache(enriched,{selectedId:preservedId,origin:nextOrigin,radiusMeters:radius})"))failures.push('Live generic discovery must persist the last-good result context atomically.');
- if(!explore.includes("Live lookup failed. Showing cached bathrooms")||!explore.includes("pull to refresh live distance"))failures.push('Explore must clearly distinguish cached fallback from live discovery and expose recovery.');
+ for(const token of ['readNearbyContinuity','writeNearbyContinuity','preservedId','RefreshControl','keyboardShouldPersistTaps','fallback.origin','cachedAgeLabel(cache.savedAt)','accessibilityRole="radiogroup"'])if(!explore.includes(token))failures.push(`Explore continuity missing ${token}`);
+ const preservesLiveSelected=/selectedId\s*&&\s*enriched\.some/.test(explore);
+ const clearsHydratedSelection=/const\s+nextSelected\s*=\s*["']{2}\s*;/.test(explore);
+ const rendersMapFromCoordinates=/const\s+mapVisible\s*=\s*Boolean\(origin(?:\s*&&\s*rows\.some\(hasCoordinates\))?\)/.test(explore);
+ if(!preservesLiveSelected||!clearsHydratedSelection||!rendersMapFromCoordinates)failures.push('Explore must preserve an explicit in-session selection during live refresh, reopen cached map context without auto-selecting a restroom, and render the map when coordinates are available.');
+ if(!/writeNearbyCache\(enriched,\s*\{[\s\S]*?selectedId:\s*preservedId,[\s\S]*?origin:\s*nextOrigin,[\s\S]*?radiusMeters:\s*radius[\s\S]*?\}\)/.test(explore))failures.push('Live generic discovery must persist the last-good result context atomically.');
+ if(!explore.includes("Live lookup failed. Showing cached bathrooms")||!explore.includes("pull to refresh"))failures.push('Explore must clearly distinguish cached fallback from live discovery and expose recovery.');
  if(!route.includes('SecureStore')||!route.includes('kleenest.native.route.draft'))failures.push('Route continuity must retain the canonical SecureStore draft.');
  for(const [name,source] of [['Activity',activity],['Notifications',notifications]]){
   if(!source.includes('RefreshControl')||!source.includes('refreshing={loading}')||!source.includes('onRefresh={load}'))failures.push(`${name} must expose native pull-to-refresh without replacing its canonical data authority.`);

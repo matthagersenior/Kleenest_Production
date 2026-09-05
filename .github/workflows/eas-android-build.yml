@@ -20,6 +20,8 @@ on:
       - 'config/production-environment.json'
       - 'scripts/native-device-readiness-audit.mjs'
       - 'scripts/production-environment-contract-audit.mjs'
+      - 'scripts/apply-consumer-explore-overlay-fix.mjs'
+      - 'scripts/apply-consumer-progress-canonical.mjs'
 
 permissions:
   contents: read

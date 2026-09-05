@@ -1,0 +1,49 @@
+name: Publish Consumer OTA Update
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/consumer-mobile/app/**'
+      - 'apps/consumer-mobile/components/**'
+      - 'apps/consumer-mobile/services/**'
+      - 'packages/mobile-core/**'
+      - 'scripts/apply-consumer-explore-overlay-fix.mjs'
+      - '.github/workflows/ota-update.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: consumer-production-ota
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
+      EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify Expo authentication
+        run: npx eas-cli@latest whoami --non-interactive
+      - name: Verify canonical Consumer Explore contract
+        run: |
+          node scripts/native-map-authority-audit.mjs
+          grep -q 'height: 230' apps/consumer-mobile/app/explore.tsx
+          grep -q 'hitSlop={14}' apps/consumer-mobile/app/explore.tsx
+          grep -q 'Close selected location' apps/consumer-mobile/app/explore.tsx
+          ! grep -q '|| rows\[0\] || null' apps/consumer-mobile/app/explore.tsx
+      - name: Publish Consumer OTA update
+        working-directory: apps/consumer-mobile
+        run: npx eas-cli@latest update --channel consumer-production --message "Consumer ${GITHUB_SHA}" --non-interactive

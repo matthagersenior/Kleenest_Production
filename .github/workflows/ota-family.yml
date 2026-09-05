@@ -1,0 +1,66 @@
+name: Publish Kleenest App Family OTA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/ota-family.yml'
+      - 'ota-family-trigger.txt'
+      - 'scripts/apply-consumer-explore-overlay-fix.mjs'
+  schedule:
+    - cron: '17 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kleenest-family-ota
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: Consumer
+            repository: matthagersenior/Kleenest_Production
+            directory: apps/consumer-mobile
+            channel: consumer-production
+          - app: Business
+            repository: matthagersenior/Kleenest_Business
+            directory: .
+            channel: business-production
+          - app: Fleet
+            repository: matthagersenior/Kleenest_Fleet
+            directory: .
+            channel: fleet-production
+          - app: Owner
+            repository: matthagersenior/Kleenest_Owner
+            directory: .
+            channel: owner-production
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
+      EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repository }}
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify OTA credential is available
+        run: test -n "$EXPO_TOKEN"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify Expo authentication
+        run: npx eas-cli@latest whoami --non-interactive
+      - name: Publish OTA update
+        working-directory: ${{ matrix.directory }}
+        run: npx eas-cli@latest update --channel "${{ matrix.channel }}" --message "${{ matrix.app }} ${GITHUB_SHA}" --non-interactive
