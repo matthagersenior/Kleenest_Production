@@ -6,6 +6,7 @@ const all=(label,source,tokens)=>tokens.forEach(token=>{if(!source.includes(toke
 const noRaw=(label,source)=>{if(/<Text[^>]*>\s*\{JSON\.stringify\(/m.test(source)||source.includes('style={s.json}'))failures.push(`${label}: raw JSON operator output is forbidden`)};
 
 const service=read('apps/fleet-mobile/services/parity.ts')+'\n'+read('apps/fleet-mobile/services/product.ts')+'\n'+read('apps/fleet-mobile/services/control.ts');
+const geofence=read('apps/fleet-mobile/services/geofence.ts');
 const assets=read('apps/fleet-mobile/app/assets.tsx');
 const planner=read('apps/fleet-mobile/app/planner.tsx');
 const dispatch=read('apps/fleet-mobile/app/dispatch.tsx');
@@ -26,8 +27,11 @@ all('Metric authority',service,['get_fleet_metric_capabilities','get_fleet_metri
 all('Metric controls',metrics,['Create metric','Edit metric','Assign metric']);
 all('Operational bridge authority',service,['record_fleet_operational_event','fleet_preventive_dispatch_opportunities','fleet_attach_preventive_work_to_route']);
 all('Operational bridge controls',operations,['attachPreventiveWorkToRoute','Resolve alert']);
+all('Operational resilience',service,['Promise.allSettled','alertsWarning']);
+all('Android geofence identifier safety',geofence,['GEOFENCE_CONTEXT_KEY',"identifier:`kf:${row.route_stop_id}`",'AsyncStorage.setItem']);
+if(geofence.includes("join('|')"))failures.push('Android geofence identifier safety: UUID tuple identifiers exceed the native requestId limit');
 all('Refresh convergence',assets+planner+dispatch+maintenance+metrics+operations,['await load()']);
 for(const [label,source] of Object.entries({assets,planner,dispatch,maintenance,operations,metrics}))noRaw(label,source);
 
 if(failures.length){console.error(`Fleet extended operator audit failed with ${failures.length} issue${failures.length===1?'':'s'}:`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
-console.log('Fleet extended operator audit passed: vehicle, driver, route, maintenance, metric and operational CRUD authority is wired to human operator controls with refresh convergence.');
+console.log('Fleet extended operator audit passed: vehicle, driver, route, maintenance, metric and operational CRUD authority is wired to resilient human operator controls with Android-safe geofencing and refresh convergence.');
