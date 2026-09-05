@@ -42,6 +42,10 @@ jobs:
           cache: npm
           cache-dependency-path: package.json
       - run: npm install --no-audit --no-fund
+      - name: Verify repository and Play release contract
+        run: |
+          node scripts/repo-hygiene-audit.mjs
+          node scripts/play-store-matrix-audit.mjs
       - name: Verify app family product contract
         run: |
           node scripts/product-parity-audit.mjs
@@ -210,6 +214,10 @@ jobs:
           test -x "$AAPT"
           "$AAPT" dump badging "$APK" > "$BADGING"
           grep -Fq "package: name='${{ matrix.package_id }}'" "$BADGING"
+          TARGET_SDK="$(sed -n "s/.*targetSdkVersion:'\([0-9][0-9]*\)'.*/\1/p" "$BADGING" | head -n1)"
+          test -n "$TARGET_SDK"
+          if [ "$TARGET_SDK" -lt 36 ]; then echo '${{ matrix.app }} APK targets API '"$TARGET_SDK"', but Google Play requires API 36 or newer.' >&2; exit 1; fi
+          echo '${{ matrix.app }} effective targetSdkVersion='"$TARGET_SDK"
           if grep -Fq 'application-debuggable' "$BADGING"; then echo '${{ matrix.app }} APK is debuggable.' >&2; exit 1; fi
       - name: Enable KVM access
         shell: bash
