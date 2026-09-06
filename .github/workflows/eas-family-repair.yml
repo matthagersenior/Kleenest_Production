@@ -1,173 +1,19 @@
 name: EAS Signed Family Repair APKs
 
+# Retained as a manual fallback. The install-ready family workflow now owns
+# parity/typecheck gating, EAS cloud builds, signing verification, and Android
+# startup smoke for Consumer, Business, Fleet, and KleenestOS.
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'apps/consumer-mobile/**'
-      - 'apps/business-mobile/**'
-      - 'apps/fleet-mobile/**'
-      - 'apps/platform-mobile/**'
-      - 'packages/mobile-core/**'
-      - '.github/workflows/eas-family-repair.yml'
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  manual-fallback:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - app: Consumer
-            dir: apps/consumer-mobile
-            package: com.kleenest.app
-            eas_project_id: 22a65aa3-c615-4c4f-a34d-084babc28fd7
-            artifact: Kleenest-Consumer.apk
-            secret_key: CONSUMER
-          - app: Business
-            dir: apps/business-mobile
-            package: com.kleenest.business
-            eas_project_id: 15ac343b-81bf-459b-8c25-1b2fc8b293de
-            artifact: Kleenest-Business.apk
-            secret_key: BUSINESS
-          - app: Fleet
-            dir: apps/fleet-mobile
-            package: com.kleenest.fleet
-            eas_project_id: 90d1d6ff-1376-4065-a00c-7cf0415e4347
-            artifact: Kleenest-Fleet.apk
-            secret_key: FLEET
-          - app: KleenestOS
-            dir: apps/platform-mobile
-            package: com.kleenest.platform
-            eas_project_id: 9b5527b5-c8b1-47c1-a961-3e2d5e549a62
-            artifact: Kleenest-Owner.apk
-            secret_key: OWNER
-    env:
-      CI: '1'
-      NODE_ENV: production
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-      EAS_PROJECT_ID: ${{ matrix.eas_project_id }}
-      GOOGLE_SERVICES_FILE: ./google-services.json
-      EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
-      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
-      KLEENEST_STANDALONE_ANDROID: '1'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Require Expo automation token
-        shell: bash
-        run: test -n "$EXPO_TOKEN"
-      - name: Install dependencies
-        run: npm install --no-package-lock --no-audit --no-fund
-      - name: Materialize Firebase config from Actions secret
-        shell: bash
-        env:
-          CONSUMER_JSON: ${{ secrets.CONSUMER_GOOGLE_SERVICES_JSON_BASE64 }}
-          BUSINESS_JSON: ${{ secrets.BUSINESS_GOOGLE_SERVICES_JSON_BASE64 }}
-          FLEET_JSON: ${{ secrets.FLEET_GOOGLE_SERVICES_JSON_BASE64 }}
-          OWNER_JSON: ${{ secrets.OWNER_GOOGLE_SERVICES_JSON_BASE64 }}
-          SHARED_JSON: ${{ secrets.KLEENEST_GOOGLE_SERVICES_JSON_BASE64 }}
+      - name: Use canonical install-ready workflow
         run: |
-          set -euo pipefail
-          case '${{ matrix.secret_key }}' in
-            CONSUMER) value="${CONSUMER_JSON:-}" ;;
-            BUSINESS) value="${BUSINESS_JSON:-}" ;;
-            FLEET) value="${FLEET_JSON:-}" ;;
-            OWNER) value="${OWNER_JSON:-}" ;;
-            *) value='' ;;
-          esac
-          [ -n "$value" ] || value="${SHARED_JSON:-}"
-          test -n "$value" || { echo 'Firebase Android config secret missing for ${{ matrix.app }}.' >&2; exit 1; }
-          printf '%s' "$value" | base64 --decode > '${{ matrix.dir }}/google-services.json'
-          node - <<'NODE'
-          const fs=require('fs');
-          const f=JSON.parse(fs.readFileSync('${{ matrix.dir }}/google-services.json','utf8'));
-          if(!f.client?.some(c=>c.client_info?.android_client_info?.package_name==='${{ matrix.package }}')) throw new Error('Firebase config does not authorize ${{ matrix.package }}');
-          NODE
-      - name: Include ephemeral Firebase config in EAS project archive
-        shell: bash
-        run: |
-          set -euo pipefail
-          ROOT_IGNORE="$GITHUB_WORKSPACE/.easignore"
-          if [ -f "$GITHUB_WORKSPACE/.gitignore" ]; then
-            cp "$GITHUB_WORKSPACE/.gitignore" "$ROOT_IGNORE"
-          else
-            : > "$ROOT_IGNORE"
-          fi
-          printf '\n# CI-only EAS include for Firebase Android config\n!${{ matrix.dir }}/google-services.json\n' >> "$ROOT_IGNORE"
-
-          APP_IGNORE="$GITHUB_WORKSPACE/${{ matrix.dir }}/.easignore"
-          if [ -f "$GITHUB_WORKSPACE/${{ matrix.dir }}/.gitignore" ]; then
-            cp "$GITHUB_WORKSPACE/${{ matrix.dir }}/.gitignore" "$APP_IGNORE"
-          else
-            : > "$APP_IGNORE"
-          fi
-          printf '\n# CI-only EAS include for Firebase Android config\n!google-services.json\n' >> "$APP_IGNORE"
-
-          test -s '${{ matrix.dir }}/google-services.json'
-          grep -Fq '!${{ matrix.dir }}/google-services.json' "$ROOT_IGNORE"
-          grep -Fq '!google-services.json' "$APP_IGNORE"
-      - name: Verify Expo identity
-        working-directory: ${{ matrix.dir }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          npx eas-cli@latest whoami
-          npx expo config --type public --json > "$RUNNER_TEMP/expo-${{ matrix.app }}.json"
-          node -e "const c=require(process.env.RUNNER_TEMP+'/expo-${{ matrix.app }}.json');if(c.android?.package!=='${{ matrix.package }}')throw new Error('Android package mismatch');if(c.extra?.eas?.projectId!=='${{ matrix.eas_project_id }}')throw new Error('EAS project mismatch');if(!c.android?.googleServicesFile)throw new Error('googleServicesFile missing')"
-      - name: Build signed candidate APK with EAS-managed credentials
-        working-directory: ${{ matrix.dir }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          OUTPUT="$GITHUB_WORKSPACE/${{ matrix.artifact }}"
-          npx eas-cli@latest build --platform android --profile candidate --non-interactive --local --output "$OUTPUT"
-          test -s "$OUTPUT"
-      - name: Verify package and signing identity
-        shell: bash
-        run: |
-          set -euo pipefail
-          APK='${{ matrix.artifact }}'
-          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -n1)"
-          AAPT="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name aapt | sort -V | tail -n1)"
-          test -x "$APKSIGNER" && test -x "$AAPT"
-          "$APKSIGNER" verify --print-certs "$APK" | tee '${{ matrix.app }}-signing-cert.txt'
-          "$AAPT" dump badging "$APK" | tee '${{ matrix.app }}-badging.txt'
-          grep -Fq "package: name='${{ matrix.package }}'" '${{ matrix.app }}-badging.txt'
-          if grep -Fqi 'CN=Android Debug' '${{ matrix.app }}-signing-cert.txt'; then
-            echo 'Refusing unstable Android Debug signing identity.' >&2
-            exit 1
-          fi
-          RAW_SHA1="$(awk -F': ' '/certificate SHA-1 digest:/{print $NF; exit}' '${{ matrix.app }}-signing-cert.txt')"
-          NORMALIZED_SHA1="$(printf '%s' "$RAW_SHA1" | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]')"
-          printf '%s' "$NORMALIZED_SHA1" | grep -Eq '^[0-9A-F]{40}$'
-          SIGNING_SHA1="$(printf '%s' "$NORMALIZED_SHA1" | sed 's/../&:/g;s/:$//')"
-          printf '%s\n' "$SIGNING_SHA1" > '${{ matrix.app }}-signing-sha1.txt'
-          sha256sum "$APK" > "$APK.sha256"
-          unzip -t "$APK" >/dev/null
-          {
-            echo '### ${{ matrix.app }} signed repair APK'
-            echo 'Package: `${{ matrix.package }}`'
-            echo "Signing SHA-1: \`$SIGNING_SHA1\`"
-          } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.app }}-EAS-Signed-Repair
-          path: |
-            ${{ matrix.artifact }}
-            ${{ matrix.artifact }}.sha256
-            ${{ matrix.app }}-signing-cert.txt
-            ${{ matrix.app }}-signing-sha1.txt
-          if-no-files-found: error
-          retention-days: 30
+          echo 'Use Install-Ready Android Family for release candidates.'
+          echo 'This legacy local-build workflow is intentionally disabled from PR automation.'
