@@ -1,0 +1,9 @@
+import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+
+export type EnterprisePortfolioBusiness={id:string;name:string;tier:string;location_count:number;vehicle_count:number;driver_count:number;open_route_count:number};
+export type EnterprisePortfolioLocation={id:string;resolved_business_id:string;business_name:string|null;name:string;address:string|null;city:string|null;state:string|null;latitude:number|null;longitude:number|null;place_type:string|null;rating:number|null;review_count:number|null;bathroom_verification_status:string|null;geofence_radius_m:number|null};
+export type EnterprisePortfolioRoute={id:string;business_id:string;business_name:string;name:string;status:string;scheduled_for:string|null;stops_count:number;distance_miles:number|null;estimated_minutes:number|null;vehicle_id:string|null;vehicle_name:string|null;current_lat:number|null;current_lng:number|null;driver_id:string|null;driver_name:string|null};
+export type EnterprisePortfolioAlert={id:string;business_id:string;business_name:string;severity:string;alert_type:string;title:string;details:string|null;status:string;created_at:string};
+export type EnterpriseOperationalPortfolio={business_id:string;summary:{business_count:number;location_count:number;open_route_count:number;open_alert_count:number;active_route_count:number};businesses:EnterprisePortfolioBusiness[];locations:EnterprisePortfolioLocation[];routes:EnterprisePortfolioRoute[];alerts:EnterprisePortfolioAlert[]};
+
+export async function getEnterpriseOperationalPortfolio(businessId:string):Promise<EnterpriseOperationalPortfolio>{const{data,error}=await getKleenestSupabaseClient().rpc('enterprise_operational_portfolio_snapshot',{p_business_id:businessId});if(error)throw error;if(!data||typeof data!=='object')throw new Error('Enterprise portfolio returned no data.');return data as EnterpriseOperationalPortfolio;}
