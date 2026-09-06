@@ -2,12 +2,14 @@ import fs from 'node:fs';
 
 const failures=[];
 const required=[
-  'apps/consumer-mobile/app/_layout.tsx','apps/consumer-mobile/app/index.tsx','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/app/discover.tsx','apps/consumer-mobile/app/progress.tsx','apps/consumer-mobile/app/location/[id].tsx','apps/consumer-mobile/app/profile.tsx','apps/consumer-mobile/app/preferences.tsx','apps/consumer-mobile/app/play.tsx','apps/consumer-mobile/app/social.tsx','apps/consumer-mobile/app/saved.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/app/qr.tsx','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/notifications.tsx','apps/consumer-mobile/app/membership.tsx','apps/consumer-mobile/app/support.tsx','apps/consumer-mobile/app/account-deletion.tsx','packages/mobile-core/src/index.ts','apps/consumer-mobile/package.json','apps/consumer-mobile/app.config.ts'
+  'apps/consumer-mobile/app/_layout.tsx','apps/consumer-mobile/app/index.tsx','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','apps/consumer-mobile/app/discover.tsx','apps/consumer-mobile/app/progress.tsx','apps/consumer-mobile/app/location/[id].tsx','apps/consumer-mobile/app/profile.tsx','apps/consumer-mobile/app/preferences.tsx','apps/consumer-mobile/app/play.tsx','apps/consumer-mobile/app/social.tsx','apps/consumer-mobile/app/saved.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/app/qr.tsx','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/notifications.tsx','apps/consumer-mobile/app/membership.tsx','apps/consumer-mobile/app/support.tsx','apps/consumer-mobile/app/account-deletion.tsx','packages/mobile-core/src/index.ts','apps/consumer-mobile/package.json','apps/consumer-mobile/app.config.ts'
 ];
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing consumer migration file: ${file}`);
 if(!failures.length){
   const read=file=>fs.readFileSync(file,'utf8');
-  const [layout,home,explore,discover,progress,location,profile,preferences,play,social,saved,route,qr,activity,notifications,membership,support,deletion,core,mobilePackage,appConfig]=required.map(read);
+  const [layout,home,exploreEntry,adaptiveExplore,discover,progress,location,profile,preferences,play,social,saved,route,qr,activity,notifications,membership,support,deletion,core,mobilePackage,appConfig]=required.map(read);
+  const explore=`${exploreEntry}\n${adaptiveExplore}`;
+  if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Explore entry must resolve to the canonical adaptive Explore implementation.');
   for(const [name,title] of [['index','Home'],['explore','Explore'],['progress','Progress'],['social','Community'],['profile','Profile']]){
     if(!layout.includes(`name="${name}"`)||!layout.includes(`title:'${title}'`))failures.push(`primary consumer tab missing or renamed: ${title}`);
   }
