@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 const failures=[];
-const files=['apps/consumer-mobile/services/trustDiscoveryControls.ts','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/app/saved.tsx'];
+const files=['apps/consumer-mobile/services/trustDiscoveryControls.ts','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','apps/consumer-mobile/app/saved.tsx'];
 for(const file of files)if(!fs.existsSync(file))failures.push(`missing trust discovery control file: ${file}`);
 if(!failures.length){
-  const [service,explore,saved]=files.map(file=>fs.readFileSync(file,'utf8'));
+  const [service,exploreEntry,adaptiveExplore,saved]=files.map(file=>fs.readFileSync(file,'utf8'));\n  const explore=`${exploreEntry}\n${adaptiveExplore}`;
   for(const token of ["TrustEvidenceFilter='any'|'verified'|'fresh'","TrustSortMode='default'|'evidence'",'hasVerifiedTrustEvidence','hasFreshTrustEvidence','applyTrustDiscoveryControls'])if(!service.includes(token))failures.push(`Trust discovery service missing: ${token}`);
   if(!service.includes("if(sort==='evidence')")||!service.includes('routeTrustScore(b.trust)-routeTrustScore(a.trust)'))failures.push('Evidence sorting must remain an explicit opt-in branch using shared trust scoring.');
   if(!service.includes("filter==='verified'")||!service.includes("filter==='fresh'"))failures.push('Verified and fresh evidence filters must remain explicit.');
@@ -20,7 +20,7 @@ if(!failures.length){
 
   if(explore.includes('applyTrustDiscoveryControls(')||explore.includes('Evidence filter')||explore.includes('Nearby order stays authoritative unless you explicitly choose Evidence.'))failures.push('Explore must stay bathroom-first; advanced evidence filtering/sorting belongs outside the critical finder path.');
   for(const token of ['Find a trusted bathroom.','What matters on this stop?','Start directions','Search a place, address or brand'])if(!explore.includes(token))failures.push(`Explore bathroom-first discovery contract missing ${token}.`);
-  if(!explore.replace(/\s+/g,'').includes('pathname:"/route"'))failures.push('Explore bathroom-first discovery contract missing route handoff.');
+  if(!/pathname:["']\/route["']/.test(explore.replace(/\s+/g,'')))failures.push('Explore bathroom-first discovery contract missing route handoff.');
   if(/rows\.sort\(|setRows\([^)]*sort/i.test(explore+saved))failures.push('Screens must not mutate underlying discovery/saved rows when sorting by evidence.');
 }
 if(failures.length){console.error('Native trust discovery controls audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
