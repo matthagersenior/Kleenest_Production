@@ -13,6 +13,8 @@ const businessLayout=requireFile('apps/business-mobile/app/_layout.tsx');
 const businessQr=requireFile('apps/business-mobile/app/qr-studio.tsx');
 const businessReviews=requireFile('apps/business-mobile/app/reviews.tsx');
 const businessReviewEvidence=requireFile('apps/business-mobile/services/reviews.ts');
+const businessIntelligence=requireFile('apps/business-mobile/app/intelligence.tsx');
+const businessIntelligenceService=requireFile('apps/business-mobile/services/intelligence.ts');
 const businessEnterprise=requireFile('apps/business-mobile/app/enterprise.tsx');
 const businessEnterpriseLocations=requireFile('apps/business-mobile/app/enterprise-locations.tsx');
 const businessSources=[businessIndex,businessLayout];
@@ -26,6 +28,9 @@ must(businessLayout.includes('name="engagement" options={{title:\'Growth\'}}'), 
 requireAll('Business review evidence service',businessReviewEvidence,['mobile_review_evidence','mobile_location_review_evidence','mobile_review_photos_for_reviews','getReviewEvidence','getLocationReviewEvidence','getReviewPhotos']);
 requireAll('Business review evidence UI',businessReviews,['Inspect review evidence','Review photos','Location evidence','Evidence source','Evidence confidence']);
 must(!businessReviews.includes('JSON.stringify('),'Business reviews must render evidence as structured product UI, not raw JSON.');
+requireAll('Business intelligence service',businessIntelligenceService,['get_business_intelligence_authority_bundle','business_growth_cockpit','business_growth_analytics','business_growth_asset_performance','business_benchmark_analytics','business_roi_analytics','business_location_intelligence','business_operations_inventory','business_restroom_prevention_recommendations','business_reverification_queue','business_growth_optimization_history','reporting_build_payload','Promise.allSettled']);
+requireAll('Business intelligence UI',businessIntelligence,['ADVANCED INTELLIGENCE','Ask Kleenest AI','Growth cockpit','ROI & returns','Location intelligence','Recommended actions','Reverification queue','Optimization history','Build 30-day report','Execute','Mark complete']);
+must(!businessIntelligence.includes('JSON.stringify('),'Business intelligence must use structured summaries rather than raw JSON.');
 
 // Standalone Enterprise is a four-mode operating system, not a networks summary. Preserve its portfolio, Fleet, network and intelligence jobs.
 const enterpriseService=requireFile('apps/business-mobile/services/enterprise.ts');
