@@ -1,13 +1,16 @@
 import fs from 'node:fs';
 const failures=[];
-const files=['apps/consumer-mobile/services/nearbyCache.ts','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/notifications.tsx'];
+const files=['apps/consumer-mobile/services/nearbyCache.ts','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/notifications.tsx'];
 for(const file of files)if(!fs.existsSync(file))failures.push(`missing continuity file: ${file}`);
 if(!failures.length){
  const cache=fs.readFileSync(files[0],'utf8');
- const explore=fs.readFileSync(files[1],'utf8');
- const route=fs.readFileSync(files[2],'utf8');
- const activity=fs.readFileSync(files[3],'utf8');
- const notifications=fs.readFileSync(files[4],'utf8');
+ const exploreEntry=fs.readFileSync(files[1],'utf8');
+ const adaptiveExplore=fs.readFileSync(files[2],'utf8');
+ const explore=`${exploreEntry}\n${adaptiveExplore}`;
+ const route=fs.readFileSync(files[3],'utf8');
+ const activity=fs.readFileSync(files[4],'utf8');
+ const notifications=fs.readFileSync(files[5],'utf8');
+ if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Explore entry must resolve to the canonical adaptive Explore implementation.');
  for(const token of ['CONTINUITY_KEY','readNearbyContinuity','writeNearbyContinuity','selectedId','radiusMeters','origin','MAX_AGE_MS'])if(!cache.includes(token))failures.push(`nearby continuity cache missing ${token}`);
  if(!cache.includes("kleenest.native.nearby.continuity.v1")||!cache.includes("kleenest.native.nearby.public.v1"))failures.push('Nearby continuity must remain separate from the public nearby result cache.');
  for(const token of ['readNearbyContinuity','writeNearbyContinuity','preservedId','RefreshControl','keyboardShouldPersistTaps','fallback.origin','cachedAgeLabel(cache.savedAt)','accessibilityRole="radiogroup"'])if(!explore.includes(token))failures.push(`Explore continuity missing ${token}`);
