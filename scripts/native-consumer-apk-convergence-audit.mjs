@@ -3,7 +3,7 @@ import fs from 'node:fs';
 const failures=[];
 const read=file=>fs.readFileSync(file,'utf8');
 const required=[
-  'apps/consumer-mobile/app/preferences.tsx','apps/consumer-mobile/services/push.ts','apps/consumer-mobile/app/notifications.tsx','apps/consumer-mobile/app/_layout.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/app/qr.tsx','apps/consumer-mobile/app/location/[id].tsx','apps/consumer-mobile/services/contributionDraft.ts','apps/consumer-mobile/eas.json','apps/consumer-mobile/app.config.ts','.github/workflows/android-preview.yml'
+  'apps/consumer-mobile/app/preferences.tsx','apps/consumer-mobile/services/push.ts','apps/consumer-mobile/app/notifications.tsx','apps/consumer-mobile/app/_layout.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/app/qr.tsx','apps/consumer-mobile/app/location/[id].tsx','apps/consumer-mobile/services/contributionDraft.ts','apps/consumer-mobile/eas.json','apps/consumer-mobile/app.config.ts','.github/workflows/android-family.yml'
 ];
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing APK convergence file: ${file}`);
 
@@ -24,9 +24,11 @@ if(!failures.length){
   if(eas?.build?.preview?.android?.buildType!=='apk'||eas?.build?.preview?.distribution!=='internal')failures.push('Preview EAS profile must remain an internal Android APK.');
   if(eas?.build?.production?.android?.buildType!=='app-bundle'||eas?.build?.production?.autoIncrement!==true)failures.push('Production EAS profile must remain an auto-incremented Android app bundle.');
   for(const token of ["package: 'com.kleenest.app'","bundleIdentifier: 'com.kleenest.app'","ACCESS_FINE_LOCATION","CAMERA","expo-notifications",projectId])if(!config.includes(token))failures.push(`Native app config missing ${token}`);
-  // The standalone builder now discovers the release APK instead of relying on
-  // Gradle's legacy flat filename and keeps output naming at the artifact level.
-  for(const token of ['Build Consumer Standalone Android APK',`EAS_PROJECT_ID: ${projectId}`,'KLEENEST_STANDALONE_ANDROID: 1','npm run native:typecheck','native-consumer-apk-convergence-audit.mjs','native-consumer-presentation-convergence-audit.mjs','native-device-readiness-audit.mjs','assembleRelease','Locate release APK','Kleenest-Consumer-Standalone-APK','actions/upload-artifact'])if(!androidWorkflow.includes(token))failures.push(`Standalone Android artifact workflow missing ${token}`);
+
+  // The canonical Android family workflow owns verified standalone APKs for all four apps.
+  // Keep the Consumer assertions semantic so a workflow rename does not break CI while
+  // still requiring the release build, package identity, smoke test, and artifact contract.
+  for(const token of ['Build Kleenest App Family Android APKs','app: Consumer','app_dir: apps/consumer-mobile','package_id: com.kleenest.app',`eas_project_id: ${projectId}`,'artifact: Kleenest-Consumer-Standalone-APK','KLEENEST_STANDALONE_ANDROID','product-parity-audit.mjs',"npm run typecheck --workspace '${{ matrix.workspace }}'",'npx expo export --platform android','assembleRelease','Locate and verify release APK','Android 16 startup smoke','actions/upload-artifact'])if(!androidWorkflow.includes(token))failures.push(`Standalone Android family workflow missing ${token}`);
   const prebuildLine=androidWorkflow.split('\n').find(line=>line.includes('npx expo prebuild'))||'';
   for(const token of ['npx expo prebuild','--platform android','--clean'])if(!prebuildLine.includes(token))failures.push(`Standalone Android artifact workflow prebuild missing ${token}`);
   for(const forbidden of ['assembleDebug','app-debug.apk','Build Consumer Android Preview'])if(androidWorkflow.includes(forbidden))failures.push(`Standalone Android artifact workflow must not use development artifact contract ${forbidden}`);

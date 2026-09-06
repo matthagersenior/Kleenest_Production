@@ -1,0 +1,19 @@
+name: EAS Signed Family Repair APKs
+
+# Retained as a manual fallback. The install-ready family workflow now owns
+# parity/typecheck gating, EAS cloud builds, signing verification, and Android
+# startup smoke for Consumer, Business, Fleet, and KleenestOS.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  manual-fallback:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use canonical install-ready workflow
+        run: |
+          echo 'Use Install-Ready Android Family for release candidates.'
+          echo 'This legacy local-build workflow is intentionally disabled from PR automation.'

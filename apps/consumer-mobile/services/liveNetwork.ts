@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { registerNativePush } from './push';
 
@@ -42,6 +42,10 @@ export async function getConsumerLiveNetworkStatus(){
   return{foreground:foreground.status,background:background.status,services,registered,regionCount:Array.isArray((regions as any)?.regions)?(regions as any).regions.length:0};
 }
 
+export async function openConsumerLiveNetworkSettings(){
+  await Linking.openSettings();
+}
+
 export async function refreshConsumerLiveNetworkRegions(){
   const registered=await TaskManager.isTaskRegisteredAsync(CONSUMER_LIVE_NETWORK_TASK).catch(()=>false);
   if(!registered)return{registered:0};
@@ -53,8 +57,9 @@ export async function refreshConsumerLiveNetworkRegions(){
 export async function enableConsumerLiveNetwork(){
   const foreground=await Location.requestForegroundPermissionsAsync();
   if(foreground.status!=='granted')throw new Error('Location permission is required for Live Network nearby-restroom alerts.');
-  const background=await Location.requestBackgroundPermissionsAsync();
-  if(background.status!=='granted')throw new Error('Background location is required for Live Network alerts while Kleenest is not open.');
+  let background=await Location.getBackgroundPermissionsAsync();
+  if(background.status!=='granted'&&Platform.OS!=='android')background=await Location.requestBackgroundPermissionsAsync();
+  if(background.status!=='granted')throw new Error('Background location is off. Open Kleenest location settings, choose Allow all the time, return to Kleenest, then enable Live Network again.');
   await registerNativePush();
   const nearby=await nearbyRegions();
   if(!nearby.length)throw new Error('No nearby restroom locations with valid coordinates are available yet.');

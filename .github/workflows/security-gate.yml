@@ -1,0 +1,76 @@
+name: Security Gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-advisories:
+    name: Dependency advisories
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Resolve the exact workspace dependency graph without running install scripts
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Fail on any published npm security advisory
+        run: npm audit --audit-level=low
+
+  repository-secret-hygiene:
+    name: Repository secret hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reject tracked native credentials and privileged secret patterns
+        shell: bash
+        run: |
+          set -euo pipefail
+          tracked_native="$(git ls-files | grep -Ei '(^|/)(google-services\.json|GoogleService-Info\.plist)$|\.(jks|keystore|p8|p12|mobileprovision)$' || true)"
+          if [ -n "$tracked_native" ]; then
+            echo 'Forbidden native credential/signing files are tracked:' >&2
+            printf '%s\n' "$tracked_native" >&2
+            exit 1
+          fi
+          git check-ignore -q apps/consumer-mobile/google-services.json
+          git check-ignore -q apps/business-mobile/google-services.json
+          git check-ignore -q apps/fleet-mobile/google-services.json
+          git check-ignore -q apps/platform-mobile/google-services.json
+
+          privileged="$(git grep -I -n -E -- '-----BEGIN (RSA |EC |OPENSSH |)?PRIVATE KEY-----|(^|[^A-Za-z0-9_])(sk_live_|rk_live_|whsec_|sb_secret_|service_role[=:]|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,})' -- ':!*.md' ':!docs/**' ':!scripts/**' || true)"
+          if [ -n "$privileged" ]; then
+            echo 'Potential privileged secret material is present in tracked source:' >&2
+            printf '%s\n' "$privileged" >&2
+            exit 1
+          fi
+
+  codeql:
+    name: CodeQL JavaScript/TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:javascript-typescript
