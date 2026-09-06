@@ -80,6 +80,7 @@ jobs:
       CI: '1'
       NODE_ENV: production
       EXPO_NO_TELEMETRY: '1'
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8" -Dorg.gradle.workers.max=2'
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EAS_PROJECT_ID: ${{ matrix.eas_project_id }}
       EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
