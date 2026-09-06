@@ -38,7 +38,7 @@ export default function Layout() {
   return <><StatusBar style="dark"/><Tabs screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute?{display:'none'}:undefined}}>
     <Tabs.Screen name="index" options={{title:'Home'}}/>
     <Tabs.Screen name="locations" options={{title:'Locations'}}/>
-    <Tabs.Screen name="growth" options={{title:'Growth'}}/>
+    <Tabs.Screen name="engagement" options={{title:'Growth'}}/>
     <Tabs.Screen name="operations" options={{title:'Operations'}}/>
     <Tabs.Screen name="analytics" options={{title:'Analytics'}}/>
     <Tabs.Screen name="auth" options={{href:null,title:'Sign in',headerShown:false}}/>
@@ -53,7 +53,7 @@ export default function Layout() {
     <Tabs.Screen name="progression" options={{href:null,title:'Progression'}}/>
     <Tabs.Screen name="intelligence" options={{href:null,title:'Intelligence'}}/>
     <Tabs.Screen name="capabilities" options={{href:null,title:'Capabilities'}}/>
-    <Tabs.Screen name="engagement" options={{href:null,title:'Engagement'}}/>
+    <Tabs.Screen name="growth" options={{href:null,title:'Growth Summary'}}/>
     <Tabs.Screen name="prevention" options={{href:null,title:'Prevention'}}/>
     <Tabs.Screen name="trust-operations" options={{href:null,title:'Trust Operations'}}/>
     <Tabs.Screen name="governance" options={{href:null,title:'Governance'}}/>
