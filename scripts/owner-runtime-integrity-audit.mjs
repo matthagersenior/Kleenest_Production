@@ -7,6 +7,9 @@ const requireFile=path=>{must(fs.existsSync(path),`missing Owner runtime contrac
 const requireAll=(label,source,tokens)=>{for(const token of tokens)must(source.includes(token),`${label}: missing ${token}`)};
 
 const messaging=requireFile('apps/platform-mobile/app/notifications.tsx');
+const push=requireFile('apps/platform-mobile/services/push.ts');
+const appConfig=requireFile('apps/platform-mobile/app.config.ts');
+const androidFamily=requireFile('.github/workflows/android-family.yml');
 const home=requireFile('apps/platform-mobile/app/index.tsx');
 const capabilities=requireFile('apps/platform-mobile/app/capabilities.tsx');
 const ownerAdmin=requireFile('apps/platform-mobile/services/ownerAdmin.ts');
@@ -23,6 +26,25 @@ requireAll('Owner Messaging crash containment',messaging,[
   'Loading Live Network messaging',
 ]);
 must(!messaging.includes("import { registerRolePush } from '../services/push'"),'Owner Messaging must not eagerly initialize the native notifications module on route import.');
+requireAll('Owner push native safety',push,[
+  "nativePushConfigured=Constants.expoConfig?.extra?.nativePushConfigured===true",
+  "Platform.OS==='android'&&!nativePushConfigured",
+  "status:'unconfigured'",
+  'The app stayed open safely',
+  'getExpoPushTokenAsync',
+]);
+requireAll('Owner push build contract',appConfig,[
+  "KLEENEST_NATIVE_PUSH_CONFIGURED==='1'",
+  "googleServicesFile:'./google-services.json'",
+  'nativePushConfigured',
+]);
+requireAll('Owner Firebase CI wiring',androidFamily,[
+  'Configure KleenestOS Firebase services',
+  'OWNER_GOOGLE_SERVICES_JSON_BASE64',
+  'com.kleenest.platform',
+  'KLEENEST_NATIVE_PUSH_CONFIGURED=1',
+  'KLEENEST_NATIVE_PUSH_CONFIGURED=0',
+]);
 
 requireAll('Owner telemetry presentation',home,[
   'getIngestionControlSnapshot',
@@ -82,4 +104,4 @@ requireAll('Owner Android route smoke',smoke,[
 ]);
 
 if(failures.length){console.error(`Owner runtime integrity audit failed with ${failures.length} gap(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
-console.log('Owner runtime integrity audit passed: live telemetry, audit RPC compatibility, capability execution semantics, Messaging crash containment and Android route smoke are protected.');
+console.log('Owner runtime integrity audit passed: live telemetry, audit RPC compatibility, capability execution semantics, Messaging crash containment, native push safety and Android route smoke are protected.');
