@@ -3,7 +3,7 @@ import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
-import { buildMobileRoute, findAdaptiveNearbyRestrooms, listRestroomsAlongRoute, type AmenityMatchRule } from '@kleenest/mobile-core';
+import { buildMobileRoute, findAdaptiveNearbyRestrooms, listNearbyRestrooms, listRestroomsAlongRoute, type AmenityMatchRule } from '@kleenest/mobile-core';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { listAmenityCatalog, type AmenityCatalogItem } from '../services/amenities';
@@ -24,7 +24,7 @@ const hasCoordinates=(row:any)=>Number.isFinite(Number(row?.latitude))&&Number.i
 const miles=(meters:any)=>Number.isFinite(Number(meters))?Number(meters)/1609.344:null;
 const distanceLabel=(meters:any)=>{const value=miles(meters);return value==null?'—':`${value.toFixed(value<10?1:0)} mi`};
 const radiusLabel=(meters:number)=>`${Math.round(meters/1609.344)} mi`;
-const directionsUrl=(row:any)=>`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${row.latitude},${row.longitude}`)}&travelmode=driving`;
+const navigateUrl=(row:any)=>`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${row.latitude},${row.longitude}`)}&travelmode=driving`;
 function freshnessLabel(value:string|null|undefined){if(!value)return'Not recently verified';const days=Math.max(0,Math.round((Date.now()-new Date(value).getTime())/86400000));return days===0?'Verified today':`Verified ${days} day${days===1?'':'s'} ago`}
 
 function ResultCard({item,selected,onSelect,route}:{item:any;selected:boolean;onSelect:()=>void;route:any}){
@@ -62,13 +62,23 @@ export default function AdaptiveExploreScreen(){
   async function loadNearby(){
     const current=await currentLocation();
     const query=search.trim();
-    const result=await findAdaptiveNearbyRestrooms({latitude:current.coords.latitude,longitude:current.coords.longitude,requestedRadiusMeters:radius,maxRadiusMeters:maxRadius,search:query,amenityNames:selectedAmenityNames,amenityMatch:matchRule,autoExpand,targetCount:3,limit:30});
+    let result:any;
+    let usedMatureFallback=false;
+    try{
+      result=await findAdaptiveNearbyRestrooms({latitude:current.coords.latitude,longitude:current.coords.longitude,requestedRadiusMeters:radius,maxRadiusMeters:maxRadius,search:query,amenityNames:selectedAmenityNames,amenityMatch:matchRule,autoExpand,targetCount:3,limit:30});
+    }catch(error){
+      if(matchRule!=='all')throw error;
+      const legacyRows=await listNearbyRestrooms(current.coords.latitude,current.coords.longitude,radius,query,selectedAmenityNames);
+      result={rows:legacyRows,requestedRadiusMeters:radius,effectiveRadiusMeters:radius,attemptedRadiiMeters:[radius],expanded:false};
+      usedMatureFallback=true;
+    }
     const enriched=await enrich(result.rows);
     setRows(enriched);setRoute(null);setEffectiveRadiusMeters(result.effectiveRadiusMeters);setAttemptedRadiiMeters(result.attemptedRadiiMeters);setCached(false);
     const kept=selectedId&&enriched.some(row=>idOf(row)===selectedId)?selectedId:'';setSelectedId(kept);
     captureConsumerDiscovery({latitude:current.coords.latitude,longitude:current.coords.longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:enriched.length,search:query,amenityCount:selectedAmenityNames.length});
     if(!query&&!selectedAmenityNames.length&&!result.expanded&&enriched.length)void writeNearbyCache(enriched,{selectedId:kept,origin:[current.coords.longitude,current.coords.latitude],radiusMeters:radius});
-    if(result.expanded)setMessage(enriched.length?`No sufficient match set within ${radiusLabel(result.requestedRadiusMeters)}. Expanded through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')} and found ${enriched.length} qualifying location${enriched.length===1?'':'s'}.`:`No qualifying locations found after expanding through ${radiusLabel(result.effectiveRadiusMeters)}.`);
+    if(usedMatureFallback)setMessage(enriched.length?`${enriched.length} nearby bathroom${enriched.length===1?'':'s'} found using the proven nearby search path while adaptive discovery recovers.`:'No bathrooms matched the current nearby search.');
+    else if(result.expanded)setMessage(enriched.length?`No sufficient match set within ${radiusLabel(result.requestedRadiusMeters)}. Expanded through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')} and found ${enriched.length} qualifying location${enriched.length===1?'':'s'}.`:`No qualifying locations found after expanding through ${radiusLabel(result.effectiveRadiusMeters)}.`);
     else setMessage(enriched.length?`${enriched.length} qualifying bathroom${enriched.length===1?'':'s'} within ${radiusLabel(result.effectiveRadiusMeters)}.`:`No qualifying bathrooms found within ${radiusLabel(result.effectiveRadiusMeters)}.`);
   }
   async function loadRoute(){
@@ -84,7 +94,7 @@ export default function AdaptiveExploreScreen(){
   async function load(){if(loading)return;setLoading(true);setMessage(mode==='nearby'?'Searching nearby…':'Building route and searching its corridor…');try{if(mode==='nearby')await loadNearby();else await loadRoute()}catch(error:any){if(mode==='nearby'&&!search.trim()&&!selectedAmenityNames.length){const fallback=await readNearbyCache();if(fallback?.rows?.length){setRows(fallback.rows);if(fallback.origin)setOrigin(fallback.origin);setCached(true);setMessage(`Live search failed. Showing cached nearby bathrooms from ${cachedAgeLabel(fallback.savedAt)}.`);setLoading(false);return}}setRows([]);setRoute(null);setMessage(error?.message||'Bathroom search failed.')}finally{setLoading(false)}}
   function selectRow(row:any){const id=idOf(row);setSelectedId(id);if(mode==='nearby')void writeNearbyContinuity(id,radius)}
   function addToRoute(row:any){const id=idOf(row);if(!id)return;captureConsumerRouteIntent(id);router.push({pathname:'/route',params:{add:id}})}
-  async function directions(row:any){const id=idOf(row);if(id)captureConsumerRouteIntent(id);await Linking.openURL(directionsUrl(row))}
+  async function directions(row:any){const id=idOf(row);if(id)captureConsumerRouteIntent(id);await Linking.openURL(navigateUrl(row))}
 
   useEffect(()=>{listAmenityCatalog().then(setAmenities).catch(()=>{});let active=true;Promise.all([readNearbyCache(),readNearbyContinuity()]).then(([cache,continuity])=>{if(!active)return;if(continuity?.radiusMeters&&radiusChoices.some(c=>c.meters===continuity.radiusMeters))setRadius(continuity.radiusMeters);if(cache?.rows?.length){setRows(cache.rows);if(cache.origin)setOrigin(cache.origin);setCached(true);setMessage(`Showing your last nearby bathrooms from ${cachedAgeLabel(cache.savedAt)} while current results load.`)}}).finally(()=>{if(active)void load()});return()=>{active=false}},[]);
 
