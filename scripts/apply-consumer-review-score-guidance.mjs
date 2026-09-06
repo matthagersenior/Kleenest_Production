@@ -40,7 +40,7 @@ replaceOnce(
 
 replaceOnce(
   "  async function submit(){if(submitting||!checkInId)return;setSubmitting(true);try{const starValue=Number(stars),cleanValue=cleanliness===''?null:Number(cleanliness);if(!Number.isInteger(starValue)||starValue<1||starValue>5)throw new Error('Stars must be a whole number from 1 to 5.');if(cleanValue!=null&&(!Number.isFinite(cleanValue)||cleanValue<0||cleanValue>100))throw new Error('Cleanliness must be from 0 to 100.');",
-  "  async function submit(){if(submitting||!checkInId||!reviewScoresValid)return;setSubmitting(true);try{const starValue=Number(stars),cleanValue=Number(cleanliness);if(!Number.isInteger(starValue)||starValue<1||starValue>5)throw new Error('Choose a rating from 1 to 5.');if(!Number.isInteger(cleanValue)||cleanValue<0||cleanValue>100)throw new Error('Cleanliness is required and must be a whole number from 0 to 100.');",
+  "  async function submit(){if(submitting||!checkInId)return;if(!reviewScoresValid)return;setSubmitting(true);try{const starValue=Number(stars),cleanValue=Number(cleanliness);if(!Number.isInteger(starValue)||starValue<1||starValue>5)throw new Error('Choose a rating from 1 to 5.');if(!Number.isInteger(cleanValue)||cleanValue<0||cleanValue>100)throw new Error('Cleanliness is required and must be a whole number from 0 to 100.');",
   'required bounded submit validation'
 );
 
