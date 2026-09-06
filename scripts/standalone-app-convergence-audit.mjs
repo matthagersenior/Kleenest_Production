@@ -5,11 +5,14 @@ const read=path=>fs.existsSync(path)?fs.readFileSync(path,'utf8'):'';
 const must=(ok,message)=>{if(!ok)failures.push(message)};
 const requireFile=path=>{must(fs.existsSync(path),`missing converged app route: ${path}`);return read(path)};
 const discover=(label,route,sources)=>must(sources.some(source=>source.includes(route)),`${label} exists but is not discoverable from its canonical app workflow: ${route}`);
+const requireAll=(label,source,tokens)=>{for(const token of tokens)must(source.includes(token),`${label}: missing ${token}`)};
 
 // Business standalone capability inventory -> Production Business app.
 const businessIndex=requireFile('apps/business-mobile/app/index.tsx');
 const businessLayout=requireFile('apps/business-mobile/app/_layout.tsx');
 const businessQr=requireFile('apps/business-mobile/app/qr-studio.tsx');
+const businessEnterprise=requireFile('apps/business-mobile/app/enterprise.tsx');
+const businessEnterpriseLocations=requireFile('apps/business-mobile/app/enterprise-locations.tsx');
 const businessSources=[businessIndex,businessLayout];
 const businessRoutes=[
  'assistant','auth','capabilities','engagement','enterprise-economy','enterprise-locations','enterprise','governance','intelligence','live-network','locations','members','notifications','prevention','profile','progression','qr-designer','qr-studio','reviews','trust-operations'
@@ -18,6 +21,24 @@ for(const route of businessRoutes)requireFile(`apps/business-mobile/app/${route}
 for(const route of ['assistant','capabilities','engagement','enterprise-economy','enterprise-locations','enterprise','governance','intelligence','live-network','locations','members','notifications','prevention','profile','progression','qr-studio','reviews','trust-operations'])discover('Business',`/${route}`,businessSources);
 discover('Business QR visual designer','/qr-designer',[businessIndex,businessQr,businessLayout]);
 must(businessLayout.includes('name="engagement" options={{title:\'Growth\'}}'), 'Business Growth tab must resolve to the full engagement CRUD surface.');
+
+// Standalone Enterprise is a four-mode operating system, not a networks summary. Preserve its portfolio, Fleet, network and intelligence jobs.
+const enterpriseService=requireFile('apps/business-mobile/services/enterprise.ts');
+const enterprisePortfolioService=requireFile('apps/business-mobile/services/enterprisePortfolio.ts');
+requireAll('Business Enterprise service authority',enterpriseService,[
+ 'enterprise_control_plane_snapshot','enterprise_list_owned_networks','enterprise_list_partner_businesses','enterprise_list_network_members','enterprise_list_network_campaigns',
+ 'create_enterprise_partner_network','enterprise_update_network','enterprise_delete_network','invite_enterprise_partner','set_enterprise_partner_status',
+ 'create_enterprise_partner_campaign','enterprise_update_campaign','activate_enterprise_partner_campaign','pause_enterprise_partner_campaign','enterprise_delete_campaign',
+ 'record_enterprise_partner_campaign_outcome','get_partner_campaign_roi','get_partner_network_benchmark','get_partner_allocation_roi'
+]);
+requireAll('Business Enterprise operational portfolio authority',enterprisePortfolioService,['enterprise_operational_portfolio_snapshot']);
+requireAll('Business Enterprise operating modes',businessEnterprise,['Overview','Operations','Network','Intelligence']);
+requireAll('Business Enterprise portfolio operations',businessEnterprise,['Portfolio businesses','Portfolio readiness','Fleet command','Operational alerts','Location network']);
+requireAll('Business Enterprise network operations',businessEnterprise,['Create partner network','Invite partner business','Campaign ROI','Record partner outcome']);
+requireAll('Business Enterprise intelligence',businessEnterprise,['Allocation ROI','Enterprise analytics','Open Economy']);
+requireAll('Business Enterprise Location portfolio',businessEnterpriseLocations,['Managed locations','Location intelligence','Active QR assets','Remaining Growth slots']);
+requireAll('Business Enterprise Location actions',businessEnterpriseLocations,['Manage location','QR Studio','Reviews','Advanced Intelligence','Campaign engagement','Trust operations','Preventive operations','Notify customers/team']);
+requireAll('Business Enterprise Location metrics',businessEnterpriseLocations,['30-day searches','30-day location views','30-day check-ins','30-day reviews']);
 
 // Fleet standalone capability inventory -> Production Fleet app. Standalone intelligence is canonically named insights in Production.
 const fleetIndex=requireFile('apps/fleet-mobile/app/index.tsx');
