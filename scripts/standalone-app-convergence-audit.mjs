@@ -11,6 +11,8 @@ const requireAll=(label,source,tokens)=>{for(const token of tokens)must(source.i
 const businessIndex=requireFile('apps/business-mobile/app/index.tsx');
 const businessLayout=requireFile('apps/business-mobile/app/_layout.tsx');
 const businessQr=requireFile('apps/business-mobile/app/qr-studio.tsx');
+const businessReviews=requireFile('apps/business-mobile/app/reviews.tsx');
+const businessReviewEvidence=requireFile('apps/business-mobile/services/reviews.ts');
 const businessEnterprise=requireFile('apps/business-mobile/app/enterprise.tsx');
 const businessEnterpriseLocations=requireFile('apps/business-mobile/app/enterprise-locations.tsx');
 const businessSources=[businessIndex,businessLayout];
@@ -21,6 +23,9 @@ for(const route of businessRoutes)requireFile(`apps/business-mobile/app/${route}
 for(const route of ['assistant','capabilities','engagement','enterprise-economy','enterprise-locations','enterprise','governance','intelligence','live-network','locations','members','notifications','prevention','profile','progression','qr-studio','reviews','trust-operations'])discover('Business',`/${route}`,businessSources);
 discover('Business QR visual designer','/qr-designer',[businessIndex,businessQr,businessLayout]);
 must(businessLayout.includes('name="engagement" options={{title:\'Growth\'}}'), 'Business Growth tab must resolve to the full engagement CRUD surface.');
+requireAll('Business review evidence service',businessReviewEvidence,['mobile_review_evidence','mobile_location_review_evidence','mobile_review_photos_for_reviews','getReviewEvidence','getLocationReviewEvidence','getReviewPhotos']);
+requireAll('Business review evidence UI',businessReviews,['Inspect review evidence','Review photos','Location evidence','Evidence source','Evidence confidence']);
+must(!businessReviews.includes('JSON.stringify('),'Business reviews must render evidence as structured product UI, not raw JSON.');
 
 // Standalone Enterprise is a four-mode operating system, not a networks summary. Preserve its portfolio, Fleet, network and intelligence jobs.
 const enterpriseService=requireFile('apps/business-mobile/services/enterprise.ts');
