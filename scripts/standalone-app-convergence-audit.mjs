@@ -62,10 +62,25 @@ requireAll('Fleet Enterprise authority',fleetEnterpriseService,['getEnterpriseOp
 const ownerIndex=requireFile('apps/platform-mobile/app/index.tsx');
 const ownerLayout=requireFile('apps/platform-mobile/app/_layout.tsx');
 const ownerModeration=requireFile('apps/platform-mobile/app/moderation.tsx');
+const ownerAccess=requireFile('apps/platform-mobile/app/access.tsx');
+const ownerBusinesses=requireFile('apps/platform-mobile/app/businesses.tsx');
+const ownerProgression=requireFile('apps/platform-mobile/app/progression.tsx');
+const ownerOperations=requireFile('apps/platform-mobile/app/operations.tsx');
+const ownerAdmin=requireFile('apps/platform-mobile/services/ownerAdmin.ts');
+const ownerEconomy=requireFile('apps/platform-mobile/services/ownerEconomy.ts');
+const ownerControl=requireFile('apps/platform-mobile/services/controlPlane.ts');
 const ownerRoutes=['access','audit','auth','businesses','capabilities','data','index','intelligence','moderation','operations','progression','reports'];
 for(const route of ownerRoutes)requireFile(`apps/platform-mobile/app/${route}.tsx`);
 for(const route of ['access','audit','businesses','capabilities','data','intelligence','moderation','operations','progression'])discover('KleenestOS',`/${route}`,[ownerIndex,ownerLayout]);
 must(ownerModeration.includes('Review reports')&&ownerModeration.includes('User safety reports')&&ownerModeration.includes('AI response reports'),'KleenestOS moderation must subsume the standalone Reports surface without losing report queues.');
+requireAll('KleenestOS authorization',ownerAdmin,['admin_authorization_v1','getOwnerAuthorization','requirePlatformOwner','admin_user_search','admin_set_user_access']);
+requireAll('KleenestOS economy authority',ownerEconomy,['owner_progression_platform_snapshot','owner_progression_xp_action_catalog','owner_update_progression_xp_action','owner_progression_objective_list','owner_progression_objective_upsert','owner_progression_objective_set_status','owner_progression_objective_delete','owner_progression_supply_status']);
+requireAll('KleenestOS operations authority',ownerControl,['owner_ingestion_control_snapshot','admin_set_national_ingestion_resume_authorization']);
+requireAll('KleenestOS access UI',ownerAccess,['Search','subscription','admin','Audit reason']);
+requireAll('KleenestOS business UI',ownerBusinesses,['Fleet enabled','Enterprise enabled','Add member','Remove member']);
+requireAll('KleenestOS economy UI',ownerProgression,['Economy & Progression Studio','Evidence tiers','Level distribution','Objective mix','Progression supply','Create objective','Archive objective','Delete objective']);
+requireAll('KleenestOS operations UI',ownerOperations,['National ingestion control','Run one cycle','Repair stalled cells','Authorize resume','Storage guard','Source policies & quotas','Priority & coverage queue']);
+requireAll('KleenestOS command center',ownerIndex,['Needs attention','ECONOMY PULSE','Open Economy','Database','Disk observed','Native push','Integrity','Subsystem degraded','No active owner actions']);
 
 if(failures.length){
  console.error(`Standalone app convergence audit failed with ${failures.length} gap(s):`);
