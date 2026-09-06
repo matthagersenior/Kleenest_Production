@@ -2,7 +2,7 @@ name: Publish Consumer Standalone Installer
 
 on:
   workflow_run:
-    workflows: ["Build Consumer Standalone Android APK"]
+    workflows: ["Build Kleenest App Family Android APKs"]
     types: [completed]
 
 permissions:
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   publish:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    if: github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion != 'cancelled'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -38,21 +38,23 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
           EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
         run: npm run web:export --workspace @kleenest/consumer-mobile
-      - name: Download verified standalone APK from triggering run
+      - name: Download verified Consumer APK from triggering family run
         uses: actions/download-artifact@v4
         with:
           name: Kleenest-Consumer-Standalone-APK
           path: installer
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
-      - name: Publish direct installer alongside web app
+      - name: Publish direct installer and legal resources alongside web app
         run: |
+          set -euo pipefail
           test -s installer/Kleenest-Consumer.apk
           cp installer/Kleenest-Consumer.apk apps/consumer-mobile/dist/Kleenest-Consumer.apk
           mkdir -p apps/consumer-mobile/dist/legal
           cp public/legal/*.html apps/consumer-mobile/dist/legal/
-          test -s apps/consumer-mobile/dist/legal/privacy.html
-          test -s apps/consumer-mobile/dist/legal/account-deletion.html
+          for legal in privacy account-deletion terms community-guidelines; do
+            test -s "apps/consumer-mobile/dist/legal/${legal}.html"
+          done
           cp apps/consumer-mobile/dist/index.html apps/consumer-mobile/dist/404.html
           touch apps/consumer-mobile/dist/.nojekyll
           sha256sum apps/consumer-mobile/dist/Kleenest-Consumer.apk > apps/consumer-mobile/dist/Kleenest-Consumer.apk.sha256
@@ -60,6 +62,6 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/consumer-mobile/dist
-      - name: Deploy Consumer web app and direct APK
+      - name: Deploy Consumer web app, legal resources, and direct APK
         id: deployment
         uses: actions/deploy-pages@v4
