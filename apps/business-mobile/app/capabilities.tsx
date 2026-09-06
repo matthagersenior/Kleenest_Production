@@ -1,71 +1,37 @@
 import { Link } from 'expo-router';
 import { useEffect,useState } from 'react';
-import { RefreshControl,ScrollView,StyleSheet,Text,View } from 'react-native';
+import { Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { currentBusinessId } from '../services/capabilityWorkflows';
 import { getBusinessCapabilityState } from '../services/control';
+import { createPartnerProgram,createPartnership,deletePartnerProgram,deletePartnership,getBusinessParityBundle,listPartnerPrograms,listPartnerships,updatePartnerProgram,updatePartnership,type BusinessParityBundle } from '../services/parity';
 
-function rows(value:any):any[]{
-  if(Array.isArray(value))return value;
-  if(Array.isArray(value?.capabilities))return value.capabilities;
-  if(value&&typeof value==='object')return Object.entries(value).map(([key,val])=>({key,value:val}));
-  return [];
-}
-
+type Row=Record<string,any>;
+function rows(value:any):Row[]{if(Array.isArray(value))return value.filter(item=>item&&typeof item==='object');if(Array.isArray(value?.capabilities))return value.capabilities;if(value&&typeof value==='object')return Object.entries(value).map(([key,item])=>({key,value:item}));return[]}
+const idOf=(row:Row)=>String(row.id||row.partner_program_id||row.partnership_id||'');
+const labelOf=(row:Row,fallback:string)=>String(row.name||row.title||row.program_name||fallback);
+function scalar(value:any){if(value==null)return null;if(typeof value==='boolean')return value?'Yes':'No';if(typeof value==='number')return Number.isInteger(value)?value.toLocaleString():value.toFixed(2);if(typeof value==='string')return value.length>90?`${value.slice(0,87)}…`:value;return null}
+function summarize(value:any){if(Array.isArray(value))return `${value.length} record${value.length===1?'':'s'}`;if(!value||typeof value!=='object')return scalar(value)||'No current signal';const facts=Object.entries(value).flatMap(([key,item])=>{const text=scalar(item);return text?[`${key.replaceAll('_',' ')}: ${text}`]:[]}).slice(0,4);return facts.length?facts.join(' · '):`${Object.keys(value).length} structured section${Object.keys(value).length===1?'':'s'}`}
 export default function Capabilities(){
-  const[data,setData]=useState<any>(null);
-  const[busy,setBusy]=useState(false);
-  const[message,setMessage]=useState('Loading capability contract…');
-
-  async function load(){
-    setBusy(true);
-    try{
-      const id=await currentBusinessId();
-      const next=await getBusinessCapabilityState(id);
-      setData(next);
-      setMessage(next.partial?'Some capability evidence is temporarily unavailable.':'');
-    }catch(e:any){
-      setMessage(e?.message||'Business capabilities are unavailable.');
-    }finally{
-      setBusy(false);
-    }
-  }
-
-  useEffect(()=>{void load()},[]);
-  const matrix=rows(data?.matrix);
-  const enabled=matrix.filter(row=>row.enabled===true||row.allowed===true||row.value===true).length;
-
-  return <ScrollView refreshControl={<RefreshControl refreshing={busy} onRefresh={load}/>} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={s.page}>
-    <View style={s.hero}>
-      <Text style={s.kicker}>CAPABILITY CONTROL PLANE</Text>
-      <Text style={s.title}>Plan × role × workspace.</Text>
-      <Text style={s.body}>Purchased entitlements decide what the organization has. Your Business role decides what you may operate. Supabase remains authoritative for every mutation.</Text>
-      <View style={s.links}>
-        <Link href="/workspaces" style={s.link}>Workspace</Link>
-        <Link href="/members" style={s.link}>People & roles</Link>
-        <Link href="/profile" style={s.link}>Business profile</Link>
-        <Link href="/enterprise" style={s.link}>Enterprise</Link>
-      </View>
-    </View>
-    {message?<Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text>:null}
-    <View style={s.metrics}><Metric label="Capability entries" value={matrix.length}/><Metric label="Enabled" value={enabled}/></View>
-    <View style={s.card}><Text style={s.cardTitle}>Qualification</Text><Text style={s.meta}>{qualificationText(data?.qualification)}</Text></View>
-    <Text style={s.section}>Effective capabilities</Text>
-    {matrix.map((row,index)=>{
-      const name=String(row.capability||row.code||row.key||row.name||`Capability ${index+1}`);
-      const value=row.enabled??row.allowed??row.granted??row.value;
-      return <View key={`${name}-${index}`} style={s.cap}>
-        <View style={{flex:1}}><Text style={s.capTitle}>{name.replaceAll('_',' ')}</Text><Text style={s.meta}>{String(row.description||row.reason||row.plan||row.tier||'Canonical Business capability')}</Text></View>
-        <View style={[s.pill,value===false&&s.pillOff]}><Text style={[s.pillText,value===false&&s.pillTextOff]}>{value===false?'LOCKED':value===true?'ACTIVE':'INFO'}</Text></View>
-      </View>;
-    })}
-  </ScrollView>;
-}
-
-function qualificationText(value:any){
-  if(!value)return 'No qualification details were returned for this workspace.';
-  if(Array.isArray(value))return value.map(row=>String(row.message||row.reason||row.status||row.name||'')).filter(Boolean).join(' · ')||`${value.length} qualification records`;
-  if(typeof value==='object')return [value.plan,value.tier,value.status,value.reason,value.message].filter(Boolean).join(' · ')||'Qualification evidence is available.';
-  return String(value);
-}
-function Metric({label,value}:{label:string;value:number}){return <View style={s.metric}><Text style={s.metricValue}>{value}</Text><Text style={s.meta}>{label}</Text></View>}
-const s=StyleSheet.create({page:{padding:18,gap:10,backgroundColor:'#f3f6f4',paddingBottom:60},hero:{backgroundColor:'#173f2d',borderRadius:24,padding:20,gap:8},kicker:{fontSize:10,fontWeight:'900',letterSpacing:1.4,color:'#c8ead7'},title:{fontSize:28,fontWeight:'900',color:'#fff'},body:{fontSize:14,lineHeight:21,color:'#deebe4'},links:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:4},link:{backgroundColor:'#edf3ef',color:'#173f2d',fontWeight:'900',paddingHorizontal:10,paddingVertical:8,borderRadius:999},message:{fontWeight:'700',color:'#596b61'},metrics:{flexDirection:'row',gap:8,flexWrap:'wrap'},metric:{minWidth:'46%',flexGrow:1,backgroundColor:'#fff',borderRadius:16,padding:13,borderWidth:1,borderColor:'#dbe5de'},metricValue:{fontSize:22,fontWeight:'900',color:'#173f2d'},meta:{fontSize:12,lineHeight:18,color:'#65756b'},card:{backgroundColor:'#fff',borderRadius:18,padding:15,gap:7,borderWidth:1,borderColor:'#dbe5de'},cardTitle:{fontSize:17,fontWeight:'900',color:'#102218'},section:{fontSize:21,fontWeight:'900',color:'#102218',marginTop:4},cap:{backgroundColor:'#fff',borderRadius:16,padding:13,borderWidth:1,borderColor:'#dbe5de',flexDirection:'row',gap:9,alignItems:'center'},capTitle:{fontSize:15,fontWeight:'900',color:'#102218'},pill:{backgroundColor:'#e7f2eb',paddingHorizontal:9,paddingVertical:6,borderRadius:999},pillOff:{backgroundColor:'#f6eaea'},pillText:{fontSize:10,fontWeight:'900',color:'#21613d'},pillTextOff:{color:'#8b3434'}});
+ const[businessId,setBusinessId]=useState(''),[state,setState]=useState<any>(null),[bundle,setBundle]=useState<BusinessParityBundle|null>(null),[programs,setPrograms]=useState<Row[]>([]),[partnerships,setPartnerships]=useState<Row[]>([]),[programName,setProgramName]=useState('Kleenest partner program'),[partnershipName,setPartnershipName]=useState('Kleenest partner relationship'),[busy,setBusy]=useState<string|null>('load'),[message,setMessage]=useState('Loading capability control plane…');
+ async function load(){setBusy('load');try{const id=businessId||await currentBusinessId();setBusinessId(id);const[nextState,nextBundle,nextPrograms,nextPartnerships]=await Promise.all([getBusinessCapabilityState(id),getBusinessParityBundle(id,30),listPartnerPrograms(),listPartnerships(id)]);setState(nextState);setBundle(nextBundle);setPrograms(rows(nextPrograms));setPartnerships(rows(nextPartnerships));setMessage(nextState.partial||nextBundle.errors.length?`Some capability sources are degraded; ${nextBundle.errors.length} analytics section${nextBundle.errors.length===1?'':'s'} reported an error.`:'')}catch(e:any){setMessage(e?.message||'Business capabilities are unavailable.')}finally{setBusy(null)}}
+ useEffect(()=>{void load()},[]);
+ async function run(key:string,fn:()=>Promise<unknown>,ok:string){setBusy(key);try{await fn();setMessage(ok);await load()}catch(e:any){setMessage(e?.message||'Capability action failed.')}finally{setBusy(null)}}
+ const matrix=rows(state?.matrix),enabled=matrix.filter(row=>row.enabled===true||row.allowed===true||row.value===true).length;
+ return <ScrollView refreshControl={<RefreshControl refreshing={busy==='load'} onRefresh={load}/>} keyboardShouldPersistTaps="handled" contentInsetAdjustmentBehavior="automatic" contentContainerStyle={s.page}>
+  <View style={s.hero}><Text style={s.kicker}>SUPABASE → BUSINESS PARITY</Text><Text style={s.title}>Capability control plane</Text><Text style={s.body}>Live canonical analytics, funnels, partner programs, progression, rankings, remediation and reliability. Purchased entitlements and Business roles still govern every mutation server-side.</Text><View style={s.links}><Link href="/workspaces" style={s.link}>Workspace</Link><Link href="/members" style={s.link}>People & roles</Link><Link href="/enterprise" style={s.link}>Enterprise</Link></View></View>{message?<Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text>:null}
+  <View style={s.metrics}><Metric label="Capability entries" value={matrix.length}/><Metric label="Enabled" value={enabled}/><Metric label="Parity errors" value={bundle?.errors.length||0}/><Metric label="Partner programs" value={programs.length}/></View>
+  <View style={s.card}><Text style={s.cardTitle}>Qualification</Text><Text style={s.meta}>{qualificationText(state?.qualification)}</Text></View>
+  <Section title="Analytics fabric" subtitle="Visitors, reviews, promotions, campaigns, events, QR, media, amenities, occupancy, rewards and summary"><Structured value={bundle?.analytics}/></Section>
+  <Section title="Attribution & growth funnels" subtitle="Canonical attribution, engagement and recommended growth actions"><Structured value={bundle?.funnels}/></Section>
+  <Section title="Community economy" subtitle="Progression engagement and Business/cross-tier rankings"><Structured value={{progression:bundle?.progression,leaderboards:bundle?.leaderboards}}/></Section>
+  <Section title="Trust & remediation operations" subtitle="Reverification, remediation, reliability and remediation performance"><Structured value={bundle?.operations}/></Section>
+  <Section title="Partner intelligence" subtitle="Partner analytics and preferred-location network state"><Structured value={bundle?.partner}/></Section>
+  <Section title="Partner program management" subtitle="Create, enable/disable and remove canonical partner programs"><View style={s.inner}><TextInput color="#132b21" placeholderTextColor="#78877f" value={programName} onChangeText={setProgramName} style={s.input} placeholder="Partner program name"/><Action label={busy==='program:create'?'Creating…':'Create partner program'} disabled={Boolean(busy)||!programName.trim()} onPress={()=>run('program:create',()=>createPartnerProgram(businessId,programName.trim()),'Partner program created.')}/></View>{programs.length?programs.map((program,index)=>{const id=idOf(program),enabled=program.enabled!==false;return <View key={id||String(index)} style={s.inner}><Text style={s.cardTitle}>{labelOf(program,'Partner program')}</Text><Text style={s.meta}>{enabled?'Enabled':'Disabled'} · {program.preferred_access===true?'preferred access':'standard access'}</Text><View style={s.actions}><Action quiet label={enabled?'Disable':'Enable'} disabled={Boolean(busy)||!id} onPress={()=>run(`program:${id}`,()=>updatePartnerProgram(businessId,id,labelOf(program,'Partner program'),!enabled),'Partner program updated.')}/><Action danger label="Delete" disabled={Boolean(busy)||!id} onPress={()=>run(`program:delete:${id}`,()=>deletePartnerProgram(businessId,id),'Partner program deleted.')}/></View></View>}):<Text style={s.meta}>No partner programs yet.</Text>}</Section>
+  <Section title="Partnerships" subtitle="Business-to-business relationships that feed preferred access and network intelligence"><View style={s.inner}><TextInput color="#132b21" placeholderTextColor="#78877f" value={partnershipName} onChangeText={setPartnershipName} style={s.input} placeholder="Partnership name"/><Action label="Create partnership" disabled={Boolean(busy)||!partnershipName.trim()} onPress={()=>run('partnership:create',()=>createPartnership(businessId,partnershipName.trim()),'Partnership created.')}/></View>{partnerships.length?partnerships.map((partnership,index)=>{const id=idOf(partnership),enabled=partnership.enabled!==false;return <View key={id||String(index)} style={s.inner}><Text style={s.cardTitle}>{labelOf(partnership,'Partnership')}</Text><Text style={s.meta}>{enabled?'Enabled':'Disabled'} · {String(partnership.custom_perk||'No custom perk')}</Text><View style={s.actions}><Action quiet label={enabled?'Disable':'Enable'} disabled={Boolean(busy)||!id} onPress={()=>run(`partnership:${id}`,()=>updatePartnership(businessId,id,{name:labelOf(partnership,'Partnership'),enabled:!enabled,preferredAccess:Boolean(partnership.preferred_access),matchDiscountBonus:Number(partnership.match_discount_bonus||0),customPerk:partnership.custom_perk==null?null:String(partnership.custom_perk)}),'Partnership updated.')}/><Action danger label="Delete" disabled={Boolean(busy)||!id} onPress={()=>run(`partnership:delete:${id}`,()=>deletePartnership(businessId,id),'Partnership deleted.')}/></View></View>}):<Text style={s.meta}>No direct partnerships yet.</Text>}</Section>
+  <Text style={s.sectionTitle}>Effective capabilities</Text>{matrix.map((row,index)=>{const name=String(row.capability||row.code||row.key||row.name||`Capability ${index+1}`),value=row.enabled??row.allowed??row.granted??row.value;return <View key={`${name}-${index}`} style={s.cap}><View style={{flex:1}}><Text style={s.capTitle}>{name.replaceAll('_',' ')}</Text><Text style={s.meta}>{String(row.description||row.reason||row.plan||row.tier||'Canonical Business capability')}</Text></View><View style={[s.pill,value===false&&s.pillOff]}><Text style={[s.pillText,value===false&&s.pillTextOff]}>{value===false?'LOCKED':value===true?'ACTIVE':'INFO'}</Text></View></View>})}
+ </ScrollView>}
+function Structured({value}:{value:any}){if(!value||typeof value!=='object')return <Text style={s.meta}>No current signal.</Text>;return <View style={{gap:7}}>{Object.entries(value).map(([key,item])=><View key={key} style={s.fact}><Text style={s.factLabel}>{key.replaceAll('_',' ')}</Text><Text style={s.factValue}>{summarize(item)}</Text></View>)}</View>}
+function Section({title,subtitle,children}:{title:string;subtitle:string;children:React.ReactNode}){return <View style={s.section}><Text style={s.sectionTitle}>{title}</Text><Text style={s.meta}>{subtitle}</Text><View style={s.card}>{children}</View></View>}
+function qualificationText(value:any){if(!value)return'No qualification details were returned for this workspace.';if(Array.isArray(value))return value.map(row=>String(row.message||row.reason||row.status||row.name||'')).filter(Boolean).join(' · ')||`${value.length} qualification records`;if(typeof value==='object')return[value.plan,value.tier,value.status,value.reason,value.message].filter(Boolean).join(' · ')||'Qualification evidence is available.';return String(value)}
+function Metric({label,value}:{label:string;value:number}){return <View style={s.metric}><Text style={s.metricValue}>{value}</Text><Text style={s.meta}>{label}</Text></View>}function Action({label,onPress,disabled,quiet=false,danger=false}:{label:string;onPress:()=>void|Promise<void>;disabled?:boolean;quiet?:boolean;danger?:boolean}){return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[s.action,quiet&&s.actionQuiet,danger&&s.actionDanger,disabled&&s.disabled]}><Text style={[s.actionText,quiet&&s.actionQuietText]}>{label}</Text></Pressable>}
+const s=StyleSheet.create({page:{padding:18,gap:11,backgroundColor:'#f3f6f4',paddingBottom:70},hero:{backgroundColor:'#173f2d',borderRadius:24,padding:20,gap:8},kicker:{fontSize:10,fontWeight:'900',letterSpacing:1.4,color:'#c8ead7'},title:{fontSize:28,fontWeight:'900',color:'#fff'},body:{fontSize:14,lineHeight:21,color:'#deebe4'},links:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:4},link:{backgroundColor:'#edf3ef',color:'#173f2d',fontWeight:'900',paddingHorizontal:10,paddingVertical:8,borderRadius:999},message:{fontWeight:'700',color:'#596b61'},metrics:{flexDirection:'row',gap:8,flexWrap:'wrap'},metric:{minWidth:'46%',flexGrow:1,backgroundColor:'#fff',borderRadius:16,padding:13,borderWidth:1,borderColor:'#dbe5de'},metricValue:{fontSize:22,fontWeight:'900',color:'#173f2d'},meta:{fontSize:12,lineHeight:18,color:'#65756b'},section:{gap:7},card:{backgroundColor:'#fff',borderRadius:18,padding:15,gap:9,borderWidth:1,borderColor:'#dbe5de'},inner:{backgroundColor:'#f5f8f6',borderRadius:13,padding:11,gap:8},cardTitle:{fontSize:17,fontWeight:'900',color:'#102218'},sectionTitle:{fontSize:21,fontWeight:'900',color:'#102218',marginTop:4},input:{borderWidth:1,borderColor:'#cbd9d0',borderRadius:12,padding:11,backgroundColor:'#fff',color:'#132b21'},actions:{flexDirection:'row',flexWrap:'wrap',gap:7},action:{alignSelf:'flex-start',backgroundColor:'#173f2d',borderRadius:999,paddingHorizontal:12,paddingVertical:9},actionQuiet:{backgroundColor:'#edf3ef'},actionDanger:{backgroundColor:'#8b3434'},actionText:{color:'#fff',fontWeight:'900'},actionQuietText:{color:'#244d39'},disabled:{opacity:.45},fact:{borderTopWidth:1,borderTopColor:'#edf1ee',paddingTop:7,gap:2},factLabel:{fontSize:12,fontWeight:'900',color:'#2f4d3d',textTransform:'capitalize'},factValue:{fontSize:12,lineHeight:18,color:'#65756b'},cap:{backgroundColor:'#fff',borderRadius:16,padding:13,borderWidth:1,borderColor:'#dbe5de',flexDirection:'row',gap:9,alignItems:'center'},capTitle:{fontSize:15,fontWeight:'900',color:'#102218',textTransform:'capitalize'},pill:{backgroundColor:'#e7f2eb',paddingHorizontal:9,paddingVertical:6,borderRadius:999},pillOff:{backgroundColor:'#f6eaea'},pillText:{fontSize:10,fontWeight:'900',color:'#21613d'},pillTextOff:{color:'#8b3434'}});
