@@ -154,7 +154,7 @@ jobs:
           "$APKSIGNER" verify --print-certs "$APK" | tee "$RUNNER_TEMP/${{ matrix.app }}-signing.txt"
           "$AAPT" dump badging "$APK" | tee "$RUNNER_TEMP/${{ matrix.app }}-badging.txt"
           grep -Fq "package: name='${{ matrix.package }}'" "$RUNNER_TEMP/${{ matrix.app }}-badging.txt"
-          RAW_SHA1="$(awk -F': ' '/certificate SHA-1 digest:/{print $2; exit}' "$RUNNER_TEMP/${{ matrix.app }}-signing.txt")"
+          RAW_SHA1="$(awk -F': ' '/certificate SHA-1 digest:/{print $NF; exit}' "$RUNNER_TEMP/${{ matrix.app }}-signing.txt")"
           NORMALIZED_SHA1="$(printf '%s' "$RAW_SHA1" | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]')"
           printf '%s' "$NORMALIZED_SHA1" | grep -Eq '^[0-9A-F]{40}$'
           SIGNING_SHA1="$(printf '%s' "$NORMALIZED_SHA1" | sed 's/../&:/g;s/:$//')"
