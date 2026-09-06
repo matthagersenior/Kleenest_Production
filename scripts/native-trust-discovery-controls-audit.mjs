@@ -3,7 +3,8 @@ const failures=[];
 const files=['apps/consumer-mobile/services/trustDiscoveryControls.ts','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','apps/consumer-mobile/app/saved.tsx'];
 for(const file of files)if(!fs.existsSync(file))failures.push(`missing trust discovery control file: ${file}`);
 if(!failures.length){
-  const [service,exploreEntry,adaptiveExplore,saved]=files.map(file=>fs.readFileSync(file,'utf8'));\n  const explore=`${exploreEntry}\n${adaptiveExplore}`;
+  const [service,exploreEntry,adaptiveExplore,saved]=files.map(file=>fs.readFileSync(file,'utf8'));
+  const explore=`${exploreEntry}\n${adaptiveExplore}`;
   for(const token of ["TrustEvidenceFilter='any'|'verified'|'fresh'","TrustSortMode='default'|'evidence'",'hasVerifiedTrustEvidence','hasFreshTrustEvidence','applyTrustDiscoveryControls'])if(!service.includes(token))failures.push(`Trust discovery service missing: ${token}`);
   if(!service.includes("if(sort==='evidence')")||!service.includes('routeTrustScore(b.trust)-routeTrustScore(a.trust)'))failures.push('Evidence sorting must remain an explicit opt-in branch using shared trust scoring.');
   if(!service.includes("filter==='verified'")||!service.includes("filter==='fresh'"))failures.push('Verified and fresh evidence filters must remain explicit.');
