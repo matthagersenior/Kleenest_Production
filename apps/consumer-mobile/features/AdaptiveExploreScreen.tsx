@@ -25,6 +25,7 @@ import {
   View,
 } from 'react-native';
 import { listAmenityCatalog, type AmenityCatalogItem } from '../services/amenities';
+import { visitFreshness } from '../services/evidenceFormatting';
 import { attachLocationTrust, listLocationTrustSummaries } from '../services/locationTrust';
 import {
   cachedAgeLabel,
@@ -98,12 +99,19 @@ const radiusLabel = (meters: number) => `${Math.round(meters / 1609.344)} mi`;
 const navigateUrl = (row: any) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${row.latitude},${row.longitude}`)}&travelmode=driving`;
 
-function freshnessLabel(value: string | null | undefined) {
-  if (!value) return 'Not recently verified';
-  const timestamp = new Date(value).getTime();
-  if (!Number.isFinite(timestamp)) return 'Verification date unavailable';
-  const days = Math.max(0, Math.round((Date.now() - timestamp) / 86400000));
-  return days === 0 ? 'Verified today' : `Verified ${days} day${days === 1 ? '' : 's'} ago`;
+function trustSummaryLine(item: any) {
+  const trust = item?.trust;
+  const visits = Number(trust?.verified_visit_count || 0);
+  const photos = Number(trust?.photo_evidence_count || 0);
+  const amenities = Number(trust?.amenity_evidence_count || 0);
+  const fresh = visitFreshness(trust?.latest_verified_at);
+  const parts = [
+    visits ? `${visits} verified visit${visits === 1 ? '' : 's'}` : null,
+    photos ? `${photos} photo${photos === 1 ? '' : 's'}` : null,
+    amenities ? `${amenities} amenity evidence` : null,
+    fresh || null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(' · ') : 'Community evidence building';
 }
 
 function parseRouteDraft(raw: string | null) {
@@ -155,12 +163,7 @@ function ResultCard({ item, selected, onSelect, route }: {
         </Text>
       ) : null}
       <RestroomSignals item={item} compact />
-      <Text style={s.trustLine}>
-        {freshnessLabel(item.trust?.latest_verified_at)}
-        {item.trust?.amenity_evidence_count
-          ? ` · ${item.trust.amenity_evidence_count} amenity evidence`
-          : ''}
-      </Text>
+      <Text style={s.trustLine}>{trustSummaryLine(item)}</Text>
       <Text style={s.hint}>
         {selected ? 'Selected on map · Full details available' : 'Tap to preview this location on the map'}
       </Text>
@@ -595,19 +598,21 @@ export default function AdaptiveExploreScreen() {
                 <Switch value={autoExpand} onValueChange={setAutoExpand} />
               </View>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
-              {radiusChoices.map((choice) => (
-                <Pressable
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: radius === choice.meters }}
-                  key={choice.meters}
-                  style={[s.choice, radius === choice.meters && s.choiceActive]}
-                  onPress={() => chooseRadius(choice.meters)}
-                >
-                  <Text style={[s.choiceText, radius === choice.meters && s.choiceTextActive]}>{choice.label}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+            <View accessibilityRole="radiogroup">
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
+                {radiusChoices.map((choice) => (
+                  <Pressable
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: radius === choice.meters }}
+                    key={choice.meters}
+                    style={[s.choice, radius === choice.meters && s.choiceActive]}
+                    onPress={() => chooseRadius(choice.meters)}
+                  >
+                    <Text style={[s.choiceText, radius === choice.meters && s.choiceTextActive]}>{choice.label}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
             {autoExpand ? (
               <View style={s.inlineBlock}>
                 <Text style={s.filterTitle}>Maximum distance</Text>
@@ -807,6 +812,7 @@ export default function AdaptiveExploreScreen() {
                   </Pressable>
                 </View>
                 <RestroomSignals item={selected} compact />
+                <Text style={s.trustLine}>{trustSummaryLine(selected)}</Text>
                 <View style={s.actionRow}>
                   <Pressable style={s.secondarySmall} onPress={() => addToRoute(selected)}>
                     <Text style={s.secondaryText}>Add to route</Text>
