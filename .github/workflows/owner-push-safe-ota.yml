@@ -1,0 +1,44 @@
+name: Owner Push Safety Hotfix OTA
+
+on:
+  push:
+    branches: [hotfix/owner-push-safe-ota-20260905]
+    paths:
+      - 'apps/platform-mobile/**'
+      - 'packages/mobile-core/**'
+      - 'scripts/owner-runtime-integrity-audit.mjs'
+      - '.github/workflows/owner-push-safe-ota.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  publish-owner-hotfix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PROJECT_ID: 9b5527b5-c8b1-47c1-a961-3e2d5e549a62
+      KLEENEST_NATIVE_PUSH_CONFIGURED: '0'
+      EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify Owner hotfix source
+        run: |
+          test -n "$EXPO_TOKEN"
+          node scripts/owner-runtime-integrity-audit.mjs
+          npm run typecheck --workspace @kleenest/owner-mobile
+          npx eas-cli@latest whoami --non-interactive
+      - name: Publish Owner push-safety update
+        working-directory: apps/platform-mobile
+        run: npx eas-cli@latest update --channel owner-production --message "Owner push safety ${GITHUB_SHA}" --non-interactive
