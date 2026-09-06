@@ -18,6 +18,8 @@ try {
 
 const forbiddenTracked = [
   { test: (path) => /(^|\/)\.env($|\.)/.test(path) && !/(^|\/)\.env\.example$/.test(path), reason: 'environment file' },
+  { test: (path) => /(^|\/)google-services\.json$/i.test(path), reason: 'Firebase Android credential file' },
+  { test: (path) => /(^|\/)GoogleService-Info\.plist$/i.test(path), reason: 'Firebase Apple credential file' },
   { test: (path) => /\.(jks|keystore|p8|p12|mobileprovision|pem|key)$/i.test(path), reason: 'signing/provisioning material' },
   { test: (path) => /\.(apk|aab|ipa|xcarchive)$/i.test(path), reason: 'release binary' },
   { test: (path) => /(^|\/)node_modules\//.test(path), reason: 'dependency output' },
@@ -61,7 +63,7 @@ const requiredDocs = [
 for (const path of requiredDocs) must(exists(path), `required canonical repository file missing: ${path}`);
 
 const gitignore = read('.gitignore');
-for (const token of ['apps/*/android/', 'apps/*/ios/', '*.aab', '*.apk', '*.keystore', '.env.*']) {
+for (const token of ['apps/*/android/', 'apps/*/ios/', 'apps/*/google-services.json', 'apps/*/GoogleService-Info.plist', '*.aab', '*.apk', '*.keystore', '.env.*']) {
   must(gitignore.includes(token), `.gitignore must protect ${token}`);
 }
 
