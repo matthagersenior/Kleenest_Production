@@ -24,7 +24,9 @@ if(!failures.length){
  const discoverySurface=`${explore}\n${adaptiveExplore}`;
 
  for(const token of ["'/explore'",'Find a better bathroom','THE KLEENEST LOOP','XP + levels','Add a missing place','YOUR NETWORK'])if(!home.includes(token))failures.push(`Home activation hierarchy missing ${token}.`);
- for(const token of ['listNearbyRestrooms','listAmenityCatalog','selectedAmenityNames','navigateUrl','captureConsumerRouteIntent','readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!discoverySurface.includes(token))failures.push(`Discovery activation missing ${token}.`);
+ for(const token of ['listAmenityCatalog','selectedAmenityNames','captureConsumerRouteIntent','readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!discoverySurface.includes(token))failures.push(`Discovery activation missing ${token}.`);
+ if(!['findAdaptiveNearbyRestrooms','listNearbyRestrooms'].some(token=>discoverySurface.includes(token)))failures.push('Discovery activation missing nearby-restroom search authority.');
+ if(!['directionsUrl','navigateUrl'].some(token=>discoverySurface.includes(token)))failures.push('Discovery activation missing directions-link authority.');
  if(!/pathname\s*:\s*['"]\/route['"]/.test(discoverySurface))failures.push('Discovery activation missing route navigation.');
  for(const token of ['remote','address','place_search','map_pin','gps','onsite_live','captureGPS','choosePhoto','saveDiscovery','saveEvidence'])if(!discover.includes(token))failures.push(`First-class place discovery missing ${token}.`);
  for(const token of ['consumer_match_or_create_discovery','consumer_record_discovery_evidence','consumer_progression_overview','consumer_active_objectives','consumer_progression_rankings','consumer_nearby_progression_opportunities','attach_discovery_photo'])if(!discoveryProgression.includes(token))failures.push(`Discovery/progression service missing ${token}.`);
