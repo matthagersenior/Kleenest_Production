@@ -7,6 +7,8 @@ on:
     paths:
       - 'apps/consumer-mobile/**'
       - 'apps/business-mobile/**'
+      - 'apps/fleet-mobile/**'
+      - 'apps/platform-mobile/**'
       - 'packages/mobile-core/**'
       - '.github/workflows/native-push-repair-candidates.yml'
 
@@ -16,7 +18,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -25,16 +27,31 @@ jobs:
             dir: apps/consumer-mobile
             workspace: '@kleenest/consumer-mobile'
             package: com.kleenest.app
-            artifact: Kleenest-Consumer-Push-Repair.apk
+            eas_project_id: 22a65aa3-c615-4c4f-a34d-084babc28fd7
+            artifact: Kleenest-Consumer.apk
           - app: Business
             dir: apps/business-mobile
             workspace: '@kleenest/business-mobile'
             package: com.kleenest.business
-            artifact: Kleenest-Business-Push-Repair.apk
+            eas_project_id: 15ac343b-81bf-459b-8c25-1b2fc8b293de
+            artifact: Kleenest-Business.apk
+          - app: Fleet
+            dir: apps/fleet-mobile
+            workspace: '@kleenest/fleet-mobile'
+            package: com.kleenest.fleet
+            eas_project_id: 90d1d6ff-1376-4065-a00c-7cf0415e4347
+            artifact: Kleenest-Fleet.apk
+          - app: KleenestOS
+            dir: apps/platform-mobile
+            workspace: '@kleenest/owner-mobile'
+            package: com.kleenest.platform
+            eas_project_id: 9b5527b5-c8b1-47c1-a961-3e2d5e549a62
+            artifact: Kleenest-Owner.apk
     env:
       CI: '1'
       NODE_ENV: production
       KLEENEST_STANDALONE_ANDROID: '1'
+      EAS_PROJECT_ID: ${{ matrix.eas_project_id }}
       EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
       GOOGLE_SERVICES_FILE: ./google-services.json
@@ -54,16 +71,19 @@ jobs:
         env:
           CONSUMER_JSON: ${{ secrets.CONSUMER_GOOGLE_SERVICES_JSON_BASE64 }}
           BUSINESS_JSON: ${{ secrets.BUSINESS_GOOGLE_SERVICES_JSON_BASE64 }}
+          FLEET_JSON: ${{ secrets.FLEET_GOOGLE_SERVICES_JSON_BASE64 }}
+          OWNER_JSON: ${{ secrets.OWNER_GOOGLE_SERVICES_JSON_BASE64 }}
           SHARED_JSON: ${{ secrets.KLEENEST_GOOGLE_SERVICES_JSON_BASE64 }}
-          EXISTING_FLEET_JSON: ${{ secrets.FLEET_GOOGLE_SERVICES_JSON_BASE64 }}
-          EXISTING_OWNER_JSON: ${{ secrets.OWNER_GOOGLE_SERVICES_JSON_BASE64 }}
         run: |
           set -euo pipefail
-          value=''
-          if [ '${{ matrix.app }}' = 'Consumer' ]; then value="${CONSUMER_JSON:-}"; else value="${BUSINESS_JSON:-}"; fi
+          case '${{ matrix.app }}' in
+            Consumer) value="${CONSUMER_JSON:-}" ;;
+            Business) value="${BUSINESS_JSON:-}" ;;
+            Fleet) value="${FLEET_JSON:-}" ;;
+            KleenestOS) value="${OWNER_JSON:-}" ;;
+            *) value='' ;;
+          esac
           [ -n "$value" ] || value="${SHARED_JSON:-}"
-          [ -n "$value" ] || value="${EXISTING_FLEET_JSON:-}"
-          [ -n "$value" ] || value="${EXISTING_OWNER_JSON:-}"
           test -n "$value" || { echo 'No Firebase Android file secret is configured for ${{ matrix.app }}.' >&2; exit 1; }
           printf '%s' "$value" | base64 --decode > '${{ matrix.dir }}/google-services.json'
           node - <<'NODE'
@@ -71,6 +91,18 @@ jobs:
           const f=JSON.parse(fs.readFileSync('${{ matrix.dir }}/google-services.json','utf8'));
           if(!f.client?.some(c=>c.client_info?.android_client_info?.package_name==='${{ matrix.package }}')) throw new Error('Firebase file does not authorize ${{ matrix.package }}');
           NODE
+      - name: Remove development-only Expo runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs');
+          const path='${{ matrix.dir }}/package.json';
+          const pkg=JSON.parse(fs.readFileSync(path,'utf8'));
+          for(const section of ['dependencies','devDependencies','optionalDependencies']) if(pkg[section]) delete pkg[section]['expo-dev-client'];
+          fs.writeFileSync(path,JSON.stringify(pkg,null,2)+'\n');
+          NODE
+          rm -rf node_modules/expo-dev-client node_modules/expo-dev-launcher node_modules/expo-dev-menu node_modules/expo-dev-menu-interface
       - name: Typecheck and verify Expo native config
         shell: bash
         run: |
@@ -78,7 +110,7 @@ jobs:
           npm run typecheck --workspace '${{ matrix.workspace }}'
           cd '${{ matrix.dir }}'
           npx expo config --type public --json > "$RUNNER_TEMP/expo.json"
-          node -e "const c=require(process.env.RUNNER_TEMP+'/expo.json');if(c.android?.package!=='${{ matrix.package }}')process.exit(1);if(!c.android?.googleServicesFile)throw new Error('googleServicesFile missing from Expo config')"
+          node -e "const c=require(process.env.RUNNER_TEMP+'/expo.json');if(c.android?.package!=='${{ matrix.package }}')throw new Error('Android package mismatch');if(!c.android?.googleServicesFile)throw new Error('googleServicesFile missing from Expo config')"
           npx expo prebuild --platform android --clean --no-install
           test -f android/app/google-services.json
           node - <<'NODE'
@@ -87,43 +119,60 @@ jobs:
           const client=f.client?.find(c=>c.client_info?.android_client_info?.package_name==='${{ matrix.package }}');
           if(!client?.client_info?.mobilesdk_app_id) throw new Error('Generated Android project is missing Firebase app identity for ${{ matrix.package }}');
           NODE
-      - name: Build release APK
-        working-directory: ${{ matrix.dir }}/android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
-      - name: Report APK signing SHA-1
+      - name: Configure repair APK build
         shell: bash
         run: |
           set -euo pipefail
-          APK="$(find '${{ matrix.dir }}/android/app/build/outputs/apk/release' -type f -name '*.apk' | head -n1)"
+          PROPS='${{ matrix.dir }}/android/gradle.properties'
+          if grep -q '^reactNativeArchitectures=' "$PROPS"; then
+            sed -i 's/^reactNativeArchitectures=.*/reactNativeArchitectures=arm64-v8a/' "$PROPS"
+          else
+            printf '\nreactNativeArchitectures=arm64-v8a\n' >> "$PROPS"
+          fi
+          if grep -q '^org.gradle.jvmargs=' "$PROPS"; then
+            sed -i 's|^org.gradle.jvmargs=.*|org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8|' "$PROPS"
+          else
+            printf '\norg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8\n' >> "$PROPS"
+          fi
+          if grep -q '^org.gradle.workers.max=' "$PROPS"; then
+            sed -i 's/^org.gradle.workers.max=.*/org.gradle.workers.max=2/' "$PROPS"
+          else
+            printf '\norg.gradle.workers.max=2\n' >> "$PROPS"
+          fi
+      - name: Build release APK
+        working-directory: ${{ matrix.dir }}/android
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+      - name: Verify, report signing SHA-1, and stage APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find '${{ matrix.dir }}/android/app/build/outputs/apk/release' -type f -name '*.apk' ! -name '*androidTest*' ! -name '*test*' | sort | head -n1)"
           test -f "$APK"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -n1)"
-          test -x "$APKSIGNER"
-          CERT_INFO="$RUNNER_TEMP/${{ matrix.app }}-signing.txt"
-          "$APKSIGNER" verify --print-certs "$APK" | tee "$CERT_INFO"
-          RAW_SHA1="$(awk -F': ' '/certificate SHA-1 digest:/{print $2; exit}' "$CERT_INFO")"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name aapt | sort -V | tail -n1)"
+          test -x "$APKSIGNER" && test -x "$AAPT"
+          "$APKSIGNER" verify --print-certs "$APK" | tee "$RUNNER_TEMP/${{ matrix.app }}-signing.txt"
+          "$AAPT" dump badging "$APK" | tee "$RUNNER_TEMP/${{ matrix.app }}-badging.txt"
+          grep -Fq "package: name='${{ matrix.package }}'" "$RUNNER_TEMP/${{ matrix.app }}-badging.txt"
+          RAW_SHA1="$(awk -F': ' '/certificate SHA-1 digest:/{print $2; exit}' "$RUNNER_TEMP/${{ matrix.app }}-signing.txt")"
           NORMALIZED_SHA1="$(printf '%s' "$RAW_SHA1" | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]')"
-          if ! printf '%s' "$NORMALIZED_SHA1" | grep -Eq '^[0-9A-F]{40}$'; then
-            echo 'Could not parse APK signing SHA-1.' >&2
-            exit 1
-          fi
+          printf '%s' "$NORMALIZED_SHA1" | grep -Eq '^[0-9A-F]{40}$'
           SIGNING_SHA1="$(printf '%s' "$NORMALIZED_SHA1" | sed 's/../&:/g;s/:$//')"
+          mkdir -p dist
+          cp "$APK" 'dist/${{ matrix.artifact }}'
+          sha256sum 'dist/${{ matrix.artifact }}' > 'dist/${{ matrix.artifact }}.sha256'
+          printf '%s\n' "$SIGNING_SHA1" > 'dist/${{ matrix.app }}-signing-sha1.txt'
           {
             echo '### ${{ matrix.app }} Android Firebase restriction identity'
             echo 'Package: `${{ matrix.package }}`'
             echo "SHA-1: \`$SIGNING_SHA1\`"
           } >> "$GITHUB_STEP_SUMMARY"
-      - name: Verify Firebase resources and stage APK
-        shell: bash
-        run: |
-          set -euo pipefail
-          APK="$(find '${{ matrix.dir }}/android/app/build/outputs/apk/release' -type f -name '*.apk' | head -n1)"
-          test -f "$APK"
-          unzip -l "$APK" | grep -q 'resources.arsc'
-          mkdir -p dist
-          cp "$APK" 'dist/${{ matrix.artifact }}'
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.app }}-Native-Push-Repair
-          path: dist/${{ matrix.artifact }}
+          name: ${{ matrix.app }}-Installable-Repair
+          path: |
+            dist/${{ matrix.artifact }}
+            dist/${{ matrix.artifact }}.sha256
+            dist/${{ matrix.app }}-signing-sha1.txt
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14
