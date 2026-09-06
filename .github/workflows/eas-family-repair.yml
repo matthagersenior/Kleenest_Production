@@ -95,6 +95,11 @@ jobs:
           const f=JSON.parse(fs.readFileSync('${{ matrix.dir }}/google-services.json','utf8'));
           if(!f.client?.some(c=>c.client_info?.android_client_info?.package_name==='${{ matrix.package }}')) throw new Error('Firebase config does not authorize ${{ matrix.package }}');
           NODE
+          # EAS local builds create a VCS archive before prebuild. The Firebase file is
+          # intentionally gitignored, so add it only to this runner's temporary index so
+          # it is present in that archive without ever committing the secret to the repo.
+          git add -f '${{ matrix.dir }}/google-services.json'
+          git ls-files --error-unmatch '${{ matrix.dir }}/google-services.json' >/dev/null
       - name: Verify Expo identity
         working-directory: ${{ matrix.dir }}
         shell: bash
