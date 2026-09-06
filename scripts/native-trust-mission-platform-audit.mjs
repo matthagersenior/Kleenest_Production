@@ -7,6 +7,7 @@ const required=[
   'apps/consumer-mobile/app/progress.tsx',
   'apps/consumer-mobile/services/notificationRouting.ts',
   'apps/consumer-mobile/app/explore.tsx',
+  'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
   'apps/consumer-mobile/app/saved.tsx',
   'apps/consumer-mobile/app/location/[id].tsx',
   'supabase/migrations/20260831082000_mobile_trust_mission_platform_authority.sql',
@@ -16,7 +17,8 @@ const required=[
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing trust mission platform file: ${file}`);
 if(!failures.length){
   const read=file=>fs.readFileSync(file,'utf8');
-  const service=read(required[0]),activityService=read(required[1]),activityScreen=read(required[2]),progress=read(required[3]),routing=read(required[4]),explore=read(required[5]),saved=read(required[6]),location=read(required[7]),base=read(required[8]),tiered=read(required[9]),preserve=read(required[10]);
+  const service=read(required[0]),activityService=read(required[1]),activityScreen=read(required[2]),progress=read(required[3]),routing=read(required[4]),exploreEntry=read(required[5]),adaptiveExplore=read(required[6]),explore=`${exploreEntry}\n${adaptiveExplore}`,saved=read(required[7]),location=read(required[8]),base=read(required[9]),tiered=read(required[10]),preserve=read(required[11]);
+  if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Explore entry must resolve to the canonical adaptive Explore screen.');
   for(const rpc of ['start_my_trust_mission','my_trust_mission','my_trust_mission_history','complete_my_trust_mission','cancel_my_trust_mission'])if(!service.includes(rpc))failures.push(`mobile trust mission service missing RPC: ${rpc}`);
   if(!service.includes('getKleenestSupabaseClient')||!service.includes('SecureStore')||!service.includes('offlineMirror'))failures.push('Trust mission service must use server authority with SecureStore only as an offline mirror.');
   if(!service.includes("client.from('reviews')")||!service.includes(".not('check_in_id','is',null)"))failures.push('Mission completion must resolve a published verified review before calling server completion authority.');
@@ -50,11 +52,16 @@ if(!failures.length){
 
   // Trust missions remain a consumer capability, but they are intentionally kept out of the
   // critical bathroom-finding path. Saved, Progress, Location, Activity, and notifications own
-  // mission lifecycle; Explore stays fast and nearby-first.
+  // mission lifecycle; Explore stays bathroom-first while retaining its mature discovery paths.
   if(explore.includes('readTrustMission')||explore.includes('trustMissionAction')||explore.includes('ACTIVE TRUST MISSION')||explore.includes('NEARBY TRUST MISSION'))failures.push('Explore must stay bathroom-first; trust mission lifecycle belongs to Progress, Saved, and Location.');
-  for(const token of ['listNearbyRestrooms','Find a trusted bathroom.','Full details','Start directions','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Explore bathroom-first mission boundary missing ${token}.`);
-  if(!explore.replace(/\s+/g,'').includes('pathname:"/route"'))failures.push('Explore bathroom-first mission boundary missing route handoff.');
-  if(!explore.includes('router.push(`/location/${idOf(selected)}`)'))failures.push('Explore must preserve the canonical selected-restroom detail handoff.');
+  const bathroomFirst=[
+    ['nearby search',explore.includes('findAdaptiveNearbyRestrooms')&&explore.includes('listNearbyRestrooms')],
+    ['trust summaries',explore.includes('listLocationTrustSummaries')&&explore.includes('attachLocationTrust')],
+    ['full details action',explore.includes('Full details')&&explore.includes('router.push(`/location/${idOf(selected)}`)')],
+    ['directions action',explore.includes('Directions')&&explore.includes('Linking.openURL')],
+    ['route handoff',explore.includes("pathname:'/route'")&&explore.includes('captureConsumerRouteIntent')],
+  ];
+  for(const [name,present] of bathroomFirst)if(!present)failures.push(`Explore bathroom-first mission boundary missing ${name}.`);
 
   if(!saved.includes('readTrustMission')||!saved.includes('trustMissionAction'))failures.push('Saved must load and evaluate the active trust mission.');
   if(!saved.includes('Resume mission')||!saved.includes('View active mission')||!saved.includes('Resume active mission'))failures.push('Saved must expose active/resume mission states clearly.');
