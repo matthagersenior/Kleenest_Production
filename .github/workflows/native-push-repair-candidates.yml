@@ -90,6 +90,28 @@ jobs:
       - name: Build release APK
         working-directory: ${{ matrix.dir }}/android
         run: ./gradlew assembleRelease --no-daemon --stacktrace
+      - name: Report APK signing SHA-1
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find '${{ matrix.dir }}/android/app/build/outputs/apk/release' -type f -name '*.apk' | head -n1)"
+          test -f "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -n1)"
+          test -x "$APKSIGNER"
+          CERT_INFO="$RUNNER_TEMP/${{ matrix.app }}-signing.txt"
+          "$APKSIGNER" verify --print-certs "$APK" | tee "$CERT_INFO"
+          RAW_SHA1="$(awk -F': ' '/certificate SHA-1 digest:/{print $2; exit}' "$CERT_INFO")"
+          NORMALIZED_SHA1="$(printf '%s' "$RAW_SHA1" | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]')"
+          if ! printf '%s' "$NORMALIZED_SHA1" | grep -Eq '^[0-9A-F]{40}$'; then
+            echo 'Could not parse APK signing SHA-1.' >&2
+            exit 1
+          fi
+          SIGNING_SHA1="$(printf '%s' "$NORMALIZED_SHA1" | sed 's/../&:/g;s/:$//')"
+          {
+            echo '### ${{ matrix.app }} Android Firebase restriction identity'
+            echo 'Package: `${{ matrix.package }}`'
+            echo "SHA-1: \`$SIGNING_SHA1\`"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Verify Firebase resources and stage APK
         shell: bash
         run: |
