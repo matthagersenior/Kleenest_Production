@@ -7,7 +7,10 @@ const operatorCommon=[['app/account.tsx','signInWithPassword'],['app/account.tsx
 const evidence={
  consumer:{
   routes:['explore.tsx','location/[id].tsx','qr.tsx','saved.tsx','route.tsx','offline.tsx','social.tsx','messages.tsx','notifications.tsx','play.tsx','games.tsx','family.tsx','membership.tsx','support.tsx','privacy.tsx','account-deletion.tsx','safety.tsx'],
-  markers:[['services/safety.ts','report_user'],['services/safety.ts','block_user'],['services/safety.ts','report_review'],['app/location/[id].tsx','mobileCheckIn'],['app/location/[id].tsx','createMobileReview'],['app/explore.tsx','listNearbyRestrooms']]
+  markers:[
+   ['services/safety.ts','report_user'],['services/safety.ts','block_user'],['services/safety.ts','report_review'],['app/location/[id].tsx','mobileCheckIn'],['app/location/[id].tsx','createMobileReview'],
+   ['app/explore.tsx','AdaptiveExploreScreen'],['features/AdaptiveExploreScreen.tsx','findAdaptiveNearbyRestrooms'],['features/AdaptiveExploreScreen.tsx','listRestroomsAlongRoute'],['features/AdaptiveExploreScreen.tsx','listAmenityCatalog'],['features/AdaptiveExploreScreen.tsx','captureConsumerRouteIntent']
+  ]
  },
  business:{
   routes:['locations.tsx','growth.tsx','operations.tsx','analytics.tsx','enterprise.tsx','enterprise-locations.tsx','profile.tsx','team.tsx','members.tsx','assistant.tsx','intelligence.tsx','live-network.tsx','progression.tsx','capabilities.tsx','workspaces.tsx','qr-studio.tsx','reviews.tsx','partners.tsx','notifications.tsx','support.tsx','terms.tsx','privacy.tsx','account.tsx'],
