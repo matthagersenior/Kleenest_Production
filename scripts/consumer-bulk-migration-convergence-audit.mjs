@@ -2,12 +2,12 @@ import fs from 'node:fs';
 
 const failures=[];
 const required=[
-  'apps/consumer-mobile/app/_layout.tsx','apps/consumer-mobile/app/index.tsx','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','apps/consumer-mobile/app/discover.tsx','apps/consumer-mobile/app/progress.tsx','apps/consumer-mobile/app/location/[id].tsx','apps/consumer-mobile/app/profile.tsx','apps/consumer-mobile/app/preferences.tsx','apps/consumer-mobile/app/play.tsx','apps/consumer-mobile/app/social.tsx','apps/consumer-mobile/app/saved.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/app/qr.tsx','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/notifications.tsx','apps/consumer-mobile/app/membership.tsx','apps/consumer-mobile/app/support.tsx','apps/consumer-mobile/app/account-deletion.tsx','packages/mobile-core/src/index.ts','apps/consumer-mobile/package.json','apps/consumer-mobile/app.config.ts'
+  'apps/consumer-mobile/app/_layout.tsx','apps/consumer-mobile/app/index.tsx','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','apps/consumer-mobile/app/discover.tsx','apps/consumer-mobile/app/progress.tsx','apps/consumer-mobile/app/location/[id].tsx','apps/consumer-mobile/app/profile.tsx','apps/consumer-mobile/app/preferences.tsx','apps/consumer-mobile/app/play.tsx','apps/consumer-mobile/app/social.tsx','apps/consumer-mobile/app/saved.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/app/qr.tsx','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/notifications.tsx','apps/consumer-mobile/app/membership.tsx','apps/consumer-mobile/app/support.tsx','apps/consumer-mobile/app/account-deletion.tsx','packages/mobile-core/src/adaptiveDiscovery.ts','packages/mobile-core/src/index.ts','apps/consumer-mobile/package.json','apps/consumer-mobile/app.config.ts'
 ];
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing consumer migration file: ${file}`);
 if(!failures.length){
   const read=file=>fs.readFileSync(file,'utf8');
-  const [layout,home,exploreEntry,adaptiveExplore,discover,progress,location,profile,preferences,play,social,saved,route,qr,activity,notifications,membership,support,deletion,core,mobilePackage,appConfig]=required.map(read);
+  const [layout,home,exploreEntry,adaptiveExplore,discover,progress,location,profile,preferences,play,social,saved,route,qr,activity,notifications,membership,support,deletion,adaptiveCore,core,mobilePackage,appConfig]=required.map(read);
   const explore=`${exploreEntry}\n${adaptiveExplore}`;
   if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Explore entry must resolve to the canonical adaptive Explore implementation.');
   for(const [name,title] of [['index','Home'],['explore','Explore'],['progress','Progress'],['social','Community'],['profile','Profile']]){
@@ -16,8 +16,23 @@ if(!failures.length){
   for(const hidden of ['play','discover','games','route','qr','saved','activity','notifications','membership','preferences','support','account-deletion'])if(!new RegExp(`name=["']${hidden}["'][^>]*href:\\s*null`).test(layout))failures.push(`secondary consumer route must remain reachable but hidden from primary tabs: ${hidden}`);
   for(const forbidden of ['Business','Fleet','Enterprise','Admin','Owner Control'])if(new RegExp(`title:\\s*['"]${forbidden}`).test(layout))failures.push(`consumer tab shell must not expose operations workspace: ${forbidden}`);
   for(const token of ["'/explore'",'/saved','/qr','THE KLEENEST LOOP','YOUR NETWORK','/discover','/progress'])if(!home.includes(token))failures.push(`Home missing rich discovery/progression activation capability: ${token}`);
-  for(const token of ['listNearbyRestrooms','listAmenityCatalog','selectedAmenityNames','captureConsumerRouteIntent','navigateUrl','listLocationTrustSummaries','readNearbyCache','writeNearbyCache'])if(!explore.includes(token))failures.push(`Explore missing mature discovery capability: ${token}`);
-  if(!/pathname\s*:\s*['"]\/route['"]/.test(explore))failures.push('Explore missing mature discovery capability: route navigation');
+
+  const matureDiscoveryCapabilities=[
+    ['nearby restroom search',explore.includes('findAdaptiveNearbyRestrooms')&&adaptiveCore.includes('listNearbyRestroomsV3')&&adaptiveCore.includes("rpc('map_network_nearby_v3'")],
+    ['amenity catalog',explore.includes('listAmenityCatalog')],
+    ['selected amenity names',explore.includes('selectedAmenityNames')],
+    ['route intent capture',explore.includes('captureConsumerRouteIntent')],
+    ['external navigation',explore.includes('directionsUrl')&&explore.includes('Linking.openURL')],
+    ['location trust summaries',explore.includes('listLocationTrustSummaries')&&explore.includes('attachLocationTrust')],
+    ['nearby offline cache read',explore.includes('readNearbyCache')],
+    ['nearby offline cache write',explore.includes('writeNearbyCache')],
+    ['nearby continuity',explore.includes('readNearbyContinuity')&&explore.includes('writeNearbyContinuity')],
+  ];
+  for(const [capability,present] of matureDiscoveryCapabilities)if(!present)failures.push(`Explore missing mature discovery capability: ${capability}`);
+  if(!/router\.push\(\{pathname:\s*['"]\/route['"]/.test(explore))failures.push('Explore missing mature discovery capability: route navigation');
+  if(!explore.includes('findAdaptiveNearbyRestrooms')||!explore.includes('listRestroomsAlongRoute'))failures.push('Explore must preserve nearby discovery while adding along-route discovery.');
+  if(!explore.includes('selectedAmenityNames')||!explore.includes('matchRule'))failures.push('Explore amenity filters must remain wired into adaptive nearby and route queries.');
+
   for(const token of ['remote','address','place_search','map_pin','gps','onsite_live','saveDiscovery','saveEvidence','choosePhoto'])if(!discover.includes(token))failures.push(`Discover missing canonical contribution capability: ${token}`);
   for(const token of ['SPECIALTY LEVELS','WHAT TO DO NEXT','BADGES','RANKINGS','XP HISTORY'])if(!progress.includes(token))failures.push(`Progress missing canonical progression capability: ${token}`);
   for(const token of ['mobileCheckIn','createMobileReview','recordReviewAmenityInventory','uploadReviewPhotos','progressionSnapshot','completeTrustMission'])if(!location.includes(token))failures.push(`Location contribution loop missing: ${token}`);
