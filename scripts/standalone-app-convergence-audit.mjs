@@ -40,13 +40,23 @@ requireAll('Business Enterprise Location portfolio',businessEnterpriseLocations,
 requireAll('Business Enterprise Location actions',businessEnterpriseLocations,['Manage location','QR Studio','Reviews','Advanced Intelligence','Campaign engagement','Trust operations','Preventive operations','Notify customers/team']);
 requireAll('Business Enterprise Location metrics',businessEnterpriseLocations,['30-day searches','30-day location views','30-day check-ins','30-day reviews']);
 
-// Fleet standalone capability inventory -> Production Fleet app. Standalone intelligence is canonically named insights in Production.
+// Fleet standalone capability inventory -> Production Fleet app. Standalone dispatch is split into Planner + Dispatch in Production.
 const fleetIndex=requireFile('apps/fleet-mobile/app/index.tsx');
 const fleetLayout=requireFile('apps/fleet-mobile/app/_layout.tsx');
+const fleetPlanner=requireFile('apps/fleet-mobile/app/planner.tsx');
+const fleetDispatch=requireFile('apps/fleet-mobile/app/dispatch.tsx');
+const fleetMap=requireFile('apps/fleet-mobile/components/FleetMap.tsx');
+const fleetGeofence=requireFile('apps/fleet-mobile/services/geofence.ts');
+const fleetEnterpriseService=requireFile('apps/fleet-mobile/services/enterprise.ts');
 const fleetRoutes=['auth','capabilities','dispatch','enterprise','execution','index','insights','metrics','operations','premium','progression','signals','sync'];
 for(const route of fleetRoutes)requireFile(`apps/fleet-mobile/app/${route}.tsx`);
 for(const route of ['capabilities','dispatch','enterprise','execution','insights','metrics','operations','premium','progression','signals','sync'])discover('Fleet',`/${route}`,[fleetIndex,fleetLayout]);
 must(fleetIndex.includes('Intelligence')&&fleetIndex.includes('/insights'),'Fleet standalone Intelligence capability must remain exposed as the Production Insights workflow.');
+requireAll('Fleet map planner',fleetPlanner,['FleetMap','Save stop order','MAP ROUTING + DISPATCH','Search','5 mi','10 mi','25 mi','50 mi','100 mi','National','Assign vehicle','Assign driver','moveStop','Remove']);
+requireAll('Fleet dispatch execution',fleetDispatch,['Dispatch','Pause','Resume','Mark arrived','Start service','Complete stop','Depart stop','Skip']);
+requireAll('Fleet map interaction',fleetMap,['business_logo_url','routeStopIds','onInteractionChange','Recenter Fleet map']);
+requireAll('Fleet Live Network authority',fleetGeofence,['fleet_route_geofence_manifest','record_geofence_event','startGeofencingAsync','register_notification_native_push_token']);
+requireAll('Fleet Enterprise authority',fleetEnterpriseService,['getEnterpriseOperationalPortfolio','createEnterpriseNetwork','inviteEnterprisePartner','createPartnerAllocation','getPartnerNetworkBenchmark','getPartnerAllocationRoi']);
 
 // Owner/KleenestOS standalone capability inventory -> Production platform app. Standalone reports are folded into the richer moderation command center.
 const ownerIndex=requireFile('apps/platform-mobile/app/index.tsx');
