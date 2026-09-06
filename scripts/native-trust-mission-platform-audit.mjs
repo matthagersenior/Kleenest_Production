@@ -40,8 +40,6 @@ if(!failures.length){
   if(!activityService.includes("activityType==='trust_mission_completed'")||!activityService.includes('Completed a trust mission')||!activityService.includes('Full evidence goal')||!activityService.includes('Verified visit goal')||!activityService.includes('goalSatisfied')||!activityService.includes('rewardPoints'))failures.push('Personal Activity service must preserve mission completion tier and reward context.');
   if(!activityScreen.includes('TRUST MISSION')||!activityScreen.includes('FULL EVIDENCE')||!activityScreen.includes('VERIFIED VISIT')||!activityScreen.includes('View strengthened restroom'))failures.push('Activity must visibly distinguish mission reward tiers and deep-link to the strengthened restroom.');
 
-  // Progress is the canonical progression hub. Verify active mission authority and restroom
-  // navigation without restoring legacy Play ownership of progression.
   if(!progress.includes('readTrustMission')||!progress.includes('ACTIVE TRUST MISSION')||!progress.includes('activeMission.locationName')||!progress.includes("pathname:'/location/[id]'" )||!progress.includes('Resume mission')||!progress.includes('Clear mission'))failures.push('Progress must surface authoritative active mission state and restroom navigation.');
   if(!progress.includes('clearTrustMission')||!progress.includes('try{await clearTrustMission();setActiveMission(null)'))failures.push('Progress mission clearing must be explicit and clear local active state only after server cancellation succeeds.');
   if(!progress.includes("catch(error:any){setMessage(error?.message||'Trust mission could not be cleared.')"))failures.push('Progress must surface mission-clear failures while preserving active mission state.');
@@ -50,16 +48,15 @@ if(!failures.length){
   if(!routing.includes("if(isProgress(data,type))return stringValue(data.game_challenge_id)||type.includes('game')||type.includes('challenge')?'/games':'/progress'"))failures.push('Non-location progression notifications must route to canonical Progress or Game Center.');
   if(!routing.includes("if(explicit)return explicit==='/play'?'/progress':explicit;"))failures.push('Legacy explicit Play notification destinations must normalize to canonical Progress.');
 
-  // Trust missions remain a consumer capability, but they are intentionally kept out of the
-  // critical bathroom-finding path. Saved, Progress, Location, Activity, and notifications own
-  // mission lifecycle; Explore stays bathroom-first while retaining its mature discovery paths.
   if(explore.includes('readTrustMission')||explore.includes('trustMissionAction')||explore.includes('ACTIVE TRUST MISSION')||explore.includes('NEARBY TRUST MISSION'))failures.push('Explore must stay bathroom-first; trust mission lifecycle belongs to Progress, Saved, and Location.');
+  const routeHandoff=/pathname\s*:\s*['"]\/route['"]/.test(explore)&&explore.includes('captureConsumerRouteIntent');
+  const directionsAction=explore.includes('navigateUrl')&&explore.includes('Linking.openURL')&&explore.includes('Start directions');
   const bathroomFirst=[
     ['nearby search',explore.includes('findAdaptiveNearbyRestrooms')&&explore.includes('listNearbyRestrooms')],
     ['trust summaries',explore.includes('listLocationTrustSummaries')&&explore.includes('attachLocationTrust')],
     ['full details action',explore.includes('Full details')&&explore.includes('router.push(`/location/${idOf(selected)}`)')],
-    ['directions action',explore.includes('Directions')&&explore.includes('Linking.openURL')],
-    ['route handoff',explore.includes("pathname:'/route'")&&explore.includes('captureConsumerRouteIntent')],
+    ['directions action',directionsAction],
+    ['route handoff',routeHandoff],
   ];
   for(const [name,present] of bathroomFirst)if(!present)failures.push(`Explore bathroom-first mission boundary missing ${name}.`);
 
