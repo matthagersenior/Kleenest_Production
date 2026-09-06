@@ -9,7 +9,7 @@ import { defaultQrDesign, normalizeQrDesign, saveQrVisualDesign, type QrDesign }
 import { pickAndUploadQrBranding } from '../services/media';
 
 type Row=Record<string,any>;
-const copy=<T,>(v:T):T=>JSON.parse(JSON.stringify(v));
+const cloneDesign=(v:QrDesign):QrDesign=>({...v,design:{...v.design,logo:{...v.design.logo}},frame:{...v.frame},brand:{...v.brand}});
 const idOf=(row:Row)=>String(row.id||row.qr_id||'');
 const payloadOf=(row:Row)=>String(row.public_url||row.landing_url||row.code||row.qr_code||idOf(row)||'https://kleenest.app/qr');
 function rgb(hex:string){const c=hex.replace('#','');if(!/^[0-9a-f]{6}$/i.test(c))return null;return[0,2,4].map(i=>parseInt(c.slice(i,i+2),16));}
@@ -17,7 +17,7 @@ function luminance(hex:string){const r=rgb(hex);if(!r)return null;const v=r.map(
 function contrast(a:string,b:string){const x=luminance(a),y=luminance(b);if(x==null||y==null)return 0;return(Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
 
 export default function QrDesigner(){
- const[businessId,setBusinessId]=useState(''),[assets,setAssets]=useState<Row[]>([]),[selectedId,setSelectedId]=useState(''),[businessLogo,setBusinessLogo]=useState(''),[design,setDesign]=useState<QrDesign>(copy(defaultQrDesign)),[busy,setBusy]=useState(false),[message,setMessage]=useState('Loading QR designer…');
+ const[businessId,setBusinessId]=useState(''),[assets,setAssets]=useState<Row[]>([]),[selectedId,setSelectedId]=useState(''),[businessLogo,setBusinessLogo]=useState(''),[design,setDesign]=useState<QrDesign>(cloneDesign(defaultQrDesign)),[busy,setBusy]=useState(false),[message,setMessage]=useState('Loading QR designer…');
  async function load(){setBusy(true);try{const id=businessId||await currentBusinessId();setBusinessId(id);const[a,d]=await Promise.all([listQrStudioAssets(id),getBusinessDashboard(id)]);setAssets(a as Row[]);setBusinessLogo(String(d?.profile?.logo_url||''));const next=(a as Row[]).find(row=>idOf(row)===selectedId)||(a as Row[])[0];if(next){setSelectedId(idOf(next));setDesign(normalizeQrDesign(next.customization||next.design));}setMessage('')}catch(e:any){setMessage(e?.message||'QR designer unavailable.')}finally{setBusy(false)}}
  useEffect(()=>{void load()},[]);
  const selected=useMemo(()=>assets.find(row=>idOf(row)===selectedId)||null,[assets,selectedId]);
