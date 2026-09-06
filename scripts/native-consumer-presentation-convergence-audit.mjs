@@ -6,7 +6,10 @@ const requireAll=(path,tokens)=>{const source=read(path);for(const token of toke
 const ui=requireAll('apps/consumer-mobile/components/ConsumerUI.tsx',['HeroCard','FeatureCard','SectionHeader','TrustStrip','MetricTile','palette']);
 const layout=requireAll('apps/consumer-mobile/app/_layout.tsx',["title:'Home'","title:'Explore'","title:'Progress'","title:'Community'","title:'Profile'","name=\"play\"","name=\"discover\"","name=\"preferences\"",'tabBarActiveTintColor']);
 const home=requireAll('apps/consumer-mobile/app/index.tsx',['Find a better bathroom. Discover what the map is missing.','THE KLEENEST LOOP','YOUR NETWORK','XP + levels','Add a missing place','Membership','Game Center','Support']);
-const explore=requireAll('apps/consumer-mobile/app/explore.tsx',['Find a trusted bathroom.','BEST NEXT DECISION','What matters on this stop?','Start directions →','listLocationTrustSummaries','listNearbyRestrooms',"router.push('/discover')"]);
+const explorePath='apps/consumer-mobile/app/explore.tsx';
+const adaptiveExplorePath='apps/consumer-mobile/features/AdaptiveExploreScreen.tsx';
+const explore=`${read(explorePath)}\n${read(adaptiveExplorePath)}`;
+for(const token of ['Find a trusted bathroom.','BEST NEXT DECISION','What matters on this stop?','Start directions →','listLocationTrustSummaries','listNearbyRestrooms',"router.push('/discover')"])if(!explore.includes(token))throw new Error(`Canonical Explore presentation missing contract: ${token}`);
 const discover=requireAll('apps/consumer-mobile/app/discover.tsx',['matchOrCreateDiscovery','recordDiscoveryEvidence','uploadDiscoveryPhoto','onsite_live']);
 const progress=requireAll('apps/consumer-mobile/app/progress.tsx',['SPECIALTY LEVELS','Quests','Missions','Challenges','Journeys','Campaigns','Contests','BADGES','RANKINGS']);
 const profile=requireAll('apps/consumer-mobile/app/profile.tsx',['Your restroom network','Your progress and people','Control your Kleenest','Privacy & preferences','Scan a Kleenest code','Contribution-backed standing','update_my_public_profile']);
