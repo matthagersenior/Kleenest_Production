@@ -29,7 +29,7 @@ if(!failures.length){
     ['nearby continuity',explore.includes('readNearbyContinuity')&&explore.includes('writeNearbyContinuity')],
   ];
   for(const [capability,present] of matureDiscoveryCapabilities)if(!present)failures.push(`Explore missing mature discovery capability: ${capability}`);
-  if(!/router\.push\(\{pathname:\s*['"]\/route['"]/.test(explore))failures.push('Explore missing mature discovery capability: route navigation');
+  if(!/router\.push\(\s*\{\s*pathname\s*:\s*['"]\/route['"]/.test(explore))failures.push('Explore missing mature discovery capability: route navigation');
   if(!explore.includes('findAdaptiveNearbyRestrooms')||!explore.includes('listRestroomsAlongRoute'))failures.push('Explore must preserve nearby discovery while adding along-route discovery.');
   if(!explore.includes('selectedAmenityNames')||!explore.includes('matchRule'))failures.push('Explore amenity filters must remain wired into adaptive nearby and route queries.');
 
