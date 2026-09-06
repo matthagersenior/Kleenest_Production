@@ -81,7 +81,12 @@ jobs:
           node -e "const c=require(process.env.RUNNER_TEMP+'/expo.json');if(c.android?.package!=='${{ matrix.package }}')process.exit(1);if(!c.android?.googleServicesFile)throw new Error('googleServicesFile missing from Expo config')"
           npx expo prebuild --platform android --clean --no-install
           test -f android/app/google-services.json
-          grep -Rqs 'google_app_id' android/app/build.gradle android/app/src/main/res android/app/google-services.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const f=JSON.parse(fs.readFileSync('android/app/google-services.json','utf8'));
+          const client=f.client?.find(c=>c.client_info?.android_client_info?.package_name==='${{ matrix.package }}');
+          if(!client?.client_info?.mobilesdk_app_id) throw new Error('Generated Android project is missing Firebase app identity for ${{ matrix.package }}');
+          NODE
       - name: Build release APK
         working-directory: ${{ matrix.dir }}/android
         run: ./gradlew assembleRelease --no-daemon --stacktrace
