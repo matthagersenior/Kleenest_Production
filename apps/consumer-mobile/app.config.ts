@@ -3,6 +3,7 @@ import type { ExpoConfig } from 'expo/config';
 const PRODUCTION_EAS_PROJECT_ID = '22a65aa3-c615-4c4f-a34d-084babc28fd7';
 const configuredEasProjectId = process.env.EAS_PROJECT_ID;
 const standaloneAndroid = process.env.KLEENEST_STANDALONE_ANDROID === '1';
+const googleServicesFile = process.env.GOOGLE_SERVICES_FILE;
 
 if (configuredEasProjectId && configuredEasProjectId !== PRODUCTION_EAS_PROJECT_ID) {
   throw new Error(`[Kleenest] EAS_PROJECT_ID drift detected. Expected ${PRODUCTION_EAS_PROJECT_ID}, received ${configuredEasProjectId}.`);
@@ -42,6 +43,7 @@ const config: ExpoConfig = {
   android: {
     package: 'com.kleenest.app',
     icon: './assets/app-icon.png',
+    ...(googleServicesFile ? { googleServicesFile } : {}),
     permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION', 'ACCESS_BACKGROUND_LOCATION', 'CAMERA'],
     blockedPermissions: ['android.permission.RECORD_AUDIO', 'android.permission.SYSTEM_ALERT_WINDOW'],
     intentFilters: [{
