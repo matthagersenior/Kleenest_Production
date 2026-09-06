@@ -35,6 +35,8 @@ jobs:
         run: node scripts/native-consumer-accessibility-polish-audit.mjs
       - name: Consumer discovery continuity
         run: node scripts/native-consumer-continuity-audit.mjs
+      - name: Consumer adaptive route discovery
+        run: node scripts/consumer-adaptive-route-search-audit.mjs
       - name: Consumer recovery convergence
         run: node scripts/native-consumer-recovery-audit.mjs
       - name: Consumer Google authentication
