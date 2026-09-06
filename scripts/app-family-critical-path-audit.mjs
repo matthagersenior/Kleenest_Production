@@ -13,11 +13,11 @@ requireFile(consumerLocation,'consumer');
 requireTokens(consumerLocation,'consumer',['findLatestEligibleReviewCheckIn','Location.Accuracy.High','mobileCheckIn','createMobileReview','await refresh()','setAmenityRefresh','setPhotoRefresh']);
 if(exists(consumerLocation)&&!/if\(submitting\|\|!checkInId(?:\|\|[^)]*)?\)return/.test(read(consumerLocation)))failures.push('consumer: verified review submission is not gated by an eligible check-in');
 
-// Google OAuth: every mobile surface must return through its own deep link, exchange the Supabase session, and let the user choose the Google account.
-requireTokens('apps/consumer-mobile/app/profile.tsx','consumer oauth',["provider:'google'","prompt:'select_account'",'mobileAuthRedirect','handleAuthUrl','exchangeCodeForSession','Continue with Google']);
-requireTokens('apps/business-mobile/app/account.tsx','business oauth',["import * as Linking from 'expo-linking'","scheme:'kleenest-business'","provider:'google'","prompt:'select_account'",'handleAuthUrl','exchangeCodeForSession','Continue with Google']);
-requireTokens('apps/fleet-mobile/app/account.tsx','fleet oauth',["import * as Linking from 'expo-linking'","scheme:'kleenest-fleet'","provider:'google'","prompt:'select_account'",'handleAuthUrl','exchangeCodeForSession','Continue with Google']);
-requireTokens('apps/platform-mobile/app/account.tsx','owner oauth',["import * as Linking from 'expo-linking'","scheme:'kleenest-owner'","provider:'google'","prompt:'select_account'",'handleAuthUrl','exchangeCodeForSession','Continue with Google','getOwnerAuthorization','a.authorized',"signOut({scope:'local'})"]);
+// Google OAuth: all role apps must use Supabase OAuth and return through their own registered deep link.
+requireTokens('apps/consumer-mobile/app/profile.tsx','consumer oauth',["provider:'google'",'mobileAuthRedirect','handleAuthUrl','exchangeCodeForSession','Continue with Google']);
+requireTokens('apps/business-mobile/app/account.tsx','business oauth',["import * as Linking from 'expo-linking'","scheme:'kleenest-business'","provider:'google'",'handleAuthUrl','exchangeCodeForSession','Continue with Google']);
+requireTokens('apps/fleet-mobile/app/account.tsx','fleet oauth',["import * as Linking from 'expo-linking'","scheme:'kleenest-fleet'","provider:'google'",'handleAuthUrl','exchangeCodeForSession','Continue with Google']);
+requireTokens('apps/platform-mobile/app/account.tsx','owner oauth',["import * as Linking from 'expo-linking'","scheme:'kleenest-owner'","provider:'google'",'handleAuthUrl','exchangeCodeForSession','Continue with Google','getOwnerAuthorization','a.authorized',"signOut({scope:'local'})"]);
 
 // Business: canonical QR Studio must protect scan quality and preserve versioned workflow behavior.
 const qr='apps/business-mobile/app/qr-studio.tsx';
