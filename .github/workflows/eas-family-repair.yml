@@ -95,11 +95,29 @@ jobs:
           const f=JSON.parse(fs.readFileSync('${{ matrix.dir }}/google-services.json','utf8'));
           if(!f.client?.some(c=>c.client_info?.android_client_info?.package_name==='${{ matrix.package }}')) throw new Error('Firebase config does not authorize ${{ matrix.package }}');
           NODE
-          # EAS local builds create a VCS archive before prebuild. The Firebase file is
-          # intentionally gitignored, so add it only to this runner's temporary index so
-          # it is present in that archive without ever committing the secret to the repo.
-          git add -f '${{ matrix.dir }}/google-services.json'
-          git ls-files --error-unmatch '${{ matrix.dir }}/google-services.json' >/dev/null
+      - name: Include ephemeral Firebase config in EAS project archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT_IGNORE="$GITHUB_WORKSPACE/.easignore"
+          if [ -f "$GITHUB_WORKSPACE/.gitignore" ]; then
+            cp "$GITHUB_WORKSPACE/.gitignore" "$ROOT_IGNORE"
+          else
+            : > "$ROOT_IGNORE"
+          fi
+          printf '\n# CI-only EAS include for Firebase Android config\n!${{ matrix.dir }}/google-services.json\n' >> "$ROOT_IGNORE"
+
+          APP_IGNORE="$GITHUB_WORKSPACE/${{ matrix.dir }}/.easignore"
+          if [ -f "$GITHUB_WORKSPACE/${{ matrix.dir }}/.gitignore" ]; then
+            cp "$GITHUB_WORKSPACE/${{ matrix.dir }}/.gitignore" "$APP_IGNORE"
+          else
+            : > "$APP_IGNORE"
+          fi
+          printf '\n# CI-only EAS include for Firebase Android config\n!google-services.json\n' >> "$APP_IGNORE"
+
+          test -s '${{ matrix.dir }}/google-services.json'
+          grep -Fq '!${{ matrix.dir }}/google-services.json' "$ROOT_IGNORE"
+          grep -Fq '!google-services.json' "$APP_IGNORE"
       - name: Verify Expo identity
         working-directory: ${{ matrix.dir }}
         shell: bash
