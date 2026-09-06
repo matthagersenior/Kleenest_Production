@@ -3,7 +3,7 @@ import fs from 'node:fs';
 const contract = JSON.parse(fs.readFileSync('config/production-environment.json', 'utf8'));
 const expoEnv = fs.readFileSync('apps/consumer-mobile/.env', 'utf8');
 const appConfig = fs.readFileSync('apps/consumer-mobile/app.config.ts', 'utf8');
-const androidWorkflow = fs.readFileSync('.github/workflows/android-preview.yml', 'utf8');
+const androidWorkflow = fs.readFileSync('.github/workflows/eas-android-build.yml', 'utf8');
 const mobileCore = fs.readFileSync('packages/mobile-core/src/index.ts', 'utf8');
 
 const required = [
@@ -45,7 +45,7 @@ if (!mobileCore.includes('EXPO_PUBLIC_SUPABASE_URL') || !mobileCore.includes('EX
 }
 
 for (const expected of [contract.expo.projectId, contract.supabase.url, contract.supabase.publishableKey]) {
-  if (!androidWorkflow.includes(expected)) throw new Error(`Android preview workflow drift: missing ${expected}.`);
+  if (!androidWorkflow.includes(expected)) throw new Error(`EAS Android workflow drift: missing ${expected}.`);
 }
 
 const forbidden = [/SUPABASE_SERVICE_ROLE_KEY\s*=/i, /SUPABASE_SECRET_KEY\s*=/i, /sb_secret_[A-Za-z0-9_-]+/i];
