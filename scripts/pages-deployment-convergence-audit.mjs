@@ -38,4 +38,4 @@ for(const token of ['window.localStorage','kleenest.preview.secure.'])requireTok
 for(const token of ['getLastNotificationResponseAsync','clearLastNotificationResponseAsync','addNotificationResponseReceivedListener'])requireToken(notificationsPreview,token,'Notifications preview adapter');
 if(/platform\s*!==\s*['"]web['"]/.test(metro))throw new Error('Metro preview aliases must be positively scoped to web only.');
 
-console.log('Consumer web preview validation and family-owned installer deployment audit passed.');
+console.log('Consumer web preview validation, legal resources, and family-owned installer deployment audit passed.');
