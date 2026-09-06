@@ -1,0 +1,30 @@
+name: Expo Push Token Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/expo-push-token-validation-audit.mjs'
+      - '.github/workflows/expo-push-token-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/expo-push-token-validation-audit.mjs'
+      - '.github/workflows/expo-push-token-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Expo push token validation
+        run: node scripts/expo-push-token-validation-audit.mjs
