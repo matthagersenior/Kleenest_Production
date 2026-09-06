@@ -18,11 +18,11 @@ if(!failures.length){
   for(const token of ["'/explore'",'/saved','/qr','THE KLEENEST LOOP','YOUR NETWORK','/discover','/progress'])if(!home.includes(token))failures.push(`Home missing rich discovery/progression activation capability: ${token}`);
 
   const matureDiscoveryCapabilities=[
-    ['nearby restroom search',explore.includes('findAdaptiveNearbyRestrooms')&&adaptiveCore.includes('listNearbyRestroomsV3')&&adaptiveCore.includes("rpc('map_network_nearby_v3'")],
+    ['nearby restroom search',explore.includes('findAdaptiveNearbyRestrooms')&&explore.includes('listNearbyRestrooms')&&adaptiveCore.includes('listNearbyRestroomsV3')&&adaptiveCore.includes("rpc('map_network_nearby_v3'")],
     ['amenity catalog',explore.includes('listAmenityCatalog')],
     ['selected amenity names',explore.includes('selectedAmenityNames')],
     ['route intent capture',explore.includes('captureConsumerRouteIntent')],
-    ['external navigation',explore.includes('directionsUrl')&&explore.includes('Linking.openURL')],
+    ['external navigation',(explore.includes('navigateUrl')||explore.includes('directionsUrl'))&&explore.includes('Linking.openURL')],
     ['location trust summaries',explore.includes('listLocationTrustSummaries')&&explore.includes('attachLocationTrust')],
     ['nearby offline cache read',explore.includes('readNearbyCache')],
     ['nearby offline cache write',explore.includes('writeNearbyCache')],
