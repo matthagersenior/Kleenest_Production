@@ -12,6 +12,7 @@ on:
       - 'packages/mobile-core/**'
       - 'scripts/**'
       - 'package.json'
+      - '.github/workflows/eas-family-repair.yml'
       - '.github/workflows/eas-install-ready.yml'
 
 permissions:
@@ -93,13 +94,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-
       - name: Require Expo automation token
         run: test -n "$EXPO_TOKEN"
-
       - name: Install dependencies
         run: npm install --no-package-lock --no-audit --no-fund
-
       - name: Materialize package-specific Firebase config
         shell: bash
         env:
@@ -122,11 +120,8 @@ jobs:
           const fs=require('fs');
           const file='${{ matrix.dir }}/google-services.json';
           const config=JSON.parse(fs.readFileSync(file,'utf8'));
-          if(!config.client?.some(c=>c.client_info?.android_client_info?.package_name==='${{ matrix.package }}')) {
-            throw new Error('Firebase config does not authorize ${{ matrix.package }}');
-          }
+          if(!config.client?.some(c=>c.client_info?.android_client_info?.package_name==='${{ matrix.package }}')) throw new Error('Firebase config does not authorize ${{ matrix.package }}');
           NODE
-
       - name: Inject cloud-build environment into candidate profile
         shell: bash
         run: |
@@ -148,7 +143,6 @@ jobs:
           };
           fs.writeFileSync(file,JSON.stringify(config,null,2)+'\n');
           NODE
-
       - name: Include ephemeral Firebase config in EAS archive
         shell: bash
         run: |
@@ -160,7 +154,6 @@ jobs:
           if [ -f "$GITHUB_WORKSPACE/${{ matrix.dir }}/.gitignore" ]; then cp "$GITHUB_WORKSPACE/${{ matrix.dir }}/.gitignore" "$APP_IGNORE"; else : > "$APP_IGNORE"; fi
           printf '\n# CI-only Firebase include\n!google-services.json\n' >> "$APP_IGNORE"
           test -s '${{ matrix.dir }}/google-services.json'
-
       - name: Verify app identity before build
         working-directory: ${{ matrix.dir }}
         shell: bash
@@ -176,7 +169,6 @@ jobs:
           if(!c.android?.googleServicesFile) throw new Error('googleServicesFile missing');
           if(!c.icon||!c.android?.icon) throw new Error('Launcher icon missing');
           NODE
-
       - name: Build signed APK in EAS cloud
         id: eas
         working-directory: ${{ matrix.dir }}
@@ -196,14 +188,12 @@ jobs:
           if(!url) throw new Error('EAS returned no application archive URL');
           fs.appendFileSync(outputPath,`build_id=${build.id}\narchive_url=${url}\n`);
           NODE
-
       - name: Download signed APK
         shell: bash
         run: |
           set -euo pipefail
           curl --fail --location --retry 5 --retry-delay 5 --retry-all-errors '${{ steps.eas.outputs.archive_url }}' -o '${{ matrix.artifact }}'
           test -s '${{ matrix.artifact }}'
-
       - name: Verify package, signature, and archive
         shell: bash
         run: |
@@ -215,10 +205,7 @@ jobs:
           "$APKSIGNER" verify --print-certs "$APK" | tee '${{ matrix.app }}-signing-cert.txt'
           "$AAPT" dump badging "$APK" | tee '${{ matrix.app }}-badging.txt'
           grep -Fq "package: name='${{ matrix.package }}'" '${{ matrix.app }}-badging.txt'
-          if grep -Fqi 'CN=Android Debug' '${{ matrix.app }}-signing-cert.txt'; then
-            echo 'Refusing debug signing identity.' >&2
-            exit 1
-          fi
+          if grep -Fqi 'CN=Android Debug' '${{ matrix.app }}-signing-cert.txt'; then echo 'Refusing debug signing identity.' >&2; exit 1; fi
           RAW_SHA1="$(awk -F': ' '/certificate SHA-1 digest:/{print $NF; exit}' '${{ matrix.app }}-signing-cert.txt')"
           NORMALIZED_SHA1="$(printf '%s' "$RAW_SHA1" | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]')"
           printf '%s' "$NORMALIZED_SHA1" | grep -Eq '^[0-9A-F]{40}$'
@@ -226,11 +213,9 @@ jobs:
           printf '%s\n' "$SIGNING_SHA1" > '${{ matrix.app }}-signing-sha1.txt'
           sha256sum "$APK" > "$APK.sha256"
           unzip -t "$APK" >/dev/null
-
       - name: Enable KVM
         shell: bash
         run: if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
-
       - name: Android 16 install/startup smoke
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -240,7 +225,6 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
           script: bash scripts/android-startup-smoke.sh '${{ matrix.artifact }}' '${{ matrix.package }}' '${{ matrix.app }}' '${{ matrix.deeplink }}' 'android-startup-logs/${{ matrix.app }}'
-
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
@@ -252,7 +236,6 @@ jobs:
             ${{ matrix.app }}-signing-sha1.txt
           if-no-files-found: error
           retention-days: 30
-
       - name: Upload startup diagnostics
         if: always()
         uses: actions/upload-artifact@v4
