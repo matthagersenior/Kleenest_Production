@@ -13,7 +13,7 @@ if(!failures.length){const read=file=>fs.readFileSync(file,'utf8'),trust=read(fi
  // Explore is the lightweight bathroom finder. Verify behavior rather than exact formatting.
  const compactExplore=explore.replace(/\s+/g,'');
  for(const token of ['trust?.verified_visit_count','trust?.photo_evidence_count','trust?.amenity_evidence_count','trust?.latest_verified_at','visitFreshness(trust?.latest_verified_at)','BEST NEXT DECISION','Start directions'])if(!explore.includes(token))failures.push(`Explore lightweight trust support missing: ${token}`);
- if(!/listLocationTrustSummaries\(data\.map\(/.test(compactExplore)||!compactExplore.includes('attachLocationTrust(data,summaries)'))failures.push('Explore must enrich nearby results with one batched trust request.');
+ if(!compactExplore.includes('listLocationTrustSummaries(ids)')||!compactExplore.includes('attachLocationTrust(data,summaries)'))failures.push('Explore must enrich nearby results with one batched trust request.');
  if(!explore.includes('listNearbyRestrooms')||!explore.includes('distanceLabel(item.distance_meters)')||!explore.includes('distanceLabel(selected.distance_meters)'))failures.push('Explore must explicitly preserve nearby/distance relevance as the primary decision contract.');
  for(const forbidden of ['NEARBY TRUST MISSION','beginMission','startTrustMission(missionFromTrust','setSortMode(\'evidence\')','markerMission','markerBest'])if(explore.includes(forbidden))failures.push(`Explore must keep advanced trust workflow out of the bathroom-finding path: ${forbidden}`);
  if(!explore.includes('markerActive')||!compactExplore.includes('active=id===selectedId'))failures.push('Explore must still distinguish the user-selected bathroom marker from unselected nearby results.');
