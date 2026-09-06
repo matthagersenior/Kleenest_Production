@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: kleenest-app-family-play-aab
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   verify-family:
@@ -113,6 +113,47 @@ jobs:
           test -n "$FLEET_GOOGLE_SERVICES_JSON_BASE64" || { echo 'FLEET_GOOGLE_SERVICES_JSON_BASE64 is required; refusing to ship Fleet push without Firebase.' >&2; exit 1; }
           printf '%s' "$FLEET_GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > apps/fleet-mobile/google-services.json
           node -e "const f=require('./apps/fleet-mobile/google-services.json'); if(!f.project_info?.project_id||!f.client?.some(c=>c.client_info?.android_client_info?.package_name==='com.kleenest.fleet')) throw new Error('Fleet google-services.json does not authorize com.kleenest.fleet')"
+      - name: Configure KleenestOS Firebase services
+        if: matrix.app == 'KleenestOS'
+        shell: bash
+        env:
+          OWNER_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.OWNER_GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${OWNER_GOOGLE_SERVICES_JSON_BASE64:-}" ]; then
+            echo 'KLEENEST_NATIVE_PUSH_CONFIGURED=0' >> "$GITHUB_ENV"
+            node - <<'NODE'
+          const fs=require('fs');
+          const path='apps/platform-mobile/eas.json';
+          const eas=JSON.parse(fs.readFileSync(path,'utf8'));
+          eas.build.production.env={...(eas.build.production.env||{}),KLEENEST_NATIVE_PUSH_CONFIGURED:'0'};
+          fs.writeFileSync(path,JSON.stringify(eas,null,2)+'\n');
+          NODE
+            echo 'Owner Firebase credential is not present; building with native push safely disabled.'
+            exit 0
+          fi
+          printf '%s' "$OWNER_GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > apps/platform-mobile/google-services.json
+          node -e "const f=require('./apps/platform-mobile/google-services.json'); if(!f.project_info?.project_id||!f.client?.some(c=>c.client_info?.android_client_info?.package_name==='com.kleenest.platform')) throw new Error('Owner google-services.json does not authorize com.kleenest.platform')"
+          echo 'KLEENEST_NATIVE_PUSH_CONFIGURED=1' >> "$GITHUB_ENV"
+          node - <<'NODE'
+          const fs=require('fs');
+          const path='apps/platform-mobile/eas.json';
+          const eas=JSON.parse(fs.readFileSync(path,'utf8'));
+          eas.build.production.env={...(eas.build.production.env||{}),KLEENEST_NATIVE_PUSH_CONFIGURED:'1'};
+          fs.writeFileSync(path,JSON.stringify(eas,null,2)+'\n');
+          NODE
+      - name: Include generated Firebase config in EAS local archive
+        if: matrix.app == 'Fleet' || matrix.app == 'KleenestOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .gitignore .easignore
+          if [ '${{ matrix.app }}' = 'Fleet' ]; then
+            test -s apps/fleet-mobile/google-services.json
+            printf '\n!apps/fleet-mobile/google-services.json\n' >> .easignore
+          elif [ -s apps/platform-mobile/google-services.json ]; then
+            printf '\n!apps/platform-mobile/google-services.json\n' >> .easignore
+          fi
       - name: Verify app identity and production profile
         shell: bash
         run: |
