@@ -28,4 +28,27 @@ if(!screen.includes('selectedAmenityNames.length > 0 && autoExpand'))throw new E
 if(!screen.includes('useState(402336)'))throw new Error('Required-amenity expansion must default to the supported 250 mile ceiling.');
 if(!screen.includes('effectiveRadiusMeters')||!screen.includes('attemptedRadiiMeters'))throw new Error('Adaptive expansion provenance is not surfaced to the UI.');
 if(!screen.includes('route.distanceMiles')||!screen.includes('route.durationMinutes'))throw new Error('Along-route distance/ETA must derive from actual built-route totals.');
+
+// The mature Explore composition is the default contract. Adaptive route / long-range controls are progressive disclosure,
+// not a replacement screen that pushes the fixed map and result list below configuration chrome.
+for(const token of [
+  'const [showAdvanced, setShowAdvanced] = useState(false);',
+  'Road trip / advanced',
+  'Advanced trip controls',
+  'setShowAdvanced((current) => !current)',
+  'showAdvanced ? (',
+  'MapLegend',
+  'Close selected location',
+  'Start directions →',
+])requireToken(screen,token,'Consumer mature Explore composition');
+const advancedStart=screen.indexOf('showAdvanced ? (');
+for(const token of ['<View style={s.segment}>','Expand for required amenities','Maximum distance','Route corridor','Must include all','Include any']){
+  const index=screen.indexOf(token);
+  if(index<advancedStart)throw new Error(`Consumer mature Explore must keep ${token} behind advanced disclosure.`);
+}
+const radiusIndex=screen.indexOf('radiusChoices.map');
+const amenityIndex=screen.indexOf('filterAmenities.map');
+const mapIndex=screen.indexOf('<View style={s.mapSection}>');
+if(!(radiusIndex>0&&amenityIndex>radiusIndex&&mapIndex>amenityIndex))throw new Error('Consumer mature Explore must preserve radius → amenities → fixed map ordering.');
+
 console.log('Consumer adaptive nearby and route-aware restroom discovery authority audit passed.');
