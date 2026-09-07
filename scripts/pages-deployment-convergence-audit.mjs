@@ -26,8 +26,8 @@ for(const token of ['Publish Consumer Standalone Installer','Build Kleenest App 
 for(const token of ['Build Kleenest App Family Android APKs','Kleenest-Consumer-Standalone-APK','Kleenest-Consumer.apk','Android 16 startup smoke'])requireToken(familyAndroid,token,'Family Android release workflow');
 for(const file of ['public/legal/privacy.html','public/legal/account-deletion.html','public/legal/terms.html','public/legal/community-guidelines.html'])if(!fs.existsSync(file))throw new Error(`Public Play-review legal resource missing: ${file}.`);
 if(!installer.includes("github.event.workflow_run.head_branch == 'main'"))throw new Error('Consumer installer deployment must be scoped to main family builds.');
-if(!installer.includes("github.event.workflow_run.conclusion != 'cancelled'"))throw new Error('Consumer installer deployment must ignore cancelled family runs while allowing a verified Consumer artifact to publish when another app fails.');
-if(installer.includes("github.event.workflow_run.conclusion == 'success'"))throw new Error('Consumer installer deployment must not block legal/Consumer publishing solely because another app-family matrix job failed.');
+if(!installer.includes("github.event.workflow_run.conclusion == 'success'"))throw new Error('Consumer installer deployment must require a successful verified app-family build before publishing.');
+if(installer.includes("github.event.workflow_run.conclusion != 'cancelled'"))throw new Error('Consumer installer deployment must not publish from failed or skipped family builds.');
 
 for(const token of ["output: 'single'","bundler: 'metro'","baseUrl: '/Kleenest_Production'","previewRole: 'non-blocking-web-preview'"])requireToken(appConfig,token,'Expo consumer preview config');
 if(pkg.scripts?.['web:export']!=='expo export --platform web')throw new Error('Consumer app must expose canonical Expo web export script.');
