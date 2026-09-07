@@ -25,6 +25,7 @@ for (const name of [
   'native-secret-hygiene.yml',
   'sync-kleenest-data.yml',
   'native-push-repair-candidates.yml',
+  'eas-install-ready.yml',
   'ota-family.yml',
 ]) {
   const workflow = read(name);
@@ -35,6 +36,7 @@ for (const name of [
 for (const name of [
   'eas-family-repair.yml',
   'native-push-repair-candidates.yml',
+  'eas-install-ready.yml',
   'ota-family.yml',
 ]) requireManualOnly(name);
 
