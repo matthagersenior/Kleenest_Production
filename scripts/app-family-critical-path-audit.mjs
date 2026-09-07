@@ -45,14 +45,21 @@ requireTokens('apps/fleet-mobile/app/planner.tsx','fleet',["['5 mi',8047]",'flee
 requireTokens('apps/fleet-mobile/app/execution.tsx','fleet',['getFleetRouteGeofenceManifest','recordFleetGeofenceEvent','recordOrQueueRouteStopTiming','replayOfflineRouteEvents','Location.watchPositionAsync']);
 requireTokens('apps/fleet-mobile/services/offline.ts','fleet',["rpc('create_offline_pack'",'p_client_event_id:row.id','already_synced','AsyncStorage.setItem(KEY']);
 requireTokens('supabase/migrations/20260905191032_add_manager_fleet_dispatch_overview.sql','fleet',['fleet_actor_is_manager','fleet_manager_dispatch','grant execute']);
+// Enterprise partner operations must use selectable businesses rather than raw database identifiers.
+const fleetEnterprise='apps/fleet-mobile/app/enterprise.tsx';
+requireTokens(fleetEnterprise,'fleet enterprise',['listEnterprisePartnerBusinesses','setPartnerByNetwork','No database ID entry is required.','Invite selected partner']);
+if(exists(fleetEnterprise)&&read(fleetEnterprise).includes('Partner Business UUID'))failures.push('fleet enterprise: operators must not paste raw Business UUIDs to invite partners');
 
 // Owner: KleenestOS must lead with actionable health and expose actual operating control planes.
 const ownerOs='apps/platform-mobile/components/KleenestOS.tsx';
 const ownerHome='apps/platform-mobile/app/index.tsx';
+const ownerBusinesses='apps/platform-mobile/app/businesses.tsx';
 requireFile(ownerOs,'owner');
 requireTokens(ownerOs,'owner',['OSHero','HealthCard','StatusPill','SectionHeader','DiagnosticDisclosure']);
 requireTokens(ownerHome,'owner',['OSHero','HealthCard','Needs attention','ECONOMY PULSE','People & Access','Businesses & Network','Trust & Moderation','Operations']);
-requireTokens('apps/platform-mobile/app/businesses.tsx','owner',['Fleet enabled','Enterprise enabled','Add member','Remove member']);
+requireTokens(ownerBusinesses,'owner',['Fleet enabled','Enterprise enabled','Add member','Remove member','claim.location_name','claim.location_address','placeholder="Business name"']);
+if(exists(ownerBusinesses)&&read(ownerBusinesses).includes("String(claim.location_id||'').slice(0,8)"))failures.push('owner: location claims must show human-readable location identity instead of truncated UUIDs');
+requireTokens('supabase/migrations/20260907091728_owner_business_claim_location_labels.sql','owner',['location_name','location_address','left join public.locations']);
 requireTokens('apps/platform-mobile/app/progression.tsx','owner',['Economy & Progression Studio','Create objective','Edit XP','Refresh progression supply']);
 requireTokens('apps/platform-mobile/app/data.tsx','owner',['Create record','Edit record','Delete record','PROTECTED']);
 if(exists(ownerHome)&&read(ownerHome).includes('JSON.stringify('))failures.push('owner: Command Center must not render raw JSON as primary UX');
