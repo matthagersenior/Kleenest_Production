@@ -16,16 +16,19 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: package.json
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        timeout-minutes: 10
+        run: npm ci --no-audit --no-fund --prefer-offline
       - name: Dependency advisory gate
+        timeout-minutes: 5
         run: npm audit --audit-level=moderate
       - name: CI freshness policy
         run: node scripts/ci-freshness-policy-audit.mjs
