@@ -23,7 +23,7 @@ export default function OfflineScreen(){
       setRoutes(r);
       const localById=new Map(local.map(pack=>[String(pack.id),pack]));
       const remoteIds=new Set((remote||[]).map(pack=>String(pack.id)));
-      const merged=(remote||[]).map(pack=>{
+      const merged:Row[]=(remote||[]).map(pack=>{
         const cached=localById.get(String(pack.id));
         return{...pack,locations:cached?.locations||[],savedAt:cached?.savedAt,route_id:cached?.route_id};
       });
@@ -118,15 +118,15 @@ const s=StyleSheet.create({
   sectionTitle:{fontSize:23,fontWeight:'900',color:palette.ink},
   card:{backgroundColor:'#fff',borderWidth:1,borderColor:'#dce6df',borderRadius:18,padding:15,gap:6},
   cardTitle:{fontSize:17,fontWeight:'900',color:palette.ink},
-  meta:{fontSize:11,lineHeight:17,color:palette.muted},
-  good:{fontSize:11,fontWeight:'900',color:palette.green},
-  body:{fontSize:13,lineHeight:20,color:palette.muted},
-  primary:{alignSelf:'flex-start',backgroundColor:palette.green,paddingHorizontal:13,paddingVertical:10,borderRadius:12,marginTop:3},
-  primaryText:{color:'#fff',fontWeight:'900'},
-  localCount:{fontSize:12,fontWeight:'900',color:palette.ink,marginTop:5},
-  snapshotRow:{flexDirection:'row',alignItems:'center',gap:10,borderTopWidth:1,borderTopColor:'#edf2ee',paddingTop:8,marginTop:2},
+  meta:{fontSize:12,color:'#68796e'},
+  body:{fontSize:13,lineHeight:20,color:'#52655a'},
+  primary:{marginTop:4,backgroundColor:palette.green,borderRadius:12,paddingVertical:11,paddingHorizontal:14,alignItems:'center'},
+  primaryText:{fontSize:13,fontWeight:'900',color:'#fff'},
+  good:{fontSize:11,fontWeight:'900',color:'#137743'},
+  localCount:{fontSize:12,fontWeight:'900',color:'#137743'},
+  snapshotRow:{flexDirection:'row',alignItems:'center',gap:10,paddingTop:8,borderTopWidth:1,borderTopColor:'#eef3ef'},
   snapshotCopy:{flex:1,gap:2},
-  snapshotName:{fontSize:13,fontWeight:'900',color:palette.ink},
-  snapshotMeta:{fontSize:11,lineHeight:16,color:palette.muted},
-  verified:{fontSize:9,fontWeight:'900',color:palette.green},
+  snapshotName:{fontSize:13,fontWeight:'800',color:palette.ink},
+  snapshotMeta:{fontSize:11,color:'#68796e'},
+  verified:{fontSize:10,fontWeight:'900',color:'#137743'},
 });
