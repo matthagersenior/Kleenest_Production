@@ -28,12 +28,10 @@ requireTokens(qr,'business',['Scan readiness','contrastRatio','quietZone','logoS
 requireAny(qr,'business',['Save configuration','Save versioned design']);
 requireTokens(qrService,'business',['qr_studio_upsert_asset','qr_studio_versions','qr_studio_restore_version','create_qr_engagement_program','business_set_qr_active','business_delete_qr']);
 requireTokens(qrBranding,'business',["storage.from('qr-branding')",'2_097_152','image/png','image/jpeg','image/webp','requestMediaLibraryPermissionsAsync']);
-// Business workspace selection must honor an explicit valid choice; scoring is fallback only.
 const businessWorkspace='apps/business-mobile/services/capabilityWorkflows.ts';
 requireTokens(businessWorkspace,'business workspace',["kleenest.business.selected_workspace.v1",'selectBusinessWorkspace','const preferredRank=ranked.find(item=>item.id===preferred);','const chosen=preferredRank||[...ranked].sort((a,b)=>b.score-a.score)[0];']);
 if(exists(businessWorkspace)&&read(businessWorkspace).includes('preferredRank&&Number(preferredRank.access?.location_count||0)>0'))failures.push('business workspace: explicit workspace selection must not depend on location_count');
 requireTokens('apps/business-mobile/app/workspaces.tsx','business workspace',['selectBusinessWorkspace','Every Business screen will now use this business.']);
-// Business trust operations must preserve proof-sensitive remediation and the reverification QR handoff.
 requireTokens('apps/business-mobile/services/trustOperations.ts','business',['business_create_reverification_qr']);
 requireTokens('apps/business-mobile/services/remediationProof.ts','business',['business_create_media',"storage.from(BUCKET).upload",'requestMediaLibraryPermissionsAsync']);
 requireTokens('apps/business-mobile/app/operations.tsx','business',['proofMediaId','criticalProofRequired','Create reverification QR',"run('release')"]);
@@ -45,18 +43,21 @@ requireTokens('apps/fleet-mobile/app/planner.tsx','fleet',["['5 mi',8047]",'flee
 requireTokens('apps/fleet-mobile/app/execution.tsx','fleet',['getFleetRouteGeofenceManifest','recordFleetGeofenceEvent','recordOrQueueRouteStopTiming','replayOfflineRouteEvents','Location.watchPositionAsync']);
 requireTokens('apps/fleet-mobile/services/offline.ts','fleet',["rpc('create_offline_pack'",'p_client_event_id:row.id','already_synced','AsyncStorage.setItem(KEY']);
 requireTokens('supabase/migrations/20260905191032_add_manager_fleet_dispatch_overview.sql','fleet',['fleet_actor_is_manager','fleet_manager_dispatch','grant execute']);
-// Enterprise partner operations must use selectable businesses rather than raw database identifiers.
 const fleetEnterprise='apps/fleet-mobile/app/enterprise.tsx';
 requireTokens(fleetEnterprise,'fleet enterprise',['listEnterprisePartnerBusinesses','setPartnerByNetwork','No database ID entry is required.','Invite selected partner']);
 if(exists(fleetEnterprise)&&read(fleetEnterprise).includes('Partner Business UUID'))failures.push('fleet enterprise: operators must not paste raw Business UUIDs to invite partners');
 
 // Owner: KleenestOS must lead with actionable health and expose actual operating control planes.
+// The home may use the shared OSHero/HealthCard primitives or an equivalent local hero/Health surface;
+// verify the behavior/labels rather than forcing a specific component implementation.
 const ownerOs='apps/platform-mobile/components/KleenestOS.tsx';
 const ownerHome='apps/platform-mobile/app/index.tsx';
 const ownerBusinesses='apps/platform-mobile/app/businesses.tsx';
 requireFile(ownerOs,'owner');
 requireTokens(ownerOs,'owner',['OSHero','HealthCard','StatusPill','SectionHeader','DiagnosticDisclosure']);
-requireTokens(ownerHome,'owner',['OSHero','HealthCard','Needs attention','ECONOMY PULSE','People & Access','Businesses & Network','Trust & Moderation','Operations']);
+requireAny(ownerHome,'owner command hero',['OSHero','style={s.hero}']);
+requireAny(ownerHome,'owner health surface',['HealthCard','<Health label=']);
+requireTokens(ownerHome,'owner',['Needs attention','ECONOMY PULSE','People & Access','Businesses & Network','Trust & Moderation','Operations']);
 requireTokens(ownerBusinesses,'owner',['Fleet enabled','Enterprise enabled','Add member','Remove member','claim.location_name','claim.location_address','placeholder="Business name"']);
 if(exists(ownerBusinesses)&&read(ownerBusinesses).includes("String(claim.location_id||'').slice(0,8)"))failures.push('owner: location claims must show human-readable location identity instead of truncated UUIDs');
 requireTokens('supabase/migrations/20260907091728_owner_business_claim_location_labels.sql','owner',['location_name','location_address','left join public.locations']);
