@@ -46,6 +46,8 @@ requireText(android, 'workflow_run:', 'Android family builds must start from a c
 requireText(android, 'workflows: [Production CI]', 'Android family builds must be downstream of Production CI.');
 requireText(android, "github.event.workflow_run.conclusion == 'success'", 'Android family builds must require successful canonical CI.');
 requireText(android, 'ref: ${{ github.event.workflow_run.head_sha || github.sha }}', 'Android family builds must check out the exact commit that passed CI.');
+requireText(android, "group: android-family-${{ github.event.workflow_run.head_branch || github.ref }}", 'Android family concurrency must use the upstream Production CI branch for workflow_run events so PR completions cannot cancel a valid main release build.');
+if (/group:\s*android-family-\$\{\{\s*github\.ref\s*\}\}/.test(android)) throw new Error('Android family workflow_run concurrency must not key only on github.ref because workflow_run uses the default branch ref.');
 if (/^\s{2}push:/m.test(android)) throw new Error('Android family builds must not race directly against push CI.');
 if (/^\s{2}pull_request:/m.test(android)) throw new Error('Android family builds must not race directly against pull-request CI.');
 
