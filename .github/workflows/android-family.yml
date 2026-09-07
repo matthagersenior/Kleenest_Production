@@ -2,26 +2,9 @@ name: Build Kleenest App Family Android APKs
 
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'apps/**'
-      - 'packages/mobile-core/**'
-      - 'scripts/**'
-      - 'config/**'
-      - 'supabase/migrations/**'
-      - 'package.json'
-      - '.github/workflows/android-family.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'apps/**'
-      - 'packages/mobile-core/**'
-      - 'scripts/**'
-      - 'config/**'
-      - 'supabase/migrations/**'
-      - 'package.json'
-      - '.github/workflows/android-family.yml'
+  workflow_run:
+    workflows: [Production CI]
+    types: [completed]
 
 permissions:
   contents: read
@@ -32,10 +15,13 @@ concurrency:
 
 jobs:
   verify-family:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -110,6 +96,8 @@ jobs:
       EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22

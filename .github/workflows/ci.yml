@@ -25,6 +25,10 @@ jobs:
           cache-dependency-path: package.json
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Dependency advisory gate
+        run: npm audit --audit-level=moderate
+      - name: CI freshness policy
+        run: node scripts/ci-freshness-policy-audit.mjs
       - name: Production environment contract
         run: node scripts/production-environment-contract-audit.mjs
       - name: Consumer product boundary
