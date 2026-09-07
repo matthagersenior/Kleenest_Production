@@ -99,7 +99,8 @@ requireAll('Owner Android route smoke',smoke,[
   'com.kleenest.platform',
   'kleenest-owner://notifications',
   'uiautomator dump',
-  'Owner Live Network Messaging did not render visible content after deep link',
+  'authenticated route correctly stopped at Owner sign-in gate',
+  'Owner deep link rendered neither the auth gate nor Live Network Messaging',
   'ReactNativeJS.*(TypeError|ReferenceError|Invariant Violation|Unhandled JS Exception)',
 ]);
 
