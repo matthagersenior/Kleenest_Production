@@ -12,6 +12,10 @@ const markerAliases=new Map([
   ['Save versioned design',['Save configuration']],
   ['Grant Premium',['Grant Fleet Premium']],
   ['Reviewing',['Mark reviewing']],
+  ['Prepare replay pack',['Create 72-hour Fleet pack']],
+  ['Last replay error',['Queued field events could not be replayed.']],
+  ['alreadySynced',['replayOfflineRouteEvents']],
+  ['Database observed',['observed · WAL']],
 ]);
 const markerPresent=(source,token)=>source.includes(token)||(markerAliases.get(token)||[]).some(alias=>source.includes(alias));
 
