@@ -1,6 +1,7 @@
 import { useEffect,useMemo,useState } from 'react';
 import { Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
-import { createRoute,dispatchRoute,getFleetDashboard,listFleetWorkspaces,setRouteStatus } from '../services/product';
+import { createRoute,dispatchRoute,getFleetDashboard,setRouteStatus } from '../services/product';
+import { currentFleetBusinessId } from '../services/control';
 import { listOfflineRouteEvents,recordOrQueueRouteStopTiming,replayOfflineRouteEvents } from '../services/offline';
 
 type Row=Record<string,unknown>;
@@ -10,7 +11,7 @@ const str=(row:Row,...keys:string[])=>{for(const key of keys){const value=row[ke
 
 export default function Dispatch(){
  const[businessId,setBusinessId]=useState(''),[data,setData]=useState<any>(null),[name,setName]=useState(''),[queued,setQueued]=useState(0),[busy,setBusy]=useState<string|null>('load'),[message,setMessage]=useState('Loading dispatch…');
- async function load(){setBusy('load');try{const spaces:any[]=await listFleetWorkspaces();const nextId=businessId||String(spaces[0]?.business_id||'');if(!nextId)throw new Error('No Fleet workspace.');setBusinessId(nextId);setData(await getFleetDashboard(nextId));setQueued((await listOfflineRouteEvents()).length);setMessage('')}catch(e:any){setMessage(e?.message||'Dispatch unavailable.')}finally{setBusy(null)}}
+ async function load(){setBusy('load');try{const nextId=businessId||await currentFleetBusinessId();setBusinessId(nextId);setData(await getFleetDashboard(nextId));setQueued((await listOfflineRouteEvents()).length);setMessage('')}catch(e:any){setMessage(e?.message||'Dispatch unavailable.')}finally{setBusy(null)}}
  useEffect(()=>{void load()},[]);
  const dispatch=object(data?.dispatch),routes=useMemo(()=>array(dispatch,'routes'),[data]),preventiveStops=useMemo(()=>array(dispatch,'preventive_stops'),[data]),opportunityOrders=useMemo(()=>array(data?.opportunities,'work_orders'),[data]);
  const activeRoutes=routes.filter(route=>['active','paused'].includes(str(route,'status'))),plannedRoutes=routes.filter(route=>str(route,'status')==='planned');
@@ -25,7 +26,7 @@ export default function Dispatch(){
   <View style={s.section}><Text style={s.sectionTitle}>Running now</Text><Text style={s.sectionCopy}>Route cards are ordered around execution. Stop controls advance the canonical timing state and queue safely when the network disappears.</Text>{activeRoutes.length?activeRoutes.map(route=><RouteCard key={str(route,'id')} route={route} businessId={businessId} busy={busy} run={run}/>):<Empty title="No route is running" body="Dispatch one of the planned routes below when a driver is ready."/>}</View>
   <View style={s.section}><Text style={s.sectionTitle}>Ready to dispatch</Text>{plannedRoutes.length?plannedRoutes.map(route=><RouteCard key={str(route,'id')} route={route} businessId={businessId} busy={busy} run={run}/>):<Empty title="No planned routes" body="Create a route below, then add/assign stops through the route planning workflow."/>}</View>
   <View style={s.section}><Text style={s.sectionTitle}>Preventive work to absorb into routes</Text><Text style={s.sectionCopy}>High-risk bathroom work is visible beside normal dispatch so a route can solve operational risk instead of creating a separate maintenance silo.</Text>{opportunityOrders.length?opportunityOrders.slice(0,12).map((row,index)=><View key={str(row,'work_order_id')||String(index)} style={s.card}><View style={s.cardTop}><View style={{flex:1}}><Text style={s.cardTitle}>{str(row,'location_name')||'Location'}</Text><Text style={s.issue}>{str(row,'amenity_name')||'Preventive service'} · {str(row,'recommendation_action')||'Service recommended'}</Text></View><Pill label={(str(row,'priority')||'normal').toUpperCase()}/></View><View style={s.factRow}><Fact label="Due" value={formatDate(str(row,'due_at'))}/><Fact label="Route" value={str(row,'assigned_route_id')?'Already assigned':'Unassigned'}/><Fact label="Escalation" value={str(row,'escalation_level')||'0'}/></View></View>):<Empty title="No preventive route opportunities" body="When preventive work is due, it will be ranked here for dispatch planning."/>}</View>
-  <View style={s.section}><Text style={s.sectionTitle}>Create a route</Text><View style={s.card}><Text style={s.meta}>Use a human-readable route name. Driver, vehicle and stops can then be assigned in route planning; no UUID entry is required here.</Text><TextInput style={s.input} placeholder="e.g. Northside morning service" value={name} onChangeText={setName}/><Action label={busy==='create'?'Creating…':'Create planned route'} disabled={Boolean(busy)} onPress={addRoute}/></View></View>
+  <View style={s.section}><Text style={s.sectionTitle}>Create a route</Text><View style={s.card}><Text style={s.meta}>Use a human-readable route name. Driver, vehicle and stops can then be assigned in route planning; no UUID entry is required here.</Text><TextInput style={s.input} placeholder="e.g. Northside morning service" value={name} onChangeText={setName}/><Action label={busy==='create'?'Creating…':'Create planned route'} disabled={Boolean(busy)||!name.trim()} onPress={addRoute}/></View></View>
  </ScrollView>
 }
 
