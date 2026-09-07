@@ -21,6 +21,8 @@ all('Driver controls',assets,['Add driver','Edit driver','Delete driver','Assign
 all('Route authority',service,['fleet_create_route','fleet_update_route','fleet_delete_route','fleet_set_route_stops','fleet_dispatch_route','fleet_set_route_status']);
 all('Planner controls',planner,['Create planned route','Save stop order','Edit route','Delete route']);
 all('Dispatch controls',dispatch,['Dispatch','Pause','Resume']);
+all('Dispatch workspace authority',dispatch,['currentFleetBusinessId']);
+if(dispatch.includes('listFleetWorkspaces')||dispatch.includes('spaces[0]'))failures.push('Dispatch workspace authority: bypasses canonical Fleet workspace selection');
 all('Maintenance authority',service,['fleet_create_maintenance','fleet_update_maintenance','fleet_delete_maintenance','fleet_complete_maintenance']);
 all('Maintenance controls',maintenance,['Schedule maintenance','Edit maintenance','Delete maintenance','Complete maintenance']);
 all('Metric authority',service,['get_fleet_metric_capabilities','get_fleet_metric_configuration','create_fleet_metric_definition','update_fleet_metric_definition','assign_fleet_metric']);
@@ -34,4 +36,4 @@ all('Refresh convergence',assets+planner+dispatch+maintenance+metrics+operations
 for(const [label,source] of Object.entries({assets,planner,dispatch,maintenance,operations,metrics}))noRaw(label,source);
 
 if(failures.length){console.error(`Fleet extended operator audit failed with ${failures.length} issue${failures.length===1?'':'s'}:`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
-console.log('Fleet extended operator audit passed: vehicle, driver, route, maintenance, metric and operational CRUD authority is wired to resilient human operator controls with Android-safe geofencing and refresh convergence.');
+console.log('Fleet extended operator audit passed: vehicle, driver, route, maintenance, metric and operational CRUD authority is wired to resilient human operator controls with Android-safe geofencing, canonical workspace selection and refresh convergence.');
