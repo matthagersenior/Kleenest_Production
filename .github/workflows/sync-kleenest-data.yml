@@ -42,8 +42,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Deliberate overlap makes the job idempotent and self-healing after a missed run.
-          SINCE="$(date -u -d '3 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          # Wide idempotent overlap ensures queued/delayed runners cannot miss fresh ingestion.
+          SINCE="$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
           BATCH=500
 
           post_archive() {
@@ -89,16 +89,9 @@ jobs:
             done
           }
 
-          # Stable configuration is tiny, so mirror all active source definitions each run.
           fetch_pages external_data_sources external_data_sources 'active=eq.true'
-
-          # Keep the hot identity/dedupe table in Production, mirror changed mappings to Data.
           fetch_pages external_location_records external_location_records "last_seen_at=gte.$SINCE"
-
-          # Trust/intelligence still reads these hot in Production; mirror recent evidence only.
           fetch_pages external_observations external_observations "imported_at=gte.$SINCE"
-
-          # Run history is archival; overlap captures final status updates after start.
           fetch_pages national_ingestion_runs national_ingestion_runs "started_at=gte.$SINCE"
 
           rm -f rows.json payload.json
