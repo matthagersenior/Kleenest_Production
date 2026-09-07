@@ -14,6 +14,7 @@ for (const name of [
   'security-gate.yml',
   'expo-push-token-validation.yml',
   'native-secret-hygiene.yml',
+  'sync-kleenest-data.yml',
 ]) {
   const workflow = read(name);
   requireText(workflow, 'concurrency:', `${name} must coalesce superseded runs.`);
