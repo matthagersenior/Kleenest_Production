@@ -6,7 +6,6 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { getOwnerAuthorization } from '../services/ownerAdmin';
 
 const ownerRedirect = Linking.createURL('/auth', { scheme: 'kleenest-owner' });
-const ownerRecoveryRedirect = `${ownerRedirect}${ownerRedirect.includes('?') ? '&' : '?'}flow=recovery`;
 type Mode = 'signin' | 'signup' | 'forgot' | 'recovery';
 
 function messageOf(value: unknown) {
@@ -60,7 +59,7 @@ export default function OwnerAuth() {
     const access_token = authParam(url, 'access_token');
     const refresh_token = authParam(url, 'refresh_token');
     const authType = authParam(url, 'type');
-    const recoveryLink = authParam(url, 'flow') === 'recovery' || authType === 'recovery';
+    const recoveryLink = authType === 'recovery';
     if (!code && !(access_token && refresh_token)) return false;
 
     const client = getKleenestSupabaseClient();
@@ -150,7 +149,7 @@ export default function OwnerAuth() {
     const client = getKleenestSupabaseClient();
     setBusy(true); setError(null); setNotice(null);
     try {
-      const { error: recoveryError } = await client.auth.resetPasswordForEmail(cleanEmail, { redirectTo: ownerRecoveryRedirect });
+      const { error: recoveryError } = await client.auth.resetPasswordForEmail(cleanEmail, { redirectTo: ownerRedirect });
       if (recoveryError) throw recoveryError;
       setNotice('If that email belongs to an account, a password recovery link has been sent. Open it on this device to continue in KleenestOS.');
     } catch (cause) { setError(messageOf(cause)); }
