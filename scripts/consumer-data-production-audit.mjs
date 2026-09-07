@@ -3,14 +3,17 @@ import fs from 'node:fs';
 const failures=[];
 const files={
   telemetry:'apps/consumer-mobile/services/consumerTelemetry.ts',
-  explore:'apps/consumer-mobile/app/explore.tsx',
+  exploreEntry:'apps/consumer-mobile/app/explore.tsx',
+  adaptiveExplore:'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
   saved:'apps/consumer-mobile/app/saved.tsx',
   location:'apps/consumer-mobile/app/location/[id].tsx',
 };
 for(const [name,file] of Object.entries(files))if(!fs.existsSync(file))failures.push(`Missing ${name} consumer data-production file: ${file}`);
 if(!failures.length){
   const read=file=>fs.readFileSync(file,'utf8');
-  const telemetry=read(files.telemetry),explore=read(files.explore),saved=read(files.saved),location=read(files.location);
+  const telemetry=read(files.telemetry),exploreEntry=read(files.exploreEntry),adaptiveExplore=read(files.adaptiveExplore),saved=read(files.saved),location=read(files.location);
+  const explore=`${exploreEntry}\n${adaptiveExplore}`;
+  if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Explore entry must resolve to the canonical adaptive Explore implementation.');
   for(const token of ["rpc('record_location_discovery_event'","rpc('record_location_route_event'",'captureConsumerDiscovery','captureConsumerRouteIntent'])if(!telemetry.includes(token))failures.push(`Consumer telemetry adapter missing ${token}.`);
   if(telemetry.includes('record_data_feature_event'))failures.push('Consumer mobile must never call the privileged data-feature event RPC directly.');
   if(telemetry.includes('p_search')||telemetry.includes('p_query')||telemetry.includes('value_text'))failures.push('Discovery telemetry must not transmit raw search text.');

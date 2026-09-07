@@ -7,6 +7,7 @@ if(configuredEasProjectId&&configuredEasProjectId!==EXPECTED_EAS_PROJECT_ID){
 }
 const EAS_PROJECT_ID=configuredEasProjectId||EXPECTED_EAS_PROJECT_ID;
 const otaChannel=process.env.EXPO_PUBLIC_OTA_CHANNEL||'fleet-production';
+const googleServicesFile=process.env.GOOGLE_SERVICES_JSON||'./google-services.json';
 
 const config:ExpoConfig={
   name:'Kleenest Fleet',slug:'kleenest-fleet',version:'1.0.0',runtimeVersion:'kleenest-fleet-1.0.0',
@@ -21,7 +22,7 @@ const config:ExpoConfig={
     },
   },
   android:{
-    package:'com.kleenest.fleet',icon:'./assets/app-icon.png',
+    package:'com.kleenest.fleet',icon:'./assets/app-icon.png',googleServicesFile,
     permissions:['ACCESS_COARSE_LOCATION','ACCESS_FINE_LOCATION','ACCESS_BACKGROUND_LOCATION'],
     blockedPermissions:['android.permission.RECORD_AUDIO','android.permission.SYSTEM_ALERT_WINDOW'],
   },

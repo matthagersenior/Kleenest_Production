@@ -12,6 +12,10 @@ ADB_WAIT_TIMEOUT="${ADB_WAIT_TIMEOUT_SECONDS:-120}"
 ADB_INSTALL_TIMEOUT="${ADB_INSTALL_TIMEOUT_SECONDS:-240}"
 ADB_COMMAND_TIMEOUT="${ADB_COMMAND_TIMEOUT_SECONDS:-30}"
 
+if [[ -z "$DEEPLINK" && "$PACKAGE" == "com.kleenest.platform" ]]; then
+  DEEPLINK="kleenest-owner://notifications"
+fi
+
 mkdir -p "$LOG_DIR"
 
 adb_bounded() {
@@ -29,9 +33,15 @@ capture_diagnostics() {
   adb_bounded "$ADB_COMMAND_TIMEOUT" shell getprop > "$LOG_DIR/device-properties.txt" 2>&1 || true
 }
 
+capture_window() {
+  adb_bounded "$ADB_COMMAND_TIMEOUT" shell uiautomator dump /sdcard/kleenest-window.xml >/dev/null 2>&1 || true
+  adb_bounded "$ADB_COMMAND_TIMEOUT" shell cat /sdcard/kleenest-window.xml > "$LOG_DIR/window.xml" 2>&1 || true
+}
+
 fail_with_diagnostics() {
   local reason="$1"
   capture_diagnostics
+  capture_window
   echo "$LABEL startup smoke failed: $reason" >&2
   echo '--- crash buffer ---' >&2
   tail -n 400 "$LOG_DIR/crash-buffer.txt" >&2 || true
@@ -39,6 +49,8 @@ fail_with_diagnostics() {
   tail -n 400 "$LOG_DIR/exit-info.txt" >&2 || true
   echo '--- app logcat tail ---' >&2
   grep -Ei "$PACKAGE|AndroidRuntime|ReactNativeJS|FATAL EXCEPTION|UnsatisfiedLinkError|SIGABRT|SIGSEGV" "$LOG_DIR/logcat.txt" | tail -n 800 >&2 || true
+  echo '--- visible window ---' >&2
+  tail -n 120 "$LOG_DIR/window.xml" >&2 || true
   exit 1
 }
 
@@ -79,7 +91,16 @@ if [[ -n "$DEEPLINK" ]]; then
   sleep "$DEEPLINK_WAIT"
   PID="$(adb_bounded "$ADB_COMMAND_TIMEOUT" shell pidof "$PACKAGE" | tr -d '\r' || true)"
   capture_diagnostics
+  capture_window
   [[ -n "$PID" ]] || fail_with_diagnostics 'process exited after deep link launch'
+  if grep -Eqi "Process: ${PACKAGE//./\\.}|FATAL EXCEPTION.*${PACKAGE//./\\.}|UnsatisfiedLinkError|ReactNativeJS.*(TypeError|ReferenceError|Invariant Violation|Unhandled JS Exception)" "$LOG_DIR/logcat.txt"; then
+    fail_with_diagnostics 'fatal or unhandled JavaScript signature found after deep link launch'
+  fi
+  if [[ "$PACKAGE" == "com.kleenest.platform" ]]; then
+    if ! grep -Eq 'Messaging &amp; incentives|Messaging & incentives|Messaging stayed open safely|Loading Live Network messaging' "$LOG_DIR/window.xml"; then
+      fail_with_diagnostics 'Owner Live Network Messaging did not render visible content after deep link'
+    fi
+  fi
 fi
 
 echo "$LABEL APK stayed alive through startup smoke test."

@@ -7,6 +7,7 @@ const required=[
   'apps/consumer-mobile/app/_layout.tsx',
   'apps/consumer-mobile/app/index.tsx',
   'apps/consumer-mobile/app/explore.tsx',
+  'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
   'apps/consumer-mobile/app/discover.tsx',
   'apps/consumer-mobile/app/progress.tsx',
   'apps/consumer-mobile/app/location/[id].tsx',
@@ -22,6 +23,7 @@ const required=[
   'apps/consumer-mobile/app/qr.tsx',
   'apps/consumer-mobile/app/membership.tsx',
   'apps/consumer-mobile/services/discoveryProgression.ts',
+  'packages/mobile-core/src/adaptiveDiscovery.ts',
   'packages/mobile-core/src/index.ts'
 ];
 for(const file of required)if(!fs.existsSync(file))failures.push(`Missing consumer parity surface: ${file}`);
@@ -37,7 +39,8 @@ for(const file of consumerFiles){const text=fs.readFileSync(file,'utf8');
 
 if(!failures.length){
  const home=fs.readFileSync('apps/consumer-mobile/app/index.tsx','utf8');
- const explore=fs.readFileSync('apps/consumer-mobile/app/explore.tsx','utf8');
+ const exploreEntry=fs.readFileSync('apps/consumer-mobile/app/explore.tsx','utf8');
+ const explore=fs.readFileSync('apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','utf8');
  const discover=fs.readFileSync('apps/consumer-mobile/app/discover.tsx','utf8');
  const progress=fs.readFileSync('apps/consumer-mobile/app/progress.tsx','utf8');
  const progressionService=fs.readFileSync('apps/consumer-mobile/services/discoveryProgression.ts','utf8');
@@ -45,7 +48,9 @@ if(!failures.length){
  const location=fs.readFileSync('apps/consumer-mobile/app/location/[id].tsx','utf8');
  const core=fs.readFileSync('packages/mobile-core/src/index.ts','utf8');
  for(const token of ["'/explore'",'Find a better bathroom','THE KLEENEST LOOP','Community discovery','XP + levels','YOUR NETWORK','Add a missing place'])if(!home.includes(token))failures.push(`Consumer Home missing discovery/progression behavior: ${token}`);
- for(const token of ['listNearbyRestrooms','listAmenityCatalog','selectedAmenityNames','What matters on this stop?','Start directions','captureConsumerDiscovery','captureConsumerRouteIntent','readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Consumer discovery missing mature capability: ${token}`);
+ if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Consumer Explore route must delegate to the canonical adaptive discovery screen.');
+ for(const token of ['findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','listAmenityCatalog','selectedAmenityNames','Must include all','Include any','Expand automatically','Maximum distance','Along route','Full details','Add to route','captureConsumerDiscovery','captureConsumerRouteIntent','readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Consumer discovery missing mature capability: ${token}`);
+ if(!explore.includes('navigateUrl')||!explore.includes('Linking.openURL')||!explore.includes('Start directions'))failures.push('Consumer discovery missing mature capability: directions');
  if(!/pathname\s*:\s*['"]\/route['"]/.test(explore))failures.push('Consumer discovery missing mature capability: route navigation');
  for(const token of ['Remote','Address','Map pin','GPS','On-site live','Save / match discovery','Save restroom evidence','Take photo'])if(!discover.includes(token))failures.push(`Consumer contribution flow missing: ${token}`);
  for(const token of ['SPECIALTY LEVELS','WHAT TO DO NEXT','Quests','Missions','Challenges','Journeys','Campaigns','Contests','BADGES','RANKINGS','XP HISTORY'])if(!progress.includes(token))failures.push(`Consumer Progress missing expansive progression surface: ${token}`);

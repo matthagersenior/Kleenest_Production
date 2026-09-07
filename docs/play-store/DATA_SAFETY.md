@@ -1,102 +1,171 @@
-# Kleenest Play Data Safety worksheet
+# Kleenest Google Play Data Safety worksheet
 
-Package: `com.kleenest.app`
-Release baseline: September 1, 2026
+**Engineering baseline:** 2026-09-05
 
-This is the engineering source of truth for the Play Console Data safety form. It must be reconciled with the final artifact and all third-party SDK behavior immediately before submission.
+This worksheet is the engineering source for Google Play Data Safety declarations. Google Play treats Data Safety at the app/package level, so each Play-distributed Kleenest package must be reconciled separately against its final production AAB, backend flows and third-party SDK behavior.
 
-## Top-level answers
+Do not copy one package's answers into another without reconciling its permissions and features.
 
-- **Does the app collect or share required user data types?** Yes — Kleenest transmits user/account and feature data off-device to its backend and service providers.
-- **Is collected user data encrypted in transit?** Yes for normal production API/auth/storage traffic; verify no cleartext endpoints are introduced in the final artifact.
-- **Can users request deletion?** Yes — in-app account deletion plus a public web deletion request route.
-- **Data sold?** No known sale of user data in the current consumer implementation.
-- **Advertising data sharing?** No ad SDK is present in the current consumer package. Re-evaluate if ads or attribution SDKs are added.
+## Package inventory
 
-## Data types to declare
+| App | Package | Account creation in app | Background location | Photos/camera | Notifications | UGC |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Consumer | `com.kleenest.app` | Yes | Yes | Yes | Yes | Yes |
+| Business | `com.kleenest.business` | No | Yes | Yes | Yes | Business replies/operator content |
+| Fleet | `com.kleenest.fleet` | No | Yes | No | Yes | No public UGC |
+| KleenestOS | `com.kleenest.platform` | No | No | No | Yes | Moderation/admin access to platform content |
+
+`config/play-store-matrix.json` is the machine-readable companion to this worksheet.
+
+## Global declaration principles
+
+- All developers publishing on Play must complete Data Safety for applicable packages/tracks and provide an accessible privacy policy where required.
+- Declare behavior of Kleenest code **and third-party SDKs/services** included in the final artifact.
+- Data transmitted off-device to Kleenest/Supabase or a service provider is collected for Data Safety analysis even when it is not sold.
+- Determine “shared” versus service-provider processing using Google's definitions; do not assume every processor is sharing and do not omit actual third-party sharing.
+- Reconcile the generated Android manifest, dependency graph and network/service inventory immediately before submission.
+- If ads, attribution, analytics, crash reporting or billing SDKs are added, re-open this worksheet before release.
+
+Canonical reference: https://support.google.com/googleplay/android-developer/answer/10787469
+
+## Infrastructure to reconcile for every affected package
+
+- Supabase Auth, Postgres/RPC, Realtime and Storage;
+- Kleenest Edge Functions and backend notification/AI/reporting paths reached by the app;
+- Expo/EAS runtime services actually present in the production AAB;
+- Expo/FCM notification transport where push is enabled;
+- MapLibre, tile/routing/geocoding providers actually contacted by the package;
+- AI providers reached by backend features used by the package;
+- Google Play Billing if enabled before release;
+- any crash, analytics, attribution or advertising SDK added later.
+
+## Consumer — `com.kleenest.app`
+
+### Likely collected data types
 
 | Play data category | Collected? | Typical purpose | Required / optional |
 | --- | --- | --- | --- |
-| Email address / user IDs | Yes | Account creation, authentication, account security, support | Required for signed-in account; app has signed-out functionality |
-| Name / username | Optional | Public contributor identity and community | Optional |
-| Profile photo | Optional | Public contributor profile | Optional |
-| Precise location | Yes when user grants permission and uses location-aware/verification features | Nearby discovery, routing, qualifying visit/check-in evidence | Optional at app level; required for specific feature paths |
-| Approximate location | Yes when user grants permission | Nearby discovery and routing | Optional at app level |
-| Photos | Optional | Avatar and supported review/evidence contributions | Optional |
-| User-generated text/content | Yes for signed-in contributors | Reviews, profile bio, messages, support/safety reports, social/community features | Optional feature data |
-| App interactions | Yes | Saved places, check-ins, reviews, progression, quests, preferences, notification state, safety controls | Feature operation / analytics-like product state |
-| Other user-generated content | Yes | Amenity observations, trust/evidence signals, game/progression contributions | Optional feature data |
-| Device or other identifiers | Yes where required by notification transport/auth infrastructure | Push delivery, session/security and service operation | Optional/required by enabled feature |
-| Purchase / entitlement information | Entitlement status exists; no active Android external checkout in this release | Membership access state | Only if membership state exists for account |
-| Crash/diagnostic data | Verify final SDK artifact | Reliability and security | Declare if any included SDK transmits it |
+| Email address / user IDs | Yes | Authentication, security, account/support operation | Required for signed-in account; signed-out discovery exists |
+| Name / username | Optional | Public contributor identity/community | Optional |
+| Profile photo | Optional | Contributor profile | Optional |
+| Approximate location | Yes when granted | Nearby discovery, routes, Live Network | Feature dependent |
+| Precise location | Yes when granted | Nearby discovery, verified visit/check-in, routes, Live Network | Feature dependent |
+| Background location | Yes when Live Network is explicitly enabled/granted | Opt-in restroom-region awareness while the app is not in use | Optional feature |
+| Photos | Optional | Avatar, reviews/evidence/contributions | Optional |
+| User-generated text/content | Yes | Reviews, profile, messages, support/safety reports, social/community | Optional feature data |
+| App interactions | Yes | Saves, check-ins, review/progression/game/preference state | App functionality |
+| Device/other identifiers | As required | Push delivery, session/security/service operation | Feature/infrastructure dependent |
+| Purchase/entitlement state | Where membership exists | Access control and purchase verification | Account dependent |
+| Crash/diagnostic data | Verify final artifact | Reliability/security if a transmitting SDK exists | Artifact dependent |
 
-## Sharing versus service-provider processing
+### Permissions and sensitive data
 
-Do not automatically mark backend/service-provider processing as "shared" without applying Google's Data Safety definitions. For each provider in the final artifact, determine whether its processing qualifies for a service-provider exception or must be declared as sharing. The declaration must include behavior of third-party code, not only Kleenest-authored code.
+Current production config includes foreground and background location plus camera access. QR camera access is user initiated. Background location requires a separate Google Play sensitive-permission declaration and must match the prominent disclosure/privacy language.
 
-Current major infrastructure/features requiring final reconciliation include:
+### Account deletion
 
-- Supabase authentication, database, RPC, storage and related infrastructure;
-- Expo/EAS and Expo Notifications transport used by the released artifact;
-- MapLibre/map tile or routing providers actually configured in production;
-- any AI provider used by Kleenest AI in the released backend path;
-- any future crash reporting, analytics, attribution, advertising or billing SDK added before build.
+Consumer allows account creation. The Play account-deletion requirement therefore applies: users need a discoverable in-app deletion path and an external web resource. Engineering surfaces are:
+
+- `apps/consumer-mobile/app/account-deletion.tsx`
+- `public/legal/account-deletion.html`
+
+The operational deletion process must cover authentication identity and associated user data subject only to documented legitimate retention exceptions.
+
+## Business — `com.kleenest.business`
+
+Business does not currently create a new app account inside the mobile experience, but it processes authenticated operator identity and business/network data.
+
+Likely declaration areas include:
+
+- authenticated user ID/email and business membership/access state;
+- business/location/profile/operations data;
+- QR design/configuration and engagement program data;
+- remediation/reverification evidence and optional photos;
+- approximate/precise location when granted;
+- background location for explicitly enabled Business Live Network geofence operations;
+- notification token/preferences and notification activity;
+- analytics/reporting/enterprise campaign inputs and outputs;
+- support/security/audit records associated with operator actions;
+- entitlement/billing state where Business plans are enabled.
+
+Background location must be declared from the **Business package's** actual use case and review video; Consumer wording is not sufficient.
+
+## Fleet — `com.kleenest.fleet`
+
+Likely declaration areas include:
+
+- authenticated user ID and fleet/business membership;
+- driver, vehicle, route, stop and dispatch data visible to authorized operators;
+- approximate/precise location for map/route execution;
+- background location for active route/geofence operations when enabled;
+- arrival/departure timing, operational events and route telemetry;
+- durable offline field-event queue and replay identifiers;
+- notification token/preferences;
+- maintenance and operational metric state;
+- support/security/audit records.
+
+Fleet does not need photo/camera collection for the current product contract. Re-evaluate if proof capture is introduced later.
+
+## KleenestOS — `com.kleenest.platform`
+
+Likely declaration areas include:
+
+- authenticated Owner/operator identity;
+- authorization/capability and audit state;
+- business verification/access/membership administration;
+- moderation and safety-report data accessed by authorized operators;
+- progression/economy/objective configuration;
+- audited Data Workbench records;
+- platform health/ingestion/operations data;
+- notification token/preferences where enabled.
+
+KleenestOS does **not** request background location in the current production configuration. If that changes, the compliance matrix and this worksheet must be updated before release.
+
+## Public versus private data
+
+Potentially public Consumer/community data includes display name, username, avatar, bio, reviews, review photos and deliberately published contribution/progression signals.
+
+Private/authorized data includes email/authentication state, private messages, safety/support reports, block lists, account-deletion requests, private preferences, operator authorization, internal business/fleet data and moderation/control-plane records.
+
+Public visibility does not automatically exclude a data type from Data Safety if the app collects/transmits it.
 
 ## Purpose mapping
 
-Use the most specific applicable Play purposes:
+Use only purposes that are actually true for a package:
 
-- **App functionality:** authentication, restroom discovery, routes, check-ins, reviews, messaging, support, safety, preferences, progression and membership entitlement.
-- **Account management:** account creation/sign-in, profile, password/security, deletion.
-- **Developer communications:** support and service-related notifications where applicable.
-- **Fraud prevention, security and compliance:** abuse prevention, moderation, trust/evidence integrity, account security and deletion audit requirements.
-- **Personalization:** only declare where a released feature actually tailors results/content using the data.
-- **Analytics:** only declare for transmitted analytics/measurement actually present in the final artifact or backend path.
+- **App functionality:** authentication, discovery, maps/routes, check-ins, QR, reviews, messaging, business operations, fleet dispatch, moderation, notifications and platform controls.
+- **Account management:** account/profile/security/deletion where applicable.
+- **Developer communications:** support and service communications where applicable.
+- **Fraud prevention, security and compliance:** abuse prevention, moderation, trust/evidence integrity, audit and account security.
+- **Personalization:** only where released behavior actually tailors content/results.
+- **Analytics:** only for transmitted measurement/analytics actually present in the final package/backend flow.
 
-## Public/private distinction
+## Consumer deletion coverage
 
-The following may be intentionally public when the user chooses to publish them: display name, username, avatar, bio, reviews, review photos, reputation/progression signals and other explicitly public community contributions.
-
-The following are intended to remain private to authorized users/operations: email, authentication state/credentials, private messages, support requests, safety reports, block lists, account-deletion requests, private preferences and private notification state.
-
-Public visibility does not remove a data type from Data Safety analysis if it is collected by the app.
-
-## Permission-to-data mapping
-
-- `ACCESS_COARSE_LOCATION` → approximate location for nearby discovery/routing.
-- `ACCESS_FINE_LOCATION` → precise location for nearby discovery, routing and qualifying visit/check-in flows.
-- `CAMERA` → QR scanning; do not claim continuous/background camera access.
-- Photo-library permission from `expo-image-picker` → user-selected profile/contribution images.
-- Notifications → push token and user notification preferences/state where enabled.
-
-The app does not currently declare background-location, contacts, microphone, SMS, call-log, health, accessibility-service, VPN, all-files, or package-query permissions. Re-run this inventory after native prebuild because transitive libraries can alter the final manifest.
-
-## Deletion mapping
-
-A processed account deletion request must cover associated data across:
+A processed Consumer account deletion request must reconcile associated data across:
 
 - authentication identity;
 - profile/public identity;
-- saved places and preferences;
-- check-ins, reviews, photos and contribution/evidence records;
+- saves/preferences;
+- check-ins, reviews, photos and evidence/contributions;
 - social relationships/posts/comments where applicable;
-- direct messages, subject to any narrowly justified retention rule;
+- direct messages, subject to narrowly justified retention rules;
 - push tokens and notification state;
-- progression, badges, quests and game state;
+- progression/badges/quests/game state;
 - membership/entitlement state;
-- support and safety records, with only legitimate security/legal/audit retention exceptions;
+- support and safety records with legitimate retention exceptions documented;
 - storage objects owned by the account.
 
-The Privacy Policy must match the operational deletion behavior. If engineering cannot delete a category, do not promise deletion of it without documenting the legitimate retention basis.
+The Privacy Policy must match operational behavior. Do not promise deletion of data engineering intentionally retains unless the retention basis and period are accurately disclosed.
 
-## Final artifact reconciliation checklist
+## Final AAB reconciliation checklist — run per package
 
-Before submitting Data Safety:
-
-1. Inspect the generated Android manifest and dependency list from the production-candidate native project/AAB.
-2. Compare every permission with this worksheet.
-3. Inventory every SDK and network destination in the production artifact.
-4. Verify whether any SDK collects crash, performance, advertising, device ID or analytics data by default.
-5. Reconcile production backend/edge-function data flows, including AI integrations.
-6. Confirm Privacy Policy language covers every collected/shared data type.
-7. Enter the final Play Console form from the reconciled worksheet; do not rely on this draft if the artifact changed.
+1. Build the production AAB for the exact release candidate.
+2. Inspect the generated manifest and effective permissions/target SDK.
+3. Inventory packaged SDKs/dependencies and production network/service destinations.
+4. Identify any automatic crash, performance, analytics, advertising or identifier collection.
+5. Reconcile backend/Edge Function flows reachable by the package, including AI/notification providers.
+6. Reconcile foreground/background location usage with the sensitive-permission declaration for Consumer, Business and Fleet.
+7. Confirm privacy-policy language covers collected/shared data and retention/deletion behavior.
+8. Complete the package's Play Console Data Safety form from the reconciled artifact—not from an older APK or this worksheet alone.
+9. Re-run this review after any SDK, permission, backend data-flow, ads, billing or analytics change.

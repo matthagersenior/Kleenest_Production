@@ -25,6 +25,16 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Verify concrete product parity
         run: node scripts/product-parity-audit.mjs
+      - name: Verify Consumer adaptive route discovery
+        run: node scripts/consumer-adaptive-route-search-audit.mjs
+      - name: Verify cross-repository capability ledger
+        run: node scripts/capability-parity-ledger-audit.mjs
+      - name: Verify four-app critical paths
+        run: node scripts/app-family-critical-path-audit.mjs
+      - name: Verify Fleet extended operator paths
+        run: node scripts/fleet-extended-operator-audit.mjs
+      - name: Verify Fleet offline recovery
+        run: node scripts/fleet-offline-recovery-audit.mjs
       - name: Typecheck Consumer
         run: npm run typecheck --workspace @kleenest/consumer-mobile
       - name: Typecheck Business

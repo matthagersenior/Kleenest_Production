@@ -16,6 +16,7 @@ export default function Layout(){return <><StatusBar style="dark"/><Tabs screenO
 <Tabs.Screen name="progression" options={{href:null,title:'Progression'}}/>
 <Tabs.Screen name="intelligence" options={{href:null,title:'Intelligence'}}/>
 <Tabs.Screen name="capabilities" options={{href:null,title:'Capabilities'}}/>
+<Tabs.Screen name="governance" options={{href:null,title:'Governance & Reporting'}}/>
 <Tabs.Screen name="enterprise-locations" options={{href:null,title:'Enterprise Location'}}/>
 <Tabs.Screen name="enterprise" options={{href:null,title:'Enterprise'}}/>
 <Tabs.Screen name="partners" options={{href:null,title:'Partners'}}/>

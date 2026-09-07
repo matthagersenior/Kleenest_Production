@@ -7,7 +7,10 @@ const operatorCommon=[['app/account.tsx','signInWithPassword'],['app/account.tsx
 const evidence={
  consumer:{
   routes:['explore.tsx','location/[id].tsx','qr.tsx','saved.tsx','route.tsx','offline.tsx','social.tsx','messages.tsx','notifications.tsx','play.tsx','games.tsx','family.tsx','membership.tsx','support.tsx','privacy.tsx','account-deletion.tsx','safety.tsx'],
-  markers:[['services/safety.ts','report_user'],['services/safety.ts','block_user'],['services/safety.ts','report_review'],['app/location/[id].tsx','mobileCheckIn'],['app/location/[id].tsx','createMobileReview'],['app/explore.tsx','listNearbyRestrooms']]
+  markers:[
+   ['services/safety.ts','report_user'],['services/safety.ts','block_user'],['services/safety.ts','report_review'],['app/location/[id].tsx','mobileCheckIn'],['app/location/[id].tsx','createMobileReview'],
+   ['app/explore.tsx','AdaptiveExploreScreen'],['features/AdaptiveExploreScreen.tsx','findAdaptiveNearbyRestrooms'],['features/AdaptiveExploreScreen.tsx','listRestroomsAlongRoute'],['features/AdaptiveExploreScreen.tsx','listAmenityCatalog'],['features/AdaptiveExploreScreen.tsx','captureConsumerRouteIntent']
+  ]
  },
  business:{
   routes:['locations.tsx','growth.tsx','operations.tsx','analytics.tsx','enterprise.tsx','enterprise-locations.tsx','profile.tsx','team.tsx','members.tsx','assistant.tsx','intelligence.tsx','live-network.tsx','progression.tsx','capabilities.tsx','workspaces.tsx','qr-studio.tsx','reviews.tsx','partners.tsx','notifications.tsx','support.tsx','terms.tsx','privacy.tsx','account.tsx'],
@@ -20,7 +23,7 @@ const evidence={
  fleet:{
   routes:['planner.tsx','dispatch.tsx','assets.tsx','maintenance.tsx','insights.tsx','operations.tsx','premium.tsx','progression.tsx','capabilities.tsx','workspaces.tsx','enterprise.tsx','notifications.tsx','support.tsx','terms.tsx','privacy.tsx','account.tsx'],
   markers:[
-   ['services/product.ts','fleet_current_user_dispatch'],['services/product.ts','fleet_create_route'],['services/product.ts','fleet_dispatch_route'],['services/product.ts','fleet_create_vehicle'],['services/product.ts','fleet_create_driver'],['services/product.ts','fleet_create_maintenance'],['services/product.ts','fleet_resolve_alert'],['services/product.ts','fleet_operational_signal_summary'],['services/product.ts','fleet_operations_exception_intelligence'],['services/product.ts','fleet_restroom_remediation_risk'],['services/product.ts','fleet_restroom_prevention_portfolio'],['services/product.ts','fleet_restroom_preventive_schedule'],['services/product.ts','fleet_restroom_prevention_effectiveness'],['services/product.ts','fleet_preventive_dispatch_opportunities'],
+   ['services/product.ts','fleet_manager_dispatch'],['services/product.ts','fleet_create_route'],['services/product.ts','fleet_dispatch_route'],['services/product.ts','fleet_create_vehicle'],['services/product.ts','fleet_create_driver'],['services/product.ts','fleet_create_maintenance'],['services/product.ts','fleet_resolve_alert'],['services/product.ts','fleet_operational_signal_summary'],['services/product.ts','fleet_operations_exception_intelligence'],['services/product.ts','fleet_restroom_remediation_risk'],['services/product.ts','fleet_restroom_prevention_portfolio'],['services/product.ts','fleet_restroom_preventive_schedule'],['services/product.ts','fleet_restroom_prevention_effectiveness'],['services/product.ts','fleet_preventive_dispatch_opportunities'],
    ['services/control.ts','kleenest.fleet.selected_workspace.v1'],['services/control.ts','fleet_list_premium_members'],['services/control.ts','fleet_progression_snapshot'],['services/control.ts','fleet_set_monitored_location'],['services/control.ts','fleet_attach_preventive_work_to_route'],['services/control.ts','fleet_set_route_stops'],
    ['services/locations.ts','map_network_nearby_v2'],['services/enterprise.ts','enterprise_list_owned_networks'],['services/enterprise.ts','create_enterprise_partner_network'],['services/enterprise.ts','get_partner_campaign_roi'],
    ['services/offline.ts','fleet_replay_route_stop_timing'],['services/offline.ts','AsyncStorage'],...operatorCommon
