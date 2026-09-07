@@ -78,6 +78,8 @@ requireAll('Owner password recovery',auth,[
   'Forgot password?',
   'Set new password',
 ]);
+must(auth.includes("resetPasswordForEmail(cleanEmail, { redirectTo: ownerRedirect })"),'Owner password recovery must reuse the already-proven registered Owner redirect URL.');
+must(!auth.includes('ownerRecoveryRedirect'),'Owner password recovery must not introduce a separate unverified redirect callback variant.');
 requireAll('Owner audit client',ownerAdmin,[
   "rpc('admin_list_activity_events'",
   'p_from:start.toISOString()',
