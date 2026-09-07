@@ -6,7 +6,8 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { getOwnerAuthorization } from '../services/ownerAdmin';
 
 const ownerRedirect = Linking.createURL('/auth', { scheme: 'kleenest-owner' });
-type Mode = 'signin' | 'signup';
+const ownerRecoveryRedirect = `${ownerRedirect}${ownerRedirect.includes('?') ? '&' : '?'}flow=recovery`;
+type Mode = 'signin' | 'signup' | 'forgot' | 'recovery';
 
 function messageOf(value: unknown) {
   if (value instanceof Error && value.message) return value.message;
@@ -18,6 +19,14 @@ function messageOf(value: unknown) {
     }
   }
   return typeof value === 'string' && value.trim() ? value : 'Owner authentication could not be completed.';
+}
+
+function authParam(url: string, key: string) {
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = url.match(new RegExp(`[?&#]${escaped}=([^&#]*)`));
+  if (!match?.[1]) return '';
+  try { return decodeURIComponent(match[1].replace(/\+/g, ' ')); }
+  catch { return match[1]; }
 }
 
 async function verifyOwner() {
@@ -36,30 +45,68 @@ export default function OwnerAuth() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  async function finishGoogle(url: string | null) {
+  function changeMode(next: Mode) {
+    setMode(next);
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setError(null);
+    setNotice(null);
+  }
+
+  async function finishAuthLink(url: string | null) {
     if (!url) return false;
-    const parsed = Linking.parse(url);
-    const code = typeof parsed.queryParams?.code === 'string' ? parsed.queryParams.code : '';
-    if (!code) return false;
+    const code = authParam(url, 'code');
+    const access_token = authParam(url, 'access_token');
+    const refresh_token = authParam(url, 'refresh_token');
+    const authType = authParam(url, 'type');
+    const recoveryLink = authParam(url, 'flow') === 'recovery' || authType === 'recovery';
+    if (!code && !(access_token && refresh_token)) return false;
+
     const client = getKleenestSupabaseClient();
     setBusy(true); setError(null); setNotice(null);
     try {
-      const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
-      if (exchangeError) throw exchangeError;
+      if (access_token && refresh_token) {
+        const { error: sessionError } = await client.auth.setSession({ access_token, refresh_token });
+        if (sessionError) throw sessionError;
+      } else if (code) {
+        const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
+        if (exchangeError) throw exchangeError;
+      }
+
+      if (recoveryLink) {
+        setMode('recovery');
+        setPassword('');
+        setConfirmPassword('');
+        setNotice('Recovery link verified. Choose a new password for this Owner account.');
+        return true;
+      }
+
       await verifyOwner();
       router.replace('/');
       return true;
     } catch (cause) {
       await client.auth.signOut({ scope: 'local' });
+      setMode('signin');
       setError(messageOf(cause));
       return false;
     } finally { setBusy(false); }
   }
 
   useEffect(() => {
-    void Linking.getInitialURL().then(finishGoogle);
-    const sub = Linking.addEventListener('url', event => { void finishGoogle(event.url); });
-    return () => sub.remove();
+    const client = getKleenestSupabaseClient();
+    void Linking.getInitialURL().then(finishAuthLink);
+    const linkSub = Linking.addEventListener('url', event => { void finishAuthLink(event.url); });
+    const { data: { subscription } } = client.auth.onAuthStateChange(event => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setMode('recovery');
+        setPassword('');
+        setConfirmPassword('');
+        setError(null);
+        setNotice('Recovery link verified. Choose a new password for this Owner account.');
+      }
+    });
+    return () => { linkSub.remove(); subscription.unsubscribe(); };
   }, []);
 
   async function signIn() {
@@ -97,6 +144,39 @@ export default function OwnerAuth() {
     finally { setBusy(false); }
   }
 
+  async function requestRecovery() {
+    const cleanEmail = email.trim();
+    if (!cleanEmail) return setError('Enter the Owner email address to recover.');
+    const client = getKleenestSupabaseClient();
+    setBusy(true); setError(null); setNotice(null);
+    try {
+      const { error: recoveryError } = await client.auth.resetPasswordForEmail(cleanEmail, { redirectTo: ownerRecoveryRedirect });
+      if (recoveryError) throw recoveryError;
+      setNotice('If that email belongs to an account, a password recovery link has been sent. Open it on this device to continue in KleenestOS.');
+    } catch (cause) { setError(messageOf(cause)); }
+    finally { setBusy(false); }
+  }
+
+  async function updateRecoveredPassword() {
+    if (password.length < 8) return setError('Use at least 8 characters for the new Owner password.');
+    if (password !== confirmPassword) return setError('The passwords do not match.');
+    const client = getKleenestSupabaseClient();
+    setBusy(true); setError(null); setNotice(null);
+    try {
+      const { error: updateError } = await client.auth.updateUser({ password });
+      if (updateError) throw updateError;
+      await verifyOwner();
+      setNotice('Password updated. Opening KleenestOS…');
+      router.replace('/');
+    } catch (cause) {
+      await client.auth.signOut({ scope: 'local' });
+      setMode('signin');
+      setPassword('');
+      setConfirmPassword('');
+      setError(messageOf(cause));
+    } finally { setBusy(false); }
+  }
+
   async function google() {
     if (busy) return;
     setBusy(true); setError(null); setNotice(null);
@@ -110,23 +190,37 @@ export default function OwnerAuth() {
   }
 
   const creating = mode === 'signup';
-  const submitDisabled = busy || !email.trim() || !password || (creating && !confirmPassword);
+  const forgetting = mode === 'forgot';
+  const recovering = mode === 'recovery';
+  const submitDisabled = recovering
+    ? busy || !password || !confirmPassword
+    : forgetting
+      ? busy || !email.trim()
+      : busy || !email.trim() || !password || (creating && !confirmPassword);
+  const heroTitle = recovering ? 'Set new password' : forgetting ? 'Recover owner access' : creating ? 'Create owner identity' : 'Owner sign in';
+  const heroBody = recovering
+    ? 'Your recovery link established a secure session. Set a new password, then KleenestOS will verify Owner authority before opening privileged controls.'
+    : forgetting
+      ? 'Enter the Owner account email. The recovery link returns to the registered KleenestOS app instead of a localhost or browser-only destination.'
+      : 'Authenticate first. KleenestOS verifies platform-owner or administrator authority before exposing privileged controls.';
+
   return <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.page}>
-    <View style={s.hero}><Text style={s.eyebrow}>KLEENESTOS · PRIVATE CONTROL PLANE</Text><Text style={s.heroTitle}>{creating ? 'Create owner identity' : 'Owner sign in'}</Text><Text style={s.heroBody}>Authenticate first. KleenestOS verifies platform-owner or administrator authority before exposing privileged controls.</Text></View>
-    <View style={s.modeRow}><ModeButton label="Sign in" active={!creating} onPress={() => { setMode('signin'); setError(null); setNotice(null); }} /><ModeButton label="Create account" active={creating} onPress={() => { setMode('signup'); setError(null); setNotice(null); }} /></View>
+    <View style={s.hero}><Text style={s.eyebrow}>KLEENESTOS · PRIVATE CONTROL PLANE</Text><Text style={s.heroTitle}>{heroTitle}</Text><Text style={s.heroBody}>{heroBody}</Text></View>
+    {!recovering ? <View style={s.modeRow}><ModeButton label="Sign in" active={mode === 'signin' || forgetting} onPress={() => changeMode('signin')} /><ModeButton label="Create account" active={creating} onPress={() => changeMode('signup')} /></View> : null}
     {error ? <Text accessibilityLiveRegion="polite" style={s.error}>{error}</Text> : null}
     {notice ? <View style={s.notice}><Text style={s.noticeText}>{notice}</Text></View> : null}
-    <Pressable disabled={busy} onPress={google} style={s.google}><Text style={s.googleText}>Continue with Google</Text></Pressable>
-    <View style={s.divider}><View style={s.line}/><Text style={s.or}>OR</Text><View style={s.line}/></View>
-    <View style={s.field}><Text style={s.label}>Owner email</Text><TextInput accessibilityLabel="Owner email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" textContentType="emailAddress" placeholder="owner@example.com" placeholderTextColor="#7f8d85" selectionColor="#132b21" cursorColor="#132b21" style={s.input}/></View>
-    <View style={s.field}><Text style={s.label}>Owner password</Text><View style={s.passwordRow}><TextInput accessibilityLabel="Owner password" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoCapitalize="none" autoCorrect={false} autoComplete={creating ? 'new-password' : 'current-password'} textContentType={creating ? 'newPassword' : 'password'} placeholder={creating ? 'Create a password' : 'Enter owner password'} placeholderTextColor="#7f8d85" selectionColor="#132b21" cursorColor="#132b21" style={s.passwordInput}/><Pressable accessibilityRole="button" accessibilityLabel={showPassword ? 'Hide owner password' : 'Show owner password'} onPress={() => setShowPassword(v => !v)} style={s.visibility}><Text style={s.visibilityText}>{showPassword ? 'Hide' : 'Show'}</Text></Pressable></View></View>
-    {creating ? <View style={s.field}><Text style={s.label}>Confirm password</Text><TextInput accessibilityLabel="Confirm owner password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={!showPassword} autoCapitalize="none" autoCorrect={false} autoComplete="new-password" textContentType="newPassword" placeholder="Re-enter password" placeholderTextColor="#7f8d85" selectionColor="#132b21" cursorColor="#132b21" style={s.input}/></View> : null}
-    <Pressable disabled={submitDisabled} onPress={creating ? signUp : signIn} style={[s.primary, submitDisabled && s.disabled]}><Text style={s.primaryText}>{busy ? 'Working…' : creating ? 'Create owner account' : 'Sign in to KleenestOS'}</Text></Pressable>
+    {!forgetting && !recovering ? <><Pressable disabled={busy} onPress={google} style={s.google}><Text style={s.googleText}>Continue with Google</Text></Pressable><View style={s.divider}><View style={s.line}/><Text style={s.or}>OR</Text><View style={s.line}/></View></> : null}
+    {!recovering ? <View style={s.field}><Text style={s.label}>Owner email</Text><TextInput accessibilityLabel="Owner email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" textContentType="emailAddress" placeholder="owner@example.com" placeholderTextColor="#7f8d85" selectionColor="#132b21" cursorColor="#132b21" style={s.input}/></View> : null}
+    {!forgetting ? <View style={s.field}><Text style={s.label}>{recovering ? 'New Owner password' : 'Owner password'}</Text><View style={s.passwordRow}><TextInput accessibilityLabel={recovering ? 'New Owner password' : 'Owner password'} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoCapitalize="none" autoCorrect={false} autoComplete={creating || recovering ? 'new-password' : 'current-password'} textContentType={creating || recovering ? 'newPassword' : 'password'} placeholder={recovering ? 'Create a new password' : creating ? 'Create a password' : 'Enter owner password'} placeholderTextColor="#7f8d85" selectionColor="#132b21" cursorColor="#132b21" style={s.passwordInput}/><Pressable accessibilityRole="button" accessibilityLabel={showPassword ? 'Hide owner password' : 'Show owner password'} onPress={() => setShowPassword(v => !v)} style={s.visibility}><Text style={s.visibilityText}>{showPassword ? 'Hide' : 'Show'}</Text></Pressable></View></View> : null}
+    {creating || recovering ? <View style={s.field}><Text style={s.label}>Confirm password</Text><TextInput accessibilityLabel="Confirm owner password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={!showPassword} autoCapitalize="none" autoCorrect={false} autoComplete="new-password" textContentType="newPassword" placeholder="Re-enter password" placeholderTextColor="#7f8d85" selectionColor="#132b21" cursorColor="#132b21" style={s.input}/></View> : null}
+    {mode === 'signin' ? <Pressable disabled={busy} accessibilityRole="button" onPress={() => changeMode('forgot')} style={s.textAction}><Text style={s.textActionText}>Forgot password?</Text></Pressable> : null}
+    <Pressable disabled={submitDisabled} onPress={recovering ? updateRecoveredPassword : forgetting ? requestRecovery : creating ? signUp : signIn} style={[s.primary, submitDisabled && s.disabled]}><Text style={s.primaryText}>{busy ? 'Working…' : recovering ? 'Set new password' : forgetting ? 'Send recovery link' : creating ? 'Create owner account' : 'Sign in to KleenestOS'}</Text></Pressable>
+    {forgetting ? <Pressable disabled={busy} accessibilityRole="button" onPress={() => changeMode('signin')} style={s.textAction}><Text style={s.textActionText}>Back to sign in</Text></Pressable> : null}
   </ScrollView>;
 }
 
 function ModeButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) { return <Pressable onPress={onPress} accessibilityRole="button" accessibilityState={{ selected: active }} style={[s.modeButton, active && s.modeActive]}><Text style={[s.modeText, active && s.modeTextActive]}>{label}</Text></Pressable>; }
 
 const s = StyleSheet.create({
-  page: { flexGrow: 1, justifyContent: 'center', padding: 22, gap: 14, backgroundColor: '#f3f6f4' }, hero: { backgroundColor: '#102218', padding: 20, borderRadius: 24, gap: 7 }, eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5, color: '#b9d2c2' }, heroTitle: { color: '#fff', fontSize: 30, fontWeight: '900' }, heroBody: { color: '#dce9e1', lineHeight: 21 }, modeRow: { flexDirection: 'row', gap: 8 }, modeButton: { flex: 1, paddingVertical: 11, borderRadius: 999, backgroundColor: '#e7eee9', alignItems: 'center' }, modeActive: { backgroundColor: '#102218' }, modeText: { fontWeight: '900', color: '#31483c' }, modeTextActive: { color: '#fff' }, error: { color: '#9b2c2c', fontWeight: '700' }, notice: { backgroundColor: '#e6f3eb', borderRadius: 14, padding: 12 }, noticeText: { color: '#22563c', lineHeight: 20 }, google: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ccd9d1', padding: 14, borderRadius: 14, alignItems: 'center' }, googleText: { fontWeight: '900', color: '#132b21' }, divider: { flexDirection: 'row', alignItems: 'center', gap: 10 }, line: { height: 1, flex: 1, backgroundColor: '#d4ddd7' }, or: { color: '#718078', fontWeight: '800', fontSize: 11 }, field: { gap: 6 }, label: { fontSize: 12, fontWeight: '900', color: '#31483c' }, input: { borderWidth: 1, borderColor: '#ccd9d1', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, backgroundColor: '#fff', color: '#132b21', fontSize: 16 }, passwordRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ccd9d1', borderRadius: 14, backgroundColor: '#fff', overflow: 'hidden' }, passwordInput: { flex: 1, paddingHorizontal: 14, paddingVertical: 13, color: '#132b21', fontSize: 16 }, visibility: { alignSelf: 'stretch', justifyContent: 'center', paddingHorizontal: 16, borderLeftWidth: 1, borderLeftColor: '#e0e8e3', backgroundColor: '#eef4f0' }, visibilityText: { fontWeight: '900', color: '#132b21' }, primary: { backgroundColor: '#102218', padding: 15, borderRadius: 14, alignItems: 'center' }, primaryText: { color: '#fff', fontWeight: '900' }, disabled: { opacity: .45 },
+  page: { flexGrow: 1, justifyContent: 'center', padding: 22, gap: 14, backgroundColor: '#f3f6f4' }, hero: { backgroundColor: '#102218', padding: 20, borderRadius: 24, gap: 7 }, eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5, color: '#b9d2c2' }, heroTitle: { color: '#fff', fontSize: 30, fontWeight: '900' }, heroBody: { color: '#dce9e1', lineHeight: 21 }, modeRow: { flexDirection: 'row', gap: 8 }, modeButton: { flex: 1, paddingVertical: 11, borderRadius: 999, backgroundColor: '#e7eee9', alignItems: 'center' }, modeActive: { backgroundColor: '#102218' }, modeText: { fontWeight: '900', color: '#31483c' }, modeTextActive: { color: '#fff' }, error: { color: '#9b2c2c', fontWeight: '700' }, notice: { backgroundColor: '#e6f3eb', borderRadius: 14, padding: 12 }, noticeText: { color: '#22563c', lineHeight: 20 }, google: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ccd9d1', padding: 14, borderRadius: 14, alignItems: 'center' }, googleText: { fontWeight: '900', color: '#132b21' }, divider: { flexDirection: 'row', alignItems: 'center', gap: 10 }, line: { height: 1, flex: 1, backgroundColor: '#d4ddd7' }, or: { color: '#718078', fontWeight: '800', fontSize: 11 }, field: { gap: 6 }, label: { fontSize: 12, fontWeight: '900', color: '#31483c' }, input: { borderWidth: 1, borderColor: '#ccd9d1', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, backgroundColor: '#fff', color: '#132b21', fontSize: 16 }, passwordRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ccd9d1', borderRadius: 14, backgroundColor: '#fff', overflow: 'hidden' }, passwordInput: { flex: 1, paddingHorizontal: 14, paddingVertical: 13, color: '#132b21', fontSize: 16 }, visibility: { alignSelf: 'stretch', justifyContent: 'center', paddingHorizontal: 16, borderLeftWidth: 1, borderLeftColor: '#e0e8e3', backgroundColor: '#eef4f0' }, visibilityText: { fontWeight: '900', color: '#132b21' }, primary: { backgroundColor: '#102218', padding: 15, borderRadius: 14, alignItems: 'center' }, primaryText: { color: '#fff', fontWeight: '900' }, textAction: { alignSelf: 'flex-start', paddingVertical: 4 }, textActionText: { color: '#22563c', fontWeight: '900' }, disabled: { opacity: .45 },
 });
