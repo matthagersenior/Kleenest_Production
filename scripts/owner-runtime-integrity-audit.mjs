@@ -12,6 +12,7 @@ const appConfig=requireFile('apps/platform-mobile/app.config.ts');
 const androidFamily=requireFile('.github/workflows/android-family.yml');
 const home=requireFile('apps/platform-mobile/app/index.tsx');
 const capabilities=requireFile('apps/platform-mobile/app/capabilities.tsx');
+const auth=requireFile('apps/platform-mobile/app/auth.tsx');
 const ownerAdmin=requireFile('apps/platform-mobile/services/ownerAdmin.ts');
 const migration=requireFile('supabase/migrations/20260905221500_repair_owner_runtime_observability_and_audit_contracts.sql');
 const compatibility=requireFile('supabase/migrations/20260905222500_align_owner_mobile_runtime_compatibility.sql');
@@ -67,6 +68,16 @@ requireAll('Owner capability execution semantics',capabilities,[
   'Auth policy',
   'Anon policy',
 ]);
+requireAll('Owner password recovery',auth,[
+  'resetPasswordForEmail',
+  'client.auth.setSession',
+  'access_token',
+  'refresh_token',
+  'PASSWORD_RECOVERY',
+  'client.auth.updateUser',
+  'Forgot password?',
+  'Set new password',
+]);
 requireAll('Owner audit client',ownerAdmin,[
   "rpc('admin_list_activity_events'",
   'p_from:start.toISOString()',
@@ -105,4 +116,4 @@ requireAll('Owner Android route smoke',smoke,[
 ]);
 
 if(failures.length){console.error(`Owner runtime integrity audit failed with ${failures.length} gap(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
-console.log('Owner runtime integrity audit passed: live telemetry, audit RPC compatibility, capability execution semantics, Messaging crash containment, native push safety and Android route smoke are protected.');
+console.log('Owner runtime integrity audit passed: live telemetry, audit RPC compatibility, capability execution semantics, password recovery, Messaging crash containment, native push safety and Android route smoke are protected.');
