@@ -1,0 +1,3 @@
+-- Reconciles the production migration ledger.
+-- This migration was intentionally applied live as a no-op marker; keep it source-controlled
+-- so CI and future migration pushes do not report production history drift.
