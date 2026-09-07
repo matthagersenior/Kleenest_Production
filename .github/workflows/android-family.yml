@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: kleenest-app-family-android-${{ github.event.pull_request.number || github.ref }}
+  group: kleenest-app-family-android-${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_sha || github.event_name == 'workflow_dispatch' && github.sha || github.run_id }}
   cancel-in-progress: true
 
 jobs:
