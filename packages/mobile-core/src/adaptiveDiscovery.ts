@@ -39,6 +39,7 @@ function boundedCoordinate(latitude:number,longitude:number){
   if(!Number.isFinite(longitude)||longitude < -180||longitude > 180)throw new Error('Longitude is outside the supported range.');
 }
 function rowId(row:any){return String(row?.location_id||row?.place_id||row?.id||'')}
+function distanceOf(row:any){const distance=Number(row?.distance_meters);return Number.isFinite(distance)?distance:Number.POSITIVE_INFINITY}
 function knownRestroomNegative(row:any){
   const tags=row?.osm_tags&&typeof row.osm_tags==='object'?row.osm_tags:{};
   const toilets=String(tags?.toilets||'').trim().toLowerCase();
@@ -49,30 +50,31 @@ function evidenceRow(row:any){return {...row,restroom_candidate_status:'restroom
 function candidateRow(row:any){return {...row,restroom_candidate_status:'needs_verification',needs_restroom_verification:true}}
 
 export function mergeNearbyDiscoveryRows(restroomRows:any[],candidateRows:any[],limit=100){
+  const max=Math.max(1,Math.min(100,Math.round(limit||100)));
   const evidenceById=new Map<string,any>();
   for(const row of restroomRows||[]){const id=rowId(row);if(id)evidenceById.set(id,evidenceRow(row));}
-  const merged=new Map<string,any>();
+  const candidatesById=new Map<string,any>();
   for(const row of candidateRows||[]){
     const id=rowId(row);
-    if(!id||knownRestroomNegative(row))continue;
-    const evidence=evidenceById.get(id);
-    if(evidence){
-      merged.set(id,{
-        ...row,
-        ...evidence,
-        business_name:evidence.business_name||row.business_name||null,
-        business_logo_url:evidence.business_logo_url||row.business_logo_url||null,
-        place_type:evidence.place_type||row.place_type||row.category||null,
-        restroom_candidate_status:'restroom_evidence',
-        needs_restroom_verification:false,
-      });
-      evidenceById.delete(id);
-    }else merged.set(id,candidateRow(row));
+    if(!id||knownRestroomNegative(row)||evidenceById.has(id))continue;
+    candidatesById.set(id,candidateRow(row));
   }
-  for(const [id,row] of evidenceById)merged.set(id,row);
-  return [...merged.values()]
-    .sort((a,b)=>Number(a?.distance_meters??Number.POSITIVE_INFINITY)-Number(b?.distance_meters??Number.POSITIVE_INFINITY))
-    .slice(0,Math.max(1,Math.min(100,Math.round(limit||100))));
+  const evidence=[...evidenceById.values()].sort((a,b)=>distanceOf(a)-distanceOf(b));
+  const candidates=[...candidatesById.values()].sort((a,b)=>distanceOf(a)-distanceOf(b));
+  // Nearby Explore is a bathroom finder and a consumer-verification surface. Reserve
+  // capacity for both so dense business data cannot erase restroom evidence, and
+  // dense restroom evidence cannot hide every plausible business candidate.
+  const evidenceTarget=Math.min(evidence.length,Math.ceil(max*0.6));
+  const candidateTarget=Math.min(candidates.length,max-evidenceTarget);
+  const selected=[...evidence.slice(0,evidenceTarget),...candidates.slice(0,candidateTarget)];
+  const selectedIds=new Set(selected.map(rowId));
+  if(selected.length<max){
+    const remainder=[...evidence.slice(evidenceTarget),...candidates.slice(candidateTarget)]
+      .filter(row=>!selectedIds.has(rowId(row)))
+      .sort((a,b)=>distanceOf(a)-distanceOf(b));
+    selected.push(...remainder.slice(0,max-selected.length));
+  }
+  return selected.sort((a,b)=>distanceOf(a)-distanceOf(b));
 }
 
 export async function listNearbyRestroomsV3(input:{latitude:number;longitude:number;radiusMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;limit?:number}){
