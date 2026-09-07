@@ -13,6 +13,8 @@ const dispatch=read('apps/fleet-mobile/app/dispatch.tsx');
 const maintenance=read('apps/fleet-mobile/app/maintenance.tsx');
 const operations=read('apps/fleet-mobile/app/operations.tsx');
 const metrics=read('apps/fleet-mobile/app/metrics.tsx');
+const capabilities=read('apps/fleet-mobile/app/capabilities.tsx');
+const entitlementMigration=read('supabase/migrations/20260907224500_fleet_entitlement_authority_convergence.sql');
 
 all('Vehicle authority',service,['fleet_create_vehicle','fleet_update_vehicle','fleet_delete_vehicle','fleet_set_vehicle_status']);
 all('Vehicle controls',assets,['Add vehicle','Edit vehicle','Delete vehicle']);
@@ -31,6 +33,15 @@ all('Operational bridge authority',service,['record_fleet_operational_event','fl
 all('Operational bridge controls',operations,['attachPreventiveWorkToRoute','Resolve alert']);
 all('Operational resilience',service,['Promise.allSettled','alertsWarning']);
 
+// Fleet access must converge on the canonical product-access entitlement instead of duplicating an older tier-only rule.
+all('Fleet entitlement authority',entitlementMigration,['business_fleet_authorized','get_business_product_access','fleet_enabled']);
+if(entitlementMigration.includes("business_tier::text in ('fleet','enterprise')"))failures.push('Fleet entitlement authority: tier-only Fleet authorization is obsolete; canonical fleet_enabled must decide access');
+
+// Capabilities are an operator surface: no raw UUID/business_id dumps or machine field names as primary UX.
+all('Fleet capability presentation',capabilities,['formatFleetCapabilityLabel','formatFleetCapabilityValue','isFleetInternalField']);
+if(capabilities.includes('key.replaceAll(\'_\',\' \')'))failures.push('Fleet capability presentation: generic raw field rendering is forbidden');
+if(capabilities.includes('<Text style={s.factValue}>{String(val)}</Text>'))failures.push('Fleet capability presentation: raw backend values are forbidden');
+
 // Validate behavior rather than brittle formatting. Android requestId values must stay short,
 // while the full UUID context is persisted separately for background callbacks.
 if(!/\bGEOFENCE_CONTEXT_KEY\b/.test(geofence))failures.push('Android geofence identifier safety: missing persisted context key');
@@ -39,7 +50,7 @@ if(!/AsyncStorage\.setItem\s*\(\s*GEOFENCE_CONTEXT_KEY\b/.test(geofence))failure
 if(/identifier\s*=\s*[^;\n]*\.join\(\s*['"]\|['"]\s*\)/.test(geofence))failures.push('Android geofence identifier safety: UUID tuple identifiers exceed the native requestId limit');
 
 all('Refresh convergence',assets+planner+dispatch+maintenance+metrics+operations,['await load()']);
-for(const [label,source] of Object.entries({assets,planner,dispatch,maintenance,operations,metrics}))noRaw(label,source);
+for(const [label,source] of Object.entries({assets,planner,dispatch,maintenance,operations,metrics,capabilities}))noRaw(label,source);
 
 if(failures.length){console.error(`Fleet extended operator audit failed with ${failures.length} issue${failures.length===1?'':'s'}:`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
-console.log('Fleet extended operator audit passed: vehicle, driver, route, maintenance, metric and operational CRUD authority is wired to resilient human operator controls with Android-safe geofencing, canonical workspace selection and refresh convergence.');
+console.log('Fleet extended operator audit passed: vehicle, driver, route, maintenance, metric and operational CRUD authority is wired to resilient human operator controls with canonical entitlement, Android-safe geofencing, canonical workspace selection and refresh convergence.');
