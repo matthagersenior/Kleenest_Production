@@ -1,18 +1,21 @@
-# trigger after workflow registration on main
 name: Maintenance Patch Consumer First Load
 
 on:
-  push:
+  pull_request:
     branches:
       - main
+    types:
+      - synchronize
     paths:
-      - .github/workflows/_maintenance-patch-consumer-first-load.yml
+      - .github/workflows/_patch-consumer-first-load.yml
+      - scripts/native-map-authority-audit.mjs
 
 permissions:
   contents: write
 
 jobs:
   patch:
+    if: github.head_ref == 'fix/consumer-explore-first-load'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
