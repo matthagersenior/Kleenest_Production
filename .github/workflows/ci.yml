@@ -153,6 +153,8 @@ jobs:
         run: node scripts/pages-deployment-convergence-audit.mjs
       - name: Business health convergence
         run: node scripts/review-amenity-business-health-convergence-audit.mjs
+      - name: Owner runtime integrity
+        run: node scripts/owner-runtime-integrity-audit.mjs
       - name: Operator functional parity
         run: node scripts/operator-functional-parity-audit.mjs
       - name: Full authority chain parity
