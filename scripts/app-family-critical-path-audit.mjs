@@ -28,6 +28,11 @@ requireTokens(qr,'business',['Scan readiness','contrastRatio','quietZone','logoS
 requireAny(qr,'business',['Save configuration','Save versioned design']);
 requireTokens(qrService,'business',['qr_studio_upsert_asset','qr_studio_versions','qr_studio_restore_version','create_qr_engagement_program','business_set_qr_active','business_delete_qr']);
 requireTokens(qrBranding,'business',["storage.from('qr-branding')",'2_097_152','image/png','image/jpeg','image/webp','requestMediaLibraryPermissionsAsync']);
+// Business workspace selection must honor an explicit valid choice; scoring is fallback only.
+const businessWorkspace='apps/business-mobile/services/capabilityWorkflows.ts';
+requireTokens(businessWorkspace,'business workspace',["kleenest.business.selected_workspace.v1",'selectBusinessWorkspace','const preferredRank=ranked.find(item=>item.id===preferred);','const chosen=preferredRank||[...ranked].sort((a,b)=>b.score-a.score)[0];']);
+if(exists(businessWorkspace)&&read(businessWorkspace).includes('preferredRank&&Number(preferredRank.access?.location_count||0)>0'))failures.push('business workspace: explicit workspace selection must not depend on location_count');
+requireTokens('apps/business-mobile/app/workspaces.tsx','business workspace',['selectBusinessWorkspace','Every Business screen will now use this business.']);
 // Business trust operations must preserve proof-sensitive remediation and the reverification QR handoff.
 requireTokens('apps/business-mobile/services/trustOperations.ts','business',['business_create_reverification_qr']);
 requireTokens('apps/business-mobile/services/remediationProof.ts','business',['business_create_media',"storage.from(BUCKET).upload",'requestMediaLibraryPermissionsAsync']);
@@ -35,6 +40,7 @@ requireTokens('apps/business-mobile/app/operations.tsx','business',['proofMediaI
 
 // Fleet: managers must see the whole dispatch workspace; field execution must remain geofence + durable offline capable.
 requireTokens('apps/fleet-mobile/services/product.ts','fleet',['fleet_manager_dispatch']);
+requireTokens('apps/fleet-mobile/app/dispatch.tsx','fleet workspace',['currentFleetBusinessId','const nextId=businessId||await currentFleetBusinessId();']);
 requireTokens('apps/fleet-mobile/app/planner.tsx','fleet',["['5 mi',8047]",'fleet_map_planner','setRouteStops']);
 requireTokens('apps/fleet-mobile/app/execution.tsx','fleet',['getFleetRouteGeofenceManifest','recordFleetGeofenceEvent','recordOrQueueRouteStopTiming','replayOfflineRouteEvents','Location.watchPositionAsync']);
 requireTokens('apps/fleet-mobile/services/offline.ts','fleet',["rpc('create_offline_pack'",'p_client_event_id:row.id','already_synced','AsyncStorage.setItem(KEY']);
