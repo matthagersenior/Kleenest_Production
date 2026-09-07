@@ -1,25 +1,15 @@
 name: Install-Ready Android Family
 
+# Signed EAS candidates are intentionally explicit. Canonical automatic Android
+# verification/builds are owned by android-family.yml after Production CI passes.
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'apps/consumer-mobile/**'
-      - 'apps/business-mobile/**'
-      - 'apps/fleet-mobile/**'
-      - 'apps/platform-mobile/**'
-      - 'packages/mobile-core/**'
-      - 'scripts/**'
-      - 'package.json'
-      - '.github/workflows/eas-family-repair.yml'
-      - '.github/workflows/eas-install-ready.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: install-ready-family-${{ github.event.pull_request.number || github.ref }}
+  group: install-ready-family-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
