@@ -62,7 +62,10 @@ for (const forbiddenPath of ['apps/consumer-mobile/**','apps/business-mobile/**'
 if (/^\s{2}push:/m.test(playAab)) throw new Error('Play AAB builds must not run automatically on push.');
 
 const publisher = read('publish-standalone-installer.yml');
-requireText(publisher, "github.event.workflow_run.conclusion == 'success'", 'Installer publishing must require a successful Android family run.');
+requireText(publisher, "github.event.workflow_run.conclusion != 'cancelled'", 'Installer publishing must ignore cancelled Android family runs.');
+if (publisher.includes("github.event.workflow_run.conclusion == 'success'")) throw new Error('Consumer installer publishing must not be blocked solely because another app-family matrix job failed.');
 requireText(publisher, 'ref: ${{ github.event.workflow_run.head_sha }}', 'Installer publishing must use the exact Android-tested commit.');
+requireText(publisher, 'run-id: ${{ github.event.workflow_run.id }}', 'Installer publishing must download the Consumer artifact from the exact triggering Android family run.');
+requireText(publisher, 'Kleenest-Consumer-Standalone-APK', 'Installer publishing must require the verified Consumer artifact from the family run.');
 
 console.log('CI freshness policy audit passed.');
