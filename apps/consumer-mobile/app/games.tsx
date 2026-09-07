@@ -1,5 +1,5 @@
 import { getKleenestSupabaseClient, getMobileProgressionDashboard, listMobileBadges } from '@kleenest/mobile-core';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { createGameChallenge,listGameChallenges,listGameChallengeTargets,recordGameChallengeScore,recordGameResult,respondGameChallenge } from '../services/games';
 import { BUILDER_SCENARIOS,GAME_DEFINITIONS,MEMORY_PAIRS,roundsFor } from '../services/gameModes';
 import { gameResultMetadata,scoreRound } from '../services/gameScoring';
@@ -11,7 +11,10 @@ function progressionMessage(before:any,after:any,base:string){const points=Math.
 const shuffle=<T,>(items:T[])=>[...items].sort(()=>Math.random()-.5);
 
 export default function GamesScreen(){
- const[game,setGame]=useState(GAME_DEFINITIONS[0]),[round,setRound]=useState(0),[score,setScore]=useState(0),[startedAt,setStartedAt]=useState(Date.now()),[saved,setSaved]=useState(false),[message,setMessage]=useState(''),[targets,setTargets]=useState<any[]>([]),[challenges,setChallenges]=useState<any[]>([]),[userId,setUserId]=useState(''),[activeChallenge,setActiveChallenge]=useState<any>(null),[memoryCards,setMemoryCards]=useState<any[]>([]),[memoryOpen,setMemoryOpen]=useState<number[]>([]),[memoryMatched,setMemoryMatched]=useState<number[]>([]),[builderSelected,setBuilderSelected]=useState<number[]>([]),[timeLeft,setTimeLeft]=useState(0),[strategyTokens,setStrategyTokens]=useState(0);
+ const params=useLocalSearchParams<{game?:string|string[]}>();
+ const requestedGameCode=Array.isArray(params.game)?params.game[0]:params.game;
+ const initialGame=GAME_DEFINITIONS.find(candidate=>candidate.code===requestedGameCode)||GAME_DEFINITIONS[0];
+ const[game,setGame]=useState(initialGame),[round,setRound]=useState(0),[score,setScore]=useState(0),[startedAt,setStartedAt]=useState(Date.now()),[saved,setSaved]=useState(false),[message,setMessage]=useState(''),[targets,setTargets]=useState<any[]>([]),[challenges,setChallenges]=useState<any[]>([]),[userId,setUserId]=useState(''),[activeChallenge,setActiveChallenge]=useState<any>(null),[memoryCards,setMemoryCards]=useState<any[]>([]),[memoryOpen,setMemoryOpen]=useState<number[]>([]),[memoryMatched,setMemoryMatched]=useState<number[]>([]),[builderSelected,setBuilderSelected]=useState<number[]>([]),[timeLeft,setTimeLeft]=useState(0),[strategyTokens,setStrategyTokens]=useState(0);
  const choiceRounds=useMemo(()=>roundsFor(game),[game]);
  const current=choiceRounds.length?choiceRounds[round%choiceRounds.length]:null;
  const builder=BUILDER_SCENARIOS[round%BUILDER_SCENARIOS.length];
@@ -20,7 +23,8 @@ export default function GamesScreen(){
  useEffect(()=>{refreshSocial()},[]);
  function newMemory(){const cards=shuffle(MEMORY_PAIRS.flatMap((pair,pairId)=>pair.map((text,side)=>({pairId,text,side}))));setMemoryCards(cards);setMemoryOpen([]);setMemoryMatched([]);}
  function reset(nextGame=game,challenge:any=null){setGame(nextGame);setRound(0);setScore(0);setSaved(false);setStartedAt(Date.now());setActiveChallenge(challenge);setBuilderSelected([]);setStrategyTokens(nextGame.strategyBudget||0);setTimeLeft(nextGame.timeLimitSec||0);setMessage(nextGame.instructions);if(nextGame.mode==='memory')setTimeout(newMemory,0);}
- useEffect(()=>{reset(game)},[]);
+ useEffect(()=>{reset(initialGame)},[]);
+ useEffect(()=>{const requested=GAME_DEFINITIONS.find(candidate=>candidate.code===requestedGameCode);if(requested&&requested.code!==game.code)reset(requested)},[requestedGameCode]);
  function advance(correct:boolean,detail:string,points?:number){const gained=points??scoreRound({game,correct,timeLeft,strategyRemaining:strategyTokens});if(gained>0)setScore(v=>v+gained);setMessage(`${correct?'✓':'✕'} ${detail}${gained>0?` +${gained}`:''}`);setRound(v=>v+1);setBuilderSelected([]);setTimeLeft(game.timeLimitSec||0);}
  useEffect(()=>{if(!game.timeLimitSec||saved||complete)return;const id=setInterval(()=>setTimeLeft(v=>{if(v<=1){setTimeout(()=>advance(false,'Time expired.',0),0);return game.timeLimitSec||0}return v-1}),1000);return()=>clearInterval(id)},[game.code,round,saved,complete]);
  function answer(index:number){if(saved||!current||complete)return;const cost=current.costs?.[index]||0;if(game.mode==='strategy'){if(cost>strategyTokens){setMessage(`Not enough evidence tokens. You have ${strategyTokens}.`);return}const remaining=strategyTokens-cost;setStrategyTokens(remaining);advance(index===current.correct,current.detail,scoreRound({game,correct:index===current.correct,strategyRemaining:remaining}));return}advance(index===current.correct,current.detail);}
