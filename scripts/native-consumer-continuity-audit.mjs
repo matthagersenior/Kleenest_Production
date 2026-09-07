@@ -1,3 +1,4 @@
+import './native-consumer-offline-corridor-audit.mjs';
 import fs from 'node:fs';
 const failures=[];
 const files=['apps/consumer-mobile/services/nearbyCache.ts','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/notifications.tsx'];
