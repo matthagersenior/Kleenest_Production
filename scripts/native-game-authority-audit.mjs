@@ -22,7 +22,9 @@ if(!failures.length){
  if(!screen.includes('recordGameResult')||!screen.includes('recordGameChallengeScore'))failures.push('Game scores must persist through canonical authorities.');
  if(!screen.includes('getMobileProgressionDashboard')||!screen.includes('listMobileBadges')||!screen.includes('progressionMessage'))failures.push('Game saves must surface canonical progression deltas.');
  if(!screen.includes("pathname:'/contributor/[id]'"))failures.push('Challenge players must link to contributor profiles.');
- if(!play.includes("router.push('/games')")||!new RegExp(`name=[\"']games[\"'][^>]*href:\\s*null`).test(layout))failures.push('Game Center must remain beneath Play as a hidden secondary route.');
+ if(!play.includes("pathname:'/games'")||!play.includes('params:{game:game.code}'))failures.push('Each Play Game Center card must deep-link the selected canonical game code.');
+ if(!screen.includes('useLocalSearchParams')||!screen.includes('requestedGameCode')||!screen.includes('candidate.code===requestedGameCode'))failures.push('Game Center must honor the selected game code from Play instead of defaulting every launch.');
+ if(!new RegExp(`name=[\"']games[\"'][^>]*href:\\s*null`).test(layout))failures.push('Game Center must remain beneath Play as a hidden secondary route.');
  if(/\.from\(['"](?:game_results|game_challenges|point_transactions)['"]\)/.test(service+screen))failures.push('Game Center must not create a direct alternate scoring/challenge store.');
 }
 if(failures.length){console.error('Native game authority audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
