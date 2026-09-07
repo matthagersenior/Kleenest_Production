@@ -13,7 +13,7 @@ export async function currentBusinessId(){
   const preferred=await SecureStore.getItemAsync(WORKSPACE_KEY).catch(()=>null);
   const ranked=await Promise.all(rows.map(async row=>{const id=String(row.business_id||'');try{const access=await productAccess(id);const locationCount=Number(access?.location_count||0);const score=locationCount*100+(access?.enterprise_enabled?30:0)+(access?.fleet_enabled?20:0)+(String(access?.plan||'')==='growth'?10:0)+(row?.is_demo_test?0:5);return{row,id,access,score};}catch{return{row,id,access:null,score:row?.is_demo_test?0:5};}}));
   const preferredRank=ranked.find(item=>item.id===preferred);
-  const chosen=preferredRank&&Number(preferredRank.access?.location_count||0)>0?preferredRank:[...ranked].sort((a,b)=>b.score-a.score)[0];
+  const chosen=preferredRank||[...ranked].sort((a,b)=>b.score-a.score)[0];
   if(!chosen?.id)throw new Error('No managed Business workspace is available for this account.');
   await SecureStore.setItemAsync(WORKSPACE_KEY,chosen.id).catch(()=>{});
   return chosen.id;
