@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 
-const required=['apps/consumer-mobile/package.json','apps/consumer-mobile/app.config.ts','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','apps/consumer-mobile/app/route.tsx','packages/mobile-core/src/index.ts'];
+const required=['apps/consumer-mobile/package.json','apps/consumer-mobile/app.config.ts','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','apps/consumer-mobile/components/RestroomSignals.tsx','apps/consumer-mobile/app/route.tsx','packages/mobile-core/src/index.ts','packages/mobile-core/src/adaptiveDiscovery.ts'];
 const failures=[];
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing native map authority file: ${file}`);
 if(!failures.length){
- const pkg=fs.readFileSync(required[0],'utf8'),config=fs.readFileSync(required[1],'utf8'),exploreEntry=fs.readFileSync(required[2],'utf8'),adaptiveExplore=fs.readFileSync(required[3],'utf8'),route=fs.readFileSync(required[4],'utf8'),core=fs.readFileSync(required[5],'utf8');
+ const pkg=fs.readFileSync(required[0],'utf8'),config=fs.readFileSync(required[1],'utf8'),exploreEntry=fs.readFileSync(required[2],'utf8'),adaptiveExplore=fs.readFileSync(required[3],'utf8'),signals=fs.readFileSync(required[4],'utf8'),route=fs.readFileSync(required[5],'utf8'),core=fs.readFileSync(required[6],'utf8'),adaptiveCore=fs.readFileSync(required[7],'utf8');
  const explore=`${exploreEntry}\n${adaptiveExplore}`;
  const exploreCompact=explore.replace(/\s+/g,''),coreCompact=core.replace(/\s+/g,'');
  if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Explore entry must resolve to the canonical adaptive Explore screen.');
@@ -20,13 +20,18 @@ if(!failures.length){
  if(!explore.includes('Close selected location')||!explore.includes('Full details'))failures.push('Selected map details must be dismissible and link to full location details.');
  if(!explore.includes('<FlatList')||!explore.includes('scrollEnabled'))failures.push('Explore search results must remain independently scrollable.');
  if(!explore.includes('google.com/maps/dir')||!exploreCompact.match(/pathname:["']\/route["']/))failures.push('Discovery must preserve direct directions and route-planner handoff.');
- if(!core.includes("p_category:'restroom'"))failures.push('Canonical nearby discovery must be restroom-scoped.');
+ if(!core.includes("p_category:'restroom'"))failures.push('Canonical nearby discovery must remain bathroom-first for verified restroom evidence.');
  if(core.includes("p_category:null,p_search"))failures.push('Consumer restroom discovery must not become unrestricted category discovery.');
  if(!core.includes('amenityNames:string[]=[]')||!core.includes('p_amenity_names:names.length?names:null'))failures.push('Mobile discovery must carry amenity names to canonical nearby authority.');
  if(!explore.includes('listAmenityCatalog')||!explore.includes('selectedAmenityNames'))failures.push('Explore must consume canonical amenity filters.');
  if(!/listNearbyRestrooms\(current\.coords\.latitude,current\.coords\.longitude,radius,query,selectedAmenityNames,?\)/.test(exploreCompact))failures.push('Explore must preserve the proven nearby-restroom fallback with radius/search/amenity inputs.');
  if(!exploreCompact.includes('canUseGenericCache=!search.trim()&&!selectedAmenityNames.length'))failures.push('Unfiltered cached results must never masquerade as filtered live results.');
  if(!explore.includes('findAdaptiveNearbyRestrooms')||!explore.includes('listRestroomsAlongRoute'))failures.push('Rich Explore must add adaptive nearby and route-corridor discovery without replacing mature nearby authority.');
+ if(!adaptiveCore.includes('listNearbyMapCandidates')||!adaptiveCore.includes("p_category:'all'"))failures.push('Adaptive Explore must merge nearby map candidates so businesses without restroom evidence can still be offered for consumer verification.');
+ if(!adaptiveCore.includes('restroom_candidate_status')||!adaptiveCore.includes("'needs_verification'"))failures.push('Candidate rows must be explicitly classified instead of being presented as verified bathrooms.');
+ if(!adaptiveCore.includes('mergeNearbyDiscoveryRows'))failures.push('Adaptive nearby discovery must deduplicate verified restroom evidence and verification candidates.');
+ if(!signals.includes('restroom_candidate_status')||!signals.includes('Needs verification'))failures.push('Map and result signals must visibly distinguish consumer-verification candidates from verified restroom evidence.');
+ if(!signals.includes('restroomMarkerLabel'))failures.push('Map markers must retain accessible semantic labels.');
  if(!explore.includes('listLocationTrustSummaries')||!explore.includes('captureConsumerDiscovery')||!explore.includes('captureConsumerRouteIntent'))failures.push('Rich Explore must preserve batched trust context and lightweight backend data production.');
  if(!route.includes('GeoJSONSource')||!route.includes('type="line"')||!route.includes('stopCoordinates'))failures.push('Route must render canonical geometry and ordered stops.');
  const stateInvalidation=route.includes('setBuilt(null)')&&route.includes('[stopIds,hydrated]')&&route.includes('if(!hydrated)return;');
