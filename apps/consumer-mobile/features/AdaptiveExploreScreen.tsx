@@ -173,6 +173,7 @@ function ResultCard({ item, selected, onSelect, route }: {
 
 export default function AdaptiveExploreScreen() {
   const [mode, setMode] = useState<'nearby' | 'route'>('nearby');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
   const [origin, setOrigin] = useState<[number, number] | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
@@ -549,25 +550,6 @@ export default function AdaptiveExploreScreen() {
       </View>
 
       <View style={s.searchPanel}>
-        <View style={s.segment}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: mode === 'nearby' }}
-            onPress={() => chooseMode('nearby')}
-            style={[s.segmentButton, mode === 'nearby' && s.segmentActive]}
-          >
-            <Text style={[s.segmentText, mode === 'nearby' && s.segmentTextActive]}>Nearby</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: mode === 'route' }}
-            onPress={() => chooseMode('route')}
-            style={[s.segmentButton, mode === 'route' && s.segmentActive]}
-          >
-            <Text style={[s.segmentText, mode === 'route' && s.segmentTextActive]}>Along route</Text>
-          </Pressable>
-        </View>
-
         <View style={s.searchRow}>
           <TextInput
             accessibilityLabel="Search bathrooms"
@@ -593,10 +575,7 @@ export default function AdaptiveExploreScreen() {
           <>
             <View style={s.rowHeading}>
               <Text style={s.filterTitle}>Starting radius</Text>
-              <View style={s.autoRow}>
-                <Text style={s.autoLabel}>Expand for required amenities</Text>
-                <Switch disabled={!selectedAmenityNames.length} value={selectedAmenityNames.length > 0 && autoExpand} onValueChange={setAutoExpand} />
-              </View>
+              <Text style={s.autoLabel}>Local search</Text>
             </View>
             <View accessibilityRole="radiogroup">
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
@@ -613,45 +592,11 @@ export default function AdaptiveExploreScreen() {
                 ))}
               </ScrollView>
             </View>
-            {selectedAmenityNames.length > 0 && autoExpand ? (
-              <View style={s.inlineBlock}>
-                <Text style={s.filterTitle}>Maximum distance</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
-                  {maxChoices.map((choice) => {
-                    const enabledValue = Math.max(radius, choice.meters);
-                    return (
-                      <Pressable
-                        key={choice.meters}
-                        style={[s.choice, maxRadius === enabledValue && s.choiceActive]}
-                        onPress={() => setMaxRadius(enabledValue)}
-                      >
-                        <Text style={[s.choiceText, maxRadius === enabledValue && s.choiceTextActive]}>{choice.label}</Text>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-            ) : null}
           </>
         ) : (
-          <View style={s.inlineBlock}>
-            <View style={s.rowHeading}>
-              <Text style={s.filterTitle}>Route corridor</Text>
-              <Pressable onPress={() => router.push('/route')}>
-                <Text style={s.linkText}>Open Route planner</Text>
-              </Pressable>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
-              {corridorChoices.map((choice) => (
-                <Pressable
-                  key={choice.meters}
-                  style={[s.choice, corridor === choice.meters && s.choiceActive]}
-                  onPress={() => setCorridor(choice.meters)}
-                >
-                  <Text style={[s.choiceText, corridor === choice.meters && s.choiceTextActive]}>{choice.label}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+          <View style={s.rowHeading}>
+            <Text style={s.filterTitle}>Along-route search</Text>
+            <Text style={s.autoLabel}>Route controls are under advanced</Text>
           </View>
         )}
 
@@ -687,22 +632,113 @@ export default function AdaptiveExploreScreen() {
           <Text style={s.help}>Amenity catalog is loading.</Text>
         )}
 
-        {selectedAmenityNames.length ? <View style={s.ruleRow}>
-          <Pressable
-            disabled={!selectedAmenityNames.length}
-            onPress={() => setMatchRule('all')}
-            style={[s.rule, matchRule === 'all' && s.ruleActive, !selectedAmenityNames.length && s.disabled]}
-          >
-            <Text style={[s.ruleText, matchRule === 'all' && s.ruleTextActive]}>Must include all</Text>
-          </Pressable>
-          <Pressable
-            disabled={!selectedAmenityNames.length}
-            onPress={() => setMatchRule('any')}
-            style={[s.rule, matchRule === 'any' && s.ruleActive, !selectedAmenityNames.length && s.disabled]}
-          >
-            <Text style={[s.ruleText, matchRule === 'any' && s.ruleTextActive]}>Include any</Text>
-          </Pressable>
-        </View> : null}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showAdvanced }}
+          onPress={() => setShowAdvanced((current) => !current)}
+          style={[s.rowHeading, { minHeight: 40, paddingVertical: 3 }]}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={s.filterTitle}>Road trip / advanced</Text>
+            <Text style={s.help}>Advanced trip controls</Text>
+          </View>
+          <Text style={s.linkText}>{showAdvanced ? 'Hide' : 'Show'}</Text>
+        </Pressable>
+
+        {showAdvanced ? (
+          <View style={[s.inlineBlock, { gap: 7 }]}>
+            <View style={s.segment}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected: mode === 'nearby' }}
+                onPress={() => chooseMode('nearby')}
+                style={[s.segmentButton, mode === 'nearby' && s.segmentActive]}
+              >
+                <Text style={[s.segmentText, mode === 'nearby' && s.segmentTextActive]}>Nearby</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected: mode === 'route' }}
+                onPress={() => chooseMode('route')}
+                style={[s.segmentButton, mode === 'route' && s.segmentActive]}
+              >
+                <Text style={[s.segmentText, mode === 'route' && s.segmentTextActive]}>Along route</Text>
+              </Pressable>
+            </View>
+
+            {mode === 'nearby' ? (
+              <>
+                <View style={s.rowHeading}>
+                  <Text style={s.filterTitle}>Adaptive amenity search</Text>
+                  <View style={s.autoRow}>
+                    <Text style={s.autoLabel}>Expand for required amenities</Text>
+                    <Switch
+                      disabled={!selectedAmenityNames.length}
+                      value={selectedAmenityNames.length > 0 && autoExpand}
+                      onValueChange={setAutoExpand}
+                    />
+                  </View>
+                </View>
+                {selectedAmenityNames.length > 0 && autoExpand ? (
+                  <View style={s.inlineBlock}>
+                    <Text style={s.filterTitle}>Maximum distance</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
+                      {maxChoices.map((choice) => {
+                        const enabledValue = Math.max(radius, choice.meters);
+                        return (
+                          <Pressable
+                            key={choice.meters}
+                            style={[s.choice, maxRadius === enabledValue && s.choiceActive]}
+                            onPress={() => setMaxRadius(enabledValue)}
+                          >
+                            <Text style={[s.choiceText, maxRadius === enabledValue && s.choiceTextActive]}>{choice.label}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                ) : null}
+              </>
+            ) : (
+              <View style={s.inlineBlock}>
+                <View style={s.rowHeading}>
+                  <Text style={s.filterTitle}>Route corridor</Text>
+                  <Pressable onPress={() => router.push('/route')}>
+                    <Text style={s.linkText}>Open Route planner</Text>
+                  </Pressable>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
+                  {corridorChoices.map((choice) => (
+                    <Pressable
+                      key={choice.meters}
+                      style={[s.choice, corridor === choice.meters && s.choiceActive]}
+                      onPress={() => setCorridor(choice.meters)}
+                    >
+                      <Text style={[s.choiceText, corridor === choice.meters && s.choiceTextActive]}>{choice.label}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {selectedAmenityNames.length ? <View style={s.ruleRow}>
+              <Pressable
+                disabled={!selectedAmenityNames.length}
+                onPress={() => setMatchRule('all')}
+                style={[s.rule, matchRule === 'all' && s.ruleActive, !selectedAmenityNames.length && s.disabled]}
+              >
+                <Text style={[s.ruleText, matchRule === 'all' && s.ruleTextActive]}>Must include all</Text>
+              </Pressable>
+              <Pressable
+                disabled={!selectedAmenityNames.length}
+                onPress={() => setMatchRule('any')}
+                style={[s.rule, matchRule === 'any' && s.ruleActive, !selectedAmenityNames.length && s.disabled]}
+              >
+                <Text style={[s.ruleText, matchRule === 'any' && s.ruleTextActive]}>Include any</Text>
+              </Pressable>
+            </View> : null}
+          </View>
+        ) : null}
 
         {message ? <Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text> : null}
         {mode === 'nearby' && attemptedRadiiMeters.length > 1 ? (
