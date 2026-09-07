@@ -34,11 +34,50 @@ function boundedSearch(value:string){
   if(new TextEncoder().encode(search).length>320)throw new Error('Search text is too long.');
   return search;
 }
+function boundedCoordinate(latitude:number,longitude:number){
+  if(!Number.isFinite(latitude)||latitude < -90||latitude > 90)throw new Error('Latitude is outside the supported range.');
+  if(!Number.isFinite(longitude)||longitude < -180||longitude > 180)throw new Error('Longitude is outside the supported range.');
+}
+function rowId(row:any){return String(row?.location_id||row?.place_id||row?.id||'')}
+function knownRestroomNegative(row:any){
+  const tags=row?.osm_tags&&typeof row.osm_tags==='object'?row.osm_tags:{};
+  const toilets=String(tags?.toilets||'').trim().toLowerCase();
+  const access=String(tags?.['toilets:access']||tags?.access||'').trim().toLowerCase();
+  return toilets==='no'||toilets==='none'||access==='private'||access==='no';
+}
+function evidenceRow(row:any){return {...row,restroom_candidate_status:'restroom_evidence',needs_restroom_verification:false}}
+function candidateRow(row:any){return {...row,restroom_candidate_status:'needs_verification',needs_restroom_verification:true}}
+
+export function mergeNearbyDiscoveryRows(restroomRows:any[],candidateRows:any[],limit=100){
+  const evidenceById=new Map<string,any>();
+  for(const row of restroomRows||[]){const id=rowId(row);if(id)evidenceById.set(id,evidenceRow(row));}
+  const merged=new Map<string,any>();
+  for(const row of candidateRows||[]){
+    const id=rowId(row);
+    if(!id||knownRestroomNegative(row))continue;
+    const evidence=evidenceById.get(id);
+    if(evidence){
+      merged.set(id,{
+        ...row,
+        ...evidence,
+        business_name:evidence.business_name||row.business_name||null,
+        business_logo_url:evidence.business_logo_url||row.business_logo_url||null,
+        place_type:evidence.place_type||row.place_type||row.category||null,
+        restroom_candidate_status:'restroom_evidence',
+        needs_restroom_verification:false,
+      });
+      evidenceById.delete(id);
+    }else merged.set(id,candidateRow(row));
+  }
+  for(const [id,row] of evidenceById)merged.set(id,row);
+  return [...merged.values()]
+    .sort((a,b)=>Number(a?.distance_meters??Number.POSITIVE_INFINITY)-Number(b?.distance_meters??Number.POSITIVE_INFINITY))
+    .slice(0,Math.max(1,Math.min(100,Math.round(limit||100))));
+}
 
 export async function listNearbyRestroomsV3(input:{latitude:number;longitude:number;radiusMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;limit?:number}){
   const latitude=Number(input.latitude),longitude=Number(input.longitude);
-  if(!Number.isFinite(latitude)||latitude < -90||latitude > 90)throw new Error('Latitude is outside the supported range.');
-  if(!Number.isFinite(longitude)||longitude < -180||longitude > 180)throw new Error('Longitude is outside the supported range.');
+  boundedCoordinate(latitude,longitude);
   const radiusMeters=boundedRadius(input.radiusMeters);
   const amenityNames=normalizedAmenities(input.amenityNames||[]);
   const amenityMatch=validMatchRule(input.amenityMatch||'any');
@@ -50,11 +89,25 @@ export async function listNearbyRestroomsV3(input:{latitude:number;longitude:num
   return Array.isArray(data)?data:[];
 }
 
+export async function listNearbyMapCandidates(input:{latitude:number;longitude:number;radiusMeters:number;search?:string;limit?:number}){
+  const latitude=Number(input.latitude),longitude=Number(input.longitude);
+  boundedCoordinate(latitude,longitude);
+  const radiusMeters=boundedRadius(input.radiusMeters);
+  const limit=Math.max(1,Math.min(100,Math.round(input.limit||100)));
+  const {data,error}=await getKleenestSupabaseClient().rpc('map_network_nearby_v2',{
+    p_lat:latitude,p_lng:longitude,p_radius_m:radiusMeters,p_limit:limit,p_category:'all',p_search:boundedSearch(input.search||'')||null,p_amenity_names:null,
+  });
+  if(error)throw error;
+  return Array.isArray(data)?data:[];
+}
+
 export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitude:number;requestedRadiusMeters:number;maxRadiusMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;autoExpand?:boolean;targetCount?:number;limit?:number}):Promise<AdaptiveNearbyResult>{
   const requestedRadiusMeters=boundedRadius(input.requestedRadiusMeters);
   const maxRadiusMeters=Math.max(requestedRadiusMeters,boundedRadius(input.maxRadiusMeters));
   const targetCount=Math.max(1,Math.min(10,Math.round(input.targetCount||3)));
-  const limit=Math.max(targetCount,Math.min(50,Math.round(input.limit||30)));
+  const amenityNames=normalizedAmenities(input.amenityNames||[]);
+  const amenityMatch=validMatchRule(input.amenityMatch||'any');
+  const limit=100;
   const radii=[requestedRadiusMeters];
   if(input.autoExpand!==false){
     for(const radius of ADAPTIVE_RADIUS_METERS)if(radius>requestedRadiusMeters&&radius<=maxRadiusMeters)radii.push(radius);
@@ -66,7 +119,16 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
   for(const radiusMeters of [...new Set(radii)]){
     attemptedRadiiMeters.push(radiusMeters);
     effectiveRadiusMeters=radiusMeters;
-    rows=await listNearbyRestroomsV3({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,amenityNames:input.amenityNames,amenityMatch:input.amenityMatch,limit});
+    const verifiedPromise=listNearbyRestroomsV3({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,amenityNames,amenityMatch,limit});
+    if(amenityNames.length){
+      rows=(await verifiedPromise).map(evidenceRow);
+    }else{
+      const [restroomRows,candidateRows]=await Promise.all([
+        verifiedPromise,
+        listNearbyMapCandidates({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,limit}),
+      ]);
+      rows=mergeNearbyDiscoveryRows(restroomRows,candidateRows,limit);
+    }
     if(rows.length>=targetCount)break;
   }
   return {rows,requestedRadiusMeters,effectiveRadiusMeters,maxRadiusMeters,expanded:effectiveRadiusMeters>requestedRadiusMeters,attemptedRadiiMeters};
