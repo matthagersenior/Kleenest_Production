@@ -13,6 +13,7 @@ const androidFamily=requireFile('.github/workflows/android-family.yml');
 const home=requireFile('apps/platform-mobile/app/index.tsx');
 const capabilities=requireFile('apps/platform-mobile/app/capabilities.tsx');
 const auth=requireFile('apps/platform-mobile/app/auth.tsx');
+const webProfile=requireFile('src/runtime/ProfilePage.jsx');
 const ownerAdmin=requireFile('apps/platform-mobile/services/ownerAdmin.ts');
 const migration=requireFile('supabase/migrations/20260905221500_repair_owner_runtime_observability_and_audit_contracts.sql');
 const compatibility=requireFile('supabase/migrations/20260905222500_align_owner_mobile_runtime_compatibility.sql');
@@ -80,6 +81,15 @@ requireAll('Owner password recovery',auth,[
 ]);
 must(auth.includes("resetPasswordForEmail(cleanEmail, { redirectTo: ownerRedirect })"),'Owner password recovery must reuse the already-proven registered Owner redirect URL.');
 must(!auth.includes('ownerRecoveryRedirect'),'Owner password recovery must not introduce a separate unverified redirect callback variant.');
+requireAll('Owner web-to-native OAuth callback bridge',webProfile,[
+  'ownerNativeCallbackUrl',
+  "'kleenest-owner://auth'",
+  "'code'",
+  "'access_token'",
+  "'refresh_token'",
+  'window.location.replace(ownerCallback)',
+]);
+must(webProfile.indexOf('if (current)')<webProfile.indexOf('ownerNativeCallbackUrl(window.location.href)'),'Owner web callback bridge must preserve an established web session before attempting native handoff.');
 requireAll('Owner audit client',ownerAdmin,[
   "rpc('admin_list_activity_events'",
   'p_from:start.toISOString()',
@@ -118,4 +128,4 @@ requireAll('Owner Android route smoke',smoke,[
 ]);
 
 if(failures.length){console.error(`Owner runtime integrity audit failed with ${failures.length} gap(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
-console.log('Owner runtime integrity audit passed: live telemetry, audit RPC compatibility, capability execution semantics, password recovery, Messaging crash containment, native push safety and Android route smoke are protected.');
+console.log('Owner runtime integrity audit passed: live telemetry, audit RPC compatibility, capability execution semantics, password recovery, web-to-native OAuth handoff, Messaging crash containment, native push safety and Android route smoke are protected.');
