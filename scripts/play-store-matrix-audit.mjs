@@ -11,6 +11,17 @@ must(matrix.schemaVersion>=2,'Play compliance matrix schema is stale');
 must(matrix.targetSdk>=36,'Play targetSdk must be Android API 36 or newer');
 must(matrix.productionFormat==='app-bundle','Google Play production format must be app-bundle');
 
+const playAabWorkflow=read('.github/workflows/eas-android-build.yml');
+must(playAabWorkflow.includes('Build Kleenest App Family Play AABs'),'Signed Play AAB workflow missing');
+must(playAabWorkflow.includes('fail-fast: false'),'Signed Play AAB matrix must preserve independent app outcomes');
+must(playAabWorkflow.includes('GRADLE_OPTS:'),'Signed Play AAB workflow must explicitly control Gradle memory');
+must(playAabWorkflow.includes('-Xmx4096m'),'Signed Play AAB workflow must reserve a 4 GiB Gradle heap');
+must(playAabWorkflow.includes('-XX:MaxMetaspaceSize=1024m'),'Signed Play AAB workflow must reserve 1 GiB Gradle metaspace');
+must(playAabWorkflow.includes('-Dorg.gradle.workers.max=2'),'Signed Play AAB workflow must bound Gradle worker concurrency');
+must(playAabWorkflow.includes('Inspect Android signing certificate'),'Signed Play AAB workflow must verify signing identity');
+must(playAabWorkflow.includes("grep -Fqi 'CN=Android Debug'"),'Signed Play AAB workflow must reject debug certificates');
+must(playAabWorkflow.includes('Validate production AAB structure and checksum'),'Signed Play AAB workflow must validate bundle structure and checksum');
+
 for(const[key,app]of Object.entries(matrix.apps)){
   const root=app.workspace;
   const config=read(`${root}/app.config.ts`);
