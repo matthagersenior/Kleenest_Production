@@ -1,0 +1,2 @@
+-- Reconciles the production migration ledger.
+-- This live migration was a no-op/revert bookkeeping marker and intentionally makes no schema change.
