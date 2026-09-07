@@ -12,6 +12,10 @@ on:
       - 'packages/mobile-core/**'
       - '.github/workflows/native-push-repair-candidates.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
