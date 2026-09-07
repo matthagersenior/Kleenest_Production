@@ -1,3 +1,4 @@
+# second push intentionally triggers this branch-only one-shot patcher
 name: Apply Consumer first-load implementation
 
 on:
