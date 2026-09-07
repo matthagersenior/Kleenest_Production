@@ -11,6 +11,15 @@ must(matrix.schemaVersion>=2,'Play compliance matrix schema is stale');
 must(matrix.targetSdk>=36,'Play targetSdk must be Android API 36 or newer');
 must(matrix.productionFormat==='app-bundle','Google Play production format must be app-bundle');
 
+const apkWorkflow=read('.github/workflows/android-family.yml');
+must(apkWorkflow.includes('Build Kleenest App Family Android APKs'),'Canonical four-app APK workflow missing');
+must(apkWorkflow.includes('GOOGLE_SERVICES_FILE: ./google-services.json'),'Canonical APK workflow must wire google-services.json into every Expo Android config');
+must(apkWorkflow.includes('Materialize package-specific Firebase config'),'Canonical APK workflow must materialize package-specific Firebase config');
+for(const secret of ['CONSUMER_GOOGLE_SERVICES_JSON_BASE64','BUSINESS_GOOGLE_SERVICES_JSON_BASE64','FLEET_GOOGLE_SERVICES_JSON_BASE64','OWNER_GOOGLE_SERVICES_JSON_BASE64'])must(apkWorkflow.includes(secret),`Canonical APK workflow missing ${secret}`);
+must(apkWorkflow.includes('Verify generated Firebase identity'),'Canonical APK workflow must verify Firebase survived Expo prebuild');
+must(apkWorkflow.includes('cfg.android?.googleServicesFile'),'Canonical APK preflight must reject missing Firebase Android wiring');
+must(!apkWorkflow.includes('building with native push safely disabled'),'Canonical APK workflow must not silently ship an app with intended native push disabled');
+
 const playAabWorkflow=read('.github/workflows/eas-android-build.yml');
 must(playAabWorkflow.includes('Build Kleenest App Family Play AABs'),'Signed Play AAB workflow missing');
 must(playAabWorkflow.includes('fail-fast: false'),'Signed Play AAB matrix must preserve independent app outcomes');
@@ -29,6 +38,7 @@ for(const[key,app]of Object.entries(matrix.apps)){
   const production=eas.build?.production;
 
   must(config.includes(`package:'${app.package}'`)||config.includes(`package: '${app.package}'`),`${key}: Android package does not match compliance matrix`);
+  must(config.includes('googleServicesFile'),`${key}: Expo config must wire package-specific Firebase Android identity when supplied`);
   must(eas.cli?.appVersionSource==='remote',`${key}: EAS appVersionSource must be remote`);
   must(production?.distribution==='store',`${key}: production EAS profile must use store distribution`);
   must(production?.autoIncrement===true,`${key}: production EAS profile must auto-increment version code`);
