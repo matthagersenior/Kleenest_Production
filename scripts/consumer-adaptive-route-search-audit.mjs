@@ -13,7 +13,7 @@ const read=path=>fs.readFileSync(path,'utf8');
 const requireToken=(text,token,label)=>{if(!text.includes(token))throw new Error(`${label} missing ${token}`)};
 const screen=read(paths.screen), entry=read(paths.entry), core=read(paths.core), publicEntry=read(paths.publicEntry), migration=read(paths.migration);
 
-for(const token of ['1 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Expand automatically','Maximum distance','Nearby','Along route','findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route'])requireToken(screen,token,'Consumer adaptive Explore');
+for(const token of ['1 mi','2 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Expand for required amenities','Maximum distance','Nearby','Along route','findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route'])requireToken(screen,token,'Consumer adaptive Explore');
 for(const token of ['AdaptiveExploreScreen'])requireToken(entry,token,'Consumer Explore entry');
 for(const token of ['map_network_nearby_v3','map_network_along_route_v1','AmenityMatchRule','findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','402336','targetCount'])requireToken(core,token,'Mobile discovery core');
 requireToken(publicEntry,"export * from './adaptiveDiscovery';",'Mobile public entry');
@@ -24,6 +24,8 @@ if(/execute\s+format|\bEXECUTE\s+[^;]*\|\|/i.test(migration))throw new Error('Ad
 // not framework vocabulary that happens to contain the same word.
 if(/TODO|coming soon|not implemented|placeholder\s+(?:implementation|behavior|logic|code|handler)/i.test(screen+core+migration))throw new Error('Adaptive discovery cannot ship placeholder/TODO behavior.');
 if(!screen.includes("matchRule === 'all'")||!screen.includes('selectedAmenityNames.length'))throw new Error('Amenity all/any controls are not wired to selected amenities.');
+if(!screen.includes('selectedAmenityNames.length > 0 && autoExpand'))throw new Error('Automatic radius expansion must be limited to searches with required amenities.');
+if(!screen.includes('useState(402336)'))throw new Error('Required-amenity expansion must default to the supported 250 mile ceiling.');
 if(!screen.includes('effectiveRadiusMeters')||!screen.includes('attemptedRadiiMeters'))throw new Error('Adaptive expansion provenance is not surfaced to the UI.');
 if(!screen.includes('route.distanceMiles')||!screen.includes('route.durationMinutes'))throw new Error('Along-route distance/ETA must derive from actual built-route totals.');
 console.log('Consumer adaptive nearby and route-aware restroom discovery authority audit passed.');

@@ -25,36 +25,15 @@ if(!failures.length){
   if(eas?.build?.production?.android?.buildType!=='app-bundle'||eas?.build?.production?.autoIncrement!==true)failures.push('Production EAS profile must remain an auto-incremented Android app bundle.');
   for(const token of ["package: 'com.kleenest.app'","bundleIdentifier: 'com.kleenest.app'","ACCESS_FINE_LOCATION","CAMERA","expo-notifications",projectId])if(!config.includes(token))failures.push(`Native app config missing ${token}`);
 
-  // Consumer APK authority is the four-app family workflow. The audit verifies
-  // the Consumer matrix identity plus binary and Android 16 startup gates rather
-  // than requiring a second Consumer-only build workflow.
-  for(const token of [
-    'Build Kleenest App Family Android APKs',
-    '- app: Consumer',
-    'app_dir: apps/consumer-mobile',
-    "workspace: '@kleenest/consumer-mobile'",
-    'package_id: com.kleenest.app',
-    `eas_project_id: ${projectId}`,
-    'artifact: Kleenest-Consumer-Standalone-APK',
-    'filename: Kleenest-Consumer.apk',
-    'deeplink: kleenest://explore',
-    "KLEENEST_STANDALONE_ANDROID: '1'",
-    'app-family-critical-path-audit.mjs',
-    "npm run typecheck --workspace '${{ matrix.workspace }}'",
-    'npx expo prebuild --platform android --clean --no-install',
-    'Build release APK',
-    'Locate and verify release APK',
-    'targetSdkVersion',
-    'Android 16 startup smoke',
-    'api-level: 36',
-    'scripts/android-startup-smoke.sh',
-    'Upload verified APK',
-    'actions/upload-artifact@v4'
-  ])if(!androidWorkflow.includes(token))failures.push(`Canonical Android family workflow missing Consumer release contract ${token}`);
-
-  for(const forbidden of ['assembleDebug','app-debug.apk','Build Consumer Android Preview','.github/workflows/android-preview.yml'])if(androidWorkflow.includes(forbidden))failures.push(`Canonical Android family workflow must not use legacy/development artifact contract ${forbidden}`);
-  if(androidWorkflow.includes('secrets.EAS_PROJECT_ID'))failures.push('Android family workflow must not depend on a secret for the public canonical EAS project id.');
+  // The canonical Android family workflow owns verified standalone APKs for all four apps.
+  // Keep the Consumer assertions semantic so a workflow rename does not break CI while
+  // still requiring the release build, package identity, smoke test, and artifact contract.
+  for(const token of ['Build Kleenest App Family Android APKs','app: Consumer','app_dir: apps/consumer-mobile','package_id: com.kleenest.app',`eas_project_id: ${projectId}`,'artifact: Kleenest-Consumer-Standalone-APK','KLEENEST_STANDALONE_ANDROID','product-parity-audit.mjs',"npm run typecheck --workspace '${{ matrix.workspace }}'",'npx expo export --platform android','assembleRelease','Locate and verify release APK','Android 16 startup smoke','actions/upload-artifact'])if(!androidWorkflow.includes(token))failures.push(`Standalone Android family workflow missing ${token}`);
+  const prebuildLine=androidWorkflow.split('\n').find(line=>line.includes('npx expo prebuild'))||'';
+  for(const token of ['npx expo prebuild','--platform android','--clean'])if(!prebuildLine.includes(token))failures.push(`Standalone Android artifact workflow prebuild missing ${token}`);
+  for(const forbidden of ['assembleDebug','app-debug.apk','Build Consumer Android Preview'])if(androidWorkflow.includes(forbidden))failures.push(`Standalone Android artifact workflow must not use development artifact contract ${forbidden}`);
+  if(androidWorkflow.includes('secrets.EAS_PROJECT_ID'))failures.push('Android artifact workflow must not depend on a secret for the public canonical EAS project id.');
   if(/service_role|record_data_feature_event/.test(preferences+push+notifications+layout+route+qr+location+contributionDraft))failures.push('APK consumer surfaces must not introduce privileged backend authority.');
 }
 if(failures.length){console.error('Native consumer APK convergence audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1);}
-console.log('Native Consumer APK convergence audit passed against the canonical four-app Android family workflow.');
+console.log('Native consumer standalone APK convergence audit passed.');

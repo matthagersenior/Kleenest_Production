@@ -58,10 +58,10 @@ const OSM_STYLE: any = {
 };
 const radiusChoices = [
   { label: '1 mi', meters: 1609 },
+  { label: '2 mi', meters: 3219 },
   { label: '5 mi', meters: 8047 },
   { label: '10 mi', meters: 16093 },
   { label: '25 mi', meters: 40234 },
-  { label: '50 mi', meters: 80467 },
 ];
 const maxChoices = [
   { label: '25 mi', meters: 40234 },
@@ -181,7 +181,7 @@ export default function AdaptiveExploreScreen() {
   const [selectedId, setSelectedId] = useState('');
   const [search, setSearch] = useState('');
   const [radius, setRadius] = useState(8047);
-  const [maxRadius, setMaxRadius] = useState(80467);
+  const [maxRadius, setMaxRadius] = useState(402336);
   const [effectiveRadiusMeters, setEffectiveRadiusMeters] = useState(8047);
   const [attemptedRadiiMeters, setAttemptedRadiiMeters] = useState<number[]>([]);
   const [autoExpand, setAutoExpand] = useState(true);
@@ -325,7 +325,7 @@ export default function AdaptiveExploreScreen() {
         search: query,
         amenityNames: selectedAmenityNames,
         amenityMatch: matchRule,
-        autoExpand,
+        autoExpand: selectedAmenityNames.length > 0 && autoExpand,
         targetCount: 3,
         limit: 30,
       });
@@ -594,8 +594,8 @@ export default function AdaptiveExploreScreen() {
             <View style={s.rowHeading}>
               <Text style={s.filterTitle}>Starting radius</Text>
               <View style={s.autoRow}>
-                <Text style={s.autoLabel}>Expand automatically</Text>
-                <Switch value={autoExpand} onValueChange={setAutoExpand} />
+                <Text style={s.autoLabel}>Expand for required amenities</Text>
+                <Switch disabled={!selectedAmenityNames.length} value={selectedAmenityNames.length > 0 && autoExpand} onValueChange={setAutoExpand} />
               </View>
             </View>
             <View accessibilityRole="radiogroup">
@@ -613,7 +613,7 @@ export default function AdaptiveExploreScreen() {
                 ))}
               </ScrollView>
             </View>
-            {autoExpand ? (
+            {selectedAmenityNames.length > 0 && autoExpand ? (
               <View style={s.inlineBlock}>
                 <Text style={s.filterTitle}>Maximum distance</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
@@ -687,7 +687,7 @@ export default function AdaptiveExploreScreen() {
           <Text style={s.help}>Amenity catalog is loading.</Text>
         )}
 
-        <View style={s.ruleRow}>
+        {selectedAmenityNames.length ? <View style={s.ruleRow}>
           <Pressable
             disabled={!selectedAmenityNames.length}
             onPress={() => setMatchRule('all')}
@@ -702,7 +702,7 @@ export default function AdaptiveExploreScreen() {
           >
             <Text style={[s.ruleText, matchRule === 'any' && s.ruleTextActive]}>Include any</Text>
           </Pressable>
-        </View>
+        </View> : null}
 
         {message ? <Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text> : null}
         {mode === 'nearby' && attemptedRadiiMeters.length > 1 ? (

@@ -16,6 +16,13 @@ export async function resolveOwnerReviewReport(input:{reportId:string;resolution
 export async function resolveOwnerUserSafetyReport(reportId:string,status:'reviewing'|'resolved'|'dismissed'){await requirePlatformOwner();return rpc('admin_resolve_user_safety_report',{p_report_id:reportId,p_status:status});}
 export async function resolveOwnerAiResponseReport(reportId:string,status:'reviewing'|'resolved'|'dismissed',resolution=''){await requirePlatformOwner();return rpc('admin_resolve_ai_response_report',{p_report_id:reportId,p_status:status,p_resolution:resolution.trim()||null});}
 export async function getOwnerProgressionPlatformSnapshot(){return(await rpc('owner_progression_platform_snapshot'))||{users_with_xp:0,xp_awarded:0,discoveries:0,on_site_discoveries:0,discovery_photos:0,active_objectives:0,objective_kinds:{},awards_by_action:[],recent_discoveries:[]};}
+export async function getOwnerProgressionXpActionCatalog(){await requirePlatformOwner();return asRows(await rpc('owner_progression_xp_action_catalog'));}
+export async function updateOwnerProgressionXpAction(input:{action:string;baseXp:number;cooldownSeconds:number;maxPerDay:number|null;enabled:boolean;reason:string}){await requirePlatformOwner();return rpc('owner_update_progression_xp_action',{p_action:input.action,p_base_xp:input.baseXp,p_cooldown_seconds:input.cooldownSeconds,p_max_per_day:input.maxPerDay,p_enabled:input.enabled,p_reason:input.reason});}
+export async function listOwnerProgressionObjectives(){await requirePlatformOwner();return asRows(await rpc('owner_progression_objective_list'));}
+export async function upsertOwnerProgressionObjective(payload:Record<string,unknown>){await requirePlatformOwner();return rpc('owner_progression_objective_upsert',payload);}
+export async function setOwnerProgressionObjectiveStatusAuthority(id:string,status:string,reason:string){await requirePlatformOwner();return rpc('owner_progression_objective_set_status',{p_id:id,p_status:status,p_reason:reason});}
+export async function deleteOwnerProgressionObjectiveAuthority(id:string,reason:string){await requirePlatformOwner();return rpc('owner_progression_objective_delete',{p_id:id,p_reason:reason});}
+export async function getOwnerProgressionSupplyStatusAuthority(){await requirePlatformOwner();return rpc('owner_progression_supply_status');}
 export async function getCapabilityCatalogBundle(){
   await requirePlatformOwner();
   const[operational,crud,classifications,retirement,domainIssues,raw,contracts]=await Promise.all([
