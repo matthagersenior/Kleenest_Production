@@ -52,6 +52,15 @@ requireText(android, 'ref: ${{ github.event.workflow_run.head_sha || github.sha 
 if (/^\s{2}push:/m.test(android)) throw new Error('Android family builds must not race directly against push CI.');
 if (/^\s{2}pull_request:/m.test(android)) throw new Error('Android family builds must not race directly against pull-request CI.');
 
+// The Play AAB workflow may self-test a workflow edit, but ordinary product PRs
+// must never fan out into four EAS production builds before canonical CI.
+const playAab = read('eas-android-build.yml');
+requireText(playAab, "- '.github/workflows/eas-android-build.yml'", 'Play AAB PR execution must stay scoped to edits of its own workflow.');
+for (const forbiddenPath of ['apps/consumer-mobile/**','apps/business-mobile/**','apps/fleet-mobile/**','apps/platform-mobile/**','packages/mobile-core/**','scripts/**']) {
+  if (playAab.includes(`- '${forbiddenPath}'`)) throw new Error(`Play AAB workflow must not auto-build for product path ${forbiddenPath}.`);
+}
+if (/^\s{2}push:/m.test(playAab)) throw new Error('Play AAB builds must not run automatically on push.');
+
 const publisher = read('publish-standalone-installer.yml');
 requireText(publisher, "github.event.workflow_run.conclusion == 'success'", 'Installer publishing must require a successful Android family run.');
 requireText(publisher, 'ref: ${{ github.event.workflow_run.head_sha }}', 'Installer publishing must use the exact Android-tested commit.');
