@@ -46,6 +46,8 @@ requireText(android, 'workflow_run:', 'Android family builds must start from a c
 requireText(android, 'workflows: [Production CI]', 'Android family builds must be downstream of Production CI.');
 requireText(android, "github.event.workflow_run.conclusion == 'success'", 'Android family builds must require successful canonical CI.');
 requireText(android, 'ref: ${{ github.event.workflow_run.head_sha || github.sha }}', 'Android family builds must check out the exact commit that passed CI.');
+requireText(android, "group: kleenest-app-family-android-${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_sha || github.event_name == 'workflow_dispatch' && github.sha || github.run_id }}", 'Android family concurrency must isolate ineligible workflow_run invocations so a skipped run cannot cancel a valid native build.');
+if (android.includes('github.event.pull_request.number || github.ref')) throw new Error('Android family concurrency must not collapse all workflow_run events onto github.ref.');
 if (/^\s{2}push:/m.test(android)) throw new Error('Android family builds must not race directly against push CI.');
 if (/^\s{2}pull_request:/m.test(android)) throw new Error('Android family builds must not race directly against pull-request CI.');
 
