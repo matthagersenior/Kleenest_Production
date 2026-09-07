@@ -31,4 +31,8 @@ requireText(android, "github.event.workflow_run.conclusion == 'success'", 'Andro
 requireText(android, 'ref: ${{ github.event.workflow_run.head_sha || github.sha }}', 'Android family builds must check out the exact commit that passed CI.');
 if (/^\s{2}push:/m.test(android)) throw new Error('Android family builds must not race directly against push CI.');
 
+const publisher = read('publish-standalone-installer.yml');
+requireText(publisher, "github.event.workflow_run.conclusion == 'success'", 'Installer publishing must require a successful Android family run.');
+requireText(publisher, 'ref: ${{ github.event.workflow_run.head_sha }}', 'Installer publishing must use the exact Android-tested commit.');
+
 console.log('CI freshness policy audit passed.');
