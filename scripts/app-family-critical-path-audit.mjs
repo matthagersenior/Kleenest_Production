@@ -13,11 +13,11 @@ requireFile(consumerLocation,'consumer');
 requireTokens(consumerLocation,'consumer',['findLatestEligibleReviewCheckIn','Location.Accuracy.High','mobileCheckIn','createMobileReview','await refresh()','setAmenityRefresh','setPhotoRefresh']);
 if(exists(consumerLocation)&&!/if\(submitting\|\|!checkInId(?:\|\|[^)]*)?\)return/.test(read(consumerLocation)))failures.push('consumer: verified review submission is not gated by an eligible check-in');
 
-// Google OAuth: all role apps must use Supabase OAuth and return through their own registered deep link.
+// Google OAuth: Consumer keeps its proven native callback. Role apps use the hosted bridge and still consume native callback sessions.
 requireTokens('apps/consumer-mobile/app/profile.tsx','consumer oauth',["provider:'google'",'mobileAuthRedirect','handleAuthUrl','exchangeCodeForSession','Continue with Google']);
-requireTokens('apps/business-mobile/app/account.tsx','business oauth',["import * as Linking from 'expo-linking'","scheme:'kleenest-business'","provider:'google'",'handleAuthUrl','exchangeCodeForSession','Continue with Google']);
-requireTokens('apps/fleet-mobile/app/account.tsx','fleet oauth',["import * as Linking from 'expo-linking'","scheme:'kleenest-fleet'","provider:'google'",'handleAuthUrl','exchangeCodeForSession','Continue with Google']);
-requireTokens('apps/platform-mobile/app/account.tsx','owner oauth',["import * as Linking from 'expo-linking'","scheme:'kleenest-owner'","provider:'google'",'handleAuthUrl','exchangeCodeForSession','Continue with Google','getOwnerAuthorization','a.authorized',"signOut({scope:'local'})"]);
+requireTokens('apps/business-mobile/app/account.tsx','business oauth',["import * as Linking from 'expo-linking'",'getHostedNativeGoogleSignInUrl','handleAuthUrl','setSession','Continue with Google']);
+requireTokens('apps/fleet-mobile/app/account.tsx','fleet oauth',["import * as Linking from 'expo-linking'",'getHostedNativeGoogleSignInUrl','handleAuthUrl','setSession','Continue with Google']);
+requireTokens('apps/platform-mobile/app/account.tsx','owner oauth',["import * as Linking from 'expo-linking'",'getHostedNativeGoogleSignInUrl','handleAuthUrl','setSession','Continue with Google','getOwnerAuthorization','a.authorized',"signOut({scope:'local'})"]);
 
 // Business: canonical QR Studio must protect scan quality and preserve versioned workflow behavior.
 const qr='apps/business-mobile/app/qr-studio.tsx';
@@ -48,8 +48,6 @@ requireTokens(fleetEnterprise,'fleet enterprise',['listEnterprisePartnerBusiness
 if(exists(fleetEnterprise)&&read(fleetEnterprise).includes('Partner Business UUID'))failures.push('fleet enterprise: operators must not paste raw Business UUIDs to invite partners');
 
 // Owner: KleenestOS must lead with actionable health and expose actual operating control planes.
-// The home may use the shared OSHero/HealthCard primitives or an equivalent local hero/Health surface;
-// verify the behavior/labels rather than forcing a specific component implementation.
 const ownerOs='apps/platform-mobile/components/KleenestOS.tsx';
 const ownerHome='apps/platform-mobile/app/index.tsx';
 const ownerBusinesses='apps/platform-mobile/app/businesses.tsx';
@@ -67,4 +65,5 @@ if(exists(ownerHome)&&read(ownerHome).includes('JSON.stringify('))failures.push(
 
 if(failures.length){console.error('App family critical path audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1);}
 console.log('App family critical paths verified for Consumer, Business, Fleet, and Owner with canonical versioning, offline recovery and operator controls.');
+await import('./native-role-oauth-bridge-audit.mjs');
 await import('./owner-runtime-integrity-audit.mjs');
