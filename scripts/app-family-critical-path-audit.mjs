@@ -42,6 +42,9 @@ requireTokens('apps/fleet-mobile/app/dispatch.tsx','fleet workspace',['currentFl
 requireTokens('apps/fleet-mobile/app/planner.tsx','fleet',["['5 mi',8047]",'fleet_map_planner','setRouteStops']);
 requireTokens('apps/fleet-mobile/app/execution.tsx','fleet',['getFleetRouteGeofenceManifest','recordFleetGeofenceEvent','recordOrQueueRouteStopTiming','replayOfflineRouteEvents','Location.watchPositionAsync']);
 requireTokens('apps/fleet-mobile/services/offline.ts','fleet',["rpc('create_offline_pack'",'p_client_event_id:row.id','already_synced','AsyncStorage.setItem(KEY']);
+const fleetParity='apps/fleet-mobile/services/parity.ts';
+requireTokens(fleetParity,'fleet assignable members',['listFleetAssignableMembers',"from('business_members')","select('user_id,role,created_at')"]);
+if(exists(fleetParity)&&read(fleetParity).includes("select('id,user_id,role,created_at')"))failures.push('fleet assignable members: business_members has no id column; use the live business_id/user_id composite membership contract');
 requireTokens('supabase/migrations/20260905191032_add_manager_fleet_dispatch_overview.sql','fleet',['fleet_actor_is_manager','fleet_manager_dispatch','grant execute']);
 const fleetEnterprise='apps/fleet-mobile/app/enterprise.tsx';
 requireTokens(fleetEnterprise,'fleet enterprise',['listEnterprisePartnerBusinesses','setPartnerByNetwork','No database ID entry is required.','Invite selected partner']);
