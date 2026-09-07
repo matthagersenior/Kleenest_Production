@@ -1,0 +1,80 @@
+name: Publish Consumer OTA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - releases/consumer-ota.txt
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kleenest-consumer-production-ota
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+      - run: npm install --no-audit --no-fund
+      - name: Verify canonical Consumer OTA source
+        run: |
+          node scripts/repo-hygiene-audit.mjs
+          node scripts/product-parity-audit.mjs
+          node scripts/app-family-critical-path-audit.mjs
+          node scripts/native-map-authority-audit.mjs
+          npm run typecheck --workspace '@kleenest/consumer-mobile'
+          npm run operator:typecheck
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PROJECT_ID: 22a65aa3-c615-4c4f-a34d-084babc28fd7
+      EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+      - name: Verify OTA credential is available
+        run: test -n "$EXPO_TOKEN"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify Consumer source and Expo authentication
+        run: |
+          npm run typecheck --workspace '@kleenest/consumer-mobile'
+          npx eas-cli@latest whoami --non-interactive
+      - name: Verify Consumer Expo project identity and OTA contract
+        working-directory: apps/consumer-mobile
+        run: |
+          npx expo config --type public --json > "$RUNNER_TEMP/consumer-expo-config.json"
+          node - <<'NODE'
+          const fs=require('fs');
+          const cfg=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/consumer-expo-config.json','utf8'));
+          const expectedProject='22a65aa3-c615-4c4f-a34d-084babc28fd7';
+          const expectedRuntime='kleenest-consumer-1.0.0';
+          const expectedChannel='consumer-production';
+          if(cfg.extra?.eas?.projectId!==expectedProject) throw new Error(`Wrong Consumer EAS project: ${cfg.extra?.eas?.projectId}`);
+          if(cfg.runtimeVersion!==expectedRuntime) throw new Error(`Wrong Consumer runtime: ${cfg.runtimeVersion}`);
+          if(cfg.updates?.requestHeaders?.['expo-channel-name']!==expectedChannel) throw new Error(`Wrong Consumer OTA channel: ${cfg.updates?.requestHeaders?.['expo-channel-name']}`);
+          if(cfg.updates?.enabled!==true) throw new Error('Consumer OTA updates are disabled.');
+          NODE
+      - name: Publish verified Consumer OTA update
+        working-directory: apps/consumer-mobile
+        run: npx eas-cli@latest update --channel consumer-production --message "Consumer ${GITHUB_SHA}" --non-interactive

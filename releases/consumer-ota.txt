@@ -1,0 +1,7 @@
+Consumer production OTA release marker.
+
+Purpose: publish the canonical Consumer Explore completeness and verification-candidate correction after this release-lane change is merged to main.
+
+Included source fix: 9c8a261290d70134994d98144dad75d2126e3853
+Target channel: consumer-production
+Compatible runtime: kleenest-consumer-1.0.0
