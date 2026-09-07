@@ -39,7 +39,7 @@ if(entitlementMigration.includes("business_tier::text in ('fleet','enterprise')"
 
 // Capabilities are an operator surface: no raw UUID/business_id dumps or machine field names as primary UX.
 all('Fleet capability presentation',capabilities,['formatFleetCapabilityLabel','formatFleetCapabilityValue','isFleetInternalField']);
-if(/<Text[^>]*>\s*\{\s*key\.replaceAll\(['"]_['"],\s*['"] ['"]\)\s*<\/Text>/.test(capabilities))failures.push('Fleet capability presentation: direct raw field rendering is forbidden');
+if(/<Text[^>]*>\s*\{\s*key\.replaceAll\(['"]_['"],\s*['"] ['"]\)\s*\}\s*<\/Text>/.test(capabilities))failures.push('Fleet capability presentation: direct raw field rendering is forbidden');
 if(capabilities.includes('<Text style={s.factValue}>{String(val)}</Text>'))failures.push('Fleet capability presentation: raw backend values are forbidden');
 
 // Validate behavior rather than brittle formatting. Android requestId values must stay short,
