@@ -143,8 +143,8 @@ jobs:
           set -euo pipefail
           if [ -z "${OWNER_GOOGLE_SERVICES_JSON_BASE64:-}" ]; then
             echo 'KLEENEST_NATIVE_PUSH_CONFIGURED=0' >> "$GITHUB_ENV"
-            echo 'Owner Firebase credential is not present; building with native push safely disabled.'
-            exit 0
+            echo 'OWNER_GOOGLE_SERVICES_JSON_BASE64 is required for the canonical KleenestOS release; refusing to ship without native push.' >&2
+            exit 1
           fi
           printf '%s' "$OWNER_GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > apps/platform-mobile/google-services.json
           node -e "const f=require('./apps/platform-mobile/google-services.json'); if(!f.project_info?.project_id||!f.client?.some(c=>c.client_info?.android_client_info?.package_name==='com.kleenest.platform')) throw new Error('Owner google-services.json does not authorize com.kleenest.platform')"
@@ -191,10 +191,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ '${{ matrix.app }}' = 'KleenestOS' ] && [ "${KLEENEST_NATIVE_PUSH_CONFIGURED:-0}" != '1' ]; then
-            echo 'KleenestOS native push is safely disabled; no generated Firebase identity is required.'
-            exit 0
-          fi
           test -s '${{ matrix.app_dir }}/android/app/google-services.json'
           node - <<'NODE'
           const fs=require('fs');
