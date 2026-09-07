@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 
 const contract = JSON.parse(fs.readFileSync('config/production-environment.json', 'utf8'));
-const expoEnv = fs.readFileSync('apps/consumer-mobile/.env', 'utf8');
+const expoEnvPath = 'apps/consumer-mobile/.env';
+const expoEnv = fs.existsSync(expoEnvPath) ? fs.readFileSync(expoEnvPath, 'utf8') : null;
 const appConfig = fs.readFileSync('apps/consumer-mobile/app.config.ts', 'utf8');
 const androidWorkflow = fs.readFileSync('.github/workflows/eas-android-build.yml', 'utf8');
 const mobileCore = fs.readFileSync('packages/mobile-core/src/index.ts', 'utf8');
@@ -21,13 +22,17 @@ if (!contract.supabase.url.includes(contract.supabase.projectRef)) {
   throw new Error('Supabase URL does not match the canonical project ref.');
 }
 
-for (const [name, expected] of [
-  ['EAS_PROJECT_ID', contract.expo.projectId],
-  ['EXPO_PUBLIC_SUPABASE_URL', contract.supabase.url],
-  ['EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', contract.supabase.publishableKey],
-]) {
-  const line = `${name}=${expected}`;
-  if (!expoEnv.includes(line)) throw new Error(`apps/consumer-mobile/.env drift: expected ${name}.`);
+// .env is intentionally developer-local and untracked. Validate it when present,
+// but never make a clean CI checkout depend on a local secret-bearing file.
+if (expoEnv !== null) {
+  for (const [name, expected] of [
+    ['EAS_PROJECT_ID', contract.expo.projectId],
+    ['EXPO_PUBLIC_SUPABASE_URL', contract.supabase.url],
+    ['EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', contract.supabase.publishableKey],
+  ]) {
+    const line = `${name}=${expected}`;
+    if (!expoEnv.includes(line)) throw new Error(`${expoEnvPath} drift: expected ${name}.`);
+  }
 }
 
 for (const expected of [
@@ -49,10 +54,10 @@ for (const expected of [contract.expo.projectId, contract.supabase.url, contract
 }
 
 const forbidden = [/SUPABASE_SERVICE_ROLE_KEY\s*=/i, /SUPABASE_SECRET_KEY\s*=/i, /sb_secret_[A-Za-z0-9_-]+/i];
-for (const [path, source] of [
-  ['config/production-environment.json', JSON.stringify(contract)],
-  ['apps/consumer-mobile/.env', expoEnv],
-]) {
+const sources = [['config/production-environment.json', JSON.stringify(contract)]];
+if (expoEnv !== null) sources.push([expoEnvPath, expoEnv]);
+
+for (const [path, source] of sources) {
   for (const pattern of forbidden) {
     if (pattern.test(source)) throw new Error(`Secret credential pattern detected in ${path}.`);
   }
