@@ -1,0 +1,112 @@
+name: Sync Kleenest Data Archive
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kleenest-data-archive-sync
+  cancel-in-progress: false
+
+env:
+  PROD_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+  DATA_SUPABASE_URL: https://sxgymblzmwdqnaidbbuq.supabase.co
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Validate required secrets
+        env:
+          PROD_KEY: ${{ secrets.KLEENEST_PROD_SERVICE_ROLE_KEY }}
+          DATA_KEY: ${{ secrets.KLEENEST_DATA_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$PROD_KEY" || { echo "Missing KLEENEST_PROD_SERVICE_ROLE_KEY"; exit 1; }
+          test -n "$DATA_KEY" || { echo "Missing KLEENEST_DATA_SERVICE_ROLE_KEY"; exit 1; }
+
+      - name: Incrementally mirror hot provenance into Kleenest_Data
+        env:
+          PROD_KEY: ${{ secrets.KLEENEST_PROD_SERVICE_ROLE_KEY }}
+          DATA_KEY: ${{ secrets.KLEENEST_DATA_SERVICE_ROLE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Deliberate overlap makes the job idempotent and self-healing after a missed run.
+          SINCE="$(date -u -d '3 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          BATCH=500
+
+          post_archive() {
+            local kind="$1"
+            local file="$2"
+            local count
+            count="$(jq 'length' "$file")"
+            [ "$count" -eq 0 ] && return 0
+
+            jq -n --arg kind "$kind" --slurpfile rows "$file" '{p_kind:$kind,p_rows:$rows[0]}' > payload.json
+            curl --fail-with-body --silent --show-error \
+              -X POST "$DATA_SUPABASE_URL/rest/v1/rpc/archive_ingest_batch" \
+              -H "apikey: $DATA_KEY" \
+              -H "Authorization: Bearer $DATA_KEY" \
+              -H 'Content-Type: application/json' \
+              --data-binary @payload.json >/dev/null
+          }
+
+          fetch_pages() {
+            local table="$1"
+            local kind="$2"
+            local filter="$3"
+            local offset=0
+
+            while true; do
+              local end=$((offset + BATCH - 1))
+              local code
+              code="$(curl --silent --show-error \
+                -o rows.json -w '%{http_code}' \
+                "$PROD_SUPABASE_URL/rest/v1/$table?select=*&$filter&order=id.asc" \
+                -H "apikey: $PROD_KEY" \
+                -H "Authorization: Bearer $PROD_KEY" \
+                -H "Range: $offset-$end" \
+                -H 'Range-Unit: items')"
+              [ "$code" = "200" ] || [ "$code" = "206" ] || { cat rows.json; exit 1; }
+
+              local count
+              count="$(jq 'length' rows.json)"
+              [ "$count" -eq 0 ] && break
+              post_archive "$kind" rows.json
+              [ "$count" -lt "$BATCH" ] && break
+              offset=$((offset + BATCH))
+            done
+          }
+
+          # Stable configuration is tiny, so mirror all active source definitions each run.
+          fetch_pages external_data_sources external_data_sources 'active=eq.true'
+
+          # Keep the hot identity/dedupe table in Production, mirror changed mappings to Data.
+          fetch_pages external_location_records external_location_records "last_seen_at=gte.$SINCE"
+
+          # Trust/intelligence still reads these hot in Production; mirror recent evidence only.
+          fetch_pages external_observations external_observations "imported_at=gte.$SINCE"
+
+          # Run history is archival; overlap captures final status updates after start.
+          fetch_pages national_ingestion_runs national_ingestion_runs "started_at=gte.$SINCE"
+
+          rm -f rows.json payload.json
+
+      - name: Verify archive RPC responds
+        env:
+          DATA_KEY: ${{ secrets.KLEENEST_DATA_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error \
+            -X POST "$DATA_SUPABASE_URL/rest/v1/rpc/archive_ingest_batch" \
+            -H "apikey: $DATA_KEY" \
+            -H "Authorization: Bearer $DATA_KEY" \
+            -H 'Content-Type: application/json' \
+            --data '{"p_kind":"external_location_records","p_rows":[]}' >/dev/null
