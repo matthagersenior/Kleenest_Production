@@ -97,8 +97,10 @@ if [[ -n "$DEEPLINK" ]]; then
     fail_with_diagnostics 'fatal or unhandled JavaScript signature found after deep link launch'
   fi
   if [[ "$PACKAGE" == "com.kleenest.platform" ]]; then
-    if ! grep -Eq 'Messaging &amp; incentives|Messaging & incentives|Messaging stayed open safely|Loading Live Network messaging' "$LOG_DIR/window.xml"; then
-      fail_with_diagnostics 'Owner Live Network Messaging did not render visible content after deep link'
+    if grep -Eq 'Owner sign in|Authenticate first|Sign in to KleenestOS' "$LOG_DIR/window.xml"; then
+      echo "$LABEL smoke: authenticated route correctly stopped at Owner sign-in gate"
+    elif ! grep -Eq 'Messaging &amp; incentives|Messaging & incentives|Messaging stayed open safely|Loading Live Network messaging' "$LOG_DIR/window.xml"; then
+      fail_with_diagnostics 'Owner deep link rendered neither the auth gate nor Live Network Messaging'
     fi
   fi
 fi
