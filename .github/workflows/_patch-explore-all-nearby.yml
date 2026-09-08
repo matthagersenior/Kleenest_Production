@@ -1,4 +1,5 @@
-# trigger registered workflow
+# execute registered one-shot workflow
+# helper script restored on this head
 name: Apply Explore all-nearby implementation
 
 on:
