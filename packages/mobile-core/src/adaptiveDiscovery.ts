@@ -49,8 +49,8 @@ function knownRestroomNegative(row:any){
 function evidenceRow(row:any){return {...row,restroom_candidate_status:'restroom_evidence',needs_restroom_verification:false}}
 function candidateRow(row:any){return {...row,restroom_candidate_status:'needs_verification',needs_restroom_verification:true}}
 
-export function mergeNearbyDiscoveryRows(restroomRows:any[],candidateRows:any[],limit=100){
-  const max=Math.max(1,Math.min(100,Math.round(limit||100)));
+export function mergeNearbyDiscoveryRows(restroomRows:any[],candidateRows:any[],limit=500){
+  const max=Math.max(1,Math.min(500,Math.round(limit||500)));
   const evidenceById=new Map<string,any>();
   for(const row of restroomRows||[]){const id=rowId(row);if(id)evidenceById.set(id,evidenceRow(row));}
   const candidatesById=new Map<string,any>();
@@ -61,20 +61,13 @@ export function mergeNearbyDiscoveryRows(restroomRows:any[],candidateRows:any[],
   }
   const evidence=[...evidenceById.values()].sort((a,b)=>distanceOf(a)-distanceOf(b));
   const candidates=[...candidatesById.values()].sort((a,b)=>distanceOf(a)-distanceOf(b));
-  // Nearby Explore is a bathroom finder and a consumer-verification surface. Reserve
-  // capacity for both so dense business data cannot erase restroom evidence, and
-  // dense restroom evidence cannot hide every plausible business candidate.
-  const evidenceTarget=Math.min(evidence.length,Math.ceil(max*0.6));
-  const candidateTarget=Math.min(candidates.length,max-evidenceTarget);
-  const selected=[...evidence.slice(0,evidenceTarget),...candidates.slice(0,candidateTarget)];
-  const selectedIds=new Set(selected.map(rowId));
-  if(selected.length<max){
-    const remainder=[...evidence.slice(evidenceTarget),...candidates.slice(candidateTarget)]
-      .filter(row=>!selectedIds.has(rowId(row)))
-      .sort((a,b)=>distanceOf(a)-distanceOf(b));
-    selected.push(...remainder.slice(0,max-selected.length));
-  }
-  return selected.sort((a,b)=>distanceOf(a)-distanceOf(b));
+  // Nearby Explore is both a bathroom finder and a consumer-verification surface.
+  // Keep all available local candidates up to the backend-supported 500-row window;
+  // evidence rows are deduplicated and remain first-class rather than replacing businesses.
+  const selected=[...evidence,...candidates]
+    .sort((a,b)=>distanceOf(a)-distanceOf(b))
+    .slice(0,max);
+  return selected;
 }
 
 export async function listNearbyRestroomsV3(input:{latitude:number;longitude:number;radiusMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;limit?:number}){
@@ -95,7 +88,7 @@ export async function listNearbyMapCandidates(input:{latitude:number;longitude:n
   const latitude=Number(input.latitude),longitude=Number(input.longitude);
   boundedCoordinate(latitude,longitude);
   const radiusMeters=boundedRadius(input.radiusMeters);
-  const limit=Math.max(1,Math.min(100,Math.round(input.limit||100)));
+  const limit=Math.max(1,Math.min(500,Math.round(input.limit||500)));
   const {data,error}=await getKleenestSupabaseClient().rpc('map_network_nearby_v2',{
     p_lat:latitude,p_lng:longitude,p_radius_m:radiusMeters,p_limit:limit,p_category:'all',p_search:boundedSearch(input.search||'')||null,p_amenity_names:null,
   });
@@ -109,7 +102,7 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
   const targetCount=Math.max(1,Math.min(10,Math.round(input.targetCount||3)));
   const amenityNames=normalizedAmenities(input.amenityNames||[]);
   const amenityMatch=validMatchRule(input.amenityMatch||'any');
-  const limit=100;
+  const limit=Math.max(targetCount,Math.min(500,Math.round(input.limit||500)));
   const radii=[requestedRadiusMeters];
   if(input.autoExpand!==false){
     for(const radius of ADAPTIVE_RADIUS_METERS)if(radius>requestedRadiusMeters&&radius<=maxRadiusMeters)radii.push(radius);
@@ -121,7 +114,7 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
   for(const radiusMeters of [...new Set(radii)]){
     attemptedRadiiMeters.push(radiusMeters);
     effectiveRadiusMeters=radiusMeters;
-    const verifiedPromise=listNearbyRestroomsV3({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,amenityNames,amenityMatch,limit});
+    const verifiedPromise=listNearbyRestroomsV3({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,amenityNames,amenityMatch,limit:Math.min(limit,100)});
     if(amenityNames.length){
       rows=(await verifiedPromise).map(evidenceRow);
     }else{
