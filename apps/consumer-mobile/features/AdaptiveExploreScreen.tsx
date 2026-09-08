@@ -304,6 +304,10 @@ export default function AdaptiveExploreScreen() {
     }
     const current = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
+    }).catch(async (freshLocationError) => {
+      const lastKnown = await Location.getLastKnownPositionAsync();
+      if (!lastKnown) throw freshLocationError;
+      return lastKnown;
     });
     const point: [number, number] = [current.coords.longitude, current.coords.latitude];
     setOrigin(point);
@@ -311,7 +315,7 @@ export default function AdaptiveExploreScreen() {
     return current;
   }
 
-  async function loadNearby(clearQuery = false) {
+  async function loadNearby(clearQuery = false, preserveCacheOnEmpty = false) {
     const current = await currentLocation();
     const nextOrigin: [number, number] = [current.coords.longitude, current.coords.latitude];
     const query = clearQuery ? '' : search.trim();
@@ -351,6 +355,31 @@ export default function AdaptiveExploreScreen() {
     }
 
     const enriched = await enrich(result.rows);
+    if (!enriched.length && preserveCacheOnEmpty && !query && !selectedAmenityNames.length) {
+      const fallback = await readNearbyCache();
+      if (fallback?.rows?.length) {
+        const fallbackSelected = selectedId && fallback.rows.some((row: any) => idOf(row) === selectedId)
+          ? selectedId
+          : '';
+        setRows(fallback.rows);
+        setSelectedId(fallbackSelected);
+        setRoute(null);
+        if (fallback.origin) {
+          setOrigin(fallback.origin);
+          setMapCenter(fallback.origin);
+        }
+        if (fallback.radiusMeters) {
+          setRadius(fallback.radiusMeters);
+          setEffectiveRadiusMeters(fallback.radiusMeters);
+        }
+        setAttemptedRadiiMeters(result.attemptedRadiiMeters || []);
+        setCached(true);
+        setMessage(
+          `Live lookup returned no usable locations on first load. Showing cached nearby results from ${cachedAgeLabel(fallback.savedAt)} while you can refresh for a new live result.`,
+        );
+        return;
+      }
+    }
     const verificationCandidates = enriched.filter((row) => row?.needs_restroom_verification === true).length;
     const restroomEvidence = enriched.length - verificationCandidates;
     const preservedId = selectedId && enriched.some((row) => idOf(row) === selectedId)
@@ -445,12 +474,15 @@ export default function AdaptiveExploreScreen() {
     );
   }
 
-  async function load(options: { clearQuery?: boolean } = {}) {
+  async function load(options: { clearQuery?: boolean; preserveCacheOnEmpty?: boolean } = {}) {
     if (loading) return;
     setLoading(true);
     setMessage(mode === 'nearby' ? 'Searching nearby…' : 'Building route and searching its corridor…');
     try {
-      if (mode === 'nearby') await loadNearby(Boolean(options.clearQuery));
+      if (mode === 'nearby') await loadNearby(
+        Boolean(options.clearQuery),
+        Boolean(options.preserveCacheOnEmpty),
+      );
       else await loadRoute();
     } catch (error: any) {
       const canUseGenericCache = !search.trim() && !selectedAmenityNames.length;
@@ -524,7 +556,7 @@ export default function AdaptiveExploreScreen() {
         }
       })
       .finally(() => {
-        if (active) void load();
+        if (active) void load({ preserveCacheOnEmpty: true });
       });
     return () => { active = false; };
   }, []);
