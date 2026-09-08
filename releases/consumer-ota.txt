@@ -1,8 +1,8 @@
 Consumer production OTA release marker.
 
-Purpose: publish the canonical Consumer Explore compact-layout correction after PR #27 merged to main.
+Purpose: publish the canonical Consumer Explore first-load reliability correction after PR #28 merged to main.
 
-Included source fix: f347df59545ca1034b30af7380b21c9c2b78a7ae
+Included source fix: bada7eecce2c33e026f72e35d5094c2913e19d16
 Target channel: consumer-production
 Compatible runtime: kleenest-consumer-1.0.0
-Behavior: preserve the existing selected-location map details card while making its X/Close action high-contrast and explicit; shorten the Explore hero; promote Nearby / Along route to primary controls; compact radius and amenity controls; and move advanced trip/filter tuning into a modal so the map and search-result viewport are no longer pushed down by expanded controls.
+Behavior: preserve the compact Explore layout and 500-location adaptive discovery while falling back to the last-known device position when a fresh fix transiently fails and retaining a useful unfiltered nearby cache when the first live response is empty.
