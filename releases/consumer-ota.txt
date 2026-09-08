@@ -1,7 +1,8 @@
 Consumer production OTA release marker.
 
-Purpose: publish the canonical Consumer Explore completeness and verification-candidate correction after this release-lane change is merged to main.
+Purpose: publish the canonical Consumer Explore full-nearby-business correction after PR #25 merged to main.
 
-Included source fix: 9c8a261290d70134994d98144dad75d2126e3853
+Included source fix: 6ede6bda6a565389151eaa0bb3684bd1963ecbda
 Target channel: consumer-production
 Compatible runtime: kleenest-consumer-1.0.0
+Behavior: unfiltered Explore may return up to the backend-supported 500 nearby places, including businesses that need consumer bathroom verification; verified restroom evidence remains explicitly distinguished.
