@@ -1,7 +1,7 @@
 import { getKleenestSupabaseClient, getMobileProgressionDashboard, listMobileBadges } from '@kleenest/mobile-core';
 import { router, useLocalSearchParams } from 'expo-router';
 import { createGameChallenge,listGameChallenges,listGameChallengeTargets,recordGameChallengeScore,recordGameResult,respondGameChallenge } from '../services/games';
-import { BUILDER_SCENARIOS,GAME_DEFINITIONS,MEMORY_PAIRS,roundsFor } from '../services/gameModes';
+import { BUILDER_SCENARIOS,GAME_DEFINITIONS,MEMORY_PAIRS,roundsFor,shuffleChoiceRound } from '../services/gameModes';
 import { gameResultMetadata,scoreRound } from '../services/gameScoring';
 import { useEffect,useMemo,useState } from 'react';
 import { Pressable,SafeAreaView,ScrollView,StyleSheet,Text,View } from 'react-native';
@@ -14,15 +14,15 @@ export default function GamesScreen(){
  const params=useLocalSearchParams<{game?:string|string[]}>();
  const requestedGameCode=Array.isArray(params.game)?params.game[0]:params.game;
  const initialGame=GAME_DEFINITIONS.find(candidate=>candidate.code===requestedGameCode)||GAME_DEFINITIONS[0];
- const[game,setGame]=useState(initialGame),[round,setRound]=useState(0),[score,setScore]=useState(0),[startedAt,setStartedAt]=useState(Date.now()),[saved,setSaved]=useState(false),[message,setMessage]=useState(''),[targets,setTargets]=useState<any[]>([]),[challenges,setChallenges]=useState<any[]>([]),[userId,setUserId]=useState(''),[activeChallenge,setActiveChallenge]=useState<any>(null),[memoryCards,setMemoryCards]=useState<any[]>([]),[memoryOpen,setMemoryOpen]=useState<number[]>([]),[memoryMatched,setMemoryMatched]=useState<number[]>([]),[builderSelected,setBuilderSelected]=useState<number[]>([]),[timeLeft,setTimeLeft]=useState(0),[strategyTokens,setStrategyTokens]=useState(0);
+ const[game,setGame]=useState(initialGame),[round,setRound]=useState(0),[score,setScore]=useState(0),[startedAt,setStartedAt]=useState(Date.now()),[saved,setSaved]=useState(false),[message,setMessage]=useState(''),[targets,setTargets]=useState<any[]>([]),[challenges,setChallenges]=useState<any[]>([]),[userId,setUserId]=useState(''),[activeChallenge,setActiveChallenge]=useState<any>(null),[memoryCards,setMemoryCards]=useState<any[]>([]),[memoryOpen,setMemoryOpen]=useState<number[]>([]),[memoryMatched,setMemoryMatched]=useState<number[]>([]),[builderSelected,setBuilderSelected]=useState<number[]>([]),[timeLeft,setTimeLeft]=useState(0),[strategyTokens,setStrategyTokens]=useState(0),[sessionNonce,setSessionNonce]=useState(0);
  const choiceRounds=useMemo(()=>roundsFor(game),[game]);
- const current=choiceRounds.length?choiceRounds[round%choiceRounds.length]:null;
+ const current=useMemo(()=>choiceRounds.length?shuffleChoiceRound(choiceRounds[round%choiceRounds.length]):null,[choiceRounds,round,sessionNonce]);
  const builder=BUILDER_SCENARIOS[round%BUILDER_SCENARIOS.length];
  const complete=game.mode==='memory'?memoryMatched.length===memoryCards.length&&memoryCards.length>0:round>=game.rounds;
  async function refreshSocial(){try{const[{data:{user}},nextTargets,nextChallenges]=await Promise.all([getKleenestSupabaseClient().auth.getUser(),listGameChallengeTargets(30),listGameChallenges(null,30)]);setUserId(user?.id||'');setTargets(nextTargets);setChallenges(nextChallenges)}catch(error:any){setMessage(error?.message||'Challenge data could not be loaded.')}}
  useEffect(()=>{refreshSocial()},[]);
  function newMemory(){const cards=shuffle(MEMORY_PAIRS.flatMap((pair,pairId)=>pair.map((text,side)=>({pairId,text,side}))));setMemoryCards(cards);setMemoryOpen([]);setMemoryMatched([]);}
- function reset(nextGame=game,challenge:any=null){setGame(nextGame);setRound(0);setScore(0);setSaved(false);setStartedAt(Date.now());setActiveChallenge(challenge);setBuilderSelected([]);setStrategyTokens(nextGame.strategyBudget||0);setTimeLeft(nextGame.timeLimitSec||0);setMessage(nextGame.instructions);if(nextGame.mode==='memory')setTimeout(newMemory,0);}
+ function reset(nextGame=game,challenge:any=null){setGame(nextGame);setRound(0);setScore(0);setSaved(false);setStartedAt(Date.now());setActiveChallenge(challenge);setBuilderSelected([]);setStrategyTokens(nextGame.strategyBudget||0);setTimeLeft(nextGame.timeLimitSec||0);setSessionNonce(v=>v+1);setMessage(nextGame.instructions);if(nextGame.mode==='memory')setTimeout(newMemory,0);}
  useEffect(()=>{reset(initialGame)},[]);
  useEffect(()=>{const requested=GAME_DEFINITIONS.find(candidate=>candidate.code===requestedGameCode);if(requested&&requested.code!==game.code)reset(requested)},[requestedGameCode]);
  function advance(correct:boolean,detail:string,points?:number){const gained=points??scoreRound({game,correct,timeLeft,strategyRemaining:strategyTokens});if(gained>0)setScore(v=>v+gained);setMessage(`${correct?'✓':'✕'} ${detail}${gained>0?` +${gained}`:''}`);setRound(v=>v+1);setBuilderSelected([]);setTimeLeft(game.timeLimitSec||0);}

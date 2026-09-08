@@ -19,6 +19,9 @@ if(!failures.length){
  if(!migration.includes("set search_path = ''")||!migration.includes('v_score:=least(v_raw_score,v_max_score)')||!migration.includes('safe_score:=least(raw_score,max_score)'))failures.push('Solo and challenge score authorities must clamp scores with empty search paths.');
  if(!migration.includes("revoke all on function public.record_game_result(text,integer,integer,jsonb) from public,anon")||!migration.includes("revoke all on function public.record_game_challenge_score(uuid,integer,jsonb) from public,anon"))failures.push('Game score authorities must deny anonymous execution.');
  if(!screen.includes('index===current.correct'))failures.push('Choice modes must score against the explicit canonical correct choice.');
+ if(!/export function shuffleChoiceRound\(/.test(modes)||!modes.includes('Math.floor(random()*(i+1))')||!modes.includes('permutation.indexOf(round.correct)'))failures.push('Choice rounds must randomize answer order with Fisher-Yates and remap the canonical correct index.');
+ if(!modes.includes('round.costs?permutation.map')||!modes.includes('round.routeMetrics?permutation.map'))failures.push('Choice-round randomization must keep strategy costs and route metrics aligned with their answers.');
+ if(!screen.includes('shuffleChoiceRound')||!screen.includes('useMemo')||!screen.includes('sessionNonce'))failures.push('Game Center must prepare one stable randomized answer order per displayed round/session.');
  if(!screen.includes('recordGameResult')||!screen.includes('recordGameChallengeScore'))failures.push('Game scores must persist through canonical authorities.');
  if(!screen.includes('getMobileProgressionDashboard')||!screen.includes('listMobileBadges')||!screen.includes('progressionMessage'))failures.push('Game saves must surface canonical progression deltas.');
  if(!screen.includes("pathname:'/contributor/[id]'"))failures.push('Challenge players must link to contributor profiles.');

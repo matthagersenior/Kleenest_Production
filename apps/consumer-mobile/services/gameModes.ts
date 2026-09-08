@@ -64,4 +64,10 @@ export const BUILDER_SCENARIOS=[
  {prompt:'Quick stop: stall lock works, soap stocked, dryer works. Changing table not observed.',options:['Working lock','Soap stocked','Working dryer','Changing table'],correct:[0,1,2]},
 ];
 
+export function shuffleChoiceRound(round:ChoiceRound,random:()=>number=Math.random):ChoiceRound{
+ const permutation=round.choices.map((_,index)=>index);
+ for(let i=permutation.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[permutation[i],permutation[j]]=[permutation[j],permutation[i]];}
+ return{...round,choices:permutation.map(index=>round.choices[index]),correct:permutation.indexOf(round.correct),costs:round.costs?permutation.map(index=>round.costs![index]):undefined,routeMetrics:round.routeMetrics?permutation.map(index=>round.routeMetrics![index]):undefined};
+}
+
 export function roundsFor(game:GameDefinition){return MODE_ROUNDS[game.mode as keyof typeof MODE_ROUNDS]||[];}
