@@ -328,7 +328,7 @@ export default function AdaptiveExploreScreen() {
         amenityMatch: matchRule,
         autoExpand: selectedAmenityNames.length > 0 && autoExpand,
         targetCount: 3,
-        limit: 30,
+        limit: 500,
       });
     } catch (error) {
       if (matchRule !== 'all') throw error;
@@ -350,6 +350,8 @@ export default function AdaptiveExploreScreen() {
     }
 
     const enriched = await enrich(result.rows);
+    const verificationCandidates = enriched.filter((row) => row?.needs_restroom_verification === true).length;
+    const restroomEvidence = enriched.length - verificationCandidates;
     const preservedId = selectedId && enriched.some((row) => idOf(row) === selectedId)
       ? selectedId
       : '';
@@ -390,6 +392,12 @@ export default function AdaptiveExploreScreen() {
         enriched.length
           ? `No sufficient match set within ${radiusLabel(result.requestedRadiusMeters)}. Expanded through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')} and found ${enriched.length} qualifying location${enriched.length === 1 ? '' : 's'}.`
           : `No qualifying locations found after expanding through ${radiusLabel(result.effectiveRadiusMeters)}.`,
+      );
+    } else if (!query && !selectedAmenityNames.length) {
+      setMessage(
+        enriched.length
+          ? `${enriched.length} nearby places within ${radiusLabel(result.effectiveRadiusMeters)} · ${restroomEvidence} with restroom evidence · ${verificationCandidates} need bathroom verification.`
+          : `No nearby places found within ${radiusLabel(result.effectiveRadiusMeters)}.`,
       );
     } else {
       setMessage(
@@ -774,7 +782,7 @@ export default function AdaptiveExploreScreen() {
                   <View style={s.userLocationDot} />
                 </View>
               </Marker>
-              {rows.filter(hasCoordinates).slice(0, 100).map((row) => {
+              {rows.filter(hasCoordinates).map((row) => {
                 const id = idOf(row);
                 const active = id === selectedId;
                 return (
@@ -886,7 +894,7 @@ export default function AdaptiveExploreScreen() {
           <View style={s.listHeading}>
             <View>
               <Text style={s.listEyebrow}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
-              <Text style={s.listTitle}>{mode === 'route' ? 'Bathrooms ahead' : 'Bathrooms near you'}</Text>
+              <Text style={s.listTitle}>{mode === 'route' ? 'Bathrooms ahead' : 'Nearby businesses & bathrooms'}</Text>
             </View>
             <Text style={s.listNote}>{cached ? 'Cached · pull to refresh' : 'Scroll results · map stays fixed'}</Text>
           </View>
