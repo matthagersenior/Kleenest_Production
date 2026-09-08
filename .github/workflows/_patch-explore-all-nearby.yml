@@ -1,0 +1,28 @@
+# trigger registered workflow
+name: Apply Explore all-nearby implementation
+
+on:
+  push:
+    branches:
+      - fix/explore-all-nearby-businesses
+    paths:
+      - .github/workflows/_patch-explore-all-nearby.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/explore-all-nearby-businesses
+      - run: node scripts/_patch-explore-all-nearby.cjs
+      - run: |
+          rm .github/workflows/_patch-explore-all-nearby.yml scripts/_patch-explore-all-nearby.cjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/consumer-mobile/features/AdaptiveExploreScreen.tsx .github/workflows/_patch-explore-all-nearby.yml scripts/_patch-explore-all-nearby.cjs
+          git commit -m "fix: show full nearby business set in Explore"
+          git push origin HEAD:fix/explore-all-nearby-businesses
