@@ -14,7 +14,7 @@ const maintenance=read('apps/fleet-mobile/app/maintenance.tsx');
 const operations=read('apps/fleet-mobile/app/operations.tsx');
 const metrics=read('apps/fleet-mobile/app/metrics.tsx');
 const capabilities=read('apps/fleet-mobile/app/capabilities.tsx');
-const entitlementMigration=read('supabase/migrations/20260907224500_fleet_entitlement_authority_convergence.sql');
+const entitlementMigration=read('supabase/migrations/20260907223605_fleet_entitlement_authority_convergence.sql');
 
 all('Vehicle authority',service,['fleet_create_vehicle','fleet_update_vehicle','fleet_delete_vehicle','fleet_set_vehicle_status']);
 all('Vehicle controls',assets,['Add vehicle','Edit vehicle','Delete vehicle']);
@@ -39,7 +39,7 @@ if(entitlementMigration.includes("business_tier::text in ('fleet','enterprise')"
 
 // Capabilities are an operator surface: no raw UUID/business_id dumps or machine field names as primary UX.
 all('Fleet capability presentation',capabilities,['formatFleetCapabilityLabel','formatFleetCapabilityValue','isFleetInternalField']);
-if(/<Text[^>]*>\s*\{\s*key\.replaceAll\(['"]_['"],\s*['"] ['"]\)\s*\}<\/Text>/.test(capabilities))failures.push('Fleet capability presentation: direct raw field rendering is forbidden');
+if(/<Text[^>]*>\s*\{\s*key\.replaceAll\(['"]_['"],\s*['"] ['"]\)\s*\}\s*<\/Text>/.test(capabilities))failures.push('Fleet capability presentation: direct raw field rendering is forbidden');
 if(capabilities.includes('<Text style={s.factValue}>{String(val)}</Text>'))failures.push('Fleet capability presentation: raw backend values are forbidden');
 
 // Validate behavior rather than brittle formatting. Android requestId values must stay short,
