@@ -30,6 +30,8 @@ if(!failures.length){
  if(!adaptiveCore.includes('listNearbyMapCandidates')||!adaptiveCore.includes("p_category:'all'"))failures.push('Adaptive Explore must merge nearby map candidates so businesses without restroom evidence can still be offered for consumer verification.');
  if(!adaptiveCore.includes('restroom_candidate_status')||!adaptiveCore.includes("'needs_verification'"))failures.push('Candidate rows must be explicitly classified instead of being presented as verified bathrooms.');
  if(!adaptiveCore.includes('mergeNearbyDiscoveryRows'))failures.push('Adaptive nearby discovery must deduplicate verified restroom evidence and verification candidates.');
+ if(!adaptiveCore.includes('Math.min(500')||!explore.includes('limit: 500'))failures.push('Unfiltered nearby Explore must request the full supported 500-row local business set instead of the legacy 30/100 result subset.');
+ if(explore.includes('.slice(0, 100)'))failures.push('Explore map must not silently discard nearby businesses after the first 100 rows.');
  if(!signals.includes('restroom_candidate_status')||!signals.includes('Needs verification'))failures.push('Map and result signals must visibly distinguish consumer-verification candidates from verified restroom evidence.');
  if(!signals.includes('restroomMarkerLabel'))failures.push('Map markers must retain accessible semantic labels.');
  if(!explore.includes('listLocationTrustSummaries')||!explore.includes('captureConsumerDiscovery')||!explore.includes('captureConsumerRouteIntent'))failures.push('Rich Explore must preserve batched trust context and lightweight backend data production.');
