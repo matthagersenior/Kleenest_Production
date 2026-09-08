@@ -1,3 +1,4 @@
+# trigger one-shot patch
 name: Apply Explore all-nearby implementation
 
 on:
