@@ -1,4 +1,5 @@
-# trigger one-shot patch
+# trigger registered one-shot patch
+# second synchronization
 name: Apply Explore all-nearby implementation
 
 on:
