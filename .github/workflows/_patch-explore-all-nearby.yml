@@ -1,0 +1,82 @@
+name: Apply Explore all-nearby implementation
+
+on:
+  push:
+    branches:
+      - fix/explore-all-nearby-businesses
+    paths:
+      - .github/workflows/_patch-explore-all-nearby.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/explore-all-nearby-businesses
+      - name: Patch Consumer Explore full nearby set
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = 'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx';
+          let source = fs.readFileSync(path, 'utf8');
+          function replaceOnce(before, after, label) {
+            const count = source.split(before).length - 1;
+            if (count !== 1) throw new Error(`${label}: expected one match, found ${count}`);
+            source = source.replace(before, after);
+          }
+          replaceOnce(
+`        targetCount: 3,
+        limit: 30,`,
+`        targetCount: 3,
+        limit: 500,`,
+'nearby result budget');
+          replaceOnce(
+`    const enriched = await enrich(result.rows);
+    const preservedId = selectedId && enriched.some((row) => idOf(row) === selectedId)`,
+`    const enriched = await enrich(result.rows);
+    const verificationCandidates = enriched.filter((row) => row?.needs_restroom_verification === true).length;
+    const restroomEvidence = enriched.length - verificationCandidates;
+    const preservedId = selectedId && enriched.some((row) => idOf(row) === selectedId)`,
+'nearby result classification summary');
+          replaceOnce(
+`    } else {
+      setMessage(
+        enriched.length
+          ? \`${'${enriched.length}'} qualifying bathroom${'${enriched.length === 1 ? \'\' : \'s\'}'} within ${'${radiusLabel(result.effectiveRadiusMeters)}'}.\`
+          : \`No qualifying bathrooms found within ${'${radiusLabel(result.effectiveRadiusMeters)}'}.\`,
+      );
+    }`,
+`    } else if (!query && !selectedAmenityNames.length) {
+      setMessage(
+        enriched.length
+          ? \`${'${enriched.length}'} nearby places within ${'${radiusLabel(result.effectiveRadiusMeters)}'} · ${'${restroomEvidence}'} with restroom evidence · ${'${verificationCandidates}'} need bathroom verification.\`
+          : \`No nearby places found within ${'${radiusLabel(result.effectiveRadiusMeters)}'}.\`,
+      );
+    } else {
+      setMessage(
+        enriched.length
+          ? \`${'${enriched.length}'} qualifying bathroom${'${enriched.length === 1 ? \'\' : \'s\'}'} within ${'${radiusLabel(result.effectiveRadiusMeters)}'}.\`
+          : \`No qualifying bathrooms found within ${'${radiusLabel(result.effectiveRadiusMeters)}'}.\`,
+      );
+    }`,
+'unfiltered nearby summary');
+          replaceOnce(
+`              {rows.filter(hasCoordinates).slice(0, 100).map((row) => {`,
+`              {rows.filter(hasCoordinates).map((row) => {`,
+'map marker truncation');
+          replaceOnce(
+`              <Text style={s.listTitle}>{mode === 'route' ? 'Bathrooms ahead' : 'Bathrooms near you'}</Text>`,
+`              <Text style={s.listTitle}>{mode === 'route' ? 'Bathrooms ahead' : 'Nearby businesses & bathrooms'}</Text>`,
+'nearby list title');
+          fs.writeFileSync(path, source);
+          NODE
+          rm .github/workflows/_patch-explore-all-nearby.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/consumer-mobile/features/AdaptiveExploreScreen.tsx .github/workflows/_patch-explore-all-nearby.yml
+          git commit -m "fix: show full nearby business set in Explore"
+          git push origin HEAD:fix/explore-all-nearby-businesses
