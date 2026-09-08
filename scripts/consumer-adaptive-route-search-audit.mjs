@@ -29,26 +29,32 @@ if(!screen.includes('useState(402336)'))throw new Error('Required-amenity expans
 if(!screen.includes('effectiveRadiusMeters')||!screen.includes('attemptedRadiiMeters'))throw new Error('Adaptive expansion provenance is not surfaced to the UI.');
 if(!screen.includes('route.distanceMiles')||!screen.includes('route.durationMinutes'))throw new Error('Along-route distance/ETA must derive from actual built-route totals.');
 
-// The mature Explore composition is the default contract. Adaptive route / long-range controls are progressive disclosure,
-// not a replacement screen that pushes the fixed map and result list below configuration chrome.
+// The mature Explore composition is the default contract. Nearby / Along route are primary controls,
+// while long-range/corridor/match tuning is modal progressive disclosure so the map and results keep the viewport.
 for(const token of [
   'const [showAdvanced, setShowAdvanced] = useState(false);',
-  'Road trip / advanced',
-  'Advanced trip controls',
-  'setShowAdvanced((current) => !current)',
-  'showAdvanced ? (',
+  'accessibilityLabel="Nearby search"',
+  'accessibilityLabel="Along route search"',
+  'accessibilityLabel="Advanced filters"',
+  '<Modal',
+  'visible={showAdvanced}',
+  'setShowAdvanced(true)',
   'MapLegend',
   'Close selected location',
   'Start directions →',
 ])requireToken(screen,token,'Consumer mature Explore composition');
-const advancedStart=screen.indexOf('showAdvanced ? (');
-for(const token of ['<View style={s.segment}>','Expand for required amenities','Maximum distance','Route corridor','Must include all','Include any']){
-  const index=screen.indexOf(token);
-  if(index<advancedStart)throw new Error(`Consumer mature Explore must keep ${token} behind advanced disclosure.`);
-}
+const modeIndex=screen.indexOf('accessibilityLabel="Nearby search"');
 const radiusIndex=screen.indexOf('radiusChoices.map');
+if(!(modeIndex>0&&radiusIndex>modeIndex))throw new Error('Consumer mature Explore must place Nearby / Along route before radius controls.');
+const advancedStart=screen.indexOf('<Modal');
+for(const token of ['Expand for required amenities','Maximum distance','Route corridor','Must include all','Include any']){
+  const index=screen.indexOf(token);
+  if(index<advancedStart)throw new Error(`Consumer mature Explore must keep ${token} inside advanced modal disclosure.`);
+}
 const amenityIndex=screen.indexOf('filterAmenities.map');
+const advancedButtonIndex=screen.indexOf('accessibilityLabel="Advanced filters"');
 const mapIndex=screen.indexOf('<View style={s.mapSection}>');
-if(!(radiusIndex>0&&amenityIndex>radiusIndex&&mapIndex>amenityIndex))throw new Error('Consumer mature Explore must preserve radius → amenities → fixed map ordering.');
+if(!(radiusIndex>0&&amenityIndex>radiusIndex&&advancedButtonIndex>amenityIndex&&mapIndex>advancedButtonIndex))throw new Error('Consumer mature Explore must preserve radius → amenities → compact advanced trigger → fixed map ordering.');
+if(screen.includes('Road trip / advanced')||screen.includes('showAdvanced ? ('))throw new Error('Advanced controls must not return to the inline expanding Explore stack.');
 
 console.log('Consumer adaptive nearby and route-aware restroom discovery authority audit passed.');
