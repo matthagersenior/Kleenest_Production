@@ -14,6 +14,7 @@ const home=requireFile('apps/platform-mobile/app/index.tsx');
 const capabilities=requireFile('apps/platform-mobile/app/capabilities.tsx');
 const auth=requireFile('apps/platform-mobile/app/auth.tsx');
 const history=requireFile('apps/platform-mobile/app/history.tsx');
+const webProfile=requireFile('src/runtime/ProfilePage.jsx');
 const ownerAdmin=requireFile('apps/platform-mobile/services/ownerAdmin.ts');
 const migration=requireFile('supabase/migrations/20260905221500_repair_owner_runtime_observability_and_audit_contracts.sql');
 const compatibility=requireFile('supabase/migrations/20260905222500_align_owner_mobile_runtime_compatibility.sql');
@@ -102,6 +103,15 @@ requireAll('Owner history presentation',history,[
   'No control history recorded',
 ]);
 must(!history.includes('JSON.stringify'),'Owner Platform History must present human-readable operator cards instead of raw JSON.');
+requireAll('Owner web-to-native OAuth callback bridge',webProfile,[
+  'ownerNativeCallbackUrl',
+  "'kleenest-owner://auth'",
+  "'code'",
+  "'access_token'",
+  "'refresh_token'",
+  'window.location.replace(ownerCallback)',
+]);
+must(webProfile.indexOf('if (current)')<webProfile.indexOf('ownerNativeCallbackUrl(window.location.href)'),'Owner web callback bridge must preserve an established web session before attempting native handoff.');
 requireAll('Owner audit client',ownerAdmin,[
   "rpc('admin_list_activity_events'",
   'p_from:start.toISOString()',
@@ -140,4 +150,4 @@ requireAll('Owner Android route smoke',smoke,[
 ]);
 
 if(failures.length){console.error(`Owner runtime integrity audit failed with ${failures.length} gap(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
-console.log('Owner runtime integrity audit passed: live telemetry, structured platform history, audit RPC compatibility, capability execution semantics, password recovery, Messaging crash containment, native push safety and Android route smoke are protected.');
+console.log('Owner runtime integrity audit passed: live telemetry, structured platform history, audit RPC compatibility, capability execution semantics, password recovery, web-to-native OAuth handoff, Messaging crash containment, native push safety and Android route smoke are protected.');
