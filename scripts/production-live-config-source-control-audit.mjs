@@ -38,7 +38,7 @@ for (const market of [
   'focus_corridor_chicago',
   'focus_corridor_springfield_mo_branch',
 ]) requireText(frontier, market, `Moving-frontier configuration must preserve ${market}.`);
-requireText(frontier, "'corridor_0.24_frontier_v1'", 'Moving-frontier configuration must preserve its grid contract.');
+requireText(frontier, 'corridor_0.24_frontier_v1', 'Moving-frontier configuration must preserve its grid contract.');
 
 const focus = requireFile('supabase/functions/focus-ingestion-orchestrator/index.ts');
 requireText(focus, "corridor:'kc_to_chicago_moving_frontier'", 'Focus ingestion must preserve the KC-to-Chicago moving-frontier contract.');
