@@ -18,6 +18,13 @@ if(!failures.length){
  if(/<Map[^>]*onPress=\{\(\)=>setSelectedId\(["']{2}\)\}/.test(exploreCompact))failures.push('Map background press must not swallow or immediately clear marker selection.');
  if(!explore.includes('pointerEvents="none"')||!explore.includes('pointerEvents="box-none"'))failures.push('Explore overlays must preserve map-pin touch access.');
  if(!explore.includes('Close selected location')||!explore.includes('Full details'))failures.push('Selected map details must be dismissible and link to full location details.');
+ if(!adaptiveExplore.includes('<Text style={s.closeLabel}>Close</Text>'))failures.push('Selected map details must expose a plainly visible Close label next to the X control.');
+ if(adaptiveExplore.includes('Nearby when you need one now. Along your route when you are planning ahead.'))failures.push('Explore hero must stay compact and not consume result viewport with explanatory copy.');
+ const nearbyModeIndex=adaptiveExplore.indexOf('accessibilityLabel="Nearby search"');
+ const radiusIndex=adaptiveExplore.indexOf('Starting radius');
+ if(nearbyModeIndex<0||radiusIndex<0||nearbyModeIndex>radiusIndex)failures.push('Nearby / Along route must be primary controls above radius and filter controls.');
+ if(!adaptiveExplore.includes('accessibilityLabel="Advanced filters"')||!adaptiveExplore.includes('<Modal')||!adaptiveExplore.includes('style={s.advancedModalCard}'))failures.push('Advanced Explore controls must open in a modal instead of expanding inline and pushing results down.');
+ if(adaptiveExplore.includes('Road trip / advanced'))failures.push('Legacy inline Road trip / advanced expansion must be removed from the main Explore stack.');
  if(!explore.includes('<FlatList')||!explore.includes('scrollEnabled'))failures.push('Explore search results must remain independently scrollable.');
  if(!explore.includes('google.com/maps/dir')||!exploreCompact.match(/pathname:["']\/route["']/))failures.push('Discovery must preserve direct directions and route-planner handoff.');
  if(!core.includes("p_category:'restroom'"))failures.push('Canonical nearby discovery must remain bathroom-first for verified restroom evidence.');

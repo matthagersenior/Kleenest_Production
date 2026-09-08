@@ -14,6 +14,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
+  Modal,
   Pressable,
   RefreshControl,
   SafeAreaView,
@@ -539,7 +540,6 @@ export default function AdaptiveExploreScreen() {
           <View style={{ flex: 1 }}>
             <Text style={s.eyebrow}>DISCOVER</Text>
             <Text style={s.title}>Find a trusted bathroom.</Text>
-            <Text style={s.heroBody}>Nearby when you need one now. Along your route when you are planning ahead.</Text>
           </View>
           <Pressable
             accessibilityRole="button"
@@ -576,6 +576,27 @@ export default function AdaptiveExploreScreen() {
             onPress={() => void load()}
           >
             <Text style={s.searchButtonText}>{loading ? 'WORKING…' : 'SEARCH'}</Text>
+          </Pressable>
+        </View>
+
+        <View style={s.segment} accessibilityRole="tablist">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Nearby search"
+            accessibilityState={{ selected: mode === 'nearby' }}
+            onPress={() => chooseMode('nearby')}
+            style={[s.segmentButton, mode === 'nearby' && s.segmentActive]}
+          >
+            <Text style={[s.segmentText, mode === 'nearby' && s.segmentTextActive]}>Nearby</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Along route search"
+            accessibilityState={{ selected: mode === 'route' }}
+            onPress={() => chooseMode('route')}
+            style={[s.segmentButton, mode === 'route' && s.segmentActive]}
+          >
+            <Text style={[s.segmentText, mode === 'route' && s.segmentTextActive]}>Along route</Text>
           </Pressable>
         </View>
 
@@ -642,111 +663,129 @@ export default function AdaptiveExploreScreen() {
 
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel="Advanced filters"
           accessibilityState={{ expanded: showAdvanced }}
-          onPress={() => setShowAdvanced((current) => !current)}
-          style={[s.rowHeading, { minHeight: 40, paddingVertical: 3 }]}
+          onPress={() => setShowAdvanced(true)}
+          style={s.advancedButton}
         >
           <View style={{ flex: 1 }}>
-            <Text style={s.filterTitle}>Road trip / advanced</Text>
-            <Text style={s.help}>Advanced trip controls</Text>
+            <Text style={s.filterTitle}>Advanced filters</Text>
+            <Text style={s.help}>Trip distance, corridor, and match rules</Text>
           </View>
-          <Text style={s.linkText}>{showAdvanced ? 'Hide' : 'Show'}</Text>
+          <Text style={s.linkText}>Open</Text>
         </Pressable>
 
-        {showAdvanced ? (
-          <View style={[s.inlineBlock, { gap: 7 }]}>
-            <View style={s.segment}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ selected: mode === 'nearby' }}
-                onPress={() => chooseMode('nearby')}
-                style={[s.segmentButton, mode === 'nearby' && s.segmentActive]}
-              >
-                <Text style={[s.segmentText, mode === 'nearby' && s.segmentTextActive]}>Nearby</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ selected: mode === 'route' }}
-                onPress={() => chooseMode('route')}
-                style={[s.segmentButton, mode === 'route' && s.segmentActive]}
-              >
-                <Text style={[s.segmentText, mode === 'route' && s.segmentTextActive]}>Along route</Text>
-              </Pressable>
-            </View>
-
-            {mode === 'nearby' ? (
-              <>
-                <View style={s.rowHeading}>
-                  <Text style={s.filterTitle}>Adaptive amenity search</Text>
-                  <View style={s.autoRow}>
-                    <Text style={s.autoLabel}>Expand for required amenities</Text>
-                    <Switch
-                      disabled={!selectedAmenityNames.length}
-                      value={selectedAmenityNames.length > 0 && autoExpand}
-                      onValueChange={setAutoExpand}
-                    />
-                  </View>
+        <Modal
+          transparent
+          animationType="fade"
+          visible={showAdvanced}
+          onRequestClose={() => setShowAdvanced(false)}
+        >
+          <View style={s.modalBackdrop}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close advanced filters"
+              style={StyleSheet.absoluteFill}
+              onPress={() => setShowAdvanced(false)}
+            />
+            <View style={s.advancedModalCard}>
+              <View style={s.advancedModalHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.advancedModalTitle}>Advanced filters</Text>
+                  <Text style={s.help}>{mode === 'nearby' ? 'Tune required amenities and maximum search distance.' : 'Tune the route corridor and match rules.'}</Text>
                 </View>
-                {selectedAmenityNames.length > 0 && autoExpand ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Close advanced filters"
+                  style={s.modalClose}
+                  onPress={() => setShowAdvanced(false)}
+                >
+                  <Text style={s.modalCloseText}>×</Text>
+                </Pressable>
+              </View>
+              <ScrollView
+                style={s.advancedModalScroll}
+                contentContainerStyle={s.advancedModalContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {mode === 'nearby' ? (
+                  <>
+                    <View style={s.rowHeading}>
+                      <Text style={s.filterTitle}>Adaptive amenity search</Text>
+                      <View style={s.autoRow}>
+                        <Text style={s.autoLabel}>Expand for required amenities</Text>
+                        <Switch
+                          disabled={!selectedAmenityNames.length}
+                          value={selectedAmenityNames.length > 0 && autoExpand}
+                          onValueChange={setAutoExpand}
+                        />
+                      </View>
+                    </View>
+                    {selectedAmenityNames.length > 0 && autoExpand ? (
+                      <View style={s.inlineBlock}>
+                        <Text style={s.filterTitle}>Maximum distance</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
+                          {maxChoices.map((choice) => {
+                            const enabledValue = Math.max(radius, choice.meters);
+                            return (
+                              <Pressable
+                                key={choice.meters}
+                                style={[s.choice, maxRadius === enabledValue && s.choiceActive]}
+                                onPress={() => setMaxRadius(enabledValue)}
+                              >
+                                <Text style={[s.choiceText, maxRadius === enabledValue && s.choiceTextActive]}>{choice.label}</Text>
+                              </Pressable>
+                            );
+                          })}
+                        </ScrollView>
+                      </View>
+                    ) : null}
+                  </>
+                ) : (
                   <View style={s.inlineBlock}>
-                    <Text style={s.filterTitle}>Maximum distance</Text>
+                    <View style={s.rowHeading}>
+                      <Text style={s.filterTitle}>Route corridor</Text>
+                      <Pressable onPress={() => { setShowAdvanced(false); router.push('/route'); }}>
+                        <Text style={s.linkText}>Open Route planner</Text>
+                      </Pressable>
+                    </View>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
-                      {maxChoices.map((choice) => {
-                        const enabledValue = Math.max(radius, choice.meters);
-                        return (
-                          <Pressable
-                            key={choice.meters}
-                            style={[s.choice, maxRadius === enabledValue && s.choiceActive]}
-                            onPress={() => setMaxRadius(enabledValue)}
-                          >
-                            <Text style={[s.choiceText, maxRadius === enabledValue && s.choiceTextActive]}>{choice.label}</Text>
-                          </Pressable>
-                        );
-                      })}
+                      {corridorChoices.map((choice) => (
+                        <Pressable
+                          key={choice.meters}
+                          style={[s.choice, corridor === choice.meters && s.choiceActive]}
+                          onPress={() => setCorridor(choice.meters)}
+                        >
+                          <Text style={[s.choiceText, corridor === choice.meters && s.choiceTextActive]}>{choice.label}</Text>
+                        </Pressable>
+                      ))}
                     </ScrollView>
                   </View>
-                ) : null}
-              </>
-            ) : (
-              <View style={s.inlineBlock}>
-                <View style={s.rowHeading}>
-                  <Text style={s.filterTitle}>Route corridor</Text>
-                  <Pressable onPress={() => router.push('/route')}>
-                    <Text style={s.linkText}>Open Route planner</Text>
-                  </Pressable>
-                </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
-                  {corridorChoices.map((choice) => (
-                    <Pressable
-                      key={choice.meters}
-                      style={[s.choice, corridor === choice.meters && s.choiceActive]}
-                      onPress={() => setCorridor(choice.meters)}
-                    >
-                      <Text style={[s.choiceText, corridor === choice.meters && s.choiceTextActive]}>{choice.label}</Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
+                )}
 
-            {selectedAmenityNames.length ? <View style={s.ruleRow}>
-              <Pressable
-                disabled={!selectedAmenityNames.length}
-                onPress={() => setMatchRule('all')}
-                style={[s.rule, matchRule === 'all' && s.ruleActive, !selectedAmenityNames.length && s.disabled]}
-              >
-                <Text style={[s.ruleText, matchRule === 'all' && s.ruleTextActive]}>Must include all</Text>
+                {selectedAmenityNames.length ? (
+                  <View style={s.ruleRow}>
+                    <Pressable
+                      onPress={() => setMatchRule('all')}
+                      style={[s.rule, matchRule === 'all' && s.ruleActive]}
+                    >
+                      <Text style={[s.ruleText, matchRule === 'all' && s.ruleTextActive]}>Must include all</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setMatchRule('any')}
+                      style={[s.rule, matchRule === 'any' && s.ruleActive]}
+                    >
+                      <Text style={[s.ruleText, matchRule === 'any' && s.ruleTextActive]}>Include any</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </ScrollView>
+              <Pressable style={s.modalDone} onPress={() => setShowAdvanced(false)}>
+                <Text style={s.primaryText}>Done</Text>
               </Pressable>
-              <Pressable
-                disabled={!selectedAmenityNames.length}
-                onPress={() => setMatchRule('any')}
-                style={[s.rule, matchRule === 'any' && s.ruleActive, !selectedAmenityNames.length && s.disabled]}
-              >
-                <Text style={[s.ruleText, matchRule === 'any' && s.ruleTextActive]}>Include any</Text>
-              </Pressable>
-            </View> : null}
+            </View>
           </View>
-        ) : null}
+        </Modal>
 
         {message ? <Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text> : null}
         {mode === 'nearby' && attemptedRadiiMeters.length > 1 ? (
@@ -838,6 +877,7 @@ export default function AdaptiveExploreScreen() {
                     style={s.close}
                   >
                     <Text style={s.closeText}>×</Text>
+                    <Text style={s.closeLabel}>Close</Text>
                   </Pressable>
                 </View>
                 <View style={s.selectedRow}>
@@ -938,18 +978,18 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.canvas },
   hero: {
     marginHorizontal: 12,
-    marginTop: 8,
-    borderRadius: 18,
-    paddingHorizontal: 13,
-    paddingVertical: 9,
+    marginTop: 4,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     backgroundColor: palette.green,
   },
   heroTop: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   eyebrow: { fontSize: 8, fontWeight: '900', letterSpacing: 1.5, color: '#bed4c6' },
-  title: { fontSize: 19, lineHeight: 23, fontWeight: '900', color: '#fff', marginTop: 2 },
+  title: { fontSize: 17, lineHeight: 20, fontWeight: '900', color: '#fff', marginTop: 1 },
   heroBody: { fontSize: 10, lineHeight: 15, color: '#dfeae3', marginTop: 3 },
   locate: {
-    minHeight: 44,
+    minHeight: 40,
     minWidth: 62,
     borderRadius: 13,
     backgroundColor: '#fff',
@@ -959,9 +999,9 @@ const s = StyleSheet.create({
   },
   locateIcon: { fontSize: 16, fontWeight: '900', color: palette.green },
   locateText: { fontSize: 8, fontWeight: '900', color: palette.green },
-  searchPanel: { paddingHorizontal: 14, paddingTop: 9, paddingBottom: 7, gap: 7 },
+  searchPanel: { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 5, gap: 5 },
   segment: { flexDirection: 'row', padding: 3, borderRadius: 12, backgroundColor: '#e8efea' },
-  segmentButton: { flex: 1, minHeight: 38, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  segmentButton: { flex: 1, minHeight: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   segmentActive: { backgroundColor: palette.green },
   segmentText: { fontSize: 10, fontWeight: '900', color: palette.green },
   segmentTextActive: { color: '#fff' },
@@ -977,7 +1017,7 @@ const s = StyleSheet.create({
     fontSize: 13,
     color: palette.ink,
   },
-  searchButton: { minHeight: 44, borderRadius: 12, backgroundColor: palette.green, paddingHorizontal: 12, justifyContent: 'center' },
+  searchButton: { minHeight: 40, borderRadius: 12, backgroundColor: palette.green, paddingHorizontal: 12, justifyContent: 'center' },
   searchButtonText: { fontSize: 9, fontWeight: '900', color: '#fff' },
   rowHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   autoRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -985,7 +1025,7 @@ const s = StyleSheet.create({
   filterTitle: { fontSize: 10, fontWeight: '900', color: palette.green },
   inlineBlock: { gap: 5 },
   choiceRow: { flexDirection: 'row', gap: 6, paddingRight: 8 },
-  choice: { minHeight: 38, paddingHorizontal: 10, borderRadius: 999, backgroundColor: '#e8efea', justifyContent: 'center' },
+  choice: { minHeight: 32, paddingHorizontal: 9, borderRadius: 999, backgroundColor: '#e8efea', justifyContent: 'center' },
   choiceActive: { backgroundColor: palette.green },
   choiceText: { fontSize: 9, fontWeight: '900', color: '#52675a' },
   choiceTextActive: { color: '#fff' },
@@ -994,7 +1034,7 @@ const s = StyleSheet.create({
   amenityTitle: { fontSize: 10, fontWeight: '900', color: palette.green },
   clear: { fontSize: 9, fontWeight: '900', color: '#567060' },
   amenityRow: { gap: 6, paddingRight: 8 },
-  amenityPill: { minHeight: 38, paddingHorizontal: 10, borderRadius: 999, backgroundColor: '#eef3ef', justifyContent: 'center' },
+  amenityPill: { minHeight: 32, paddingHorizontal: 9, borderRadius: 999, backgroundColor: '#eef3ef', justifyContent: 'center' },
   amenityPillActive: { backgroundColor: palette.green },
   amenityText: { fontSize: 9, fontWeight: '800', color: '#52675a' },
   amenityTextActive: { color: '#fff' },
@@ -1031,8 +1071,9 @@ const s = StyleSheet.create({
   selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, borderRadius: 13, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 5 },
   selectedHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   selectedLabel: { flex: 1, fontSize: 8, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
-  close: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#eef4f0', alignItems: 'center', justifyContent: 'center' },
-  closeText: { color: palette.green, fontSize: 21, lineHeight: 23, fontWeight: '900' },
+  close: { minHeight: 38, borderRadius: 19, backgroundColor: palette.green, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 10 },
+  closeText: { color: '#fff', fontSize: 20, lineHeight: 22, fontWeight: '900' },
+  closeLabel: { color: '#fff', fontSize: 9, fontWeight: '900' },
   selectedRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   selectedTitle: { fontSize: 14, fontWeight: '900', color: palette.ink },
   actionRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
@@ -1040,6 +1081,16 @@ const s = StyleSheet.create({
   secondarySmall: { minHeight: 34, borderRadius: 9, backgroundColor: '#e8efea', paddingHorizontal: 9, paddingVertical: 7, justifyContent: 'center' },
   primaryText: { fontSize: 9, fontWeight: '900', color: '#fff' },
   secondaryText: { fontSize: 9, fontWeight: '900', color: palette.green },
+  advancedButton: { minHeight: 34, borderRadius: 11, borderWidth: 1, borderColor: '#d6e2da', backgroundColor: '#f7faf8', paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(13,31,22,.46)', justifyContent: 'center', padding: 18 },
+  advancedModalCard: { maxHeight: '82%', borderRadius: 20, backgroundColor: '#fff', padding: 14, gap: 12 },
+  advancedModalHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  advancedModalTitle: { fontSize: 18, lineHeight: 22, fontWeight: '900', color: palette.ink },
+  advancedModalScroll: { flexGrow: 0 },
+  advancedModalContent: { gap: 12, paddingBottom: 4 },
+  modalClose: { width: 38, height: 38, borderRadius: 19, backgroundColor: palette.green, alignItems: 'center', justifyContent: 'center' },
+  modalCloseText: { color: '#fff', fontSize: 22, lineHeight: 24, fontWeight: '900' },
+  modalDone: { minHeight: 40, borderRadius: 11, backgroundColor: palette.green, alignItems: 'center', justifyContent: 'center' },
   routeCoverage: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: '#fff7e8', borderWidth: 1, borderColor: '#ead9b4' },
   routeCoverageTitle: { fontSize: 10, fontWeight: '900', color: palette.ink },
   list: { paddingHorizontal: 14, paddingBottom: 34, gap: 8 },
