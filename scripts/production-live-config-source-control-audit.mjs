@@ -29,8 +29,21 @@ for (const migration of [
   'supabase/migrations/20260907224638_add_cold_external_location_offload_contract.sql',
 ]) requireFile(migration);
 
+const frontier = requireFile('supabase/operational-config/kc_chicago_moving_frontier.sql');
+for (const market of [
+  'focus_corridor_kansas_city',
+  'focus_corridor_columbia_mo',
+  'focus_corridor_springfield_il',
+  'focus_corridor_bloomington_il',
+  'focus_corridor_chicago',
+  'focus_corridor_springfield_mo_branch',
+]) requireText(frontier, market, `Moving-frontier configuration must preserve ${market}.`);
+requireText(frontier, "'corridor_0.24_frontier_v1'", 'Moving-frontier configuration must preserve its grid contract.');
+
 const focus = requireFile('supabase/functions/focus-ingestion-orchestrator/index.ts');
-requireText(focus, "corridor:'kc_to_chicago'", 'Focus ingestion must preserve the KC-to-Chicago corridor contract.');
+requireText(focus, "corridor:'kc_to_chicago_moving_frontier'", 'Focus ingestion must preserve the KC-to-Chicago moving-frontier contract.');
+requireText(focus, "market_key.like.focus_corridor_%", 'Focus ingestion must select moving-frontier markets.');
+requireText(focus, "status:'kc_to_chicago_moving_frontier_v18'", 'Focus ingestion must report the current moving-frontier runtime version.');
 requireText(focus, 'https://overpass-api.de/api/interpreter', 'Primary Overpass endpoint must remain source-controlled.');
 requireText(focus, 'https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'Fallback Overpass endpoint must remain source-controlled.');
 requireText(focus, "breaker:'single_429_15m_or_2_consecutive_or_legacy_rate'", 'Endpoint breaker policy must remain source-controlled.');
