@@ -1,0 +1,37 @@
+name: Generate MapLibre security lock repair
+
+on:
+  push:
+    branches: [fix/maplibre-security-20260908]
+    paths:
+      - '.github/workflows/maplibre-lock-repair.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/maplibre-security-20260908
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Update MapLibre and lockfile
+        run: npm install maplibre-gl@6.4.1 --save --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Verify lockfile security floor
+        run: |
+          node -e "const p=require('./package.json');const l=require('./package-lock.json');if(p.dependencies?.['maplibre-gl']!=='^6.4.1')throw new Error('package.json not pinned to ^6.4.1');const v=l.packages?.['node_modules/maplibre-gl']?.version;if(!v||Number(v.split('.')[0])<6||(v==='6.4.0'))throw new Error('lockfile MapLibre remains vulnerable: '+v);console.log('Locked MapLibre',v)"
+      - name: Commit generated package metadata
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: upgrade MapLibre past sanitizer bypass'
+          git push origin HEAD:fix/maplibre-security-20260908
