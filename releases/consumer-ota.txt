@@ -1,8 +1,8 @@
 Consumer production OTA release marker.
 
-Purpose: publish the canonical Consumer quiz answer-order correction after PR #26 merged to main.
+Purpose: publish the canonical Consumer Explore compact-layout correction after PR #27 merged to main.
 
-Included source fix: a2ecd18021d2886f9038fd795641704307ba62fe
+Included source fix: f347df59545ca1034b30af7380b21c9c2b78a7ae
 Target channel: consumer-production
 Compatible runtime: kleenest-consumer-1.0.0
-Behavior: multiple-choice quiz answers are randomized per displayed round, the canonical correct answer is remapped to its shuffled position, strategy costs and route metadata remain aligned, and the displayed order stays stable during rerenders.
+Behavior: preserve the existing selected-location map details card while making its X/Close action high-contrast and explicit; shorten the Explore hero; promote Nearby / Along route to primary controls; compact radius and amenity controls; and move advanced trip/filter tuning into a modal so the map and search-result viewport are no longer pushed down by expanded controls.
