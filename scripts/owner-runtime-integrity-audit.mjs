@@ -34,6 +34,19 @@ requireAll('Owner push native safety',push,[
   'The app stayed open safely',
   'getExpoPushTokenAsync',
 ]);
+must(!/^import .*expo-notifications/m.test(push),'Owner push activation must not import expo-notifications at module load; native registration must stay behind runtime guards.');
+requireAll('Owner push activation safety',push,[
+  "await import('expo-notifications')",
+  "setNotificationChannelAsync('kleenestos-operations'",
+  'getPermissionsAsync',
+  'requestPermissionsAsync',
+]);
+const channelIndex=push.indexOf("setNotificationChannelAsync('kleenestos-operations'");
+const permissionIndex=push.indexOf('getPermissionsAsync');
+must(channelIndex>=0&&permissionIndex>=0&&channelIndex<permissionIndex,'Owner Android push must create its notification channel before permission/token registration.');
+const nativeImportIndex=push.indexOf("await import('expo-notifications')");
+const guardIndex=push.indexOf("Platform.OS==='android'&&!nativePushConfigured");
+must(nativeImportIndex>=0&&guardIndex>=0&&guardIndex<nativeImportIndex,'Owner push must check build-time native configuration before loading expo-notifications.');
 requireAll('Owner push build contract',appConfig,[
   "KLEENEST_NATIVE_PUSH_CONFIGURED==='1'",
   "googleServicesFile:'./google-services.json'",
