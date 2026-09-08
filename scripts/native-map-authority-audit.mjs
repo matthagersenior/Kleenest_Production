@@ -23,7 +23,7 @@ if(!failures.length){
  const nearbyModeIndex=adaptiveExplore.indexOf('accessibilityLabel="Nearby search"');
  const radiusIndex=adaptiveExplore.indexOf('Starting radius');
  if(nearbyModeIndex<0||radiusIndex<0||nearbyModeIndex>radiusIndex)failures.push('Nearby / Along route must be primary controls above radius and filter controls.');
- if(!adaptiveExplore.includes('accessibilityLabel="Advanced filters"')||!adaptiveExplore.includes('<Modal')||!adaptiveExplore.includes('styles={s.advancedModalCard}'))failures.push('Advanced Explore controls must open in a modal instead of expanding inline and pushing results down.');
+ if(!adaptiveExplore.includes('accessibilityLabel="Advanced filters"')||!adaptiveExplore.includes('<Modal')||!adaptiveExplore.includes('style={s.advancedModalCard}'))failures.push('Advanced Explore controls must open in a modal instead of expanding inline and pushing results down.');
  if(adaptiveExplore.includes('Road trip / advanced'))failures.push('Legacy inline Road trip / advanced expansion must be removed from the main Explore stack.');
  if(!explore.includes('<FlatList')||!explore.includes('scrollEnabled'))failures.push('Explore search results must remain independently scrollable.');
  if(!explore.includes('google.com/maps/dir')||!exploreCompact.match(/pathname:["']\/route["']/))failures.push('Discovery must preserve direct directions and route-planner handoff.');
