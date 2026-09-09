@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { currentFleetBusinessId } from '../services/control';
 
-const googleRedirect = Linking.createURL('/auth', { scheme: 'kleenest-fleet' });
+const googleRedirect = Linking.createURL('auth', { scheme: 'kleenest-fleet' });
 type Mode = 'signin' | 'signup';
 
 function messageOf(value: unknown) {
