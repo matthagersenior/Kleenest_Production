@@ -72,6 +72,11 @@ const cold = requireFile('supabase/functions/cold-provenance-offloader/index.ts'
 requireText(cold, 'sxgymblzmwdqnaidbbuq.supabase.co/functions/v1/cold-provenance-receiver', 'Cold provenance offloader must target Kleenest_Data.');
 requireText(cold, 'cold_external_location_archive_ack', 'Cold provenance offloader must acknowledge and delete transferred rows.');
 
+const legacyArchive = requireFile('supabase/functions/kleenest-archive-exporter/index.ts');
+requireText(legacyArchive, 'disabled: true', 'Legacy archive exporter must remain disabled after migration to GitHub Actions synchronization.');
+requireText(legacyArchive, 'Replaced by GitHub Actions Kleenest_Data sync', 'Legacy archive exporter tombstone must document the canonical Kleenest_Data synchronization path.');
+requireText(legacyArchive, 'status: 410', 'Legacy archive exporter must continue returning Gone rather than resuming writes.');
+
 const sync = requireFile('.github/workflows/sync-kleenest-data.yml');
 requireText(sync, "cron: '17 * * * *'", 'Kleenest_Data archive reconciliation workflow must remain hourly.');
 requireText(sync, 'KLEENEST_PROD_SERVICE_ROLE_KEY', 'Archive reconciliation must require the Production service-role secret.');
