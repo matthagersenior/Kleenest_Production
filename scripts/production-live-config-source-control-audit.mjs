@@ -34,6 +34,17 @@ requireText(geoRuntime, "jsonb_build_object('batches',20,'limit',1000)", 'Geo ca
 requireText(geoRuntime, "cron.schedule('geo-catalog-export','* * * * *'", 'Geo catalog runtime must preserve the canonical live scheduler name and one-minute cadence.');
 requireText(geoRuntime, "jobname in ('geo-catalog-export', 'geo_catalog_export_sync')", 'Geo catalog runtime must remove legacy duplicate scheduler names before scheduling.');
 
+const national = requireFile('supabase/functions/national-ingestion-orchestrator/index.ts');
+requireText(national, "get_internal_scheduler_secret',{p_name:'kleenest_maps_scheduler'}", 'National ingestion must preserve scheduler authentication.');
+requireText(national, "Number(c.count||0)<4", 'National ingestion must preserve the live four-market running cap.');
+requireText(national, '0.05_city_0.12_state_adaptive_v6', 'National ingestion must preserve the live adaptive OSM grid.');
+requireText(national, 'national_ingestion_storage_status', 'National ingestion must remain governed by the storage guard.');
+requireText(national, "storage.data?.may_ingest===false", 'National ingestion must stop when the storage guard pauses ingestion.');
+requireText(national, 'https://overpass-api.de/api/interpreter', 'National ingestion primary Overpass endpoint must remain source-controlled.');
+requireText(national, 'https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'National ingestion fallback Overpass endpoint must remain source-controlled.');
+requireText(national, 'for(let i=0;i<2;i++)', 'National ingestion endpoint attempts must remain bounded to the live two-attempt policy.');
+requireText(national, "api:'v4_spatial_semantic_v5'", 'National Data.gov ingestion mode must remain source-controlled.');
+
 const frontier = requireFile('supabase/operational-config/kc_chicago_moving_frontier.sql');
 for (const market of [
   'focus_corridor_kansas_city',
