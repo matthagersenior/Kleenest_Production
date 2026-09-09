@@ -34,6 +34,8 @@ jobs:
         run: node scripts/ci-freshness-policy-audit.mjs
       - name: Production environment contract
         run: node scripts/production-environment-contract-audit.mjs
+      - name: Production live configuration source control
+        run: node scripts/production-live-config-source-control-audit.mjs
       - name: Consumer product boundary
         run: node scripts/consumer-product-boundary-audit.mjs
       - name: Consumer activation loop
