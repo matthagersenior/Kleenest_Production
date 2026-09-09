@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { listBusinessWorkspaceOptions } from '../services/capabilityWorkflows';
 
-const googleRedirect = Linking.createURL('/auth', { scheme: 'kleenest-business' });
+const googleRedirect = Linking.createURL('auth', { scheme: 'kleenest-business' });
 type Mode = 'signin' | 'signup';
 
 function messageOf(value: unknown) {
