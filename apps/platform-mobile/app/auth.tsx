@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { getOwnerAuthorization } from '../services/ownerAdmin';
 
-const ownerRedirect = Linking.createURL('/auth', { scheme: 'kleenest-owner' });
+const ownerRedirect = Linking.createURL('auth', { scheme: 'kleenest-owner', isTripleSlashed: false });
 type Mode = 'signin' | 'signup' | 'forgot' | 'recovery';
 
 function messageOf(value: unknown) {
