@@ -29,6 +29,11 @@ for (const migration of [
   'supabase/migrations/20260907224638_add_cold_external_location_offload_contract.sql',
 ]) requireFile(migration);
 
+const geoRuntime = requireFile('supabase/migrations/20260907113600_reconcile_geo_catalog_sync_runtime.sql');
+requireText(geoRuntime, "jsonb_build_object('batches',20,'limit',1000)", 'Geo catalog runtime must preserve the live 20-batch export pacing.');
+requireText(geoRuntime, "cron.schedule('geo-catalog-export','* * * * *'", 'Geo catalog runtime must preserve the canonical live scheduler name and one-minute cadence.');
+requireText(geoRuntime, "jobname in ('geo-catalog-export', 'geo_catalog_export_sync')", 'Geo catalog runtime must remove legacy duplicate scheduler names before scheduling.');
+
 const frontier = requireFile('supabase/operational-config/kc_chicago_moving_frontier.sql');
 for (const market of [
   'focus_corridor_kansas_city',
