@@ -154,12 +154,16 @@ grant execute on function public.run_geo_catalog_exporter() to service_role;
 
 do $do$
 declare
-  existing_job bigint;
+  existing_job record;
 begin
-  select jobid into existing_job from cron.job where jobname='geo_catalog_export_sync' limit 1;
-  if existing_job is not null then
-    perform cron.unschedule(existing_job);
-  end if;
-  perform cron.schedule('geo_catalog_export_sync','* * * * *','select public.run_geo_catalog_exporter();');
+  for existing_job in
+    select jobid
+    from cron.job
+    where jobname in ('geo-catalog-export', 'geo_catalog_export_sync')
+  loop
+    perform cron.unschedule(existing_job.jobid);
+  end loop;
+
+  perform cron.schedule('geo-catalog-export','* * * * *','select public.run_geo_catalog_exporter();');
 end;
 $do$;
