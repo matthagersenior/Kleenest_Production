@@ -20,7 +20,7 @@ export async function currentBusinessId(){
 }
 
 export async function searchContributors(query:string){return (await rpc('community_search_contributors',{p_query:query,p_limit:20}))||[];}
-export async function listBusinessMembers(businessId:string){const{data,error}=await client().from('business_members').select('id,business_id,user_id,role,created_at,updated_at').eq('business_id',businessId).order('created_at',{ascending:true});if(error)throw error;return data||[];}
+export async function listBusinessMembers(businessId:string){const{data,error}=await client().from('business_members').select('business_id,user_id,role,created_at').eq('business_id',businessId).order('created_at',{ascending:true});if(error)throw error;return data||[];}
 export function inviteBusinessMember(businessId:string,userId:string,role:string){return rpc('business_invite_member',{p_business_id:businessId,p_user_id:userId,p_role:role});}
 export function changeBusinessMemberRole(businessId:string,userId:string,role:string){return rpc('business_change_member_role',{p_business_id:businessId,p_user_id:userId,p_role:role});}
 export function removeBusinessMember(businessId:string,userId:string){return rpc('business_remove_member',{p_business_id:businessId,p_user_id:userId});}
