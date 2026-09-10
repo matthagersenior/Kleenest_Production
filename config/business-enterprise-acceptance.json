@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "canonicalDatabaseMatrix": "business_tier_capability_matrix",
+  "capabilities": [
+    {
+      "id": "business.locations",
+      "tier": "standard",
+      "sources": [{"path": "apps/business-mobile/services/product.ts", "tokens": ["business_list_locations", "business_manage_location"]}],
+      "rpcs": ["business_list_locations", "business_manage_location"],
+      "demoProof": "enterprise-demo-"
+    },
+    {
+      "id": "business.reviews_and_replies",
+      "tier": "standard",
+      "sources": [{"path": "apps/business-mobile/services/capabilityWorkflows.ts", "tokens": ["business_review_detail", "business_reply_review"]}],
+      "rpcs": ["business_review_detail", "business_reply_review"]
+    },
+    {
+      "id": "business.qr_studio",
+      "tier": "growth",
+      "sources": [{"path": "apps/business-mobile/services/qrStudio.ts", "tokens": ["qr_studio_list_assets", "qr_studio_upsert_asset", "qr_studio_versions", "business_qr_analytics"]}],
+      "rpcs": ["qr_studio_list_assets", "qr_studio_upsert_asset", "qr_studio_versions", "business_qr_analytics"],
+      "demoProof": "enterprise-truth-demo-qr-"
+    },
+    {
+      "id": "business.team_roles",
+      "tier": "standard",
+      "sources": [{"path": "apps/business-mobile/services/capabilityWorkflows.ts", "tokens": ["business_invite_member", "business_change_member_role", "business_transfer_ownership"]}],
+      "rpcs": ["business_invite_member", "business_change_member_role", "business_transfer_ownership"],
+      "demoProof": "Kleenest Demo Fleet"
+    },
+    {
+      "id": "business.remediation",
+      "tier": "growth",
+      "sources": [{"path": "apps/business-mobile/services/trustOps.ts", "tokens": ["business_restroom_remediation_operations", "business_manage_restroom_remediation"]}],
+      "rpcs": ["business_restroom_remediation_operations", "business_manage_restroom_remediation"],
+      "demoProof": "enterprise_truth_remediation"
+    },
+    {
+      "id": "business.preventive_work",
+      "tier": "growth",
+      "sources": [{"path": "apps/business-mobile/services/prevention.ts", "tokens": ["business_restroom_preventive_work_orders", "business_manage_restroom_preventive_work_order"]}],
+      "rpcs": ["business_restroom_preventive_work_orders", "business_manage_restroom_preventive_work_order"],
+      "demoProof": "enterprise_truth_preventive"
+    },
+    {
+      "id": "business.intelligence",
+      "tier": "growth",
+      "sources": [{"path": "apps/business-mobile/services/capabilityWorkflows.ts", "tokens": ["get_business_intelligence_authority_bundle", "execute_intelligence_action", "complete_intelligence_action"]}],
+      "rpcs": ["get_business_intelligence_authority_bundle", "execute_intelligence_action", "complete_intelligence_action"]
+    },
+    {
+      "id": "business.live_network",
+      "tier": "growth",
+      "sources": [{"path": "apps/business-mobile/services/capabilityWorkflows.ts", "tokens": ["business_live_network_manifest", "business_ensure_live_network_geofences"]}],
+      "rpcs": ["business_live_network_manifest", "business_ensure_live_network_geofences"]
+    },
+    {
+      "id": "enterprise.portfolio",
+      "tier": "enterprise",
+      "databaseCapability": "enterprise.portfolio_fleet",
+      "sources": [{"path": "apps/business-mobile/services/enterprisePortfolio.ts", "tokens": ["enterprise_operational_portfolio_snapshot"]}],
+      "rpcs": ["enterprise_operational_portfolio_snapshot"],
+      "demoProof": "enterprise_truth_route_active"
+    },
+    {
+      "id": "enterprise.networks",
+      "tier": "enterprise",
+      "databaseCapability": "enterprise.enterprise_networks",
+      "sources": [{"path": "apps/business-mobile/services/enterprise.ts", "tokens": ["enterprise_list_owned_networks", "create_enterprise_partner_network", "invite_enterprise_partner"]}],
+      "rpcs": ["enterprise_list_owned_networks", "create_enterprise_partner_network", "invite_enterprise_partner"],
+      "demoProof": "Kleenest Mock Enterprise Network"
+    },
+    {
+      "id": "enterprise.campaigns",
+      "tier": "enterprise",
+      "databaseCapability": "enterprise.partner_campaigns",
+      "sources": [{"path": "apps/business-mobile/services/enterprise.ts", "tokens": ["create_enterprise_partner_campaign", "record_enterprise_partner_campaign_outcome", "get_partner_campaign_roi"]}],
+      "rpcs": ["create_enterprise_partner_campaign", "record_enterprise_partner_campaign_outcome", "get_partner_campaign_roi"],
+      "demoProof": "Summer Check-In Challenge"
+    },
+    {
+      "id": "enterprise.allocations",
+      "tier": "enterprise",
+      "databaseCapability": "enterprise.allocations",
+      "sources": [{"path": "apps/business-mobile/services/enterprise.ts", "tokens": ["create_partner_allocation", "activate_partner_allocation", "get_partner_allocation_roi"]}],
+      "rpcs": ["create_partner_allocation", "activate_partner_allocation", "get_partner_allocation_roi"],
+      "demoProof": "enterprise_truth_allocation"
+    }
+  ]
+}

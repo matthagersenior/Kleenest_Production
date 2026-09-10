@@ -1,0 +1,34 @@
+name: Business Enterprise Truth Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/business-mobile/**'
+      - 'config/business-enterprise-acceptance.json'
+      - 'scripts/business-enterprise-truth-audit.mjs'
+      - 'supabase/migrations/**'
+      - '.github/workflows/business-enterprise-truth.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/business-mobile/**'
+      - 'config/business-enterprise-acceptance.json'
+      - 'scripts/business-enterprise-truth-audit.mjs'
+      - 'supabase/migrations/**'
+      - '.github/workflows/business-enterprise-truth.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-business-enterprise-truth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify promised capability chains
+        run: node scripts/business-enterprise-truth-audit.mjs
