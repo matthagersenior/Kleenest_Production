@@ -9,25 +9,34 @@ const failures=[];
 
 if(!fs.existsSync(contractPath)) failures.push('missing Business/Enterprise acceptance contract');
 const contract=fs.existsSync(contractPath)?JSON.parse(fs.readFileSync(contractPath,'utf8')):null;
-const migrationDir=path.join(root,'supabase/migrations');
-const migrationSql=fs.existsSync(migrationDir)?fs.readdirSync(migrationDir).filter(name=>name.endsWith('.sql')).map(name=>fs.readFileSync(path.join(migrationDir,name),'utf8')).join('\n'):'';
 const seedSql=fs.existsSync(seedPath)?fs.readFileSync(seedPath,'utf8'):'';
 const authoritySql=fs.existsSync(authorityPath)?fs.readFileSync(authorityPath,'utf8'):'';
 
 if(contract){
   if(contract.canonicalDatabaseMatrix!=='business_tier_capability_matrix') failures.push('acceptance contract must use business_tier_capability_matrix as the canonical database matrix');
   for(const capability of contract.capabilities||[]){
+    let sourceText='';
     for(const source of capability.sources||[]){
       const sourcePath=path.join(root,source.path);
       if(!fs.existsSync(sourcePath)){failures.push(`${capability.id}: missing source ${source.path}`);continue;}
       const text=fs.readFileSync(sourcePath,'utf8');
+      sourceText+=`\n${text}`;
       for(const token of source.tokens||[]) if(!text.includes(token)) failures.push(`${capability.id}: source ${source.path} missing ${token}`);
     }
-    for(const rpc of capability.rpcs||[]) if(!migrationSql.includes(rpc)) failures.push(`${capability.id}: no source-controlled migration evidence for RPC ${rpc}`);
+    for(const rpc of capability.rpcs||[]) if(!sourceText.includes(rpc)) failures.push(`${capability.id}: production service seam does not call RPC ${rpc}`);
     if(capability.demoProof&&!seedSql.includes(capability.demoProof)) failures.push(`${capability.id}: deterministic demo proof missing ${capability.demoProof}`);
     if(capability.databaseCapability&&!authoritySql.includes(capability.databaseCapability)) failures.push(`${capability.id}: authority migration missing capability key ${capability.databaseCapability}`);
   }
 }
+
+const memberServicePath=path.join(root,'apps/business-mobile/services/capabilityWorkflows.ts');
+const memberScreenPath=path.join(root,'apps/business-mobile/app/members.tsx');
+const memberService=fs.existsSync(memberServicePath)?fs.readFileSync(memberServicePath,'utf8'):'';
+const memberScreen=fs.existsSync(memberScreenPath)?fs.readFileSync(memberScreenPath,'utf8'):'';
+for(const token of ["select('business_id,user_id,role,created_at')","business_invite_member","business_change_member_role","business_transfer_ownership"]) if(!memberService.includes(token)) failures.push(`Business team read/write seam missing: ${token}`);
+if(memberService.includes("select('id,business_id,user_id,role,created_at,updated_at')")) failures.push('Business team read path still requests nonexistent business_members.id/updated_at columns');
+for(const token of ["const roles=['admin','manager','analyst','staff']","inviteBusinessMember(id,userId,'staff')","row.role==='owner'","String(row.business_id)+'-'+String(row.user_id)"]) if(!memberScreen.includes(token)) failures.push(`Business team screen is not aligned to canonical business_member_role schema: ${token}`);
+if(/business_(owner|admin|manager|analyst|marketing|staff)/.test(memberScreen)) failures.push('Business team screen still emits prefixed role values that the live business_member_role enum rejects');
 
 for(const token of [
   'create or replace function public.business_capability_allowed(',
