@@ -7,7 +7,7 @@
       "tier": "standard",
       "sources": [{"path": "apps/business-mobile/services/product.ts", "tokens": ["business_list_locations", "business_manage_location"]}],
       "rpcs": ["business_list_locations", "business_manage_location"],
-      "demoProof": "enterprise-demo-01"
+      "demoProof": "enterprise-demo-"
     },
     {
       "id": "business.reviews_and_replies",
@@ -20,7 +20,7 @@
       "tier": "growth",
       "sources": [{"path": "apps/business-mobile/services/qrStudio.ts", "tokens": ["qr_studio_list_assets", "qr_studio_upsert_asset", "qr_studio_versions", "business_qr_analytics"]}],
       "rpcs": ["qr_studio_list_assets", "qr_studio_upsert_asset", "qr_studio_versions", "business_qr_analytics"],
-      "demoProof": "enterprise-truth-demo-qr-01"
+      "demoProof": "enterprise-truth-demo-qr-"
     },
     {
       "id": "business.team_roles",
