@@ -4,14 +4,14 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 const client=()=>getKleenestSupabaseClient();
 async function rpc(name:string,args:Record<string,unknown>={}){const{data,error}=await client().rpc(name,args);if(error)throw error;return data;}
 const WORKSPACE_KEY='kleenest.business.selected_workspace.v1';
-export async function listBusinessWorkspaceOptions(){return ((await rpc('business_list_workspaces',{p_include_demo:false}))||[]) as any[];}
+export async function listBusinessWorkspaceOptions(){return ((await rpc('business_list_workspaces',{p_include_demo:true}))||[]) as any[];}
 async function productAccess(businessId:string){const rows:any[]=(await rpc('get_business_product_access',{p_business_id:businessId}))||[];return rows[0]||null;}
 export async function selectBusinessWorkspace(businessId:string){const rows=await listBusinessWorkspaceOptions();if(!rows.some(row=>String(row.business_id)===businessId))throw new Error('That Business workspace is not available to this account.');await SecureStore.setItemAsync(WORKSPACE_KEY,businessId);return businessId;}
 export async function currentBusinessId(){
   const rows=await listBusinessWorkspaceOptions();
   if(!rows.length)throw new Error('No managed Business workspace is available for this account.');
   const preferred=await SecureStore.getItemAsync(WORKSPACE_KEY).catch(()=>null);
-  const ranked=await Promise.all(rows.map(async row=>{const id=String(row.business_id||'');try{const access=await productAccess(id);const locationCount=Number(access?.location_count||0);const score=locationCount*100+(access?.enterprise_enabled?30:0)+(access?.fleet_enabled?20:0)+(String(access?.plan||'')==='growth'?10:0)+(row?.is_demo_test?0:5);return{row,id,access,score};}catch{return{row,id,access:null,score:row?.is_demo_test?0:5};}}));
+  const ranked=await Promise.all(rows.map(async row=>{const id=String(row.business_id||'');try{const access=await productAccess(id);const locationCount=Number(access?.location_count||0);const score=locationCount*100+(access?.enterprise_enabled?30:0)+(access?.fleet_enabled?20:0)+(String(access?.plan||'')==='growth'?10:0)+(row?.is_demo_test?-100000:5);return{row,id,access,score};}catch{return{row,id,access:null,score:row?.is_demo_test?-100000:5};}}));
   const preferredRank=ranked.find(item=>item.id===preferred);
   const chosen=preferredRank||[...ranked].sort((a,b)=>b.score-a.score)[0];
   if(!chosen?.id)throw new Error('No managed Business workspace is available for this account.');
