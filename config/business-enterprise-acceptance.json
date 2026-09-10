@@ -12,7 +12,7 @@
     {
       "id": "business.reviews_and_replies",
       "tier": "standard",
-      "sources": [{"path": "apps/business-mobile/services/reviews.ts", "tokens": ["business_review_detail", "business_reply_review"]}],
+      "sources": [{"path": "apps/business-mobile/services/capabilityWorkflows.ts", "tokens": ["business_review_detail", "business_reply_review"]}],
       "rpcs": ["business_review_detail", "business_reply_review"]
     },
     {
@@ -25,34 +25,34 @@
     {
       "id": "business.team_roles",
       "tier": "standard",
-      "sources": [{"path": "apps/business-mobile/services/product.ts", "tokens": ["business_invite_member", "business_change_member_role", "business_transfer_ownership"]}],
+      "sources": [{"path": "apps/business-mobile/services/capabilityWorkflows.ts", "tokens": ["business_invite_member", "business_change_member_role", "business_transfer_ownership"]}],
       "rpcs": ["business_invite_member", "business_change_member_role", "business_transfer_ownership"],
       "demoProof": "Kleenest Demo Fleet"
     },
     {
       "id": "business.remediation",
       "tier": "growth",
-      "sources": [{"path": "apps/business-mobile/services/capabilityWorkflows.ts", "tokens": ["business_manage_restroom_remediation"]}],
-      "rpcs": ["business_manage_restroom_remediation"],
+      "sources": [{"path": "apps/business-mobile/services/trustOps.ts", "tokens": ["business_restroom_remediation_operations", "business_manage_restroom_remediation"]}],
+      "rpcs": ["business_restroom_remediation_operations", "business_manage_restroom_remediation"],
       "demoProof": "enterprise_truth_remediation"
     },
     {
       "id": "business.preventive_work",
       "tier": "growth",
-      "sources": [{"path": "apps/business-mobile/services/prevention.ts", "tokens": ["business_manage_restroom_preventive_work_order"]}],
-      "rpcs": ["business_manage_restroom_preventive_work_order"],
+      "sources": [{"path": "apps/business-mobile/services/prevention.ts", "tokens": ["business_restroom_preventive_work_orders", "business_manage_restroom_preventive_work_order"]}],
+      "rpcs": ["business_restroom_preventive_work_orders", "business_manage_restroom_preventive_work_order"],
       "demoProof": "enterprise_truth_preventive"
     },
     {
       "id": "business.intelligence",
       "tier": "growth",
-      "sources": [{"path": "apps/business-mobile/services/intelligence.ts", "tokens": ["get_business_intelligence_authority_bundle", "execute_intelligence_action", "complete_intelligence_action"]}],
+      "sources": [{"path": "apps/business-mobile/services/capabilityWorkflows.ts", "tokens": ["get_business_intelligence_authority_bundle", "execute_intelligence_action", "complete_intelligence_action"]}],
       "rpcs": ["get_business_intelligence_authority_bundle", "execute_intelligence_action", "complete_intelligence_action"]
     },
     {
       "id": "business.live_network",
       "tier": "growth",
-      "sources": [{"path": "apps/business-mobile/services/liveNetwork.ts", "tokens": ["business_live_network_manifest", "business_ensure_live_network_geofences"]}],
+      "sources": [{"path": "apps/business-mobile/services/capabilityWorkflows.ts", "tokens": ["business_live_network_manifest", "business_ensure_live_network_geofences"]}],
       "rpcs": ["business_live_network_manifest", "business_ensure_live_network_geofences"]
     },
     {
