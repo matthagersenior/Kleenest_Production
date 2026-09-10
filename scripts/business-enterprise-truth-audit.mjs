@@ -5,12 +5,13 @@ const root=process.cwd();
 const contractPath=path.join(root,'config/business-enterprise-acceptance.json');
 const seedPath=path.join(root,'supabase/migrations/20260910180500_enterprise_truth_demo_seed.sql');
 const authorityPath=path.join(root,'supabase/migrations/20260910181500_business_enterprise_truth_authority.sql');
+const portfolioPath=path.join(root,'supabase/migrations/20260910182500_enterprise_portfolio_capability_convergence.sql');
 const failures=[];
 
 if(!fs.existsSync(contractPath)) failures.push('missing Business/Enterprise acceptance contract');
 const contract=fs.existsSync(contractPath)?JSON.parse(fs.readFileSync(contractPath,'utf8')):null;
 const seedSql=fs.existsSync(seedPath)?fs.readFileSync(seedPath,'utf8'):'';
-const authoritySql=fs.existsSync(authorityPath)?fs.readFileSync(authorityPath,'utf8'):'';
+const authoritySql=[authorityPath,portfolioPath].filter(fs.existsSync).map(file=>fs.readFileSync(file,'utf8')).join('\n');
 
 if(contract){
   if(contract.canonicalDatabaseMatrix!=='business_tier_capability_matrix') failures.push('acceptance contract must use business_tier_capability_matrix as the canonical database matrix');
@@ -62,6 +63,7 @@ for(const token of [
   "public.business_capability_allowed(p_business_id,'enterprise.enterprise_networks')",
   "public.business_capability_allowed(n.owner_business_id,'enterprise.partner_campaigns')",
   "public.business_capability_allowed(n.owner_business_id,'enterprise.allocations')",
+  "public.business_capability_allowed(p_business_id,'enterprise.portfolio_fleet')",
 ]) if(!authoritySql.includes(token)) failures.push(`Enterprise read authority is not matrix-backed: ${token}`);
 
 for(const token of [
