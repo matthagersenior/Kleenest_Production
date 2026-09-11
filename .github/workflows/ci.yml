@@ -114,6 +114,8 @@ jobs:
         run: node scripts/real-world-demo-onboarding-audit.mjs
       - name: Mandatory onboarding and Consumer focus convergence
         run: node scripts/mandatory-onboarding-consumer-focus-audit.mjs
+      - name: Business onboarding tier authority
+        run: node scripts/business-onboarding-tier-authority-audit.mjs
       - name: Fleet authority
         run: |
           node scripts/fleet-operational-rpc-authority-audit.mjs
