@@ -45,6 +45,8 @@ export default function Layout(){
     <Tabs.Screen name="progression" options={{href:null,title:'Progression'}}/>
     <Tabs.Screen name="capabilities" options={{href:null,title:'Capabilities'}}/>
     <Tabs.Screen name="workspaces" options={{href:null,title:'Workspaces'}}/>
+    <Tabs.Screen name="onboarding" options={{href:null,title:'Onboarding'}}/>
+    <Tabs.Screen name="demo" options={{href:null,title:'Guided Demo'}}/>
     <Tabs.Screen name="notifications" options={{href:null,title:'Notifications'}}/>
     <Tabs.Screen name="support" options={{href:null,title:'Support'}}/>
     <Tabs.Screen name="terms" options={{href:null,title:'Terms'}}/>

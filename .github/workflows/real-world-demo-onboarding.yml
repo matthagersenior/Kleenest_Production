@@ -1,0 +1,34 @@
+name: Real World Demo and Onboarding
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/business-mobile/**'
+      - 'apps/fleet-mobile/**'
+      - 'config/real-world-demo-onboarding-contract.json'
+      - 'scripts/real-world-demo-onboarding-audit.mjs'
+      - 'supabase/migrations/**'
+      - '.github/workflows/real-world-demo-onboarding.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/business-mobile/**'
+      - 'apps/fleet-mobile/**'
+      - 'config/real-world-demo-onboarding-contract.json'
+      - 'scripts/real-world-demo-onboarding-audit.mjs'
+      - 'supabase/migrations/**'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-real-world-demo-onboarding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/real-world-demo-onboarding-audit.mjs
