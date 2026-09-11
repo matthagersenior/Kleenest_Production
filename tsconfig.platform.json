@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "include": [
+    "packages/platform-core/src/**/*.ts",
+    "packages/sdk-js/src/**/*.ts",
+    "packages/map-layer/src/**/*.ts",
+    "packages/widget/src/**/*.ts",
+    "packages/route-sdk/src/**/*.ts",
+    "packages/webhook-types/src/**/*.ts"
+  ]
+}
