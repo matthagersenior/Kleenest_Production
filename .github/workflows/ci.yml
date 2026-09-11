@@ -122,6 +122,8 @@ jobs:
         run: node scripts/business-home-mobile-card-polish-audit.mjs
       - name: Fleet ad-hoc stop and geofence intelligence
         run: node scripts/fleet-adhoc-stop-geofence-intelligence-audit.mjs
+      - name: Stateful real-world demo loops
+        run: node scripts/stateful-real-world-demo-loop-audit.mjs
       - name: OTA family authority
         run: node scripts/ota-family-authority-audit.mjs
       - name: Fleet authority
