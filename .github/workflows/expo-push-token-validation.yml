@@ -3,10 +3,6 @@ name: Expo Push Token Validation
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'supabase/migrations/**'
-      - 'scripts/expo-push-token-validation-audit.mjs'
-      - '.github/workflows/expo-push-token-validation.yml'
   push:
     branches: [main]
     paths:
