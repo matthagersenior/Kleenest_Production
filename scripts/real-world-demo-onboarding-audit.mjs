@@ -13,7 +13,8 @@ const files=[
   'apps/fleet-mobile/services/onboarding.ts',
   'supabase/migrations/20260911012000_real_world_demo_onboarding.sql',
   'supabase/migrations/20260911014000_real_world_demo_route_refinement.sql',
-  'supabase/migrations/20260911102500_stateful_real_world_demo_loops.sql'
+  'supabase/migrations/20260911102500_stateful_real_world_demo_loops.sql',
+  'supabase/migrations/20260911104000_real_world_demo_loop_surface_convergence.sql'
 ];
 for(const file of files) if(!fs.existsSync(path.join(root,file))) failures.push('missing '+file);
 
@@ -21,6 +22,8 @@ const read=file=>fs.existsSync(path.join(root,file))?fs.readFileSync(path.join(r
 const migration=read('supabase/migrations/20260911012000_real_world_demo_onboarding.sql');
 const routeRefinement=read('supabase/migrations/20260911014000_real_world_demo_route_refinement.sql');
 const loopMigration=read('supabase/migrations/20260911102500_stateful_real_world_demo_loops.sql');
+const loopConvergence=read('supabase/migrations/20260911104000_real_world_demo_loop_surface_convergence.sql');
+const loopAuthority=loopMigration+'\n'+loopConvergence;
 for(const token of ['demo_fleet_route_refinement','America’s Center Convention Complex','Central West End Transit Center','Barnes-Jewish Center for Outpatient Health','12th & Park Recreation Center','Blueprint Coffee']) if(!routeRefinement.includes(token)) failures.push('Fleet demo route refinement missing '+token);
 
 for(const token of [
@@ -40,7 +43,7 @@ const businessOnboarding=read('apps/business-mobile/app/onboarding.tsx');
 for(const scenario of contract.demoScenarios){
   const target=scenario.id==='fleet'?fleetDemo:businessDemo;
   for(const surface of scenario.surfaces){
-    if(!target.includes(surface)&&!loopMigration.includes(surface)) failures.push(`${scenario.id} demo missing surface ${surface}`);
+    if(!target.includes(surface)&&!loopAuthority.includes(surface)) failures.push(`${scenario.id} demo missing surface ${surface}`);
   }
 }
 for(const token of ['Start demo','Complete step','Restart loop']) {
@@ -48,7 +51,7 @@ for(const token of ['Start demo','Complete step','Restart loop']) {
   if(!fleetDemo.includes(token)) failures.push('Fleet demo missing stateful control '+token);
 }
 for(const token of ['real_world_demo_loop_state','real_world_demo_loop_start','real_world_demo_loop_advance','real_world_demo_loop_reset']) {
-  if(!loopMigration.includes(token)) failures.push('Stateful demo authority missing '+token);
+  if(!loopAuthority.includes(token)) failures.push('Stateful demo authority missing '+token);
 }
 for(const token of ['business_onboarding_catalog','business_onboarding_preview','business_onboarding_apply']) if(!read('apps/business-mobile/services/onboarding.ts').includes(token)) failures.push('Business onboarding service missing '+token);
 for(const token of ['business_onboarding_catalog','business_onboarding_preview','business_onboarding_apply']) if(!read('apps/fleet-mobile/services/onboarding.ts').includes(token)) failures.push('Fleet onboarding service missing '+token);
