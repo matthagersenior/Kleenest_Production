@@ -3,12 +3,6 @@ name: Business Enterprise Truth Gate
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'apps/business-mobile/**'
-      - 'config/business-enterprise-acceptance.json'
-      - 'scripts/business-enterprise-truth-audit.mjs'
-      - 'supabase/migrations/**'
-      - '.github/workflows/business-enterprise-truth.yml'
   push:
     branches: [main]
     paths:
