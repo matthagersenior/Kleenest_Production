@@ -10,7 +10,7 @@ export type OnboardingGate={business_id:string;mandatory:boolean;required:boolea
 
 export async function getBusinessOnboardingCatalog(){return await rpc('business_onboarding_catalog') as OnboardingCatalog;}
 export async function getBusinessOnboardingState(businessId:string){return await rpc('business_onboarding_state',{p_business_id:businessId}) as Record<string,any>;}
-export async function previewBusinessOnboarding(businessId:string,businessType:string,goals:string[],scale:Record<string,number>,answers:Record<string,unknown>={}){return await rpc('business_onboarding_preview_v2',{p_business_id:businessId,p_business_type:businessType,p_goals:goals,p_scale:scale,p_answers:answers}) as OnboardingPreview;}
+export async function previewBusinessOnboarding(businessId:string,businessType:string,goals:string[],scale:Record<string,number>,answers:Record<string,unknown>={}){return await rpc('business_onboarding_save_draft_v2',{p_business_id:businessId,p_business_type:businessType,p_goals:goals,p_scale:scale,p_answers:answers}) as OnboardingPreview;}
 export async function applyBusinessOnboarding(businessId:string,businessType:string,goals:string[],scale:Record<string,number>,answers:Record<string,unknown>={}){return await rpc('business_onboarding_apply_v2',{p_business_id:businessId,p_business_type:businessType,p_goals:goals,p_scale:scale,p_answers:answers}) as Record<string,any>;}
 export async function getBusinessOnboardingGate(businessId:string){return await rpc('business_onboarding_gate',{p_business_id:businessId}) as OnboardingGate;}
 export async function getBusinessRealWorldDemoSnapshot(businessId:string){return await rpc('business_real_world_demo_snapshot',{p_business_id:businessId}) as Record<string,any>;}
