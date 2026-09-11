@@ -3,12 +3,18 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { currentBusinessId } from '../services/capabilityWorkflows';
+import { getBusinessOnboardingGate } from '../services/onboarding';
+
+const ONBOARDING_BYPASS=new Set(['onboarding','workspaces','support','terms','privacy','account']);
 
 export default function Layout() {
   const router = useRouter();
   const segments = useSegments();
   const [ready, setReady] = useState(false);
+  const [gateReady,setGateReady]=useState(false);
   const [signedIn, setSignedIn] = useState(false);
+  const [onboardingRequired,setOnboardingRequired]=useState(false);
   const onAuthRoute = segments[0] === 'auth';
 
   useEffect(() => {
@@ -27,15 +33,41 @@ export default function Layout() {
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, []);
 
-  useEffect(() => {
-    if (!ready) return;
-    if (!signedIn && !onAuthRoute) router.replace('/auth');
-    else if (signedIn && onAuthRoute) router.replace('/');
-  }, [ready, signedIn, onAuthRoute, router]);
+  useEffect(()=>{
+    if(!ready)return;
+    let active=true;
+    if(!signedIn){
+      setOnboardingRequired(false);
+      setGateReady(true);
+      if(!onAuthRoute)router.replace('/auth');
+      return()=>{active=false};
+    }
 
-  if (!ready) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f6f4' }}><ActivityIndicator size="large" /></View>;
+    setGateReady(false);
+    void (async()=>{
+      try{
+        const businessId=await currentBusinessId();
+        const gate=await getBusinessOnboardingGate(businessId);
+        if(!active)return;
+        const required=Boolean(gate?.required);
+        setOnboardingRequired(required);
+        setGateReady(true);
+        const route=String(segments[0]||'');
+        if(required&&!ONBOARDING_BYPASS.has(route))router.replace('/onboarding');
+        else if(onAuthRoute)router.replace(required?'/onboarding':'/');
+      }catch{
+        if(!active)return;
+        setOnboardingRequired(false);
+        setGateReady(true);
+        if(onAuthRoute)router.replace('/');
+      }
+    })();
+    return()=>{active=false};
+  },[ready,signedIn,onAuthRoute,router,segments]);
 
-  return <><StatusBar style="dark"/><Tabs screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute?{display:'none'}:undefined}}>
+  if (!ready || (signedIn&&!gateReady)) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f6f4' }}><ActivityIndicator size="large" /></View>;
+
+  return <><StatusBar style="dark"/><Tabs screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired?{display:'none'}:undefined}}>
     <Tabs.Screen name="index" options={{title:'Home'}}/>
     <Tabs.Screen name="locations" options={{title:'Locations'}}/>
     <Tabs.Screen name="engagement" options={{title:'Growth'}}/>
@@ -58,7 +90,7 @@ export default function Layout() {
     <Tabs.Screen name="growth" options={{href:null,title:'Growth Summary'}}/>
     <Tabs.Screen name="prevention" options={{href:null,title:'Prevention'}}/>
     <Tabs.Screen name="trust-operations" options={{href:null,title:'Trust Operations'}}/>
-    <Tabs.Screen name="governance" options={{href:null,title:'Governance'}}/>
+    <Tabs.Screen name="governance" options={{href:null,title:'Governance & Reporting'}}/>
     <Tabs.Screen name="enterprise-economy" options={{href:null,title:'Enterprise Economy'}}/>
     <Tabs.Screen name="enterprise-locations" options={{href:null,title:'Enterprise Location'}}/>
     <Tabs.Screen name="enterprise" options={{href:null,title:'Enterprise'}}/>
