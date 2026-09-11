@@ -15,8 +15,8 @@ for(const token of [
 ]) if(!sql.includes(token)) failures.push('commercial authority migration missing '+token);
 
 const tiers=read('apps/business-mobile/domain/businessTiers.ts');
-for(const token of ["return'Fleet'","return'Growth + Fleet'","return'Enterprise + Fleet'","return'Enterprise'","return'Growth'","return'Standard'"]) if(!tiers.includes(token)) failures.push('tierLabel missing '+token);
-if(/fleet=enterprise\|\|/.test(tiers)) failures.push('Enterprise must not silently imply Fleet.');
+for(const token of ["'Fleet + Enterprise'","'Fleet'","'Growth + Enterprise'","'Growth + Fleet'","'Enterprise + Fleet'","'Enterprise'","'Growth'","'Standard'"]) if(!tiers.includes(token)) failures.push('tierLabel missing '+token);
+if(/const fleet=enterprise\|\|/.test(tiers)) failures.push('Enterprise must not silently imply Fleet.');
 
 const business=read('apps/business-mobile/app/onboarding.tsx');
 for(const token of ['Standard → Growth → Fleet → Enterprise','recommended_addons','upgrade_paths','Enterprise pricing','50 Premium']) if(!business.includes(token)) failures.push('Business onboarding commercial presentation missing '+token);
