@@ -47,6 +47,8 @@ jobs:
         run: node scripts/business-onboarding-tier-authority-audit.mjs
       - name: Verify Business Fleet onboarding portfolio home
         run: node scripts/business-fleet-onboarding-portfolio-home-audit.mjs
+      - name: Verify Business Home mobile card polish
+        run: node scripts/business-home-mobile-card-polish-audit.mjs
       - name: Verify OTA family authority
         run: node scripts/ota-family-authority-audit.mjs
       - name: Typecheck Consumer
