@@ -15,3 +15,8 @@ export async function previewBusinessOnboardingReadOnly(businessId:string,busine
 export async function applyBusinessOnboarding(businessId:string,businessType:string,goals:string[],scale:Record<string,number>,answers:Record<string,unknown>={}){return await rpc('business_onboarding_apply_v2',{p_business_id:businessId,p_business_type:businessType,p_goals:goals,p_scale:scale,p_answers:answers}) as Record<string,any>;}
 export async function getBusinessOnboardingGate(businessId:string){return await rpc('business_onboarding_gate',{p_business_id:businessId}) as OnboardingGate;}
 export async function getBusinessRealWorldDemoSnapshot(businessId:string){return await rpc('business_real_world_demo_snapshot',{p_business_id:businessId}) as Record<string,any>;}
+
+export async function getBusinessRealWorldDemoLoopState(businessId:string){return await rpc('real_world_demo_loop_state',{p_business_id:businessId}) as Record<string,any>;}
+export async function startBusinessRealWorldDemoLoop(businessId:string){return await rpc('real_world_demo_loop_start',{p_business_id:businessId}) as Record<string,any>;}
+export async function advanceBusinessRealWorldDemoLoop(businessId:string){return await rpc('real_world_demo_loop_advance',{p_business_id:businessId}) as Record<string,any>;}
+export async function resetBusinessRealWorldDemoLoop(businessId:string){return await rpc('real_world_demo_loop_reset',{p_business_id:businessId}) as Record<string,any>;}
