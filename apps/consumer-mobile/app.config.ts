@@ -10,6 +10,7 @@ if (configuredEasProjectId && configuredEasProjectId !== PRODUCTION_EAS_PROJECT_
 }
 
 const easProjectId = configuredEasProjectId || PRODUCTION_EAS_PROJECT_ID;
+const otaChannel = process.env.EXPO_PUBLIC_OTA_CHANNEL || 'consumer-production';
 const devClientPlugins: NonNullable<ExpoConfig['plugins']> = standaloneAndroid
   ? []
   : [['expo-dev-client', { launchMode: 'most-recent' }]];
@@ -25,7 +26,7 @@ const config: ExpoConfig = {
     url: `https://u.expo.dev/${easProjectId}`,
     checkAutomatically: 'ON_LOAD',
     fallbackToCacheTimeout: 0,
-    requestHeaders: { 'expo-channel-name': 'consumer-production' },
+    requestHeaders: { 'expo-channel-name': otaChannel },
   },
   orientation: 'portrait',
   scheme: 'kleenest',
@@ -78,7 +79,7 @@ const config: ExpoConfig = {
   experiments: { typedRoutes: true, baseUrl: '/Kleenest_Production' },
   extra: {
     appRole: 'consumer',
-    otaChannel: 'consumer-production',
+    otaChannel,
     previewRole: 'non-blocking-web-preview',
     productionEnvironment: {
       expoProjectId: PRODUCTION_EAS_PROJECT_ID,

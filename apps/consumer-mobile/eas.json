@@ -30,22 +30,26 @@
       "autoIncrement": true,
       "env": {
         "EAS_PROJECT_ID": "22a65aa3-c615-4c4f-a34d-084babc28fd7",
-        "KLEENEST_RELEASE_CHANNEL": "candidate"
+        "KLEENEST_RELEASE_CHANNEL": "candidate",
+        "EXPO_PUBLIC_OTA_CHANNEL": "consumer-candidate"
       },
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "consumer-candidate"
     },
     "production": {
       "distribution": "store",
       "autoIncrement": true,
       "env": {
         "EAS_PROJECT_ID": "22a65aa3-c615-4c4f-a34d-084babc28fd7",
-        "KLEENEST_RELEASE_CHANNEL": "production"
+        "KLEENEST_RELEASE_CHANNEL": "production",
+        "EXPO_PUBLIC_OTA_CHANNEL": "consumer-production"
       },
       "android": {
         "buildType": "app-bundle"
-      }
+      },
+      "channel": "consumer-production"
     }
   },
   "submit": {
