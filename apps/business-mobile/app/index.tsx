@@ -63,7 +63,8 @@ export default function BusinessHome(){
    ]);
    const caps=getBusinessTierCapabilities(access,entitlement);
    setData({businessId,workspace,dashboard,operations,analytics,access,entitlement,onboarding,onboardingGate,portfolio,caps,tier:tierLabel(access,entitlement)});
-   setMessage(operations.partial?'Some operational services are degraded; available controls remain active.':'');
+   const degraded=Array.isArray(operations.degradedServices)?operations.degradedServices.filter(Boolean):[];
+   setMessage(degraded.length?((degraded.length===1?degraded[0]:degraded.join(', '))+' temporarily unavailable. Other Business controls remain active.'):'');
   }catch(e:any){
    setMessage(e?.message||'Business workspace unavailable.');
   }finally{
