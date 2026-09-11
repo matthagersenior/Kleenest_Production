@@ -1,5 +1,5 @@
 import { Link,router } from 'expo-router';
-import { useEffect,useMemo,useState } from 'react';
+import { useEffect,useMemo,useState,type Dispatch,type SetStateAction } from 'react';
 import { Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { currentBusinessId } from '../services/capabilityWorkflows';
 import {
@@ -66,7 +66,7 @@ export default function BusinessOnboarding(){
  }
  useEffect(()=>{void load()},[]);
 
- const toggle=(setter:React.Dispatch<React.SetStateAction<string[]>>,id:string)=>{setter(current=>current.includes(id)?current.filter(x=>x!==id):[...current,id]);setApplied(null);setPreview(null)};
+ const toggle=(setter:Dispatch<SetStateAction<string[]>>,id:string)=>{setter(current=>current.includes(id)?current.filter(x=>x!==id):[...current,id]);setApplied(null);setPreview(null)};
  async function recommend(){if(!goals.length){setMessage('Choose at least one result you want Kleenest to produce.');return}setBusy(true);try{setPreview(await previewBusinessOnboarding(businessId,businessType,goals,scale,answers));setApplied(null);setMessage('Recommendation ready. Your answers now shape the operating priorities, starter setup and default Business experience.')}catch(e:any){setMessage(e?.message||'Recommendation could not be built.')}finally{setBusy(false)}}
  async function apply(){if(gate&&!gate.can_complete){setMessage('An owner or admin must complete mandatory onboarding for this workspace.');return}setBusy(true);try{const result=await applyBusinessOnboarding(businessId,businessType,goals,scale,answers);setApplied(result);setPreview(result.preview||preview);setMessage('Business setup completed. Kleenest will now prioritize the workflows tied to your operation and desired results.');setGate(await getBusinessOnboardingGate(businessId));router.replace('/')}catch(e:any){setMessage(e?.message||'Business setup could not be completed.')}finally{setBusy(false)}}
  const typeRows=(catalog?.business_types?.length?catalog.business_types:BUSINESS_TYPES.map(([id,label])=>({id,label,detail:''})));
@@ -101,7 +101,7 @@ export default function BusinessOnboarding(){
 }
 function Section({title,body,children}:{title:string;body:string;children:any}){return <View style={s.section}><Text style={s.sectionTitle}>{title}</Text><Text style={s.meta}>{body}</Text>{children}</View>}
 function Chip({label,active,onPress}:{label:string;active:boolean;onPress:()=>void}){return <Pressable onPress={onPress} style={[s.chip,active&&s.chipOn]}><Text style={[s.chipText,active&&s.chipTextOn]}>{label}</Text></Pressable>}
-function ChoiceGroup({rows,value,setValue}:{rows:readonly(readonly[string,string])[];value:string;setValue:(v:string)=>void}){return <View style={s.chips}>{rows.map(([id,label])=><Chip key={id} label={label} active={value===id} onPress={()=>setValue(id)}/>)}</View>}
+function ChoiceGroup({rows,value,setValue}:{rows:ReadonlyArray<readonly [string,string]>;value:string;setValue:(v:string)=>void}){return <View style={s.chips}>{rows.map(([id,label])=><Chip key={id} label={label} active={value===id} onPress={()=>setValue(id)}/>)}</View>}
 function MultiChoice({rows,selected,toggle}:{rows:readonly(readonly[string,string])[];selected:string[];toggle:(id:string)=>void}){return <View style={s.chips}>{rows.map(([id,label])=><Chip key={id} label={label} active={selected.includes(id)} onPress={()=>toggle(id)}/>)}</View>}
 function NumberField({label,value,onChange}:{label:string;value:string;onChange:(v:string)=>void}){return <View style={s.numberRow}><Text style={[s.capTitle,{flex:1}]}>{label}</Text><TextInput keyboardType="number-pad" value={value} onChangeText={onChange} style={s.numberInput}/></View>}
 function Pill({label}:{label:string}){return <View style={s.pill}><Text style={s.pillText}>{label}</Text></View>}
