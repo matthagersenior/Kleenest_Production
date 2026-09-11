@@ -10,8 +10,8 @@ requireFile(migration);
 requireTokens(migration,[
   'business_managed_location_portfolio',
   'business_onboarding_save_draft_v2',
-  "'scope','direct'",
-  "'scope','network'",
+  "'direct'::text as scope",
+  "'network'::text as scope",
   "'portfolio_location_count'",
   "'direct_location_count'",
   "'partner_business_count'"
