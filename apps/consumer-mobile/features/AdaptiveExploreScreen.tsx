@@ -97,6 +97,10 @@ const distanceLabel = (meters: any) => {
   return `${value.toFixed(value < 10 ? 1 : 0)} mi`;
 };
 const radiusLabel = (meters: number) => `${Math.round(meters / 1609.344)} mi`;
+const looksLikeAddressOrArea = (value: string) => {
+  const query=value.trim();
+  return Boolean(query) && (/\d/.test(query) || /,/.test(query) || /\b\d{5}(?:-\d{4})?\b/.test(query) || /\s[A-Z]{2}$/i.test(query) || /\b(street|road|avenue|boulevard|drive|lane|highway|parkway|court|circle)\b/i.test(query));
+};
 const navigateUrl = (row: any) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${row.latitude},${row.longitude}`)}&travelmode=driving`;
 
@@ -182,6 +186,8 @@ export default function AdaptiveExploreScreen() {
   const [cameraNonce, setCameraNonce] = useState(0);
   const [selectedId, setSelectedId] = useState('');
   const [search, setSearch] = useState('');
+  const [searchAreaOrigin,setSearchAreaOrigin]=useState<[number,number]|null>(null);
+  const [searchAreaLabel,setSearchAreaLabel]=useState('');
   const [radius, setRadius] = useState(8047);
   const [maxRadius, setMaxRadius] = useState(402336);
   const [effectiveRadiusMeters, setEffectiveRadiusMeters] = useState(8047);
@@ -265,6 +271,7 @@ export default function AdaptiveExploreScreen() {
     setRows([]);
     setSelectedId('');
     setRoute(null);
+    if(next==='route'){setSearchAreaOrigin(null);setSearchAreaLabel('');}
     setAttemptedRadiiMeters([]);
     setCached(false);
     setMessage(
@@ -275,9 +282,10 @@ export default function AdaptiveExploreScreen() {
   }
 
   function recenterMap() {
-    if (!origin) return;
+    const target=searchAreaOrigin||origin;
+    if (!target) return;
     setSelectedId('');
-    setMapCenter(origin);
+    setMapCenter(target);
     setMapZoom(13);
     setCameraNonce((value) => value + 1);
   }
@@ -316,16 +324,32 @@ export default function AdaptiveExploreScreen() {
   }
 
   async function loadNearby(clearQuery = false, preserveCacheOnEmpty = false) {
-    const current = await currentLocation();
-    const nextOrigin: [number, number] = [current.coords.longitude, current.coords.latitude];
-    const query = clearQuery ? '' : search.trim();
-    if (clearQuery) setSearch('');
+    const rawQuery=clearQuery?'':search.trim();
+    if(clearQuery){setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');}
+
+    let areaMatch:{origin:[number,number];label:string}|null=null;
+    if(rawQuery&&looksLikeAddressOrArea(rawQuery)){
+      const permission=await Location.requestForegroundPermissionsAsync();
+      if(permission.status!=='granted')throw new Error('Location access is needed to search an address on this device. Enable it in phone settings and try again.');
+      const geocoded=await Location.geocodeAsync(rawQuery);
+      const match=geocoded.find(item=>Number.isFinite(item.latitude)&&Number.isFinite(item.longitude));
+      if(!match)throw new Error(`Kleenest could not locate “${rawQuery}”. Try a fuller street address, city/state, or ZIP.`);
+      areaMatch={origin:[match.longitude,match.latitude],label:rawQuery};
+    }
+
+    const current=areaMatch?null:await currentLocation();
+    const nextOrigin:[number,number]=areaMatch?areaMatch.origin:[Number(current!.coords.longitude),Number(current!.coords.latitude)];
+    const latitude=nextOrigin[1],longitude=nextOrigin[0];
+    const query=areaMatch?'':rawQuery;
+    if(areaMatch){setSearchAreaOrigin(areaMatch.origin);setSearchAreaLabel(areaMatch.label);}
+    else if(rawQuery){setSearchAreaOrigin(null);setSearchAreaLabel('');}
+
     let result: any;
     let usedMatureFallback = false;
     try {
       result = await findAdaptiveNearbyRestrooms({
-        latitude: current.coords.latitude,
-        longitude: current.coords.longitude,
+        latitude,
+        longitude,
         requestedRadiusMeters: radius,
         maxRadiusMeters: maxRadius,
         search: query,
@@ -337,104 +361,50 @@ export default function AdaptiveExploreScreen() {
       });
     } catch (error) {
       if (matchRule !== 'all') throw error;
-      const legacyRows = await listNearbyRestrooms(
-        current.coords.latitude,
-        current.coords.longitude,
-        radius,
-        query,
-        selectedAmenityNames,
-      );
-      result = {
-        rows: legacyRows,
-        requestedRadiusMeters: radius,
-        effectiveRadiusMeters: radius,
-        attemptedRadiiMeters: [radius],
-        expanded: false,
-      };
+      const legacyRows = await listNearbyRestrooms(latitude,longitude,radius,query,selectedAmenityNames);
+      result = { rows: legacyRows, requestedRadiusMeters: radius, effectiveRadiusMeters: radius, attemptedRadiiMeters: [radius], expanded: false };
       usedMatureFallback = true;
     }
 
     const enriched = await enrich(result.rows);
-    if (!enriched.length && preserveCacheOnEmpty && !query && !selectedAmenityNames.length) {
+    if (!areaMatch&&!enriched.length && preserveCacheOnEmpty && !query && !selectedAmenityNames.length) {
       const fallback = await readNearbyCache();
       if (fallback?.rows?.length) {
-        const fallbackSelected = selectedId && fallback.rows.some((row: any) => idOf(row) === selectedId)
-          ? selectedId
-          : '';
-        setRows(fallback.rows);
-        setSelectedId(fallbackSelected);
-        setRoute(null);
-        if (fallback.origin) {
-          setOrigin(fallback.origin);
-          setMapCenter(fallback.origin);
-        }
-        if (fallback.radiusMeters) {
-          setRadius(fallback.radiusMeters);
-          setEffectiveRadiusMeters(fallback.radiusMeters);
-        }
-        setAttemptedRadiiMeters(result.attemptedRadiiMeters || []);
-        setCached(true);
-        setMessage(
-          `Live lookup returned no usable locations on first load. Showing cached nearby results from ${cachedAgeLabel(fallback.savedAt)} while you can refresh for a new live result.`,
-        );
+        const fallbackSelected = selectedId && fallback.rows.some((row: any) => idOf(row) === selectedId) ? selectedId : '';
+        setRows(fallback.rows);setSelectedId(fallbackSelected);setRoute(null);
+        if (fallback.origin) {setOrigin(fallback.origin);setMapCenter(fallback.origin);}
+        if (fallback.radiusMeters) {setRadius(fallback.radiusMeters);setEffectiveRadiusMeters(fallback.radiusMeters);}
+        setAttemptedRadiiMeters(result.attemptedRadiiMeters || []);setCached(true);
+        setMessage(`Live lookup returned no usable locations on first load. Showing cached nearby results from ${cachedAgeLabel(fallback.savedAt)} while you can refresh for a new live result.`);
         return;
       }
     }
+
     const verificationCandidates = enriched.filter((row) => row?.needs_restroom_verification === true).length;
     const restroomEvidence = enriched.length - verificationCandidates;
-    const preservedId = selectedId && enriched.some((row) => idOf(row) === selectedId)
-      ? selectedId
-      : '';
-    setRows(enriched);
-    setRoute(null);
-    setOrigin(nextOrigin);
+    const preservedId = selectedId && enriched.some((row) => idOf(row) === selectedId) ? selectedId : '';
+    setRows(enriched);setRoute(null);
     if (!preservedId) setMapCenter(nextOrigin);
-    setEffectiveRadiusMeters(result.effectiveRadiusMeters);
-    setAttemptedRadiiMeters(result.attemptedRadiiMeters);
-    setCached(false);
-    setSelectedId(preservedId);
+    setEffectiveRadiusMeters(result.effectiveRadiusMeters);setAttemptedRadiiMeters(result.attemptedRadiiMeters);setCached(false);setSelectedId(preservedId);
 
-    captureConsumerDiscovery({
-      latitude: current.coords.latitude,
-      longitude: current.coords.longitude,
-      radiusMeters: result.effectiveRadiusMeters,
-      resultCount: enriched.length,
-      search: query,
-      amenityCount: selectedAmenityNames.length,
-    });
+    captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:enriched.length,search:rawQuery,amenityCount:selectedAmenityNames.length});
 
-    if (!query && !selectedAmenityNames.length && !result.expanded && enriched.length) {
-      void writeNearbyCache(enriched, {
-        selectedId: preservedId,
-        origin: nextOrigin,
-        radiusMeters: radius,
-      });
+    if (!areaMatch&&!query && !selectedAmenityNames.length && !result.expanded && enriched.length) {
+      void writeNearbyCache(enriched,{selectedId:preservedId,origin:nextOrigin,radiusMeters:radius});
     }
 
-    if (usedMatureFallback) {
-      setMessage(
-        enriched.length
-          ? `${enriched.length} nearby bathroom${enriched.length === 1 ? '' : 's'} found using the proven nearby search path while adaptive discovery recovers.`
-          : 'No bathrooms matched the current nearby search.',
-      );
+    if(areaMatch){
+      setMessage(enriched.length
+        ? `${enriched.length} bathroom${enriched.length===1?'':'s'} found while Searching near ${areaMatch.label} within ${radiusLabel(result.effectiveRadiusMeters)}${result.expanded?' after adaptive expansion':''}.`
+        : `No qualifying bathrooms found while Searching near ${areaMatch.label} through ${radiusLabel(result.effectiveRadiusMeters)}.`);
+    } else if (usedMatureFallback) {
+      setMessage(enriched.length?`${enriched.length} nearby bathroom${enriched.length===1?'':'s'} found using the proven nearby search path while adaptive discovery recovers.`:'No bathrooms matched the current nearby search.');
     } else if (result.expanded) {
-      setMessage(
-        enriched.length
-          ? `No sufficient match set within ${radiusLabel(result.requestedRadiusMeters)}. Expanded through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')} and found ${enriched.length} qualifying location${enriched.length === 1 ? '' : 's'}.`
-          : `No qualifying locations found after expanding through ${radiusLabel(result.effectiveRadiusMeters)}.`,
-      );
+      setMessage(enriched.length?`No sufficient match set within ${radiusLabel(result.requestedRadiusMeters)}. Expanded through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')} and found ${enriched.length} qualifying location${enriched.length===1?'':'s'}.`:`No qualifying locations found after expanding through ${radiusLabel(result.effectiveRadiusMeters)}.`);
     } else if (!query && !selectedAmenityNames.length) {
-      setMessage(
-        enriched.length
-          ? `${enriched.length} nearby places within ${radiusLabel(result.effectiveRadiusMeters)} · ${restroomEvidence} with restroom evidence · ${verificationCandidates} need bathroom verification.`
-          : `No nearby places found within ${radiusLabel(result.effectiveRadiusMeters)}.`,
-      );
+      setMessage(enriched.length?`${enriched.length} nearby places within ${radiusLabel(result.effectiveRadiusMeters)} · ${restroomEvidence} with restroom evidence · ${verificationCandidates} need bathroom verification.`:`No nearby places found within ${radiusLabel(result.effectiveRadiusMeters)}.`);
     } else {
-      setMessage(
-        enriched.length
-          ? `${enriched.length} qualifying bathroom${enriched.length === 1 ? '' : 's'} within ${radiusLabel(result.effectiveRadiusMeters)}.`
-          : `No qualifying bathrooms found within ${radiusLabel(result.effectiveRadiusMeters)}.`,
-      );
+      setMessage(enriched.length?`${enriched.length} qualifying bathroom${enriched.length===1?'':'s'} within ${radiusLabel(result.effectiveRadiusMeters)}.`:`No qualifying bathrooms found within ${radiusLabel(result.effectiveRadiusMeters)}.`);
     }
   }
 
@@ -563,7 +533,7 @@ export default function AdaptiveExploreScreen() {
 
   const cameraViewState: any = routeBounds
     ? { bounds: routeBounds, padding: { top: 28, right: 28, bottom: 28, left: 28 } }
-    : { center: mapCenter || origin || [0, 0], zoom: mapZoom };
+    : { center: mapCenter || searchAreaOrigin || origin || [0, 0], zoom: mapZoom };
 
   return (
     <SafeAreaView style={s.safe}>
@@ -610,6 +580,8 @@ export default function AdaptiveExploreScreen() {
             <Text style={s.searchButtonText}>{loading ? 'WORKING…' : 'SEARCH'}</Text>
           </Pressable>
         </View>
+
+        {searchAreaLabel?<View style={s.searchAreaChip}><Text style={s.searchAreaText}>Searching near {searchAreaLabel}</Text><Pressable onPress={()=>{setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');void load({clearQuery:true});}}><Text style={s.searchAreaAction}>Use my location</Text></Pressable></View>:null}
 
         <View style={s.segment} accessibilityRole="tablist">
           <Pressable
@@ -828,7 +800,7 @@ export default function AdaptiveExploreScreen() {
         {cached ? <Text style={s.provenance}>Offline continuity result — refresh for live qualification.</Text> : null}
       </View>
 
-      {origin ? (
+      {(origin||searchAreaOrigin) ? (
         <View style={s.mapSection}>
           <View style={s.mapFrame}>
             <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE}>
@@ -848,11 +820,14 @@ export default function AdaptiveExploreScreen() {
                   />
                 </GeoJSONSource>
               ) : null}
-              <Marker id="kleenest-user-location" lngLat={origin} anchor="center">
+              {origin?<Marker id="kleenest-user-location" lngLat={origin} anchor="center">
                 <View accessibilityLabel="Your current location" style={s.userLocationRing}>
                   <View style={s.userLocationDot} />
                 </View>
-              </Marker>
+              </Marker>:null}
+              {searchAreaOrigin?<Marker id="searched-area-marker" lngLat={searchAreaOrigin} anchor="center">
+                <View accessibilityLabel={`Search area: ${searchAreaLabel}`} style={s.searchedAreaMarker}><Text style={s.searchedAreaMarkerText}>◎</Text></View>
+              </Marker>:null}
               {rows.filter(hasCoordinates).map((row) => {
                 const id = idOf(row);
                 const active = id === selectedId;
@@ -890,7 +865,7 @@ export default function AdaptiveExploreScreen() {
               <Pressable accessibilityRole="button" accessibilityLabel="Zoom map out" style={s.mapControl} onPress={() => changeMapZoom(-1)}>
                 <Text style={s.mapControlText}>−</Text>
               </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel="Center map on my location" style={s.mapControl} onPress={recenterMap}>
+              <Pressable accessibilityRole="button" accessibilityLabel={searchAreaOrigin?'Center map on searched area':'Center map on my location'} style={s.mapControl} onPress={recenterMap}>
                 <Text style={s.mapControlText}>⌖</Text>
               </Pressable>
             </View>
@@ -1032,6 +1007,8 @@ const s = StyleSheet.create({
   locateIcon: { fontSize: 16, fontWeight: '900', color: palette.green },
   locateText: { fontSize: 8, fontWeight: '900', color: palette.green },
   searchPanel: { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 5, gap: 5 },
+  searchAreaChip:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,backgroundColor:'#e8f1eb',borderRadius:11,paddingHorizontal:10,paddingVertical:7},
+  searchAreaText:{flex:1,fontSize:10,fontWeight:'900',color:palette.green},searchAreaAction:{fontSize:9,fontWeight:'900',color:palette.green,textDecorationLine:'underline'},
   segment: { flexDirection: 'row', padding: 3, borderRadius: 12, backgroundColor: '#e8efea' },
   segmentButton: { flex: 1, minHeight: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   segmentActive: { backgroundColor: palette.green },
@@ -1092,6 +1069,7 @@ const s = StyleSheet.create({
   map: { flex: 1 },
   userLocationRing: { width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(32,106,69,.2)', alignItems: 'center', justifyContent: 'center' },
   userLocationDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: palette.green, borderWidth: 2, borderColor: '#fff' },
+  searchedAreaMarker:{width:30,height:30,borderRadius:15,backgroundColor:'#fff',borderWidth:3,borderColor:'#986c20',alignItems:'center',justifyContent:'center'},searchedAreaMarkerText:{fontSize:18,fontWeight:'900',color:'#986c20'},
   marker: { minWidth: 42, minHeight: 42, borderRadius: 21, backgroundColor: '#fff', borderWidth: 2, borderColor: palette.green, alignItems: 'center', justifyContent: 'center', padding: 4 },
   markerActive: { borderWidth: 4, transform: [{ scale: 1.1 }] },
   mapBadge: { position: 'absolute', top: 9, left: 9, borderRadius: 999, backgroundColor: 'rgba(23,61,43,.9)', paddingHorizontal: 9, paddingVertical: 6 },

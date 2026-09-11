@@ -3,13 +3,20 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { currentFleetBusinessId } from '../services/control';
+import { getFleetOnboardingGate } from '../services/onboarding';
+
+const ONBOARDING_BYPASS=new Set(['onboarding','workspaces','support','terms','privacy','account']);
 
 export default function Layout(){
   const router=useRouter();
   const segments=useSegments();
   const[ready,setReady]=useState(false);
+  const[gateReady,setGateReady]=useState(false);
   const[signedIn,setSignedIn]=useState(false);
-  const onAuthRoute=segments[0]==='auth';
+  const[onboardingRequired,setOnboardingRequired]=useState(false);
+  const activeRoute=String(segments[0]||'');
+  const onAuthRoute=activeRoute==='auth';
 
   useEffect(()=>{
     let active=true;
@@ -21,13 +28,34 @@ export default function Layout(){
 
   useEffect(()=>{
     if(!ready)return;
-    if(!signedIn&&!onAuthRoute)router.replace('/auth');
-    else if(signedIn&&onAuthRoute)router.replace('/');
-  },[ready,signedIn,onAuthRoute,router]);
+    let active=true;
+    if(!signedIn){
+      setOnboardingRequired(false);setGateReady(true);
+      if(!onAuthRoute)router.replace('/auth');
+      return()=>{active=false};
+    }
+    setGateReady(false);
+    void (async()=>{
+      try{
+        const businessId=await currentFleetBusinessId();
+        const gate=await getFleetOnboardingGate(businessId);
+        if(!active)return;
+        const required=Boolean(gate?.required);
+        setOnboardingRequired(required);setGateReady(true);
+        if(required&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');
+        else if(onAuthRoute)router.replace(required?'/onboarding':'/');
+      }catch{
+        if(!active)return;
+        setOnboardingRequired(false);setGateReady(true);
+        if(onAuthRoute)router.replace('/');
+      }
+    })();
+    return()=>{active=false};
+  },[ready,signedIn,onAuthRoute,router,activeRoute]);
 
-  if(!ready)return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:'#f3f6f4'}}><ActivityIndicator size="large"/></View>;
+  if(!ready||(signedIn&&!gateReady))return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:'#f3f6f4'}}><ActivityIndicator size="large"/></View>;
 
-  return <><StatusBar style="dark"/><Tabs screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute?{display:'none'}:undefined}}>
+  return <><StatusBar style="dark"/><Tabs screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired?{display:'none'}:undefined}}>
     <Tabs.Screen name="index" options={{title:'Home'}}/>
     <Tabs.Screen name="planner" options={{title:'Planner'}}/>
     <Tabs.Screen name="dispatch" options={{title:'Dispatch'}}/>

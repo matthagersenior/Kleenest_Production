@@ -31,7 +31,7 @@ if(!failures.length){
  if(core.includes("p_category:null,p_search"))failures.push('Consumer restroom discovery must not become unrestricted category discovery.');
  if(!core.includes('amenityNames:string[]=[]')||!core.includes('p_amenity_names:names.length?names:null'))failures.push('Mobile discovery must carry amenity names to canonical nearby authority.');
  if(!explore.includes('listAmenityCatalog')||!explore.includes('selectedAmenityNames'))failures.push('Explore must consume canonical amenity filters.');
- if(!/listNearbyRestrooms\(current\.coords\.latitude,current\.coords\.longitude,radius,query,selectedAmenityNames,?\)/.test(exploreCompact))failures.push('Explore must preserve the proven nearby-restroom fallback with radius/search/amenity inputs.');
+ if(!/listNearbyRestrooms\((?:current\.coords\.latitude,?current\.coords\.longitude|latitude,longitude),radius,query,selectedAmenityNames,?\)/.test(exploreCompact))failures.push('Explore must preserve the proven nearby-restroom fallback with current- or searched-area coordinates plus radius/search/amenity inputs.');
  if(!exploreCompact.includes('canUseGenericCache=!search.trim()&&!selectedAmenityNames.length'))failures.push('Unfiltered cached results must never masquerade as filtered live results.');
  if(!explore.includes('getLastKnownPositionAsync'))failures.push('Explore first-load location acquisition must fall back to the last known device position when a fresh fix transiently fails.');
  if(!explore.includes('preserveCacheOnEmpty'))failures.push('Explore first load must preserve a useful nearby cache instead of replacing it with a transient empty live response.');
