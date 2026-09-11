@@ -124,6 +124,8 @@ jobs:
         run: node scripts/fleet-adhoc-stop-geofence-intelligence-audit.mjs
       - name: Stateful real-world demo loops
         run: node scripts/stateful-real-world-demo-loop-audit.mjs
+      - name: Onboarding navigation stability
+        run: node scripts/onboarding-navigation-bounce-audit.mjs
       - name: OTA family authority
         run: node scripts/ota-family-authority-audit.mjs
       - name: Fleet authority
