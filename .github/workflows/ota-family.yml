@@ -2,6 +2,10 @@ name: Publish Kleenest App Family OTA
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - releases/family-ota.txt
 
 permissions:
   contents: read
@@ -27,6 +31,8 @@ jobs:
           node scripts/repo-hygiene-audit.mjs
           node scripts/product-parity-audit.mjs
           node scripts/app-family-critical-path-audit.mjs
+          node scripts/business-onboarding-tier-authority-audit.mjs
+          node scripts/ota-family-authority-audit.mjs
           npm run native:typecheck
           npm run operator:typecheck
 
@@ -91,4 +97,4 @@ jobs:
           NODE
       - name: Publish verified OTA update
         working-directory: ${{ matrix.directory }}
-        run: npx eas-cli@latest update --channel "${{ matrix.channel }}" --message "${{ matrix.app }} ${GITHUB_SHA}" --non-interactive
+        run: npx eas-cli@latest update --channel "${{ matrix.channel }}" --message "${{ matrix.app }} ${GITHUB_SHA}" --environment production --non-interactive
