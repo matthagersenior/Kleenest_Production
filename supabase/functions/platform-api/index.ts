@@ -33,21 +33,24 @@ function json(body: unknown, status = 200, extraHeaders: HeadersInit = {}) {
   });
 }
 
-function message(error: unknown) {
-  return error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? error);
+class ApiInputError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ApiInputError';
+  }
 }
 
 function boundedNumber(value: unknown, min: number, max: number, fallback?: number): number {
   const parsed = Number(value ?? fallback);
   if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
-    throw new Error(`Value must be between ${min} and ${max}`);
+    throw new ApiInputError(`Value must be between ${min} and ${max}`);
   }
   return parsed;
 }
 
 function coordinate(value: unknown, min: number, max: number, name: string): number {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < min || parsed > max) throw new Error(`${name} is invalid`);
+  if (!Number.isFinite(parsed) || parsed < min || parsed > max) throw new ApiInputError(`${name} is invalid`);
   return parsed;
 }
 
@@ -200,7 +203,7 @@ async function nearby(body: any) {
 async function route(body: any) {
   const geometry = body?.route;
   if (!geometry || geometry.type !== 'LineString' || !Array.isArray(geometry.coordinates) || geometry.coordinates.length < 2 || geometry.coordinates.length > 5000) {
-    throw new Error('route must be a LineString with 2 to 5000 coordinates');
+    throw new ApiInputError('route must be a LineString with 2 to 5000 coordinates');
   }
   const corridorMeters = Math.round(boundedNumber(body?.corridorMeters, 100, 40234, 8047));
   const limit = Math.round(boundedNumber(body?.limit, 1, 50, 10));
@@ -251,6 +254,8 @@ Deno.serve(async req => {
     }
     return json({ error: 'Not found' }, 404);
   } catch (error) {
-    return json({ error: message(error) }, 400);
+    if (error instanceof ApiInputError) return json({ error: error.message }, 400);
+    console.error('Kleenest Platform API request failed', error instanceof Error ? error.name : 'unknown_error');
+    return json({ error: 'Internal server error' }, 500);
   }
 });
