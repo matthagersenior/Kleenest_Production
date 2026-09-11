@@ -4,7 +4,7 @@ const client=()=>getKleenestSupabaseClient();async function rpc(name:string,args
 const WORKSPACE_KEY='kleenest.fleet.selected_workspace.v1';
 type FleetWorkspaceChangeListener=(businessId:string)=>void;
 const fleetWorkspaceChangeListeners=new Set<FleetWorkspaceChangeListener>();
-export function subscribeFleetWorkspaceChange(listener:FleetWorkspaceChangeListener){fleetWorkspaceChangeListeners.add(listener);return()=>fleetWorkspaceChangeListeners.delete(listener);}
+export function subscribeFleetWorkspaceChange(listener:FleetWorkspaceChangeListener){fleetWorkspaceChangeListeners.add(listener);return()=>{fleetWorkspaceChangeListeners.delete(listener);};}
 export function emitFleetWorkspaceChange(businessId:string){for(const listener of fleetWorkspaceChangeListeners)listener(businessId);}
 export async function listFleetWorkspaceOptions(){const rows:any[]=(await rpc('business_list_workspaces',{p_include_demo:true}))||[];const checked=await Promise.all(rows.map(async row=>{const id=String(row.business_id||'');try{const allowed=Boolean(await rpc('business_fleet_authorized',{p_business_id:id}));return allowed?row:null}catch{return null}}));return checked.filter(Boolean) as any[];}
 export async function selectFleetWorkspace(businessId:string){const rows=await listFleetWorkspaceOptions();if(!rows.some(row=>String(row.business_id)===businessId))throw new Error('That Fleet workspace is not enabled for this account.');await SecureStore.setItemAsync(WORKSPACE_KEY,businessId);emitFleetWorkspaceChange(businessId);return businessId;}
