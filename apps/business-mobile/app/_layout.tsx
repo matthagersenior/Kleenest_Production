@@ -43,6 +43,8 @@ export default function Layout() {
     <Tabs.Screen name="analytics" options={{title:'Analytics'}}/>
     <Tabs.Screen name="auth" options={{href:null,title:'Sign in',headerShown:false}}/>
     <Tabs.Screen name="workspaces" options={{href:null,title:'Workspaces'}}/>
+    <Tabs.Screen name="onboarding" options={{href:null,title:'Onboarding'}}/>
+    <Tabs.Screen name="demo" options={{href:null,title:'Guided Demo'}}/>
     <Tabs.Screen name="profile" options={{href:null,title:'Profile'}}/>
     <Tabs.Screen name="members" options={{href:null,title:'People & Roles'}}/>
     <Tabs.Screen name="assistant" options={{href:null,title:'Kleenest AI'}}/>
