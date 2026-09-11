@@ -77,4 +77,4 @@ jobs:
           NODE
       - name: Publish verified Consumer OTA update
         working-directory: apps/consumer-mobile
-        run: npx eas-cli@latest update --channel consumer-production --message "Consumer ${GITHUB_SHA}" --non-interactive
+        run: npx eas-cli@latest update --channel consumer-production --message "Consumer ${GITHUB_SHA}" --environment production --non-interactive
