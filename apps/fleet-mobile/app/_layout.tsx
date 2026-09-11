@@ -15,7 +15,8 @@ export default function Layout(){
   const[gateReady,setGateReady]=useState(false);
   const[signedIn,setSignedIn]=useState(false);
   const[onboardingRequired,setOnboardingRequired]=useState(false);
-  const onAuthRoute=segments[0]==='auth';
+  const activeRoute=String(segments[0]||'');
+  const onAuthRoute=activeRoute==='auth';
 
   useEffect(()=>{
     let active=true;
@@ -41,8 +42,7 @@ export default function Layout(){
         if(!active)return;
         const required=Boolean(gate?.required);
         setOnboardingRequired(required);setGateReady(true);
-        const route=String(segments[0]||'');
-        if(required&&!ONBOARDING_BYPASS.has(route))router.replace('/onboarding');
+        if(required&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');
         else if(onAuthRoute)router.replace(required?'/onboarding':'/');
       }catch{
         if(!active)return;
@@ -51,7 +51,7 @@ export default function Layout(){
       }
     })();
     return()=>{active=false};
-  },[ready,signedIn,onAuthRoute,router,segments]);
+  },[ready,signedIn,onAuthRoute,router,activeRoute]);
 
   if(!ready||(signedIn&&!gateReady))return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:'#f3f6f4'}}><ActivityIndicator size="large"/></View>;
 
