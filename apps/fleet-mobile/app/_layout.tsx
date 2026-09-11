@@ -16,7 +16,7 @@ export default function Layout(){
   const[signedIn,setSignedIn]=useState(false);
   const[onboardingRequired,setOnboardingRequired]=useState(false);
   const[workspaceRevision,setWorkspaceRevision]=useState(0);
-  const activeRoute=String(segments[0]||'');
+  const activeRoute=String(segments.at(-1)||'');
   const onAuthRoute=activeRoute==='auth';
 
   useEffect(()=>{
@@ -33,28 +33,40 @@ export default function Layout(){
     if(!ready)return;
     let active=true;
     if(!signedIn){
-      setOnboardingRequired(false);setGateReady(true);
-      if(!onAuthRoute)router.replace('/auth');
+      setOnboardingRequired(false);
+      setGateReady(true);
       return()=>{active=false};
     }
+
     setGateReady(false);
     void (async()=>{
       try{
         const businessId=await currentFleetBusinessId();
         const gate=await getFleetOnboardingGate(businessId);
         if(!active)return;
-        const required=Boolean(gate?.required);
-        setOnboardingRequired(required);setGateReady(true);
-        if(required&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');
-        else if(onAuthRoute)router.replace(required?'/onboarding':'/');
+        setOnboardingRequired(Boolean(gate?.required));
       }catch{
         if(!active)return;
-        setOnboardingRequired(false);setGateReady(true);
-        if(onAuthRoute)router.replace('/');
+        setOnboardingRequired(false);
+      }finally{
+        if(active)setGateReady(true);
       }
     })();
     return()=>{active=false};
-  },[ready,signedIn,onAuthRoute,router,activeRoute,workspaceRevision]);
+  },[ready,signedIn,workspaceRevision]);
+
+  useEffect(()=>{
+    if(!ready||!gateReady)return;
+    if(!signedIn){
+      if(!onAuthRoute)router.replace('/auth');
+      return;
+    }
+    if(onAuthRoute){
+      router.replace(onboardingRequired?'/onboarding':'/');
+      return;
+    }
+    if(onboardingRequired&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');
+  },[ready,gateReady,signedIn,onboardingRequired,onAuthRoute,activeRoute,router]);
 
   if(!ready||(signedIn&&!gateReady))return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:'#f3f6f4'}}><ActivityIndicator size="large"/></View>;
 
