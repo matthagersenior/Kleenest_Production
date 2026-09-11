@@ -40,6 +40,20 @@ for(const token of ['business_onboarding_catalog','business_onboarding_preview',
 for(const type of contract.onboarding.businessTypes) if(!businessOnboarding.includes(type)) failures.push('Business onboarding UI missing type '+type);
 for(const goal of contract.onboarding.goals) if(!businessOnboarding.includes(goal.id)) failures.push('Business onboarding UI missing goal '+goal.id);
 
+const businessLayout=read('apps/business-mobile/app/_layout.tsx');
+const businessHome=read('apps/business-mobile/app/index.tsx');
+const fleetLayout=read('apps/fleet-mobile/app/_layout.tsx');
+const fleetHome=read('apps/fleet-mobile/app/index.tsx');
+const fleetControl=read('apps/fleet-mobile/services/control.ts');
+const fleetWorkspaces=read('apps/fleet-mobile/app/workspaces.tsx');
+for(const token of ['name="onboarding"','name="demo"']) if(!businessLayout.includes(token)) failures.push('Business navigation missing '+token);
+for(const token of ['/onboarding','/demo']) if(!businessHome.includes(token)) failures.push('Business home missing '+token);
+for(const token of ['name="onboarding"','name="demo"']) if(!fleetLayout.includes(token)) failures.push('Fleet navigation missing '+token);
+for(const token of ['/onboarding','/demo']) if(!fleetHome.includes(token)) failures.push('Fleet home missing '+token);
+if(!fleetControl.includes("p_include_demo:true")) failures.push('Fleet managed demo workspaces are not discoverable');
+if(!fleetControl.includes("is_demo_test?-100000")) failures.push('Fleet demo workspaces are not strongly de-prioritized for automatic selection');
+if(!fleetWorkspaces.includes("DEMO")) failures.push('Fleet workspace selector does not visibly label demo workspaces');
+
 const planRank={standard:0,growth:1,fleet:2,enterprise:3};
 for(const c of contract.onboarding.cases){
   const goalPlans=c.goals.map(id=>contract.onboarding.goals.find(g=>g.id===id)?.minimumPlan||'standard');
