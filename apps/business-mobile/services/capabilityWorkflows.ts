@@ -4,9 +4,13 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 const client=()=>getKleenestSupabaseClient();
 async function rpc(name:string,args:Record<string,unknown>={}){const{data,error}=await client().rpc(name,args);if(error)throw error;return data;}
 const WORKSPACE_KEY='kleenest.business.selected_workspace.v1';
+type BusinessWorkspaceChangeListener=(businessId:string)=>void;
+const businessWorkspaceChangeListeners=new Set<BusinessWorkspaceChangeListener>();
+export function subscribeBusinessWorkspaceChange(listener:BusinessWorkspaceChangeListener){businessWorkspaceChangeListeners.add(listener);return()=>{businessWorkspaceChangeListeners.delete(listener);};}
+export function emitBusinessWorkspaceChange(businessId:string){for(const listener of businessWorkspaceChangeListeners)listener(businessId);}
 export async function listBusinessWorkspaceOptions(){return ((await rpc('business_list_workspaces',{p_include_demo:true}))||[]) as any[];}
 async function productAccess(businessId:string){const rows:any[]=(await rpc('get_business_product_access',{p_business_id:businessId}))||[];return rows[0]||null;}
-export async function selectBusinessWorkspace(businessId:string){const rows=await listBusinessWorkspaceOptions();if(!rows.some(row=>String(row.business_id)===businessId))throw new Error('That Business workspace is not available to this account.');await SecureStore.setItemAsync(WORKSPACE_KEY,businessId);return businessId;}
+export async function selectBusinessWorkspace(businessId:string){const rows=await listBusinessWorkspaceOptions();if(!rows.some(row=>String(row.business_id)===businessId))throw new Error('That Business workspace is not available to this account.');await SecureStore.setItemAsync(WORKSPACE_KEY,businessId);emitBusinessWorkspaceChange(businessId);return businessId;}
 export async function currentBusinessId(){
   const rows=await listBusinessWorkspaceOptions();
   if(!rows.length)throw new Error('No managed Business workspace is available for this account.');
