@@ -9,7 +9,7 @@ for(const path of ['apps/business-mobile/app/_layout.tsx','apps/fleet-mobile/app
   if(!src.includes("},[ready,gateReady,signedIn,onboardingRequired,onAuthRoute,activeRoute,router]);"))failures.push(path+' must enforce routing in a separate effect');
   if(src.includes("setGateReady(false);\n    void (async()=>")&&src.includes("activeRoute,workspaceRevision"))failures.push(path+' still tears down navigator on route changes');
   if(!src.includes("if(onboardingRequired&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');"))failures.push(path+' must retain mandatory onboarding enforcement');
-  if(!src.includes("if(onAuthRoute)router.replace(onboardingRequired?'/onboarding':'/');"))failures.push(path+' must retain post-auth routing');
+  if(!/if\s*\(onAuthRoute\)\s*\{?[\s\S]{0,120}?router\.replace\(onboardingRequired\?'\/onboarding':'\/'\)/.test(src))failures.push(path+' must retain post-auth routing');
 }
 if(failures.length){
  console.error('Onboarding navigation bounce audit failed:');
