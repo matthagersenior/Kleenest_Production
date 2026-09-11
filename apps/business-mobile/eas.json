@@ -1,1 +1,37 @@
-{"cli":{"version":">= 16.0.0","appVersionSource":"remote"},"build":{"candidate":{"distribution":"internal","autoIncrement":true,"env":{"KLEENEST_RELEASE_CHANNEL":"candidate"},"android":{"buildType":"apk"}},"production":{"distribution":"store","autoIncrement":true,"env":{"KLEENEST_RELEASE_CHANNEL":"production"},"android":{"buildType":"app-bundle"}}},"submit":{"production":{"android":{}}}}
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "candidate": {
+      "distribution": "internal",
+      "autoIncrement": true,
+      "env": {
+        "KLEENEST_RELEASE_CHANNEL": "candidate",
+        "EXPO_PUBLIC_OTA_CHANNEL": "business-candidate"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "channel": "business-candidate"
+    },
+    "production": {
+      "distribution": "store",
+      "autoIncrement": true,
+      "env": {
+        "KLEENEST_RELEASE_CHANNEL": "production",
+        "EXPO_PUBLIC_OTA_CHANNEL": "business-production"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "channel": "business-production"
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {}
+    }
+  }
+}
