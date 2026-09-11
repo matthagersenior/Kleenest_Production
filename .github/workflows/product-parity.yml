@@ -53,6 +53,8 @@ jobs:
         run: node scripts/fleet-adhoc-stop-geofence-intelligence-audit.mjs
       - name: Verify stateful real-world demo loops
         run: node scripts/stateful-real-world-demo-loop-audit.mjs
+      - name: Verify onboarding navigation stability
+        run: node scripts/onboarding-navigation-bounce-audit.mjs
       - name: Verify OTA family authority
         run: node scripts/ota-family-authority-audit.mjs
       - name: Typecheck Consumer
