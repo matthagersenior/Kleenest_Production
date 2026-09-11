@@ -120,6 +120,8 @@ jobs:
         run: node scripts/business-fleet-onboarding-portfolio-home-audit.mjs
       - name: Business Home mobile card polish
         run: node scripts/business-home-mobile-card-polish-audit.mjs
+      - name: Fleet ad-hoc stop and geofence intelligence
+        run: node scripts/fleet-adhoc-stop-geofence-intelligence-audit.mjs
       - name: OTA family authority
         run: node scripts/ota-family-authority-audit.mjs
       - name: Fleet authority
