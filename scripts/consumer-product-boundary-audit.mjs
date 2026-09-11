@@ -47,7 +47,8 @@ if(!failures.length){
  const layout=fs.readFileSync('apps/consumer-mobile/app/_layout.tsx','utf8');
  const location=fs.readFileSync('apps/consumer-mobile/app/location/[id].tsx','utf8');
  const core=fs.readFileSync('packages/mobile-core/src/index.ts','utf8');
- for(const token of ["'/explore'",'Find a better bathroom','THE KLEENEST LOOP','Community discovery','XP + levels','YOUR NETWORK','Add a missing place'])if(!home.includes(token))failures.push(`Consumer Home missing discovery/progression behavior: ${token}`);
+ for(const token of ["'/explore'",'Find a bathroom','homePrimaryCta','SCAN QR','CHECK IN / REVIEW','THE KLEENEST LOOP','XP + levels','YOUR NETWORK','Add a missing place'])if(!home.includes(token))failures.push(`Consumer Home missing discovery/progression behavior: ${token}`);
+ for(const token of ['Location.geocodeAsync','looksLikeAddressOrArea','searchAreaOrigin','searched-area-marker'])if(!explore.includes(token))failures.push(`Consumer Explore missing address-origin discovery behavior: ${token}`);
  if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Consumer Explore route must delegate to the canonical adaptive discovery screen.');
  for(const token of ['findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','listAmenityCatalog','selectedAmenityNames','Must include all','Include any','Expand for required amenities','Maximum distance','Along route','Full details','Add to route','captureConsumerDiscovery','captureConsumerRouteIntent','readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Consumer discovery missing mature capability: ${token}`);
  if(!explore.includes('navigateUrl')||!explore.includes('Linking.openURL')||!explore.includes('Start directions'))failures.push('Consumer discovery missing mature capability: directions');
