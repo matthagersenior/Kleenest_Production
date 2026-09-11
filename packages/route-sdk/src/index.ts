@@ -1,9 +1,13 @@
-import type { KleenestClient } from '@kleenest/sdk-js';
 import type {
   LineStringGeometry,
   RecommendationRequirements,
   RecommendationResponse,
+  RouteRecommendationRequest,
 } from '@kleenest/platform-core';
+
+export type RouteRecommendationTransport = {
+  recommendRoute(input: RouteRecommendationRequest): Promise<RecommendationResponse>;
+};
 
 export type RouteStopOptions = {
   route: LineStringGeometry;
@@ -14,10 +18,10 @@ export type RouteStopOptions = {
 };
 
 export class KleenestRouteClient {
-  constructor(private readonly client: KleenestClient) {}
+  constructor(private readonly transport: RouteRecommendationTransport) {}
 
   findStops(options: RouteStopOptions): Promise<RecommendationResponse> {
-    return this.client.recommendRoute({
+    return this.transport.recommendRoute({
       route: options.route,
       corridorMeters: options.corridorMeters ?? 8047,
       requirements: options.requirements,
