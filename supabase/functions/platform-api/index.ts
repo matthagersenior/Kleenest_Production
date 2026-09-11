@@ -158,7 +158,7 @@ function partner(req: Request): string | null {
     ?? req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
     ?? '';
   if (!supplied) return null;
-  const value = apiKeys()[supplied];
+  const value = Object.entries(apiKeys()).find(([key]) => key === supplied)?.[1];
   if (!value) return null;
   if (typeof value === 'string') return value;
   return String(value.partnerId ?? 'partner');
