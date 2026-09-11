@@ -97,7 +97,10 @@ const distanceLabel = (meters: any) => {
   return `${value.toFixed(value < 10 ? 1 : 0)} mi`;
 };
 const radiusLabel = (meters: number) => `${Math.round(meters / 1609.344)} mi`;
-const looksLikeAddressOrArea = (value: string) => {\n  const query=value.trim();\n  return Boolean(query) && (/\\d/.test(query) || /,/.test(query) || /\\b\\d{5}(?:-\\d{4})?\\b/.test(query) || /\\b[A-Z]{2}\\b/i.test(query) || /\\b(street|road|avenue|boulevard|drive|lane|highway|parkway|court|circle)\\b/i.test(query));\n};
+const looksLikeAddressOrArea = (value: string) => {
+  const query=value.trim();
+  return Boolean(query) && (/\d/.test(query) || /,/.test(query) || /\b\d{5}(?:-\d{4})?\b/.test(query) || /\s[A-Z]{2}$/i.test(query) || /\b(street|road|avenue|boulevard|drive|lane|highway|parkway|court|circle)\b/i.test(query));
+};
 const navigateUrl = (row: any) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${row.latitude},${row.longitude}`)}&travelmode=driving`;
 
