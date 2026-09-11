@@ -47,6 +47,25 @@ requireTokens('apps/fleet-mobile/app/index.tsx',[
   'ONBOARDING IN PROGRESS'
 ]);
 
+requireTokens('apps/business-mobile/services/capabilityWorkflows.ts',[
+  'subscribeBusinessWorkspaceChange',
+  'emitBusinessWorkspaceChange'
+]);
+requireTokens('apps/business-mobile/app/_layout.tsx',[
+  'subscribeBusinessWorkspaceChange',
+  'workspaceRevision',
+  'key={`business-workspace-${workspaceRevision}`}'
+]);
+requireTokens('apps/fleet-mobile/services/control.ts',[
+  'subscribeFleetWorkspaceChange',
+  'emitFleetWorkspaceChange'
+]);
+requireTokens('apps/fleet-mobile/app/_layout.tsx',[
+  'subscribeFleetWorkspaceChange',
+  'workspaceRevision',
+  'key={`fleet-workspace-${workspaceRevision}`}'
+]);
+
 if(failures.length){
   console.error('Business/Fleet onboarding portfolio home audit failed:');
   for(const failure of failures)console.error('- '+failure);
