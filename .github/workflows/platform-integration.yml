@@ -61,7 +61,7 @@ jobs:
         shell: bash
         run: |
           if [ -f supabase/functions/platform-api/index.ts ]; then
-            deno check supabase/functions/platform-api/index.ts
+            deno check --node-modules-dir=auto supabase/functions/platform-api/index.ts
           fi
       - name: MCP server typecheck
         shell: bash
