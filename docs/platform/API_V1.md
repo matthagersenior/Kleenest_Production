@@ -1,5 +1,7 @@
 # Kleenest REST API v1
 
+> External production release is blocked until bootstrap API-key storage is replaced by durable partner credentials, quotas, and usage accounting.
+
 The REST API exposes Kleenest restroom intelligence to partner backends and approved client integrations.
 
 ## Authentication
