@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "demoScenarios": [
+    {
+      "id": "growth",
+      "workspace": "Downtown Coffee & Market",
+      "tier": "growth",
+      "markers": [
+        "demo_growth_visit_campaign",
+        "demo_growth_qr",
+        "demo_growth_review_signal"
+      ],
+      "surfaces": [
+        "/locations",
+        "/growth",
+        "/qr-studio",
+        "/reviews",
+        "/analytics",
+        "/intelligence"
+      ]
+    },
+    {
+      "id": "fleet",
+      "workspace": "Kleenest Demo Fleet",
+      "tier": "fleet",
+      "markers": [
+        "demo_fleet_route",
+        "demo_fleet_stop",
+        "demo_fleet_alert"
+      ],
+      "surfaces": [
+        "/assets",
+        "/planner",
+        "/dispatch",
+        "/execution",
+        "/signals",
+        "/operations",
+        "/insights"
+      ]
+    },
+    {
+      "id": "enterprise",
+      "workspace": "Matt Test Business",
+      "tier": "enterprise",
+      "markers": [
+        "enterprise_truth_demo",
+        "enterprise_truth_route_active",
+        "enterprise_truth_allocation"
+      ],
+      "surfaces": [
+        "/enterprise-locations",
+        "/enterprise",
+        "/enterprise-economy",
+        "/operations",
+        "/analytics"
+      ]
+    }
+  ],
+  "onboarding": {
+    "businessTypes": [
+      "restaurant_cafe",
+      "retail",
+      "fuel_travel",
+      "hospitality",
+      "healthcare_public",
+      "logistics_delivery",
+      "field_service",
+      "multi_location_chain",
+      "venue_entertainment",
+      "other"
+    ],
+    "goals": [
+      {
+        "id": "restroom_trust",
+        "minimumPlan": "standard"
+      },
+      {
+        "id": "verified_feedback",
+        "minimumPlan": "standard"
+      },
+      {
+        "id": "increase_visits",
+        "minimumPlan": "growth"
+      },
+      {
+        "id": "loyalty_repeat",
+        "minimumPlan": "growth"
+      },
+      {
+        "id": "promotions_events",
+        "minimumPlan": "growth"
+      },
+      {
+        "id": "multi_location_consistency",
+        "minimumPlan": "growth"
+      },
+      {
+        "id": "reduce_downtime",
+        "minimumPlan": "growth"
+      },
+      {
+        "id": "route_efficiency",
+        "minimumPlan": "fleet"
+      },
+      {
+        "id": "workforce_wellbeing",
+        "minimumPlan": "fleet"
+      },
+      {
+        "id": "service_verification",
+        "minimumPlan": "fleet"
+      },
+      {
+        "id": "partner_network",
+        "minimumPlan": "enterprise"
+      },
+      {
+        "id": "multi_market_roi",
+        "minimumPlan": "enterprise"
+      }
+    ],
+    "cases": [
+      {
+        "businessType": "restaurant_cafe",
+        "goals": [
+          "increase_visits",
+          "verified_feedback"
+        ],
+        "recommendedPlan": "growth"
+      },
+      {
+        "businessType": "logistics_delivery",
+        "goals": [
+          "route_efficiency",
+          "workforce_wellbeing"
+        ],
+        "recommendedPlan": "fleet"
+      },
+      {
+        "businessType": "multi_location_chain",
+        "goals": [
+          "partner_network",
+          "multi_market_roi"
+        ],
+        "recommendedPlan": "enterprise"
+      },
+      {
+        "businessType": "retail",
+        "goals": [
+          "restroom_trust"
+        ],
+        "recommendedPlan": "standard"
+      }
+    ]
+  }
+}
