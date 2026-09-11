@@ -20,7 +20,7 @@ if(!failures.length){
  const preservesLiveSelected=/selectedId\s*&&\s*enriched\.some/.test(explore)&&explore.includes('setSelectedId(preservedId)');
  const hydratesCachedRows=explore.includes('setRows(cache.rows)')&&explore.includes('setCached(true)');
  const avoidsHydratedSelection=!/setSelectedId\([^\n;]*cache(?:\.|\?\.)selectedId/.test(explore)&&!explore.includes('setSelectedId(continuity.selectedId)');
- const rendersMapFromCoordinates=/\{origin\s*\?\s*\(/.test(explore)||/const\s+mapVisible\s*=\s*Boolean\(origin/.test(explore);
+ const rendersMapFromCoordinates=/\{\(?origin\s*\|\|\s*searchAreaOrigin\)?\s*\?\s*\(/.test(explore)||/\{origin\s*\?\s*\(/.test(explore)||/const\s+mapVisible\s*=\s*Boolean\(origin/.test(explore);
  if(!preservesLiveSelected||!hydratesCachedRows||!avoidsHydratedSelection||!rendersMapFromCoordinates)failures.push('Explore must preserve an explicit in-session selection during live refresh, reopen cached map context without auto-selecting a restroom, and render the map when coordinates are available.');
  if(!/writeNearbyCache\(enriched,\s*\{[\s\S]*?selectedId:\s*preservedId,[\s\S]*?origin:\s*nextOrigin,[\s\S]*?radiusMeters:\s*radius[\s\S]*?\}\)/.test(explore))failures.push('Live generic discovery must persist the last-good result context atomically.');
  if(!explore.includes("Live lookup failed. Showing cached bathrooms")||!explore.includes("pull to refresh"))failures.push('Explore must clearly distinguish cached fallback from live discovery and expose recovery.');
