@@ -1,0 +1,72 @@
+name: Platform Integration CI
+
+on:
+  push:
+    branches:
+      - "platform/**"
+    paths:
+      - "packages/platform-core/**"
+      - "packages/sdk-js/**"
+      - "packages/map-layer/**"
+      - "packages/widget/**"
+      - "packages/route-sdk/**"
+      - "packages/webhook-types/**"
+      - "supabase/functions/platform-api/**"
+      - "mcp/kleenest-mcp/**"
+      - "docs/platform/**"
+      - "scripts/platform-integration-contract-audit.mjs"
+      - "tsconfig.platform.json"
+      - "package-lock.json"
+      - ".github/workflows/platform-integration.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/platform-core/**"
+      - "packages/sdk-js/**"
+      - "packages/map-layer/**"
+      - "packages/widget/**"
+      - "packages/route-sdk/**"
+      - "packages/webhook-types/**"
+      - "supabase/functions/platform-api/**"
+      - "mcp/kleenest-mcp/**"
+      - "docs/platform/**"
+      - "scripts/platform-integration-contract-audit.mjs"
+      - "tsconfig.platform.json"
+      - "package-lock.json"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Install production workspace
+        run: npm ci --no-audit --no-fund
+      - name: Platform contract audit
+        run: node scripts/platform-integration-contract-audit.mjs
+      - name: Platform package typecheck
+        run: npx tsc -p tsconfig.platform.json --noEmit
+      - name: REST Edge Function check
+        shell: bash
+        run: |
+          if [ -f supabase/functions/platform-api/index.ts ]; then
+            deno check supabase/functions/platform-api/index.ts
+          fi
+      - name: MCP server typecheck
+        shell: bash
+        run: |
+          if [ -f mcp/kleenest-mcp/package.json ]; then
+            npm install --prefix mcp/kleenest-mcp --no-audit --no-fund --ignore-scripts
+            npm run typecheck --prefix mcp/kleenest-mcp
+          fi
