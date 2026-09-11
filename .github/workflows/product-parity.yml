@@ -45,6 +45,8 @@ jobs:
         run: node scripts/mandatory-onboarding-consumer-focus-audit.mjs
       - name: Verify Business onboarding tier authority
         run: node scripts/business-onboarding-tier-authority-audit.mjs
+      - name: Verify Business Fleet onboarding portfolio home
+        run: node scripts/business-fleet-onboarding-portfolio-home-audit.mjs
       - name: Verify OTA family authority
         run: node scripts/ota-family-authority-audit.mjs
       - name: Typecheck Consumer

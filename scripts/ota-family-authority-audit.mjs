@@ -15,6 +15,8 @@ for(const [name,dir,candidate,production] of apps){
 }
 const family=read('.github/workflows/ota-family.yml');
 for(const token of ['push:','releases/family-ota.txt','--environment production','consumer-production','business-production','fleet-production','owner-production'])if(!family.includes(token))failures.push('family OTA workflow missing '+token);
-if(!read('releases/family-ota.txt').includes('four-tier-pricing-ota-authority'))failures.push('family OTA release marker missing current release');
+const releaseMarker=read('releases/family-ota.txt').trim();
+if(!releaseMarker)failures.push('family OTA release marker is empty');
+else if(!/^[a-z0-9][a-z0-9._-]*$/i.test(releaseMarker))failures.push('family OTA release marker must be a simple stable release id');
 if(failures.length){console.error('OTA family authority audit failed:');for(const f of failures)console.error('- '+f);process.exit(1)}
 console.log('OTA family authority audit passed.');

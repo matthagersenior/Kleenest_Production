@@ -1,82 +1,296 @@
 import { Link } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
-import { RefreshControl,ScrollView,StyleSheet,Text,View } from 'react-native';
+import { Pressable,RefreshControl,ScrollView,StyleSheet,Text,View } from 'react-native';
 import { getBusinessTierCapabilities,tierLabel,type BusinessTierCapabilities } from '../domain/businessTiers';
-import { getBusinessAnalytics,getBusinessDashboard,getBusinessOperations,BUSINESS_PARITY } from '../services/product';
+import { getBusinessAnalytics,getBusinessDashboard,getBusinessManagedLocationPortfolio,getBusinessOperations,BUSINESS_PARITY } from '../services/product';
 import { currentBusinessId,listBusinessWorkspaceOptions } from '../services/capabilityWorkflows';
 import { getBusinessProductAccess,getBusinessServiceEntitlement } from '../services/productAccess';
-import { getBusinessOnboardingState } from '../services/onboarding';
+import { getBusinessOnboardingGate,getBusinessOnboardingState } from '../services/onboarding';
 
-function count(value:any){if(Array.isArray(value))return value.length;if(value&&typeof value==='object')return Object.keys(value).length;return Number(value||0)}
+function count(value:any){
+ if(Array.isArray(value))return value.length;
+ if(value&&typeof value==='object')return Object.keys(value).length;
+ return Number(value||0);
+}
+function n(value:any){const parsed=Number(value);return Number.isFinite(parsed)?parsed:0}
 type Gate=keyof BusinessTierCapabilities|'always';
-type Domain=[string,string,string,Gate];
+type Domain={href:string;title:string;body:string;gate:Gate;glyph:string;group:'Operate'|'Grow'|'Understand'|'Admin'};
+
 const domainSpecs:Domain[]=[
- ['/profile','Business profile','Identity, contact details and brand used across Kleenest.','coreManagement'],
- ['/locations','Locations','Claim, create, edit and deactivate canonical locations.','coreManagement'],
- ['/members','People & roles','Invite staff, change roles and transfer ownership.','coreManagement'],
- ['/engagement','Growth & engagement','Create, edit and delete promotions, campaigns, contests and events.','advancedEngagement'],
- ['/growth','Growth summary','Connect offers, visits, campaigns, contests and engagement outcomes.','advancedEngagement'],
- ['/reviews','Reviews','Read customer feedback, evidence and publish Business replies.','reviews'],
- ['/qr-studio','QR Studio','Create, design, version, activate, share and attribute QR programs.','qr'],
- ['/live-network','Live Network','Geofences, operational coverage and audience updates.','communications'],
- ['/progression','Progression','See XP, QR and community participation outcomes.','always'],
- ['/intelligence','Advanced Intelligence','Growth, ROI, benchmarks, trust signals and callable actions.','intelligence'],
- ['/assistant','Kleenest AI','Grounded growth and messaging assistance.','always'],
- ['/operations','Operations command','Unified remediation, reverification and preventive work queue.','trustOperations'],
- ['/trust-operations','Reverification & remediation','Deep trust operations, proof, SLA and reverification controls.','trustOperations'],
- ['/prevention','Preventive operations','Prevent recurring restroom issues and hand work to Fleet when appropriate.','preventiveOperations'],
- ['/analytics','Analytics','Visitors, occupancy, ROI, benchmarks and campaign results.','reporting'],
- ['/governance','Governance & reporting','Run and export reports, schedules, provenance and trust evidence.','reporting'],
- ['/capabilities','Capabilities','Plan, role and entitlement authority plus partner programs.','always'],
- ['/enterprise-locations','Enterprise Location','Growth multi-location operations across canonical locations without requiring full Enterprise network authority.','enterpriseLocationFeatures'],
- ['/enterprise','Enterprise','Partner networks, portfolio Fleet operations and enterprise-scale controls.','enterpriseNetworks'],
- ['/enterprise-economy','Enterprise Economy','Partner allocations, budgets, activation, benchmarks and ROI.','enterpriseNetworks'],
- ['/partners','Partners','Partner programs and business relationships.','always'],
- ['/onboarding','Guided setup','Update the operating profile that drives this targeted Business experience.','always'],
- ['/demo','Real-world demo','Walk Growth or Enterprise through seeded evidence and the same controls used by real operators.','always'],
+ {href:'/locations',title:'Locations',body:'Manage direct locations and see Enterprise portfolio locations.',gate:'coreManagement',glyph:'⌖',group:'Operate'},
+ {href:'/operations',title:'Operations command',body:'Resolve remediation, reverification and preventive work from one queue.',gate:'trustOperations',glyph:'✓',group:'Operate'},
+ {href:'/trust-operations',title:'Trust operations',body:'Work evidence, SLA, proof and reverification cases.',gate:'trustOperations',glyph:'◎',group:'Operate'},
+ {href:'/prevention',title:'Preventive operations',body:'Prevent recurring restroom issues and hand work to Fleet.',gate:'preventiveOperations',glyph:'↻',group:'Operate'},
+ {href:'/live-network',title:'Live Network',body:'Geofences, operational coverage and audience updates.',gate:'communications',glyph:'◉',group:'Operate'},
+ {href:'/engagement',title:'Growth & engagement',body:'Promotions, campaigns, contests and events.',gate:'advancedEngagement',glyph:'↗',group:'Grow'},
+ {href:'/growth',title:'Growth summary',body:'Connect offers, visits, campaigns and repeat engagement outcomes.',gate:'advancedEngagement',glyph:'↑',group:'Grow'},
+ {href:'/qr-studio',title:'QR Studio',body:'Create, design, version, activate and attribute QR programs.',gate:'qr',glyph:'▦',group:'Grow'},
+ {href:'/reviews',title:'Reviews',body:'Read verified feedback, evidence and publish Business replies.',gate:'reviews',glyph:'★',group:'Grow'},
+ {href:'/progression',title:'Progression',body:'See XP, QR and community participation outcomes.',gate:'always',glyph:'◆',group:'Grow'},
+ {href:'/analytics',title:'Analytics',body:'Visitors, occupancy, ROI, benchmarks and campaign results.',gate:'reporting',glyph:'▥',group:'Understand'},
+ {href:'/intelligence',title:'Advanced Intelligence',body:'Growth, ROI, benchmarks, trust signals and callable actions.',gate:'intelligence',glyph:'✦',group:'Understand'},
+ {href:'/governance',title:'Governance & reporting',body:'Reports, schedules, provenance and trust evidence.',gate:'reporting',glyph:'≡',group:'Understand'},
+ {href:'/enterprise-locations',title:'Enterprise Locations',body:'Operate direct and network portfolio locations from one view.',gate:'enterpriseLocationFeatures',glyph:'◫',group:'Understand'},
+ {href:'/enterprise',title:'Enterprise',body:'Partner networks, portfolio controls and cross-business operations.',gate:'enterpriseNetworks',glyph:'⬡',group:'Understand'},
+ {href:'/enterprise-economy',title:'Enterprise Economy',body:'Partner allocations, budgets, benchmarks and ROI.',gate:'enterpriseNetworks',glyph:'◇',group:'Understand'},
+ {href:'/partners',title:'Partners',body:'Partner programs and business relationships.',gate:'always',glyph:'∞',group:'Understand'},
+ {href:'/profile',title:'Business profile',body:'Identity, contact details and brand used across Kleenest.',gate:'coreManagement',glyph:'●',group:'Admin'},
+ {href:'/members',title:'People & roles',body:'Invite staff, change roles and transfer ownership.',gate:'coreManagement',glyph:'⋮',group:'Admin'},
+ {href:'/capabilities',title:'Capabilities',body:'Plan, role and entitlement authority plus partner programs.',gate:'always',glyph:'⚙',group:'Admin'},
+ {href:'/assistant',title:'Kleenest AI',body:'Grounded operating, growth and messaging assistance.',gate:'always',glyph:'✧',group:'Admin'},
+ {href:'/onboarding',title:'Guided setup',body:'Update the operating profile that drives this targeted experience.',gate:'always',glyph:'→',group:'Admin'},
+ {href:'/demo',title:'Real-world demo',body:'Walk Growth or Enterprise through seeded evidence and real controls.',gate:'always',glyph:'▷',group:'Admin'},
 ];
 
 export default function BusinessHome(){
  const[data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('Loading Business control center…');
+
  async function load(){
   setBusy(true);
   try{
-   const businessId=await currentBusinessId(),spaces:any[]=await listBusinessWorkspaceOptions(),workspace=spaces.find(row=>String(row.business_id)===businessId)||spaces[0];
-   const[dashboard,operations,analytics,access,entitlement,onboarding]=await Promise.all([
-    getBusinessDashboard(businessId),getBusinessOperations(businessId),getBusinessAnalytics(businessId),
-    getBusinessProductAccess(businessId),getBusinessServiceEntitlement(businessId).catch(()=>null),getBusinessOnboardingState(businessId).catch(()=>({}))
+   const businessId=await currentBusinessId();
+   const spaces:any[]=await listBusinessWorkspaceOptions();
+   const workspace=spaces.find(row=>String(row.business_id)===businessId)||spaces[0];
+   const[dashboard,operations,analytics,access,entitlement,onboarding,onboardingGate,portfolio]=await Promise.all([
+    getBusinessDashboard(businessId),
+    getBusinessOperations(businessId),
+    getBusinessAnalytics(businessId),
+    getBusinessProductAccess(businessId),
+    getBusinessServiceEntitlement(businessId).catch(()=>null),
+    getBusinessOnboardingState(businessId).catch(()=>({})),
+    getBusinessOnboardingGate(businessId).catch(()=>null),
+    getBusinessManagedLocationPortfolio(businessId).catch(()=>null),
    ]);
    const caps=getBusinessTierCapabilities(access,entitlement);
-   setData({businessId,workspace,dashboard,operations,analytics,access,entitlement,onboarding,caps,tier:tierLabel(access,entitlement)});
+   setData({businessId,workspace,dashboard,operations,analytics,access,entitlement,onboarding,onboardingGate,portfolio,caps,tier:tierLabel(access,entitlement)});
    setMessage(operations.partial?'Some operational services are degraded; available controls remain active.':'');
-  }catch(e:any){setMessage(e?.message||'Business workspace unavailable.')}finally{setBusy(false)}
+  }catch(e:any){
+   setMessage(e?.message||'Business workspace unavailable.');
+  }finally{
+   setBusy(false);
+  }
  }
  useEffect(()=>{void load()},[]);
 
- const d=data?.dashboard||{},locations=Array.isArray(d.locations)?d.locations:[],caps:BusinessTierCapabilities|undefined=data?.caps;
- const attention=useMemo(()=>{const o=data?.operations||{};return count(o.remediation)+count(o.reverification)+count(o.preventive)},[data]);
- const allowedDomains=useMemo(()=>domainSpecs.filter(([, , ,gate])=>gate==='always'||Boolean(caps?.[gate])),[caps]);
- const targeted_routes:string[]=Array.isArray(data?.onboarding?.experience?.targeted_routes)?data.onboarding.experience.targeted_routes.map(String):[];
- const priorityDomains=useMemo(()=>targeted_routes.map(route=>allowedDomains.find(([href])=>href===route)).filter(Boolean).slice(0,6) as Domain[],[allowedDomains,targeted_routes.join('|')]);
- const prioritySet=new Set(priorityDomains.map(([href])=>href));
- const remainingDomains=allowedDomains.filter(([href])=>!prioritySet.has(href));
- const experience=data?.onboarding?.experience||{};
- const hasTargetedExperience=Boolean(data?.onboarding?.completed_at&&targeted_routes.length);
+ const d=data?.dashboard||{};
+ const caps:BusinessTierCapabilities|undefined=data?.caps;
+ const attention=useMemo(()=>{
+  const o=data?.operations||{};
+  return count(o.remediation)+count(o.reverification)+count(o.preventive);
+ },[data]);
+
+ const allowedDomains=useMemo(()=>domainSpecs.filter(item=>item.gate==='always'||Boolean(caps?.[item.gate])),[caps]);
+ const targetedRoutes:string[]=Array.isArray(data?.onboarding?.experience?.targeted_routes)
+  ?data.onboarding.experience.targeted_routes.map(String)
+  :Array.isArray(data?.onboarding?.preview?.targeted_routes)
+   ?data.onboarding.preview.targeted_routes.map(String)
+   :[];
+ const priorityDomains=useMemo(()=>targetedRoutes.map(route=>allowedDomains.find(item=>item.href===route)).filter(Boolean).slice(0,6) as Domain[],[allowedDomains,targetedRoutes.join('|')]);
+ const prioritySet=new Set(priorityDomains.map(item=>item.href));
+ const remainingDomains=allowedDomains.filter(item=>!prioritySet.has(item.href));
+ const experience=data?.onboarding?.experience||data?.onboarding?.preview?.experience||{};
+ const gate=data?.onboardingGate||{};
+ const hasDraft=Boolean(data?.onboarding?.business_type||targetedRoutes.length||Object.keys(data?.onboarding?.answers||{}).length);
+ const onboardingComplete=Boolean(gate?.completed);
+ const onboardingStatus=onboardingComplete?'ONBOARDING COMPLETE':hasDraft?'ONBOARDING IN PROGRESS':'ONBOARDING NOT STARTED';
+ const portfolioSummary=data?.portfolio?.summary||{};
+ const directLocations=n(portfolioSummary.direct_location_count??(Array.isArray(d.locations)?d.locations.length:0));
+ const portfolioLocations=n(portfolioSummary.portfolio_location_count??directLocations);
+ const networkLocations=n(portfolioSummary.network_location_count);
+ const partnerBusinesses=n(portfolioSummary.partner_business_count);
+ const groups=(['Operate','Grow','Understand','Admin'] as const).map(group=>({group,items:remainingDomains.filter(item=>item.group===group)})).filter(row=>row.items.length);
 
  return <ScrollView contentInsetAdjustmentBehavior="automatic" refreshControl={<RefreshControl refreshing={busy} onRefresh={load}/>} contentContainerStyle={s.page}>
-  <View style={s.hero}><Text style={s.eyebrow}>BUSINESS CONTROL CENTER · {String(data?.tier||'STANDARD').toUpperCase()}</Text><Text style={s.title}>{data?.workspace?.business_name||data?.workspace?.name||'Kleenest Business'}</Text><Text style={s.heroBody}>{experience?.headline||'Everything this organization is entitled to operate—from canonical locations and customer trust to Growth multi-location operations, Fleet handoff and Enterprise networks—starts here.'}</Text><View style={s.heroLinks}><Link href="/onboarding" style={s.heroLink}>Update setup</Link><Link href="/demo" style={s.heroLink}>Guided demo</Link><Link href="/workspaces" style={s.heroLink}>Switch workspace</Link><Link href="/notifications" style={s.heroLink}>Notifications</Link></View></View>
-  {message?<Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text>:null}
+  <View style={s.hero}>
+   <View style={s.heroTop}>
+    <View style={s.brandMark}><Text style={s.brandMarkText}>K</Text></View>
+    <View style={{flex:1}}>
+     <Text style={s.eyebrow}>KLEENEST BUSINESS · {String(data?.tier||'STANDARD').toUpperCase()}</Text>
+     <Text style={s.title}>{data?.workspace?.business_name||data?.workspace?.name||'Business command center'}</Text>
+    </View>
+   </View>
+   <Text style={s.heroBody}>{experience?.headline||'Run customer trust, growth, locations and operations from one workspace built around how this business actually works.'}</Text>
+   <View style={s.heroBadges}>
+    <StatusBadge label={onboardingStatus} strong={onboardingComplete}/>
+    {networkLocations>0?<StatusBadge label={String(partnerBusinesses)+' NETWORK PARTNER'+(partnerBusinesses===1?'':'S')}/>:null}
+   </View>
+   <View style={s.heroStats}>
+    <HeroStat label="Direct locations" value={directLocations}/>
+    <HeroStat label="Portfolio locations" value={portfolioLocations}/>
+    <HeroStat label="Needs attention" value={attention}/>
+   </View>
+   <View style={s.heroActions}>
+    <Link href="/locations" asChild><Pressable style={s.primaryAction}><Text style={s.primaryActionText}>Manage locations</Text><Text style={s.primaryActionArrow}>›</Text></Pressable></Link>
+    <Link href="/onboarding" asChild><Pressable style={s.secondaryAction}><Text style={s.secondaryActionText}>{onboardingComplete?'Update setup':'Continue setup'}</Text></Pressable></Link>
+   </View>
+  </View>
 
-  <View style={s.metrics}><Metric label="Managed locations" value={locations.length}/><Metric label="Needs attention" value={attention}/><Metric label="Trust quality" value={d.trust?.score??d.trust?.overall_score??'—'}/><Metric label="Health" value={d.health?.score??d.health?.overall_score??'—'}/></View>
+  {message?<View style={s.alert}><Text accessibilityLiveRegion="polite" style={s.alertText}>{message}</Text></View>:null}
 
-  {hasTargetedExperience?<View style={s.priorityWrap}><View style={s.sectionHead}><View><Text style={s.kicker}>YOUR PRIORITIES</Text><Text style={s.sectionTitle}>Built from onboarding</Text></View><Text style={s.meta}>{String(experience.operating_mode||'targeted').replaceAll('_',' ')}</Text></View><Text style={s.meta}>Kleenest is prioritizing these workflows from your goals, pain points, customers, access model, success metrics and team focus. Entitlements still control what can actually be used.</Text><View style={s.grid}>{priorityDomains.map(([href,title,body])=><Link key={href} href={href as any} style={[s.domain,s.priorityDomain]}><Text style={s.priorityLabel}>PRIORITY</Text><Text style={s.domainTitle}>{title}</Text><Text style={s.domainBody}>{body}</Text><Text style={s.open}>Open →</Text></Link>)}</View></View>:<View style={s.setupNote}><Text style={s.tierNoteTitle}>Make this Business workspace targeted</Text><Text style={s.meta}>Complete guided onboarding to prioritize the tools, metrics, QR actions and operating workflows that match this business.</Text><Link href="/onboarding" style={s.inlineLink}>Complete setup →</Link></View>}
+  <View style={[s.onboardingPanel,onboardingComplete?s.onboardingComplete:hasDraft?s.onboardingProgress:s.onboardingMissing]}>
+   <View style={s.panelIcon}><Text style={s.panelIconText}>{onboardingComplete?'✓':hasDraft?'…':'!'}</Text></View>
+   <View style={{flex:1,gap:3}}>
+    <Text style={s.panelEyebrow}>{onboardingStatus}</Text>
+    <Text style={s.panelTitle}>{onboardingComplete?'Your workspace is personalized.':hasDraft?'Your answers are saved. Finish setup to lock in the operating plan.':'Tell Kleenest how this business operates.'}</Text>
+    <Text style={s.panelBody}>{hasDraft?'Home priorities now reflect your saved goals, pain points, success measures and team focus.':'Detailed onboarding determines which workflows, metrics, QR actions and operating surfaces appear first.'}</Text>
+   </View>
+   <Link href="/onboarding" style={s.panelLink}>{onboardingComplete?'Review':'Continue'} →</Link>
+  </View>
 
-  {caps?.enterpriseLocationFeatures&&!caps?.enterpriseNetworks?<View style={s.tierNote}><Text style={s.tierNoteTitle}>Growth multi-location operations enabled</Text><Text style={s.meta}>Enterprise Location features are available on this workspace. Full partner-network and Enterprise Economy controls remain Enterprise-only.</Text></View>:null}
+  <View style={s.portfolioPanel}>
+   <View style={s.portfolioHeader}>
+    <View style={{flex:1}}>
+     <Text style={s.portfolioEyebrow}>LOCATION AUTHORITY</Text>
+     <Text style={s.portfolioTitle}>{portfolioLocations} Portfolio locations</Text>
+    </View>
+    <View style={s.portfolioBadge}><Text style={s.portfolioBadgeText}>{networkLocations>0?'ENTERPRISE NETWORK':'DIRECT'}</Text></View>
+   </View>
+   <Text style={s.portfolioBody}>{networkLocations>0
+    ?String(directLocations)+' direct · '+String(networkLocations)+' network portfolio · '+String(partnerBusinesses)+' partner business'+(partnerBusinesses===1?'':'es')+'. Network locations are visible as portfolio scope and are not mislabeled as directly owned.'
+    :String(directLocations)+' direct or claimed location'+(directLocations===1?'':'s')+' currently belong to this Business workspace.'}</Text>
+   <View style={s.portfolioActions}>
+    <Link href="/locations" style={s.darkLink}>Open locations</Link>
+    {caps?.enterpriseLocationFeatures?<Link href="/enterprise-locations" style={s.lightLink}>Portfolio view</Link>:null}
+   </View>
+  </View>
 
-  <View style={s.sectionHead}><View><Text style={s.kicker}>ALL AVAILABLE TOOLS</Text><Text style={s.sectionTitle}>Business workspace</Text></View><Text style={s.meta}>{BUSINESS_PARITY.length} enforced capabilities</Text></View>
-  <View style={s.grid}>{remainingDomains.map(([href,title,body])=><Link key={href} href={href as any} style={s.domain}><Text style={s.domainTitle}>{title}</Text><Text style={s.domainBody}>{body}</Text><Text style={s.open}>Open →</Text></Link>)}</View>
-  <View style={s.footer}><Link href="/support" style={s.footerLink}>Support</Link><Link href="/terms" style={s.footerLink}>Terms</Link><Link href="/privacy" style={s.footerLink}>Privacy</Link><Link href="/account" style={s.footerLink}>Account</Link></View>
+  <View style={s.metricStrip}>
+   <Metric label="Trust quality" value={d.trust?.score??d.trust?.overall_score??'—'} detail="verified customer signal"/>
+   <Metric label="Restroom health" value={d.health?.score??d.health?.overall_score??'—'} detail="operational condition"/>
+   <Metric label="Parity" value={BUSINESS_PARITY.length} detail="enforced capabilities"/>
+  </View>
+
+  {priorityDomains.length?<View style={s.prioritySection}>
+   <View style={s.sectionHeader}>
+    <View>
+     <Text style={s.sectionEyebrow}>YOUR PRIORITIES</Text>
+     <Text style={s.sectionTitle}>Start here</Text>
+    </View>
+    <Text style={s.sectionMeta}>{String(experience.operating_mode||'targeted').replaceAll('_',' ')}</Text>
+   </View>
+   <Text style={s.sectionCopy}>These actions are elevated from your onboarding goals and current entitlements—not a generic feature list.</Text>
+   <View style={s.actionGrid}>{priorityDomains.map(item=><ActionTile key={item.href} item={item} priority/>)}</View>
+  </View>:null}
+
+  {caps?.enterpriseLocationFeatures&&!caps?.enterpriseNetworks?<View style={s.notice}>
+   <Text style={s.noticeTitle}>Growth multi-location controls are active</Text>
+   <Text style={s.panelBody}>Cross-location operating tools are available. Full partner-network and Enterprise Economy authority remains Enterprise-only.</Text>
+  </View>:null}
+
+  <View style={s.workspaceHeader}>
+   <Text style={s.sectionEyebrow}>BUSINESS WORKSPACE</Text>
+   <Text style={s.sectionTitle}>Everything available to this account</Text>
+   <Text style={s.sectionCopy}>Organized by the job you are trying to do, with entitlement rules enforced behind every surface.</Text>
+  </View>
+
+  {groups.map(({group,items})=><View key={group} style={s.toolGroup}>
+   <View style={s.groupHeader}><Text style={s.groupTitle}>{group}</Text><Text style={s.groupCount}>{items.length}</Text></View>
+   <View style={s.toolList}>{items.map(item=><ActionTile key={item.href} item={item}/>)}</View>
+  </View>)}
+
+  <View style={s.footer}>
+   <Link href="/workspaces" style={s.footerLink}>Switch workspace</Link>
+   <Link href="/notifications" style={s.footerLink}>Notifications</Link>
+   <Link href="/support" style={s.footerLink}>Support</Link>
+   <Link href="/account" style={s.footerLink}>Account</Link>
+  </View>
  </ScrollView>
 }
-function Metric({label,value}:{label:string;value:any}){return <View style={s.metric}><Text style={s.metricValue}>{String(value)}</Text><Text style={s.meta}>{label}</Text></View>}
-const s=StyleSheet.create({page:{padding:18,gap:14,backgroundColor:'#f3f6f4',paddingBottom:70},hero:{backgroundColor:'#173f2d',padding:20,borderRadius:26,gap:8},eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1.7,color:'#bde4cf'},title:{fontSize:31,lineHeight:35,fontWeight:'900',color:'#fff'},heroBody:{fontSize:14,lineHeight:21,color:'#dce9e1'},heroLinks:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:3},heroLink:{backgroundColor:'#fff',color:'#173f2d',fontWeight:'900',paddingHorizontal:11,paddingVertical:9,borderRadius:999},message:{fontWeight:'700',color:'#596b61'},metrics:{flexDirection:'row',flexWrap:'wrap',gap:8},metric:{minWidth:'46%',flexGrow:1,backgroundColor:'#fff',padding:14,borderRadius:17,borderWidth:1,borderColor:'#dbe5de'},metricValue:{fontSize:23,fontWeight:'900',color:'#173f2d'},meta:{fontSize:12,lineHeight:18,color:'#65756b'},priorityWrap:{backgroundColor:'#eaf4ed',borderRadius:20,padding:14,gap:10,borderWidth:1,borderColor:'#cfe1d5'},priorityDomain:{borderColor:'#b9d3c1',borderWidth:2},priorityLabel:{fontSize:9,fontWeight:'900',letterSpacing:1.2,color:'#557060',marginBottom:3},setupNote:{backgroundColor:'#fff3ce',borderRadius:17,padding:14,gap:5,borderWidth:1,borderColor:'#e7d291'},inlineLink:{fontWeight:'900',color:'#173f2d',paddingTop:5},tierNote:{backgroundColor:'#eaf4ed',borderRadius:17,padding:14,gap:4,borderWidth:1,borderColor:'#cfe1d5'},tierNoteTitle:{fontSize:16,fontWeight:'900',color:'#173f2d'},sectionHead:{flexDirection:'row',alignItems:'flex-end',justifyContent:'space-between',gap:10},kicker:{fontSize:10,fontWeight:'900',letterSpacing:1.3,color:'#65756b'},sectionTitle:{fontSize:22,fontWeight:'900',color:'#102218'},grid:{gap:9},domain:{backgroundColor:'#fff',borderRadius:18,padding:15,borderWidth:1,borderColor:'#dbe5de'},domainTitle:{fontSize:17,fontWeight:'900',color:'#102218',marginBottom:4},domainBody:{fontSize:12,lineHeight:18,color:'#65756b'},open:{fontSize:12,fontWeight:'900',color:'#173f2d',marginTop:8},footer:{flexDirection:'row',flexWrap:'wrap',gap:8},footerLink:{backgroundColor:'#edf3ef',color:'#173f2d',fontWeight:'900',paddingHorizontal:11,paddingVertical:9,borderRadius:999}});
+
+function StatusBadge({label,strong=false}:{label:string;strong?:boolean}){return <View style={[s.statusBadge,strong&&s.statusBadgeStrong]}><Text style={[s.statusBadgeText,strong&&s.statusBadgeTextStrong]}>{label}</Text></View>}
+function HeroStat({label,value}:{label:string;value:any}){return <View style={s.heroStat}><Text style={s.heroStatValue}>{String(value)}</Text><Text style={s.heroStatLabel}>{label}</Text></View>}
+function Metric({label,value,detail}:{label:string;value:any;detail:string}){return <View style={s.metric}><Text style={s.metricValue}>{String(value)}</Text><Text style={s.metricLabel}>{label}</Text><Text style={s.metricDetail}>{detail}</Text></View>}
+function ActionTile({item,priority=false}:{item:Domain;priority?:boolean}){
+ return <Link href={item.href as any} asChild>
+  <Pressable accessibilityRole="button" style={[s.actionTile,priority&&s.actionTilePriority]}>
+   <View style={[s.actionGlyph,priority&&s.actionGlyphPriority]}><Text style={[s.actionGlyphText,priority&&s.actionGlyphTextPriority]}>{item.glyph}</Text></View>
+   <View style={s.actionCopy}>
+    <View style={s.actionTitleRow}><Text style={s.actionTitle}>{item.title}</Text>{priority?<Text style={s.priorityTag}>PRIORITY</Text>:null}</View>
+    <Text style={s.actionBody}>{item.body}</Text>
+   </View>
+   <Text style={s.chevron}>›</Text>
+  </Pressable>
+ </Link>;
+}
+
+const s=StyleSheet.create({
+ page:{padding:16,gap:14,backgroundColor:'#f2f5f2',paddingBottom:72},
+ hero:{backgroundColor:'#123a2a',padding:20,borderRadius:28,gap:13,shadowColor:'#0b251a',shadowOpacity:.18,shadowRadius:14,shadowOffset:{width:0,height:8},elevation:4},
+ heroTop:{flexDirection:'row',alignItems:'center',gap:12},
+ brandMark:{width:44,height:44,borderRadius:14,backgroundColor:'#d7ad5b',alignItems:'center',justifyContent:'center'},
+ brandMarkText:{fontSize:22,fontWeight:'900',color:'#123a2a'},
+ eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1.55,color:'#bfe2cf'},
+ title:{fontSize:29,lineHeight:34,fontWeight:'900',color:'#fff',marginTop:2},
+ heroBody:{fontSize:14,lineHeight:21,color:'#e1ece6'},
+ heroBadges:{flexDirection:'row',flexWrap:'wrap',gap:7},
+ statusBadge:{borderWidth:1,borderColor:'#527663',backgroundColor:'#234b39',paddingHorizontal:9,paddingVertical:6,borderRadius:999},
+ statusBadgeStrong:{backgroundColor:'#d7ad5b',borderColor:'#d7ad5b'},
+ statusBadgeText:{fontSize:9,fontWeight:'900',letterSpacing:.7,color:'#d9e9e0'},
+ statusBadgeTextStrong:{color:'#123a2a'},
+ heroStats:{flexDirection:'row',gap:8},
+ heroStat:{flex:1,backgroundColor:'#1d4935',borderRadius:15,padding:11,minHeight:72,justifyContent:'center'},
+ heroStatValue:{fontSize:22,fontWeight:'900',color:'#fff'},
+ heroStatLabel:{fontSize:10,lineHeight:14,fontWeight:'800',color:'#bfe2cf',marginTop:2},
+ heroActions:{flexDirection:'row',gap:8,flexWrap:'wrap'},
+ primaryAction:{backgroundColor:'#fff',borderRadius:14,paddingHorizontal:14,paddingVertical:11,flexDirection:'row',alignItems:'center',gap:10},
+ primaryActionText:{fontWeight:'900',color:'#123a2a'},
+ primaryActionArrow:{fontSize:20,fontWeight:'900',color:'#123a2a'},
+ secondaryAction:{borderWidth:1,borderColor:'#6c8b7a',borderRadius:14,paddingHorizontal:14,paddingVertical:11},
+ secondaryActionText:{fontWeight:'900',color:'#fff'},
+ alert:{backgroundColor:'#fff1df',borderRadius:14,padding:12,borderWidth:1,borderColor:'#ead2ab'},
+ alertText:{fontSize:12,fontWeight:'800',color:'#765129'},
+ onboardingPanel:{borderRadius:20,padding:15,borderWidth:1,flexDirection:'row',alignItems:'center',gap:11},
+ onboardingComplete:{backgroundColor:'#e7f3eb',borderColor:'#c2dccb'},
+ onboardingProgress:{backgroundColor:'#fff6df',borderColor:'#ead8a9'},
+ onboardingMissing:{backgroundColor:'#fff',borderColor:'#d9e2dc'},
+ panelIcon:{width:38,height:38,borderRadius:13,backgroundColor:'#123a2a',alignItems:'center',justifyContent:'center'},
+ panelIconText:{color:'#fff',fontSize:18,fontWeight:'900'},
+ panelEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1,color:'#5e7166'},
+ panelTitle:{fontSize:15,lineHeight:19,fontWeight:'900',color:'#173528'},
+ panelBody:{fontSize:12,lineHeight:18,color:'#65756b'},
+ panelLink:{fontSize:11,fontWeight:'900',color:'#123a2a',paddingLeft:4},
+ portfolioPanel:{backgroundColor:'#182c23',borderRadius:22,padding:16,gap:8},
+ portfolioHeader:{flexDirection:'row',alignItems:'center',gap:10},
+ portfolioEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.2,color:'#adc9ba'},
+ portfolioTitle:{fontSize:23,fontWeight:'900',color:'#fff',marginTop:2},
+ portfolioBadge:{backgroundColor:'#d7ad5b',borderRadius:999,paddingHorizontal:9,paddingVertical:6},
+ portfolioBadgeText:{fontSize:9,fontWeight:'900',color:'#182c23'},
+ portfolioBody:{fontSize:12,lineHeight:18,color:'#d5e3dc'},
+ portfolioActions:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:2},
+ darkLink:{backgroundColor:'#d7ad5b',color:'#182c23',fontWeight:'900',paddingHorizontal:11,paddingVertical:9,borderRadius:999},
+ lightLink:{backgroundColor:'#f3f7f4',color:'#173528',fontWeight:'900',paddingHorizontal:11,paddingVertical:9,borderRadius:999},
+ metricStrip:{flexDirection:'row',gap:8},
+ metric:{flex:1,backgroundColor:'#fff',borderRadius:17,padding:12,borderWidth:1,borderColor:'#dde5df'},
+ metricValue:{fontSize:21,fontWeight:'900',color:'#123a2a'},
+ metricLabel:{fontSize:11,fontWeight:'900',color:'#284d3a',marginTop:2},
+ metricDetail:{fontSize:9,lineHeight:13,color:'#7a8980',marginTop:2},
+ prioritySection:{backgroundColor:'#edf5ef',borderRadius:22,padding:14,gap:10,borderWidth:1,borderColor:'#cfe0d4'},
+ sectionHeader:{flexDirection:'row',alignItems:'flex-end',justifyContent:'space-between',gap:10},
+ sectionEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.2,color:'#66786e'},
+ sectionTitle:{fontSize:22,lineHeight:27,fontWeight:'900',color:'#102218'},
+ sectionMeta:{fontSize:10,fontWeight:'900',textTransform:'uppercase',color:'#587064'},
+ sectionCopy:{fontSize:12,lineHeight:18,color:'#69786f'},
+ actionGrid:{gap:8},
+ actionTile:{backgroundColor:'#fff',borderRadius:17,padding:12,borderWidth:1,borderColor:'#dce5df',flexDirection:'row',alignItems:'center',gap:11},
+ actionTilePriority:{borderColor:'#afccb9',backgroundColor:'#fbfdfb'},
+ actionGlyph:{width:38,height:38,borderRadius:12,backgroundColor:'#edf3ef',alignItems:'center',justifyContent:'center'},
+ actionGlyphPriority:{backgroundColor:'#123a2a'},
+ actionGlyphText:{fontSize:18,fontWeight:'900',color:'#315641'},
+ actionGlyphTextPriority:{color:'#d7ad5b'},
+ actionCopy:{flex:1,gap:3},
+ actionTitleRow:{flexDirection:'row',alignItems:'center',gap:7,flexWrap:'wrap'},
+ actionTitle:{fontSize:15,fontWeight:'900',color:'#132d20'},
+ priorityTag:{fontSize:8,fontWeight:'900',letterSpacing:.8,color:'#725a25',backgroundColor:'#f8e9bd',paddingHorizontal:6,paddingVertical:3,borderRadius:999},
+ actionBody:{fontSize:11,lineHeight:16,color:'#69786f'},
+ chevron:{fontSize:25,color:'#315641'},
+ notice:{backgroundColor:'#e9f2ec',borderRadius:17,padding:14,gap:4,borderWidth:1,borderColor:'#cddfd3'},
+ noticeTitle:{fontSize:16,fontWeight:'900',color:'#173f2d'},
+ workspaceHeader:{gap:3,marginTop:3},
+ toolGroup:{gap:7},
+ groupHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:2},
+ groupTitle:{fontSize:16,fontWeight:'900',color:'#1a3528'},
+ groupCount:{fontSize:10,fontWeight:'900',color:'#65766c',backgroundColor:'#e7ede9',paddingHorizontal:8,paddingVertical:4,borderRadius:999},
+ toolList:{gap:7},
+ footer:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:4},
+ footerLink:{backgroundColor:'#e8eeea',color:'#173f2d',fontWeight:'900',paddingHorizontal:11,paddingVertical:9,borderRadius:999},
+});

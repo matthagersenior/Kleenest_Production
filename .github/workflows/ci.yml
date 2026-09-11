@@ -116,6 +116,8 @@ jobs:
         run: node scripts/mandatory-onboarding-consumer-focus-audit.mjs
       - name: Business onboarding tier authority
         run: node scripts/business-onboarding-tier-authority-audit.mjs
+      - name: Business Fleet onboarding portfolio home
+        run: node scripts/business-fleet-onboarding-portfolio-home-audit.mjs
       - name: OTA family authority
         run: node scripts/ota-family-authority-audit.mjs
       - name: Fleet authority
