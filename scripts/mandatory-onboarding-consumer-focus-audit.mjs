@@ -39,6 +39,7 @@ for(const token of ['getBusinessOnboardingGate','/onboarding','onboardingRequire
 const onboarding=read('apps/business-mobile/app/onboarding.tsx');
 const fleetLayout=read('apps/fleet-mobile/app/_layout.tsx');
 const fleetOnboarding=read('apps/fleet-mobile/app/onboarding.tsx');
+const fleetHome=read('apps/fleet-mobile/app/index.tsx');
 const fleetService=read('apps/fleet-mobile/services/onboarding.ts');
 for(const token of [
   'customer_profile','access_model','traffic_pattern','pain_points','qr_intent',
@@ -47,6 +48,7 @@ for(const token of [
 for(const token of ['getFleetOnboardingGate','business_onboarding_gate','business_onboarding_apply_v2']) if(!fleetService.includes(token)) failures.push('Fleet onboarding service missing '+token);
 for(const token of ['getFleetOnboardingGate','onboardingRequired','/onboarding']) if(!fleetLayout.includes(token)) failures.push('Fleet mandatory gate missing '+token);
 for(const token of ['customer_profile','access_model','traffic_pattern','pain_points','qr_intent','success_metrics','reporting_cadence','team_focus','Complete Fleet setup']) if(!fleetOnboarding.includes(token)) failures.push('Fleet detailed onboarding missing '+token);
+for(const token of ['getFleetOnboardingState','YOUR PRIORITIES','Targeted from onboarding']) if(!fleetHome.includes(token)) failures.push('Fleet targeted home missing '+token);
 
 const businessHome=read('apps/business-mobile/app/index.tsx');
 for(const token of ['getBusinessOnboardingState','YOUR PRIORITIES','targeted_routes']) if(!businessHome.includes(token)) failures.push('targeted Business home missing '+token);
