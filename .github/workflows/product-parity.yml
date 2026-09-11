@@ -39,6 +39,8 @@ jobs:
         run: node scripts/fleet-extended-operator-audit.mjs
       - name: Verify Fleet offline recovery
         run: node scripts/fleet-offline-recovery-audit.mjs
+      - name: Verify real-world demo and onboarding
+        run: node scripts/real-world-demo-onboarding-audit.mjs
       - name: Typecheck Consumer
         run: npm run typecheck --workspace @kleenest/consumer-mobile
       - name: Typecheck Business
