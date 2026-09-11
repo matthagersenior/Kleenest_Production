@@ -163,7 +163,7 @@ export default function BusinessHome(){
   {priorityDomains.length?<View style={s.prioritySection}>
    <View style={s.sectionHeader}>
     <View>
-     <Text style={s.sectionEyebrow}>YOUR OPERATING PLAN</Text>
+     <Text style={s.sectionEyebrow}>YOUR PRIORITIES</Text>
      <Text style={s.sectionTitle}>Start here</Text>
     </View>
     <Text style={s.sectionMeta}>{String(experience.operating_mode||'targeted').replaceAll('_',' ')}</Text>
