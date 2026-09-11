@@ -1,0 +1,32 @@
+name: Mandatory Onboarding and Consumer Focus
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/business-mobile/**'
+      - 'apps/consumer-mobile/**'
+      - 'supabase/migrations/**'
+      - 'scripts/mandatory-onboarding-consumer-focus-audit.mjs'
+      - '.github/workflows/mandatory-onboarding-consumer-focus.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/business-mobile/**'
+      - 'apps/consumer-mobile/**'
+      - 'supabase/migrations/**'
+      - 'scripts/mandatory-onboarding-consumer-focus-audit.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/mandatory-onboarding-consumer-focus-audit.mjs
