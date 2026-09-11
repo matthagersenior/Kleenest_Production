@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
-import { currentFleetBusinessId } from '../services/control';
+import { currentFleetBusinessId,subscribeFleetWorkspaceChange } from '../services/control';
 import { getFleetOnboardingGate } from '../services/onboarding';
 
 const ONBOARDING_BYPASS=new Set(['onboarding','workspaces','support','terms','privacy','account']);
@@ -15,6 +15,7 @@ export default function Layout(){
   const[gateReady,setGateReady]=useState(false);
   const[signedIn,setSignedIn]=useState(false);
   const[onboardingRequired,setOnboardingRequired]=useState(false);
+  const[workspaceRevision,setWorkspaceRevision]=useState(0);
   const activeRoute=String(segments[0]||'');
   const onAuthRoute=activeRoute==='auth';
 
@@ -25,6 +26,8 @@ export default function Layout(){
     const{data:listener}=client.auth.onAuthStateChange((_event,session)=>{if(!active)return;setSignedIn(Boolean(session));setReady(true);});
     return()=>{active=false;listener.subscription.unsubscribe();};
   },[]);
+
+  useEffect(()=>subscribeFleetWorkspaceChange(()=>setWorkspaceRevision(value=>value+1)),[]);
 
   useEffect(()=>{
     if(!ready)return;
@@ -51,11 +54,11 @@ export default function Layout(){
       }
     })();
     return()=>{active=false};
-  },[ready,signedIn,onAuthRoute,router,activeRoute]);
+  },[ready,signedIn,onAuthRoute,router,activeRoute,workspaceRevision]);
 
   if(!ready||(signedIn&&!gateReady))return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:'#f3f6f4'}}><ActivityIndicator size="large"/></View>;
 
-  return <><StatusBar style="dark"/><Tabs screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired?{display:'none'}:undefined}}>
+  return <><StatusBar style="dark"/><Tabs key={`fleet-workspace-${workspaceRevision}`} screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired?{display:'none'}:undefined}}>
     <Tabs.Screen name="index" options={{title:'Home'}}/>
     <Tabs.Screen name="planner" options={{title:'Planner'}}/>
     <Tabs.Screen name="dispatch" options={{title:'Dispatch'}}/>
