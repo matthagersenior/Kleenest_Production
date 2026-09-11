@@ -6,7 +6,6 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
-    "@kleenest/platform-core": "0.1.0",
-    "@kleenest/sdk-js": "0.1.0"
+    "@kleenest/platform-core": "0.1.0"
   }
 }
