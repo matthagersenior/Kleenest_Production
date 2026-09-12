@@ -43,5 +43,12 @@ for (const phrase of [
 if (!/apps\/developer-portal\/static\/index\.html/.test(workflow)) {
   throw new Error('Pages workflow must publish the canonical static developer portal.');
 }
+if (!/_site\/developer\/index\.html/.test(workflow)) {
+  throw new Error('Pages workflow must publish the portal at /developer/.');
+}
+const edgePortal = file('supabase/functions/platform-developer-portal/index.ts');
+if (!/github\.io\/Kleenest_Production\/developer\//.test(edgePortal)) {
+  throw new Error('Supabase compatibility redirect must target the GitHub Pages /developer/ portal.');
+}
 
 console.log('Kleenest Developer Portal hosting audit passed.');
