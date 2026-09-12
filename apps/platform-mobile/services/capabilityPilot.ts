@@ -24,6 +24,20 @@ export type PilotSession={
   sample_profile_snapshot:Record<string,unknown>;capability_overrides:Record<string,unknown>;created_at:string;updated_at:string;
 };
 
+export type OfferLaunchManifest={
+  offer_key:string;label:string;audience:string;description:string;sample_profile:Record<string,unknown>;
+  pilot_session:Record<string,unknown>|null;canonical_audit_issue_count:number;
+  readiness:{sample_ready:boolean;pilot_ready:boolean;production_ready:boolean;missing_domains:string[];missing_rpcs:string[];production_gates:string[];surface_gaps:string[]};
+  capabilities:Array<{domain:string;capability:string;canonical_rpc:string;owner_workspace:string|null;owner_route:string|null;release_state:string;promise_state:string;sample_enabled:boolean;pilot_enabled:boolean;pilot_mode:string;rpc_exists:boolean}>;
+  real_world_demo:Record<string,unknown>|null;developer_portal:string|null;launch_steps:string[];generated_at:string;
+};
+
+export type OfferLaunchCheck={
+  id:string;offer_key:string;offer_label?:string;pilot_session_id:string|null;pilot_name?:string|null;
+  check_type:'sample'|'pilot'|'production';status:'passed'|'blocked';passed?:boolean;canonical_audit_issue_count:number;
+  readiness:OfferLaunchManifest['readiness'];manifest?:OfferLaunchManifest;launch_manifest?:OfferLaunchManifest;created_at:string;
+};
+
 export async function getOfferReadiness():Promise<OfferReadiness[]>{const value=await rpc('owner_offer_capability_readiness');return Array.isArray(value)?value as OfferReadiness[]:[];}
 export async function getPilotCapabilityDomains():Promise<PilotCapabilityDomain[]>{const value=await rpc('owner_capability_domain_contracts');return Array.isArray(value)?value as PilotCapabilityDomain[]:[];}
 export async function updateOfferGovernance(offerKey:string,patch:Record<string,unknown>,reason='KleenestOS offer/pilot governance update'){return rpc('owner_update_capability_offer',{p_offer_key:offerKey,p_patch:patch,p_reason:reason});}
@@ -43,4 +57,18 @@ export async function createPilotSession(input:{offerKey:string;name:string;orga
 
 export async function updatePilotSession(sessionId:string,patch:Record<string,unknown>,reason='KleenestOS pilot session update'){
   return rpc('owner_update_pilot_session',{p_session_id:sessionId,p_patch:patch,p_reason:reason});
+}
+
+
+export async function getOfferLaunchManifest(offerKey:string,pilotSessionId?:string|null):Promise<OfferLaunchManifest>{
+  return await rpc('owner_offer_launch_manifest',{p_offer_key:offerKey,p_pilot_session_id:pilotSessionId??null}) as OfferLaunchManifest;
+}
+
+export async function runOfferLaunchCheck(offerKey:string,checkType:'sample'|'pilot'|'production',pilotSessionId?:string|null):Promise<OfferLaunchCheck>{
+  return await rpc('owner_run_offer_launch_check',{p_offer_key:offerKey,p_pilot_session_id:pilotSessionId??null,p_check_type:checkType}) as OfferLaunchCheck;
+}
+
+export async function getOfferLaunchHistory(offerKey?:string,limit=50):Promise<OfferLaunchCheck[]>{
+  const value=await rpc('owner_offer_launch_history',{p_offer_key:offerKey??null,p_limit:limit});
+  return Array.isArray(value)?value as OfferLaunchCheck[]:[];
 }
