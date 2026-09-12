@@ -1,7 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const VERSION = '0.1.0';
-const ASSETS: Record<string, { file: string; type: string }> = {
+type Asset = { file: string; type: string; base64?: boolean; downloadName?: string };
+const ASSETS: Record<string, Asset> = {
   'kleenest-sdk.js': { file: 'kleenest-sdk.js', type: 'text/javascript; charset=utf-8' },
   'kleenest-widget.js': { file: 'kleenest-widget.js', type: 'text/javascript; charset=utf-8' },
   'kleenest-map-layer.js': { file: 'kleenest-map-layer.js', type: 'text/javascript; charset=utf-8' },
@@ -9,6 +10,12 @@ const ASSETS: Record<string, { file: string; type: string }> = {
   'kleenest-webhook-types.js': { file: 'kleenest-webhook-types.js', type: 'text/javascript; charset=utf-8' },
   'openapi-v1.yaml': { file: 'openapi-v1.yaml', type: 'application/yaml; charset=utf-8' },
   'manifest.json': { file: 'manifest.json', type: 'application/json; charset=utf-8' },
+  'kleenest-platform-core-0.1.0.tgz': { file: 'tarballs/kleenest-platform-core-0.1.0.tgz.b64', type: 'application/gzip', base64: true, downloadName: 'kleenest-platform-core-0.1.0.tgz' },
+  'kleenest-sdk-js-0.1.0.tgz': { file: 'tarballs/kleenest-sdk-js-0.1.0.tgz.b64', type: 'application/gzip', base64: true, downloadName: 'kleenest-sdk-js-0.1.0.tgz' },
+  'kleenest-widget-0.1.0.tgz': { file: 'tarballs/kleenest-widget-0.1.0.tgz.b64', type: 'application/gzip', base64: true, downloadName: 'kleenest-widget-0.1.0.tgz' },
+  'kleenest-map-layer-0.1.0.tgz': { file: 'tarballs/kleenest-map-layer-0.1.0.tgz.b64', type: 'application/gzip', base64: true, downloadName: 'kleenest-map-layer-0.1.0.tgz' },
+  'kleenest-route-sdk-0.1.0.tgz': { file: 'tarballs/kleenest-route-sdk-0.1.0.tgz.b64', type: 'application/gzip', base64: true, downloadName: 'kleenest-route-sdk-0.1.0.tgz' },
+  'kleenest-webhook-types-0.1.0.tgz': { file: 'tarballs/kleenest-webhook-types-0.1.0.tgz.b64', type: 'application/gzip', base64: true, downloadName: 'kleenest-webhook-types-0.1.0.tgz' },
 };
 
 function json(body: unknown, status = 200, cache = 'no-store') {
@@ -21,6 +28,13 @@ function json(body: unknown, status = 200, cache = 'no-store') {
       'x-content-type-options': 'nosniff',
     },
   });
+}
+
+function decodeBase64(value: string): Uint8Array {
+  const raw = atob(value.replace(/\s+/g, ''));
+  const bytes = new Uint8Array(raw.length);
+  for (let index = 0; index < raw.length; index++) bytes[index] = raw.charCodeAt(index);
+  return bytes;
 }
 
 Deno.serve(async req => {
@@ -58,15 +72,15 @@ Deno.serve(async req => {
   if (!asset) return json({ error: 'Asset not found' }, 404);
 
   try {
-    const body = await Deno.readTextFile(new URL('./assets/' + asset.file, import.meta.url));
-    return new Response(body, {
-      headers: {
-        'content-type': asset.type,
-        'cache-control': 'public, max-age=31536000, immutable',
-        'access-control-allow-origin': '*',
-        'x-content-type-options': 'nosniff',
-      },
-    });
+    const stored = await Deno.readTextFile(new URL('./assets/' + asset.file, import.meta.url));
+    const headers: Record<string,string> = {
+      'content-type': asset.type,
+      'cache-control': 'public, max-age=31536000, immutable',
+      'access-control-allow-origin': '*',
+      'x-content-type-options': 'nosniff',
+    };
+    if (asset.downloadName) headers['content-disposition'] = 'attachment; filename="' + asset.downloadName + '"';
+    return new Response(asset.base64 ? decodeBase64(stored) : stored, { headers });
   } catch {
     return json({ error: 'Asset unavailable' }, 503);
   }
