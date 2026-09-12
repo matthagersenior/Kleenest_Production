@@ -19,6 +19,9 @@ type Authorization = {
   partner_slug?: string;
   plan?: string;
   api_key_id?: string;
+  credential_type?: string;
+  credential_minute_limit?: number;
+  credential_minute_remaining?: number;
   minute_limit?: number;
   minute_remaining?: number;
   month_limit?: number;
@@ -35,6 +38,19 @@ function json(body: unknown, status = 200, extraHeaders: HeadersInit = {}) {
       ...extraHeaders,
     },
   });
+}
+
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('origin');
+  const headers: Record<string, string> = {
+    'access-control-allow-origin': origin || '*',
+    'access-control-allow-methods': 'GET,POST,OPTIONS',
+    'access-control-allow-headers': 'content-type,authorization,x-kleenest-api-key,x-kleenest-client-token',
+    'access-control-expose-headers': 'x-kleenest-request-id,x-kleenest-partner-id,x-kleenest-plan,x-kleenest-credential-type,x-ratelimit-limit-minute,x-ratelimit-remaining-minute,x-ratelimit-limit-month,x-ratelimit-remaining-month,x-ratelimit-limit-client-minute,x-ratelimit-remaining-client-minute',
+    'access-control-max-age': '600',
+  };
+  if (origin) headers['vary'] = 'Origin';
+  return headers;
 }
 
 class ApiInputError extends Error {
@@ -167,7 +183,8 @@ function canonicalPlatformRoute(pathname: string): string {
 }
 
 function suppliedApiKey(req: Request): string {
-  return req.headers.get('x-kleenest-api-key')
+  return req.headers.get('x-kleenest-client-token')
+    ?? req.headers.get('x-kleenest-api-key')
     ?? req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
     ?? '';
 }
@@ -179,21 +196,27 @@ async function authorize(req: Request, route: string): Promise<Authorization> {
     p_raw_key: rawKey,
     p_route: route,
     p_request_id: requestId,
+    p_origin: req.headers.get('origin'),
   });
   if (error) throw error;
   return (data ?? { authorized: false, reason: 'authorization_failed', request_id: requestId }) as Authorization;
 }
 
-function authFailure(auth: Authorization) {
-  const quota = auth.reason === 'minute_quota_exceeded' || auth.reason === 'monthly_quota_exceeded';
-  const scope = auth.reason === 'insufficient_scope' || auth.reason === 'partner_inactive';
-  const headers: Record<string, string> = {};
+function authFailure(req: Request, auth: Authorization) {
+  const quota = auth.reason === 'minute_quota_exceeded'
+    || auth.reason === 'monthly_quota_exceeded'
+    || auth.reason === 'credential_minute_quota_exceeded';
+  const forbidden = auth.reason === 'insufficient_scope'
+    || auth.reason === 'partner_inactive'
+    || auth.reason === 'origin_required'
+    || auth.reason === 'origin_not_allowed';
+  const headers: Record<string, string> = { ...corsHeaders(req) };
   if (auth.retry_after_seconds) headers['retry-after'] = String(auth.retry_after_seconds);
   return json({
-    error: quota ? 'Rate limit exceeded' : scope ? 'Forbidden' : 'Unauthorized',
+    error: quota ? 'Rate limit exceeded' : forbidden ? 'Forbidden' : 'Unauthorized',
     code: auth.reason ?? 'unauthorized',
     requestId: auth.request_id,
-  }, quota ? 429 : scope ? 403 : 401, headers);
+  }, quota ? 429 : forbidden ? 403 : 401, headers);
 }
 
 function rateHeaders(auth: Authorization): Record<string, string> {
@@ -206,6 +229,13 @@ function rateHeaders(auth: Authorization): Record<string, string> {
   if (auth.minute_remaining !== undefined) headers['x-ratelimit-remaining-minute'] = String(auth.minute_remaining);
   if (auth.month_limit !== undefined) headers['x-ratelimit-limit-month'] = String(auth.month_limit);
   if (auth.month_remaining !== undefined) headers['x-ratelimit-remaining-month'] = String(auth.month_remaining);
+  if (auth.credential_type) headers['x-kleenest-credential-type'] = String(auth.credential_type);
+  if (auth.credential_minute_limit !== undefined && auth.credential_minute_limit !== null) {
+    headers['x-ratelimit-limit-client-minute'] = String(auth.credential_minute_limit);
+  }
+  if (auth.credential_minute_remaining !== undefined && auth.credential_minute_remaining !== null) {
+    headers['x-ratelimit-remaining-client-minute'] = String(auth.credential_minute_remaining);
+  }
   return headers;
 }
 
@@ -287,11 +317,14 @@ async function route(body: any) {
 
 Deno.serve(async req => {
   const url = new URL(req.url);
-  if (req.method === 'GET' && url.pathname.endsWith('/health')) {
-    return json({ ok: true, service: 'kleenest-platform-api', version: 'v1' });
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders(req) });
   }
-  if (!SUPABASE_SECRET_KEY) return json({ error: 'Service unavailable' }, 503);
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+  if (req.method === 'GET' && url.pathname.endsWith('/health')) {
+    return json({ ok: true, service: 'kleenest-platform-api', version: 'v1' }, 200, corsHeaders(req));
+  }
+  if (!SUPABASE_SECRET_KEY) return json({ error: 'Service unavailable' }, 503, corsHeaders(req));
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
 
   const routePath = canonicalPlatformRoute(url.pathname);
 
@@ -300,9 +333,9 @@ Deno.serve(async req => {
     auth = await authorize(req, routePath);
   } catch (error) {
     console.error('Kleenest Platform authorization failed', error instanceof Error ? error.name : 'unknown_error');
-    return json({ error: 'Service unavailable' }, 503);
+    return json({ error: 'Service unavailable' }, 503, corsHeaders(req));
   }
-  if (!auth.authorized) return authFailure(auth);
+  if (!auth.authorized) return authFailure(req, auth);
 
   let status = 200;
   let payload: unknown;
@@ -328,5 +361,5 @@ Deno.serve(async req => {
   }
 
   await recordOutcome(auth, routePath, status);
-  return json(payload, status, rateHeaders(auth));
+  return json(payload, status, { ...corsHeaders(req), ...rateHeaders(auth) });
 });

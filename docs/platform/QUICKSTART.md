@@ -21,7 +21,7 @@ Kleenest Platform beta v0.1.0 exposes the same recommendation engine through RES
 
   const client = new KleenestClient({
     baseUrl: "https://ssgesjzdvdsqacdtasje.supabase.co/functions/v1/platform-api",
-    apiKey: "YOUR_PARTNER_KEY"
+    clientToken: "YOUR_BROWSER_TOKEN"
   });
 
   const result = await client.recommendNearby({
@@ -35,7 +35,7 @@ Kleenest Platform beta v0.1.0 exposes the same recommendation engine through RES
 </script>
 ```
 
-Do not embed unrestricted production partner keys into public websites. Browser modules are intended for trusted prototypes or short-lived/public-client credentials once those are enabled. Server-to-server integrations should keep the API key on the server.
+Never embed a server API key in browser code. For Widget, Map, or other browser integrations, issue a publishable client token from the Developer Portal with an exact Allowed origin, an expiration of 30 days or less, and a separate per-minute cap. Server-to-server integrations should keep the server API key on the server.
 
 ## Package artifacts
 
@@ -55,7 +55,7 @@ The artifact bundle also contains SHA-256 checksums and the OpenAPI contract.
 import { KleenestClient } from ".../v1/sdk.js";
 import { mountKleenestFinder } from ".../v1/widget.js";
 
-const client = new KleenestClient({ baseUrl: API_BASE, apiKey: YOUR_KEY });
+const client = new KleenestClient({ baseUrl: API_BASE, clientToken: YOUR_BROWSER_TOKEN });
 
 mountKleenestFinder(document.querySelector("#restrooms"), {
   client,
@@ -71,7 +71,7 @@ mountKleenestFinder(document.querySelector("#restrooms"), {
 import { KleenestClient } from ".../v1/sdk.js";
 import { KleenestRouteClient, lineStringFromCoordinates } from ".../v1/route.js";
 
-const client = new KleenestClient({ baseUrl: API_BASE, apiKey: YOUR_KEY });
+const client = new KleenestClient({ baseUrl: API_BASE, clientToken: YOUR_BROWSER_TOKEN });
 const routes = new KleenestRouteClient(client);
 
 const result = await routes.findStops({
@@ -90,9 +90,10 @@ The Developer Portal is invite-based for partner workspaces:
 1. Create a developer account or sign in.
 2. Claim the one-time partner invitation.
 3. Open the partner workspace.
-4. Issue a partner API key.
-5. Configure webhooks if needed.
-6. Integrate using REST, package artifacts, or the versioned ESM modules above.
+4. Issue a server API key for backend integrations, or a Browser token for public Widget/Map/browser integrations.
+5. For a Browser token, enter the exact Allowed origin (for example `https://app.example.com`), expiration, and per-minute cap.
+6. Configure webhooks if needed.
+7. Integrate using REST, package artifacts, or the versioned ESM modules above.
 
 Developer Portal:
 `https://ssgesjzdvdsqacdtasje.supabase.co/functions/v1/platform-developer-portal`

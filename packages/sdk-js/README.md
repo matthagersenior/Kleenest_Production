@@ -17,3 +17,17 @@ const result = await client.recommendNearby({
 ```
 
 Keep server API keys out of browser bundles.
+
+
+## Browser integrations
+
+Never embed a server API key in browser code. Issue an origin-restricted Browser token from the Kleenest Developer Portal and use `clientToken`:
+
+```ts
+const client = new KleenestClient({
+  baseUrl: 'https://ssgesjzdvdsqacdtasje.supabase.co/functions/v1/platform-api',
+  clientToken: 'YOUR_BROWSER_TOKEN',
+});
+```
+
+Browser tokens are read-only, expire within 30 days, require an exact Allowed origin, and have an independent per-minute cap.

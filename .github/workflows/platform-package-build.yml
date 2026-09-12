@@ -3,6 +3,7 @@ name: Platform Package Build
 on:
   push:
     branches:
+      - main
       - "platform/**"
     paths:
       - "packages/platform-core/**"
@@ -75,5 +76,5 @@ jobs:
         with:
           name: kleenest-platform-packages-v0.1.0
           path: platform-package-artifacts/
-          retention-days: 30
+          retention-days: 90
           if-no-files-found: error

@@ -8,6 +8,8 @@ const SDK = `export class KleenestClient {
     this.baseUrl = String(options.baseUrl || '').replace(/\\/$/, '');
     if (!this.baseUrl) throw new Error('baseUrl is required');
     this.apiKey = options.apiKey;
+    this.clientToken = options.clientToken;
+    if (this.apiKey && this.clientToken) throw new Error('Use either apiKey or clientToken, not both');
     this.fetchImpl = options.fetch || globalThis.fetch;
     if (!this.fetchImpl) throw new Error('A fetch implementation is required');
   }
@@ -15,7 +17,8 @@ const SDK = `export class KleenestClient {
     const headers = new Headers(init.headers || {});
     headers.set('accept', 'application/json');
     if (init.body && !headers.has('content-type')) headers.set('content-type', 'application/json');
-    if (this.apiKey) headers.set('x-kleenest-api-key', this.apiKey);
+    if (this.clientToken) headers.set('x-kleenest-client-token', this.clientToken);
+    else if (this.apiKey) headers.set('x-kleenest-api-key', this.apiKey);
     const response = await this.fetchImpl(this.baseUrl + path, { ...init, headers });
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
@@ -150,9 +153,8 @@ Deno.serve((req) => {
   if (req.method !== "GET") return response(JSON.stringify({ error: "Method not allowed" }), "application/json; charset=utf-8", false);
 
   const url = new URL(req.url);
-  const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const publicHost = forwardedHost || req.headers.get("host") || url.host;
-  const publicOrigin = "https://" + publicHost;
+  const configuredOrigin = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
+  const publicOrigin = configuredOrigin || url.origin;
   const base = publicOrigin + "/functions/v1/platform-distribution/v1";
   if (url.pathname.endsWith("/v1/manifest.json")) {
     return response(JSON.stringify({
