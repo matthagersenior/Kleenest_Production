@@ -135,7 +135,7 @@ begin
 
   select coalesce(issue_count,0) into v_latest_audit
   from public.capability_audit_runs
-  order by created_at desc
+  order by executed_at desc
   limit 1;
   v_latest_audit:=coalesce(v_latest_audit,0);
 
