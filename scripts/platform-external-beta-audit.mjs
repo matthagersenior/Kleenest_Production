@@ -11,8 +11,8 @@ function requireText(text, pattern, message) {
 const migrationNames = fs.readdirSync('supabase/migrations')
   .filter(name => /platform_external_beta/.test(name))
   .sort();
-if (migrationNames.length !== 1) throw new Error('Expected exactly one external beta onboarding migration.');
-const sql = file(`supabase/migrations/${migrationNames[0]}`);
+if (migrationNames.length < 1) throw new Error('Expected external beta onboarding migrations.');
+const sql = migrationNames.map(name => file(`supabase/migrations/${name}`)).join('\n');
 
 for (const table of ['platform_partner_members','platform_partner_invites']) {
   requireText(sql, new RegExp(`create table if not exists public\\.${table}`, 'i'), `Missing ${table}.`);
