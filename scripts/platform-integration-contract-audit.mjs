@@ -46,4 +46,15 @@ if (fs.existsSync('mcp/kleenest-mcp/src/index.ts')) {
   if (!mcp.includes('/v1/recommendations/')) throw new Error('MCP must delegate to REST instead of implementing a second recommendation engine.');
 }
 
+if (fs.existsSync('supabase/functions/platform-integration-smoke/index.ts')) {
+  const smoke = required(
+    'supabase/functions/platform-integration-smoke/index.ts',
+    /assert_kleenest_public_security_definer_allowlist/,
+    'Live platform smoke must assert the reviewed public SECURITY DEFINER allowlist.'
+  );
+  if (!/publicSecurityDefinerAllowlist/.test(smoke)) {
+    throw new Error('Live platform smoke must expose the public SECURITY DEFINER allowlist check.');
+  }
+}
+
 console.log('Kleenest platform integration contract audit passed.');
