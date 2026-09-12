@@ -24,7 +24,7 @@ for(const token of [
   "('platform_mcp','AI / MCP Integration'",
   "('developer_platform','Developer / Integration Platform'",
   "('fleet_employee_benefit','Fleet Employee Premium Benefit'",
-  "'employee_limit':75",
+  '"employee_limit":75',
   "('sponsored_promotion','Sponsored Promotion / Advertising'",
 ]) if(!migration.includes(token))failures.push(`pilot capability migration missing contract token: ${token}`);
 
