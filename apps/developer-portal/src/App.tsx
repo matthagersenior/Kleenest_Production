@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
 
 type Summary = {
   partner?: {
@@ -54,7 +55,10 @@ type Tab = typeof tabs[number];
 function App() {
   const [tab, setTab] = useState<Tab>('Overview');
   const [functionsBase, setFunctionsBase] = useState(() => sessionStorage.getItem('kleenest-functions-base') ?? '');
-  const [operatorToken, setOperatorToken] = useState(() => sessionStorage.getItem('kleenest-operator-token') ?? '');
+  const [publishableKey, setPublishableKey] = useState(() => sessionStorage.getItem('kleenest-publishable-key') ?? '');
+  const [ownerEmail, setOwnerEmail] = useState('');
+  const [ownerPassword, setOwnerPassword] = useState('');
+  const [accessToken, setAccessToken] = useState('');
   const [partnerId, setPartnerId] = useState(() => sessionStorage.getItem('kleenest-partner-id') ?? '');
   const [summary, setSummary] = useState<Summary | null>(null);
   const [notice, setNotice] = useState('');
@@ -72,18 +76,49 @@ function App() {
 
   function persistConfig() {
     sessionStorage.setItem('kleenest-functions-base', functionsBase);
-    sessionStorage.setItem('kleenest-operator-token', operatorToken);
+    sessionStorage.setItem('kleenest-publishable-key', publishableKey);
     sessionStorage.setItem('kleenest-partner-id', partnerId);
   }
 
+  const supabaseUrl = useMemo(
+    () => functionsBase.replace(/\/functions\/v1\/?$/, '').replace(/\/$/, ''),
+    [functionsBase],
+  );
+
+  async function signInOwner(event: FormEvent) {
+    event.preventDefault();
+    if (!supabaseUrl || !publishableKey || !ownerEmail || !ownerPassword) {
+      setNotice('Functions URL, publishable key, email, and password are required.');
+      return;
+    }
+    await action('Platform owner session authenticated.', async () => {
+      persistConfig();
+      const client = createClient(supabaseUrl, publishableKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data, error } = await client.auth.signInWithPassword({
+        email: ownerEmail,
+        password: ownerPassword,
+      });
+      if (error || !data.session?.access_token) throw error ?? new Error('Authentication failed.');
+      setAccessToken(data.session.access_token);
+      setOwnerPassword('');
+    });
+  }
+
+  function signOutOwner() {
+    setAccessToken('');
+    setNotice('Platform owner session cleared.');
+  }
+
   async function admin(operation: string, payload: Record<string, unknown> = {}) {
-    if (!functionsBase || !operatorToken) throw new Error('Functions base URL and operator token are required.');
+    if (!functionsBase || !accessToken) throw new Error('Authenticate a Kleenest platform owner first.');
     persistConfig();
     const response = await fetch(`${functionsBase.replace(/\/$/, '')}/platform-partner-admin`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-kleenest-platform-admin': operatorToken,
+        'authorization': `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ operation, ...payload }),
     });
@@ -237,7 +272,7 @@ function App() {
         </nav>
         <div className="aside-note">
           <strong>Internal operator preview</strong>
-          <span>Partner self-service auth and billing come after the authority layer.</span>
+          <span>Administrative actions require an existing Kleenest platform-owner session.</span>
         </div>
       </aside>
 
@@ -257,13 +292,20 @@ function App() {
             <input value={functionsBase} onChange={e => setFunctionsBase(e.target.value)} placeholder="https://project.supabase.co/functions/v1" />
           </label>
           <label>
-            Operator token
-            <input type="password" value={operatorToken} onChange={e => setOperatorToken(e.target.value)} placeholder="Internal operator credential" />
+            Publishable key
+            <input type="password" value={publishableKey} onChange={e => setPublishableKey(e.target.value)} placeholder="sb_publishable_..." />
           </label>
           <label>
             Partner ID
             <input value={partnerId} onChange={e => setPartnerId(e.target.value)} placeholder="UUID" />
           </label>
+          <form className="owner-login" onSubmit={signInOwner}>
+            <input type="email" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} placeholder="Kleenest owner email" autoComplete="username" />
+            <input type="password" value={ownerPassword} onChange={e => setOwnerPassword(e.target.value)} placeholder="Password" autoComplete="current-password" />
+            {accessToken
+              ? <button type="button" onClick={signOutOwner}>Clear owner session</button>
+              : <button className="primary" disabled={busy}>Sign in as owner</button>}
+          </form>
         </section>
 
         {notice && <div className="notice">{notice}</div>}
