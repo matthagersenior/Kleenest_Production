@@ -13,8 +13,9 @@ const publicSecurityInvokerBatch5Migration='supabase/migrations/20260912065000_p
 const verificationOpportunitiesMigration='supabase/migrations/20260912070500_verification_opportunities_auth_only.sql';
 const publicFunctionDefaultPrivilegesMigration='supabase/migrations/20260912072000_public_function_default_privileges.sql';
 const reviewedPublicDefinerMigration='supabase/migrations/20260912073500_reviewed_public_security_definer_allowlist.sql';
+const internalExplicitDenyMigration='supabase/migrations/20260912081500_internal_tables_explicit_deny_policies.sql';
 const failures=[];
-for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration,anonSecurityDefinerBatch2Migration,publicSecurityInvokerBatch3Migration,businessLocationCapMigration,publicSecurityInvokerBatch5Migration,verificationOpportunitiesMigration,publicFunctionDefaultPrivilegesMigration,reviewedPublicDefinerMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
+for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration,anonSecurityDefinerBatch2Migration,publicSecurityInvokerBatch3Migration,businessLocationCapMigration,publicSecurityInvokerBatch5Migration,verificationOpportunitiesMigration,publicFunctionDefaultPrivilegesMigration,reviewedPublicDefinerMigration,internalExplicitDenyMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
 if(!failures.length){
   const internalSql=fs.readFileSync(internalMigration,'utf8');
   const triggerFunctions=['converge_fleet_operational_event_to_intelligence','materialize_fleet_geofence_notification','materialize_fleet_operational_notification','sync_external_location_address'];
@@ -165,6 +166,15 @@ if(!failures.length){
   if((reviewedPublicDefinerSql.match(/KLEENEST_REVIEWED_PUBLIC_SECURITY_DEFINER:/g)||[]).length<14)failures.push('all intentional anonymous SECURITY DEFINER RPCs must carry reviewed comments');
   if(!reviewedPublicDefinerSql.includes('kleenest_public_security_definer_drift()'))failures.push('public SECURITY DEFINER drift detector is required');
   if(!reviewedPublicDefinerSql.includes('assert_kleenest_public_security_definer_allowlist()'))failures.push('public SECURITY DEFINER allowlist assertion is required');
+
+  const internalExplicitDenySql=fs.readFileSync(internalExplicitDenyMigration,'utf8');
+  const internalExplicitDenyTables=["business_restroom_preventive_work_orders","business_restroom_remediation_cases","business_reverification_cases","corridor_open_data_runtime","enterprise_location_feature_configs","enterprise_location_staff_assignments","external_ingestion_adapters","external_ingestion_runtime","external_source_place_type_map","focus_ingestion_runtime","geo_catalog_export_state","kleenest_storage_pressure_events","national_ingestion_markets","national_ingestion_runs","national_ingestion_source_policies","national_ingestion_storage_guard","platform_notification_attribution","platform_notification_rule_runs","platform_notification_rules","platform_owner_control_audit","progression_supply_runs","progression_supply_templates","real_world_demo_loop_events","real_world_demo_loop_sessions","stripe_webhook_events"];
+  for(const table of internalExplicitDenyTables){
+    if(!internalExplicitDenySql.includes(`create policy ${table}_client_deny on public.${table}`))failures.push(`${table} must carry an explicit client deny policy`);
+  }
+  if((internalExplicitDenySql.match(/for all to anon, authenticated/g)||[]).length<internalExplicitDenyTables.length)failures.push('all internal explicit deny policies must target anon/authenticated roles');
+  if((internalExplicitDenySql.match(/using \(false\)/g)||[]).length<internalExplicitDenyTables.length)failures.push('all internal explicit deny policies must deny reads');
+  if((internalExplicitDenySql.match(/with check \(false\);/g)||[]).length<internalExplicitDenyTables.length)failures.push('all internal explicit deny policies must deny writes');
 
   const migrationDir='supabase/migrations';
   const retiredOwnerRightsViews=['locations_public','review_intelligence_signals','v_ai_business_roi'];
