@@ -291,6 +291,38 @@ Deno.serve(async req => {
       return json({ ...data, warning: 'The API key is shown only once. Store it securely.' });
     }
 
+    if (operation === 'issue-public-token') {
+      const partnerId = uuid(body?.partnerId, 'partnerId');
+      const allowedOrigins = Array.isArray(body?.allowedOrigins)
+        ? body.allowedOrigins.map((value: unknown) => text(value, 300)).filter(Boolean).slice(0, 20)
+        : [];
+      const expiresAt = body?.expiresAt || new Date(Date.now() + 7 * 86400000).toISOString();
+      const quotaPerMinute = Math.max(1, Math.min(Number(body?.quotaPerMinute ?? 30), 120));
+
+      if (actor.platformOwner) {
+        const { data, error } = await db.rpc('issue_platform_publishable_token', {
+          p_partner_id: partnerId,
+          p_label: text(body?.label || 'Browser token', 120),
+          p_allowed_origins: allowedOrigins,
+          p_expires_at: expiresAt,
+          p_quota_per_minute: quotaPerMinute,
+        });
+        if (error) throw error;
+        return json({ ...data, warning: 'This browser token is publishable but origin-restricted and shown only once.' });
+      }
+
+      const { data, error } = await db.rpc('issue_platform_member_publishable_token', {
+        p_user_id: actor.userId,
+        p_partner_id: partnerId,
+        p_label: text(body?.label || 'Browser token', 120),
+        p_allowed_origins: allowedOrigins,
+        p_expires_at: expiresAt,
+        p_quota_per_minute: quotaPerMinute,
+      });
+      if (error) throw error;
+      return json({ ...data, warning: 'This browser token is publishable but origin-restricted and shown only once.' });
+    }
+
     if (operation === 'revoke-key') {
       const partnerId = uuid(body?.partnerId, 'partnerId');
       const apiKeyId = uuid(body?.apiKeyId, 'apiKeyId');
