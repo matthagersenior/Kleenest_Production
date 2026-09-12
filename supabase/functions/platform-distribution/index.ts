@@ -150,12 +150,15 @@ Deno.serve((req) => {
   if (req.method !== "GET") return response(JSON.stringify({ error: "Method not allowed" }), "application/json; charset=utf-8", false);
 
   const url = new URL(req.url);
-  const base = url.origin + "/functions/v1/platform-distribution/v1";
+  const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const publicHost = forwardedHost || req.headers.get("host") || url.host;
+  const publicOrigin = "https://" + publicHost;
+  const base = publicOrigin + "/functions/v1/platform-distribution/v1";
   if (url.pathname.endsWith("/v1/manifest.json")) {
     return response(JSON.stringify({
       version: VERSION,
       status: "beta",
-      apiBaseUrl: url.origin + "/functions/v1/platform-api",
+      apiBaseUrl: publicOrigin + "/functions/v1/platform-api",
       openapi: base + "/openapi.json",
       modules: {
         sdk: base + "/sdk.js",

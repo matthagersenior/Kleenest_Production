@@ -39,6 +39,9 @@ on:
       - "packages/webhook-types/**"
       - "supabase/functions/platform-api/**"
       - "supabase/functions/platform-partner-admin/**"
+      - "supabase/functions/platform-distribution/**"
+      - "supabase/functions/platform-integration-smoke/**"
+      - "supabase/functions/platform-developer-portal/**"
       - "supabase/functions/deliver-platform-webhooks/**"
       - "supabase/migrations/**"
       - "apps/developer-portal/**"
@@ -46,6 +49,8 @@ on:
       - "docs/platform/**"
       - "scripts/platform-integration-contract-audit.mjs"
       - "scripts/platform-partner-authority-audit.mjs"
+      - "scripts/platform-distribution-v1-audit.mjs"
+      - "scripts/platform-external-beta-audit.mjs"
       - "tsconfig.platform.json"
       - "package-lock.json"
 
