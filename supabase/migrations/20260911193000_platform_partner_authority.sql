@@ -230,14 +230,14 @@ begin
   if not exists(select 1 from public.platform_partners p where p.id=p_partner_id and p.status='active') then
     raise exception 'Active partner not found';
   end if;
-  v_raw:='kln_live_'||encode(gen_random_bytes(24),'hex');
+  v_raw:='kln_live_'||encode(extensions.gen_random_bytes(24),'hex');
   v_prefix:=left(v_raw,17);
   insert into public.platform_api_keys(partner_id,label,key_prefix,secret_hash,scopes,expires_at)
   values(
     p_partner_id,
     trim(p_label),
     v_prefix,
-    encode(digest(v_raw,'sha256'),'hex'),
+    encode(extensions.digest(v_raw,'sha256'),'hex'),
     coalesce(nullif(p_scopes,'{}'::text[]),array['recommendations:read']::text[]),
     p_expires_at
   )
@@ -287,7 +287,7 @@ begin
 
   select * into v_key
   from public.platform_api_keys k
-  where k.secret_hash=encode(digest(p_raw_key,'sha256'),'hex')
+  where k.secret_hash=encode(extensions.digest(p_raw_key,'sha256'),'hex')
     and k.revoked_at is null
     and (k.expires_at is null or k.expires_at>now())
   limit 1;
@@ -416,12 +416,12 @@ begin
   if not exists(select 1 from public.platform_partners p where p.id=p_partner_id and p.status='active') then
     raise exception 'Active partner not found';
   end if;
-  v_secret:='whsec_'||encode(gen_random_bytes(24),'hex');
+  v_secret:='whsec_'||encode(extensions.gen_random_bytes(24),'hex');
   insert into public.platform_webhook_endpoints(partner_id,url,label,event_types,signing_secret_encrypted)
   values(
     p_partner_id,p_url,coalesce(nullif(trim(p_label),''),'Default'),
     coalesce(nullif(p_event_types,'{}'::text[]),array['*']::text[]),
-    pgp_sym_encrypt(v_secret,p_master_key,'cipher-algo=aes256')
+    extensions.pgp_sym_encrypt(v_secret,p_master_key,'cipher-algo=aes256')
   )
   returning id into v_id;
   return jsonb_build_object('endpoint_id',v_id,'signing_secret',v_secret,'url',p_url);
@@ -517,7 +517,7 @@ select
   ev.event_type,
   ev.created_at,
   ep.url,
-  pgp_sym_decrypt(ep.signing_secret_encrypted,p_master_key)::text,
+  extensions.pgp_sym_decrypt(ep.signing_secret_encrypted,p_master_key)::text,
   ev.payload,
   c.attempts
 from claimed c
