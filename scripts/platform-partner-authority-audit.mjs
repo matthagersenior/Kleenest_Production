@@ -8,7 +8,7 @@ function requireText(text, pattern, message) {
   if (!pattern.test(text)) throw new Error(message);
 }
 
-const migrations = fs.readdirSync('supabase/migrations').filter(name => /platform_partner/.test(name)).sort();
+const migrations = fs.readdirSync('supabase/migrations').filter(name => /platform_(partner|integration_smoke_trigger)/.test(name)).sort();
 if (migrations.length < 1) throw new Error('Expected platform partner authority migrations.');
 const sql = migrations.map(name => file(`supabase/migrations/${name}`)).join('\n');
 
