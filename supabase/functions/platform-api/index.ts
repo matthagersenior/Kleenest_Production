@@ -118,6 +118,82 @@ function publicVerificationStatus(value: unknown): 'verified' | 'needs_verificat
   return 'unknown';
 }
 
+function optionalText(value: unknown, name: string, max = 320): string | null {
+  if (value === null || value === undefined) return null;
+  const normalized = String(value).trim();
+  if (!normalized) return null;
+  if (normalized.length > max) throw new ApiInputError(`${name} is too long`);
+  return normalized;
+}
+
+function scoredMatchCandidate(row: Record<string, unknown>) {
+  const exactExternal = boolOrNull(row.exact_external) === true;
+  const exactAddress = boolOrNull(row.exact_address) === true;
+  const exactName = boolOrNull(row.exact_name) === true;
+  const cityMatch = boolOrNull(row.city_match) === true;
+  const stateMatch = boolOrNull(row.state_match) === true;
+  const postalMatch = boolOrNull(row.postal_match) === true;
+  const distanceMeters = finite(row.distance_meters);
+  const matchedSignals: string[] = [];
+  let matchScore = 0;
+
+  if (exactExternal) {
+    matchedSignals.push('EXTERNAL_ID');
+    matchScore = 100;
+  }
+  if (exactAddress) {
+    matchedSignals.push('ADDRESS');
+    if (!exactExternal) matchScore += 75;
+  }
+  if (exactName) {
+    matchedSignals.push('NAME');
+    if (!exactExternal) matchScore += 25;
+  }
+  if (cityMatch) {
+    matchedSignals.push('CITY');
+    if (!exactExternal) matchScore += 4;
+  }
+  if (stateMatch) {
+    matchedSignals.push('STATE');
+    if (!exactExternal) matchScore += 3;
+  }
+  if (postalMatch) {
+    matchedSignals.push('POSTAL_CODE');
+    if (!exactExternal) matchScore += 8;
+  }
+
+  if (distanceMeters !== null) {
+    let proximityScore = 0;
+    let proximitySignal = 'PROXIMITY';
+    if (distanceMeters <= 25) { proximityScore = 50; proximitySignal = 'PROXIMITY_25M'; }
+    else if (distanceMeters <= 75) { proximityScore = 40; proximitySignal = 'PROXIMITY_75M'; }
+    else if (distanceMeters <= 150) { proximityScore = 30; proximitySignal = 'PROXIMITY_150M'; }
+    else if (distanceMeters <= 250) { proximityScore = 20; proximitySignal = 'PROXIMITY_250M'; }
+    else if (distanceMeters <= 500) { proximityScore = 10; proximitySignal = 'PROXIMITY_500M'; }
+    else if (distanceMeters <= 1000) { proximityScore = 5; proximitySignal = 'PROXIMITY_1000M'; }
+    matchedSignals.push(proximitySignal);
+    if (!exactExternal) matchScore += proximityScore;
+  }
+
+  return {
+    place: {
+      kleenestPlaceId: String(row.location_id ?? ''),
+      name: String(row.name ?? 'Kleenest place'),
+      latitude: finite(row.latitude),
+      longitude: finite(row.longitude),
+      address: stringOrNull(row.address),
+      city: stringOrNull(row.city),
+      state: stringOrNull(row.state),
+      postalCode: stringOrNull(row.postal_code),
+    },
+    matchScore: Math.max(0, Math.min(100, Math.round(matchScore))),
+    matchedSignals,
+    distanceMeters,
+    verificationStatus: publicVerificationStatus(row.verification_status),
+    confidence: normalizeConfidence(row.verification_confidence),
+  };
+}
+
 function publicPlaceDetails(row: Record<string, unknown>) {
   const id = String(row.id ?? row.location_id ?? '').trim();
   if (!id) return null;
@@ -426,6 +502,81 @@ async function placeDetails(routePath: string) {
   return publicPlaceDetails(data as Record<string, unknown>);
 }
 
+async function matchPlaces(body: any) {
+  const external = recordOrNull(body?.external);
+  const externalSource = optionalText(external?.source, 'external.source', 160);
+  const externalId = optionalText(external?.id, 'external.id', 320);
+  if (Boolean(externalSource) !== Boolean(externalId)) {
+    throw new ApiInputError('external.source and external.id must be supplied together');
+  }
+
+  const name = optionalText(body?.name, 'name');
+  const address = optionalText(body?.address, 'address');
+  const city = optionalText(body?.city, 'city', 160);
+  const state = optionalText(body?.state, 'state', 80);
+  const postalCode = optionalText(body?.postalCode, 'postalCode', 40);
+  const location = recordOrNull(body?.location);
+  const hasLatitude = location?.latitude !== undefined && location?.latitude !== null;
+  const hasLongitude = location?.longitude !== undefined && location?.longitude !== null;
+  if (hasLatitude !== hasLongitude) {
+    throw new ApiInputError('location.latitude and location.longitude must be supplied together');
+  }
+  const latitude = hasLatitude ? coordinate(location?.latitude, -90, 90, 'latitude') : null;
+  const longitude = hasLongitude ? coordinate(location?.longitude, -180, 180, 'longitude') : null;
+
+  if (!externalId && !address && latitude === null) {
+    throw new ApiInputError('external id, address, or coordinates are required');
+  }
+
+  const maxDistanceMeters = Math.round(boundedNumber(body?.maxDistanceMeters, 10, 5000, 250));
+  const limit = Math.round(boundedNumber(body?.limit, 1, 10, 5));
+
+  const { data, error } = await db.rpc('platform_match_places', {
+    p_name: name,
+    p_address: address,
+    p_city: city,
+    p_state: state,
+    p_postal_code: postalCode,
+    p_lat: latitude,
+    p_lng: longitude,
+    p_max_distance_m: maxDistanceMeters,
+    p_external_source: externalSource,
+    p_external_id: externalId,
+    p_limit: limit,
+  });
+  if (error) throw error;
+
+  const candidates = (Array.isArray(data) ? data : [])
+    .filter(row => row && typeof row === 'object')
+    .map(row => scoredMatchCandidate(row as Record<string, unknown>))
+    .filter(candidate => candidate.place.kleenestPlaceId)
+    .sort((a, b) =>
+      b.matchScore - a.matchScore ||
+      (a.distanceMeters ?? Number.POSITIVE_INFINITY) - (b.distanceMeters ?? Number.POSITIVE_INFINITY) ||
+      (b.confidence ?? -1) - (a.confidence ?? -1) ||
+      a.place.kleenestPlaceId.localeCompare(b.place.kleenestPlaceId)
+    )
+    .slice(0, limit);
+
+  const top = candidates[0] ?? null;
+  const second = candidates[1] ?? null;
+  const margin = top && second ? top.matchScore - second.matchScore : Number.POSITIVE_INFINITY;
+  const exactExternalMatch = Boolean(top?.matchedSignals.includes('EXTERNAL_ID'));
+  const matched = Boolean(top && top.matchScore >= 75 && (exactExternalMatch || !second || margin >= 10));
+  const ambiguous = Boolean(top && top.matchScore >= 75 && !matched);
+
+  return {
+    match: matched ? top : null,
+    candidates,
+    metadata: {
+      requestedAt: new Date().toISOString(),
+      candidateCount: candidates.length,
+      matched,
+      ambiguous,
+    },
+  };
+}
+
 async function nearby(body: any) {
   const latitude = coordinate(body?.location?.latitude, -90, 90, 'latitude');
   const longitude = coordinate(body?.location?.longitude, -180, 180, 'longitude');
@@ -503,12 +654,13 @@ Deno.serve(async req => {
   const routePath = canonicalPlatformRoute(url.pathname);
   const isNearby = routePath === '/v1/recommendations/nearby';
   const isRoute = routePath === '/v1/recommendations/route';
-  const isPlaceDetails = /^\/v1\/places\/[^/]+$/.test(routePath);
+  const isPlaceMatch = routePath === '/v1/places/match';
+  const isPlaceDetails = /^\/v1\/places\/[^/]+$/.test(routePath) && !isPlaceMatch;
 
-  if (!isNearby && !isRoute && !isPlaceDetails) {
+  if (!isNearby && !isRoute && !isPlaceMatch && !isPlaceDetails) {
     return json({ error: 'Not found' }, 404, corsHeaders(req));
   }
-  if ((isNearby || isRoute) && req.method !== 'POST') {
+  if ((isNearby || isRoute || isPlaceMatch) && req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
   }
   if (isPlaceDetails && req.method !== 'GET') {
@@ -535,7 +687,9 @@ Deno.serve(async req => {
       }
     } else {
       const body = await req.json().catch(() => ({}));
-      if (isNearby) {
+      if (isPlaceMatch) {
+        payload = await matchPlaces(body);
+      } else if (isNearby) {
         payload = await nearby(body);
       } else {
         payload = await route(body);
