@@ -767,7 +767,7 @@ begin
 end;
 $function$;
 
-for $grant$
+do $grant$
 declare v_sig regprocedure;
 begin
   foreach v_sig in array array[
