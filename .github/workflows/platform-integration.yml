@@ -90,6 +90,7 @@ jobs:
           deno check --node-modules-dir=auto supabase/functions/platform-partner-admin/index.ts
           deno check supabase/functions/platform-developer-portal/index.ts
           deno check --node-modules-dir=auto supabase/functions/platform-integration-smoke/index.ts
+          deno check supabase/functions/platform-distribution/index.ts
           deno check --node-modules-dir=auto supabase/functions/deliver-platform-webhooks/index.ts
       - name: Developer portal build
         run: npm run build --workspace @kleenest/developer-portal
