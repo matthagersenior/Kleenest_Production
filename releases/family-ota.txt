@@ -1,2 +1,1 @@
-developer-partner-control-plane
 pilot-launch-assurance-control-plane
