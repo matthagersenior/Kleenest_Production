@@ -176,15 +176,14 @@ Deno.serve(async req => {
 
     if (operation === 'create-partner') {
       requirePlatformOwner(actor);
-      const { data, error } = await db.rpc('create_platform_partner', {
+      const bundleKey = text(body?.bundleKey || 'starter_api', 80);
+      const { data, error } = await db.rpc('create_platform_partner_with_bundle', {
         p_slug: text(body?.slug, 64),
         p_name: text(body?.name, 160),
-        p_plan: text(body?.plan || 'developer', 24),
-        p_quota_per_minute: Number(body?.quotaPerMinute ?? 60),
-        p_quota_per_month: Number(body?.quotaPerMonth ?? 10000),
+        p_bundle_key: bundleKey,
       });
       if (error) throw error;
-      return json({ partnerId: data });
+      return json({ partnerId: data, bundleKey });
     }
 
     if (operation === 'set-billing') {
@@ -256,14 +255,14 @@ Deno.serve(async req => {
           p_partner_id: partnerId,
         });
         if (error) throw error;
-        return json({ ...(data ?? {}), membership_role: 'platform_owner' });
+        return json({ ...(data ?? {}), membership_role: 'platform_owner', product_access: data?.product_access ?? null });
       }
       const { data, error } = await db.rpc('platform_member_partner_summary', {
         p_user_id: actor.userId,
         p_partner_id: partnerId,
       });
       if (error) throw error;
-      return json(data ?? {});
+      return json({ ...(data ?? {}), product_access: data?.product_access ?? null });
     }
 
     if (operation === 'issue-key') {
