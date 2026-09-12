@@ -33,6 +33,7 @@ export default function Layout(){
     <Tabs.Screen name="moderation" options={{title:'Moderation'}}/>
     <Tabs.Screen name="access" options={{title:'Access'}}/>
     <Tabs.Screen name="operations" options={{title:'Operations'}}/>
+    <Tabs.Screen name="developers" options={{title:'Developers'}}/>
     <Tabs.Screen name="pilots" options={{title:'Pilots'}}/>
     <Tabs.Screen name="auth" options={{href:null,title:'Sign in',headerShown:false}}/>
     <Tabs.Screen name="accounts" options={{href:null,title:'Accounts'}}/>
