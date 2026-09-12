@@ -97,6 +97,153 @@ function boolOrNull(value: unknown): boolean | null {
   return null;
 }
 
+function stringOrNull(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const normalized = String(value).trim();
+  return normalized || null;
+}
+
+function recordOrNull(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function publicVerificationStatus(value: unknown): 'verified' | 'needs_verification' | 'unverified' | 'conflicted' | 'unknown' {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'verified') return 'verified';
+  if (normalized === 'needs_verification' || normalized === 'needs verification') return 'needs_verification';
+  if (normalized === 'unverified') return 'unverified';
+  if (normalized === 'conflicted' || normalized === 'conflict') return 'conflicted';
+  return 'unknown';
+}
+
+function publicPlaceDetails(row: Record<string, unknown>) {
+  const id = String(row.id ?? row.location_id ?? '').trim();
+  if (!id) return null;
+
+  const business = recordOrNull(row.business);
+  const intelligence = recordOrNull(row.intelligence);
+  const featureSummary = recordOrNull(row.feature_summary);
+  const hours = Array.isArray(row.hours) ? row.hours : [];
+  const promotions = Array.isArray(row.promotions) ? row.promotions : [];
+  const photos = Array.isArray(row.photos) ? row.photos : [];
+
+  const amenityNames = (() => {
+    const raw = featureSummary?.amenity_names ?? featureSummary?.amenities ?? row.amenity_names;
+    if (!Array.isArray(raw)) return [];
+    return [...new Set(raw.map(item => {
+      if (typeof item === 'string') return item.trim();
+      const object = recordOrNull(item);
+      return String(object?.name ?? object?.amenity_name ?? '').trim();
+    }).filter(Boolean))].slice(0, 64);
+  })();
+
+  const publicHours = hours
+    .map(item => recordOrNull(item))
+    .filter((item): item is Record<string, unknown> => Boolean(item))
+    .map(item => ({
+      dayOfWeek: finite(item.day_of_week),
+      opensAt: stringOrNull(item.opens_at),
+      closesAt: stringOrNull(item.closes_at),
+      is24Hours: boolOrNull(item.is_24_hours) === true,
+      notes: stringOrNull(item.notes),
+    }));
+
+  const publicPromotions = promotions
+    .map(item => recordOrNull(item))
+    .filter((item): item is Record<string, unknown> => Boolean(item))
+    .map(item => ({
+      id: stringOrNull(item.id),
+      title: String(item.title ?? 'Kleenest offer').trim() || 'Kleenest offer',
+      description: stringOrNull(item.description),
+      discount: stringOrNull(item.discount),
+      startsAt: stringOrNull(item.starts_at),
+      endsAt: stringOrNull(item.ends_at),
+    }))
+    .slice(0, 25);
+
+  const publicPhotos = photos
+    .map(item => recordOrNull(item))
+    .filter((item): item is Record<string, unknown> => Boolean(item))
+    .map(item => ({
+      id: stringOrNull(item.id),
+      url: stringOrNull(item.url ?? item.photo_url ?? item.public_url),
+      caption: stringOrNull(item.caption),
+      isFeatured: boolOrNull(item.is_featured) === true,
+    }))
+    .filter(item => item.url && /^https?:\/\//i.test(item.url))
+    .map(item => ({ ...item, url: item.url as string }))
+    .slice(0, 30);
+
+  const confidence = normalizeConfidence(
+    row.verification_confidence ?? intelligence?.confidence ?? intelligence?.confidence_score
+  );
+  const verificationStatus = publicVerificationStatus(
+    row.verification_status ?? row.bathroom_verification_status ?? intelligence?.status
+  );
+  const publicAccess = boolOrNull(
+    row.public_access ?? row.restroom_public_access ?? featureSummary?.public_access ?? intelligence?.public_access
+  );
+  const open24Hours = boolOrNull(
+    row.open_24_hours ?? featureSummary?.open_24_hours ?? intelligence?.open_24_hours
+  );
+
+  return {
+    place: {
+      kleenestPlaceId: id,
+      name: String(row.name ?? 'Kleenest place'),
+      latitude: finite(row.latitude),
+      longitude: finite(row.longitude),
+      address: stringOrNull(row.address),
+      city: stringOrNull(row.city),
+      state: stringOrNull(row.state),
+      postalCode: stringOrNull(row.postal_code),
+      country: stringOrNull(row.country),
+      placeType: stringOrNull(row.place_type),
+      description: stringOrNull(row.description),
+      phone: stringOrNull(row.phone),
+      website: stringOrNull(row.website),
+    },
+    business: business && business.id ? {
+      id: String(business.id),
+      name: String(business.name ?? row.business_name ?? 'Business'),
+      description: stringOrNull(business.description),
+      website: stringOrNull(business.website),
+      phone: stringOrNull(business.phone),
+      logoUrl: stringOrNull(business.logo_url),
+      verificationStatus: stringOrNull(business.verification_status),
+    } : null,
+    restroom: {
+      publicAccess,
+      wheelchairAccessible: boolOrNull(row.accessible ?? featureSummary?.accessible),
+      changingTable: boolOrNull(row.changing_table ?? featureSummary?.changing_table),
+      familyRestroom: boolOrNull(row.family_restroom ?? featureSummary?.family_restroom),
+      open24Hours,
+      amenityNames,
+      smartBathroom: boolOrNull(row.smart_bathroom),
+      cleanlinessPct: finite(row.cleanliness_pct ?? row.cleanliness),
+      rating: finite(row.rating),
+      reviewCount: finite(row.review_count),
+      cleaningSchedule: stringOrNull(row.cleaning_schedule),
+    },
+    trust: {
+      confidence,
+      verificationStatus,
+      lastVerifiedAt: stringOrNull(row.bathroom_verified_at ?? intelligence?.last_verified_at),
+      observationCount: finite(row.verification_observation_count ?? intelligence?.evidence_count),
+      freshnessAt: stringOrNull(row.updated_at ?? intelligence?.updated_at),
+      positiveCount: finite(row.verification_positive_count ?? row.bathroom_positive_count),
+      negativeCount: finite(row.verification_negative_count ?? row.bathroom_negative_count),
+    },
+    hours: publicHours,
+    promotions: publicPromotions,
+    photos: publicPhotos,
+    deepLink: `https://kleenest.app/place/${encodeURIComponent(id)}`,
+    source: 'kleenest' as const,
+  };
+}
+
 function normalizeRow(row: Record<string, unknown>) {
   const id = String(row.location_id ?? row.place_id ?? row.id ?? '').trim();
   const confidence = normalizeConfidence(row.confidence ?? row.confidence_score ?? row.trust_score);
@@ -189,12 +336,20 @@ function suppliedApiKey(req: Request): string {
     ?? '';
 }
 
+function authorizationRoute(route: string): string {
+  // Place details are read-only recommendation context. Keep existing partner and
+  // publishable credentials backward-compatible under recommendations:read.
+  return route.startsWith('/v1/places/')
+    ? '/v1/recommendations/place-details'
+    : route;
+}
+
 async function authorize(req: Request, route: string): Promise<Authorization> {
   const rawKey = suppliedApiKey(req);
   const requestId = crypto.randomUUID();
   const { data, error } = await db.rpc('authorize_platform_request', {
     p_raw_key: rawKey,
-    p_route: route,
+    p_route: authorizationRoute(route),
     p_request_id: requestId,
     p_origin: req.headers.get('origin'),
   });
@@ -249,6 +404,26 @@ async function recordOutcome(auth: Authorization, route: string, status: number)
     p_units: 1,
   });
   if (error) console.error('Kleenest Platform usage outcome record failed', error.code ?? 'rpc_error');
+}
+
+function placeIdFromRoute(routePath: string): string {
+  const match = routePath.match(/^\/v1\/places\/([^/]+)$/);
+  if (!match) throw new ApiInputError('Place id is required');
+  const decoded = decodeURIComponent(match[1]).trim();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(decoded)) {
+    throw new ApiInputError('Place id is invalid');
+  }
+  return decoded;
+}
+
+async function placeDetails(routePath: string) {
+  const placeId = placeIdFromRoute(routePath);
+  const { data, error } = await db.rpc('mobile_location_detail_v1', {
+    p_location_id: placeId,
+  });
+  if (error) throw error;
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+  return publicPlaceDetails(data as Record<string, unknown>);
 }
 
 async function nearby(body: any) {
@@ -324,9 +499,21 @@ Deno.serve(async req => {
     return json({ ok: true, service: 'kleenest-platform-api', version: 'v1' }, 200, corsHeaders(req));
   }
   if (!SUPABASE_SECRET_KEY) return json({ error: 'Service unavailable' }, 503, corsHeaders(req));
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
 
   const routePath = canonicalPlatformRoute(url.pathname);
+  const isNearby = routePath === '/v1/recommendations/nearby';
+  const isRoute = routePath === '/v1/recommendations/route';
+  const isPlaceDetails = /^\/v1\/places\/[^/]+$/.test(routePath);
+
+  if (!isNearby && !isRoute && !isPlaceDetails) {
+    return json({ error: 'Not found' }, 404, corsHeaders(req));
+  }
+  if ((isNearby || isRoute) && req.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
+  }
+  if (isPlaceDetails && req.method !== 'GET') {
+    return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
+  }
 
   let auth: Authorization;
   try {
@@ -340,14 +527,19 @@ Deno.serve(async req => {
   let status = 200;
   let payload: unknown;
   try {
-    const body = await req.json().catch(() => ({}));
-    if (routePath === '/v1/recommendations/nearby') {
-      payload = await nearby(body);
-    } else if (routePath === '/v1/recommendations/route') {
-      payload = await route(body);
+    if (isPlaceDetails) {
+      payload = await placeDetails(routePath);
+      if (!payload) {
+        status = 404;
+        payload = { error: 'Place not found' };
+      }
     } else {
-      status = 404;
-      payload = { error: 'Not found' };
+      const body = await req.json().catch(() => ({}));
+      if (isNearby) {
+        payload = await nearby(body);
+      } else {
+        payload = await route(body);
+      }
     }
   } catch (error) {
     if (error instanceof ApiInputError) {

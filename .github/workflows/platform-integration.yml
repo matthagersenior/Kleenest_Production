@@ -23,6 +23,7 @@ on:
       - "mcp/kleenest-mcp/**"
       - "docs/platform/**"
       - "scripts/platform-integration-contract-audit.mjs"
+      - "scripts/platform-place-details-audit.mjs"
       - "scripts/platform-partner-authority-audit.mjs"
       - "scripts/platform-external-beta-audit.mjs"
       - "scripts/platform-distribution-v1-audit.mjs"
@@ -81,6 +82,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Platform contract audit
         run: node scripts/platform-integration-contract-audit.mjs
+      - name: Place details contract audit
+        run: node scripts/platform-place-details-audit.mjs
       - name: Partner platform authority audit
         run: node scripts/platform-partner-authority-audit.mjs
       - name: External beta onboarding audit

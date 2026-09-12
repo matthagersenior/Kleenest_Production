@@ -27,6 +27,16 @@ async function callApi(apiKey: string, path: string, body: unknown) {
   return { ok: response.ok, status: response.status, payload };
 }
 
+async function callGetApi(apiKey: string, path: string) {
+  const response = await fetch(`${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/platform-api${path}`, {
+    method: 'GET',
+    headers: { 'x-kleenest-api-key': apiKey },
+    signal: AbortSignal.timeout(20000),
+  });
+  const payload = await response.json().catch(() => ({}));
+  return { ok: response.ok, status: response.status, payload };
+}
+
 async function callBrowserToken(clientToken: string, origin: string, path: string, body: unknown) {
   const response = await fetch(`${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/platform-api${path}`, {
     method: 'POST',
@@ -156,6 +166,10 @@ Deno.serve(async req => {
     ? (nearby.payload as any).recommendations : [];
   const routeRecommendations = Array.isArray((route.payload as any)?.recommendations)
     ? (route.payload as any).recommendations : [];
+  const nearbyPlaceId = String(nearbyRecommendations[0]?.place?.kleenestPlaceId ?? '');
+  const placeDetails = nearbyPlaceId
+    ? await callGetApi(String(apiKey), `/v1/places/${encodeURIComponent(nearbyPlaceId)}`)
+    : { ok: false, status: 0, payload: {} as any };
 
   const recommendationShape = (item: any) =>
     typeof item?.place?.kleenestPlaceId === 'string' &&
@@ -205,6 +219,10 @@ Deno.serve(async req => {
   const checks = {
     publicSecurityDefinerAllowlist: !publicSecurityDefinerError,
     restNearby: nearby.ok,
+    placeDetails: placeDetails.ok
+      && (placeDetails.payload as any)?.place?.kleenestPlaceId === nearbyPlaceId
+      && !('source_metadata' in ((placeDetails.payload as any) ?? {}))
+      && !('owner_name' in ((placeDetails.payload as any) ?? {})),
     sdkTransport: nearby.ok && nearbyRecommendations.every(recommendationShape),
     widgetRenderable: nearby.ok && nearbyRecommendations.every((item: any) =>
       typeof item?.place?.name === 'string' && typeof item?.deepLink === 'string'
@@ -247,6 +265,7 @@ Deno.serve(async req => {
     },
     http: {
       nearby: nearby.status,
+      placeDetails: placeDetails.status,
       route: route.status,
       manifest: manifestResponse.status,
       sdk: sdk.status,
@@ -261,6 +280,7 @@ Deno.serve(async req => {
     },
     sample: {
       nearby: nearbyRecommendations.slice(0, 1),
+      placeDetails: placeDetails.ok ? placeDetails.payload : null,
       routeNextStop: routeRecommendations[0] ?? null,
       portalLocation,
     },
