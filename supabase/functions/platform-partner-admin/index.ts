@@ -6,9 +6,12 @@ const secretKeys = (() => {
   try { return JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}'); }
   catch { return {}; }
 })();
+const publishableKeys = (() => {
+  try { return JSON.parse(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS') ?? '{}'); }
+  catch { return {}; }
+})();
 const SERVICE_KEY = secretKeys.default ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const ADMIN_SECRET = Deno.env.get('KLEENEST_PLATFORM_ADMIN_SECRET') ?? '';
-const WEBHOOK_MASTER_KEY = Deno.env.get('KLEENEST_PLATFORM_WEBHOOK_MASTER_KEY') ?? '';
+const PUBLISHABLE_KEY = publishableKeys.default ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
 const db = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -21,15 +24,25 @@ function json(body: unknown, status = 200) {
       'content-type': 'application/json; charset=utf-8',
       'cache-control': 'no-store',
       'access-control-allow-origin': '*',
-      'access-control-allow-headers': 'content-type,x-kleenest-platform-admin',
+      'access-control-allow-headers': 'content-type,authorization,apikey',
       'access-control-allow-methods': 'POST,OPTIONS',
     },
   });
 }
 
-function authorized(req: Request) {
-  const supplied = req.headers.get('x-kleenest-platform-admin') ?? '';
-  return ADMIN_SECRET.length >= 24 && supplied.length === ADMIN_SECRET.length && supplied === ADMIN_SECRET;
+async function authorized(req: Request) {
+  const authHeader = req.headers.get('authorization') ?? '';
+  if (!authHeader.toLowerCase().startsWith('bearer ') || !PUBLISHABLE_KEY) return false;
+
+  const userClient = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: userData, error: userError } = await userClient.auth.getUser();
+  if (userError || !userData.user) return false;
+
+  const { data: allowed, error: ownerError } = await userClient.rpc('is_platform_owner_session');
+  return !ownerError && allowed === true;
 }
 
 function text(value: unknown, max = 160) {
@@ -47,8 +60,8 @@ function uuid(value: unknown, name: string) {
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: json({}).headers });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-  if (!SERVICE_KEY || !WEBHOOK_MASTER_KEY) return json({ error: 'Service unavailable' }, 503);
-  if (!authorized(req)) return json({ error: 'Unauthorized' }, 401);
+  if (!SERVICE_KEY || !PUBLISHABLE_KEY) return json({ error: 'Service unavailable' }, 503);
+  if (!await authorized(req)) return json({ error: 'Unauthorized' }, 401);
 
   try {
     const body = await req.json().catch(() => ({}));
@@ -113,7 +126,6 @@ Deno.serve(async req => {
         p_url: text(body?.url, 1000),
         p_label: text(body?.label || 'Default', 120),
         p_event_types: eventTypes,
-        p_master_key: WEBHOOK_MASTER_KEY,
       });
       if (error) throw error;
       return json({ ...data, warning: 'The signing secret is shown only once. Store it securely.' });
