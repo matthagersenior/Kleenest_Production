@@ -8,8 +8,9 @@ const externalObservationMigration='supabase/migrations/20260912052000_external_
 const anonSecurityDefinerMigration='supabase/migrations/20260912054500_anon_security_definer_batch1.sql';
 const anonSecurityDefinerBatch2Migration='supabase/migrations/20260912060000_anon_security_definer_batch2_helpers.sql';
 const publicSecurityInvokerBatch3Migration='supabase/migrations/20260912061500_public_security_invoker_batch3.sql';
+const businessLocationCapMigration='supabase/migrations/20260912063000_business_location_cap_auth_only.sql';
 const failures=[];
-for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration,anonSecurityDefinerBatch2Migration,publicSecurityInvokerBatch3Migration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
+for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration,anonSecurityDefinerBatch2Migration,publicSecurityInvokerBatch3Migration,businessLocationCapMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
 if(!failures.length){
   const internalSql=fs.readFileSync(internalMigration,'utf8');
   const triggerFunctions=['converge_fleet_operational_event_to_intelligence','materialize_fleet_geofence_notification','materialize_fleet_operational_notification','sync_external_location_address'];
@@ -107,6 +108,10 @@ if(!failures.length){
     if(!publicSecurityInvokerBatch3Sql.includes(`alter function public.${fn}`))failures.push(`${fn} must be declared in public invoker hardening`);
   }
   if((publicSecurityInvokerBatch3Sql.match(/security invoker;/g)||[]).length<2)failures.push('public invoker batch3 must convert both public RPCs to SECURITY INVOKER');
+
+  const businessLocationCapSql=fs.readFileSync(businessLocationCapMigration,'utf8');
+  if(!businessLocationCapSql.includes('revoke all on function public.get_business_location_cap(uuid)'))failures.push('business location cap must revoke PUBLIC/anon execution');
+  if(!businessLocationCapSql.includes('grant execute on function public.get_business_location_cap(uuid)'))failures.push('business location cap must preserve authenticated/service execution');
 
   const migrationDir='supabase/migrations';
   const retiredOwnerRightsViews=['locations_public','review_intelligence_signals','v_ai_business_roi'];
