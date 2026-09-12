@@ -7,8 +7,6 @@ const secretKeys = (() => {
   catch { return {}; }
 })();
 const SERVICE_KEY = secretKeys.default ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const WORKER_SECRET = Deno.env.get('KLEENEST_PLATFORM_WEBHOOK_WORKER_SECRET') ?? '';
-const WEBHOOK_MASTER_KEY = Deno.env.get('KLEENEST_PLATFORM_WEBHOOK_MASTER_KEY') ?? '';
 
 const db = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -105,15 +103,23 @@ async function deliver(item: ClaimedDelivery) {
 
 Deno.serve(async req => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-  if (!SERVICE_KEY || !WEBHOOK_MASTER_KEY || !WORKER_SECRET) return json({ error: 'Service unavailable' }, 503);
-  if ((req.headers.get('x-kleenest-worker-secret') ?? '') !== WORKER_SECRET) return json({ error: 'Unauthorized' }, 401);
+  if (!SERVICE_KEY) return json({ error: 'Service unavailable' }, 503);
+
+  const suppliedSecret = req.headers.get('x-kleenest-worker-secret') ?? '';
+  const { data: allowed, error: authError } = await db.rpc('authorize_platform_webhook_worker', {
+    p_secret: suppliedSecret,
+  });
+  if (authError) {
+    console.error('Webhook worker authorization failed', authError.code ?? 'rpc_error');
+    return json({ error: 'Service unavailable' }, 503);
+  }
+  if (allowed !== true) return json({ error: 'Unauthorized' }, 401);
 
   const body = await req.json().catch(() => ({}));
   const requested = Math.round(Number(body?.limit ?? 20));
   const limit = Number.isFinite(requested) ? Math.max(1, Math.min(requested, 50)) : 20;
 
   const { data, error } = await db.rpc('claim_platform_webhook_deliveries', {
-    p_master_key: WEBHOOK_MASTER_KEY,
     p_limit: limit,
   });
   if (error) {
