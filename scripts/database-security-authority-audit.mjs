@@ -5,8 +5,9 @@ const purchaseMigration='supabase/migrations/20260831044500_single_use_purchase_
 const viewMigration='supabase/migrations/20260831084000_mobile_live_view_security_invoker_hardening.sql';
 const fkMigration='supabase/migrations/20260831084500_mobile_live_foreign_key_index_convergence.sql';
 const externalObservationMigration='supabase/migrations/20260912052000_external_observation_live_summary_rls_hardening.sql';
+const anonSecurityDefinerMigration='supabase/migrations/20260912054500_anon_security_definer_batch1.sql';
 const failures=[];
-for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
+for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
 if(!failures.length){
   const internalSql=fs.readFileSync(internalMigration,'utf8');
   const triggerFunctions=['converge_fleet_operational_event_to_intelligence','materialize_fleet_geofence_notification','materialize_fleet_operational_notification','sync_external_location_address'];
@@ -59,6 +60,36 @@ if(!failures.length){
   if(!externalObservationSql.includes('alter view public.restroom_intelligence set (security_invoker = true);'))failures.push('restroom_intelligence must remain security_invoker after external observation hardening');
   if(!externalObservationSql.includes('revoke all on function public.kleenest_location_confidence(uuid)'))failures.push('legacy confidence RPC must not remain publicly executable');
   if(!externalObservationSql.includes('grant execute on function public.kleenest_location_confidence(uuid)'))failures.push('service-role confidence RPC authority must be preserved');
+
+  const anonSecurityDefinerSql=fs.readFileSync(anonSecurityDefinerMigration,'utf8');
+  const serviceOnlyFns=[
+    '_progression_level_for_xp(bigint)',
+    'cold_ingestion_run_archive_ack(uuid[])',
+    'cold_ingestion_run_archive_batch(integer)',
+    'run_corridor_ingestion_scheduler()',
+    'run_corridor_open_data_scheduler()',
+  ];
+  for(const fn of serviceOnlyFns){
+    if(!anonSecurityDefinerSql.includes(`revoke all on function public.${fn}`))failures.push(`${fn} must revoke direct app-role execution`);
+    if(!anonSecurityDefinerSql.includes(`grant execute on function public.${fn}`))failures.push(`${fn} must preserve service-role execution`);
+  }
+  const authenticatedOnlyFns=[
+    'attach_discovery_photo(uuid,text,text,bigint,integer,integer)',
+    'consumer_active_objectives()',
+    'consumer_match_or_create_discovery(jsonb)',
+    'consumer_progression_overview()',
+    'consumer_progression_rankings(text,text,jsonb)',
+    'consumer_record_discovery_evidence(uuid,jsonb)',
+    'list_my_blocked_users()',
+    'live_network_motif_snapshot(uuid,integer)',
+    'record_progression_event_v2(text,jsonb,text)',
+    'report_ai_response(text,text,text,text,text,text,text)',
+    'require_current_policy_acceptance()',
+  ];
+  for(const fn of authenticatedOnlyFns){
+    if(!anonSecurityDefinerSql.includes(`revoke all on function public.${fn}`))failures.push(`${fn} must revoke anonymous/public execution`);
+    if(!anonSecurityDefinerSql.includes(`grant execute on function public.${fn}`))failures.push(`${fn} must preserve authenticated/service execution`);
+  }
 
   const migrationDir='supabase/migrations';
   const retiredOwnerRightsViews=['locations_public','review_intelligence_signals','v_ai_business_roi'];
