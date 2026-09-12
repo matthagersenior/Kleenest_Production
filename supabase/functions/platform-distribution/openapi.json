@@ -244,6 +244,60 @@
           }
         }
       }
+    },
+    "/v1/places/match": {
+      "post": {
+        "tags": [
+          "Places"
+        ],
+        "summary": "Match a partner place record to Kleenest",
+        "description": "Read-only deterministic resolver. Returns a canonical match only when the leading candidate is strong and not ambiguous; otherwise candidates are returned for caller review.",
+        "security": [
+          {
+            "KleenestApiKey": []
+          },
+          {
+            "KleenestClientToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceMatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Match result and ranked candidates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceMatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1100,6 +1154,251 @@
           "photos",
           "deepLink",
           "source"
+        ]
+      },
+      "PlaceMatchRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 320
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 320
+          },
+          "city": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "state": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "postalCode": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "external": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "type": "string",
+                "maxLength": 160
+              },
+              "id": {
+                "type": "string",
+                "maxLength": 320
+              }
+            },
+            "required": [
+              "source",
+              "id"
+            ]
+          },
+          "location": {
+            "$ref": "#/components/schemas/GeoPoint"
+          },
+          "maxDistanceMeters": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 5000,
+            "default": 250
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 5
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "external"
+            ]
+          },
+          {
+            "required": [
+              "address"
+            ]
+          },
+          {
+            "required": [
+              "location"
+            ]
+          }
+        ]
+      },
+      "PlaceMatchCandidate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "place": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kleenestPlaceId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "latitude": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "longitude": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "address": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "city": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "postalCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "kleenestPlaceId",
+              "name",
+              "latitude",
+              "longitude",
+              "address",
+              "city",
+              "state",
+              "postalCode"
+            ]
+          },
+          "matchScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "matchedSignals": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "EXTERNAL_ID",
+                "ADDRESS",
+                "NAME",
+                "CITY",
+                "STATE",
+                "POSTAL_CODE",
+                "PROXIMITY_25M",
+                "PROXIMITY_75M",
+                "PROXIMITY_150M",
+                "PROXIMITY_250M",
+                "PROXIMITY_500M",
+                "PROXIMITY_1000M",
+                "PROXIMITY"
+              ]
+            }
+          },
+          "distanceMeters": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "verificationStatus": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "place",
+          "matchScore",
+          "matchedSignals",
+          "distanceMeters",
+          "verificationStatus",
+          "confidence"
+        ]
+      },
+      "PlaceMatchResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "match": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlaceMatchCandidate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaceMatchCandidate"
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "requestedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "candidateCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "matched": {
+                "type": "boolean"
+              },
+              "ambiguous": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "requestedAt",
+              "candidateCount",
+              "matched",
+              "ambiguous"
+            ]
+          }
+        },
+        "required": [
+          "match",
+          "candidates",
+          "metadata"
         ]
       }
     },
