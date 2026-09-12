@@ -105,3 +105,61 @@ export type RecommendationResponse = {
     attemptedRadiiMeters?: number[];
   };
 };
+
+
+export type PlaceDetails = {
+  place: PlaceIdentity & {
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    postalCode: string | null;
+    country: string | null;
+    placeType: string | null;
+    description: string | null;
+    phone: string | null;
+    website: string | null;
+  };
+  business: {
+    id: string;
+    name: string;
+    description: string | null;
+    website: string | null;
+    phone: string | null;
+    logoUrl: string | null;
+    verificationStatus: string | null;
+  } | null;
+  restroom: RestroomAttributes & {
+    smartBathroom: boolean | null;
+    cleanlinessPct: number | null;
+    rating: number | null;
+    reviewCount: number | null;
+    cleaningSchedule: string | null;
+  };
+  trust: TrustSummary & {
+    positiveCount: number | null;
+    negativeCount: number | null;
+  };
+  hours: Array<{
+    dayOfWeek: number | null;
+    opensAt: string | null;
+    closesAt: string | null;
+    is24Hours: boolean;
+    notes: string | null;
+  }>;
+  promotions: Array<{
+    id: string | null;
+    title: string;
+    description: string | null;
+    discount: string | null;
+    startsAt: string | null;
+    endsAt: string | null;
+  }>;
+  photos: Array<{
+    id: string | null;
+    url: string;
+    caption: string | null;
+    isFeatured: boolean;
+  }>;
+  deepLink: string;
+  source: 'kleenest';
+};
