@@ -233,7 +233,7 @@ Deno.serve(async req => {
         p_user_email: actor.email,
       });
       if (error) throw error;
-      return json({ ...(data ?? {}), product_access: data?.product_access ?? null });
+      return json(data ?? {});
     }
 
     if (operation === 'my-partners') {
@@ -270,7 +270,7 @@ Deno.serve(async req => {
         p_partner_id: partnerId,
       });
       if (error) throw error;
-      return json(data ?? {});
+      return json({ ...(data ?? {}), product_access: data?.product_access ?? null });
     }
 
     if (operation === 'issue-key') {
