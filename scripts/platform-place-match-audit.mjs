@@ -8,6 +8,15 @@ function need(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+const migrationName=fs.readdirSync('supabase/migrations').find(name=>name.includes('platform_place_match_authority'));
+need(Boolean(migrationName), 'Place matching must have a durable database authority migration.');
+const sql=file(`supabase/migrations/${migrationName}`);
+need(sql.includes('function public.platform_match_places'), 'Migration must define platform_match_places.');
+need(/security invoker/i.test(sql), 'Place match authority must remain SECURITY INVOKER.');
+need(!/security definer/i.test(sql), 'Place match authority must not bypass RLS through SECURITY DEFINER.');
+need(/grant execute[\s\S]*to service_role/i.test(sql), 'Place match authority must be service-role only.');
+need(/revoke all[\s\S]*from public,anon,authenticated/i.test(sql), 'Place match authority must be denied to public clients.');
+
 const api=file('supabase/functions/platform-api/index.ts');
 need(api.includes("'/v1/places/match'"), 'Platform API must expose POST /v1/places/match.');
 need(api.includes('matchPlaces'), 'Platform API must implement a read-only place matcher.');
