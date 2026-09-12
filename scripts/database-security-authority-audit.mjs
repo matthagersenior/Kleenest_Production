@@ -136,7 +136,8 @@ if(!failures.length){
   }
 
   const publicFunctionDefaultPrivilegesSql=fs.readFileSync(publicFunctionDefaultPrivilegesMigration,'utf8');
-  if(!/alter default privileges for role postgres in schema public[\s\S]*revoke execute on functions from public, anon, authenticated;/i.test(publicFunctionDefaultPrivilegesSql))failures.push('new public functions must revoke default PUBLIC/anon/authenticated EXECUTE');
+  if(!/alter default privileges for role postgres\s+revoke execute on functions from public;/i.test(publicFunctionDefaultPrivilegesSql))failures.push('new postgres-owned functions must revoke the built-in global PUBLIC EXECUTE default');
+  if(!/alter default privileges for role postgres in schema public[\s\S]*revoke execute on functions from anon, authenticated;/i.test(publicFunctionDefaultPrivilegesSql))failures.push('new public functions must revoke default anon/authenticated EXECUTE');
   if(!/alter default privileges for role postgres in schema public[\s\S]*grant execute on functions to service_role;/i.test(publicFunctionDefaultPrivilegesSql))failures.push('new public functions must preserve service-role default EXECUTE');
 
   const migrationDir='supabase/migrations';
