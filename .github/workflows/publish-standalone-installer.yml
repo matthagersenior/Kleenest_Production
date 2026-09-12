@@ -52,9 +52,14 @@ jobs:
           cp installer/Kleenest-Consumer.apk apps/consumer-mobile/dist/Kleenest-Consumer.apk
           mkdir -p apps/consumer-mobile/dist/legal
           cp public/legal/*.html apps/consumer-mobile/dist/legal/
+          mkdir -p apps/consumer-mobile/dist/developer
+          cp apps/developer-portal/static/index.html apps/consumer-mobile/dist/developer/index.html
           for legal in privacy account-deletion terms community-guidelines; do
             test -s "apps/consumer-mobile/dist/legal/${legal}.html"
           done
+          test -s apps/consumer-mobile/dist/developer/index.html
+          grep -q "Kleenest Developer Portal" apps/consumer-mobile/dist/developer/index.html
+          grep -q "Browser token" apps/consumer-mobile/dist/developer/index.html
           cp apps/consumer-mobile/dist/index.html apps/consumer-mobile/dist/404.html
           touch apps/consumer-mobile/dist/.nojekyll
           sha256sum apps/consumer-mobile/dist/Kleenest-Consumer.apk > apps/consumer-mobile/dist/Kleenest-Consumer.apk.sha256
@@ -62,6 +67,6 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/consumer-mobile/dist
-      - name: Deploy Consumer web app, legal resources, and direct APK
+      - name: Deploy Consumer web app, Developer Portal, legal resources, and direct APK
         id: deployment
         uses: actions/deploy-pages@v4
