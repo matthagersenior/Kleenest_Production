@@ -19,6 +19,7 @@ on:
       - "supabase/functions/deliver-platform-webhooks/**"
       - "supabase/migrations/**"
       - "apps/developer-portal/**"
+      - "apps/developer-portal/static/**"
       - "mcp/kleenest-mcp/**"
       - "docs/platform/**"
       - "scripts/platform-integration-contract-audit.mjs"
@@ -26,6 +27,7 @@ on:
       - "scripts/platform-external-beta-audit.mjs"
       - "scripts/platform-distribution-v1-audit.mjs"
       - "scripts/platform-public-client-token-audit.mjs"
+      - "scripts/platform-developer-portal-hosting-audit.mjs"
       - "tsconfig.platform.json"
       - "package-lock.json"
       - ".github/workflows/platform-integration.yml"
@@ -84,6 +86,8 @@ jobs:
         run: node scripts/platform-distribution-v1-audit.mjs
       - name: Publishable client-token audit
         run: node scripts/platform-public-client-token-audit.mjs
+      - name: Developer portal hosting audit
+        run: node scripts/platform-developer-portal-hosting-audit.mjs
       - name: Platform package typecheck
         run: npx tsc -p tsconfig.platform.json --noEmit
       - name: REST Edge Function check
