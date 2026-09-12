@@ -23,4 +23,11 @@ need(core.includes('export type PlaceDetails'), 'Platform core must define Place
 const smoke = file('supabase/functions/platform-integration-smoke/index.ts');
 need(smoke.includes('placeDetails'), 'Live integration smoke must cover place details.');
 
+const openapi = JSON.parse(file('docs/platform/openapi-v1.json'));
+need(Boolean(openapi.paths?.['/v1/places/{kleenestPlaceId}']?.get), 'OpenAPI must document GET /v1/places/{kleenestPlaceId}.');
+need(Boolean(openapi.components?.schemas?.PlaceDetails), 'OpenAPI must define PlaceDetails.');
+
+const distribution = file('supabase/functions/platform-distribution/index.ts');
+need(distribution.includes('getPlace(kleenestPlaceId)'), 'Distributed browser SDK must expose getPlace.');
+
 console.log('Kleenest Platform place-details audit passed.');
