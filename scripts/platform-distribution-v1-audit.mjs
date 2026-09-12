@@ -20,8 +20,8 @@ for (const route of ['/v1/manifest.json','/v1/openapi.json','/v1/sdk.js','/v1/wi
 if (!/Access-Control-Allow-Origin/i.test(dist)) throw new Error('Distribution assets must be cross-origin consumable.');
 if (!/SUPABASE_URL/.test(dist)) throw new Error('Distribution manifest must derive its public origin from SUPABASE_URL, not the internal edge runtime host.');
 if (!/immutable/i.test(dist)) throw new Error('Versioned assets must be cacheable as immutable.');
-if (!/publicOrigin/.test(dist) || !/https:\/\//.test(dist)) throw new Error('Distribution manifest must construct public HTTPS URLs.');
-if (/apiBaseUrl:\s*url\.origin/.test(dist)) throw new Error('Distribution manifest must not publish the Edge runtime internal origin.');
+if (!/configuredOrigin/.test(dist) || !/publicOrigin/.test(dist)) throw new Error('Distribution manifest must construct public URLs from the configured Supabase origin.');
+if (/apiBaseUrl:\s*url\.origin/.test(dist) || /x-forwarded-host|req\.headers\.get\(["']host["']\)/.test(dist)) throw new Error('Distribution manifest must not publish the Edge runtime internal origin.');
 
 const portal = file('supabase/functions/platform-developer-portal/index.ts');
 for (const phrase of ['SDK module','Widget module','Map module','Route module','OpenAPI']) {

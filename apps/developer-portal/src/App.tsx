@@ -24,6 +24,9 @@ type Summary = {
     label: string;
     key_prefix: string;
     scopes: string[];
+    credential_type?: 'secret' | 'publishable';
+    allowed_origins?: string[];
+    credential_quota_per_minute?: number | null;
     expires_at?: string | null;
     revoked_at?: string | null;
     last_used_at?: string | null;
@@ -66,6 +69,7 @@ function App() {
   const [oneTimeSecret, setOneTimeSecret] = useState('');
   const [newPartner, setNewPartner] = useState({ slug: '', name: '', plan: 'developer', minute: '60', month: '10000' });
   const [newKey, setNewKey] = useState({ label: 'Integration key', expiresAt: '' });
+  const [newPublicToken, setNewPublicToken] = useState({ label: 'Browser token', origin: '', days: '7', minute: '30' });
   const [billing, setBilling] = useState({ provider: 'manual', status: 'inactive', planCode: 'developer', customerId: '', subscriptionId: '' });
   const [newWebhook, setNewWebhook] = useState({ label: 'Default', url: '', eventTypes: 'place.updated,place.verification_changed' });
 
@@ -202,6 +206,25 @@ function App() {
           expiresAt: newKey.expiresAt || null,
         });
         setOneTimeSecret(result.api_key ?? '');
+        await loadSummary();
+      });
+    } catch {}
+  }
+
+  async function issuePublicToken(event: FormEvent) {
+    event.preventDefault();
+    const days = Math.max(1, Math.min(Number(newPublicToken.days || 7), 30));
+    const quotaPerMinute = Math.max(1, Math.min(Number(newPublicToken.minute || 30), 120));
+    try {
+      await action('Browser token issued. Copy it now; it will not be shown again.', async () => {
+        const result = await admin('issue-public-token', {
+          partnerId,
+          label: newPublicToken.label,
+          allowedOrigins: [newPublicToken.origin.trim()],
+          expiresAt: new Date(Date.now() + days * 86400000).toISOString(),
+          quotaPerMinute,
+        });
+        setOneTimeSecret(result.client_token ?? '');
         await loadSummary();
       });
     } catch {}
@@ -382,25 +405,47 @@ function App() {
         {tab === 'API keys' && (
           <section className="grid two">
             <article className="card">
-              <h2>Issue API key</h2>
+              <h2>Issue server API key</h2>
+              <p>Use server keys only from trusted backend environments.</p>
               <form onSubmit={issueKey}>
                 <input required value={newKey.label} onChange={e => setNewKey({ ...newKey, label: e.target.value })} placeholder="Key label" />
                 <label>Optional expiration<input type="datetime-local" value={newKey.expiresAt} onChange={e => setNewKey({ ...newKey, expiresAt: e.target.value })} /></label>
-                <button className="primary" disabled={busy || !partnerId}>Issue key</button>
+                <button className="primary" disabled={busy || !partnerId}>Issue server key</button>
               </form>
             </article>
-            <article className="card wide-list">
-              <h2>API keys</h2>
+            <article className="card">
+              <h2>Issue Browser token</h2>
+              <p>Publishable read-only token for Widget/Map/browser integrations. Exact Allowed origin required.</p>
+              <form onSubmit={issuePublicToken}>
+                <input required value={newPublicToken.label} onChange={e => setNewPublicToken({ ...newPublicToken, label: e.target.value })} placeholder="Token label" />
+                <input required type="url" value={newPublicToken.origin} onChange={e => setNewPublicToken({ ...newPublicToken, origin: e.target.value })} placeholder="Allowed origin, e.g. https://app.example.com" />
+                <div className="form-row">
+                  <label>Expires in days<input type="number" min="1" max="30" value={newPublicToken.days} onChange={e => setNewPublicToken({ ...newPublicToken, days: e.target.value })} /></label>
+                  <label>Per-minute cap<input type="number" min="1" max="120" value={newPublicToken.minute} onChange={e => setNewPublicToken({ ...newPublicToken, minute: e.target.value })} /></label>
+                </div>
+                <button className="primary" disabled={busy || !partnerId}>Issue Browser token</button>
+              </form>
+            </article>
+            <article className="card wide-list" style={{ gridColumn: '1 / -1' }}>
+              <h2>Credentials</h2>
               {(summary?.api_keys ?? []).map(key => (
                 <div className="list-row" key={key.id}>
-                  <div><strong>{key.label}</strong><code>{key.key_prefix}…</code><small>{key.scopes?.join(', ')}</small></div>
+                  <div>
+                    <strong>{key.label}</strong>
+                    <code>{key.key_prefix}…</code>
+                    <small>
+                      {key.credential_type === 'publishable'
+                        ? `Browser token · ${(key.allowed_origins ?? []).join(', ')} · ${key.credential_quota_per_minute ?? '—'}/min`
+                        : `Server API key · ${key.scopes?.join(', ')}`}
+                    </small>
+                  </div>
                   <div className="row-actions">
                     <span className={key.revoked_at ? 'pill off' : 'pill'}>{key.revoked_at ? 'Revoked' : 'Active'}</span>
                     {!key.revoked_at && <button className="danger" onClick={() => revokeKey(key.id)}>Revoke</button>}
                   </div>
                 </div>
               ))}
-              {!summary?.api_keys?.length && <p className="empty">Load a partner to view keys.</p>}
+              {!summary?.api_keys?.length && <p className="empty">Load a partner to view credentials.</p>}
             </article>
           </section>
         )}
@@ -457,7 +502,7 @@ function App() {
           <section className="grid two">
             <article className="card">
               <h2>REST API</h2>
-              <p>Partner backends authenticate with an issued Kleenest key. Keys are hashed in the database and the plaintext is never retrievable.</p>
+              <p>Partner backends use server API keys. Browser integrations use origin-restricted Browser tokens via <code>x-kleenest-client-token</code>; never embed a server key in browser code.</p>
               <pre>{`curl -X POST "${platformApiUrl}/v1/recommendations/nearby" \\
   -H "x-kleenest-api-key: YOUR_KEY" \\
   -H "content-type: application/json" \\

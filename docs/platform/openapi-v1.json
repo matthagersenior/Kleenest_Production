@@ -67,6 +67,9 @@
         "security": [
           {
             "KleenestApiKey": []
+          },
+          {
+            "KleenestClientToken": []
           }
         ],
         "requestBody": {
@@ -114,7 +117,8 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "$ref": "#/components/responses/Forbidden",
+            "description": "Insufficient scope, inactive partner, missing Origin, or non-allowlisted Origin"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -134,6 +138,9 @@
         "security": [
           {
             "KleenestApiKey": []
+          },
+          {
+            "KleenestClientToken": []
           }
         ],
         "requestBody": {
@@ -164,7 +171,8 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "$ref": "#/components/responses/Forbidden",
+            "description": "Insufficient scope, inactive partner, missing Origin, or non-allowlisted Origin"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -183,6 +191,12 @@
         "in": "header",
         "name": "x-kleenest-api-key",
         "description": "Partner API key issued from the Kleenest Developer Portal."
+      },
+      "KleenestClientToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-kleenest-client-token",
+        "description": "Publishable, origin-restricted browser/client token issued from the Kleenest Developer Portal."
       }
     },
     "schemas": {

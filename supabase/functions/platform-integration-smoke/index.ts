@@ -27,6 +27,44 @@ async function callApi(apiKey: string, path: string, body: unknown) {
   return { ok: response.ok, status: response.status, payload };
 }
 
+async function callBrowserToken(clientToken: string, origin: string, path: string, body: unknown) {
+  const response = await fetch(`${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/platform-api${path}`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-kleenest-client-token': clientToken,
+      'origin': origin,
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(20000),
+  });
+  const payload = await response.json().catch(() => ({}));
+  return {
+    ok: response.ok,
+    status: response.status,
+    payload,
+    allowOrigin: response.headers.get('access-control-allow-origin') ?? '',
+    credentialType: response.headers.get('x-kleenest-credential-type') ?? '',
+  };
+}
+
+async function browserPreflight(origin: string) {
+  const response = await fetch(`${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/platform-api/v1/recommendations/nearby`, {
+    method: 'OPTIONS',
+    headers: {
+      'origin': origin,
+      'access-control-request-method': 'POST',
+      'access-control-request-headers': 'content-type,x-kleenest-client-token',
+    },
+    signal: AbortSignal.timeout(10000),
+  });
+  return {
+    status: response.status,
+    allowOrigin: response.headers.get('access-control-allow-origin') ?? '',
+    allowHeaders: response.headers.get('access-control-allow-headers') ?? '',
+  };
+}
+
 async function getText(url: string, redirect: RequestRedirect = 'follow') {
   const response = await fetch(url, { redirect, signal: AbortSignal.timeout(15000) });
   const body = await response.text().catch(() => '');
@@ -61,6 +99,53 @@ Deno.serve(async req => {
     corridorMeters: 8047,
     limit: 3,
   });
+
+  const browserOrigin = 'https://smoke.kleenest.invalid';
+  let browserTokenId = '';
+  let browserAllowed = { ok: false, status: 0, payload: {} as any, allowOrigin: '', credentialType: '' };
+  let browserDenied = { ok: false, status: 0, payload: {} as any, allowOrigin: '', credentialType: '' };
+  const preflight = await browserPreflight(browserOrigin);
+
+  try {
+    const { data: internalPartner, error: partnerError } = await db
+      .from('platform_partners')
+      .select('id')
+      .eq('slug', 'kleenest-internal-development')
+      .single();
+    if (partnerError || !internalPartner?.id) throw partnerError ?? new Error('Internal sandbox partner unavailable');
+
+    const { data: issued, error: issueError } = await db.rpc('issue_platform_publishable_token', {
+      p_partner_id: internalPartner.id,
+      p_label: 'Live browser smoke',
+      p_allowed_origins: [browserOrigin],
+      p_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      p_quota_per_minute: 5,
+    });
+    if (issueError || !issued?.client_token || !issued?.api_key_id) {
+      throw issueError ?? new Error('Publishable smoke token issuance failed');
+    }
+
+    browserTokenId = String(issued.api_key_id);
+    browserAllowed = await callBrowserToken(
+      String(issued.client_token),
+      browserOrigin,
+      '/v1/recommendations/nearby',
+      { location: { latitude: 38.627, longitude: -90.1994 }, radiusMeters: 16093, limit: 1 },
+    );
+    browserDenied = await callBrowserToken(
+      String(issued.client_token),
+      'https://wrong-origin.kleenest.invalid',
+      '/v1/recommendations/nearby',
+      { location: { latitude: 38.627, longitude: -90.1994 }, radiusMeters: 16093, limit: 1 },
+    );
+  } catch (error) {
+    console.error('Publishable client-token smoke failed', error instanceof Error ? error.name : 'unknown_error');
+  } finally {
+    if (browserTokenId) {
+      const { error: cleanupError } = await db.from('platform_api_keys').delete().eq('id', browserTokenId);
+      if (cleanupError) console.error('Publishable smoke cleanup failed', cleanupError.code ?? 'delete_error');
+    }
+  }
 
   const nearbyRecommendations = Array.isArray((nearby.payload as any)?.recommendations)
     ? (nearby.payload as any).recommendations : [];
@@ -129,6 +214,15 @@ Deno.serve(async req => {
     distributionRoute: routeModule.ok && routeModule.contentType.includes('javascript') && routeModule.body.includes('KleenestRouteClient'),
     portalRedirect: [301,302,307,308].includes(portalRedirect.status) && portalLocation.startsWith('https://'),
     portalHtml: portalHtml.ok && portalHtml.contentType.toLowerCase().includes('text/html') && portalHtml.body.includes('Kleenest Developer Portal'),
+    browserClientPreflight: preflight.status === 204
+      && preflight.allowOrigin === browserOrigin
+      && preflight.allowHeaders.toLowerCase().includes('x-kleenest-client-token'),
+    browserClientAllowed: browserAllowed.ok
+      && browserAllowed.status === 200
+      && browserAllowed.allowOrigin === browserOrigin
+      && browserAllowed.credentialType === 'publishable',
+    browserClientOriginDenied: browserDenied.status === 403
+      && (browserDenied.payload as any)?.code === 'origin_not_allowed',
   };
 
   return json({
@@ -151,6 +245,9 @@ Deno.serve(async req => {
       routeModule: routeModule.status,
       portalRedirect: portalRedirect.status,
       portalHtml: portalHtml.status,
+      browserPreflight: preflight.status,
+      browserAllowed: browserAllowed.status,
+      browserDenied: browserDenied.status,
     },
     sample: {
       nearby: nearbyRecommendations.slice(0, 1),
