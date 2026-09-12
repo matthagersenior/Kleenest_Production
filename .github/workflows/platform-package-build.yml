@@ -1,0 +1,79 @@
+name: Platform Package Build
+
+on:
+  push:
+    branches:
+      - "platform/**"
+    paths:
+      - "packages/platform-core/**"
+      - "packages/sdk-js/**"
+      - "packages/widget/**"
+      - "packages/map-layer/**"
+      - "packages/route-sdk/**"
+      - "docs/platform/openapi-v1.json"
+      - "supabase/functions/platform-distribution/**"
+      - ".github/workflows/platform-package-build.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/platform-core/**"
+      - "packages/sdk-js/**"
+      - "packages/widget/**"
+      - "packages/map-layer/**"
+      - "packages/route-sdk/**"
+      - "docs/platform/openapi-v1.json"
+      - "supabase/functions/platform-distribution/**"
+      - ".github/workflows/platform-package-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-packages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install workspace
+        run: npm ci --no-audit --no-fund
+      - name: Build platform-core
+        run: npm run build --workspace @kleenest/platform-core
+      - name: Build sdk-js
+        run: npm run build --workspace @kleenest/sdk-js
+      - name: Build widget
+        run: npm run build --workspace @kleenest/widget
+      - name: Build map-layer
+        run: npm run build --workspace @kleenest/map-layer
+      - name: Build route-sdk
+        run: npm run build --workspace @kleenest/route-sdk
+      - name: Pack beta artifacts
+        shell: bash
+        run: |
+          mkdir -p platform-package-artifacts
+          npm pack --workspace @kleenest/platform-core --pack-destination platform-package-artifacts
+          npm pack --workspace @kleenest/sdk-js --pack-destination platform-package-artifacts
+          npm pack --workspace @kleenest/widget --pack-destination platform-package-artifacts
+          npm pack --workspace @kleenest/map-layer --pack-destination platform-package-artifacts
+          npm pack --workspace @kleenest/route-sdk --pack-destination platform-package-artifacts
+          sha256sum platform-package-artifacts/*.tgz > platform-package-artifacts/SHA256SUMS.txt
+          cp docs/platform/openapi-v1.json platform-package-artifacts/openapi-v1.json
+      - name: Inspect package contents
+        shell: bash
+        run: |
+          for archive in platform-package-artifacts/*.tgz; do
+            echo "### $archive"
+            tar -tzf "$archive"
+          done
+      - name: Upload package bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: kleenest-platform-packages-v0.1.0
+          path: platform-package-artifacts/
+          retention-days: 30
+          if-no-files-found: error
