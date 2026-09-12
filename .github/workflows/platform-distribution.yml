@@ -50,10 +50,15 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
       - name: Install workspace
         run: npm ci --no-audit --no-fund
       - name: Distribution contract audit
         run: node scripts/platform-distribution-audit.mjs
+      - name: Check asset server
+        run: deno check supabase/functions/platform-assets/index.ts
       - name: Build versioned distribution
         run: node scripts/build-platform-distribution.mjs
       - name: Upload Kleenest Platform distribution
