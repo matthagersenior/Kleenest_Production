@@ -10,6 +10,14 @@ type Summary = {
     quota_per_minute?: number;
     quota_per_month?: number;
   } | null;
+  billing?: {
+    provider?: string;
+    status?: string;
+    plan_code?: string | null;
+    external_customer_id?: string | null;
+    external_subscription_id?: string | null;
+    current_period_end?: string | null;
+  } | null;
   api_keys?: Array<{
     id: string;
     label: string;
@@ -54,6 +62,7 @@ function App() {
   const [oneTimeSecret, setOneTimeSecret] = useState('');
   const [newPartner, setNewPartner] = useState({ slug: '', name: '', plan: 'developer', minute: '60', month: '10000' });
   const [newKey, setNewKey] = useState({ label: 'Integration key', expiresAt: '' });
+  const [billing, setBilling] = useState({ provider: 'manual', status: 'inactive', planCode: 'developer', customerId: '', subscriptionId: '' });
   const [newWebhook, setNewWebhook] = useState({ label: 'Default', url: '', eventTypes: 'place.updated,place.verification_changed' });
 
   const platformApiUrl = useMemo(
@@ -126,6 +135,23 @@ function App() {
         sessionStorage.setItem('kleenest-partner-id', result.partnerId);
         setSummary(null);
         setTab('Overview');
+      });
+    } catch {}
+  }
+
+  async function saveBilling(event: FormEvent) {
+    event.preventDefault();
+    try {
+      await action('Billing and plan state updated.', async () => {
+        await admin('set-billing', {
+          partnerId,
+          provider: billing.provider,
+          status: billing.status,
+          planCode: billing.planCode,
+          externalCustomerId: billing.customerId || null,
+          externalSubscriptionId: billing.subscriptionId || null,
+        });
+        await loadSummary();
       });
     } catch {}
   }
@@ -256,7 +282,7 @@ function App() {
           <>
             <section className="metrics">
               <article><span>Partner</span><strong>{summary?.partner?.name ?? 'Not loaded'}</strong><small>{summary?.partner?.slug ?? '—'}</small></article>
-              <article><span>Plan</span><strong>{summary?.partner?.plan ?? '—'}</strong><small>{summary?.partner?.status ?? '—'}</small></article>
+              <article><span>Plan</span><strong>{summary?.partner?.plan ?? '—'}</strong><small>{summary?.billing?.status ?? summary?.partner?.status ?? '—'}</small></article>
               <article><span>Monthly requests</span><strong>{monthCount.toLocaleString()}</strong><small>{monthLimit ? `of ${monthLimit.toLocaleString()}` : 'No quota loaded'}</small></article>
               <article><span>Active webhooks</span><strong>{summary?.webhooks?.filter(item => item.active).length ?? 0}</strong><small>{summary?.api_keys?.filter(item => !item.revoked_at).length ?? 0} active API keys</small></article>
             </section>
@@ -286,6 +312,26 @@ function App() {
                   <div><dt>Per month</dt><dd>{monthLimit ? monthLimit.toLocaleString() : '—'}</dd></div>
                   <div><dt>Current usage</dt><dd>{monthCount.toLocaleString()}</dd></div>
                 </dl>
+              </article>
+              <article className="card">
+                <h2>Billing & plan hook</h2>
+                <p>Keep commercial state linked to the partner authority without putting payment-provider logic inside the recommendation API.</p>
+                <form onSubmit={saveBilling}>
+                  <div className="form-row">
+                    <select value={billing.provider} onChange={e => setBilling({ ...billing, provider: e.target.value })}>
+                      <option>manual</option><option>stripe</option><option>shopify</option><option>other</option>
+                    </select>
+                    <select value={billing.status} onChange={e => setBilling({ ...billing, status: e.target.value })}>
+                      <option>inactive</option><option>trialing</option><option>active</option><option>past_due</option><option>canceled</option>
+                    </select>
+                  </div>
+                  <select value={billing.planCode} onChange={e => setBilling({ ...billing, planCode: e.target.value })}>
+                    <option>developer</option><option>growth</option><option>fleet</option><option>enterprise</option>
+                  </select>
+                  <input value={billing.customerId} onChange={e => setBilling({ ...billing, customerId: e.target.value })} placeholder="External customer ID (optional)" />
+                  <input value={billing.subscriptionId} onChange={e => setBilling({ ...billing, subscriptionId: e.target.value })} placeholder="External subscription ID (optional)" />
+                  <button className="primary" disabled={busy || !partnerId}>Save billing state</button>
+                </form>
               </article>
             </section>
           </>
