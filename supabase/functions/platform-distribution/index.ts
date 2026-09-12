@@ -34,6 +34,7 @@ const SDK = `export class KleenestClient {
     if (!id) throw new Error('kleenestPlaceId is required');
     return this.request('/v1/places/' + encodeURIComponent(id));
   }
+  matchPlace(input) { return this.request('/v1/places/match', { method: 'POST', body: JSON.stringify(input) }); }
   recommendNearby(input) { return this.request('/v1/recommendations/nearby', { method: 'POST', body: JSON.stringify(input) }); }
   recommendRoute(input) { return this.request('/v1/recommendations/route', { method: 'POST', body: JSON.stringify(input) }); }
 }
