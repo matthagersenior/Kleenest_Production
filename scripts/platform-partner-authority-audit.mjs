@@ -14,6 +14,7 @@ const sql = file(`supabase/migrations/${migrations[0]}`);
 
 for (const table of [
   'platform_partners',
+  'platform_partner_billing',
   'platform_api_keys',
   'platform_api_rate_buckets',
   'platform_api_usage_monthly',
@@ -25,6 +26,7 @@ for (const table of [
   requireText(sql, new RegExp(`create table if not exists public\\.${table}`, 'i'), `Missing ${table} authority table.`);
 }
 for (const fn of [
+  'set_platform_partner_billing_state',
   'issue_platform_api_key',
   'authorize_platform_request',
   'record_platform_request_outcome',
@@ -45,7 +47,7 @@ requireText(api, /record_platform_request_outcome/, 'REST API must record usage 
 if (/KLEENEST_PLATFORM_API_KEYS/.test(api)) throw new Error('Bootstrap environment API-key map must be removed.');
 
 const admin = file('supabase/functions/platform-partner-admin/index.ts');
-for (const op of ['issue-key', 'revoke-key', 'create-webhook', 'disable-webhook', 'summary']) {
+for (const op of ['set-billing', 'issue-key', 'revoke-key', 'create-webhook', 'disable-webhook', 'summary']) {
   requireText(admin, new RegExp(op), `Partner admin must support ${op}.`);
 }
 
