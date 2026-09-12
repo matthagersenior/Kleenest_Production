@@ -176,21 +176,13 @@ Deno.serve(async req => {
 
     if (operation === 'create-partner') {
       requirePlatformOwner(actor);
-      const { data, error } = await db.rpc('create_platform_partner', {
+      const bundleKey = text(body?.bundleKey || 'starter_api', 80);
+      const { data, error } = await db.rpc('create_platform_partner_with_bundle', {
         p_slug: text(body?.slug, 64),
         p_name: text(body?.name, 160),
-        p_plan: text(body?.plan || 'developer', 24),
-        p_quota_per_minute: Number(body?.quotaPerMinute ?? 60),
-        p_quota_per_month: Number(body?.quotaPerMonth ?? 10000),
+        p_bundle_key: bundleKey,
       });
       if (error) throw error;
-      const bundleKey = text(body?.bundleKey || 'starter_api', 80);
-      const { error: bundleError } = await db.rpc('apply_platform_product_bundle', {
-        p_partner_id: data,
-        p_bundle_key: bundleKey,
-        p_reason: 'Developer Portal partner creation',
-      });
-      if (bundleError) throw bundleError;
       return json({ partnerId: data, bundleKey });
     }
 
