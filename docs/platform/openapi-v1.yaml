@@ -1,0 +1,222 @@
+openapi: 3.1.0
+info:
+  title: Kleenest Platform API
+  version: 0.1.0
+  description: Restroom intelligence and recommendation API for Kleenest partners.
+servers:
+  - url: https://ssgesjzdvdsqacdtasje.supabase.co/functions/v1/platform-api
+paths:
+  /health:
+    get:
+      summary: Platform API health
+      operationId: getPlatformHealth
+      responses:
+        '200':
+          description: Healthy service
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, service, version]
+                properties:
+                  ok: { type: boolean }
+                  service: { type: string }
+                  version: { type: string }
+  /v1/recommendations/nearby:
+    post:
+      summary: Find ranked nearby restroom recommendations
+      operationId: recommendNearby
+      security:
+        - KleenestApiKey: []
+        - KleenestBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NearbyRecommendationRequest'
+      responses:
+        '200':
+          description: Ranked recommendations
+          headers:
+            x-kleenest-request-id: { schema: { type: string } }
+            x-ratelimit-remaining-minute: { schema: { type: integer } }
+            x-ratelimit-remaining-month: { schema: { type: integer } }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /v1/recommendations/route:
+    post:
+      summary: Find ranked restroom recommendations along a route
+      operationId: recommendRoute
+      security:
+        - KleenestApiKey: []
+        - KleenestBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteRecommendationRequest'
+      responses:
+        '200':
+          description: Ranked route recommendations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+components:
+  securitySchemes:
+    KleenestApiKey:
+      type: apiKey
+      in: header
+      name: x-kleenest-api-key
+    KleenestBearer:
+      type: http
+      scheme: bearer
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthorized:
+      description: Missing or invalid partner credential
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Forbidden:
+      description: Partner or scope is not authorized
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    RateLimited:
+      description: Partner quota exceeded
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+  schemas:
+    GeoPoint:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+    RecommendationRequirements:
+      type: object
+      properties:
+        amenityNames:
+          type: array
+          maxItems: 24
+          items: { type: string }
+        amenityMatch:
+          type: string
+          enum: [all, any]
+        publicAccess: { type: boolean }
+        wheelchairAccessible: { type: boolean }
+        changingTable: { type: boolean }
+        familyRestroom: { type: boolean }
+        open24Hours: { type: boolean }
+    NearbyRecommendationRequest:
+      type: object
+      required: [location, radiusMeters]
+      properties:
+        location: { $ref: '#/components/schemas/GeoPoint' }
+        radiusMeters: { type: number, minimum: 100, maximum: 402336 }
+        maxRadiusMeters: { type: number }
+        search: { type: string }
+        requirements: { $ref: '#/components/schemas/RecommendationRequirements' }
+        limit: { type: integer, minimum: 1, maximum: 100, default: 10 }
+    LineString:
+      type: object
+      required: [type, coordinates]
+      properties:
+        type: { type: string, const: LineString }
+        coordinates:
+          type: array
+          minItems: 2
+          maxItems: 5000
+          items:
+            type: array
+            prefixItems:
+              - { type: number }
+              - { type: number }
+            minItems: 2
+            maxItems: 2
+    RouteRecommendationRequest:
+      type: object
+      required: [route, corridorMeters]
+      properties:
+        route: { $ref: '#/components/schemas/LineString' }
+        corridorMeters: { type: number, minimum: 100, maximum: 40234 }
+        search: { type: string }
+        requirements: { $ref: '#/components/schemas/RecommendationRequirements' }
+        maxDetourMinutes: { type: number }
+        limit: { type: integer, minimum: 1, maximum: 50, default: 10 }
+    RecommendationCandidate:
+      type: object
+      required: [place, score, trust, restroom, reasonCodes, explanation, deepLink, source]
+      properties:
+        place:
+          type: object
+          required: [kleenestPlaceId, name]
+          properties:
+            kleenestPlaceId: { type: string }
+            name: { type: string }
+            latitude: { type: [number, 'null'] }
+            longitude: { type: [number, 'null'] }
+        score: { type: number, minimum: 0, maximum: 100 }
+        trust:
+          type: object
+          properties:
+            confidence: { type: [number, 'null'] }
+            verificationStatus: { type: string }
+            lastVerifiedAt: { type: [string, 'null'], format: date-time }
+            observationCount: { type: [number, 'null'] }
+            freshnessAt: { type: [string, 'null'], format: date-time }
+        restroom:
+          type: object
+          additionalProperties: true
+        distanceMeters: { type: [number, 'null'] }
+        distanceAheadMeters: { type: [number, 'null'] }
+        detourMinutes: { type: [number, 'null'] }
+        reasonCodes:
+          type: array
+          items: { type: string }
+        explanation: { type: string }
+        deepLink: { type: string, format: uri }
+        source: { type: string, const: kleenest }
+    RecommendationResponse:
+      type: object
+      required: [recommendations, metadata]
+      properties:
+        recommendations:
+          type: array
+          items: { $ref: '#/components/schemas/RecommendationCandidate' }
+        metadata:
+          type: object
+          required: [requestedAt, resultCount]
+          properties:
+            requestedAt: { type: string, format: date-time }
+            resultCount: { type: integer }
+            expanded: { type: boolean }
+            effectiveRadiusMeters: { type: number }
+            attemptedRadiiMeters:
+              type: array
+              items: { type: number }
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        code: { type: string }
+        requestId: { type: string }
