@@ -183,7 +183,7 @@ returns void
 language plpgsql
 security definer
 set search_path=''
-as $
+as $billing$
 begin
   insert into public.platform_partner_billing(
     partner_id,provider,status,plan_code,external_customer_id,external_subscription_id,current_period_end,metadata,updated_at
@@ -207,7 +207,7 @@ begin
     where id=p_partner_id and lower(trim(p_plan_code)) in ('developer','growth','fleet','enterprise');
   end if;
 end;
-$;
+$billing$;
 revoke all on function public.set_platform_partner_billing_state(uuid,text,text,text,text,text,timestamptz,jsonb) from public,anon,authenticated;
 grant execute on function public.set_platform_partner_billing_state(uuid,text,text,text,text,text,timestamptz,jsonb) to service_role;
 
