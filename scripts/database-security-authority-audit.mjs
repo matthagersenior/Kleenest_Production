@@ -10,8 +10,9 @@ const anonSecurityDefinerBatch2Migration='supabase/migrations/20260912060000_ano
 const publicSecurityInvokerBatch3Migration='supabase/migrations/20260912061500_public_security_invoker_batch3.sql';
 const businessLocationCapMigration='supabase/migrations/20260912063000_business_location_cap_auth_only.sql';
 const publicSecurityInvokerBatch5Migration='supabase/migrations/20260912065000_public_security_invoker_batch5.sql';
+const verificationOpportunitiesMigration='supabase/migrations/20260912070500_verification_opportunities_auth_only.sql';
 const failures=[];
-for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration,anonSecurityDefinerBatch2Migration,publicSecurityInvokerBatch3Migration,businessLocationCapMigration,publicSecurityInvokerBatch5Migration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
+for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration,anonSecurityDefinerBatch2Migration,publicSecurityInvokerBatch3Migration,businessLocationCapMigration,publicSecurityInvokerBatch5Migration,verificationOpportunitiesMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
 if(!failures.length){
   const internalSql=fs.readFileSync(internalMigration,'utf8');
   const triggerFunctions=['converge_fleet_operational_event_to_intelligence','materialize_fleet_geofence_notification','materialize_fleet_operational_notification','sync_external_location_address'];
@@ -123,6 +124,15 @@ if(!failures.length){
     if(!publicSecurityInvokerBatch5Sql.includes(`alter function public.${fn}`))failures.push(`${fn} must be declared in public invoker batch5`);
   }
   if((publicSecurityInvokerBatch5Sql.match(/security invoker;/g)||[]).length<3)failures.push('public invoker batch5 must convert all three RPCs to SECURITY INVOKER');
+
+  const verificationOpportunitiesSql=fs.readFileSync(verificationOpportunitiesMigration,'utf8');
+  for(const fn of [
+    'get_location_preventive_verification_opportunities(uuid)',
+    'get_location_remediation_confirmation_opportunities(uuid)',
+  ]){
+    if(!verificationOpportunitiesSql.includes(`revoke all on function public.${fn}`))failures.push(`${fn} must revoke PUBLIC/anon execution`);
+    if(!verificationOpportunitiesSql.includes(`grant execute on function public.${fn}`))failures.push(`${fn} must preserve authenticated/service execution`);
+  }
 
   const migrationDir='supabase/migrations';
   const retiredOwnerRightsViews=['locations_public','review_intelligence_signals','v_ai_business_roi'];
