@@ -131,7 +131,7 @@ export function lineStringFromCoordinates(coordinates) {
 export const KLEENEST_ROUTE_VERSION = '${VERSION}';
 `;
 
-function response(body, contentType, cache = true) {
+function response(body: BodyInit | null, contentType: string, cache = true) {
   return new Response(body, {
     headers: {
       "content-type": contentType,
