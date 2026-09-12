@@ -1,1 +1,1 @@
-complete-pilot-capability-control-plane-v2
+developer-partner-control-plane
