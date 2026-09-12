@@ -1,0 +1,644 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Kleenest Platform API",
+    "version": "0.1.0",
+    "description": "Kleenest restroom intelligence and recommendation API. Beta v1 contract."
+  },
+  "servers": [
+    {
+      "url": "https://ssgesjzdvdsqacdtasje.supabase.co/functions/v1/platform-api"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Recommendations",
+      "description": "Ranked restroom recommendations."
+    },
+    {
+      "name": "Service",
+      "description": "Platform service status."
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Service"
+        ],
+        "summary": "Health check",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "service",
+                    "version"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recommendations/nearby": {
+      "post": {
+        "tags": [
+          "Recommendations"
+        ],
+        "summary": "Find nearby restroom recommendations",
+        "security": [
+          {
+            "KleenestApiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NearbyRecommendationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ranked recommendations",
+            "headers": {
+              "X-Kleenest-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-RateLimit-Remaining-Minute": {
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Remaining-Month": {
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v1/recommendations/route": {
+      "post": {
+        "tags": [
+          "Recommendations"
+        ],
+        "summary": "Find restroom recommendations along a route",
+        "security": [
+          {
+            "KleenestApiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteRecommendationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ranked route recommendations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "KleenestApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-kleenest-api-key",
+        "description": "Partner API key issued from the Kleenest Developer Portal."
+      }
+    },
+    "schemas": {
+      "GeoPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "LineString": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "LineString"
+          },
+          "coordinates": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 5000,
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          }
+        },
+        "required": [
+          "type",
+          "coordinates"
+        ]
+      },
+      "RecommendationRequirements": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "amenityNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 24
+          },
+          "amenityMatch": {
+            "type": "string",
+            "enum": [
+              "all",
+              "any"
+            ]
+          },
+          "publicAccess": {
+            "type": "boolean"
+          },
+          "wheelchairAccessible": {
+            "type": "boolean"
+          },
+          "changingTable": {
+            "type": "boolean"
+          },
+          "familyRestroom": {
+            "type": "boolean"
+          },
+          "open24Hours": {
+            "type": "boolean"
+          }
+        }
+      },
+      "NearbyRecommendationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "location": {
+            "$ref": "#/components/schemas/GeoPoint"
+          },
+          "radiusMeters": {
+            "type": "number",
+            "minimum": 100,
+            "maximum": 402336
+          },
+          "maxRadiusMeters": {
+            "type": "number",
+            "minimum": 100,
+            "maximum": 402336
+          },
+          "search": {
+            "type": "string"
+          },
+          "requirements": {
+            "$ref": "#/components/schemas/RecommendationRequirements"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10
+          }
+        },
+        "required": [
+          "location",
+          "radiusMeters"
+        ]
+      },
+      "RouteRecommendationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "route": {
+            "$ref": "#/components/schemas/LineString"
+          },
+          "corridorMeters": {
+            "type": "number",
+            "minimum": 100,
+            "maximum": 40234,
+            "default": 8047
+          },
+          "search": {
+            "type": "string"
+          },
+          "requirements": {
+            "$ref": "#/components/schemas/RecommendationRequirements"
+          },
+          "maxDetourMinutes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10
+          }
+        },
+        "required": [
+          "route",
+          "corridorMeters"
+        ]
+      },
+      "PlaceIdentity": {
+        "type": "object",
+        "properties": {
+          "kleenestPlaceId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "longitude": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "externalIds": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "kleenestPlaceId",
+          "name",
+          "latitude",
+          "longitude"
+        ]
+      },
+      "RecommendationCandidate": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "$ref": "#/components/schemas/PlaceIdentity"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "trust": {
+            "type": "object",
+            "properties": {
+              "confidence": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "verificationStatus": {
+                "type": "string"
+              },
+              "lastVerifiedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "observationCount": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "freshnessAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "confidence",
+              "verificationStatus",
+              "lastVerifiedAt",
+              "observationCount",
+              "freshnessAt"
+            ]
+          },
+          "restroom": {
+            "type": "object",
+            "properties": {
+              "publicAccess": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "wheelchairAccessible": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "changingTable": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "familyRestroom": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "open24Hours": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "amenityNames": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "publicAccess",
+              "wheelchairAccessible",
+              "changingTable",
+              "familyRestroom",
+              "open24Hours",
+              "amenityNames"
+            ]
+          },
+          "distanceMeters": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "distanceAheadMeters": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "detourMinutes": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "reasonCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "deepLink": {
+            "type": "string",
+            "format": "uri"
+          },
+          "source": {
+            "const": "kleenest"
+          }
+        },
+        "required": [
+          "place",
+          "score",
+          "trust",
+          "restroom",
+          "distanceMeters",
+          "distanceAheadMeters",
+          "detourMinutes",
+          "reasonCodes",
+          "explanation",
+          "deepLink",
+          "source"
+        ]
+      },
+      "RecommendationResponse": {
+        "type": "object",
+        "properties": {
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecommendationCandidate"
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "requestedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "resultCount": {
+                "type": "integer"
+              },
+              "expanded": {
+                "type": "boolean"
+              },
+              "effectiveRadiusMeters": {
+                "type": "number"
+              },
+              "attemptedRadiiMeters": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            },
+            "required": [
+              "requestedAt",
+              "resultCount"
+            ]
+          }
+        },
+        "required": [
+          "recommendations",
+          "metadata"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing or invalid API key",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Insufficient scope or inactive partner",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Minute or monthly quota exceeded",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Internal service failure",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}
