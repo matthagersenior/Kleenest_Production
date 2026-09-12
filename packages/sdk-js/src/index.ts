@@ -7,18 +7,24 @@ import type {
 export type KleenestClientOptions = {
   baseUrl: string;
   apiKey?: string;
+  clientToken?: string;
   fetch?: typeof globalThis.fetch;
 };
 
 export class KleenestClient {
   private readonly baseUrl: string;
   private readonly apiKey?: string;
+  private readonly clientToken?: string;
   private readonly fetchImpl: typeof globalThis.fetch;
 
   constructor(options: KleenestClientOptions) {
     this.baseUrl = String(options.baseUrl || '').replace(/\/$/, '');
     if (!this.baseUrl) throw new Error('baseUrl is required');
     this.apiKey = options.apiKey;
+    this.clientToken = options.clientToken;
+    if (this.apiKey && this.clientToken) {
+      throw new Error('Use either apiKey or clientToken, not both');
+    }
     this.fetchImpl = options.fetch ?? globalThis.fetch;
     if (!this.fetchImpl) throw new Error('A fetch implementation is required');
   }
@@ -27,7 +33,8 @@ export class KleenestClient {
     const headers = new Headers(init.headers);
     headers.set('accept', 'application/json');
     if (init.body && !headers.has('content-type')) headers.set('content-type', 'application/json');
-    if (this.apiKey) headers.set('x-kleenest-api-key', this.apiKey);
+    if (this.clientToken) headers.set('x-kleenest-client-token', this.clientToken);
+    else if (this.apiKey) headers.set('x-kleenest-api-key', this.apiKey);
 
     const response = await this.fetchImpl(`${this.baseUrl}${path}`, { ...init, headers });
     const payload = await response.json().catch(() => null);
