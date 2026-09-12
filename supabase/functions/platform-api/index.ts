@@ -160,6 +160,12 @@ function ranked(rows: unknown[], limit: number) {
     .slice(0, limit);
 }
 
+function canonicalPlatformRoute(pathname: string): string {
+  const marker = '/v1/';
+  const index = pathname.indexOf(marker);
+  return index >= 0 ? pathname.slice(index) : pathname;
+}
+
 function suppliedApiKey(req: Request): string {
   return req.headers.get('x-kleenest-api-key')
     ?? req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
@@ -287,9 +293,11 @@ Deno.serve(async req => {
   if (!SUPABASE_SECRET_KEY) return json({ error: 'Service unavailable' }, 503);
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
+  const routePath = canonicalPlatformRoute(url.pathname);
+
   let auth: Authorization;
   try {
-    auth = await authorize(req, url.pathname);
+    auth = await authorize(req, routePath);
   } catch (error) {
     console.error('Kleenest Platform authorization failed', error instanceof Error ? error.name : 'unknown_error');
     return json({ error: 'Service unavailable' }, 503);
@@ -300,9 +308,9 @@ Deno.serve(async req => {
   let payload: unknown;
   try {
     const body = await req.json().catch(() => ({}));
-    if (url.pathname.endsWith('/v1/recommendations/nearby')) {
+    if (routePath === '/v1/recommendations/nearby') {
       payload = await nearby(body);
-    } else if (url.pathname.endsWith('/v1/recommendations/route')) {
+    } else if (routePath === '/v1/recommendations/route') {
       payload = await route(body);
     } else {
       status = 404;
@@ -319,6 +327,6 @@ Deno.serve(async req => {
     }
   }
 
-  await recordOutcome(auth, url.pathname, status);
+  await recordOutcome(auth, routePath, status);
   return json(payload, status, rateHeaders(auth));
 });
