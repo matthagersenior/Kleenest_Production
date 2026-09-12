@@ -12,9 +12,14 @@ on:
       - "packages/route-sdk/**"
       - "packages/webhook-types/**"
       - "supabase/functions/platform-api/**"
+      - "supabase/functions/platform-partner-admin/**"
+      - "supabase/functions/deliver-platform-webhooks/**"
+      - "supabase/migrations/**"
+      - "apps/developer-portal/**"
       - "mcp/kleenest-mcp/**"
       - "docs/platform/**"
       - "scripts/platform-integration-contract-audit.mjs"
+      - "scripts/platform-partner-authority-audit.mjs"
       - "tsconfig.platform.json"
       - "package-lock.json"
       - ".github/workflows/platform-integration.yml"
@@ -28,9 +33,14 @@ on:
       - "packages/route-sdk/**"
       - "packages/webhook-types/**"
       - "supabase/functions/platform-api/**"
+      - "supabase/functions/platform-partner-admin/**"
+      - "supabase/functions/deliver-platform-webhooks/**"
+      - "supabase/migrations/**"
+      - "apps/developer-portal/**"
       - "mcp/kleenest-mcp/**"
       - "docs/platform/**"
       - "scripts/platform-integration-contract-audit.mjs"
+      - "scripts/platform-partner-authority-audit.mjs"
       - "tsconfig.platform.json"
       - "package-lock.json"
 
@@ -55,6 +65,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Platform contract audit
         run: node scripts/platform-integration-contract-audit.mjs
+      - name: Partner platform authority audit
+        run: node scripts/platform-partner-authority-audit.mjs
       - name: Platform package typecheck
         run: npx tsc -p tsconfig.platform.json --noEmit
       - name: REST Edge Function check
@@ -63,6 +75,13 @@ jobs:
           if [ -f supabase/functions/platform-api/index.ts ]; then
             deno check --node-modules-dir=auto supabase/functions/platform-api/index.ts
           fi
+      - name: Partner Edge Function checks
+        shell: bash
+        run: |
+          deno check --node-modules-dir=auto supabase/functions/platform-partner-admin/index.ts
+          deno check --node-modules-dir=auto supabase/functions/deliver-platform-webhooks/index.ts
+      - name: Developer portal build
+        run: npm run build --workspace @kleenest/developer-portal
       - name: MCP server typecheck
         shell: bash
         run: |

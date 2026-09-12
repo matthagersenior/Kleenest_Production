@@ -1,23 +1,44 @@
 # Kleenest REST API v1
 
-> External production release is blocked until bootstrap API-key storage is replaced by durable partner credentials, quotas, and usage accounting.
-
 The REST API exposes Kleenest restroom intelligence to partner backends and approved client integrations.
 
 ## Authentication
 
-Foundation builds accept a partner credential in either:
+Partners authenticate with a durable Kleenest API key in either:
 
 - `x-kleenest-api-key: <key>`
 - `Authorization: Bearer <key>`
 
-The Edge Function currently resolves keys from the `KLEENEST_PLATFORM_API_KEYS` environment variable, a JSON object keyed by credential. This is a bootstrap mechanism. Durable partner identities, hashed key storage, origin-scoped publishable credentials, quotas and usage accounting belong to the partner-platform lane before external production release.
+Keys are generated once, stored only as SHA-256 hashes, can expire, can be revoked, and are scoped. The v1 recommendation endpoints require `recommendations:read` or `*`.
+
+## Quotas and metering
+
+Authorization is atomic and enforced in Postgres before recommendation work runs.
+
+Each successful authorization consumes:
+
+- one request in the partner's current minute bucket,
+- one request in the partner's current monthly bucket.
+
+Responses include:
+
+- `x-kleenest-request-id`
+- `x-kleenest-partner-id`
+- `x-kleenest-plan`
+- `x-ratelimit-limit-minute`
+- `x-ratelimit-remaining-minute`
+- `x-ratelimit-limit-month`
+- `x-ratelimit-remaining-month`
+
+Quota failures return `429`. Minute quota responses include `Retry-After`.
+
+Compact daily usage aggregates track route-level request, success, client-error, server-error, and unit counts without retaining a large raw-request ledger.
 
 ## Health
 
 `GET /health`
 
-No authentication is required.
+No partner credential is required.
 
 ## Nearby recommendations
 
@@ -74,6 +95,12 @@ Both recommendation endpoints return:
 
 All external recommendation surfaces should consume this contract rather than recreate ranking independently.
 
+## Partner operations
+
+Partner lifecycle, API-key issuance/revocation, usage summaries, billing/plan linkage and webhook endpoint management are handled through the internal `platform-partner-admin` Edge Function and Developer Portal.
+
+Plaintext API keys and webhook signing secrets are returned only once at creation time.
+
 ## MCP
 
-`mcp/kleenest-mcp` is a thin MCP v2 adapter over these REST endpoints. It exposes nearby, along-route and next-restroom tools and therefore inherits the same recommendation behavior.
+`mcp/kleenest-mcp` is a thin MCP v2 adapter over these REST endpoints. It exposes nearby, along-route and next-restroom tools and therefore inherits the same authorization, quota and recommendation behavior.

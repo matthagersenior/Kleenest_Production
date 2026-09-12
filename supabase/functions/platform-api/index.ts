@@ -11,16 +11,20 @@ const db = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-type ApiKeyMap = Record<string, { partnerId?: string } | string>;
-
-function apiKeys(): ApiKeyMap {
-  try {
-    const value = JSON.parse(Deno.env.get('KLEENEST_PLATFORM_API_KEYS') ?? '{}');
-    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-  } catch {
-    return {};
-  }
-}
+type Authorization = {
+  authorized: boolean;
+  reason?: string;
+  request_id?: string;
+  partner_id?: string;
+  partner_slug?: string;
+  plan?: string;
+  api_key_id?: string;
+  minute_limit?: number;
+  minute_remaining?: number;
+  month_limit?: number;
+  month_remaining?: number;
+  retry_after_seconds?: number;
+};
 
 function json(body: unknown, status = 200, extraHeaders: HeadersInit = {}) {
   return new Response(JSON.stringify(body), {
@@ -156,15 +160,59 @@ function ranked(rows: unknown[], limit: number) {
     .slice(0, limit);
 }
 
-function partner(req: Request): string | null {
-  const supplied = req.headers.get('x-kleenest-api-key')
+function suppliedApiKey(req: Request): string {
+  return req.headers.get('x-kleenest-api-key')
     ?? req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
     ?? '';
-  if (!supplied) return null;
-  const value = Object.entries(apiKeys()).find(([key]) => key === supplied)?.[1];
-  if (!value) return null;
-  if (typeof value === 'string') return value;
-  return String(value.partnerId ?? 'partner');
+}
+
+async function authorize(req: Request, route: string): Promise<Authorization> {
+  const rawKey = suppliedApiKey(req);
+  const requestId = crypto.randomUUID();
+  const { data, error } = await db.rpc('authorize_platform_request', {
+    p_raw_key: rawKey,
+    p_route: route,
+    p_request_id: requestId,
+  });
+  if (error) throw error;
+  return (data ?? { authorized: false, reason: 'authorization_failed', request_id: requestId }) as Authorization;
+}
+
+function authFailure(auth: Authorization) {
+  const quota = auth.reason === 'minute_quota_exceeded' || auth.reason === 'monthly_quota_exceeded';
+  const scope = auth.reason === 'insufficient_scope' || auth.reason === 'partner_inactive';
+  const headers: Record<string, string> = {};
+  if (auth.retry_after_seconds) headers['retry-after'] = String(auth.retry_after_seconds);
+  return json({
+    error: quota ? 'Rate limit exceeded' : scope ? 'Forbidden' : 'Unauthorized',
+    code: auth.reason ?? 'unauthorized',
+    requestId: auth.request_id,
+  }, quota ? 429 : scope ? 403 : 401, headers);
+}
+
+function rateHeaders(auth: Authorization): Record<string, string> {
+  const headers: Record<string, string> = {
+    'x-kleenest-request-id': String(auth.request_id ?? ''),
+    'x-kleenest-partner-id': String(auth.partner_id ?? ''),
+    'x-kleenest-plan': String(auth.plan ?? ''),
+  };
+  if (auth.minute_limit !== undefined) headers['x-ratelimit-limit-minute'] = String(auth.minute_limit);
+  if (auth.minute_remaining !== undefined) headers['x-ratelimit-remaining-minute'] = String(auth.minute_remaining);
+  if (auth.month_limit !== undefined) headers['x-ratelimit-limit-month'] = String(auth.month_limit);
+  if (auth.month_remaining !== undefined) headers['x-ratelimit-remaining-month'] = String(auth.month_remaining);
+  return headers;
+}
+
+async function recordOutcome(auth: Authorization, route: string, status: number) {
+  if (!auth.partner_id || !auth.api_key_id) return;
+  const { error } = await db.rpc('record_platform_request_outcome', {
+    p_partner_id: auth.partner_id,
+    p_api_key_id: auth.api_key_id,
+    p_route: route,
+    p_status_code: status,
+    p_units: 1,
+  });
+  if (error) console.error('Kleenest Platform usage outcome record failed', error.code ?? 'rpc_error');
 }
 
 async function nearby(body: any) {
@@ -232,30 +280,45 @@ async function route(body: any) {
 }
 
 Deno.serve(async req => {
+  const url = new URL(req.url);
+  if (req.method === 'GET' && url.pathname.endsWith('/health')) {
+    return json({ ok: true, service: 'kleenest-platform-api', version: 'v1' });
+  }
+  if (!SUPABASE_SECRET_KEY) return json({ error: 'Service unavailable' }, 503);
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+  let auth: Authorization;
   try {
-    const url = new URL(req.url);
-    if (req.method === 'GET' && url.pathname.endsWith('/health')) {
-      return json({ ok: true, service: 'kleenest-platform-api', version: 'v1' });
-    }
+    auth = await authorize(req, url.pathname);
+  } catch (error) {
+    console.error('Kleenest Platform authorization failed', error instanceof Error ? error.name : 'unknown_error');
+    return json({ error: 'Service unavailable' }, 503);
+  }
+  if (!auth.authorized) return authFailure(auth);
 
-    const partnerId = partner(req);
-    if (!partnerId) return json({ error: 'Unauthorized' }, 401);
-    if (!SUPABASE_SECRET_KEY) return json({ error: 'Supabase service credentials are not configured' }, 500);
-    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-
+  let status = 200;
+  let payload: unknown;
+  try {
     const body = await req.json().catch(() => ({}));
     if (url.pathname.endsWith('/v1/recommendations/nearby')) {
-      const response = await nearby(body);
-      return json(response, 200, { 'x-kleenest-partner-id': partnerId });
+      payload = await nearby(body);
+    } else if (url.pathname.endsWith('/v1/recommendations/route')) {
+      payload = await route(body);
+    } else {
+      status = 404;
+      payload = { error: 'Not found' };
     }
-    if (url.pathname.endsWith('/v1/recommendations/route')) {
-      const response = await route(body);
-      return json(response, 200, { 'x-kleenest-partner-id': partnerId });
-    }
-    return json({ error: 'Not found' }, 404);
   } catch (error) {
-    if (error instanceof ApiInputError) return json({ error: error.message }, 400);
-    console.error('Kleenest Platform API request failed', error instanceof Error ? error.name : 'unknown_error');
-    return json({ error: 'Internal server error' }, 500);
+    if (error instanceof ApiInputError) {
+      status = 400;
+      payload = { error: error.message };
+    } else {
+      status = 500;
+      payload = { error: 'Internal server error' };
+      console.error('Kleenest Platform API request failed', error instanceof Error ? error.name : 'unknown_error');
+    }
   }
+
+  await recordOutcome(auth, url.pathname, status);
+  return json(payload, status, rateHeaders(auth));
 });
