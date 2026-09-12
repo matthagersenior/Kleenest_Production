@@ -63,6 +63,12 @@ requireText(worker, /complete_platform_webhook_delivery/, 'Webhook worker must r
 requireText(worker, /authorize_platform_webhook_worker/, 'Webhook worker must authorize through Vault-backed database authority.');
 if (/KLEENEST_PLATFORM_WEBHOOK_MASTER_KEY|KLEENEST_PLATFORM_WEBHOOK_WORKER_SECRET/.test(worker)) throw new Error('Webhook worker must not require custom manual secrets.');
 
+const smoke = file('supabase/functions/platform-integration-smoke/index.ts');
+requireText(smoke, /platform_internal_development_api_key/, 'Live integration smoke must use the Vault-held internal sandbox key.');
+requireText(smoke, /authorize_platform_webhook_worker/, 'Live integration smoke must require the Vault worker credential.');
+for (const check of ['sdkTransport','widgetRenderable','mapLayer','routeSdk','mcpDelegation']) {
+  requireText(smoke, new RegExp(check), `Live integration smoke must cover ${check}.`);
+}
 const hostedPortal = file('supabase/functions/platform-developer-portal/index.ts');
 requireText(hostedPortal, /Kleenest Developer Portal/, 'Hosted developer portal must identify the Kleenest developer surface.');
 requireText(hostedPortal, /platform-partner-admin/, 'Hosted portal must use the canonical partner admin control plane.');
