@@ -16,6 +16,18 @@ create table if not exists public.platform_partners(
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.platform_partner_billing(
+  partner_id uuid primary key references public.platform_partners(id) on delete cascade,
+  provider text not null default 'manual' check(provider in ('manual','stripe','shopify','other')),
+  external_customer_id text,
+  external_subscription_id text,
+  status text not null default 'inactive' check(status in ('inactive','trialing','active','past_due','canceled')),
+  plan_code text,
+  current_period_end timestamptz,
+  metadata jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.platform_api_keys(
   id uuid primary key default gen_random_uuid(),
   partner_id uuid not null references public.platform_partners(id) on delete cascade,
@@ -105,6 +117,7 @@ create index if not exists platform_webhook_deliveries_due_idx
   where status='pending';
 
 alter table public.platform_partners enable row level security;
+alter table public.platform_partner_billing enable row level security;
 alter table public.platform_api_keys enable row level security;
 alter table public.platform_api_rate_buckets enable row level security;
 alter table public.platform_api_usage_monthly enable row level security;
@@ -114,6 +127,7 @@ alter table public.platform_webhook_events enable row level security;
 alter table public.platform_webhook_deliveries enable row level security;
 
 revoke all on table public.platform_partners from public,anon,authenticated;
+revoke all on table public.platform_partner_billing from public,anon,authenticated;
 revoke all on table public.platform_api_keys from public,anon,authenticated;
 revoke all on table public.platform_api_rate_buckets from public,anon,authenticated;
 revoke all on table public.platform_api_usage_monthly from public,anon,authenticated;
@@ -123,6 +137,7 @@ revoke all on table public.platform_webhook_events from public,anon,authenticate
 revoke all on table public.platform_webhook_deliveries from public,anon,authenticated;
 
 grant select,insert,update,delete on table public.platform_partners to service_role;
+grant select,insert,update,delete on table public.platform_partner_billing to service_role;
 grant select,insert,update,delete on table public.platform_api_keys to service_role;
 grant select,insert,update,delete on table public.platform_api_rate_buckets to service_role;
 grant select,insert,update,delete on table public.platform_api_usage_monthly to service_role;
@@ -153,6 +168,48 @@ end;
 $$;
 revoke all on function public.create_platform_partner(text,text,text,integer,bigint) from public,anon,authenticated;
 grant execute on function public.create_platform_partner(text,text,text,integer,bigint) to service_role;
+
+create or replace function public.set_platform_partner_billing_state(
+  p_partner_id uuid,
+  p_provider text,
+  p_status text,
+  p_plan_code text default null,
+  p_external_customer_id text default null,
+  p_external_subscription_id text default null,
+  p_current_period_end timestamptz default null,
+  p_metadata jsonb default '{}'::jsonb
+)
+returns void
+language plpgsql
+security definer
+set search_path=''
+as $
+begin
+  insert into public.platform_partner_billing(
+    partner_id,provider,status,plan_code,external_customer_id,external_subscription_id,current_period_end,metadata,updated_at
+  )
+  values(
+    p_partner_id,lower(trim(p_provider)),lower(trim(p_status)),p_plan_code,p_external_customer_id,p_external_subscription_id,p_current_period_end,coalesce(p_metadata,'{}'::jsonb),now()
+  )
+  on conflict(partner_id) do update set
+    provider=excluded.provider,
+    status=excluded.status,
+    plan_code=excluded.plan_code,
+    external_customer_id=excluded.external_customer_id,
+    external_subscription_id=excluded.external_subscription_id,
+    current_period_end=excluded.current_period_end,
+    metadata=excluded.metadata,
+    updated_at=now();
+
+  if p_plan_code is not null then
+    update public.platform_partners
+    set plan=lower(trim(p_plan_code)),updated_at=now()
+    where id=p_partner_id and lower(trim(p_plan_code)) in ('developer','growth','fleet','enterprise');
+  end if;
+end;
+$;
+revoke all on function public.set_platform_partner_billing_state(uuid,text,text,text,text,text,timestamptz,jsonb) from public,anon,authenticated;
+grant execute on function public.set_platform_partner_billing_state(uuid,text,text,text,text,text,timestamptz,jsonb) to service_role;
 
 create or replace function public.issue_platform_api_key(
   p_partner_id uuid,
@@ -524,6 +581,15 @@ select jsonb_build_object(
   'partner',(
     select to_jsonb(p)-'metadata'
     from public.platform_partners p where p.id=p_partner_id
+  ),
+  'billing',(
+    select jsonb_build_object(
+      'provider',b.provider,'status',b.status,'plan_code',b.plan_code,
+      'external_customer_id',b.external_customer_id,
+      'external_subscription_id',b.external_subscription_id,
+      'current_period_end',b.current_period_end,'updated_at',b.updated_at
+    )
+    from public.platform_partner_billing b where b.partner_id=p_partner_id
   ),
   'api_keys',coalesce((
     select jsonb_agg(jsonb_build_object(
