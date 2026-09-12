@@ -1,5 +1,6 @@
 import type {
   NearbyRecommendationRequest,
+  PlaceDetails,
   RecommendationResponse,
   RouteRecommendationRequest,
 } from '@kleenest/platform-core';
@@ -51,6 +52,12 @@ export class KleenestClient {
     return this.request('/health');
   }
 
+  getPlace(kleenestPlaceId: string): Promise<PlaceDetails> {
+    const id = String(kleenestPlaceId || '').trim();
+    if (!id) throw new Error('kleenestPlaceId is required');
+    return this.request(`/v1/places/${encodeURIComponent(id)}`);
+  }
+
   recommendNearby(input: NearbyRecommendationRequest): Promise<RecommendationResponse> {
     return this.request('/v1/recommendations/nearby', {
       method: 'POST',
@@ -68,6 +75,7 @@ export class KleenestClient {
 
 export type {
   NearbyRecommendationRequest,
+  PlaceDetails,
   RecommendationResponse,
   RouteRecommendationRequest,
 } from '@kleenest/platform-core';
