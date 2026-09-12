@@ -7,8 +7,9 @@ const fkMigration='supabase/migrations/20260831084500_mobile_live_foreign_key_in
 const externalObservationMigration='supabase/migrations/20260912052000_external_observation_live_summary_rls_hardening.sql';
 const anonSecurityDefinerMigration='supabase/migrations/20260912054500_anon_security_definer_batch1.sql';
 const anonSecurityDefinerBatch2Migration='supabase/migrations/20260912060000_anon_security_definer_batch2_helpers.sql';
+const publicSecurityInvokerBatch3Migration='supabase/migrations/20260912061500_public_security_invoker_batch3.sql';
 const failures=[];
-for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration,anonSecurityDefinerBatch2Migration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
+for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration,anonSecurityDefinerBatch2Migration,publicSecurityInvokerBatch3Migration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
 if(!failures.length){
   const internalSql=fs.readFileSync(internalMigration,'utf8');
   const triggerFunctions=['converge_fleet_operational_event_to_intelligence','materialize_fleet_geofence_notification','materialize_fleet_operational_notification','sync_external_location_address'];
@@ -97,6 +98,15 @@ if(!failures.length){
     if(!anonSecurityDefinerBatch2Sql.includes(`revoke all on function public.${fn}`))failures.push(`${fn} must reject direct public/app execution`);
     if(!anonSecurityDefinerBatch2Sql.includes(`grant execute on function public.${fn}`))failures.push(`${fn} must retain service-role authority`);
   }
+
+  const publicSecurityInvokerBatch3Sql=fs.readFileSync(publicSecurityInvokerBatch3Migration,'utf8');
+  for(const fn of [
+    'current_policy_versions()',
+    'consumer_nearby_progression_opportunities(double precision,double precision,integer)',
+  ]){
+    if(!publicSecurityInvokerBatch3Sql.includes(`alter function public.${fn}`))failures.push(`${fn} must be declared in public invoker hardening`);
+  }
+  if((publicSecurityInvokerBatch3Sql.match(/security invoker;/g)||[]).length<2)failures.push('public invoker batch3 must convert both public RPCs to SECURITY INVOKER');
 
   const migrationDir='supabase/migrations';
   const retiredOwnerRightsViews=['locations_public','review_intelligence_signals','v_ai_business_roi'];
