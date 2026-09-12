@@ -54,6 +54,9 @@ on:
       - "scripts/platform-partner-authority-audit.mjs"
       - "scripts/platform-distribution-v1-audit.mjs"
       - "scripts/platform-external-beta-audit.mjs"
+      - "scripts/platform-public-client-token-audit.mjs"
+      - "scripts/platform-developer-portal-hosting-audit.mjs"
+      - ".github/workflows/platform-developer-portal-pages.yml"
       - "tsconfig.platform.json"
       - "package-lock.json"
 
