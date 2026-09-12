@@ -8,7 +8,7 @@ function requireText(text, pattern, message) {
   if (!pattern.test(text)) throw new Error(message);
 }
 
-const migrations = fs.readdirSync('supabase/migrations').filter(name => /platform_partner/.test(name)).sort();
+const migrations = fs.readdirSync('supabase/migrations').filter(name => /platform_(partner|integration_smoke_trigger)/.test(name)).sort();
 if (migrations.length < 1) throw new Error('Expected platform partner authority migrations.');
 const sql = migrations.map(name => file(`supabase/migrations/${name}`)).join('\n');
 
@@ -42,6 +42,7 @@ requireText(sql, /pgp_sym_encrypt/i, 'Webhook signing secrets must be encrypted 
 requireText(sql, /revoke all on table public\.platform_api_keys from public,anon,authenticated/i, 'Partner secrets must be service-role only.');
 requireText(sql, /vault\.create_secret/i, 'Partner webhook authority must bootstrap secrets in Supabase Vault.');
 requireText(sql, /configure_platform_partner_jobs/i, 'Partner platform must configure scheduled webhook and cleanup jobs.');
+requireText(sql, /trigger_platform_integration_smoke/i, 'Partner platform must expose a service-role live smoke trigger.');
 requireText(sql, /platform_webhook_deliveries_event_idx/i, 'Webhook event foreign key must have a covering index.');
 
 const api = file('supabase/functions/platform-api/index.ts');
