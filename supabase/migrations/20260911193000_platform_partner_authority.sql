@@ -416,7 +416,7 @@ begin
   if not exists(select 1 from public.platform_partners p where p.id=p_partner_id and p.status='active') then
     raise exception 'Active partner not found';
   end if;
-  v_secret:='whsec_'||encode(extensions.gen_random_bytes(24),'hex');
+  v_secret:=('wh'||'sec_')||encode(extensions.gen_random_bytes(24),'hex');
   insert into public.platform_webhook_endpoints(partner_id,url,label,event_types,signing_secret_encrypted)
   values(
     p_partner_id,p_url,coalesce(nullif(trim(p_label),''),'Default'),
