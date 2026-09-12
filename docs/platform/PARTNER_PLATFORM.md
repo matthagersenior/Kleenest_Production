@@ -53,7 +53,7 @@ Each endpoint has:
 - encrypted signing secret,
 - success/failure health fields.
 
-Signing secrets are encrypted at rest with AES-256 through pgcrypto. The encryption key is supplied only from the Edge Function secret `KLEENEST_PLATFORM_WEBHOOK_MASTER_KEY`.
+Signing secrets are encrypted at rest with AES-256 through pgcrypto. The encryption master key is generated inside Postgres and stored in Supabase Vault; Edge Functions never receive or store that master key.
 
 Events are durable. Delivery is at-least-once.
 
@@ -68,17 +68,16 @@ The worker:
 
 Partner consumers should deduplicate on `Kleenest-Webhook-Id`.
 
-## Required Edge Function secrets
+## Runtime authorization and secret storage
 
-Production needs three Kleenest-specific secrets:
+No Kleenest-specific Edge Function secrets are required for this control plane.
 
-- `KLEENEST_PLATFORM_ADMIN_SECRET` — protects the internal operator control plane.
-- `KLEENEST_PLATFORM_WEBHOOK_MASTER_KEY` — encrypts/decrypts webhook signing secrets.
-- `KLEENEST_PLATFORM_WEBHOOK_WORKER_SECRET` — authenticates scheduled webhook worker invocations.
+- Partner administration validates the signed-in user and requires the existing `is_platform_owner_session()` authority.
+- The webhook encryption master key is generated and stored in Supabase Vault.
+- The scheduled webhook-worker credential is generated and stored in Supabase Vault.
+- Supabase-provided `SUPABASE_URL`, `SUPABASE_SECRET_KEYS`, and `SUPABASE_PUBLISHABLE_KEYS` supply server and user-auth context.
 
-Supabase-provided `SUPABASE_URL` and `SUPABASE_SECRET_KEYS` are used for privileged database calls.
-
-No secret values belong in Git.
+No secret values belong in Git or in the developer portal bundle.
 
 ## Developer Portal
 
@@ -92,13 +91,16 @@ No secret values belong in Git.
 - test webhook enqueue,
 - REST and webhook integration examples.
 
-The operator credential is entered at runtime and held in `sessionStorage`; it is not compiled into the bundle.
+The console signs in through Supabase Auth with an existing Kleenest platform-owner account. The publishable key is safe browser configuration; the owner password is not persisted. Administrative requests carry the resulting user access token and are independently checked by `is_platform_owner_session()`.
 
-Partner self-service authentication and public onboarding can replace this operator gate later without changing the underlying database authority.
+Partner self-service authentication and public onboarding can be added later without changing the underlying partner authority.
 
 ## Scheduling
 
-`deliver-platform-webhooks` is designed for periodic invocation. Supabase supports scheduled Edge Functions with `pg_cron` + `pg_net`; any scheduler credential should be held in Vault rather than hardcoded in SQL.
+`configure_platform_partner_jobs(project_url)` installs two recurring jobs through `pg_cron`:
+
+- webhook delivery every minute through `pg_net`, using the Vault-held worker credential,
+- stale minute-bucket cleanup daily.
 
 The worker is idempotent at the claim/delivery-state level and safely supports repeated invocations.
 
