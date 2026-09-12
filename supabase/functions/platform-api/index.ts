@@ -432,7 +432,8 @@ function authFailure(req: Request, auth: Authorization) {
   const forbidden = auth.reason === 'insufficient_scope'
     || auth.reason === 'partner_inactive'
     || auth.reason === 'origin_required'
-    || auth.reason === 'origin_not_allowed'\n    || auth.reason === 'product_not_enabled';
+    || auth.reason === 'origin_not_allowed'
+    || auth.reason === 'product_not_enabled';
   const headers: Record<string, string> = { ...corsHeaders(req) };
   if (auth.retry_after_seconds) headers['retry-after'] = String(auth.retry_after_seconds);
   return json({
