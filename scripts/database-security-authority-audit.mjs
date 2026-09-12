@@ -6,8 +6,9 @@ const viewMigration='supabase/migrations/20260831084000_mobile_live_view_securit
 const fkMigration='supabase/migrations/20260831084500_mobile_live_foreign_key_index_convergence.sql';
 const externalObservationMigration='supabase/migrations/20260912052000_external_observation_live_summary_rls_hardening.sql';
 const anonSecurityDefinerMigration='supabase/migrations/20260912054500_anon_security_definer_batch1.sql';
+const anonSecurityDefinerBatch2Migration='supabase/migrations/20260912060000_anon_security_definer_batch2_helpers.sql';
 const failures=[];
-for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
+for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration,anonSecurityDefinerBatch2Migration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
 if(!failures.length){
   const internalSql=fs.readFileSync(internalMigration,'utf8');
   const triggerFunctions=['converge_fleet_operational_event_to_intelligence','materialize_fleet_geofence_notification','materialize_fleet_operational_notification','sync_external_location_address'];
@@ -89,6 +90,12 @@ if(!failures.length){
   for(const fn of authenticatedOnlyFns){
     if(!anonSecurityDefinerSql.includes(`revoke all on function public.${fn}`))failures.push(`${fn} must revoke anonymous/public execution`);
     if(!anonSecurityDefinerSql.includes(`grant execute on function public.${fn}`))failures.push(`${fn} must preserve authenticated/service execution`);
+  }
+
+  const anonSecurityDefinerBatch2Sql=fs.readFileSync(anonSecurityDefinerBatch2Migration,'utf8');
+  for(const fn of ['enforce_ugc_policy_acceptance()','users_have_block_relationship(uuid,uuid)']){
+    if(!anonSecurityDefinerBatch2Sql.includes(`revoke all on function public.${fn}`))failures.push(`${fn} must reject direct public/app execution`);
+    if(!anonSecurityDefinerBatch2Sql.includes(`grant execute on function public.${fn}`))failures.push(`${fn} must retain service-role authority`);
   }
 
   const migrationDir='supabase/migrations';
