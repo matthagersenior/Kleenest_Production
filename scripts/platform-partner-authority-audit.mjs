@@ -52,7 +52,7 @@ if (/KLEENEST_PLATFORM_API_KEYS/.test(api)) throw new Error('Bootstrap environme
 const admin = file('supabase/functions/platform-partner-admin/index.ts');
 requireText(admin, /is_platform_owner_session/, 'Partner admin must use canonical Kleenest owner authorization.');
 if (/KLEENEST_PLATFORM_ADMIN_SECRET|KLEENEST_PLATFORM_WEBHOOK_MASTER_KEY/.test(admin)) throw new Error('Partner admin must not require custom manual secrets.');
-for (const op of ['set-billing', 'issue-key', 'revoke-key', 'create-webhook', 'disable-webhook', 'summary']) {
+for (const op of ['set-billing', 'issue-key', 'revoke-key', 'create-webhook', 'disable-webhook', 'summary', 'diagnostics']) {
   requireText(admin, new RegExp(op), `Partner admin must support ${op}.`);
 }
 
@@ -63,6 +63,16 @@ requireText(worker, /complete_platform_webhook_delivery/, 'Webhook worker must r
 requireText(worker, /authorize_platform_webhook_worker/, 'Webhook worker must authorize through Vault-backed database authority.');
 if (/KLEENEST_PLATFORM_WEBHOOK_MASTER_KEY|KLEENEST_PLATFORM_WEBHOOK_WORKER_SECRET/.test(worker)) throw new Error('Webhook worker must not require custom manual secrets.');
 
+const smoke = file('supabase/functions/platform-integration-smoke/index.ts');
+requireText(smoke, /platform_internal_development_api_key/, 'Live integration smoke must use the Vault-held internal sandbox key.');
+requireText(smoke, /authorize_platform_webhook_worker/, 'Live integration smoke must require the Vault worker credential.');
+for (const check of ['sdkTransport','widgetRenderable','mapLayer','routeSdk','mcpDelegation']) {
+  requireText(smoke, new RegExp(check), `Live integration smoke must cover ${check}.`);
+}
+const hostedPortal = file('supabase/functions/platform-developer-portal/index.ts');
+requireText(hostedPortal, /Kleenest Developer Portal/, 'Hosted developer portal must identify the Kleenest developer surface.');
+requireText(hostedPortal, /platform-partner-admin/, 'Hosted portal must use the canonical partner admin control plane.');
+requireText(hostedPortal, /kleenest-internal-development|eba2a7a6-1059-4619-9ae7-318463056ddb/, 'Hosted portal must expose the internal sandbox.');
 const portal = file('apps/developer-portal/src/App.tsx');
 requireText(portal, /signInWithPassword/, 'Developer portal must authenticate the existing Kleenest owner account.');
 for (const surface of ['API keys', 'Usage', 'Webhooks', 'Integration']) {
