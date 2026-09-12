@@ -16,6 +16,10 @@
       "description": "Ranked restroom recommendations."
     },
     {
+      "name": "Places",
+      "description": "Canonical Kleenest restroom place details."
+    },
+    {
       "name": "Service",
       "description": "Platform service status."
     }
@@ -173,6 +177,64 @@
           "403": {
             "$ref": "#/components/responses/Forbidden",
             "description": "Insufficient scope, inactive partner, missing Origin, or non-allowlisted Origin"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v1/places/{kleenestPlaceId}": {
+      "get": {
+        "tags": [
+          "Places"
+        ],
+        "summary": "Get canonical Kleenest place details",
+        "description": "Returns a sanitized public restroom/business detail record for a Kleenest place id.",
+        "security": [
+          {
+            "KleenestApiKey": []
+          },
+          {
+            "KleenestClientToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kleenestPlaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical place details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -600,6 +662,445 @@
         "required": [
           "error"
         ]
+      },
+      "PlaceDetails": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "place": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kleenestPlaceId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "latitude": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "longitude": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "address": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "city": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "postalCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "country": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "placeType": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "website": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "kleenestPlaceId",
+              "name",
+              "latitude",
+              "longitude",
+              "address",
+              "city",
+              "state",
+              "postalCode",
+              "country",
+              "placeType",
+              "description",
+              "phone",
+              "website"
+            ]
+          },
+          "business": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "website": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "logoUrl": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "verificationStatus": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "description",
+              "website",
+              "phone",
+              "logoUrl",
+              "verificationStatus"
+            ]
+          },
+          "restroom": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "publicAccess": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "wheelchairAccessible": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "changingTable": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "familyRestroom": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "open24Hours": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "amenityNames": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "smartBathroom": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "cleanlinessPct": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "rating": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "reviewCount": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "cleaningSchedule": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "publicAccess",
+              "wheelchairAccessible",
+              "changingTable",
+              "familyRestroom",
+              "open24Hours",
+              "amenityNames",
+              "smartBathroom",
+              "cleanlinessPct",
+              "rating",
+              "reviewCount",
+              "cleaningSchedule"
+            ]
+          },
+          "trust": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "confidence": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "verificationStatus": {
+                "type": "string"
+              },
+              "lastVerifiedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "observationCount": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "freshnessAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "positiveCount": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "negativeCount": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "confidence",
+              "verificationStatus",
+              "lastVerifiedAt",
+              "observationCount",
+              "freshnessAt",
+              "positiveCount",
+              "negativeCount"
+            ]
+          },
+          "hours": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "dayOfWeek": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "opensAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "closesAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "is24Hours": {
+                  "type": "boolean"
+                },
+                "notes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "dayOfWeek",
+                "opensAt",
+                "closesAt",
+                "is24Hours",
+                "notes"
+              ]
+            }
+          },
+          "promotions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "discount": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "startsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "endsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "description",
+                "discount",
+                "startsAt",
+                "endsAt"
+              ]
+            }
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "caption": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "isFeatured": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "url",
+                "caption",
+                "isFeatured"
+              ]
+            }
+          },
+          "deepLink": {
+            "type": "string",
+            "format": "uri"
+          },
+          "source": {
+            "const": "kleenest"
+          }
+        },
+        "required": [
+          "place",
+          "business",
+          "restroom",
+          "trust",
+          "hours",
+          "promotions",
+          "photos",
+          "deepLink",
+          "source"
+        ]
       }
     },
     "responses": {
@@ -645,6 +1146,16 @@
       },
       "InternalError": {
         "description": "Internal service failure",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
         "content": {
           "application/json": {
             "schema": {
