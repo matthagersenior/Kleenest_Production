@@ -12,8 +12,9 @@ const businessLocationCapMigration='supabase/migrations/20260912063000_business_
 const publicSecurityInvokerBatch5Migration='supabase/migrations/20260912065000_public_security_invoker_batch5.sql';
 const verificationOpportunitiesMigration='supabase/migrations/20260912070500_verification_opportunities_auth_only.sql';
 const publicFunctionDefaultPrivilegesMigration='supabase/migrations/20260912072000_public_function_default_privileges.sql';
+const reviewedPublicDefinerMigration='supabase/migrations/20260912073500_reviewed_public_security_definer_allowlist.sql';
 const failures=[];
-for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration,anonSecurityDefinerBatch2Migration,publicSecurityInvokerBatch3Migration,businessLocationCapMigration,publicSecurityInvokerBatch5Migration,verificationOpportunitiesMigration,publicFunctionDefaultPrivilegesMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
+for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration,anonSecurityDefinerBatch2Migration,publicSecurityInvokerBatch3Migration,businessLocationCapMigration,publicSecurityInvokerBatch5Migration,verificationOpportunitiesMigration,publicFunctionDefaultPrivilegesMigration,reviewedPublicDefinerMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
 if(!failures.length){
   const internalSql=fs.readFileSync(internalMigration,'utf8');
   const triggerFunctions=['converge_fleet_operational_event_to_intelligence','materialize_fleet_geofence_notification','materialize_fleet_operational_notification','sync_external_location_address'];
@@ -139,6 +140,31 @@ if(!failures.length){
   if(!/alter default privileges for role postgres\s+revoke execute on functions from public;/i.test(publicFunctionDefaultPrivilegesSql))failures.push('new postgres-owned functions must revoke the built-in global PUBLIC EXECUTE default');
   if(!/alter default privileges for role postgres in schema public[\s\S]*revoke execute on functions from anon, authenticated;/i.test(publicFunctionDefaultPrivilegesSql))failures.push('new public functions must revoke default anon/authenticated EXECUTE');
   if(!/alter default privileges for role postgres in schema public[\s\S]*grant execute on functions to service_role;/i.test(publicFunctionDefaultPrivilegesSql))failures.push('new public functions must preserve service-role default EXECUTE');
+
+  const reviewedPublicDefinerSql=fs.readFileSync(reviewedPublicDefinerMigration,'utf8');
+  const reviewedPublicDefiners=[
+    'discovery_photos_for_location(uuid)',
+    'get_location_amenity_inventory(uuid)',
+    'get_location_occupancy_summary(uuid)',
+    'get_location_occupancy_trend(uuid,integer,integer)',
+    'get_location_preventive_maintenance_status(uuid)',
+    'get_location_recovery_confidence(uuid)',
+    'get_location_recovery_history(uuid)',
+    'get_public_qr_landing(text)',
+    'map_network_nearby_v2(double precision,double precision,integer,integer,text,text,text[])',
+    'mobile_location_detail_v1(uuid)',
+    'mobile_location_review_evidence(uuid,integer)',
+    'mobile_location_trust_summaries(uuid[])',
+    'mobile_review_evidence(uuid)',
+    'mobile_review_photos_for_reviews(uuid[])',
+  ];
+  for(const fn of reviewedPublicDefiners){
+    if(!reviewedPublicDefinerSql.includes(`revoke all on function public.${fn} from public;`))failures.push(`${fn} must remove broad PUBLIC execution`);
+    if(!reviewedPublicDefinerSql.includes(`grant execute on function public.${fn} to anon, authenticated, service_role;`))failures.push(`${fn} must use explicit reviewed public grants`);
+  }
+  if((reviewedPublicDefinerSql.match(/KLEENEST_REVIEWED_PUBLIC_SECURITY_DEFINER:/g)||[]).length<14)failures.push('all intentional anonymous SECURITY DEFINER RPCs must carry reviewed comments');
+  if(!reviewedPublicDefinerSql.includes('kleenest_public_security_definer_drift()'))failures.push('public SECURITY DEFINER drift detector is required');
+  if(!reviewedPublicDefinerSql.includes('assert_kleenest_public_security_definer_allowlist()'))failures.push('public SECURITY DEFINER allowlist assertion is required');
 
   const migrationDir='supabase/migrations';
   const retiredOwnerRightsViews=['locations_public','review_intelligence_signals','v_ai_business_roi'];
