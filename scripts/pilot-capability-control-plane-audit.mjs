@@ -8,6 +8,8 @@ const assuranceMigration=required('supabase/migrations/20260912124500_offer_laun
 const service=required('apps/platform-mobile/services/capabilityPilot.ts');
 const screen=required('apps/platform-mobile/app/pilots.tsx');
 const layout=required('apps/platform-mobile/app/_layout.tsx');
+const home=required('apps/platform-mobile/app/index.tsx');
+const familyService=required('apps/consumer-mobile/services/family.ts');
 
 for(const token of [
   'capability_offer_promises','owner_offer_capability_readiness()','owner_update_capability_offer','sample_enabled','pilot_enabled','pilot_mode','promise_state',
@@ -41,6 +43,8 @@ for(const token of ['Production ready','Pilot ready','Sample ready','Commercial 
   if(!screen.includes(token))failures.push(`KleenestOS pilot workspace missing UI contract: ${token}`);
 
 if(!layout.includes('<Tabs.Screen name="pilots"'))failures.push('KleenestOS must expose the Pilots workspace as a primary owner control surface');
+for(const token of ['/pilots','Offers & Pilots','/developers','Developer Platform'])if(!home.includes(token))failures.push(`KleenestOS Home missing owner control route: ${token}`);
+for(const token of ['family_has_premium_access','seatsTotal:5'])if(!familyService.includes(token))failures.push(`Consumer Family production evidence missing: ${token}`);
 
 if(failures.length){console.error(failures.join('\n'));process.exit(1);}
 console.log('Kleenest pilot/offer capability control-plane audit passed.');
