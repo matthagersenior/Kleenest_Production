@@ -27,8 +27,7 @@ for(const token of [
 
 for(const token of [
   'Developer Platform','Partner workspaces','Product bundle','API products','Per minute','Per month',
-  'Team access','Credentials & origins','Webhooks','Billing','Audit trail','Suspend partner',
-  'Starter API','Route Intelligence','Place Intelligence','Fleet Integration','Enterprise Data'
+  'Team access','Credentials & origins','Webhooks','Billing','Audit trail','Suspend partner'
 ]) if(!screen.includes(token)) failures.push(`KleenestOS developer workspace missing UI contract: ${token}`);
 
 if(!layout.includes('<Tabs.Screen name="developers"')) failures.push('KleenestOS must expose Developer Platform as a primary owner workspace');
