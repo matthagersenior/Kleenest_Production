@@ -42,6 +42,7 @@ requireText(sql, /pgp_sym_encrypt/i, 'Webhook signing secrets must be encrypted 
 requireText(sql, /revoke all on table public\.platform_api_keys from public,anon,authenticated/i, 'Partner secrets must be service-role only.');
 requireText(sql, /vault\.create_secret/i, 'Partner webhook authority must bootstrap secrets in Supabase Vault.');
 requireText(sql, /configure_platform_partner_jobs/i, 'Partner platform must configure scheduled webhook and cleanup jobs.');
+requireText(sql, /trigger_platform_integration_smoke/i, 'Partner platform must expose a service-role live smoke trigger.');
 requireText(sql, /platform_webhook_deliveries_event_idx/i, 'Webhook event foreign key must have a covering index.');
 
 const api = file('supabase/functions/platform-api/index.ts');
