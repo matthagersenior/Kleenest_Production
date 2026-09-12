@@ -24,6 +24,7 @@ on:
       - "docs/platform/**"
       - "scripts/platform-integration-contract-audit.mjs"
       - "scripts/platform-place-details-audit.mjs"
+      - "scripts/platform-place-match-audit.mjs"
       - "scripts/platform-partner-authority-audit.mjs"
       - "scripts/platform-external-beta-audit.mjs"
       - "scripts/platform-distribution-v1-audit.mjs"
@@ -84,6 +85,8 @@ jobs:
         run: node scripts/platform-integration-contract-audit.mjs
       - name: Place details contract audit
         run: node scripts/platform-place-details-audit.mjs
+      - name: Place match contract audit
+        run: node scripts/platform-place-match-audit.mjs
       - name: Partner platform authority audit
         run: node scripts/platform-partner-authority-audit.mjs
       - name: External beta onboarding audit
