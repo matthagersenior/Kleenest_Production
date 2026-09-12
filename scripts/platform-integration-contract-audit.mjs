@@ -32,6 +32,7 @@ if (fs.existsSync('packages/webhook-types/src/index.ts')) {
 }
 if (fs.existsSync('supabase/functions/platform-api/index.ts')) {
   const api = required('supabase/functions/platform-api/index.ts', /authorize_platform_request/, 'REST API must authorize through the durable partner authority.');
+  if (!/canonicalPlatformRoute/.test(api)) throw new Error('REST API must canonicalize the Supabase function pathname before scope checks.');
   if (/KLEENEST_PLATFORM_API_KEYS/.test(api)) throw new Error('REST API must not use the bootstrap environment API-key map.');
   for (const rpc of ['map_network_nearby_v3', 'map_network_along_route_v1']) {
     if (!api.includes(rpc)) throw new Error(`REST API must delegate to existing ${rpc} RPC.`);
