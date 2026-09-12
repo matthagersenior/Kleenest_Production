@@ -1,0 +1,65 @@
+name: Platform Distribution
+
+on:
+  push:
+    branches:
+      - "platform/distribution-artifacts"
+    paths:
+      - "packages/platform-core/**"
+      - "packages/sdk-js/**"
+      - "packages/widget/**"
+      - "packages/map-layer/**"
+      - "packages/route-sdk/**"
+      - "packages/webhook-types/**"
+      - "scripts/platform-distribution-audit.mjs"
+      - "scripts/build-platform-distribution.mjs"
+      - "tsconfig.platform-distribution.json"
+      - "docs/platform/openapi-v1.yaml"
+      - "supabase/functions/platform-assets/**"
+      - ".github/workflows/platform-distribution.yml"
+      - "package-lock.json"
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/platform-core/**"
+      - "packages/sdk-js/**"
+      - "packages/widget/**"
+      - "packages/map-layer/**"
+      - "packages/route-sdk/**"
+      - "packages/webhook-types/**"
+      - "scripts/platform-distribution-audit.mjs"
+      - "scripts/build-platform-distribution.mjs"
+      - "tsconfig.platform-distribution.json"
+      - "docs/platform/openapi-v1.yaml"
+      - "supabase/functions/platform-assets/**"
+      - ".github/workflows/platform-distribution.yml"
+      - "package-lock.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install workspace
+        run: npm ci --no-audit --no-fund
+      - name: Distribution contract audit
+        run: node scripts/platform-distribution-audit.mjs
+      - name: Build versioned distribution
+        run: node scripts/build-platform-distribution.mjs
+      - name: Upload Kleenest Platform distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kleenest-Platform-Distribution
+          path: dist/platform-distribution
+          retention-days: 30
+          if-no-files-found: error
