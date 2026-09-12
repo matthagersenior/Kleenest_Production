@@ -27,14 +27,15 @@ const portal = file('supabase/functions/platform-developer-portal/index.ts');
 for (const phrase of ['SDK module','Widget module','Map module','Route module','OpenAPI']) {
   if (!new RegExp(phrase,'i').test(portal)) throw new Error(`Developer portal must link ${phrase}.`);
 }
-if (!/new Response\(HTML/.test(portal)) throw new Error('Developer portal must serve HTML directly from its Edge function.');
-if (!/text\/html; charset=utf-8/i.test(portal)) throw new Error('Developer portal must return an HTML content type.');
-if (!/content-security-policy/i.test(portal) || !/frame-ancestors 'none'/.test(portal)) throw new Error('Developer portal must ship a restrictive CSP.');
+if (!/matthagersenior\.github\.io\/Kleenest_Production\/developer\//.test(portal)) throw new Error('Developer portal compatibility endpoint must redirect to the GitHub Pages portal.');
+if (!/status:\s*302/.test(portal) || !/location:\s*publicPortalUrl/.test(portal)) throw new Error('Developer portal Edge function must redirect browsers to the Pages portal.');
 if (/db\.storage|storage\.createBucket|storage\.from/.test(portal)) throw new Error('Developer portal must not depend on Supabase Storage for executable HTML.');
 if (!/authorize_platform_webhook_worker/.test(portal)) throw new Error('Developer portal compatibility POST must retain Vault-backed worker authorization.');
+const staticPortal=file('apps/developer-portal/static/index.html');
+for(const phrase of ['Kleenest Developer Portal','Browser token','Content-Security-Policy'])if(!staticPortal.includes(phrase))throw new Error(`Static Developer Portal missing ${phrase}.`);
 
 const smoke = file('supabase/functions/platform-integration-smoke/index.ts');
-for (const check of ['distributionManifest','distributionSdk','distributionWidget','distributionMap','distributionRoute','portalDirect','portalHtml']) {
+for (const check of ['distributionManifest','distributionSdk','distributionWidget','distributionMap','distributionRoute','portalRedirect','portalHtml']) {
   if (!smoke.includes(check)) throw new Error(`Live smoke must cover ${check}.`);
 }
 
