@@ -66,6 +66,21 @@ Deno.serve(async req => {
       return json({ partnerId: data });
     }
 
+    if (operation === 'set-billing') {
+      const { error } = await db.rpc('set_platform_partner_billing_state', {
+        p_partner_id: uuid(body?.partnerId, 'partnerId'),
+        p_provider: text(body?.provider || 'manual', 24),
+        p_status: text(body?.status || 'inactive', 24),
+        p_plan_code: body?.planCode ? text(body.planCode, 24) : null,
+        p_external_customer_id: body?.externalCustomerId ? text(body.externalCustomerId, 200) : null,
+        p_external_subscription_id: body?.externalSubscriptionId ? text(body.externalSubscriptionId, 200) : null,
+        p_current_period_end: body?.currentPeriodEnd || null,
+        p_metadata: body?.metadata && typeof body.metadata === 'object' ? body.metadata : {},
+      });
+      if (error) throw error;
+      return json({ updated: true });
+    }
+
     if (operation === 'issue-key') {
       const partnerId = uuid(body?.partnerId, 'partnerId');
       const scopes = Array.isArray(body?.scopes)
