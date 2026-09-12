@@ -20,23 +20,19 @@ function json(body: unknown, status = 200) {
 }
 
 function publicPortalUrl() {
-  return `${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/platform-developer-portal`;
-}
-
-function portalHeaders(): HeadersInit {
-  return {
-    'content-type': 'text/html; charset=utf-8',
-    'cache-control': 'no-store',
-    'content-security-policy': "default-src 'self'; connect-src 'self' https://ssgesjzdvdsqacdtasje.supabase.co; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
-    'x-content-type-options': 'nosniff',
-    'referrer-policy': 'no-referrer',
-    'permissions-policy': 'camera=(), microphone=(), geolocation=()',
-  };
+  return 'https://matthagersenior.github.io/Kleenest_Production/developer/';
 }
 
 Deno.serve(async req => {
   if (req.method === 'GET') {
-    return new Response(HTML, { status: 200, headers: portalHeaders() });
+    return new Response(null, {
+      status: 302,
+      headers: {
+        location: publicPortalUrl(),
+        'cache-control': 'no-store',
+        'referrer-policy': 'no-referrer',
+      },
+    });
   }
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
   if (!SERVICE_KEY) return json({ error: 'Service unavailable' }, 503);
