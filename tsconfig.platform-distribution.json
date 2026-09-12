@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "noEmit": false,
+    "rootDir": "packages",
+    "outDir": ".platform-build",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "paths": {
+      "@kleenest/platform-core": ["packages/platform-core/src/index.ts"],
+      "@kleenest/sdk-js": ["packages/sdk-js/src/index.ts"],
+      "@kleenest/widget": ["packages/widget/src/index.ts"],
+      "@kleenest/map-layer": ["packages/map-layer/src/index.ts"],
+      "@kleenest/route-sdk": ["packages/route-sdk/src/index.ts"],
+      "@kleenest/webhook-types": ["packages/webhook-types/src/index.ts"]
+    }
+  },
+  "include": [
+    "packages/platform-core/src/**/*.ts",
+    "packages/sdk-js/src/**/*.ts",
+    "packages/widget/src/**/*.ts",
+    "packages/map-layer/src/**/*.ts",
+    "packages/route-sdk/src/**/*.ts",
+    "packages/webhook-types/src/**/*.ts"
+  ]
+}
