@@ -27,18 +27,14 @@ const portal = file('supabase/functions/platform-developer-portal/index.ts');
 for (const phrase of ['SDK module','Widget module','Map module','Route module','OpenAPI']) {
   if (!new RegExp(phrase,'i').test(portal)) throw new Error(`Developer portal must link ${phrase}.`);
 }
-if (!/db\.storage|storage\.createBucket|storage\.from/.test(portal)) throw new Error('Developer portal must publish its HTML through Supabase Storage.');
-if (!/authorize_platform_webhook_worker/.test(portal)) throw new Error('Developer portal publishing must require Vault-backed worker authorization.');
-if (!/status:\s*302/.test(portal) || !/location:\s*publicPortalUrl/.test(portal)) throw new Error('Developer portal Edge function must redirect browsers to the static HTML object.');
-
-const migrations = fs.readdirSync('supabase/migrations').filter(name => /platform_developer_portal_publish_trigger/.test(name));
-if (migrations.length !== 1) throw new Error('Expected exactly one developer portal publish trigger migration.');
-const publishSql = file(`supabase/migrations/${migrations[0]}`);
-if (!/trigger_platform_developer_portal_publish/.test(publishSql)) throw new Error('Portal publish trigger function is required.');
-if (!/kleenest_platform_webhook_worker_secret/.test(publishSql)) throw new Error('Portal publish trigger must keep the worker credential inside Vault-backed Postgres.');
+if (!/new Response\(HTML/.test(portal)) throw new Error('Developer portal must serve HTML directly from its Edge function.');
+if (!/text\/html; charset=utf-8/i.test(portal)) throw new Error('Developer portal must return an HTML content type.');
+if (!/content-security-policy/i.test(portal) || !/frame-ancestors 'none'/.test(portal)) throw new Error('Developer portal must ship a restrictive CSP.');
+if (/db\.storage|storage\.createBucket|storage\.from/.test(portal)) throw new Error('Developer portal must not depend on Supabase Storage for executable HTML.');
+if (!/authorize_platform_webhook_worker/.test(portal)) throw new Error('Developer portal compatibility POST must retain Vault-backed worker authorization.');
 
 const smoke = file('supabase/functions/platform-integration-smoke/index.ts');
-for (const check of ['distributionManifest','distributionSdk','distributionWidget','distributionMap','distributionRoute','portalRedirect','portalHtml']) {
+for (const check of ['distributionManifest','distributionSdk','distributionWidget','distributionMap','distributionRoute','portalDirect','portalHtml']) {
   if (!smoke.includes(check)) throw new Error(`Live smoke must cover ${check}.`);
 }
 
