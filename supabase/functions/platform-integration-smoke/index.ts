@@ -170,6 +170,22 @@ Deno.serve(async req => {
   const placeDetails = nearbyPlaceId
     ? await callGetApi(String(apiKey), `/v1/places/${encodeURIComponent(nearbyPlaceId)}`)
     : { ok: false, status: 0, payload: {} as any };
+  const detailPlace = (placeDetails.payload as any)?.place ?? {};
+  const placeMatch = nearbyPlaceId
+    ? await callApi(String(apiKey), '/v1/places/match', {
+        name: detailPlace.name ?? nearbyRecommendations[0]?.place?.name,
+        address: detailPlace.address ?? undefined,
+        city: detailPlace.city ?? undefined,
+        state: detailPlace.state ?? undefined,
+        postalCode: detailPlace.postalCode ?? undefined,
+        location: {
+          latitude: detailPlace.latitude ?? nearbyRecommendations[0]?.place?.latitude,
+          longitude: detailPlace.longitude ?? nearbyRecommendations[0]?.place?.longitude,
+        },
+        maxDistanceMeters: 500,
+        limit: 5,
+      })
+    : { ok: false, status: 0, payload: {} as any };
 
   const recommendationShape = (item: any) =>
     typeof item?.place?.kleenestPlaceId === 'string' &&
@@ -223,6 +239,10 @@ Deno.serve(async req => {
       && (placeDetails.payload as any)?.place?.kleenestPlaceId === nearbyPlaceId
       && !('source_metadata' in ((placeDetails.payload as any) ?? {}))
       && !('owner_name' in ((placeDetails.payload as any) ?? {})),
+    placeMatch: placeMatch.ok
+      && (placeMatch.payload as any)?.metadata?.matched === true
+      && (placeMatch.payload as any)?.match?.place?.kleenestPlaceId === nearbyPlaceId
+      && Array.isArray((placeMatch.payload as any)?.match?.matchedSignals),
     sdkTransport: nearby.ok && nearbyRecommendations.every(recommendationShape),
     widgetRenderable: nearby.ok && nearbyRecommendations.every((item: any) =>
       typeof item?.place?.name === 'string' && typeof item?.deepLink === 'string'
@@ -266,6 +286,7 @@ Deno.serve(async req => {
     http: {
       nearby: nearby.status,
       placeDetails: placeDetails.status,
+      placeMatch: placeMatch.status,
       route: route.status,
       manifest: manifestResponse.status,
       sdk: sdk.status,
@@ -281,6 +302,7 @@ Deno.serve(async req => {
     sample: {
       nearby: nearbyRecommendations.slice(0, 1),
       placeDetails: placeDetails.ok ? placeDetails.payload : null,
+      placeMatch: placeMatch.ok ? placeMatch.payload : null,
       routeNextStop: routeRecommendations[0] ?? null,
       portalLocation,
     },

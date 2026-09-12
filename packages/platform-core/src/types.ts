@@ -163,3 +163,59 @@ export type PlaceDetails = {
   deepLink: string;
   source: 'kleenest';
 };
+
+
+export type PlaceMatchRequest = {
+  name?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  external?: {
+    source: string;
+    id: string;
+  };
+  location?: GeoPoint;
+  maxDistanceMeters?: number;
+  limit?: number;
+};
+
+export type PlaceMatchSignal =
+  | 'EXTERNAL_ID'
+  | 'ADDRESS'
+  | 'NAME'
+  | 'CITY'
+  | 'STATE'
+  | 'POSTAL_CODE'
+  | 'PROXIMITY_25M'
+  | 'PROXIMITY_75M'
+  | 'PROXIMITY_150M'
+  | 'PROXIMITY_250M'
+  | 'PROXIMITY_500M'
+  | 'PROXIMITY_1000M'
+  | 'PROXIMITY';
+
+export type PlaceMatchCandidate = {
+  place: PlaceIdentity & {
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    postalCode: string | null;
+  };
+  matchScore: number;
+  matchedSignals: PlaceMatchSignal[];
+  distanceMeters: number | null;
+  verificationStatus: VerificationStatus;
+  confidence: number | null;
+};
+
+export type PlaceMatchResponse = {
+  match: PlaceMatchCandidate | null;
+  candidates: PlaceMatchCandidate[];
+  metadata: {
+    requestedAt: string;
+    candidateCount: number;
+    matched: boolean;
+    ambiguous: boolean;
+  };
+};
