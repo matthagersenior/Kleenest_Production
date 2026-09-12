@@ -57,6 +57,82 @@ function uuid(value: unknown, name: string) {
   return normalized;
 }
 
+async function internalDiagnostics() {
+  const { data: apiKey, error: keyError } = await db.rpc('platform_internal_development_api_key');
+  if (keyError || !apiKey) throw keyError ?? new Error('Internal development API key is unavailable.');
+
+  const baseUrl = `${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/platform-api`;
+  const callApi = async (path: string, body: unknown) => {
+    const response = await fetch(`${baseUrl}${path}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-kleenest-api-key': String(apiKey),
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(20000),
+    });
+    const payload = await response.json().catch(() => ({}));
+    return { ok: response.ok, status: response.status, payload };
+  };
+
+  const nearby = await callApi('/v1/recommendations/nearby', {
+    location: { latitude: 38.627, longitude: -90.1994 },
+    radiusMeters: 16093,
+    limit: 3,
+  });
+
+  const route = await callApi('/v1/recommendations/route', {
+    route: {
+      type: 'LineString',
+      coordinates: [[-90.1994, 38.627], [-89.6501, 39.7817]],
+    },
+    corridorMeters: 8047,
+    limit: 3,
+  });
+
+  const recommendations = Array.isArray((nearby.payload as any)?.recommendations)
+    ? (nearby.payload as any).recommendations
+    : [];
+  const routeRecommendations = Array.isArray((route.payload as any)?.recommendations)
+    ? (route.payload as any).recommendations
+    : [];
+
+  const mapFeatureCount = recommendations.filter((item: any) =>
+    Number.isFinite(Number(item?.place?.latitude)) &&
+    Number.isFinite(Number(item?.place?.longitude))
+  ).length;
+
+  const widgetRenderable = recommendations.every((item: any) =>
+    typeof item?.place?.name === 'string' &&
+    Number.isFinite(Number(item?.score)) &&
+    typeof item?.deepLink === 'string'
+  );
+
+  const routeNextStop = routeRecommendations[0] ?? null;
+
+  return {
+    checkedAt: new Date().toISOString(),
+    partner: 'kleenest-internal-development',
+    surfaces: {
+      restNearby: { ok: nearby.ok, status: nearby.status, resultCount: recommendations.length },
+      sdk: { ok: nearby.ok, transport: 'REST v1', contract: 'RecommendationResponse' },
+      widget: { ok: nearby.ok && widgetRenderable, renderableRecommendations: recommendations.length },
+      mapLayer: { ok: nearby.ok, geoJsonFeatureCount: mapFeatureCount },
+      restRoute: { ok: route.ok, status: route.status, resultCount: routeRecommendations.length },
+      routeSdk: { ok: route.ok, nextStopAvailable: Boolean(routeNextStop) },
+      mcp: {
+        ok: nearby.ok && route.ok,
+        delegation: 'find_nearby_restrooms + find_restrooms_along_route -> REST v1',
+      },
+    },
+    sample: {
+      nearby: recommendations.slice(0, 2),
+      routeNextStop,
+    },
+  };
+}
+
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: json({}).headers });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -145,6 +221,10 @@ Deno.serve(async req => {
       });
       if (error) throw error;
       return json(data ?? {});
+    }
+
+    if (operation === 'diagnostics') {
+      return json(await internalDiagnostics());
     }
 
     if (operation === 'enqueue-test-webhook') {
