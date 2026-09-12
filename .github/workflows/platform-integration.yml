@@ -25,6 +25,7 @@ on:
       - "scripts/platform-partner-authority-audit.mjs"
       - "scripts/platform-external-beta-audit.mjs"
       - "scripts/platform-distribution-v1-audit.mjs"
+      - "scripts/platform-public-client-token-audit.mjs"
       - "tsconfig.platform.json"
       - "package-lock.json"
       - ".github/workflows/platform-integration.yml"
@@ -81,6 +82,8 @@ jobs:
         run: node scripts/platform-external-beta-audit.mjs
       - name: Distribution v1 audit
         run: node scripts/platform-distribution-v1-audit.mjs
+      - name: Publishable client-token audit
+        run: node scripts/platform-public-client-token-audit.mjs
       - name: Platform package typecheck
         run: npx tsc -p tsconfig.platform.json --noEmit
       - name: REST Edge Function check
