@@ -63,6 +63,11 @@ for (const phrase of ['Browser token','Allowed origin','issue-public-token']) {
   requireText(portal, new RegExp(phrase,'i'), `Developer Portal must expose ${phrase}.`);
 }
 
+const smoke = file('supabase/functions/platform-integration-smoke/index.ts');
+for (const check of ['browserClientPreflight','browserClientAllowed','browserClientOriginDenied']) {
+  requireText(smoke, new RegExp(check), `Live smoke must cover ${check}.`);
+}
+
 const quickstart = file('docs/platform/QUICKSTART.md');
 requireText(quickstart, /client token/i, 'Quickstart must explain publishable client tokens.');
 requireText(quickstart, /never embed.*server.*key/i, 'Quickstart must prohibit embedding server keys in browser code.');
