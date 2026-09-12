@@ -4,8 +4,9 @@ const fleetMigration='supabase/migrations/20260831043000_fleet_operational_rpc_a
 const purchaseMigration='supabase/migrations/20260831044500_single_use_purchase_authority_hardening.sql';
 const viewMigration='supabase/migrations/20260831084000_mobile_live_view_security_invoker_hardening.sql';
 const fkMigration='supabase/migrations/20260831084500_mobile_live_foreign_key_index_convergence.sql';
+const externalObservationMigration='supabase/migrations/20260912052000_external_observation_live_summary_rls_hardening.sql';
 const failures=[];
-for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
+for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
 if(!failures.length){
   const internalSql=fs.readFileSync(internalMigration,'utf8');
   const triggerFunctions=['converge_fleet_operational_event_to_intelligence','materialize_fleet_geofence_notification','materialize_fleet_operational_notification','sync_external_location_address'];
@@ -50,6 +51,14 @@ if(!failures.length){
     'review_reports_review_id_idx','verification_streaks_last_location_id_idx'
   ];
   for(const index of fkIndexes)if(!fkSql.includes(`create index if not exists ${index} on public.`))failures.push(`live foreign-key coverage migration missing index: ${index}`);
+
+  const externalObservationSql=fs.readFileSync(externalObservationMigration,'utf8');
+  if(!externalObservationSql.includes('alter table public.external_observation_live_summary enable row level security;'))failures.push('external observation live summary must have RLS enabled');
+  if(!externalObservationSql.includes('revoke all on table public.external_observation_live_summary from public, anon, authenticated;'))failures.push('external observation live summary must deny direct app-role table access');
+  if(!externalObservationSql.includes('create policy external_observation_live_summary_client_deny'))failures.push('external observation live summary must carry an explicit deny-all client policy');
+  if(!externalObservationSql.includes('alter view public.restroom_intelligence set (security_invoker = true);'))failures.push('restroom_intelligence must remain security_invoker after external observation hardening');
+  if(!externalObservationSql.includes('revoke all on function public.kleenest_location_confidence(uuid)'))failures.push('legacy confidence RPC must not remain publicly executable');
+  if(!externalObservationSql.includes('grant execute on function public.kleenest_location_confidence(uuid)'))failures.push('service-role confidence RPC authority must be preserved');
 
   const migrationDir='supabase/migrations';
   const retiredOwnerRightsViews=['locations_public','review_intelligence_signals','v_ai_business_roi'];
