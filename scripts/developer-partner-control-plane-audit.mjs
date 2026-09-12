@@ -9,6 +9,7 @@ const screen=required('apps/platform-mobile/app/developers.tsx');
 const layout=required('apps/platform-mobile/app/_layout.tsx');
 const admin=required('supabase/functions/platform-partner-admin/index.ts');
 const portal=required('supabase/functions/platform-developer-portal/index.ts');
+const api=required('supabase/functions/platform-api/index.ts');
 
 for(const token of [
   'platform_product_bundles','platform_partner_product_access','platform_partner_control_log',
@@ -33,6 +34,11 @@ for(const token of [
 if(!layout.includes('<Tabs.Screen name="developers"')) failures.push('KleenestOS must expose Developer Platform as a primary owner workspace');
 if(!admin.includes('product_access')) failures.push('partner admin summary must expose product access');
 if(!portal.includes('API products')) failures.push('customer developer portal must show enabled API products');
+if(!portal.includes('Integration surfaces')) failures.push('customer developer portal must show enabled integration surfaces');
+if(!admin.includes("bundleKey || 'starter_api'")) failures.push('new partner workspaces must default to Starter API');
+if(!migration.includes("'product_not_enabled'")) failures.push('database authorization must deny unassigned API products');
+if(!api.includes('p_route: route')) failures.push('platform API must authorize the canonical requested route');
+if(!api.includes("auth.reason === 'product_not_enabled'")) failures.push('platform API must return product access denials as forbidden');
 
 if(failures.length){console.error(failures.join('\n'));process.exit(1);}
 console.log('KleenestOS developer partner control-plane audit passed.');
