@@ -86,6 +86,11 @@ Deno.serve(async req => {
   if (authError) return json({ error: 'Service unavailable' }, 503);
   if (allowed !== true) return json({ error: 'Unauthorized' }, 401);
 
+  const { error: publicSecurityDefinerError } = await db.rpc('assert_kleenest_public_security_definer_allowlist');
+  if (publicSecurityDefinerError) {
+    console.error('Public SECURITY DEFINER allowlist drift detected', publicSecurityDefinerError.code ?? 'allowlist_error');
+  }
+
   const { data: apiKey, error: keyError } = await db.rpc('platform_internal_development_api_key');
   if (keyError || !apiKey) return json({ error: 'Internal sandbox credential unavailable' }, 503);
 
@@ -198,6 +203,7 @@ Deno.serve(async req => {
     manifestModules.every(value => typeof value === 'string' && value.startsWith('https://'));
 
   const checks = {
+    publicSecurityDefinerAllowlist: !publicSecurityDefinerError,
     restNearby: nearby.ok,
     sdkTransport: nearby.ok && nearbyRecommendations.every(recommendationShape),
     widgetRenderable: nearby.ok && nearbyRecommendations.every((item: any) =>
