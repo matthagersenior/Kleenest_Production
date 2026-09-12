@@ -184,7 +184,14 @@ Deno.serve(async req => {
         p_quota_per_month: Number(body?.quotaPerMonth ?? 10000),
       });
       if (error) throw error;
-      return json({ partnerId: data });
+      const bundleKey = text(body?.bundleKey || 'starter_api', 80);
+      const { error: bundleError } = await db.rpc('apply_platform_product_bundle', {
+        p_partner_id: data,
+        p_bundle_key: bundleKey,
+        p_reason: 'Developer Portal partner creation',
+      });
+      if (bundleError) throw bundleError;
+      return json({ partnerId: data, bundleKey });
     }
 
     if (operation === 'set-billing') {
@@ -226,7 +233,7 @@ Deno.serve(async req => {
         p_user_email: actor.email,
       });
       if (error) throw error;
-      return json(data ?? {});
+      return json({ ...(data ?? {}), product_access: data?.product_access ?? null });
     }
 
     if (operation === 'my-partners') {
@@ -256,7 +263,7 @@ Deno.serve(async req => {
           p_partner_id: partnerId,
         });
         if (error) throw error;
-        return json({ ...(data ?? {}), membership_role: 'platform_owner' });
+        return json({ ...(data ?? {}), membership_role: 'platform_owner', product_access: data?.product_access ?? null });
       }
       const { data, error } = await db.rpc('platform_member_partner_summary', {
         p_user_id: actor.userId,
