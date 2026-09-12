@@ -16,7 +16,7 @@ function sampleTarget(o:OfferReadiness){
   const external=String(profile.developer_portal||'');
   if(external.startsWith('https://'))return external;
   if(route.startsWith('https://'))return route;
-  const normalized=route.replace(/^\\/+/, '');
+  const normalized=route.replace(/^\/+/, '');
   if(!normalized)return null;
   if(app==='consumer-mobile')return `kleenest://${normalized}`;
   if(app==='business-mobile')return `kleenest-business://${normalized}`;
