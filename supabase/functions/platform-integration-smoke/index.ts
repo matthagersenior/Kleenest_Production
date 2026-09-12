@@ -181,7 +181,11 @@ Deno.serve(async req => {
   ]);
 
   const portalEdgeUrl = `${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/platform-developer-portal`;
-  const portalHtml = await getText(portalEdgeUrl);
+  const portalRedirect = await getText(portalEdgeUrl, 'manual');
+  const portalLocation = portalRedirect.location;
+  const portalHtml = portalLocation.startsWith('https://')
+    ? await getText(portalLocation)
+    : { ok: false, status: 0, body: '', contentType: '', location: '' };
 
   const manifestModules = manifest?.modules && typeof manifest.modules === 'object'
     ? Object.values(manifest.modules) as unknown[]
@@ -208,8 +212,12 @@ Deno.serve(async req => {
     distributionWidget: widget.ok && widget.contentType.includes('javascript') && widget.body.includes('mountKleenestFinder'),
     distributionMap: map.ok && map.contentType.includes('javascript') && map.body.includes('recommendationsToGeoJSON'),
     distributionRoute: routeModule.ok && routeModule.contentType.includes('javascript') && routeModule.body.includes('KleenestRouteClient'),
-    portalDirect: portalHtml.status === 200 && portalHtml.contentType.toLowerCase().includes('text/html'),
-    portalHtml: portalHtml.ok && portalHtml.body.includes('Kleenest Developer Portal') && portalHtml.body.includes('Browser token'),
+    portalRedirect: [301,302,307,308].includes(portalRedirect.status)
+      && portalLocation === 'https://matthagersenior.github.io/Kleenest_Production/developer/',
+    portalHtml: portalHtml.ok
+      && portalHtml.contentType.toLowerCase().includes('text/html')
+      && portalHtml.body.includes('Kleenest Developer Portal')
+      && portalHtml.body.includes('Browser token'),
     browserClientPreflight: preflight.status === 204
       && preflight.allowOrigin === browserOrigin
       && preflight.allowHeaders.toLowerCase().includes('x-kleenest-client-token'),
@@ -239,6 +247,7 @@ Deno.serve(async req => {
       widget: widget.status,
       map: map.status,
       routeModule: routeModule.status,
+      portalRedirect: portalRedirect.status,
       portalHtml: portalHtml.status,
       browserPreflight: preflight.status,
       browserAllowed: browserAllowed.status,
@@ -247,7 +256,7 @@ Deno.serve(async req => {
     sample: {
       nearby: nearbyRecommendations.slice(0, 1),
       routeNextStop: routeRecommendations[0] ?? null,
-      portalLocation: portalEdgeUrl,
+      portalLocation,
     },
   }, Object.values(checks).every(Boolean) ? 200 : 502);
 });
