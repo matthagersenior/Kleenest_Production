@@ -22,6 +22,7 @@ on:
       - "docs/platform/**"
       - "scripts/platform-integration-contract-audit.mjs"
       - "scripts/platform-partner-authority-audit.mjs"
+      - "scripts/platform-external-beta-audit.mjs"
       - "tsconfig.platform.json"
       - "package-lock.json"
       - ".github/workflows/platform-integration.yml"
@@ -69,6 +70,8 @@ jobs:
         run: node scripts/platform-integration-contract-audit.mjs
       - name: Partner platform authority audit
         run: node scripts/platform-partner-authority-audit.mjs
+      - name: External beta onboarding audit
+        run: node scripts/platform-external-beta-audit.mjs
       - name: Platform package typecheck
         run: npx tsc -p tsconfig.platform.json --noEmit
       - name: REST Edge Function check

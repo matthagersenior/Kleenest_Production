@@ -73,7 +73,8 @@ for (const check of ['sdkTransport','widgetRenderable','mapLayer','routeSdk','mc
 const hostedPortal = file('supabase/functions/platform-developer-portal/index.ts');
 requireText(hostedPortal, /Kleenest Developer Portal/, 'Hosted developer portal must identify the Kleenest developer surface.');
 requireText(hostedPortal, /platform-partner-admin/, 'Hosted portal must use the canonical partner admin control plane.');
-requireText(hostedPortal, /kleenest-internal-development|eba2a7a6-1059-4619-9ae7-318463056ddb/, 'Hosted portal must expose the internal sandbox.');
+requireText(hostedPortal, /Kleenest owner controls/i, 'Hosted portal must preserve Kleenest owner controls.');
+requireText(hostedPortal, /runDiagnostics|diagnostics/i, 'Hosted portal must preserve internal platform diagnostics.');
 const portal = file('apps/developer-portal/src/App.tsx');
 requireText(portal, /signInWithPassword/, 'Developer portal must authenticate the existing Kleenest owner account.');
 for (const surface of ['API keys', 'Usage', 'Webhooks', 'Integration']) {
