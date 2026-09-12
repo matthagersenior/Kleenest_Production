@@ -412,20 +412,12 @@ function suppliedApiKey(req: Request): string {
     ?? '';
 }
 
-function authorizationRoute(route: string): string {
-  // Place details are read-only recommendation context. Keep existing partner and
-  // publishable credentials backward-compatible under recommendations:read.
-  return route.startsWith('/v1/places/')
-    ? '/v1/recommendations/place-details'
-    : route;
-}
-
 async function authorize(req: Request, route: string): Promise<Authorization> {
   const rawKey = suppliedApiKey(req);
   const requestId = crypto.randomUUID();
   const { data, error } = await db.rpc('authorize_platform_request', {
     p_raw_key: rawKey,
-    p_route: authorizationRoute(route),
+    p_route: route,
     p_request_id: requestId,
     p_origin: req.headers.get('origin'),
   });
@@ -440,7 +432,7 @@ function authFailure(req: Request, auth: Authorization) {
   const forbidden = auth.reason === 'insufficient_scope'
     || auth.reason === 'partner_inactive'
     || auth.reason === 'origin_required'
-    || auth.reason === 'origin_not_allowed';
+    || auth.reason === 'origin_not_allowed'\n    || auth.reason === 'product_not_enabled';
   const headers: Record<string, string> = { ...corsHeaders(req) };
   if (auth.retry_after_seconds) headers['retry-after'] = String(auth.retry_after_seconds);
   return json({
