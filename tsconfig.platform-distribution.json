@@ -11,15 +11,30 @@
     "noEmit": false,
     "rootDir": "packages",
     "outDir": ".platform-build",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "baseUrl": ".",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "paths": {
-      "@kleenest/platform-core": ["packages/platform-core/src/index.ts"],
-      "@kleenest/sdk-js": ["packages/sdk-js/src/index.ts"],
-      "@kleenest/widget": ["packages/widget/src/index.ts"],
-      "@kleenest/map-layer": ["packages/map-layer/src/index.ts"],
-      "@kleenest/route-sdk": ["packages/route-sdk/src/index.ts"],
-      "@kleenest/webhook-types": ["packages/webhook-types/src/index.ts"]
+      "@kleenest/platform-core": [
+        "./packages/platform-core/src/index.ts"
+      ],
+      "@kleenest/sdk-js": [
+        "./packages/sdk-js/src/index.ts"
+      ],
+      "@kleenest/widget": [
+        "./packages/widget/src/index.ts"
+      ],
+      "@kleenest/map-layer": [
+        "./packages/map-layer/src/index.ts"
+      ],
+      "@kleenest/route-sdk": [
+        "./packages/route-sdk/src/index.ts"
+      ],
+      "@kleenest/webhook-types": [
+        "./packages/webhook-types/src/index.ts"
+      ]
     }
   },
   "include": [
