@@ -183,6 +183,31 @@ $function$;
 revoke all on function public.apply_platform_product_bundle(uuid,text,text) from public,anon,authenticated;
 grant execute on function public.apply_platform_product_bundle(uuid,text,text) to service_role;
 
+create or replace function public.create_platform_partner_with_bundle(
+  p_slug text,
+  p_name text,
+  p_bundle_key text default 'starter_api'
+)
+returns uuid
+language plpgsql
+security definer
+set search_path=''
+as $function$
+declare v_bundle public.platform_product_bundles; v_id uuid;
+begin
+  select * into v_bundle from public.platform_product_bundles
+  where bundle_key=p_bundle_key and active;
+  if v_bundle.bundle_key is null then raise exception 'Unknown or inactive platform product bundle'; end if;
+  v_id:=public.create_platform_partner(
+    p_slug,p_name,v_bundle.plan,v_bundle.default_quota_per_minute,v_bundle.default_quota_per_month
+  );
+  perform public.apply_platform_product_bundle(v_id,p_bundle_key,'Partner created with bundle');
+  return v_id;
+end;
+$function$;
+revoke all on function public.create_platform_partner_with_bundle(text,text,text) from public,anon,authenticated;
+grant execute on function public.create_platform_partner_with_bundle(text,text,text) to service_role;
+
 create or replace function public.platform_partner_summary(p_partner_id uuid)
 returns jsonb
 language sql
@@ -508,8 +533,7 @@ begin
   if p_pilot_session_id is not null and not exists(select 1 from public.capability_pilot_sessions s where s.id=p_pilot_session_id) then
     raise exception 'Pilot session not found';
   end if;
-  v_id:=public.create_platform_partner(p_slug,p_name,v_bundle.plan,v_bundle.default_quota_per_minute,v_bundle.default_quota_per_month);
-  perform public.apply_platform_product_bundle(v_id,p_bundle_key,'KleenestOS partner created with bundle');
+  v_id:=public.create_platform_partner_with_bundle(p_slug,p_name,p_bundle_key);
   update public.platform_partner_product_access set pilot_session_id=p_pilot_session_id,updated_by=auth.uid(),updated_at=now() where partner_id=v_id;
   insert into public.platform_partner_control_log(partner_id,action,changed_by,reason,next_state)
   values(v_id,'create_partner',auth.uid(),'Created in KleenestOS',public.platform_partner_summary(v_id));
