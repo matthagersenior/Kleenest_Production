@@ -1,8 +1,27 @@
 {
   "name": "@kleenest/platform-core",
-  "private": true,
   "version": "0.1.0",
+  "description": "Shared Kleenest Platform contracts and recommendation utilities.",
   "type": "module",
-  "main": "src/index.ts",
-  "types": "src/index.ts"
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "prepack": "npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  }
 }
