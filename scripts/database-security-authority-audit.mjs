@@ -173,7 +173,8 @@ if(!failures.length){
     if(!internalExplicitDenySql.includes(`create policy ${table}_client_deny on public.${table}`))failures.push(`${table} must carry an explicit client deny policy`);
   }
   if((internalExplicitDenySql.match(/for all to anon, authenticated/g)||[]).length<internalExplicitDenyTables.length)failures.push('all internal explicit deny policies must target anon/authenticated roles');
-  if((internalExplicitDenySql.match(/using \(false\)[\s\S]*with check \(false\);/g)||[]).length<internalExplicitDenyTables.length)failures.push('all internal explicit deny policies must deny reads and writes');
+  if((internalExplicitDenySql.match(/using \(false\)/g)||[]).length<internalExplicitDenyTables.length)failures.push('all internal explicit deny policies must deny reads');
+  if((internalExplicitDenySql.match(/with check \(false\);/g)||[]).length<internalExplicitDenyTables.length)failures.push('all internal explicit deny policies must deny writes');
 
   const migrationDir='supabase/migrations';
   const retiredOwnerRightsViews=['locations_public','review_intelligence_signals','v_ai_business_roi'];
