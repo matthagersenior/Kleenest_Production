@@ -744,13 +744,13 @@ Deno.serve(async req => {
   const isPlaceDetails = /^\/v1\/places\/[^/]+$/.test(routePath) && !isPlaceMatch;
   const isDevices = routePath === '/v1/devices';
   const isDeviceEvents = routePath === '/v1/devices/events';
-  const isDeviceCommand = /^\\/v1\\/devices\\/[0-9a-f-]+\\/commands$/i.test(routePath);
-  const isDeviceCommandComplete = /^\\/v1\\/devices\\/[0-9a-f-]+\\/commands\\/[0-9a-f-]+\\/complete$/i.test(routePath);
+  const isDeviceCommand = /^\/v1\/devices\/[0-9a-f-]+\/commands$/i.test(routePath);
+  const isDeviceCommandComplete = /^\/v1\/devices\/[0-9a-f-]+\/commands\/[0-9a-f-]+\/complete$/i.test(routePath);
 
-  if (!isNearby && !isRoute && !isPlaceMatch && !isPlaceDetails && !isDevices && !isDeviceRegister && !isDeviceEvents && !isDeviceCommand && !isDeviceCommandComplete) {
+  if (!isNearby && !isRoute && !isPlaceMatch && !isPlaceDetails && !isDevices && !isDeviceEvents && !isDeviceCommand && !isDeviceCommandComplete) {
     return json({ error: 'Not found' }, 404, corsHeaders(req));
   }
-  if ((isNearby || isRoute || isPlaceMatch || isDeviceRegister || isDeviceEvents || isDeviceCommand || isDeviceCommandComplete) && req.method !== 'POST') {
+  if ((isNearby || isRoute || isPlaceMatch || isDeviceEvents || isDeviceCommand || isDeviceCommandComplete) && req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
   }
   if (isDevices && req.method !== 'GET' && req.method !== 'POST') {
@@ -781,7 +781,8 @@ Deno.serve(async req => {
     } else {
       const body = await req.json().catch(() => ({}));
       if (isDevices) {
-        payload = await listSmartDevices(auth);
+        payload = req.method === 'POST' ? await registerSmartDevice(auth, body) : await listSmartDevices(auth);
+        if (req.method === 'POST') status = 201;
       } else if (isDeviceEvents) {
         payload = await ingestSmartDeviceEvent(auth, body);
         status = 202;
