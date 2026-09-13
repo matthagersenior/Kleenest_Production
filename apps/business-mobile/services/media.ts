@@ -7,6 +7,11 @@ export function businessLocationPhotoUrl(storagePath:string){const path=String(s
 export function businessReviewPhotoUrl(storagePath:string){const path=String(storagePath||'').trim();return path?getKleenestSupabaseClient().storage.from(REVIEW_BUCKET).getPublicUrl(path).data.publicUrl:'';}
 const QR_BUCKET='qr-branding';
 const client=()=>getKleenestSupabaseClient();
+export async function voteBusinessReviewPhoto(businessId:string,reviewPhotoId:string,vote:'helpful'|'not_helpful'){
+  const{data,error}=await client().rpc('vote_review_photo',{p_review_photo_id:reviewPhotoId,p_vote:vote,p_business_id:businessId});
+  if(error)throw error;
+  return data as Record<string,unknown>;
+}
 
 function extension(mime:string|undefined,name:string|undefined){
   const fromName=name?.split('.').pop()?.toLowerCase();
