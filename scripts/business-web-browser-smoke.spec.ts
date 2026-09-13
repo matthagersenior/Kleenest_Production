@@ -5,7 +5,11 @@ const PREFIX='kleenest.business.web.secure.';
 
 test('Business Web reaches sign-in when its persisted auth storage is unavailable',async({page})=>{
   const pageErrors:string[]=[];
+  const requestFailures:string[]=[];
+  const badResponses:string[]=[];
   page.on('pageerror',error=>pageErrors.push(error.message));
+  page.on('requestfailed',request=>requestFailures.push(`${request.method()} ${request.url()} :: ${request.failure()?.errorText||'failed'}`));
+  page.on('response',response=>{if(response.status()>=400)badResponses.push(`${response.status()} ${response.url()}`);});
 
   await page.addInitScript((prefix)=>{
     const getItem=Storage.prototype.getItem;
@@ -27,6 +31,13 @@ test('Business Web reaches sign-in when its persisted auth storage is unavailabl
 
   const response=await page.goto(BASE,{waitUntil:'domcontentloaded'});
   expect(response?.status()).toBe(200);
+  await page.waitForTimeout(4000);
+  console.log('BUSINESS_FINAL_URL',page.url());
+  console.log('BUSINESS_BODY',JSON.stringify((await page.locator('body').innerText()).slice(0,1000)));
+  console.log('BUSINESS_ROOT',JSON.stringify((await page.locator('#root').innerHTML()).slice(0,1000)));
+  console.log('BUSINESS_PAGE_ERRORS',JSON.stringify(pageErrors));
+  console.log('BUSINESS_REQUEST_FAILURES',JSON.stringify(requestFailures));
+  console.log('BUSINESS_BAD_RESPONSES',JSON.stringify(badResponses));
   await expect(page.getByText('KLEENEST BUSINESS',{exact:true})).toBeVisible({timeout:15000});
   await expect(page.getByText('Welcome back',{exact:true})).toBeVisible();
   expect(pageErrors).toEqual([]);
