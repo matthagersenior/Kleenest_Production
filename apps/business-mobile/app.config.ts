@@ -37,7 +37,8 @@ const config:ExpoConfig={
     ['expo-notifications',{defaultChannel:'live-network'}],
     ['expo-image-picker',{photosPermission:'Kleenest Business uses your photo library only when you choose business branding or other media to upload.',microphonePermission:false}],
   ],
-  experiments:{typedRoutes:true},
-  extra:{appRole:'business',otaChannel,productionEnvironment:{supabaseProjectRef:'ssgesjzdvdsqacdtasje'},eas:{projectId:EAS_PROJECT_ID}},
+  web:{output:'single',bundler:'metro',name:'Kleenest Business Web',shortName:'Kleenest Business'},
+  experiments:{typedRoutes:true,baseUrl:'/Kleenest_Production/business'},
+  extra:{appRole:'business',webPortalName:'Kleenest Business Web',otaChannel,productionEnvironment:{supabaseProjectRef:'ssgesjzdvdsqacdtasje'},eas:{projectId:EAS_PROJECT_ID}},
 };
 export default config;
