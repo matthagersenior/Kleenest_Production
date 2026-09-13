@@ -3,7 +3,7 @@ import fs from 'node:fs';
 function read(path){return fs.readFileSync(path,'utf8')}
 function requireToken(text,token,label){if(!text.includes(token))throw new Error(`${label} missing ${token}.`)}
 
-const required=['.github/workflows/install-center-smoke.yml','scripts/install-center-browser-smoke.spec.ts','scripts/consumer-release-drift-audit.mjs','apps/consumer-mobile/app/install.tsx','apps/platform-mobile/metro.config.js','apps/platform-mobile/web/secureStorePreview.ts','.github/workflows/pages.yml','.github/workflows/publish-standalone-installer.yml','.github/workflows/android-family.yml','apps/consumer-mobile/app.config.ts','apps/consumer-mobile/package.json','apps/consumer-mobile/metro.config.js','apps/consumer-mobile/web/maplibrePreview.tsx','apps/consumer-mobile/web/secureStorePreview.ts','apps/consumer-mobile/web/notificationsPreview.ts','scripts/prepare-consumer-web-pwa.mjs','public/manifest.webmanifest','public/app-icon-512.svg','public/sw.js'];
+const required=['apps/consumer-mobile/components/MarketingSite.tsx','apps/consumer-mobile/app/for-you.tsx','apps/consumer-mobile/app/for-business.tsx','apps/consumer-mobile/app/trust.tsx','.github/workflows/install-center-smoke.yml','scripts/install-center-browser-smoke.spec.ts','scripts/consumer-release-drift-audit.mjs','apps/consumer-mobile/app/install.tsx','apps/platform-mobile/metro.config.js','apps/platform-mobile/web/secureStorePreview.ts','.github/workflows/pages.yml','.github/workflows/publish-standalone-installer.yml','.github/workflows/android-family.yml','apps/consumer-mobile/app.config.ts','apps/consumer-mobile/package.json','apps/consumer-mobile/metro.config.js','apps/consumer-mobile/web/maplibrePreview.tsx','apps/consumer-mobile/web/secureStorePreview.ts','apps/consumer-mobile/web/notificationsPreview.ts','scripts/prepare-consumer-web-pwa.mjs','public/manifest.webmanifest','public/app-icon-512.svg','public/sw.js'];
 for(const file of required)if(!fs.existsSync(file))throw new Error(`Consumer preview/install file missing: ${file}.`);
 if(fs.existsSync('.github/workflows/static.yml'))throw new Error('Competing GitHub-generated static Pages workflow must not exist.');
 if(fs.existsSync('.github/workflows/android-preview.yml'))throw new Error('Duplicate Consumer-only Android build workflow must be removed; family Android workflow owns verified APKs.');
@@ -43,12 +43,14 @@ for(const token of ["output: 'single'","bundler: 'metro'","baseUrl: '/Kleenest_P
 const consumerInstall=read('apps/consumer-mobile/app/install.tsx');
 for(const token of ['Install Kleenest','beforeinstallprompt','Kleenest-Consumer.apk','INSTALL WEB APP','DOWNLOAD ANDROID APK','iPhone','iPad','Add to Home Screen','Open as Web App','deviceKind','isIOS','isAndroid','Kleenest-release-state.json','INSTALL HEALTH','SHARE INSTALL LINK','OPEN KLEENEST','CHECK INSTALLATION','browserKind','serviceWorkerReady'])requireToken(consumerInstall,token,'Consumer Installation Center');
 const consumerHome=read('apps/consumer-mobile/app/index.tsx');
-for(const token of ['GET KLEENEST','Install on this device','/install'])requireToken(consumerHome,token,'Consumer Home installation feature');
+for(const token of ['GET KLEENEST','Install on this device','/install','MarketingHome','webAppLaunch'])requireToken(consumerHome,token,'Consumer Home + public marketing split');
+const marketingSite=read('apps/consumer-mobile/components/MarketingSite.tsx');
+for(const token of ['Clean bathrooms shouldn’t be a gamble.','For You','For Business','TRUST + FRESHNESS','INSTALL KLEENEST','KLEENEST ANYWHERE'])requireToken(marketingSite,token,'Public Kleenest marketing site');
 const installSmoke=read('.github/workflows/install-center-smoke.yml');
 for(const token of ['Verify Kleenest Installation Center','Publish Consumer Standalone Installer','@playwright/test','EXPECTED_SHA','install-center-browser-smoke.spec.ts'])requireToken(installSmoke,token,'Installation Center post-deploy browser smoke workflow');
 const installSpec=read('scripts/install-center-browser-smoke.spec.ts');
 for(const token of ['Install Kleenest','INSTALL WEB APP','SHARE INSTALL LINK','Kleenest-release-state.json','Kleenest-Consumer.apk.sha256','manifest.webmanifest','EXPECTED_SHA'])requireToken(installSpec,token,'Installation Center browser journey');
-if(!installer.includes('apps/consumer-mobile/dist/install/index.html'))throw new Error('Pages publisher must materialize /install as a first-class direct route.');
+for(const token of ['public_routes="install for-you for-business trust"','cp apps/consumer-mobile/dist/index.html "apps/consumer-mobile/dist/$route/index.html"'])requireToken(installer,token,'Public marketing route materialization');
 if(!manifest.shortcuts?.some(shortcut=>shortcut.url==='/Kleenest_Production/install'))throw new Error('Consumer PWA manifest must expose the Installation Center as an app shortcut.');
 const ownerConfig=read('apps/platform-mobile/app.config.ts');
 const ownerPkg=JSON.parse(read('apps/platform-mobile/package.json'));
@@ -67,7 +69,7 @@ for(const token of ['getLastNotificationResponseAsync','clearLastNotificationRes
 if(/platform\s*!==\s*['"]web['"]/.test(metro))throw new Error('Metro preview aliases must be positively scoped to web only.');
 
 for(const token of ['manifest.webmanifest','navigator.serviceWorker.register','apps/consumer-mobile/dist/index.html','apps/consumer-mobile/assets/app-icon.png'])requireToken(pwaPrep,token,'Consumer PWA preparation script');
-if(manifest.display!=='standalone'||manifest.start_url!=='/Kleenest_Production/'||manifest.scope!=='/Kleenest_Production/')throw new Error('Consumer PWA manifest must remain standalone and scoped to the GitHub Pages app path.');
+if(manifest.display!=='standalone'||manifest.start_url!=='/Kleenest_Production/?app=1'||manifest.scope!=='/Kleenest_Production/')throw new Error('Consumer PWA manifest must remain standalone, launch into the app Home experience, and stay scoped to the GitHub Pages app path.');
 if(!Array.isArray(manifest.icons)||manifest.icons.length<2)throw new Error('Consumer PWA manifest must provide installable app icons.');
 if(!manifest.icons.some(icon=>icon.src==='/Kleenest_Production/app-icon.png'&&icon.sizes==='192x192')||!manifest.icons.some(icon=>icon.src==='/Kleenest_Production/app-icon-512.svg'&&icon.sizes==='512x512'))throw new Error('Consumer PWA manifest must publish truthful 192px and 512px install icon metadata.');
 for(const token of ['kleenest-shell','showNotification','notificationclick','isVersionedAsset','networkFirst'])requireToken(serviceWorker,token,'Consumer web service worker');
