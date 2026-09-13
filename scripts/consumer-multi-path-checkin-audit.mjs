@@ -4,6 +4,15 @@ const failures=[];
 const read=(path)=>fs.readFileSync(path,'utf8');
 const expect=(source,token,label)=>{if(!source.includes(token))failures.push(label);};
 
+const home=read('apps/consumer-mobile/app/index.tsx');
+for(const [token,label] of [
+  ['accessibilityLabel="Check in at a restroom"','consumer Home must expose a first-class check-in action'],
+  ['<Text style={s.heroQuickLabel}>CHECK IN</Text>','consumer Home must label check-in independently of QR'],
+  ['<Text style={s.heroQuickTitle}>Nearby or search</Text>','consumer Home check-in must lead users toward GPS/search location selection'],
+  ['accessibilityLabel="Scan a Kleenest QR code"','consumer Home must keep QR as a separate optional verification path'],
+]) expect(home,token,label);
+if(home.includes('Scan QR to check in or review')) failures.push('consumer Home must not teach users that QR is the general check-in entry point');
+
 const explore=read('apps/consumer-mobile/features/AdaptiveExploreScreen.tsx');
 for(const [token,label] of [
   ['mobileCheckIn','native Explore must use the canonical GPS check-in RPC'],
@@ -27,6 +36,12 @@ for(const [token,label] of [
   ['arriveMobileRouteStop','saved route stop arrival must link to the verified check-in'],
   ['never silently checks you in','arrival detection must not silently create a user check-in'],
 ]) expect(route,token,label);
+
+const qrScreen=read('apps/consumer-mobile/app/qr.tsx');
+for(const [token,label] of [
+  ['accessibilityLabel="Check in without a QR"','QR screen must offer a GPS/search escape hatch for regular check-in'],
+  ['Check in with GPS + geofence','QR screen must explain that a QR is not required for normal check-in'],
+]) expect(qrScreen,token,label);
 
 const qr=read('apps/consumer-mobile/services/qrActions.ts');
 expect(qr,"rpc('verify_checkin'",'QR check-in must use the existing server-authoritative QR + geofence RPC');
@@ -55,4 +70,4 @@ if(failures.length){
   process.exit(1);
 }
 
-console.log('Consumer multi-path check-in audit passed: GPS/geofence, QR, Explore, location detail, route stops, opt-in arrival prompts, and web parity converge on server-authoritative check-in paths.');
+console.log('Consumer multi-path check-in audit passed: Home, GPS/geofence, QR, Explore, location detail, route stops, opt-in arrival prompts, and web parity converge on server-authoritative check-in paths.');

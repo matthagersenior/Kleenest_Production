@@ -59,7 +59,8 @@ for(const token of ['resolveConsumerSearchLocation','looksLikeAddressOrArea','se
 if(explore.includes('Location.geocodeAsync')) failures.push('Explore address-origin search must not regress to device geocoding.');
 
 const consumerHome=read('apps/consumer-mobile/app/index.tsx');
-for(const token of ['FIND A BATHROOM','CHECK IN / REVIEW','SCAN QR','homePrimaryCta']) if(!consumerHome.includes(token)) failures.push('Consumer Home focal hierarchy missing '+token);
+for(const token of ['FIND A BATHROOM','CHECK IN','Nearby or search','QR PROOF','homePrimaryCta']) if(!consumerHome.includes(token)) failures.push('Consumer Home focal hierarchy missing '+token);
+if(consumerHome.includes('Scan QR to check in or review')) failures.push('Consumer Home focal hierarchy must keep regular check-in separate from QR proof.');
 
 if(failures.length){
   console.error('Mandatory onboarding / Consumer focus gate failed:');

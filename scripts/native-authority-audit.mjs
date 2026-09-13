@@ -37,7 +37,7 @@ if(!failures.length){
  const primaryTabs=['index','explore','progress','social','profile'];
  expect(primaryTabs.every(name=>layout.includes(`name=\"${name}\"`)),'primary consumer tabs must remain Home, Explore, Progress, Community, Profile');
  for(const name of ['play','discover','games','route','qr','saved','activity','notifications','membership','preferences','support','account-deletion'])expect(new RegExp(`name=[\"']${name}[\"'][^>]*href:\\s*null`).test(layout),`secondary consumer route ${name} must remain hidden from primary tabs`);
- expect(home.includes("'/explore'")&&home.includes('Find a bathroom')&&home.includes('homePrimaryCta')&&home.includes('SCAN QR')&&home.includes('CHECK IN / REVIEW')&&home.includes('THE KLEENEST LOOP')&&home.includes('XP + levels')&&home.includes('Add a missing place')&&home.includes('YOUR NETWORK'),'Home must preserve bathroom-first discovery, QR action and progression hierarchy');
+ expect(home.includes("'/explore'")&&home.includes('Find a bathroom')&&home.includes('homePrimaryCta')&&home.includes('CHECK IN')&&home.includes('Nearby or search')&&home.includes('QR PROOF')&&home.includes('THE KLEENEST LOOP')&&home.includes('XP + levels')&&home.includes('Add a missing place')&&home.includes('YOUR NETWORK')&&!home.includes('Scan QR to check in or review'),'Home must preserve bathroom-first discovery, first-class check-in, optional QR proof and progression hierarchy');
  expect(exploreEntry.includes('AdaptiveExploreScreen'),'Explore entry must render the canonical adaptive discovery implementation');
  const hasRouteHandoff=/pathname\s*:\s*[\"']\/route[\"']/.test(explore)||/router\.push\(\s*[\"']\/route/.test(explore);
  const hasDetailsHandoff=/\/location\//.test(explore);
