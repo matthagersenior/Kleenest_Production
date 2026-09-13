@@ -20,7 +20,7 @@ type ReleaseState={
 
 const ROOT_PATH='/Kleenest_Production/';
 const INSTALL_PATH='/Kleenest_Production/install';
-const APP_PATH='/Kleenest_Production/explore';
+const APP_PATH='/Kleenest_Production/?app=1';
 const APK_PATH='/Kleenest_Production/Kleenest-Consumer.apk';
 const CHECKSUM_PATH='/Kleenest_Production/Kleenest-Consumer.apk.sha256';
 const RELEASE_STATE_PATH='/Kleenest_Production/Kleenest-release-state.json';
