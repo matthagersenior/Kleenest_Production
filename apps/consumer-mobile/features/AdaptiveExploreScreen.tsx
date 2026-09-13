@@ -9,6 +9,7 @@ import {
   findAdaptiveNearbyRestrooms,
   listNearbyRestrooms,
   listRestroomsAlongRoute,
+  mobileCheckIn,
   type AmenityMatchRule,
 } from '@kleenest/mobile-core';
 import { useEffect, useMemo, useState } from 'react';
@@ -170,11 +171,12 @@ function parseRouteDraft(raw: string | null) {
   }
 }
 
-function ResultCard({ item, selected, onSelect, onDirections, onAddToRoute, onDetails, route, requestedAmenities }: {
+function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddToRoute, onDetails, route, requestedAmenities }: {
   item: any;
   selected: boolean;
   onSelect: () => void;
   onDirections: () => void;
+  onCheckIn: () => void;
   onAddToRoute: () => void;
   onDetails: () => void;
   route: any;
@@ -222,6 +224,9 @@ function ResultCard({ item, selected, onSelect, onDirections, onAddToRoute, onDe
         </Text>
       </Pressable>
       <View style={s.cardActionRow}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Check in at this location" style={[s.secondarySmall, s.cardAction]} onPress={onCheckIn}>
+          <Text style={s.secondaryText}>Check in</Text>
+        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Start directions to this location"
@@ -569,6 +574,21 @@ export default function AdaptiveExploreScreen() {
     const id = idOf(row);
     if (id) captureConsumerRouteIntent(id);
     await Linking.openURL(navigateUrl(row));
+  }
+
+  async function checkIn(row:any){
+    const id=idOf(row);if(!id)return;
+    try{
+      const permission=await Location.requestForegroundPermissionsAsync();
+      if(permission.status!=='granted')throw new Error(permission.canAskAgain===false?'Location permission is blocked in system settings.':'Location permission is required to check in.');
+      const current=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.High});
+      const result:any=await mobileCheckIn(id,current.coords.latitude,current.coords.longitude);
+      setMessage(`Checked in at ${row.name||'this restroom'}. GPS + geofence verified${result?.distance_meters!=null?` · ${Math.round(Number(result.distance_meters))} m from the location`:''}.`);
+      setSelectedId(id);
+    }catch(error:any){
+      const detail=String(error?.message||'');
+      setMessage(detail.includes('OUTSIDE_GEOFENCE')?`Get closer to ${row.name||'this restroom'} to check in. Kleenest only verifies GPS check-ins inside the location geofence.`:detail||'Check-in could not be completed.');
+    }
   }
 
   useEffect(() => {
@@ -980,6 +1000,9 @@ export default function AdaptiveExploreScreen() {
                 <CompactRestroomSignals item={selected} />
                 <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
                 <View style={s.actionRow}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Check in at selected location" style={[s.secondarySmall, s.selectedAction]} onPress={() => void checkIn(selected)}>
+                    <Text style={s.secondaryText}>Check in</Text>
+                  </Pressable>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Start directions to this location"
@@ -1025,6 +1048,7 @@ export default function AdaptiveExploreScreen() {
               selected={idOf(item) === selectedId}
               onSelect={() => selectRow(item)}
               onDirections={() => void directions(item)}
+              onCheckIn={() => void checkIn(item)}
               onAddToRoute={() => addToRoute(item)}
               onDetails={() => router.push(`/location/${idOf(item)}`)}
               route={mode === 'route' ? route : null}

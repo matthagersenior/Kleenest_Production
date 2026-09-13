@@ -22,6 +22,14 @@ export async function resolveQrAction(code:string):Promise<ResolvedQrAction>{
   return data as ResolvedQrAction;
 }
 
+export async function verifyQrCheckIn(code:string,latitude:number,longitude:number){
+  const value=String(code||'').trim();if(!value)throw new Error('QR code is required.');
+  const client=getKleenestSupabaseClient();
+  const {data,error}=await client.rpc('verify_checkin',{p_qr_code:value,p_lat:latitude,p_lng:longitude});
+  if(error)throw error;
+  return data;
+}
+
 export async function executeQrAction(action:ResolvedQrAction){
   const type=String(action.action_type||'').toLowerCase();
   if(type==='smart_amenity'){
