@@ -117,6 +117,7 @@ export default function Layout() {
     <Tabs.Screen name="index" options={{title:'Home'}}/>
     <Tabs.Screen name="tools" options={{title:'Actions'}}/>
     <Tabs.Screen name="locations" options={{title:'Locations'}}/>
+    <Tabs.Screen name="verification-center" options={{href:null,title:'Verification Center'}}/>
     <Tabs.Screen name="engagement" options={{href:null,title:'Growth'}}/>
     <Tabs.Screen name="operations" options={{title:'Operations'}}/>
     <Tabs.Screen name="fleet" options={{href:null,title:'Fleet Suite'}}/>
