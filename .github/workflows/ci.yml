@@ -131,8 +131,6 @@ jobs:
       - name: Native gameplay and platform authority
         run: |
           node scripts/native-game-authority-audit.mjs
-      - name: Game content depth
-        run: node scripts/game-content-depth-audit.mjs
           node scripts/native-account-control-audit.mjs
           node scripts/native-hotpath-rls-authority-audit.mjs
           node scripts/native-social-feed-authority-audit.mjs
@@ -143,6 +141,8 @@ jobs:
           node scripts/native-public-rpc-authority-audit.mjs
           node scripts/admin-control-plane-rpc-authority-audit.mjs
           node scripts/native-consumer-contribution-rpc-authority-audit.mjs
+      - name: Game content depth
+        run: node scripts/game-content-depth-audit.mjs
       - name: Business canonical authority
         run: node scripts/business-canonical-rpc-authority-audit.mjs
       - name: Consumer location photo authority
