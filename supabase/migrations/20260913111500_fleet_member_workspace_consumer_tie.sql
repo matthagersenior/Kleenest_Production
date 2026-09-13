@@ -277,3 +277,166 @@ comment on function public.fleet_member_context(uuid) is
   'Returns a signed-in Fleet user safe workspace context plus only that assigned driver route context when applicable.';
 comment on function public.fleet_observe_access(uuid) is
   'Restricts Fleet operational observation to managers or an assigned driver instead of any authenticated user.';
+
+
+-- Convert an open route-stop geofence entry into a durable dwell/stall exception.
+-- This closes the gap between native geofence enter/exit callbacks and the
+-- server-side exception/notification system: the server can recognize a
+-- driver who remains inside a stop geofence even when the app is backgrounded.
+create or replace function public.materialize_fleet_active_dwell_exceptions()
+returns integer
+language plpgsql
+security definer
+set search_path=''
+as $$
+declare
+  rec record;
+  v_threshold_minutes integer;
+  v_dwell_seconds integer;
+  v_alert_id uuid;
+  v_notification_id uuid;
+  v_count integer:=0;
+begin
+  for rec in
+    select
+      s.id route_stop_id,
+      s.business_id,
+      s.route_id,
+      s.stop_order,
+      coalesce(s.stop_name,'Route stop') stop_name,
+      s.planned_dwell_minutes,
+      r.driver_id,
+      r.vehicle_id,
+      d.user_id driver_user_id,
+      g.id geofence_id,
+      e.id entry_event_id,
+      e.user_id entry_user_id,
+      e.occurred_at entered_at,
+      coalesce(p.geofence_dwell_minutes,30) geofence_dwell_minutes,
+      coalesce(p.dwell_overrun_minutes,10) dwell_overrun_minutes
+    from public.fleet_route_stops s
+    join public.fleet_routes r
+      on r.id=s.route_id and r.business_id=s.business_id
+    join public.business_geofences g
+      on g.route_stop_id=s.id and g.business_id=s.business_id and coalesce(g.active,true)
+    left join public.fleet_drivers d
+      on d.id=r.driver_id and d.business_id=r.business_id
+    left join public.fleet_exception_policies p
+      on p.business_id=s.business_id
+    join lateral (
+      select ge.id,ge.user_id,ge.occurred_at
+      from public.geofence_events ge
+      where ge.geofence_id=g.id
+        and lower(ge.event_type) in ('enter','entered','entry')
+      order by ge.occurred_at desc
+      limit 1
+    ) e on true
+    where s.notify_dwell
+      and r.status in ('active','paused')
+      and s.status not in ('completed','skipped','cancelled')
+      and not exists(
+        select 1
+        from public.geofence_events gx
+        where gx.geofence_id=g.id
+          and gx.occurred_at>e.occurred_at
+          and lower(gx.event_type) in ('exit','exited')
+      )
+  loop
+    v_threshold_minutes:=greatest(
+      1,
+      rec.geofence_dwell_minutes,
+      coalesce(rec.planned_dwell_minutes,0)+rec.dwell_overrun_minutes
+    );
+    v_dwell_seconds:=greatest(0,floor(extract(epoch from(now()-rec.entered_at)))::integer);
+
+    if v_dwell_seconds < v_threshold_minutes*60 then
+      continue;
+    end if;
+
+    v_alert_id:=public.materialize_fleet_exception_alert(
+      rec.business_id,
+      rec.vehicle_id,
+      'route_stop_stall',
+      'Fleet stop stall / dwell threshold',
+      rec.stop_name||' has remained inside its route geofence for '||
+        greatest(1,round(v_dwell_seconds/60.0))::text||' minutes.',
+      'warning',
+      'fleet_route_stop',
+      rec.route_stop_id
+    );
+
+    -- Preserve a dwell observation in the canonical geofence event stream.
+    insert into public.geofence_events(
+      geofence_id,user_id,location_id,business_id,event_type,dwell_seconds,metadata
+    )
+    select
+      rec.geofence_id,
+      rec.entry_user_id,
+      s.location_id,
+      rec.business_id,
+      'dwell_threshold',
+      v_dwell_seconds,
+      jsonb_build_object(
+        'route_id',rec.route_id,
+        'route_stop_id',rec.route_stop_id,
+        'stop_order',rec.stop_order,
+        'threshold_minutes',v_threshold_minutes,
+        'source','fleet_active_dwell_watch'
+      )
+    from public.fleet_route_stops s
+    where s.id=rec.route_stop_id
+      and not exists(
+        select 1 from public.geofence_events existing
+        where existing.geofence_id=rec.geofence_id
+          and lower(existing.event_type)='dwell_threshold'
+          and existing.metadata->>'route_stop_id'=rec.route_stop_id::text
+          and existing.occurred_at>=rec.entered_at
+      );
+
+    -- materialize_fleet_exception_alert owns the manager notification. Add the
+    -- assigned driver's delivery to the same event so the client user sees
+    -- the stall/dwell warning without gaining operator access.
+    if rec.driver_user_id is not null then
+      select ne.id into v_notification_id
+      from public.notification_events ne
+      where ne.dedupe_key='fleet-exception:'||v_alert_id::text
+      order by ne.created_at desc
+      limit 1;
+
+      if v_notification_id is not null then
+        insert into public.notification_deliveries(notification_id,recipient_user_id,channel)
+        values
+          (v_notification_id,rec.driver_user_id,'in_app'),
+          (v_notification_id,rec.driver_user_id,'push')
+        on conflict(notification_id,recipient_user_id,channel) do nothing;
+      end if;
+    end if;
+
+    v_count:=v_count+1;
+  end loop;
+
+  return v_count;
+end;
+$$;
+
+revoke all on function public.materialize_fleet_active_dwell_exceptions() from public,anon,authenticated;
+grant execute on function public.materialize_fleet_active_dwell_exceptions() to service_role;
+
+do $$
+declare
+  v_jobid bigint;
+begin
+  if exists(select 1 from pg_extension where extname='pg_cron') then
+    select jobid into v_jobid from cron.job where jobname='fleet-active-dwell-watch' limit 1;
+    if v_jobid is not null then perform cron.unschedule(v_jobid); end if;
+    perform cron.schedule(
+      'fleet-active-dwell-watch',
+      '*/5 * * * *',
+      'select public.materialize_fleet_active_dwell_exceptions();'
+    );
+  end if;
+end
+$$;
+
+comment on function public.materialize_fleet_active_dwell_exceptions() is
+  'Server-side Fleet dwell/stall watchdog for active route-stop geofences; materializes manager alerts and assigned-driver notifications without requiring the mobile app to remain foregrounded.';
