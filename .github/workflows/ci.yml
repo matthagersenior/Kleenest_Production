@@ -69,6 +69,8 @@ jobs:
         run: node scripts/native-consumer-presentation-convergence-audit.mjs
       - name: Public marketing imagery convergence
         run: node scripts/public-marketing-imagery-audit.mjs
+      - name: Consumer multi-path check-in
+        run: node scripts/consumer-multi-path-checkin-audit.mjs
       - name: Consumer activation loop
         run: node scripts/consumer-activation-loop-audit.mjs
       - name: Consumer bulk migration convergence

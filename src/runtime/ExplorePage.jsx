@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { findNearbyRestrooms } from '../services/nearby.js';
 import { directNavigationUrl } from '../services/routing.js';
+import { checkInAtLocation } from '../services/community.js';
 
 const DEFAULT_CENTER = [38.627, -90.199];
 const OSM_RASTER = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -24,7 +25,7 @@ function markerElement(place, selected) {
 export default function ExplorePage() {
   const navigate = useNavigate();
   const hostRef = useRef(null), mapRef = useRef(null), markersRef = useRef([]), requestRef = useRef(0), autoLocatedRef = useRef(false);
-  const [center, setCenter] = useState(DEFAULT_CENTER), [places, setPlaces] = useState([]), [selectedId, setSelectedId] = useState(null), [search, setSearch] = useState(''), [radiusMeters, setRadiusMeters] = useState(8047), [status, setStatus] = useState('idle'), [error, setError] = useState('');
+  const [center, setCenter] = useState(DEFAULT_CENTER), [places, setPlaces] = useState([]), [selectedId, setSelectedId] = useState(null), [search, setSearch] = useState(''), [radiusMeters, setRadiusMeters] = useState(8047), [status, setStatus] = useState('idle'), [error, setError] = useState(''), [checkInMessage,setCheckInMessage]=useState('');
   const selected = useMemo(() => places.find((place) => (place.location_id || place.place_id) === selectedId) || null, [places, selectedId]);
 
   useEffect(() => {
@@ -57,6 +58,20 @@ export default function ExplorePage() {
 
   const locate = () => { if (!navigator.geolocation) return; setStatus('locating'); navigator.geolocation.getCurrentPosition((position) => { const next = [position.coords.latitude, position.coords.longitude]; setCenter(next); mapRef.current?.easeTo({ center: [next[1], next[0]], zoom: 14 }); load({ position: next }); }, () => { setStatus('error'); setError('Location permission was unavailable.'); }, { enableHighAccuracy: true, timeout: 8000 }); };
 
+  const checkIn = (place) => {
+    setCheckInMessage('');
+    if (!navigator.geolocation) { setCheckInMessage('Location is required to check in.'); return; }
+    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      try {
+        const result = await checkInAtLocation(place.location_id || place.place_id, coords.latitude, coords.longitude);
+        setCheckInMessage(`Checked in at ${place.name || 'this restroom'} · GPS + geofence verified${result?.distance_meters != null ? ` · ${Math.round(Number(result.distance_meters))} m away` : ''}.`);
+      } catch (err) {
+        const detail=String(err?.message||'');
+        setCheckInMessage(detail.includes('OUTSIDE_GEOFENCE')?`Get closer to ${place.name||'this restroom'} to check in. Kleenest verifies GPS check-ins only inside the location geofence.`:detail||'Check-in could not be completed.');
+      }
+    }, (err) => setCheckInMessage(err?.message || 'Location permission is required to check in.'), { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
+  };
+
   return <main className="explore-page">
     <section className="explore-hero"><div><span className="eyebrow">Explore</span><h1>Find a restroom you can trust.</h1><p>Search nearby locations, compare confidence signals, and open the full location record when you need more detail.</p></div></section>
     <section className="explore-controls" aria-label="Explore controls">
@@ -65,8 +80,8 @@ export default function ExplorePage() {
       <button type="button" onClick={() => load()} disabled={status === 'loading'}>{status === 'loading' ? 'Searching…' : 'Search'}</button>
       <button type="button" className="secondary" onClick={locate}>Use my location</button>
     </section>
-    {error ? <div className="explore-alert" role="alert">{error}</div> : null}
-    <section className="explore-map-shell" aria-label="Restroom map"><div ref={hostRef} className="explore-map" /><div className="map-legend"><strong>Map</strong><span>Pin letter = business or brand</span><span>Selected pins highlight</span></div>{selected ? <article className="map-selection"><button type="button" className="map-selection-close" onClick={() => setSelectedId(null)} aria-label="Close selected location">×</button><strong>{selected.name}</strong><span>{signals(selected).join(' · ')}</span><div><button type="button" onClick={() => navigate(`/locations/${selected.location_id || selected.place_id}`)}>Full details</button><a href={directNavigationUrl(selected)} target="_blank" rel="noreferrer">Directions</a></div></article> : null}</section>
-    <section className="explore-results"><div className="explore-results-heading"><div><span className="eyebrow">Nearby</span><h2>{status === 'loading' ? 'Searching…' : `${places.length} result${places.length === 1 ? '' : 's'}`}</h2></div></div><div className="explore-result-list">{places.map((place) => { const id = place.location_id || place.place_id; return <article className={id === selectedId ? 'explore-result selected' : 'explore-result'} key={id}><button type="button" className="explore-result-main" onClick={() => setSelectedId(id)}><span className="explore-result-brand">{(place.brand || place.name || 'K').slice(0, 1).toUpperCase()}</span><span><strong>{place.name}</strong><small>{place.address || 'Address unavailable'}</small><em>{signals(place).join(' · ')}</em></span></button><div className="explore-result-actions"><button type="button" onClick={() => navigate(`/locations/${id}`)}>Full details</button><a href={directNavigationUrl(place)} target="_blank" rel="noreferrer">Directions</a></div></article>;})}{status !== 'loading' && places.length === 0 ? <div className="explore-empty">No matching locations in this radius yet. Try a wider radius or remove the text filter.</div> : null}</div></section>
+    {error ? <div className="explore-alert" role="alert">{error}</div> : null}{checkInMessage ? <div className="notice" role="status">{checkInMessage}</div> : null}
+    <section className="explore-map-shell" aria-label="Restroom map"><div ref={hostRef} className="explore-map" /><div className="map-legend"><strong>Map</strong><span>Pin letter = business or brand</span><span>Selected pins highlight</span></div>{selected ? <article className="map-selection"><button type="button" className="map-selection-close" onClick={() => setSelectedId(null)} aria-label="Close selected location">×</button><strong>{selected.name}</strong><span>{signals(selected).join(' · ')}</span><div><button type="button" onClick={() => checkIn(selected)}>Check in</button><button type="button" onClick={() => navigate(`/locations/${selected.location_id || selected.place_id}`)}>Full details</button><a href={directNavigationUrl(selected)} target="_blank" rel="noreferrer">Directions</a></div></article> : null}</section>
+    <section className="explore-results"><div className="explore-results-heading"><div><span className="eyebrow">Nearby</span><h2>{status === 'loading' ? 'Searching…' : `${places.length} result${places.length === 1 ? '' : 's'}`}</h2></div></div><div className="explore-result-list">{places.map((place) => { const id = place.location_id || place.place_id; return <article className={id === selectedId ? 'explore-result selected' : 'explore-result'} key={id}><button type="button" className="explore-result-main" onClick={() => setSelectedId(id)}><span className="explore-result-brand">{(place.brand || place.name || 'K').slice(0, 1).toUpperCase()}</span><span><strong>{place.name}</strong><small>{place.address || 'Address unavailable'}</small><em>{signals(place).join(' · ')}</em></span></button><div className="explore-result-actions"><button type="button" onClick={() => checkIn(place)}>Check in</button><button type="button" onClick={() => navigate(`/locations/${id}`)}>Full details</button><a href={directNavigationUrl(place)} target="_blank" rel="noreferrer">Directions</a></div></article>;})}{status !== 'loading' && places.length === 0 ? <div className="explore-empty">No matching locations in this radius yet. Try a wider radius or remove the text filter.</div> : null}</div></section>
   </main>;
 }
