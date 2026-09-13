@@ -1,15 +1,20 @@
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { ActivityIndicator, View, useColorScheme } from 'react-native';
+import { getKleenestSupabaseClient,getKleenestThemePreference,resolveKleenestTheme,subscribeKleenestThemePreference,type KleenestThemeMode } from '@kleenest/mobile-core';
 
 export default function Layout(){
   const router=useRouter();
   const segments=useSegments();
   const[ready,setReady]=useState(false);
   const[signedIn,setSignedIn]=useState(false);
+  const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
+  const systemScheme=useColorScheme()==='dark'?'dark':'light';
+  const theme=resolveKleenestTheme('owner',themeMode,systemScheme);
   const onAuthRoute=segments[0]==='auth';
+
+  useEffect(()=>{void getKleenestThemePreference().then(setThemeMode);return subscribeKleenestThemePreference(setThemeMode)},[]);
 
   useEffect(()=>{
     let active=true;
@@ -25,9 +30,9 @@ export default function Layout(){
     else if(signedIn&&onAuthRoute)router.replace('/');
   },[ready,signedIn,onAuthRoute,router]);
 
-  if(!ready)return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:'#f3f6f4'}}><ActivityIndicator size="large"/></View>;
+  if(!ready)return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:theme.colors.canvas}}><ActivityIndicator size="large"/></View>;
 
-  return <><StatusBar style="dark"/><Tabs screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute?{display:'none'}:undefined}}>
+  return <><StatusBar style={theme.scheme==='dark'?'light':'dark'}/><Tabs screenOptions={{headerStyle:{backgroundColor:theme.colors.canvas},headerTintColor:theme.colors.text,headerTitleStyle:{color:theme.colors.text,fontWeight:'900'},headerShadowVisible:false,sceneStyle:{backgroundColor:theme.colors.canvas},tabBarActiveTintColor:theme.colors.accent,tabBarInactiveTintColor:theme.colors.textMuted,tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute?{display:'none'}:{backgroundColor:theme.colors.surface,borderTopColor:theme.colors.border}}}>
     <Tabs.Screen name="index" options={{title:'Home'}}/>
     <Tabs.Screen name="control" options={{title:'Control'}}/>
     <Tabs.Screen name="pilots" options={{title:'Pilots'}}/>
