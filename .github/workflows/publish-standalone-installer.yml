@@ -47,6 +47,15 @@ jobs:
         run: |
           test -s apps/business-mobile/dist/index.html
           grep -q "Kleenest Business" apps/business-mobile/dist/index.html
+      - name: Export Kleenest Fleet Web
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+        run: npm run web:export --workspace @kleenest/fleet-mobile
+      - name: Verify Kleenest Fleet Web
+        run: |
+          test -s apps/fleet-mobile/dist/index.html
+          grep -q "Kleenest Fleet" apps/fleet-mobile/dist/index.html
       - name: Export KleenestOS Web
         env:
           EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
@@ -88,11 +97,17 @@ jobs:
           cp "$RUNNER_TEMP/Kleenest-release-state.json" apps/consumer-mobile/dist/Kleenest-release-state.json
           mkdir -p apps/consumer-mobile/dist/legal
           cp public/legal/*.html apps/consumer-mobile/dist/legal/
-          rm -rf apps/consumer-mobile/dist/developer apps/consumer-mobile/dist/owner apps/consumer-mobile/dist/business
-          mkdir -p apps/consumer-mobile/dist/developer apps/consumer-mobile/dist/owner apps/consumer-mobile/dist/business
+          rm -rf apps/consumer-mobile/dist/developer apps/consumer-mobile/dist/owner apps/consumer-mobile/dist/business apps/consumer-mobile/dist/fleet
+          mkdir -p apps/consumer-mobile/dist/developer apps/consumer-mobile/dist/owner apps/consumer-mobile/dist/business apps/consumer-mobile/dist/fleet
           cp -R apps/developer-portal/static/. apps/consumer-mobile/dist/developer/
           cp -R apps/platform-mobile/dist/. apps/consumer-mobile/dist/owner/
           cp -R apps/business-mobile/dist/. apps/consumer-mobile/dist/business/
+          cp -R apps/fleet-mobile/dist/. apps/consumer-mobile/dist/fleet/
+          fleet_routes="auth planner dispatch assets operations member nearby execution signals metrics sync maintenance insights enterprise premium progression capabilities workspaces onboarding demo notifications support terms privacy account"
+          for route in $fleet_routes; do
+            mkdir -p "apps/consumer-mobile/dist/fleet/$route"
+            cp apps/fleet-mobile/dist/index.html "apps/consumer-mobile/dist/fleet/$route/index.html"
+          done
           owner_routes="auth control pilots developers operations businesses moderation access accounts history intelligence reports progression capabilities audit data notifications support terms privacy account"
           for route in $owner_routes; do
             mkdir -p "apps/consumer-mobile/dist/owner/$route"
@@ -113,6 +128,11 @@ jobs:
           test -s apps/consumer-mobile/dist/owner/control/index.html
           test -s apps/consumer-mobile/dist/owner/auth/index.html
           test -s apps/consumer-mobile/dist/business/index.html
+          test -s apps/consumer-mobile/dist/fleet/index.html
+          test -s apps/consumer-mobile/dist/fleet/auth/index.html
+          test -s apps/consumer-mobile/dist/fleet/dispatch/index.html
+          test -s apps/consumer-mobile/dist/fleet/nearby/index.html
+          test -s apps/consumer-mobile/dist/fleet/operations/index.html
           test -s apps/consumer-mobile/dist/business/tools/index.html
           test -s apps/consumer-mobile/dist/business/analytics/index.html
           test -s apps/consumer-mobile/dist/business/enterprise-location-admin/index.html
@@ -132,6 +152,6 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/consumer-mobile/dist
-      - name: Deploy Consumer web app, Business Web, KleenestOS Web, Developer Portal, legal resources, and direct APK
+      - name: Deploy Consumer web app, Business Web, Fleet Web, KleenestOS Web, Developer Portal, legal resources, and direct APK
         id: deployment
         uses: actions/deploy-pages@v4
