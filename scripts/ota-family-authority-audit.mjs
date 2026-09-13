@@ -14,7 +14,7 @@ for(const [name,dir,candidate,production] of apps){
  for(const token of ['"channel":"'+candidate+'"','"channel":"'+production+'"','EXPO_PUBLIC_OTA_CHANNEL'])if(!eas.replace(/\s/g,'').includes(token.replace(/\s/g,'')))failures.push(name+' eas config missing '+token);
 }
 const family=read('.github/workflows/ota-family.yml');
-for(const token of ['push:','releases/family-ota.txt','--environment production','consumer-production','business-production','fleet-production','owner-production','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','--strict-ota'])if(!family.includes(token))failures.push('family OTA workflow missing '+token);
+for(const token of ['workflow_run:','workflows: ["Production CI"]','push:','releases/family-ota.txt','--environment production','consumer-production','business-production','fleet-production','owner-production','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_publish','native_rebuild_required'])if(!family.includes(token))failures.push('family OTA workflow missing '+token);
 const nativeFamily=read('.github/workflows/android-family.yml');
 for(const token of ['schedule:','0 9 * * *','releases/family-native.txt','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_build'])if(!nativeFamily.includes(token))failures.push('family native workflow missing '+token);
 if(nativeFamily.includes('workflow_run:'))failures.push('family native workflow must not rebuild after every Production CI');
