@@ -1,0 +1,35 @@
+name: Verify Kleenest Installation Center
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Publish Consumer Standalone Installer"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kleenest-install-center-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPECTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright test runner
+        run: npm install --no-save --no-package-lock @playwright/test@1.55.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Click through live Installation Center
+        run: npx playwright test scripts/install-center-browser-smoke.spec.ts --browser=chromium --reporter=line --workers=1
