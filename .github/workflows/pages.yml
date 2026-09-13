@@ -12,6 +12,7 @@ on:
       - public/sw.js
       - scripts/prepare-consumer-web-pwa.mjs
       - scripts/pages-deployment-convergence-audit.mjs
+      - scripts/business-web-browser-smoke.spec.ts
       - .github/workflows/pages.yml
   workflow_run:
     workflows: ["Production CI"]
@@ -55,6 +56,27 @@ jobs:
         run: |
           test -s apps/business-mobile/dist/index.html
           grep -q "Kleenest Business" apps/business-mobile/dist/index.html
+      - name: Install Business Web browser smoke runner
+        run: |
+          npm install --no-save --no-package-lock @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Browser-smoke Kleenest Business Web
+        env:
+          BUSINESS_WEB_BASE: http://127.0.0.1:4173/Kleenest_Production/business/
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/kleenest-business-web"
+          mkdir -p "$RUNNER_TEMP/kleenest-business-web/Kleenest_Production/business"
+          cp -R apps/business-mobile/dist/. "$RUNNER_TEMP/kleenest-business-web/Kleenest_Production/business/"
+          python3 -m http.server 4173 --directory "$RUNNER_TEMP/kleenest-business-web" >"$RUNNER_TEMP/business-web-http.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent "$BUSINESS_WEB_BASE" >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent "$BUSINESS_WEB_BASE" >/dev/null
+          npx playwright test scripts/business-web-browser-smoke.spec.ts --reporter=line --workers=1
       - name: Export KleenestOS Web
         run: npm run web:export --workspace @kleenest/owner-mobile
         env:

@@ -1,7 +1,7 @@
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { currentBusinessId,subscribeBusinessWorkspaceChange } from '../services/capabilityWorkflows';
 import { getBusinessOnboardingGate } from '../services/onboarding';
@@ -21,18 +21,36 @@ export default function Layout() {
 
   useEffect(() => {
     let active = true;
-    const client = getKleenestSupabaseClient();
-    void client.auth.getSession().then(({ data }) => {
+    let listener: { subscription: { unsubscribe: () => void } } | null = null;
+    let settled = false;
+    const finish = (session: unknown) => {
       if (!active) return;
-      setSignedIn(Boolean(data.session));
-      setReady(true);
-    });
-    const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
-      if (!active) return;
+      settled = true;
       setSignedIn(Boolean(session));
       setReady(true);
-    });
-    return () => { active = false; listener.subscription.unsubscribe(); };
+    };
+    const startupFallback = Platform.OS === 'web' ? setTimeout(() => {
+      if (!active || settled) return;
+      setSignedIn(false);
+      setReady(true);
+    }, 2500) : null;
+
+    try {
+      const client = getKleenestSupabaseClient();
+      void client.auth.getSession()
+        .then(({ data }) => finish(data.session))
+        .catch(() => finish(null));
+      const authListener = client.auth.onAuthStateChange((_event, session) => finish(session));
+      listener = authListener.data;
+    } catch {
+      finish(null);
+    }
+
+    return () => {
+      active = false;
+      if (startupFallback !== null) clearTimeout(startupFallback);
+      listener?.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(()=>subscribeBusinessWorkspaceChange(()=>setWorkspaceRevision(value=>value+1)),[]);
