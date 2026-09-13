@@ -1,5 +1,5 @@
 import * as Linking from 'expo-linking';
-import { router } from 'expo-router';
+import { router,useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
@@ -20,13 +20,15 @@ function messageOf(value: unknown) {
   return typeof value === 'string' && value.trim() ? value : 'Authentication could not be completed.';
 }
 
-async function verifyBusinessAccess() {
+async function hasBusinessAccess() {
   const rows = await listBusinessWorkspaceOptions();
-  if (!rows.length) throw new Error('This account is signed in, but no Kleenest Business workspace is assigned yet.');
+  return rows.length > 0;
 }
 
 export default function BusinessAuth() {
-  const [mode, setMode] = useState<Mode>('signin');
+  const params=useLocalSearchParams<{mode?:string;intent?:string}>();
+  const intent=Array.isArray(params.intent)?params.intent[0]:String(params.intent||'');
+  const [mode, setMode] = useState<Mode>(params.mode==='signup'?'signup':'signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,6 +36,14 @@ export default function BusinessAuth() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const getStartedRoute=()=>intent?`/get-started?intent=${encodeURIComponent(intent)}`:'/get-started';
+  const googleRedirectForIntent=Platform.OS==='web'&&intent?`${googleRedirect}?intent=${encodeURIComponent(intent)}`:googleRedirect;
+  async function finishAuthenticated(){
+    router.replace((await hasBusinessAccess()?'/':getStartedRoute()) as any);
+  }
+
+  useEffect(()=>{if(params.mode==='signup')setMode('signup');},[params.mode]);
 
   async function finishGoogle(url: string | null) {
     if (!url) return false;
@@ -45,11 +55,9 @@ export default function BusinessAuth() {
     try {
       const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
       if (exchangeError) throw exchangeError;
-      await verifyBusinessAccess();
-      router.replace('/');
+      await finishAuthenticated();
       return true;
     } catch (cause) {
-      await client.auth.signOut({ scope: 'local' });
       setError(messageOf(cause));
       return false;
     } finally { setBusy(false); }
@@ -68,10 +76,8 @@ export default function BusinessAuth() {
     try {
       const { error: authError } = await client.auth.signInWithPassword({ email: email.trim(), password });
       if (authError) throw authError;
-      await verifyBusinessAccess();
-      router.replace('/');
+      await finishAuthenticated();
     } catch (cause) {
-      await client.auth.signOut({ scope: 'local' });
       setError(messageOf(cause));
     } finally { setBusy(false); }
   }
@@ -86,14 +92,11 @@ export default function BusinessAuth() {
       const { data, error: signupError } = await getKleenestSupabaseClient().auth.signUp({
         email: cleanEmail,
         password,
-        options: { emailRedirectTo: googleRedirect },
+        options: { emailRedirectTo: googleRedirectForIntent },
       });
       if (signupError) throw signupError;
-      if (data.session) {
-        try { await verifyBusinessAccess(); router.replace('/'); return; }
-        catch { await getKleenestSupabaseClient().auth.signOut({ scope: 'local' }); }
-      }
-      setNotice('Account created. Confirm your email if prompted. A Business workspace must still be assigned or claimed before Business controls unlock.');
+      if (data.session) { await finishAuthenticated(); return; }
+      setNotice('Account created. Confirm your email if prompted, then sign in to create or claim your Business workspace and continue guided setup.');
       setMode('signin'); setPassword(''); setConfirmPassword('');
     } catch (cause) { setError(messageOf(cause)); }
     finally { setBusy(false); }
@@ -105,7 +108,7 @@ export default function BusinessAuth() {
     try {
       const { data, error: authError } = await getKleenestSupabaseClient().auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: googleRedirect, skipBrowserRedirect: Platform.OS!=='web' },
+        options: { redirectTo: googleRedirectForIntent, skipBrowserRedirect: Platform.OS!=='web' },
       });
       if (authError) throw authError;
       if (!data.url) throw new Error('Google sign-in did not return an authorization URL.');
