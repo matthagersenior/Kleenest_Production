@@ -10,10 +10,10 @@ const strictOta=flag('--strict-ota');
 const jsonOut=value('--json-out');
 
 const apps=[
-  {name:'consumer',dir:'apps/consumer-mobile',runtimePrefixes:['apps/consumer-mobile/app/','apps/consumer-mobile/features/','apps/consumer-mobile/components/','apps/consumer-mobile/services/']},
-  {name:'business',dir:'apps/business-mobile',runtimePrefixes:['apps/business-mobile/app/','apps/business-mobile/components/','apps/business-mobile/services/']},
-  {name:'fleet',dir:'apps/fleet-mobile',runtimePrefixes:['apps/fleet-mobile/app/','apps/fleet-mobile/components/','apps/fleet-mobile/services/']},
-  {name:'owner',dir:'apps/platform-mobile',runtimePrefixes:['apps/platform-mobile/app/','apps/platform-mobile/components/','apps/platform-mobile/services/']},
+  {name:'consumer',dir:'apps/consumer-mobile'},
+  {name:'business',dir:'apps/business-mobile'},
+  {name:'fleet',dir:'apps/fleet-mobile'},
+  {name:'owner',dir:'apps/platform-mobile'},
 ];
 
 function runGit(parts){return execFileSync('git',parts,{encoding:'utf8'}).trim()}
@@ -74,8 +74,9 @@ const results=apps.map(app=>{
     if(!same(before,after))reasons.push('resolved native dependency versions changed');
   }
 
-  const runtimeChanged=changed.some(file=>app.runtimePrefixes.some(prefix=>file.startsWith(prefix)))||
-    changed.some(file=>file.startsWith('packages/mobile-core/'));
+  const runtimeChanged=changed.some(file=>file.startsWith(`${app.dir}/`))||
+    changed.some(file=>file.startsWith('packages/'))||
+    changed.includes('package-lock.json');
   return {
     app:app.name,
     runtimeChanged,
