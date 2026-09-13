@@ -91,8 +91,8 @@ export default function Layout(){
     <Tabs.Screen name="operations" options={{title:'Operations',href:operator?undefined:null}}/>
     <Tabs.Screen name="member" options={{title:'For Me',href:operator?null:undefined}}/>
     <Tabs.Screen name="nearby" options={{title:'Nearby',href:operator?null:undefined}}/>
-    <Tabs.Screen name="notifications" options={{href:operator?null:undefined,title:'Alerts'}}/>
-    <Tabs.Screen name="account" options={{href:operator?null:undefined,title:'Account'}}/>
+    <Tabs.Screen name="notifications" options={{title:'Alerts'}}/>
+    <Tabs.Screen name="account" options={{title:'Account'}}/>
     <Tabs.Screen name="auth" options={{href:null,title:'Sign in',headerShown:false}}/>
     <Tabs.Screen name="execution" options={{href:null,title:'Execution'}}/>
     <Tabs.Screen name="signals" options={{href:null,title:'Live Network'}}/>
