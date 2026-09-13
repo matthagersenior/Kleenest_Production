@@ -5,8 +5,30 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } fr
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { currentFleetBusinessId } from '../services/control';
 
-const googleRedirect = Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/fleet/auth/` : Linking.createURL('auth', { scheme: 'kleenest-fleet', isTripleSlashed: false });
+const operatorOAuthReturnKey='kleenest.operator.oauth.return';
+const webSiteOAuthRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/` : '';
+const authRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/fleet/auth/` : Linking.createURL('auth', { scheme: 'kleenest-fleet', isTripleSlashed: false });
 type Mode = 'signin' | 'signup';
+function authParam(url: string, key: string) {
+  try {
+    const parsed = new URL(url);
+    const queryValue = parsed.searchParams.get(key);
+    if (queryValue) return queryValue;
+    return new URLSearchParams(parsed.hash.replace(/^#/, '')).get(key) || '';
+  } catch {
+    return '';
+  }
+}
+
+function rememberOperatorOAuthReturn(portal: 'business'|'fleet'|'owner', intent = '') {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  try { window.localStorage.setItem(operatorOAuthReturnKey, JSON.stringify({ portal, intent, createdAt: Date.now() })); } catch {}
+}
+
+function clearOperatorOAuthReturn() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  try { window.localStorage.removeItem(operatorOAuthReturnKey); } catch {}
+}
 
 function messageOf(value: unknown) {
   if (value instanceof Error && value.message) return value.message;
@@ -42,27 +64,47 @@ export default function FleetAuth() {
 
   async function finishGoogle(url: string | null) {
     if (!url) return false;
-    const parsed = Linking.parse(url);
-    const code = typeof parsed.queryParams?.code === 'string' ? parsed.queryParams.code : '';
-    if (!code) return false;
+    const oauthError=authParam(url,'error_description')||authParam(url,'error');
+    const code=authParam(url,'code');
+    const access_token=authParam(url,'access_token');
+    const refresh_token=authParam(url,'refresh_token');
+    if(oauthError){clearOperatorOAuthReturn();setError(oauthError);return true;}
+    if(!code&&!(access_token&&refresh_token))return false;
     const client = getKleenestSupabaseClient();
     setBusy(true); setError(null); setNotice(null);
     try {
-      const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
-      if (exchangeError) throw exchangeError;
+      if(access_token&&refresh_token){
+        const {error:sessionError}=await client.auth.setSession({access_token,refresh_token});
+        if(sessionError)throw sessionError;
+      }else{
+        const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
+        if (exchangeError) throw exchangeError;
+      }
+      clearOperatorOAuthReturn();
+      if(Platform.OS==='web'&&typeof window!=='undefined')window.history.replaceState({},'',window.location.pathname);
       if(await hasFleetAccess())router.replace('/');
       else await openBusinessSetup();
       return true;
     } catch (cause) {
+      clearOperatorOAuthReturn();
       setError(messageOf(cause));
-      return false;
+      return true;
     } finally { setBusy(false); }
   }
 
   useEffect(() => {
-    void Linking.getInitialURL().then(finishGoogle);
+    let active=true;
+    const client=getKleenestSupabaseClient();
+    void (async()=>{
+      const handled=await finishGoogle(await Linking.getInitialURL());
+      if(!active||handled)return;
+      const {data}=await client.auth.getSession();
+      if(!active||!data.session)return;
+      if(await hasFleetAccess())router.replace('/');
+      else await openBusinessSetup();
+    })();
     const sub = Linking.addEventListener('url', event => { void finishGoogle(event.url); });
-    return () => sub.remove();
+    return () => { active=false; sub.remove(); };
   }, []);
 
   async function signIn() {
@@ -87,7 +129,7 @@ export default function FleetAuth() {
     const client = getKleenestSupabaseClient();
     setBusy(true); setError(null); setNotice(null);
     try {
-      const { data, error: signupError } = await client.auth.signUp({ email: cleanEmail, password, options: { emailRedirectTo: googleRedirect } });
+      const { data, error: signupError } = await client.auth.signUp({ email: cleanEmail, password, options: { emailRedirectTo: authRedirect } });
       if (signupError) throw signupError;
       if (data.session) {
         if(await hasFleetAccess())router.replace('/');
@@ -104,11 +146,12 @@ export default function FleetAuth() {
     if (busy) return;
     setBusy(true); setError(null); setNotice(null);
     try {
-      const { data, error: authError } = await getKleenestSupabaseClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: googleRedirect, skipBrowserRedirect: Platform.OS!=='web' } });
+      rememberOperatorOAuthReturn('fleet');
+      const { data, error: authError } = await getKleenestSupabaseClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: Platform.OS==='web'?webSiteOAuthRedirect:authRedirect, skipBrowserRedirect: Platform.OS!=='web' } });
       if (authError) throw authError;
       if (!data.url) throw new Error('Google sign-in did not return an authorization URL.');
       if(Platform.OS==='web'&&typeof window!=='undefined')window.location.assign(data.url);else await Linking.openURL(data.url);
-    } catch (cause) { setError(messageOf(cause)); }
+    } catch (cause) { clearOperatorOAuthReturn(); setError(messageOf(cause)); }
     finally { setBusy(false); }
   }
 
