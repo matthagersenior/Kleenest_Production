@@ -134,16 +134,16 @@ function ObjectiveWorldCard({item}:{item:any}){
  const chapterMarks=kind==='journey'?safeArray(item?.rules?.chapters):[];
  return <View style={[s.objective,{borderColor:flavor.accent,backgroundColor:flavor.soft}]}>
   <View style={s.row}><View style={s.objectiveIcon}><Text style={s.objectiveIconText}>{flavor.icon}</Text></View><View style={{flex:1}}><Text style={[s.objectiveKicker,{color:flavor.accent}]}>{flavor.label} · {mechanic.toUpperCase()}</Text><Text style={s.objectiveTitle}>{item.title||'Objective'}</Text></View>{reward?<Text style={[s.reward,{color:flavor.accent}]}>+{reward} XP</Text>:null}</View>
-  <Text style={[s.body,{color:theme.muted}]}>{item.description||'Complete useful Kleenest actions to advance.'}</Text>
+  <Text style={s.body}>{item.description||'Complete useful Kleenest actions to advance.'}</Text>
   <Text style={s.objectiveRule}>{special}</Text>
   <View style={s.trackSmall}><View style={[s.fillSmall,{width:(String(Math.round(pct*100))+'%') as any,backgroundColor:flavor.accent}]} /></View>
   {chapterMarks.length?<View style={s.milestones}>{chapterMarks.map((mark:any)=><View key={String(mark)} style={[s.milestone,progress>=Number(mark)&&{backgroundColor:flavor.accent}]}><Text style={[s.milestoneText,progress>=Number(mark)&&{color:'#fff'}]}>{mark}</Text></View>)}</View>:null}
-  <Text style={[s.meta,{color:theme.muted}]}>{progress}/{target} · {String(item.state||'active').toUpperCase()}</Text>
+  <Text style={s.meta}>{progress}/{target} · {String(item.state||'active').toUpperCase()}</Text>
  </View>
 }
-function WorldMeter({progress,target,label}:{progress:number;target:number;label:string}){const pct=percent(progress,Math.max(1,target));return <View style={{gap:5}}><View style={s.trackSmall}><View style={[s.fillSmall,{width:(String(Math.round(pct*100))+'%') as any}]} /></View><View style={s.meterLine}><Text style={[s.meta,{color:theme.muted}]}>{label}</Text><Text style={s.meterValue}>{Math.min(progress,target).toLocaleString()} / {target.toLocaleString()}</Text></View></View>}
+function WorldMeter({progress,target,label}:{progress:number;target:number;label:string}){const pct=percent(progress,Math.max(1,target));return <View style={{gap:5}}><View style={s.trackSmall}><View style={[s.fillSmall,{width:(String(Math.round(pct*100))+'%') as any}]} /></View><View style={s.meterLine}><Text style={s.meta}>{label}</Text><Text style={s.meterValue}>{Math.min(progress,target).toLocaleString()} / {target.toLocaleString()}</Text></View></View>}
 function MiniDark({value,label}:{value:any;label:string}){return <View style={s.miniDark}><Text style={s.miniDarkValue}>{value}</Text><Text style={s.miniDarkLabel}>{label}</Text></View>}
-function Header({kicker,title,body}:{kicker:string;title:string;body:string}){return <View style={s.header}><Text style={[s.kicker,{color:theme.muted}]}>{kicker}</Text><Text style={[s.sectionTitle,{color:theme.ink}]}>{title}</Text><Text style={[s.body,{color:theme.muted}]}>{body}</Text></View>}
+function Header({kicker,title,body}:{kicker:string;title:string;body:string}){return <View style={s.header}><Text style={s.kicker}>{kicker}</Text><Text style={s.sectionTitle}>{title}</Text><Text style={s.body}>{body}</Text></View>}
 
 const s=StyleSheet.create({
  safe:{flex:1,backgroundColor:palette.canvas},content:{padding:18,paddingBottom:50,gap:12},
