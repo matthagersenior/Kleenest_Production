@@ -3,7 +3,7 @@ import { router,useLocalSearchParams } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
 import { Pressable,SafeAreaView,ScrollView,StyleSheet,Text,View } from 'react-native';
 import { BUILDER_SCENARIOS,GAME_DEFINITIONS,MEMORY_PAIRS,roundsFor,shuffleChoiceRound,type ChoiceRound } from '../../services/gameModes';
-import { freshRoundOrder,getGameFreshnessProfile,getGamePersonalRecord,recordGameContentExposure,recordGameResult } from '../../services/games';
+import { createGameChallenge,freshRoundOrder,getGameFreshnessProfile,getGamePersonalRecord,listGameChallengeTargets,recordGameChallengeScore,recordGameContentExposure,recordGameResult } from '../../services/games';
 import { gameResultMetadata,masteryRating,scoreRound } from '../../services/gameScoring';
 
 const shuffle=<T,>(items:T[])=>[...items].sort(()=>Math.random()-.5);
@@ -35,8 +35,9 @@ function progressionMessage(before:any,after:any,base:string){
 }
 
 export default function GameArena(){
- const params=useLocalSearchParams<{code?:string|string[]}>();
+ const params=useLocalSearchParams<{code?:string|string[];challengeId?:string|string[]}>();
  const code=Array.isArray(params.code)?params.code[0]:params.code;
+ const challengeId=Array.isArray(params.challengeId)?params.challengeId[0]:params.challengeId;
  const game=GAME_DEFINITIONS.find(g=>g.code===code)||GAME_DEFINITIONS[0];
  const theme=ARENA[game.code]||ARENA.clean_sweep;
  const[sessionRounds,setSessionRounds]=useState<ChoiceRound[]>([]);
@@ -44,7 +45,7 @@ export default function GameArena(){
  const[combo,setCombo]=useState(0),[maxCombo,setMaxCombo]=useState(0),[lives,setLives]=useState(3);
  const[timeLeft,setTimeLeft]=useState(game.timeLimitSec||0),[strategyTokens,setStrategyTokens]=useState(game.strategyBudget||0);
  const[message,setMessage]=useState(game.instructions),[saved,setSaved]=useState(false),[startedAt,setStartedAt]=useState(Date.now()),[roundStartedAt,setRoundStartedAt]=useState(Date.now());
- const[record,setRecord]=useState<any>({}),[loading,setLoading]=useState(true);
+ const[record,setRecord]=useState<any>({}),[loading,setLoading]=useState(true),[targets,setTargets]=useState<any[]>([]),[challengeMessage,setChallengeMessage]=useState('');
  const[memoryCards,setMemoryCards]=useState<any[]>([]),[memoryOpen,setMemoryOpen]=useState<number[]>([]),[memoryMatched,setMemoryMatched]=useState<number[]>([]),[memoryMoves,setMemoryMoves]=useState(0);
  const[builderOrder,setBuilderOrder]=useState<any[]>([]),[builderSelected,setBuilderSelected]=useState<number[]>([]);
 
@@ -61,8 +62,8 @@ export default function GameArena(){
  async function prepare(){
   setLoading(true);
   try{
-   const[profile,personal]=await Promise.all([getGameFreshnessProfile(game.code,30).catch(()=>({})),getGamePersonalRecord(game.code).catch(()=>({}))]);
-   setRecord(personal||{});
+   const[profile,personal,nextTargets]=await Promise.all([getGameFreshnessProfile(game.code,30).catch(()=>({})),getGamePersonalRecord(game.code).catch(()=>({})),listGameChallengeTargets(12).catch(()=>[])]);
+   setRecord(personal||{});setTargets(nextTargets||[]);
    const ordered=freshRoundOrder(roundsFor(game),profile).slice(0,game.rounds).map(row=>shuffleChoiceRound(row));
    setSessionRounds(ordered);
    setBuilderOrder(shuffle(BUILDER_SCENARIOS).slice(0,game.rounds));
@@ -142,11 +143,21 @@ export default function GameArena(){
   try{
    const before=await progressionSnapshot();
    const metadata=gameResultMetadata(game,round,{correct:correctCount,accuracy,max_combo:maxCombo,lives_remaining:lives,memory_moves:memoryMoves,strategy_remaining:strategyTokens,mastery,focus:'bathroom_trust'});
-   const result=await recordGameResult(game.code,score,Date.now()-startedAt,metadata);
+   let personalBest=false;
+   if(challengeId){
+    await recordGameChallengeScore(String(challengeId),score,round);
+    const nextRecord=await getGamePersonalRecord(game.code).catch(()=>({}));
+    personalBest=Number(nextRecord?.best_score||0)>Number(record?.best_score||0);
+    setRecord(nextRecord||{});
+   }else{
+    const result=await recordGameResult(game.code,score,Date.now()-startedAt,metadata);
+    personalBest=Boolean(result?.personal_best);
+    setRecord((v:any)=>({...v,best_score:Math.max(Number(v?.best_score||0),score),plays:Number(v?.plays||0)+1}));
+   }
    const after=await progressionSnapshot();
-   setSaved(true);setRecord((v:any)=>({...v,best_score:Math.max(Number(v?.best_score||0),score),plays:Number(v?.plays||0)+1}));
-   const best=result?.personal_best?' · NEW PERSONAL BEST':'';
-   setMessage(progressionMessage(before,after,'Run saved.'+best));
+   setSaved(true);
+   const best=personalBest?' · NEW PERSONAL BEST':'';
+   setMessage(progressionMessage(before,after,(challengeId?'Challenge score submitted.':'Run saved.')+best));
   }catch(error:any){setMessage(error?.message||'Score could not be saved.')}
  }
 
@@ -171,6 +182,7 @@ export default function GameArena(){
   </View>
 
   <View style={s.masteryCard}><Text style={s.masteryKicker}>MASTERY</Text><Text style={s.masteryTitle}>{mastery}</Text><Text style={s.masteryBody}>Personal best {bestScore} · {Number(record?.plays||0)} prior run{Number(record?.plays||0)===1?'':'s'}. XP is progression; this is the score you come back to beat.</Text></View>
+  <View style={s.challengeCard}><Text style={s.masteryKicker}>CHALLENGE THIS GAME</Text><Text style={s.challengeTitle}>Put your run against someone you follow.</Text><Text style={s.challengeBody}>They get the same game and score ceiling. Fresh scenarios can differ, so the match rewards mastery rather than memorizing one fixed question order.</Text>{challengeMessage?<Text style={s.challengeNotice}>{challengeMessage}</Text>:null}<View style={s.targetList}>{targets.slice(0,6).map(target=><View key={String(target.user_id)} style={s.targetRow}><View style={{flex:1}}><Text style={s.targetName}>{target.display_name||target.username||'Contributor'}</Text><Text style={s.targetMeta}>{target.relationship||'community'}</Text></View><Pressable style={[s.secondary,{backgroundColor:theme.soft}]} onPress={async()=>{try{await createGameChallenge(game.code,String(target.user_id));setChallengeMessage('Challenge sent to '+(target.display_name||target.username||'player')+'.')}catch(error:any){setChallengeMessage(error?.message||'Challenge could not be sent.')}}}><Text style={s.secondaryText}>CHALLENGE</Text></Pressable></View>)}</View>{!targets.length?<Text style={s.challengeBody}>Follow contributors in Community to unlock rivals.</Text>:null}</View>
  </ScrollView></SafeAreaView>;
 
  function Choice(){
@@ -202,6 +214,6 @@ const s=StyleSheet.create({
  primary:{minHeight:48,borderRadius:14,alignItems:'center',justifyContent:'center',paddingHorizontal:14},primaryText:{color:'#fff',fontWeight:'900'},secondary:{minHeight:44,borderRadius:12,backgroundColor:'#edf3ef',alignItems:'center',justifyContent:'center',paddingHorizontal:12},secondaryText:{color:'#173d2b',fontWeight:'900',fontSize:10},disabled:{opacity:.5},
  routeGrid:{gap:7},routeCard:{backgroundColor:'#f4f7f5',borderRadius:13,padding:11},routeName:{fontWeight:'900',color:'#173d2b'},routeMeta:{fontSize:10,color:'#64756b',marginTop:2},
  memoryGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},memoryCard:{width:'31%',height:84,borderRadius:13,borderWidth:1.5,alignItems:'center',justifyContent:'center',padding:7,backgroundColor:'#fbfcfb'},memoryText:{fontSize:10,textAlign:'center',fontWeight:'900',color:'#173d2b'},
- masteryCard:{backgroundColor:'#fff',borderRadius:18,padding:15,borderWidth:1,borderColor:'#dbe5de'},masteryKicker:{fontSize:8,fontWeight:'900',letterSpacing:1.2,color:'#65756b'},masteryTitle:{fontSize:22,fontWeight:'900',color:'#173d2b',marginTop:3},masteryBody:{fontSize:11,lineHeight:17,color:'#65756b',marginTop:3},
+ challengeCard:{backgroundColor:'#fff',borderRadius:18,padding:15,borderWidth:1,borderColor:'#dbe5de',gap:7},challengeTitle:{fontSize:18,fontWeight:'900',color:'#13251b'},challengeBody:{fontSize:11,lineHeight:17,color:'#65756b'},challengeNotice:{fontSize:11,fontWeight:'800',color:'#173d2b'},targetList:{gap:7},targetRow:{flexDirection:'row',gap:8,alignItems:'center',borderTopWidth:1,borderTopColor:'#edf1ee',paddingTop:8},targetName:{fontSize:13,fontWeight:'900',color:'#13251b'},targetMeta:{fontSize:9,color:'#65756b',marginTop:2},masteryCard:{backgroundColor:'#fff',borderRadius:18,padding:15,borderWidth:1,borderColor:'#dbe5de'},masteryKicker:{fontSize:8,fontWeight:'900',letterSpacing:1.2,color:'#65756b'},masteryTitle:{fontSize:22,fontWeight:'900',color:'#173d2b',marginTop:3},masteryBody:{fontSize:11,lineHeight:17,color:'#65756b',marginTop:3},
  results:{alignItems:'center',gap:9},resultsKicker:{fontSize:9,fontWeight:'900',letterSpacing:1.5,color:'#65756b'},resultsScore:{fontSize:58,fontWeight:'900',color:'#13251b'},resultsLabel:{fontSize:9,fontWeight:'900',color:'#65756b'},resultStats:{flexDirection:'row',gap:8,width:'100%'},resultStat:{flex:1,backgroundColor:'#f4f7f5',borderRadius:13,padding:10,alignItems:'center'},resultValue:{fontSize:17,fontWeight:'900',color:'#173d2b'},resultLabel:{fontSize:8,color:'#65756b',fontWeight:'800'},resultActions:{flexDirection:'row',flexWrap:'wrap',gap:8,justifyContent:'center',marginTop:2}
 });
