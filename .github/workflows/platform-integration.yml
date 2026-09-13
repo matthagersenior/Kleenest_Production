@@ -59,14 +59,20 @@ on:
       - "scripts/platform-public-client-token-audit.mjs"
       - "scripts/platform-developer-portal-hosting-audit.mjs"
       - ".github/workflows/platform-developer-portal-pages.yml"
+      - ".github/workflows/platform-integration.yml"
       - "tsconfig.platform.json"
       - "package-lock.json"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   verify:
+    name: platform-integration
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

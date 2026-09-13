@@ -12,6 +12,10 @@ on:
       - 'supabase/migrations/**'
       - '.github/workflows/business-enterprise-truth.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

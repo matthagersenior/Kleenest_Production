@@ -24,6 +24,9 @@ for (const name of [
   'security-gate.yml',
   'expo-push-token-validation.yml',
   'native-secret-hygiene.yml',
+  'business-enterprise-truth.yml',
+  'mandatory-onboarding-consumer-focus.yml',
+  'platform-integration.yml',
   'sync-kleenest-data.yml',
   'native-push-repair-candidates.yml',
   'eas-install-ready.yml',
@@ -41,6 +44,13 @@ for (const name of [
 const ci = read('ci.yml');
 requireText(ci, 'npm audit --audit-level=moderate', 'Production CI must reject every published moderate-or-higher dependency advisory.');
 requireText(ci, 'node scripts/ci-freshness-policy-audit.mjs', 'Production CI must enforce its own freshness policy.');
+
+const platformIntegration = read('platform-integration.yml');
+requireText(platformIntegration, 'name: platform-integration', 'Path-specific Platform Integration CI must not publish the generic required verify context.');
+if (platformIntegration.split('.github/workflows/platform-integration.yml').length - 1 < 2) throw new Error('Platform Integration CI must test changes to its own workflow on pull requests.');
+
+const onboarding = read('mandatory-onboarding-consumer-focus.yml');
+requireText(onboarding, 'name: mandatory-onboarding-consumer-focus', 'Path-specific onboarding CI must not publish the generic required verify context.');
 
 const android = read('android-family.yml');
 requireText(android, 'workflow_run:', 'Android family builds must start from a completed canonical CI run.');
