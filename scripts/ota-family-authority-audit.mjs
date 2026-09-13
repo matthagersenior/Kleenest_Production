@@ -18,7 +18,7 @@ for(const token of ['push:','releases/family-ota.txt','--environment production'
 const nativeFamily=read('.github/workflows/android-family.yml');
 for(const token of ['schedule:','0 9 * * *','releases/family-native.txt','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_build'])if(!nativeFamily.includes(token))failures.push('family native workflow missing '+token);
 if(nativeFamily.includes('workflow_run:'))failures.push('family native workflow must not rebuild after every Production CI');
-for(const file of ['scripts/resolve-family-apk-baseline.mjs','scripts/app-family-release-plan.mjs'])if(!exists(file))failures.push('family release authority missing '+file);
+for(const file of ['scripts/resolve-family-apk-baseline.mjs','scripts/app-family-release-plan.mjs'])if(!fs.existsSync(file))failures.push('family release authority missing '+file);
 const releaseMarker=read('releases/family-ota.txt').trim();
 if(!releaseMarker)failures.push('family OTA release marker is empty');
 else if(!/^[a-z0-9][a-z0-9._-]*$/i.test(releaseMarker))failures.push('family OTA release marker must be a simple stable release id');
