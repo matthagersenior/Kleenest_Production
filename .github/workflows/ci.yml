@@ -172,6 +172,8 @@ jobs:
         run: node scripts/fleet-member-workspace-audit.mjs
       - name: Fleet web portal and Consumer gating
         run: node scripts/fleet-web-portal-consumer-gating-audit.mjs
+      - name: Platform ecosystem convergence
+        run: node scripts/platform-ecosystem-convergence-audit.mjs
       - name: Fleet offline recovery convergence
         run: node scripts/fleet-offline-recovery-audit.mjs
       - name: Business analytics RPC authority
