@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: kleenest-family-ota
@@ -20,12 +21,23 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: package.json
       - run: npm install --no-audit --no-fund
+      - name: Resolve synchronized native family baseline
+        id: baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/resolve-family-apk-baseline.mjs
+      - name: Require OTA-safe family source
+        env:
+          KLEENEST_FAMILY_NATIVE_BASELINE_SHA: ${{ steps.baseline.outputs.source_sha }}
+        run: node scripts/app-family-release-plan.mjs --strict-ota --json-out "$RUNNER_TEMP/family-release-plan.json"
       - name: Verify OTA-compatible family source
         run: |
           node scripts/repo-hygiene-audit.mjs
