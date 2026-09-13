@@ -7,7 +7,7 @@ test('Business Web reaches sign-in when its persisted auth storage is unavailabl
   const pageErrors:string[]=[];
   const requestFailures:string[]=[];
   const badResponses:string[]=[];
-  page.on('pageerror',error=>pageErrors.push(error.message));
+  page.on('pageerror',error=>pageErrors.push(error.stack||error.message));
   page.on('requestfailed',request=>requestFailures.push(`${request.method()} ${request.url()} :: ${request.failure()?.errorText||'failed'}`));
   page.on('response',response=>{if(response.status()>=400)badResponses.push(`${response.status()} ${response.url()}`);});
 
