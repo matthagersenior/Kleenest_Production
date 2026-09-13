@@ -2,6 +2,9 @@ name: Publish Consumer OTA
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Production CI"]
+    types: [completed]
   push:
     branches:
       - main
@@ -9,6 +12,7 @@ on:
       - releases/consumer-ota.txt
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -17,10 +21,15 @@ concurrency:
 
 jobs:
   verify:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    outputs:
+      baseline_sha: ${{ steps.apk.outputs.source_sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -35,6 +44,16 @@ jobs:
           node scripts/native-map-authority-audit.mjs
           npm run typecheck --workspace '@kleenest/consumer-mobile'
           npm run operator:typecheck
+      - name: Resolve latest verified Consumer APK baseline
+        id: apk
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: node scripts/resolve-consumer-apk-baseline.mjs --target-sha "$TARGET_SHA"
+      - name: Fetch Consumer APK baseline commit
+        run: git fetch --no-tags --depth=1 origin "${{ steps.apk.outputs.source_sha }}"
+      - name: Strict Consumer native drift guard
+        run: node scripts/consumer-release-drift-audit.mjs --baseline "${{ steps.apk.outputs.source_sha }}" --strict
 
   publish:
     needs: verify
@@ -47,6 +66,8 @@ jobs:
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
