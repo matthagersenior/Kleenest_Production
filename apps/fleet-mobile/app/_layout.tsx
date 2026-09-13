@@ -1,8 +1,8 @@
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { ActivityIndicator, View, useColorScheme } from 'react-native';
+import { getKleenestSupabaseClient,getKleenestThemePreference,resolveKleenestTheme,subscribeKleenestThemePreference,type KleenestThemeMode } from '@kleenest/mobile-core';
 import { currentFleetBusinessId,getFleetWorkspaceAccess,subscribeFleetWorkspaceChange,type FleetWorkspaceRole } from '../services/control';
 import { getFleetOnboardingGate } from '../services/onboarding';
 
@@ -19,6 +19,9 @@ export default function Layout(){
   const[needsBusinessSetup,setNeedsBusinessSetup]=useState(false);
   const[workspaceRole,setWorkspaceRole]=useState<FleetWorkspaceRole|null>(null);
   const[workspaceRevision,setWorkspaceRevision]=useState(0);
+  const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
+  const systemScheme=useColorScheme()==='dark'?'dark':'light';
+  const theme=resolveKleenestTheme('fleet',themeMode,systemScheme);
   const activeRoute=String(segments.at(-1)||'');
   const onAuthRoute=activeRoute==='auth';
   const operator=workspaceRole==='operator';
@@ -32,6 +35,7 @@ export default function Layout(){
   },[]);
 
   useEffect(()=>subscribeFleetWorkspaceChange(()=>setWorkspaceRevision(value=>value+1)),[]);
+  useEffect(()=>{void getKleenestThemePreference().then(setThemeMode);return subscribeKleenestThemePreference(setThemeMode)},[]);
 
   useEffect(()=>{
     if(!ready)return;
@@ -89,9 +93,9 @@ export default function Layout(){
     if(onAuthRoute)router.replace(onboardingRequired?'/onboarding':'/');
   },[ready,gateReady,signedIn,needsBusinessSetup,workspaceRole,onboardingRequired,onAuthRoute,activeRoute,router]);
 
-  if(!ready||(signedIn&&!gateReady))return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:'#f3f6f4'}}><ActivityIndicator size="large"/></View>;
+  if(!ready||(signedIn&&!gateReady))return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:theme.colors.canvas}}><ActivityIndicator size="large"/></View>;
 
-  return <><StatusBar style="dark"/><Tabs key={'fleet-workspace-'+workspaceRevision+'-'+String(workspaceRole)} screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired||needsBusinessSetup?{display:'none'}:undefined}}>
+  return <><StatusBar style={theme.scheme==='dark'?'light':'dark'}/><Tabs key={'fleet-workspace-'+workspaceRevision+'-'+String(workspaceRole)} screenOptions={{headerStyle:{backgroundColor:theme.colors.canvas},headerTintColor:theme.colors.text,headerTitleStyle:{color:theme.colors.text,fontWeight:'900'},headerShadowVisible:false,sceneStyle:{backgroundColor:theme.colors.canvas},tabBarActiveTintColor:theme.colors.accent,tabBarInactiveTintColor:theme.colors.textMuted,tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired||needsBusinessSetup?{display:'none'}:{backgroundColor:theme.colors.surface,borderTopColor:theme.colors.border}}}>
     <Tabs.Screen name="index" options={{title:'Home',href:operator?undefined:null}}/>
     <Tabs.Screen name="planner" options={{title:'Planner',href:operator?undefined:null}}/>
     <Tabs.Screen name="dispatch" options={{title:'Dispatch',href:operator?undefined:null}}/>
