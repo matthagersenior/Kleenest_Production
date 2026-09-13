@@ -6,17 +6,48 @@
 <meta name="theme-color" content="#07100d" />
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://ssgesjzdvdsqacdtasje.supabase.co; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'self'">
 <title>Kleenest Developer Portal</title>
+<meta name="description" content="Build trusted restroom discovery, maps, route intelligence, widgets, webhooks and AI experiences on the Kleenest platform." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23173d2b'/%3E%3Cpath d='M32 11c-9.4 0-17 7.6-17 17 0 12.4 17 25 17 25s17-12.6 17-25c0-9.4-7.6-17-17-17Z' fill='%2356e39f'/%3E%3Cpath d='m24 29 5 5 11-12' fill='none' stroke='%2307100d' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#07100d;color:#edf7f2}main{max-width:1240px;margin:auto;padding:26px}header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.mark{width:46px;height:46px;border-radius:14px;background:#56e39f;color:#07100d;display:grid;place-items:center;font-weight:950;font-size:21px;box-shadow:0 0 0 5px rgba(86,227,159,.08)}.eyebrow{color:#56e39f;font-size:11px;letter-spacing:.17em;font-weight:900}.sub{color:#90aa9f;margin:5px 0 0;line-height:1.55}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.card{background:#0e1d17;border:1px solid #203a30;border-radius:18px;padding:19px;box-shadow:0 12px 28px rgba(0,0,0,.12)}.wide{grid-column:1/-1}.hidden{display:none!important}h1{margin:0;font-size:30px}h2{margin:0 0 9px;font-size:19px}h3{margin:15px 0 8px;font-size:14px;color:#c4d9cf}label{font-size:12px;color:#9bb1a8;display:grid;gap:6px;margin:10px 0}input,select,textarea,button{font:inherit;border-radius:10px;padding:10px 11px}input,select,textarea{border:1px solid #2a493d;background:#07130f;color:#fff;width:100%}textarea{min-height:88px;resize:vertical}input:focus,select:focus,textarea:focus{outline:2px solid rgba(86,227,159,.25);border-color:#56e39f}button{border:1px solid #315348;background:#14271f;color:#eaf5ef;cursor:pointer}button:hover{border-color:#56e39f}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:#56e39f;color:#07100d;border-color:#56e39f;font-weight:850}.secondary{background:#17372b;border-color:#315c4b}.danger{background:#311917;color:#ffc7c0;border-color:#70403b}.row{display:flex;gap:8px;flex-wrap:wrap}.status{margin-top:10px;padding:10px;border:1px solid #294b3d;border-radius:10px;color:#afd2c1;background:#0b1813}.notice{padding:11px 14px;border:1px solid #35594a;border-radius:11px;background:#10241c;margin-bottom:14px}.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.metric{background:#0a1611;border:1px solid #1c3329;border-radius:13px;padding:14px}.metric span,.metric small{display:block;color:#7f998d}.metric strong{font-size:20px;display:block;margin:6px 0;text-transform:capitalize}.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#173e2d;color:#8bf0b9;font-size:12px}.pill.alt{background:#1b2b42;color:#a9c9ff}.secret{padding:12px;background:#283819;border:1px solid #536c25;border-radius:12px;overflow:auto;white-space:pre-wrap}.list{display:grid;gap:8px}.item{display:flex;justify-content:space-between;gap:12px;align-items:center;border-top:1px solid #1a3028;padding:10px 0}.item:first-child{border-top:0}.item strong,.item span,.item small,.item code{display:block}.item small{color:#819a90}.item code{color:#95dfbe;max-width:560px;overflow:hidden;text-overflow:ellipsis}.actions{display:flex;gap:7px;align-items:center}pre{white-space:pre-wrap;word-break:break-word;background:#06100c;border:1px solid #1a3328;border-radius:12px;padding:14px;max-height:460px;overflow:auto;color:#a9ebca}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.divider{border-top:1px solid #20362e;margin:16px 0}.muted{color:#80988e;font-size:12px}.owner{border-color:#365a4a}.onboarding{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px}.step{border:1px solid #29483b;background:#091611;border-radius:13px;padding:12px;min-height:80px}.step b{display:block;margin-bottom:5px}.step small{color:#7f998d;line-height:1.35}.step.done{border-color:#3d7a60;background:#10281f}.step.done b{color:#73efb1}.hero-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.choice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.choice{background:#0a1712;border:1px solid #244237;border-radius:14px;padding:14px}.choice strong{display:block;margin-bottom:5px}.choice p{color:#829c91;font-size:12px;line-height:1.45;min-height:52px}.highlight{box-shadow:0 0 0 2px #56e39f inset}.play-layout{display:grid;grid-template-columns:.82fr 1.18fr;gap:14px}.mode-tabs,.code-tabs{display:flex;gap:7px;flex-wrap:wrap}.mode-tabs button.active,.code-tabs button.active{background:#56e39f;color:#07100d;border-color:#56e39f;font-weight:800}.map-stage{height:250px;position:relative;overflow:hidden;border:1px solid #27483b;border-radius:14px;background:linear-gradient(rgba(86,227,159,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(86,227,159,.05) 1px,transparent 1px),#081510;background-size:28px 28px}.map-empty{position:absolute;inset:0;display:grid;place-items:center;color:#6f8b7f;font-size:13px}.map-dot{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#56e39f;border:3px solid #07100d;box-shadow:0 0 0 2px rgba(86,227,159,.4)}.map-dot.best{width:20px;height:20px;margin:-10px 0 0 -10px;background:#fff}.results{display:grid;gap:8px;margin-top:10px}.result{display:grid;grid-template-columns:1fr auto;gap:10px;border:1px solid #213c31;background:#0a1712;border-radius:12px;padding:12px}.result strong{display:block}.result small{color:#81998f;line-height:1.4}.score{font-weight:900;color:#56e39f;font-size:18px}.play-meta{padding:9px 11px;border-radius:10px;background:#0a1712;color:#8ea89d;font-size:12px;margin-top:9px}.samples{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.sample{border:1px solid #213e32;background:#091611;border-radius:14px;padding:15px;display:flex;flex-direction:column;gap:9px}.sample .tag{font-size:10px;letter-spacing:.09em;color:#56e39f;font-weight:900}.sample p{color:#819a8f;font-size:12px;line-height:1.5;margin:0;min-height:54px}.sample .row{margin-top:auto}.code-panel{margin-top:10px}.tiny{font-size:11px;color:#708b7f}.success-banner{background:linear-gradient(135deg,#123326,#0c2119);border-color:#346b52}.success-banner h2{font-size:22px}.success-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:13px}.success-action{border:1px solid #2c5947;border-radius:14px;padding:13px;background:#0a1a14}.success-action b{display:block;margin-bottom:5px}.success-action small{display:block;color:#89a398;line-height:1.4;margin-bottom:10px}a{color:inherit;text-decoration:none}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 12% 8%,rgba(86,227,159,.12),transparent 28%),radial-gradient(circle at 88% 16%,rgba(152,108,32,.10),transparent 24%);z-index:-1}
+.icon-sprite{position:absolute;width:0;height:0;overflow:hidden}
+.portal-hero{position:relative;overflow:hidden;border:1px solid #2a4b3d;background:linear-gradient(135deg,#10271e 0%,#0a1913 58%,#0d2119 100%);border-radius:24px;padding:22px 24px;margin-bottom:18px;box-shadow:0 22px 60px rgba(0,0,0,.22)}
+.portal-hero:after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;right:-90px;top:-120px;border:1px solid rgba(86,227,159,.18);box-shadow:0 0 0 34px rgba(86,227,159,.035),0 0 0 70px rgba(86,227,159,.025)}
+.portal-brandline{display:flex;align-items:center;gap:15px;position:relative;z-index:1}.mark{background:linear-gradient(145deg,#73f3b6,#45cd8c)!important}.mark svg{width:27px;height:27px;stroke:#07100d;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.portal-hero h1{font-size:clamp(28px,4vw,46px);line-height:1.02;letter-spacing:-.035em;margin:4px 0 8px}.portal-hero .sub{max-width:790px;font-size:14px}.portal-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;position:relative;z-index:1}.brand-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #315347;border-radius:999px;background:rgba(7,16,13,.58);color:#bcd3c9;font-size:11px;font-weight:800}.brand-badge svg{width:14px;height:14px;stroke:#56e39f;fill:none;stroke-width:2}
+.card{transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease}.card:hover{border-color:#2c5142;box-shadow:0 16px 36px rgba(0,0,0,.16)}
+.section-title{display:flex;align-items:center;gap:10px;margin-bottom:7px}.section-title h2{margin:0}.section-icon{width:34px;height:34px;flex:0 0 34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,#173c2d,#10271f);border:1px solid #2d5a46;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)}.section-icon svg{width:18px;height:18px;stroke:#67e9aa;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+button{transition:transform .12s ease,border-color .12s ease,background .12s ease}button:hover:not(:disabled){transform:translateY(-1px)}
+.primary{box-shadow:0 8px 22px rgba(86,227,159,.12)}
+@media(max-width:760px){.portal-hero{padding:18px}.portal-brandline{align-items:flex-start}.portal-hero h1{font-size:30px}}
 @media(max-width:980px){.metrics{grid-template-columns:repeat(3,1fr)}.samples{grid-template-columns:1fr 1fr}.play-layout{grid-template-columns:1fr}.onboarding{grid-template-columns:1fr 1fr 1fr}.choice-grid,.success-grid{grid-template-columns:1fr}}
 @media(max-width:760px){main{padding:14px}.grid,.metrics,.samples,.onboarding{grid-template-columns:1fr}.wide{grid-column:auto}header{flex-direction:column}.item{align-items:flex-start;flex-direction:column}.actions{width:100%;justify-content:flex-end}.choice-grid{grid-template-columns:1fr}.result{grid-template-columns:1fr}.brand{align-items:flex-start}}
 </style>
 </head>
 <body>
 <main>
-<header>
-  <div class="brand"><div class="mark">K</div><div><div class="eyebrow">KLEENEST PLATFORM</div><h1>Kleenest Developer Portal</h1><p class="sub">Build restroom discovery, route intelligence, maps, widgets and AI experiences on the same trusted Kleenest data layer.</p></div></div>
-  <div class="row"><span class="pill">External Beta</span><span class="pill alt">v0.2 Developer Experience</span></div>
+<svg class="icon-sprite" aria-hidden="true">
+  <symbol id="icon-brand" viewBox="0 0 24 24"><path d="M12 21s7-5.2 7-12a7 7 0 1 0-14 0c0 6.8 7 12 7 12Z"/><path d="m8.5 10.5 2.2 2.2 4.8-5"/></symbol>
+  <symbol id="icon-account" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></symbol>
+  <symbol id="icon-workspace" viewBox="0 0 24 24"><path d="M4 7h16v13H4z"/><path d="M8 7V4h8v3M8 12h8"/></symbol>
+  <symbol id="icon-credentials" viewBox="0 0 24 24"><circle cx="8" cy="12" r="4"/><path d="M12 12h8m-3 0v3m-3-3v2"/></symbol>
+  <symbol id="icon-playground" viewBox="0 0 24 24"><path d="m8 9-4 3 4 3M16 9l4 3-4 3M14 5l-4 14"/></symbol>
+  <symbol id="icon-webhooks" viewBox="0 0 24 24"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="7" r="3"/><circle cx="18" cy="17" r="3"/><path d="m9 11 6-3m-6 5 6 3"/></symbol>
+  <symbol id="icon-samples" viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h5M8 16h7"/></symbol>
+  <symbol id="icon-route" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18c5 0 8-2 8-6 0-2-1-4 2-4"/></symbol>
+</svg>
+<header class="portal-hero">
+  <div class="portal-brandline">
+    <div class="mark"><svg><use href="#icon-brand"/></svg></div>
+    <div><div class="eyebrow">KLEENEST DEVELOPER CLOUD</div><h1>Kleenest Developer Portal</h1><p class="sub">Build trusted restroom discovery, route intelligence, maps, widgets, webhooks and AI experiences on the same evidence-backed Kleenest data layer.</p></div>
+  </div>
+  <div class="portal-badges">
+    <span class="brand-badge"><svg><use href="#icon-playground"/></svg>Live sandbox</span>
+    <span class="brand-badge"><svg><use href="#icon-route"/></svg>Route intelligence</span>
+    <span class="brand-badge"><svg><use href="#icon-credentials"/></svg>Origin-bound browser tokens</span>
+    <span class="brand-badge"><svg><use href="#icon-webhooks"/></svg>Webhooks + MCP</span>
+  </div>
 </header>
 <div id="notice" class="notice hidden"></div>
 
@@ -29,7 +60,7 @@
 </section>
 
 <section class="card">
-  <h2>Developer account</h2>
+  <div class="section-title"><span class="section-icon"><svg><use href="#icon-account"/></svg></span><h2>Developer account</h2></div>
   <label>Email<input id="email" type="email" autocomplete="username" /></label>
   <label>Password<input id="password" type="password" autocomplete="current-password" /></label>
   <div class="row">
@@ -41,7 +72,7 @@
 </section>
 
 <section class="card">
-  <h2>Claim invite</h2>
+  <div class="section-title"><span class="section-icon"><svg><use href="#icon-account"/></svg></span><h2>Claim invite</h2></div>
   <p class="sub">Invitation access is tied to the email address the Kleenest partner owner invited.</p>
   <label>Invitation token<input id="inviteToken" placeholder="kln_inv_..." /></label>
   <div class="row"><button id="claimInvite" class="primary">Claim invite</button></div>
@@ -49,7 +80,7 @@
 </section>
 
 <section class="card wide">
-  <h2>My partner workspaces</h2>
+  <div class="section-title"><span class="section-icon"><svg><use href="#icon-workspace"/></svg></span><h2>My partner workspaces</h2></div>
   <div class="row">
     <select id="workspaceSelect" style="flex:1;min-width:240px"><option value="">Sign in to load workspaces</option></select>
     <button id="refreshWorkspaces">Refresh</button>
@@ -60,7 +91,7 @@
 
 <section id="ownerTools" class="card wide owner hidden">
   <div class="eyebrow">KLEENEST OWNER</div>
-  <h2>Developer platform controls</h2>
+  <div class="section-title"><span class="section-icon"><svg><use href="#icon-workspace"/></svg></span><h2>Developer platform controls</h2></div>
   <div class="grid">
     <div>
       <h3>Create partner workspace</h3>
@@ -79,7 +110,7 @@
 </section>
 
 <section id="workspaceCard" class="card wide hidden">
-  <h2>Workspace health</h2>
+  <div class="section-title"><span class="section-icon"><svg><use href="#icon-workspace"/></svg></span><h2>Workspace health</h2></div>
   <div class="metrics">
     <div class="metric"><span>Plan</span><strong id="metricPlan">—</strong><small id="metricStatus">—</small></div>
     <div class="metric"><span>Month requests</span><strong id="metricUsage">0</strong><small id="metricLimit">—</small></div>
@@ -102,7 +133,7 @@
 </section>
 
 <section id="keyCard" class="card wide hidden">
-  <h2>Where will this run?</h2>
+  <div class="section-title"><span class="section-icon"><svg><use href="#icon-credentials"/></svg></span><h2>Where will this run?</h2></div>
   <p class="sub">Choose the environment first. Kleenest will point you to the safest credential for that integration.</p>
   <div class="choice-grid">
     <div id="choiceServer" class="choice"><strong>My server / backend</strong><p>For server-to-server REST, secure jobs, or MCP services. Keep this secret off browsers and mobile bundles.</p><button id="chooseServer">Use a server API key</button></div>
@@ -135,7 +166,7 @@
 
 <section id="playgroundCard" class="card wide hidden">
   <div class="eyebrow">LIVE DATA</div>
-  <h2>API Playground</h2>
+  <div class="section-title"><span class="section-icon"><svg><use href="#icon-playground"/></svg></span><h2>API Playground</h2></div>
   <p class="sub">Run a real Kleenest request using your memory-only sandbox token. The request is counted against the workspace quota just like a production call.</p>
   <div class="mode-tabs"><button id="modeNearby" class="active">Nearby</button><button id="modeRoute">Along route</button></div>
   <div class="play-layout" style="margin-top:12px">
@@ -167,13 +198,13 @@
 
 <section id="samplesCard" class="card wide hidden">
   <div class="eyebrow">READY-MADE USE CASES</div>
-  <h2>Sample gallery</h2>
+  <div class="section-title"><span class="section-icon"><svg><use href="#icon-samples"/></svg></span><h2>Sample gallery</h2></div>
   <p class="sub">Start from a working scenario instead of a blank request. Use in my workspace loads the sample directly into the live Playground.</p>
   <div id="sampleGrid" class="samples"></div>
 </section>
 
 <section id="inviteMemberCard" class="card hidden">
-  <h2>Team access</h2>
+  <div class="section-title"><span class="section-icon"><svg><use href="#icon-account"/></svg></span><h2>Team access</h2></div>
   <label>Email<input id="inviteEmail" type="email" placeholder="developer@partner.com" /></label>
   <label>Role<select id="inviteRole"><option value="owner">owner</option><option value="admin">admin</option><option value="developer">developer</option></select></label>
   <button id="createInvite" class="primary">Create invitation</button>
@@ -181,7 +212,7 @@
 </section>
 
 <section id="webhookCard" class="card hidden">
-  <h2>Webhooks</h2>
+  <div class="section-title"><span class="section-icon"><svg><use href="#icon-webhooks"/></svg></span><h2>Webhooks</h2></div>
   <label>HTTPS endpoint<input id="webhookUrl" type="url" placeholder="https://partner.example/webhooks/kleenest" /></label>
   <label>Events<input id="webhookEvents" value="place.updated,place.verification_changed" /></label>
   <div class="row"><button id="createWebhook" class="primary">Create webhook</button><button id="testWebhook">Queue test</button></div>
@@ -191,7 +222,7 @@
 </section>
 
 <section id="integrationCard" class="card wide hidden">
-  <h2>Integration resources</h2>
+  <div class="section-title"><span class="section-icon"><svg><use href="#icon-route"/></svg></span><h2>Integration resources</h2></div>
   <p class="sub">Use the same canonical Kleenest engine through REST, SDK, Widget, Map Layer, Route SDK, deep links, webhooks and MCP.</p>
   <div class="row" style="margin:12px 0">
     <a class="pill alt" target="_blank" rel="noopener" href="https://ssgesjzdvdsqacdtasje.supabase.co/functions/v1/platform-distribution/v1/sdk.js">SDK module</a>
