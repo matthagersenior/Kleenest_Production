@@ -143,6 +143,8 @@ jobs:
         run: node scripts/consumer-location-photo-authority-audit.mjs
       - name: Business UI action coverage
         run: node scripts/business-ui-action-coverage-audit.mjs
+      - name: Smart-device control plane
+        run: node scripts/smart-device-control-plane-audit.mjs
       - name: Real-world demo and onboarding convergence
         run: node scripts/real-world-demo-onboarding-audit.mjs
       - name: Mandatory onboarding and Consumer focus convergence
