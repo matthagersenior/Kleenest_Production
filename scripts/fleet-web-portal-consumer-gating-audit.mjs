@@ -128,11 +128,14 @@ requireTokens('Consumer no-install fallback',install,[
 ]);
 requireTokens('Marketing suppression',marketing,[
   'useConsumerWebExperience',
+  'usePathname',
   'appActive',
+  "const autoOpenApp=pathname==='/'&&appActive",
   "router.replace('/?app=1'",
   'OPEN FLEET PORTAL',
   "/Kleenest_Production/fleet/"
 ]);
+if(marketing.includes("ready&&appActive)router.replace('/?app=1'"))failures.push('Marketing subpages are still hijacked by the Consumer app-active redirect.');
 requireTokens('Public website no-install entry',marketing,[
   'Continue as guest',
   'Join Kleenest',
