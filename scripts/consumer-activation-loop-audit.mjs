@@ -15,16 +15,19 @@ const files={
   amenities:'apps/consumer-mobile/services/amenities.ts',
   photos:'apps/consumer-mobile/services/reviewPhotos.ts',
   discoveryProgression:'apps/consumer-mobile/services/discoveryProgression.ts',
-  community:'apps/consumer-mobile/services/communityActivity.ts'
+  community:'apps/consumer-mobile/services/communityActivity.ts',
+  locationResolver:'apps/consumer-mobile/services/locationResolver.ts'
 };
 for(const [name,file] of Object.entries(files))if(!fs.existsSync(file))failures.push(`Missing ${name} activation file: ${file}`);
 if(!failures.length){
  const read=file=>fs.readFileSync(file,'utf8');
- const home=read(files.home),explore=read(files.explore),adaptiveExplore=read(files.adaptiveExplore),discover=read(files.discover),progress=read(files.progress),location=read(files.location),social=read(files.social),play=read(files.play),activity=read(files.activity),core=read(files.core),amenities=read(files.amenities),photos=read(files.photos),discoveryProgression=read(files.discoveryProgression),community=read(files.community);
+ const home=read(files.home),explore=read(files.explore),adaptiveExplore=read(files.adaptiveExplore),discover=read(files.discover),progress=read(files.progress),location=read(files.location),social=read(files.social),play=read(files.play),activity=read(files.activity),core=read(files.core),amenities=read(files.amenities),photos=read(files.photos),discoveryProgression=read(files.discoveryProgression),community=read(files.community),locationResolver=read(files.locationResolver);
  const discoverySurface=`${explore}\n${adaptiveExplore}`;
 
  for(const token of ["'/explore'",'Find a bathroom','homePrimaryCta','SCAN QR','CHECK IN / REVIEW','THE KLEENEST LOOP','XP + levels','Add a missing place','YOUR NETWORK'])if(!home.includes(token))failures.push(`Home activation hierarchy missing ${token}.`);
- for(const token of ['Location.geocodeAsync','looksLikeAddressOrArea','searchAreaOrigin','searched-area-marker'])if(!adaptiveExplore.includes(token))failures.push(`Address-origin Explore activation missing ${token}.`);
+ for(const token of ['resolveConsumerSearchLocation','looksLikeAddressOrArea','searchAreaOrigin','searched-area-marker'])if(!adaptiveExplore.includes(token))failures.push(`Address-origin Explore activation missing ${token}.`);
+ if(adaptiveExplore.includes('Location.geocodeAsync'))failures.push('Address-origin Explore must not regress to device geocoding.');
+ if(!locationResolver.includes("functions.invoke('resolve-consumer-location'"))failures.push('Address-origin Explore activation must use the canonical server resolver.');
  for(const token of ['listAmenityCatalog','selectedAmenityNames','captureConsumerRouteIntent','readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!discoverySurface.includes(token))failures.push(`Discovery activation missing ${token}.`);
  if(!['findAdaptiveNearbyRestrooms','listNearbyRestrooms'].some(token=>discoverySurface.includes(token)))failures.push('Discovery activation missing nearby-restroom search authority.');
  if(!['directionsUrl','navigateUrl'].some(token=>discoverySurface.includes(token)))failures.push('Discovery activation missing directions-link authority.');

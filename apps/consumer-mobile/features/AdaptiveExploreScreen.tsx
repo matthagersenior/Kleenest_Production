@@ -28,6 +28,7 @@ import {
 import { listAmenityCatalog, type AmenityCatalogItem } from '../services/amenities';
 import { visitFreshness } from '../services/evidenceFormatting';
 import { attachLocationTrust, listLocationTrustSummaries } from '../services/locationTrust';
+import { resolveConsumerSearchLocation } from '../services/locationResolver';
 import {
   cachedAgeLabel,
   readNearbyCache,
@@ -100,7 +101,14 @@ const distanceLabel = (meters: any) => {
 const radiusLabel = (meters: number) => `${Math.round(meters / 1609.344)} mi`;
 const looksLikeAddressOrArea = (value: string) => {
   const query=value.trim();
-  return Boolean(query) && (/\d/.test(query) || /,/.test(query) || /\b\d{5}(?:-\d{4})?\b/.test(query) || /\s[A-Z]{2}$/i.test(query) || /\b(street|road|avenue|boulevard|drive|lane|highway|parkway|court|circle)\b/i.test(query));
+  return Boolean(query) && (
+    /\d/.test(query)
+    || /,/.test(query)
+    || /\b\d{5}(?:-\d{4})?\b/.test(query)
+    || /\s[A-Z]{2}$/i.test(query)
+    || /\b(street|st\.?|road|rd\.?|avenue|ave\.?|boulevard|blvd\.?|drive|dr\.?|lane|ln\.?|highway|hwy\.?|parkway|pkwy\.?|court|ct\.?|circle|place|plaza|way)\b/i.test(query)
+    || /\b(school|academy|college|university|campus|hospital|clinic|medical center|airport|station|terminal|park|library|church|synagogue|mosque|temple|stadium|arena|museum|hotel|motel|resort|courthouse|city hall)\b/i.test(query)
+  );
 };
 const navigateUrl = (row: any) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${row.latitude},${row.longitude}`)}&travelmode=driving`;
@@ -392,12 +400,9 @@ export default function AdaptiveExploreScreen() {
 
     let areaMatch:{origin:[number,number];label:string}|null=null;
     if(rawQuery&&looksLikeAddressOrArea(rawQuery)){
-      const permission=await Location.requestForegroundPermissionsAsync();
-      if(permission.status!=='granted')throw new Error('Location access is needed to search an address on this device. Enable it in phone settings and try again.');
-      const geocoded=await Location.geocodeAsync(rawQuery);
-      const match=geocoded.find(item=>Number.isFinite(item.latitude)&&Number.isFinite(item.longitude));
-      if(!match)throw new Error(`Kleenest could not locate “${rawQuery}”. Try a fuller street address, city/state, or ZIP.`);
-      areaMatch={origin:[match.longitude,match.latitude],label:rawQuery};
+      const match=await resolveConsumerSearchLocation(rawQuery);
+      if(!match)throw new Error(`Kleenest could not locate “${rawQuery}”. Try the street number plus city/state or ZIP.`);
+      areaMatch={origin:[match.longitude,match.latitude],label:match.label||rawQuery};
     }
 
     const current=areaMatch?null:await currentLocation();
@@ -640,7 +645,7 @@ export default function AdaptiveExploreScreen() {
             onChangeText={setSearch}
             onSubmitEditing={() => void load()}
             returnKeyType="search"
-            placeholder="Search a place, address or brand"
+            placeholder="Address, school, workplace, city or brand"
             placeholderTextColor="#7b8b82"
           />
           <Pressable

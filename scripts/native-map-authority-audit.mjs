@@ -1,16 +1,16 @@
 import fs from 'node:fs';
 
-const required=['apps/consumer-mobile/package.json','apps/consumer-mobile/app.config.ts','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','apps/consumer-mobile/components/RestroomSignals.tsx','apps/consumer-mobile/app/route.tsx','packages/mobile-core/src/index.ts','packages/mobile-core/src/adaptiveDiscovery.ts'];
+const required=['apps/consumer-mobile/package.json','apps/consumer-mobile/app.config.ts','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','apps/consumer-mobile/components/RestroomSignals.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/services/locationResolver.ts','supabase/functions/resolve-consumer-location/index.ts','packages/mobile-core/src/index.ts','packages/mobile-core/src/adaptiveDiscovery.ts'];
 const failures=[];
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing native map authority file: ${file}`);
 if(!failures.length){
- const pkg=fs.readFileSync(required[0],'utf8'),config=fs.readFileSync(required[1],'utf8'),exploreEntry=fs.readFileSync(required[2],'utf8'),adaptiveExplore=fs.readFileSync(required[3],'utf8'),signals=fs.readFileSync(required[4],'utf8'),route=fs.readFileSync(required[5],'utf8'),core=fs.readFileSync(required[6],'utf8'),adaptiveCore=fs.readFileSync(required[7],'utf8');
+ const pkg=fs.readFileSync(required[0],'utf8'),config=fs.readFileSync(required[1],'utf8'),exploreEntry=fs.readFileSync(required[2],'utf8'),adaptiveExplore=fs.readFileSync(required[3],'utf8'),signals=fs.readFileSync(required[4],'utf8'),route=fs.readFileSync(required[5],'utf8'),locationResolver=fs.readFileSync(required[6],'utf8'),locationResolverEdge=fs.readFileSync(required[7],'utf8'),core=fs.readFileSync(required[8],'utf8'),adaptiveCore=fs.readFileSync(required[9],'utf8');
  const explore=`${exploreEntry}\n${adaptiveExplore}`;
  const exploreCompact=explore.replace(/\s+/g,''),coreCompact=core.replace(/\s+/g,'');
  if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Explore entry must resolve to the canonical adaptive Explore screen.');
  if(!pkg.includes('@maplibre/maplibre-react-native'))failures.push('Native consumer app must depend on MapLibre React Native.');
  if(!config.includes("'@maplibre/maplibre-react-native'"))failures.push('Expo config must register the MapLibre native config plugin.');
- for(const token of ['Find a trusted bathroom.','Locate','Search a place, address or brand','What matters on this stop?','Start directions','Add to route','BEST NEXT DECISION'])if(!explore.includes(token))failures.push(`Bathroom-first rich Explore missing ${token}.`);
+ for(const token of ['Find a trusted bathroom.','Locate','Address, school, workplace, city or brand','What matters on this stop?','Start directions','Add to route','BEST NEXT DECISION'])if(!explore.includes(token))failures.push(`Bathroom-first rich Explore missing ${token}.`);
  if(!explore.includes("import { Camera, Map, Marker }")||!explore.includes('<Map ')||!explore.includes('<Camera'))failures.push('Explore must render MapLibre.');
  if(!explore.includes('tile.openstreetmap.org')||!exploreCompact.includes("type:'raster'")&&!exploreCompact.includes('type:"raster"'))failures.push('Explore must use canonical OpenStreetMap raster tiles.');
  if(!explore.includes('<Marker')||/\bcluster\s*=/.test(explore))failures.push('Nearby restroom markers must stay directly actionable and unclustered.');
@@ -36,6 +36,12 @@ if(!failures.length){
  if(!explore.includes('listAmenityCatalog')||!explore.includes('selectedAmenityNames'))failures.push('Explore must consume canonical amenity filters.');
  if(!/listNearbyRestrooms\((?:current\.coords\.latitude,?current\.coords\.longitude|latitude,longitude),radius,query,selectedAmenityNames,?\)/.test(exploreCompact))failures.push('Explore must preserve the proven nearby-restroom fallback with current- or searched-area coordinates plus radius/search/amenity inputs.');
  if(!exploreCompact.includes('canUseGenericCache=!search.trim()&&!selectedAmenityNames.length'))failures.push('Unfiltered cached results must never masquerade as filtered live results.');
+ if(!adaptiveExplore.includes('resolveConsumerSearchLocation')||adaptiveExplore.includes('Location.geocodeAsync'))failures.push('Typed address/place discovery must use the server-backed resolver rather than device geocoding.');
+ if(!adaptiveExplore.includes('Address, school, workplace, city or brand'))failures.push('Explore search affordance must clearly accept arbitrary destinations, not only nearby place names.');
+ if(!locationResolver.includes("functions.invoke('resolve-consumer-location'")||!locationResolver.includes('resolved'))failures.push('Consumer location resolver must invoke the canonical server-backed geocoder and return a resolved coordinate.');
+ for(const token of ['KLEENEST_GEOCODER_BASE_URL','nominatim.openstreetmap.org','User-Agent','cache','lastProviderCallAt','display_name'])if(!locationResolverEdge.includes(token))failures.push(`Server location resolver missing ${token}.`);
+ if(!locationResolverEdge.includes("req.method === 'OPTIONS'")||!locationResolverEdge.includes('access-control-allow-origin'))failures.push('Server location resolver must support browser CORS preflight.');
+ if(!locationResolverEdge.includes('limit=5')&&!locationResolverEdge.includes("limit', '5'"))failures.push('Server location resolver must request multiple candidates rather than trusting one opaque provider hit.');
  if(!explore.includes('getLastKnownPositionAsync'))failures.push('Explore first-load location acquisition must fall back to the last known device position when a fresh fix transiently fails.');
  if(!explore.includes('preserveCacheOnEmpty'))failures.push('Explore first load must preserve a useful nearby cache instead of replacing it with a transient empty live response.');
  if(!explore.includes('findAdaptiveNearbyRestrooms')||!explore.includes('listRestroomsAlongRoute'))failures.push('Rich Explore must add adaptive nearby and route-corridor discovery without replacing mature nearby authority.');
