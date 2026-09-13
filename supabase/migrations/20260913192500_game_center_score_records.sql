@@ -125,3 +125,25 @@ revoke all on function public.record_game_result(text,integer,integer,jsonb) fro
 grant execute on function public.record_game_result(text,integer,integer,jsonb) to authenticated,service_role;
 revoke all on function public.get_game_personal_record(text) from public,anon;
 grant execute on function public.get_game_personal_record(text) to authenticated,service_role;
+
+
+-- Converge the canonical game catalog to the replayable arena_v3 lengths and
+-- score ceilings. These ceilings include room for speed, combo, survival and
+-- strategy bonuses; they are intentionally higher than the original flat quiz scores.
+update public.progression_games
+set rules = coalesce(rules,'{}'::jsonb) || patch.rules
+from (values
+ ('clean_sweep',        '{"rounds":12,"max_score":250,"score_model":"arena_v3","lives":3}'::jsonb),
+ ('bathroom_memory',    '{"pairs":8,"rounds":8,"max_score":250,"score_model":"arena_v3"}'::jsonb),
+ ('trust_or_bust',      '{"questions":10,"rounds":10,"max_score":300,"score_model":"arena_v3"}'::jsonb),
+ ('flush_the_facts',    '{"questions":12,"rounds":12,"max_score":350,"score_model":"arena_v3","time_limit_sec":7}'::jsonb),
+ ('restroom_relay',     '{"rounds":8,"max_score":225,"score_model":"arena_v3"}'::jsonb),
+ ('stall_strategy',     '{"turns":6,"rounds":6,"max_score":300,"score_model":"arena_v3","strategy_budget":20}'::jsonb),
+ ('sink_sprint',        '{"rounds":12,"max_score":325,"score_model":"arena_v3","time_limit_sec":5}'::jsonb),
+ ('route_to_relief',    '{"rounds":8,"max_score":300,"score_model":"arena_v3"}'::jsonb),
+ ('review_rater',       '{"rounds":8,"max_score":250,"score_model":"arena_v3"}'::jsonb),
+ ('evidence_detective', '{"rounds":8,"max_score":350,"score_model":"arena_v3","lives":3}'::jsonb),
+ ('amenity_architect',  '{"rounds":8,"max_score":300,"score_model":"arena_v3"}'::jsonb),
+ ('cleanliness_clash',  '{"rounds":8,"max_score":350,"score_model":"arena_v3","multiplayer":true}'::jsonb)
+) as patch(code,rules)
+where public.progression_games.code=patch.code;
