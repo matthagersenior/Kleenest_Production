@@ -44,6 +44,19 @@ jobs:
       - name: Consumer native drift visibility
         if: steps.consumer-apk-baseline.outputs.source_sha != ''
         run: node scripts/consumer-release-drift-audit.mjs --baseline "${{ steps.consumer-apk-baseline.outputs.source_sha }}" --report-only
+      - name: Resolve synchronized family APK baseline
+        id: family-apk-baseline
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/resolve-family-apk-baseline.mjs --target-sha "$TARGET_SHA" --optional
+      - name: Fetch family APK baseline commit
+        if: steps.family-apk-baseline.outputs.source_sha != ''
+        run: git fetch --no-tags --depth=1 origin "${{ steps.family-apk-baseline.outputs.source_sha }}"
+      - name: App-family OTA/native drift visibility
+        if: steps.family-apk-baseline.outputs.source_sha != ''
+        run: node scripts/app-family-release-plan.mjs --baseline "${{ steps.family-apk-baseline.outputs.source_sha }}" --json-out "$RUNNER_TEMP/family-release-plan.json"
       - name: CI freshness policy
         run: node scripts/ci-freshness-policy-audit.mjs
       - name: Production environment contract
