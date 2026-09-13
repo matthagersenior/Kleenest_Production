@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: kleenest-consumer-preview-pages
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event.workflow_run.conclusion == 'success' }}
 
 jobs:
   publish:
