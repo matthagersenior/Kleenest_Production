@@ -5,6 +5,8 @@ const read=p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';
 const requireTokens=(label,source,tokens)=>{for(const token of tokens)if(!source.includes(token))failures.push(label+' missing '+token)};
 
 const migration=read('supabase/migrations/20260913111500_fleet_member_workspace_consumer_tie.sql');
+const hardening=read('supabase/migrations/20260913112000_fleet_member_workspace_security_hardening.sql');
+const authority=migration+'\n'+hardening;
 const control=read('apps/fleet-mobile/services/control.ts');
 const layout=read('apps/fleet-mobile/app/_layout.tsx');
 const member=read('apps/fleet-mobile/app/member.tsx');
@@ -15,7 +17,7 @@ const premium=read('apps/fleet-mobile/app/premium.tsx');
 const product=read('apps/fleet-mobile/services/product.ts');
 const geofence=read('apps/fleet-mobile/services/geofence.ts');
 
-requireTokens('Fleet member authority',migration,[
+requireTokens('Fleet member authority',authority,[
  'fleet_product_enabled',
  'fleet_user_has_workspace_access',
  'fleet_current_user_workspace_manifest',
@@ -35,12 +37,14 @@ requireTokens('Fleet member authority',migration,[
  "'fleet-active-dwell-watch'",
  "rec.driver_user_id,'push'"
 ]);
-requireTokens('Fleet observe gate',migration,[
+requireTokens('Fleet observe gate',authority,[
  'create or replace function public.fleet_observe_access',
  'public.fleet_actor_is_manager(p_business_id)',
  'd.user_id=auth.uid()'
 ]);
-if(migration.includes("select auth.uid() is not null\n     and coalesce((select a.fleet_enabled"))failures.push('Fleet observe access still allows unrelated authenticated users.');
+if(authority.includes("select auth.uid() is not null\n     and coalesce((select a.fleet_enabled"))failures.push('Fleet observe access still allows unrelated authenticated users.');
+requireTokens('Fleet workspace helper hardening',hardening,["revoke execute on function public.fleet_user_has_workspace_access(uuid) from authenticated","existing_alert.source_kind='fleet_route_stop'","existing_alert.alert_type='route_stop_stall'"]);
+if(hardening.includes("insert into public.geofence_events"))failures.push('Fleet active dwell watchdog must not create a second geofence dwell alert stream.');
 
 requireTokens('Fleet workspace resolver',control,[
  'fleet_current_user_workspace_manifest',
