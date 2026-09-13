@@ -23,7 +23,7 @@ const domainSpecs:Domain[]=[
  {href:'/fleet',title:'Fleet Suite',body:'Routing, dispatch, assets, operations, alerts and role-gated Fleet client workspaces tied to this Business.',gate:'always',glyph:'↝',group:'Operate'},
  {href:'/trust-operations',title:'Trust operations',body:'Work evidence, SLA, proof and reverification cases.',gate:'trustOperations',glyph:'◎',group:'Operate'},
  {href:'/prevention',title:'Preventive operations',body:'Prevent recurring restroom issues and hand work to Fleet.',gate:'preventiveOperations',glyph:'↻',group:'Operate'},
- {href:'/live-network',title:'Live Network',body:'Geofences, operational coverage and audience updates.',gate:'communications',glyph:'◉',group:'Operate'},
+ {href:'/live-network',title:'Live Network',body:'Geofences, operational coverage and audience updates.',gate:'communications',glyph:'◉',group:'Operate'},\n {href:'/devices',title:'Smart Devices',body:'Connected-facility sensors, commands, automations and device health.',gate:'always',glyph:'⌁',group:'Operate'},
  {href:'/engagement',title:'Growth & engagement',body:'Promotions, campaigns, contests and events.',gate:'advancedEngagement',glyph:'↗',group:'Grow'},
  {href:'/growth',title:'Growth summary',body:'Connect offers, visits, campaigns and repeat engagement outcomes.',gate:'advancedEngagement',glyph:'↑',group:'Grow'},
  {href:'/qr-studio',title:'QR Studio',body:'Create, design, version, activate and attribute QR programs.',gate:'qr',glyph:'▦',group:'Grow'},
