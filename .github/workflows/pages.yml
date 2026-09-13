@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - apps/consumer-mobile/**
+      - apps/platform-mobile/**
       - public/manifest.webmanifest
       - public/sw.js
       - scripts/prepare-consumer-web-pwa.mjs
@@ -44,6 +45,15 @@ jobs:
         env:
           EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
           EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+      - name: Export KleenestOS Web
+        run: npm run web:export --workspace @kleenest/owner-mobile
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+      - name: Validate KleenestOS Web export
+        run: |
+          test -s apps/platform-mobile/dist/index.html
+          grep -q "KleenestOS" apps/platform-mobile/dist/index.html
       - name: Prepare installable Consumer Web PWA
         run: |
           node scripts/prepare-consumer-web-pwa.mjs
@@ -61,6 +71,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Kleenest-Consumer-Web-Preview
-          path: apps/consumer-mobile/dist
+          path: |
+            apps/consumer-mobile/dist
+            apps/platform-mobile/dist
           retention-days: 3
           if-no-files-found: error

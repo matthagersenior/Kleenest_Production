@@ -16,7 +16,8 @@ const config:ExpoConfig={
   ios:{bundleIdentifier:'com.kleenest.platform',supportsTablet:true,config:{usesNonExemptEncryption:false}},
   android:{package:'com.kleenest.platform',icon:'./assets/app-icon.png',...(nativePushConfigured?{googleServicesFile:'./google-services.json'}:{}),blockedPermissions:['android.permission.ACCESS_BACKGROUND_LOCATION','android.permission.RECORD_AUDIO','android.permission.SYSTEM_ALERT_WINDOW']},
   plugins:['expo-router','expo-secure-store',['expo-notifications',{defaultChannel:'kleenestos-operations'}]],
-  experiments:{typedRoutes:true},
-  extra:{appRole:'owner',otaChannel,nativePushConfigured,productionEnvironment:{supabaseProjectRef:'ssgesjzdvdsqacdtasje'},eas:{projectId:EAS_PROJECT_ID}},
+  web:{output:'single',bundler:'metro',name:'KleenestOS Web',shortName:'KleenestOS'},
+  experiments:{typedRoutes:true,baseUrl:'/Kleenest_Production/owner'},
+  extra:{appRole:'owner',webPortalName:'KleenestOS Web',otaChannel,nativePushConfigured,productionEnvironment:{supabaseProjectRef:'ssgesjzdvdsqacdtasje'},eas:{projectId:EAS_PROJECT_ID}},
 };
 export default config;

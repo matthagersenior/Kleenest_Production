@@ -6,6 +6,8 @@ function file(path) {
 }
 
 const html = file('apps/developer-portal/static/index.html');
+const manifest = file('apps/developer-portal/static/manifest.webmanifest');
+const worker = file('apps/developer-portal/static/sw.js');
 for (const phrase of [
   'Kleenest Developer Portal',
   'Claim invite',
@@ -31,6 +33,9 @@ for (const phrase of [
   if (!html.includes(phrase)) throw new Error(`Static developer portal missing: ${phrase}`);
 }
 if (!/Content-Security-Policy/i.test(html)) throw new Error('Static portal must include a CSP.');
+for (const token of ['manifest.webmanifest','navigator.serviceWorker.register','Install Developer Portal']) if (!html.includes(token)) throw new Error(`Developer Portal PWA missing: ${token}`);
+for (const token of ['Kleenest Developer Portal','/Kleenest_Production/developer/','standalone']) if (!manifest.includes(token)) throw new Error(`Developer Portal manifest missing: ${token}`);
+for (const token of ['kleenest-developer-portal','networkFirst']) if (!worker.includes(token)) throw new Error(`Developer Portal service worker missing: ${token}`);
 if (!/data:image\/svg\+xml/i.test(html)) throw new Error('Static portal must carry a self-contained branded SVG favicon.');
 if (!/class="section-icon"/.test(html)) throw new Error('Developer Portal must use branded section iconography, not text-only cards.');
 if (!/connect-src[^;]*ssgesjzdvdsqacdtasje\.supabase\.co/i.test(html)) {

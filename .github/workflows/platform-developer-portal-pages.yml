@@ -37,9 +37,12 @@ jobs:
         run: |
           rm -rf _site
           mkdir -p _site/developer
-          cp apps/developer-portal/static/index.html _site/developer/index.html
+          test -s apps/developer-portal/static/index.html
+          cp -R apps/developer-portal/static/. _site/developer/
           cp apps/developer-portal/static/index.html _site/developer/404.html
           test -s _site/developer/index.html
+          test -s _site/developer/manifest.webmanifest
+          test -s _site/developer/sw.js
           test -s _site/developer/404.html
       - name: Preserve Developer Portal preview artifact
         uses: actions/upload-artifact@v4

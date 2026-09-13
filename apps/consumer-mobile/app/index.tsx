@@ -68,7 +68,7 @@ export default function HomeScreen(){
 
     <SectionHeader eyebrow="MORE" title="Account, access and support stay close."/>
     <View style={s.moreRow}>
-      <Pressable style={s.more} onPress={action('/membership')}><Text style={s.moreTitle}>Membership</Text><Text style={s.moreBody}>Premium + Family options</Text></Pressable>
+      <Pressable style={s.more} onPress={action('/install')}><Text style={s.moreTitle}>Install Kleenest</Text><Text style={s.moreBody}>Web app + verified Android APK</Text></Pressable>\n      <Pressable style={s.more} onPress={action('/membership')}><Text style={s.moreTitle}>Membership</Text><Text style={s.moreBody}>Premium + Family options</Text></Pressable>
       <Pressable style={s.more} onPress={action('/family')}><Text style={s.moreTitle}>Family</Text><Text style={s.moreBody}>Create or join your group</Text></Pressable>
       <Pressable style={s.more} onPress={action('/messages')}><Text style={s.moreTitle}>Messages</Text><Text style={s.moreBody}>Talk with trusted contributors</Text></Pressable>
       <Pressable style={s.more} onPress={action('/access')}><Text style={s.moreTitle}>Access</Text><Text style={s.moreBody}>Preferred + single-use access</Text></Pressable>
