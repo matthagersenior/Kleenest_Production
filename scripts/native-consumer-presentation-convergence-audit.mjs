@@ -9,7 +9,7 @@ const home=requireAll('apps/consumer-mobile/app/index.tsx',['Find a bathroom you
 const explorePath='apps/consumer-mobile/app/explore.tsx';
 const adaptiveExplorePath='apps/consumer-mobile/features/AdaptiveExploreScreen.tsx';
 const explore=`${read(explorePath)}\n${read(adaptiveExplorePath)}`;
-for(const token of ['Find a trusted bathroom.','BEST NEXT DECISION','What matters on this stop?','Start navigation','Location.geocodeAsync','searchAreaOrigin','Searching near','listLocationTrustSummaries','listNearbyRestrooms',"router.push('/discover')"])if(!explore.includes(token))throw new Error(`Canonical Explore presentation missing contract: ${token}`);
+for(const token of ['Find a trusted bathroom.','BEST NEXT DECISION','What matters on this stop?','Start navigation','resolveConsumerSearchLocation','searchAreaOrigin','Searching near','Address, school, workplace, city or brand','listLocationTrustSummaries','listNearbyRestrooms',"router.push('/discover')"])if(!explore.includes(token))throw new Error(`Canonical Explore presentation missing contract: ${token}`);
 const discover=requireAll('apps/consumer-mobile/app/discover.tsx',['matchOrCreateDiscovery','recordDiscoveryEvidence','uploadDiscoveryPhoto','onsite_live']);
 const progress=requireAll('apps/consumer-mobile/app/progress.tsx',['SPECIALTY LEVELS','Quests','Missions','Challenges','Journeys','Campaigns','Contests','BADGES','RANKINGS']);
 const profile=requireAll('apps/consumer-mobile/app/profile.tsx',['Your restroom network','Your progress and people','Control your Kleenest','Privacy & preferences','Scan a Kleenest code','Contribution-backed standing','update_my_public_profile']);
