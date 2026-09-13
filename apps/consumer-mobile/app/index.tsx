@@ -1,7 +1,7 @@
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { router } from 'expo-router';
 import { useEffect,useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FeatureCard, HeroCard, SectionHeader, palette } from '../components/ConsumerUI';
 import { hasCurrentPolicyAcceptance } from '../services/safety';
 
@@ -23,6 +23,12 @@ export default function HomeScreen(){
         <Pressable accessibilityRole="button" accessibilityLabel="Add a missing place" style={s.heroQuick} onPress={action('/discover')}><Text style={s.heroQuickLabel}>ADD TO MAP</Text><Text style={s.heroQuickTitle}>Missing place</Text></Pressable>
       </View>
     </HeroCard>
+
+    {Platform.OS==='web'?<Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest" style={s.installFeature} onPress={action('/install')}>
+      <View style={s.installFeatureIcon}><Text style={s.installFeatureIconText}>⇩</Text></View>
+      <View style={{flex:1}}><Text style={s.installFeatureKicker}>GET KLEENEST</Text><Text style={s.installFeatureTitle}>Install on this device</Text><Text style={s.installFeatureBody}>Add the web app to your Home Screen or desktop, check install health, share the installer, or get the verified Android APK.</Text></View>
+      <Text style={s.installFeatureArrow}>›</Text>
+    </Pressable>:null}
 
     <SectionHeader eyebrow="QUICK ACTIONS" title="Keep your next move one tap away." body="The hero already handles finding, scanning and adding places. Quick Actions now stays focused on the tools you come back to."/>
     <View style={s.twoCol}>
@@ -68,7 +74,8 @@ export default function HomeScreen(){
 
     <SectionHeader eyebrow="MORE" title="Account, access and support stay close."/>
     <View style={s.moreRow}>
-      <Pressable style={s.more} onPress={action('/install')}><Text style={s.moreTitle}>Install Kleenest</Text><Text style={s.moreBody}>Web app + verified Android APK</Text></Pressable>\n      <Pressable style={s.more} onPress={action('/membership')}><Text style={s.moreTitle}>Membership</Text><Text style={s.moreBody}>Premium + Family options</Text></Pressable>
+      <Pressable style={s.more} onPress={action('/install')}><Text style={s.moreTitle}>Install Kleenest</Text><Text style={s.moreBody}>Web app + verified Android APK</Text></Pressable>
+      <Pressable style={s.more} onPress={action('/membership')}><Text style={s.moreTitle}>Membership</Text><Text style={s.moreBody}>Premium + Family options</Text></Pressable>
       <Pressable style={s.more} onPress={action('/family')}><Text style={s.moreTitle}>Family</Text><Text style={s.moreBody}>Create or join your group</Text></Pressable>
       <Pressable style={s.more} onPress={action('/messages')}><Text style={s.moreTitle}>Messages</Text><Text style={s.moreBody}>Talk with trusted contributors</Text></Pressable>
       <Pressable style={s.more} onPress={action('/access')}><Text style={s.moreTitle}>Access</Text><Text style={s.moreBody}>Preferred + single-use access</Text></Pressable>
@@ -105,6 +112,13 @@ const s=StyleSheet.create({
   heroQuick:{flex:1,minHeight:58,backgroundColor:'#2b513e',paddingHorizontal:11,paddingVertical:10,borderRadius:13,justifyContent:'center'},
   heroQuickLabel:{fontSize:8,fontWeight:'900',letterSpacing:1,color:'#bcd4c5'},
   heroQuickTitle:{fontSize:12,fontWeight:'900',color:'#fff',marginTop:2},
+  installFeature:{backgroundColor:'#fff',borderWidth:2,borderColor:'#bfd8c7',borderRadius:20,padding:15,flexDirection:'row',alignItems:'center',gap:12},
+  installFeatureIcon:{width:42,height:42,borderRadius:14,backgroundColor:palette.green,alignItems:'center',justifyContent:'center'},
+  installFeatureIconText:{fontSize:22,fontWeight:'900',color:'#fff'},
+  installFeatureKicker:{fontSize:9,fontWeight:'900',letterSpacing:1,color:palette.green},
+  installFeatureTitle:{fontSize:18,fontWeight:'900',color:palette.ink,marginTop:2},
+  installFeatureBody:{fontSize:11,lineHeight:16,color:palette.muted,marginTop:3},
+  installFeatureArrow:{fontSize:30,color:palette.green,fontWeight:'700'},
   twoCol:{flexDirection:'row',flexWrap:'wrap',gap:10},
   aiBand:{backgroundColor:'#e8f2ec',borderRadius:22,borderWidth:1,borderColor:'#cfe0d5',padding:17,gap:14},
   aiTitle:{fontSize:21,lineHeight:26,fontWeight:'900',color:palette.ink},
