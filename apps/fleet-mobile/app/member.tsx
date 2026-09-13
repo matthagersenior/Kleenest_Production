@@ -13,6 +13,7 @@ export default function FleetMemberWorkspace(){
  const[context,setContext]=useState<any>(null);
  const[busy,setBusy]=useState(false);
  const[message,setMessage]=useState('Loading your Fleet workspace…');
+ const[,setClock]=useState(0);
 
  async function load(){
   setBusy(true);
@@ -22,6 +23,7 @@ export default function FleetMemberWorkspace(){
   }catch(e:any){setMessage(e?.message||'Your Fleet workspace is unavailable.')}finally{setBusy(false)}
  }
  useEffect(()=>{void load()},[]);
+ useEffect(()=>{const timer=setInterval(()=>setClock(value=>value+1),30000);return()=>clearInterval(timer)},[]);
 
  const workspace=context?.workspace||{};
  const dispatch=context?.dispatch||{};
