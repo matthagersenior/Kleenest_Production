@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 const args=process.argv.slice(2);
@@ -91,7 +92,7 @@ const result={
   checkedAt:new Date().toISOString(),
 };
 const rendered=JSON.stringify(result,null,2)+'\n';
-if(jsonOut){fs.mkdirSync(new URL('.',`file://${process.cwd()}/${jsonOut}`).pathname,{recursive:true});fs.writeFileSync(jsonOut,rendered)}
+if(jsonOut){fs.mkdirSync(path.dirname(jsonOut),{recursive:true});fs.writeFileSync(jsonOut,rendered)}
 console.log(rendered.trim());
 if(nativeDrift){
   const message=`Consumer native drift detected against APK baseline ${baseline.slice(0,12)}: ${reasons.join('; ')}. Build a new Consumer APK/AAB before publishing OTA to this runtime.`;
