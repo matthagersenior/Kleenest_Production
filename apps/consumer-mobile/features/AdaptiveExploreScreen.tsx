@@ -13,7 +13,6 @@ import {
 } from '@kleenest/mobile-core';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  FlatList,
   Modal,
   Pressable,
   RefreshControl,
@@ -37,6 +36,7 @@ import {
 } from '../services/nearbyCache';
 import { captureConsumerDiscovery, captureConsumerRouteIntent } from '../services/consumerTelemetry';
 import {
+  CompactRestroomSignals,
   MapLegend,
   PlaceIcon,
   RestroomSignals,
@@ -130,49 +130,72 @@ function parseRouteDraft(raw: string | null) {
   }
 }
 
-function ResultCard({ item, selected, onSelect, route }: {
+function ResultCard({ item, selected, onSelect, onDirections, onAddToRoute, onDetails, route }: {
   item: any;
   selected: boolean;
   onSelect: () => void;
+  onDirections: () => void;
+  onAddToRoute: () => void;
+  onDetails: () => void;
   route: any;
 }) {
   const fraction = Math.max(0, Math.min(1, Number(item.route_fraction || 0)));
   const ahead = route ? Math.max(0, Number(route.distanceMiles || 0) * fraction) : null;
   const eta = route ? Math.max(0, Number(route.durationMinutes || 0) * fraction) : null;
+  const reviewCount = Number(item.review_count || 0);
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      accessibilityLabel={`${item.name || 'Restroom location'}, ${route && ahead != null ? `${ahead.toFixed(ahead < 10 ? 1 : 0)} miles ahead` : distanceLabel(item.distance_meters)}`}
-      onPress={onSelect}
-      style={[s.card, selected && s.cardActive]}
-    >
-      <View style={s.cardTop}>
-        <PlaceIcon item={item} size={34} />
-        <View style={{ flex: 1 }}>
-          <Text style={s.cardTitle}>{item.name || 'Restroom location'}</Text>
-          {item.business_name ? <Text style={s.meta}>{item.business_name}</Text> : null}
-          <Text style={s.meta}>
-            {[item.address, item.city, item.state].filter(Boolean).join(', ') || 'Address unavailable'}
+    <View style={[s.card, selected && s.cardActive]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected }}
+        accessibilityLabel={`${item.name || 'Restroom location'}, ${route && ahead != null ? `${ahead.toFixed(ahead < 10 ? 1 : 0)} miles ahead` : distanceLabel(item.distance_meters)}`}
+        onPress={onSelect}
+        style={s.cardMain}
+      >
+        <View style={s.cardTop}>
+          <PlaceIcon item={item} size={34} />
+          <View style={{ flex: 1 }}>
+            <Text style={s.cardTitle}>{item.name || 'Restroom location'}</Text>
+            {item.business_name ? <Text style={s.meta}>{item.business_name}</Text> : null}
+            <Text style={s.meta}>
+              {[item.address, item.city, item.state].filter(Boolean).join(', ') || 'Address unavailable'}
+            </Text>
+          </View>
+          <Text style={s.distance}>
+            {route && ahead != null
+              ? `~${ahead.toFixed(ahead < 10 ? 1 : 0)} mi ahead`
+              : distanceLabel(item.distance_meters)}
           </Text>
         </View>
-        <Text style={s.distance}>
-          {route && ahead != null
-            ? `~${ahead.toFixed(ahead < 10 ? 1 : 0)} mi ahead`
-            : distanceLabel(item.distance_meters)}
+        {route && eta != null ? (
+          <Text style={s.routeLine}>
+            ~{Math.round(eta)} min ahead · {distanceLabel(item.distance_to_route_meters)} from route
+          </Text>
+        ) : null}
+        <RestroomSignals item={item} compact />
+        {reviewCount > 0 ? <Text style={s.meta}>{reviewCount} review{reviewCount === 1 ? '' : 's'}</Text> : null}
+        <Text style={s.trustLine}>{trustSummaryLine(item)}</Text>
+        <Text style={s.hint}>
+          {selected ? 'Selected on map' : 'Tap this card to focus its map pin'}
         </Text>
+      </Pressable>
+      <View style={s.cardActionRow}>
+        <Pressable
+          accessibilityRole="button"
+          disabled={!hasCoordinates(item)}
+          style={[s.primarySmall, s.cardAction, !hasCoordinates(item) && s.disabled]}
+          onPress={onDirections}
+        >
+          <Text style={s.primaryText}>Start navigation</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" style={[s.secondarySmall, s.cardAction]} onPress={onAddToRoute}>
+          <Text style={s.secondaryText}>Add to route</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" style={[s.secondarySmall, s.cardAction]} onPress={onDetails}>
+          <Text style={s.secondaryText}>Full details</Text>
+        </Pressable>
       </View>
-      {route && eta != null ? (
-        <Text style={s.routeLine}>
-          ~{Math.round(eta)} min ahead · {distanceLabel(item.distance_to_route_meters)} from route
-        </Text>
-      ) : null}
-      <RestroomSignals item={item} compact />
-      <Text style={s.trustLine}>{trustSummaryLine(item)}</Text>
-      <Text style={s.hint}>
-        {selected ? 'Selected on map · Full details available' : 'Tap to preview this location on the map'}
-      </Text>
-    </Pressable>
+    </View>
   );
 }
 
@@ -537,6 +560,13 @@ export default function AdaptiveExploreScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
+      <ScrollView
+        style={s.pageScroll}
+        contentContainerStyle={s.pageContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
+      >
       <View style={s.hero}>
         <View style={s.heroTop}>
           <View style={{ flex: 1 }}>
@@ -891,29 +921,28 @@ export default function AdaptiveExploreScreen() {
                   <PlaceIcon item={selected} size={34} />
                   <View style={{ flex: 1 }}>
                     <Text numberOfLines={1} style={s.selectedTitle}>{selected.name || 'Restroom location'}</Text>
-                    <Text numberOfLines={1} style={s.meta}>
+                    <Text numberOfLines={2} style={s.meta}>
                       {mode === 'route'
                         ? `${distanceLabel(selected.distance_to_route_meters)} from route`
                         : distanceLabel(selected.distance_meters)}
                       {' · '}{[selected.address, selected.city].filter(Boolean).join(', ') || 'Address unavailable'}
                     </Text>
                   </View>
-                  <Pressable style={s.primarySmall} onPress={() => router.push(`/location/${idOf(selected)}`)}>
-                    <Text style={s.primaryText}>Full details</Text>
-                  </Pressable>
                 </View>
-                <RestroomSignals item={selected} compact />
-                <Text style={s.trustLine}>{trustSummaryLine(selected)}</Text>
+                <CompactRestroomSignals item={selected} />
                 <View style={s.actionRow}>
-                  <Pressable style={s.secondarySmall} onPress={() => addToRoute(selected)}>
-                    <Text style={s.secondaryText}>Add to route</Text>
-                  </Pressable>
                   <Pressable
-                    style={s.primarySmall}
+                    style={[s.primarySmall, s.selectedAction, !hasCoordinates(selected) && s.disabled]}
                     disabled={!hasCoordinates(selected)}
                     onPress={() => void directions(selected)}
                   >
-                    <Text style={s.primaryText}>Start directions →</Text>
+                    <Text style={s.primaryText}>Start navigation</Text>
+                  </Pressable>
+                  <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => addToRoute(selected)}>
+                    <Text style={s.secondaryText}>Add to route</Text>
+                  </Pressable>
+                  <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => router.push(`/location/${idOf(selected)}`)}>
+                    <Text style={s.secondaryText}>Full details</Text>
                   </Pressable>
                 </View>
               </View>
@@ -928,45 +957,29 @@ export default function AdaptiveExploreScreen() {
         </View>
       ) : null}
 
-      <FlatList
-        style={{ flex: 1 }}
-        data={rows}
-        scrollEnabled
-        nestedScrollEnabled
-        keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
-        keyExtractor={idOf}
-        contentContainerStyle={s.list}
-        ListHeaderComponent={
-          <View style={s.listHeading}>
-            <View>
-              <Text style={s.listEyebrow}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
-              <Text style={s.listTitle}>{mode === 'route' ? 'Bathrooms ahead' : 'Nearby businesses & bathrooms'}</Text>
-            </View>
-            <Text style={s.listNote}>{cached ? 'Cached · pull to refresh' : 'Scroll results · map stays fixed'}</Text>
+      <View style={s.list}>
+        <View style={s.listHeading}>
+          <View>
+            <Text style={s.listEyebrow}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
+            <Text style={s.listTitle}>{mode === 'route' ? 'Bathrooms ahead' : 'Nearby businesses & bathrooms'}</Text>
           </View>
-        }
-        ListFooterComponent={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add a missing bathroom"
-            onPress={() => router.push('/discover')}
-            style={s.missingPlace}
-          >
-            <Text style={s.listEyebrow}>MISSING A PLACE?</Text>
-            <Text style={s.missingTitle}>Add a missing bathroom</Text>
-            <Text style={s.help}>Contribute a place that is not in the Kleenest network yet.</Text>
-          </Pressable>
-        }
-        renderItem={({ item }) => (
+          <Text style={s.listNote}>{cached ? 'Cached · pull to refresh' : 'Distance + actions on every card'}</Text>
+        </View>
+
+        {rows.map((item) => (
           <ResultCard
+            key={idOf(item)}
             item={item}
             selected={idOf(item) === selectedId}
             onSelect={() => selectRow(item)}
+            onDirections={() => void directions(item)}
+            onAddToRoute={() => addToRoute(item)}
+            onDetails={() => router.push(`/location/${idOf(item)}`)}
             route={mode === 'route' ? route : null}
           />
-        )}
-        ListEmptyComponent={!loading ? (
+        ))}
+
+        {!loading && rows.length === 0 ? (
           <View style={s.empty}>
             <Text style={s.emptyTitle}>No qualifying results yet.</Text>
             <Text style={s.help}>
@@ -976,13 +989,27 @@ export default function AdaptiveExploreScreen() {
             </Text>
           </View>
         ) : null}
-      />
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add a missing bathroom"
+          onPress={() => router.push('/discover')}
+          style={s.missingPlace}
+        >
+          <Text style={s.listEyebrow}>MISSING A PLACE?</Text>
+          <Text style={s.missingTitle}>Add a missing bathroom</Text>
+          <Text style={s.help}>Contribute a place that is not in the Kleenest network yet.</Text>
+        </Pressable>
+      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.canvas },
+  pageScroll: { flex: 1 },
+  pageContent: { paddingBottom: 24 },
   hero: {
     marginHorizontal: 12,
     marginTop: 4,
@@ -1087,6 +1114,7 @@ const s = StyleSheet.create({
   selectedRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   selectedTitle: { fontSize: 14, fontWeight: '900', color: palette.ink },
   actionRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  selectedAction: { flexGrow: 1, alignItems: 'center' },
   primarySmall: { minHeight: 34, borderRadius: 9, backgroundColor: palette.green, paddingHorizontal: 9, paddingVertical: 7, justifyContent: 'center' },
   secondarySmall: { minHeight: 34, borderRadius: 9, backgroundColor: '#e8efea', paddingHorizontal: 9, paddingVertical: 7, justifyContent: 'center' },
   primaryText: { fontSize: 9, fontWeight: '900', color: '#fff' },
@@ -1110,6 +1138,9 @@ const s = StyleSheet.create({
   listNote: { fontSize: 8, fontWeight: '800', color: '#718077' },
   card: { borderRadius: 16, padding: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#dce6df', gap: 6 },
   cardActive: { borderColor: palette.green, borderWidth: 2 },
+  cardMain: { gap: 6 },
+  cardActionRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  cardAction: { flexGrow: 1, alignItems: 'center' },
   cardTop: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   cardTitle: { fontSize: 15, fontWeight: '900', color: palette.ink },
   meta: { fontSize: 9, lineHeight: 13, color: '#66776d' },
