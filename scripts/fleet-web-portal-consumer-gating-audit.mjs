@@ -91,6 +91,7 @@ requireTokens('Fleet web OAuth callback',fleetAuth,[
 ]);
 
 requireTokens('Consumer web experience gate',webExperience,[
+  "kleenest.consumer.installed-presence.v2",
   "kleenest.consumer.app-presence.v1",
   'display-mode: standalone',
   'getInstalledRelatedApps',
@@ -98,8 +99,13 @@ requireTokens('Consumer web experience gate',webExperience,[
   'onAuthStateChange',
   'signedIn',
   'installed',
-  'appActive'
+  'explicitLaunch',
+  "if(standalone)markConsumerAppPresence()",
+  'appActive:native||explicitLaunch||signedIn||installed'
 ]);
+if(webExperience.includes('if(explicit||standalone)markConsumerAppPresence()')||webExperience.includes('if(explicitLaunch||standalone)markConsumerAppPresence()'))failures.push('Guest web launch is still persisted as installed app presence.');
+if(webExperience.includes('const present=explicit||')||webExperience.includes('const present=explicitLaunch||'))failures.push('Explicit guest launch is still counted as an installed app.');
+if(webExperience.includes('setInstalled(explicit||')||webExperience.includes('setInstalled(explicitLaunch||'))failures.push('Explicit guest launch still contaminates installed state.');
 requireTokens('Consumer home install gate',consumerHome,[
   'useConsumerWebExperience',
   'showInstall',
@@ -112,12 +118,31 @@ requireTokens('Install presence persistence',install,[
   'appinstalled',
   "choice.outcome==='accepted'"
 ]);
+requireTokens('Consumer no-install fallback',install,[
+  'CONTINUE AS GUEST',
+  'JOIN KLEENEST',
+  'SIGN IN',
+  "router.push('/?app=1'",
+  "router.push('/signup'",
+  "router.push('/profile'"
+]);
 requireTokens('Marketing suppression',marketing,[
   'useConsumerWebExperience',
+  'usePathname',
   'appActive',
+  "const autoOpenApp=pathname==='/'&&appActive",
   "router.replace('/?app=1'",
   'OPEN FLEET PORTAL',
   "/Kleenest_Production/fleet/"
+]);
+if(marketing.includes("ready&&appActive)router.replace('/?app=1'"))failures.push('Marketing subpages are still hijacked by the Consumer app-active redirect.');
+requireTokens('Public website no-install entry',marketing,[
+  'Continue as guest',
+  'Join Kleenest',
+  'Sign in to Kleenest',
+  "go('/?app=1')",
+  "go('/signup')",
+  "go('/profile')"
 ]);
 requireTokens('Fleet web validation',pages,[
   'apps/fleet-mobile/**',

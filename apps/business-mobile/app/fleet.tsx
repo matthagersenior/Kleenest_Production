@@ -4,6 +4,7 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { currentBusinessId } from '../services/capabilityWorkflows';
 import { getBusinessProductAccess } from '../services/productAccess';
 import { BusinessCard,BusinessHero,SectionHeader,businessColors } from '../components/BusinessOS';
+import { smartRestroomSnapshot } from '../services/smartDevices';
 
 type Workspace=Record<string,any>;
 const operatorRoutes=[
@@ -23,19 +24,20 @@ function portalUrl(route=''){const suffix=route?route.replace(/^\//,'')+'/':'';r
 async function openFleet(route=''){if(Platform.OS==='web'&&typeof window!=='undefined'){window.location.assign(portalUrl(route));return;}await Linking.openURL(`kleenest-fleet://${route||''}`);}
 
 export default function BusinessFleetSuite(){
- const[businessId,setBusinessId]=useState(''),[access,setAccess]=useState<any>(null),[workspace,setWorkspace]=useState<Workspace|null>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('Loading Fleet authority…');
+ const[businessId,setBusinessId]=useState(''),[access,setAccess]=useState<any>(null),[workspace,setWorkspace]=useState<Workspace|null>(null),[smart,setSmart]=useState<any>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('Loading Fleet authority…');
 
  async function load(){
   setBusy(true);
   try{
    const id=businessId||await currentBusinessId();setBusinessId(id);
-   const[product,manifestResult]=await Promise.all([
+   const[product,manifestResult,smartSnapshot]=await Promise.all([
     getBusinessProductAccess(id),
     getKleenestSupabaseClient().rpc('fleet_current_user_workspace_manifest'),
+    smartRestroomSnapshot(id),
    ]);
    if(manifestResult.error)throw manifestResult.error;
    const workspaces=Array.isArray((manifestResult.data as any)?.workspaces)?(manifestResult.data as any).workspaces:[];
-   setAccess(product);
+   setAccess(product);setSmart(smartSnapshot);
    setWorkspace(workspaces.find((row:any)=>String(row.business_id)===id)||null);
    setMessage('');
   }catch(e:any){setMessage(e?.message||'Fleet workspace authority is unavailable.')}
@@ -56,7 +58,7 @@ export default function BusinessFleetSuite(){
   <View style={s.metrics}>
    <Metric label="Fleet entitlement" value={enabled?'ENABLED':'OFF'}/>
    <Metric label="Workspace role" value={role?role.toUpperCase():'NONE'}/>
-   <Metric label="Business tier" value={String(access?.plan||access?.business_tier||'—').toUpperCase()}/>
+   <Metric label="Business tier" value={String(access?.plan||access?.business_tier||'—').toUpperCase()}/><Metric label="Smart locations" value={String(smart?.summary?.smart_locations||0)}/><Metric label="Online devices" value={String(smart?.summary?.online_devices||0)}/>
   </View>
 
   {!enabled?<BusinessCard><SectionHeader title="Fleet is not enabled for this Business" body="Enable Fleet on the canonical Business account before routing, dispatch and Fleet client workspaces are exposed."/></BusinessCard>:null}
@@ -67,6 +69,8 @@ export default function BusinessFleetSuite(){
     <SectionHeader title={operator?'Operator workspace active':'Fleet client workspace active'} body={operator?'Owner/admin/manager/dispatcher authority exposes the full Fleet web control plane for this Business.':'This account keeps the Consumer-connected Fleet member experience while operator-only routing/dispatch controls remain gated.'}/>
     <View style={s.gates}>{capRows.map(([key,value])=><View key={key} style={[s.gate,Boolean(value)&&s.gateOn]}><Text style={[s.gateText,Boolean(value)&&s.gateTextOn]}>{Boolean(value)?'✓ ':'— '}{key.replaceAll('_',' ')}</Text></View>)}</View>
   </BusinessCard>:null}
+
+  {enabled&&workspace?<BusinessCard><SectionHeader title="Smart Restroom Fleet signal" body="Routing, nearby discovery, dwell/stall context and operator actions can use the same Connected / Smart Restroom signal. Device verification and business confirmation remain visible separately."/><Text style={s.routeBody}>{Number(smart?.summary?.device_verified||0)} device-verified locations · {Number(smart?.summary?.open_commands||0)} open device commands · {Number(smart?.summary?.critical_events_24h||0)} critical events in 24h</Text></BusinessCard>:null}
 
   {enabled&&operator?<View style={s.section}>
     <SectionHeader title="Fleet operator control plane" body="These tools open the same Fleet-enabled Business workspace in the dedicated Fleet portal/app. Alerts and Account remain available to operators as well as client members."/>

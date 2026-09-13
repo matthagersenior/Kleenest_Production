@@ -89,7 +89,9 @@ No secret values belong in Git or in the developer portal bundle.
 - billing/plan linkage,
 - webhook creation/disablement,
 - test webhook enqueue,
-- REST and webhook integration examples.
+- REST and webhook integration examples,
+- Smart Facilities scope selection and device contract examples,
+- Smart Restroom amenity discovery/filtering and MCP guidance.
 
 The console signs in through Supabase Auth with an existing Kleenest platform-owner account. The publishable key is safe browser configuration; the owner password is not persisted. Administrative requests carry the resulting user access token and are independently checked by `is_platform_owner_session()`.
 
@@ -115,3 +117,10 @@ This design deliberately avoids a raw API-request event table. Minute buckets ar
 The `smart_facilities` bundle extends Enterprise Data with the `smart_devices` API product. It provides `devices:read`, `devices:write`, `devices:command`, and `devices:events:write` scopes plus REST, webhook, and MCP surfaces.
 
 Hardware integrations are bridge-based: Matter controllers, MQTT gateways, or a vendor cloud keep their own device credentials and translate into the canonical Kleenest Smart Device event/command contract. See `docs/platform/SMART_DEVICES.md`.
+
+
+## Amenity + Smart Facilities contract
+
+The canonical Smart Facilities amenity is `Connected / Smart Restroom`. Partners can enumerate all amenities through `GET /v1/amenities`, request smart-only nearby/route recommendations with `requirements.smartRestroom=true`, and use the same signal across Map/Route/MCP integrations.
+
+Smart Facilities is intentionally provenance-aware: a consumer observation, Business owner/admin/manager confirmation, and device verification are separate signals. Device attachment can verify the Smart Restroom capability without deleting or replacing community trust evidence.

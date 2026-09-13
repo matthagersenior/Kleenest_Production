@@ -2,7 +2,8 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { useEffect,useState } from 'react';
 import { Platform } from 'react-native';
 
-const APP_PRESENCE_KEY='kleenest.consumer.app-presence.v1';
+const APP_PRESENCE_KEY='kleenest.consumer.installed-presence.v2';
+const LEGACY_APP_PRESENCE_KEY='kleenest.consumer.app-presence.v1';
 
 function browser(){
   return Platform.OS==='web'&&typeof window!=='undefined'?window:null;
@@ -35,7 +36,16 @@ export function markConsumerAppPresence(){
 export function clearConsumerAppPresence(){
   const w=browser();
   if(!w)return;
-  try{w.localStorage.removeItem(APP_PRESENCE_KEY)}catch{}
+  try{
+    w.localStorage.removeItem(APP_PRESENCE_KEY);
+    w.localStorage.removeItem(LEGACY_APP_PRESENCE_KEY);
+  }catch{}
+}
+
+function clearLegacyConsumerAppPresence(){
+  const w=browser();
+  if(!w)return;
+  try{w.localStorage.removeItem(LEGACY_APP_PRESENCE_KEY)}catch{}
 }
 
 function storedConsumerAppPresence(){
@@ -54,6 +64,7 @@ async function relatedInstalledApp(){
 
 export function useConsumerWebExperience(){
   const native=Platform.OS!=='web';
+  const explicitLaunch=!native&&isExplicitConsumerAppLaunch();
   const[ready,setReady]=useState(native);
   const[signedIn,setSignedIn]=useState(false);
   const[installed,setInstalled]=useState(native);
@@ -62,21 +73,21 @@ export function useConsumerWebExperience(){
     if(native)return;
     let active=true;
     const client=getKleenestSupabaseClient();
-    const explicit=isExplicitConsumerAppLaunch();
     const standalone=isConsumerStandaloneWebApp();
-    if(explicit||standalone)markConsumerAppPresence();
+    clearLegacyConsumerAppPresence();
+    if(standalone)markConsumerAppPresence();
 
     async function refresh(sessionOverride?:unknown){
       const session=sessionOverride===undefined?(await client.auth.getSession()).data.session:sessionOverride;
       const related=await relatedInstalledApp();
       if(!active)return;
-      const present=explicit||standalone||storedConsumerAppPresence()||related;
+      const present=standalone||storedConsumerAppPresence()||related;
       setInstalled(present);
       setSignedIn(Boolean(session));
       setReady(true);
     }
 
-    void refresh().catch(()=>{if(active){setInstalled(explicit||standalone||storedConsumerAppPresence());setSignedIn(false);setReady(true)}});
+    void refresh().catch(()=>{if(active){setInstalled(standalone||storedConsumerAppPresence());setSignedIn(false);setReady(true)}});
     const auth=client.auth.onAuthStateChange((_event,session)=>{void refresh(session)});
     return()=>{active=false;auth.data.subscription.unsubscribe()};
   },[native]);
@@ -85,6 +96,6 @@ export function useConsumerWebExperience(){
     ready,
     signedIn,
     installed,
-    appActive:native||signedIn||installed,
+    appActive:native||explicitLaunch||signedIn||installed,
   };
 }

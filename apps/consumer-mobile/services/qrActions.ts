@@ -24,6 +24,11 @@ export async function resolveQrAction(code:string):Promise<ResolvedQrAction>{
 
 export async function executeQrAction(action:ResolvedQrAction){
   const type=String(action.action_type||'').toLowerCase();
+  if(type==='smart_amenity'){
+    const locationId=String(action.location_id||action.action_payload?.locationId||action.action_payload?.location_id||'');
+    if(!locationId)throw new Error('This Smart Restroom QR is missing its location.');
+    return {kind:'smart_amenity' as const,locationId,amenity:'Connected / Smart Restroom'};
+  }
   if(type==='trust_mission'){
     const locationId=String(action.location_id||action.action_payload?.location_id||'');
     if(!locationId)throw new Error('This trust-mission QR is missing its restroom location.');

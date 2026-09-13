@@ -5,16 +5,16 @@ import * as z from 'zod/v4';
 const baseUrl = String(process.env.KLEENEST_API_BASE_URL ?? '').replace(/\/$/, '');
 const apiKey = process.env.KLEENEST_API_KEY ?? '';
 
-async function call(path: string, body: unknown) {
+async function call(path: string, body: unknown = undefined, method: 'GET'|'POST' = 'POST') {
   if (!baseUrl) throw new Error('KLEENEST_API_BASE_URL is required');
   if (!apiKey) throw new Error('KLEENEST_API_KEY is required');
   const response = await fetch(`${baseUrl}${path}`, {
-    method: 'POST',
+    method,
     headers: {
       'content-type': 'application/json',
       'x-kleenest-api-key': apiKey,
     },
-    body: JSON.stringify(body),
+    body: method==='GET'?undefined:JSON.stringify(body),
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(String((payload as any)?.error ?? `Kleenest API failed with ${response.status}`));
@@ -42,6 +42,7 @@ serveStdio(() => {
         amenityNames: z.array(z.string()).max(24).optional(),
         amenityMatch: z.enum(['all', 'any']).default('any'),
         search: z.string().max(320).optional(),
+        smartRestroom: z.boolean().optional(),
       }),
     },
     async input => textResult(await call('/v1/recommendations/nearby', {
@@ -52,6 +53,7 @@ serveStdio(() => {
       requirements: {
         amenityNames: input.amenityNames ?? [],
         amenityMatch: input.amenityMatch,
+        smartRestroom: input.smartRestroom,
       },
     })),
   );
@@ -67,6 +69,7 @@ serveStdio(() => {
         amenityNames: z.array(z.string()).max(24).optional(),
         amenityMatch: z.enum(['all', 'any']).default('any'),
         search: z.string().max(320).optional(),
+        smartRestroom: z.boolean().optional(),
       }),
     },
     async input => textResult(await call('/v1/recommendations/route', {
@@ -77,6 +80,7 @@ serveStdio(() => {
       requirements: {
         amenityNames: input.amenityNames ?? [],
         amenityMatch: input.amenityMatch,
+        smartRestroom: input.smartRestroom,
       },
     })),
   );
@@ -100,6 +104,33 @@ serveStdio(() => {
       }) as any;
       return textResult(result?.recommendations?.[0] ?? null);
     },
+  );
+
+  server.registerTool(
+    'list_amenities',
+    {
+      description: 'List the canonical Kleenest amenity catalog, including Connected / Smart Restroom.',
+      inputSchema: z.object({}),
+    },
+    async () => textResult(await call('/v1/amenities', undefined, 'GET')),
+  );
+
+  server.registerTool(
+    'find_smart_restrooms',
+    {
+      description: 'Return nearby restrooms explicitly carrying the Connected / Smart Restroom capability.',
+      inputSchema: z.object({
+        latitude: z.number().min(-90).max(90),
+        longitude: z.number().min(-180).max(180),
+        radiusMeters: z.number().min(100).max(402336).default(16093),
+        limit: z.number().int().min(1).max(25).default(5),
+      }),
+    },
+    async input => textResult(await call('/v1/recommendations/nearby', {
+      location:{latitude:input.latitude,longitude:input.longitude},
+      radiusMeters:input.radiusMeters,limit:input.limit,
+      requirements:{smartRestroom:true,amenityNames:[],amenityMatch:'all'},
+    })),
   );
 
   server.registerTool(

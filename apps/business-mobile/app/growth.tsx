@@ -77,8 +77,9 @@ export default function Growth(){
   <BusinessHero eyebrow="GROWTH & ENGAGEMENT" title="Programs that connect to real visits." body="Promotions, campaigns, contests, events, media and QR programs share the same Business identity, location IDs, progression and analytics contracts."/>
   {message?<Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text>:null}
 
-  <View style={s.metrics}><Metric label="Promotions" value={promotions.length}/><Metric label="Contests" value={contests.length}/><Metric label="Events" value={events.length}/><Metric label="Media" value={media.length}/></View>
+  <View style={s.metrics}><Metric label="Promotions" value={promotions.length}/><Metric label="Contests" value={contests.length}/><Metric label="Smart locations" value={Number(data?.smartRestrooms?.summary?.smart_locations||0)}/><Metric label="Smart QR" value={Number(data?.smartRestrooms?.summary?.smart_qr_codes||0)}/></View>
   <BarChart title="Program mix" subtitle="Current Business growth assets by type" items={programMix}/>
+  <BusinessCard><SectionHeader title="Smart Restroom growth signal" body="Connected / Smart Restroom is a reusable audience, QR, trust and operational signal—not a silo. Use verified smart locations for campaigns, contests, offers, attribution and on-site QR experiences."/><Text style={s.meta}>{Number(data?.smartRestrooms?.summary?.business_confirmed||0)} business-confirmed · {Number(data?.smartRestrooms?.summary?.device_verified||0)} device-verified · {Number(data?.smartRestrooms?.summary?.online_devices||0)} devices online</Text></BusinessCard>
 
   <BusinessCard><SectionHeader title="Create a program" body="Launch customer-facing programs without leaving the Business control center."/>
    <TextInput style={s.input} placeholder="Promotion title" value={promotion} onChangeText={setPromotion}/><Action label="Create promotion" disabled={busy||!promotion.trim()} onPress={()=>run(()=>manageBusinessPromotion(businessId,null,'create',{title:promotion.trim(),name:promotion.trim(),active:true}),'Promotion created.',()=>setPromotion(''))}/>

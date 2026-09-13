@@ -14,7 +14,7 @@ const METHODS:{key:DiscoveryMethod;label:string;detail:string;xp:string}[]=[
   {key:'gps',label:'GPS',detail:'Capture your current coordinates near the place.',xp:'Higher XP'},
   {key:'onsite_live',label:'On-site live',detail:'Fresh location evidence while you are physically there.',xp:'Highest discovery XP'},
 ];
-const AMENITIES=['Public restroom','Accessible stall','Changing table','Family restroom','Urinals','Stalls','Sinks','Showers','Vending','24-hour access'];
+const AMENITIES=['Public restroom','Connected / Smart Restroom','Accessible stall','Changing table','Family restroom','Urinals','Stalls','Sinks','Showers','Vending','24-hour access'];
 
 export default function DiscoverScreen(){
   const[method,setMethod]=useState<DiscoveryMethod>('remote');

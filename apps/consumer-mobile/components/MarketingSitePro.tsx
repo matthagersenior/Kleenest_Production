@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { type ReactNode, useEffect } from 'react';
 import { useConsumerWebExperience } from '../services/webExperience';
 import {
@@ -109,10 +109,12 @@ function Header() {
 }
 
 function Shell({ children }: { children: ReactNode }) {
+  const pathname=usePathname();
   const{ready,appActive}=useConsumerWebExperience();
-  useEffect(()=>{if(Platform.OS==='web'&&ready&&appActive)router.replace('/?app=1' as any)},[ready,appActive]);
+  const autoOpenApp=pathname==='/'&&appActive;
+  useEffect(()=>{if(Platform.OS==='web'&&ready&&autoOpenApp)router.replace('/?app=1' as any)},[ready,autoOpenApp]);
   if(Platform.OS==='web'&&!ready)return <SafeAreaView style={s.safe}/>;
-  if(Platform.OS==='web'&&appActive)return <SafeAreaView style={s.safe}/>;
+  if(Platform.OS==='web'&&autoOpenApp)return <SafeAreaView style={s.safe}/>;
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
@@ -346,8 +348,13 @@ export function MarketingHome() {
             Kleenest helps you find a bathroom you can trust before you stop. Search near you or around any address, compare cleanliness, access, amenities and freshness, then navigate with confidence.
           </Text>
           <View style={s.heroButtonRow}>
-            <Pressable style={s.heroPrimary} onPress={go('/install')}><Text style={s.heroPrimaryText}>INSTALL KLEENEST</Text></Pressable>
-            <Pressable style={s.heroSecondary} onPress={go('/?app=1')}><Text style={s.heroSecondaryText}>TRY THE WEB APP</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest" style={s.heroPrimary} onPress={go('/install')}><Text style={s.heroPrimaryText}>INSTALL KLEENEST</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Continue as guest" style={s.heroSecondary} onPress={go('/?app=1')}><Text style={s.heroSecondaryText}>CONTINUE AS GUEST</Text></Pressable>
+          </View>
+          <Text style={s.heroGuestNote}>No install required. Use the full consumer experience now, then join or sign in whenever you want account-backed features.</Text>
+          <View style={s.heroAuthRow}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Join Kleenest" style={s.heroAuthButton} onPress={go('/signup')}><Text style={s.heroAuthText}>JOIN KLEENEST</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Sign in to Kleenest" style={s.heroAuthButton} onPress={go('/profile')}><Text style={s.heroAuthText}>SIGN IN</Text></Pressable>
           </View>
           <View style={s.heroTrustRow}>
             <TrustChip value="NOW" label="See what is fresh" />
@@ -765,6 +772,10 @@ const s = StyleSheet.create({
   heroPrimaryText: { color: '#FFFFFF', fontSize: 11, fontWeight: '900', letterSpacing: 0.6 },
   heroSecondary: { backgroundColor: '#FFFFFF', paddingHorizontal: 21, paddingVertical: 15, borderRadius: 12, borderWidth: 1, borderColor: '#CAD6CE' },
   heroSecondaryText: { color: brand.forest, fontSize: 11, fontWeight: '900', letterSpacing: 0.6 },
+  heroGuestNote: { color: '#718076', fontSize: 11, lineHeight: 17, fontWeight: '700', maxWidth: 610, marginTop: 11 },
+  heroAuthRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  heroAuthButton: { backgroundColor: brand.mintSoft, paddingHorizontal: 15, paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: '#CFE3D6' },
+  heroAuthText: { color: brand.forest, fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
   heroTrustRow: { marginTop: 32, flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   trustChip: { minWidth: 125, backgroundColor: '#F2F6F3', borderRadius: 14, borderWidth: 1, borderColor: '#DBE5DE', paddingHorizontal: 12, paddingVertical: 11 },
   trustChipValue: { color: brand.forest, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },

@@ -62,6 +62,7 @@ function attributes(row: Record<string, unknown>): RestroomAttributes {
     changingTable: boolOrNull(row.changing_table),
     familyRestroom: boolOrNull(row.family_restroom),
     open24Hours: boolOrNull(row.open_24_hours ?? row.open24_hours),
+    smartRestroom: boolOrNull(row.smart_bathroom) ?? (amenityNames(row).some(name=>/^(connected \/ smart restroom|smart restroom)$/i.test(name))?true:null),
     amenityNames: amenityNames(row),
   };
 }
@@ -80,6 +81,7 @@ function reasonCodes(
   if (detourMinutes !== null && detourMinutes <= 5) reasons.push('LOW_DETOUR');
   if (restroom.publicAccess === true) reasons.push('PUBLIC_ACCESS');
   if (restroom.wheelchairAccessible === true) reasons.push('ACCESSIBILITY_MATCH');
+  if (restroom.smartRestroom === true) reasons.push('SMART_RESTROOM');
   return [...new Set(reasons)];
 }
 
@@ -96,6 +98,7 @@ function score(
   if (trust.confidence !== null) value += Math.round(trust.confidence * 20);
   if (restroom.publicAccess === true) value += 8;
   if (restroom.wheelchairAccessible === true) value += 4;
+  if (restroom.smartRestroom === true) value += 3;
   if (distanceMeters !== null) value += Math.max(0, 8 - Math.round(distanceMeters / 3218));
   if (detourMinutes !== null) value += Math.max(0, 10 - Math.round(detourMinutes));
   return Math.max(0, Math.min(100, value));
@@ -107,6 +110,7 @@ function explanation(reasons: RecommendationReasonCode[]): string {
   if (reasons.includes('HIGH_CONFIDENCE')) phrases.push('high-confidence Kleenest data');
   if (reasons.includes('PUBLIC_ACCESS')) phrases.push('public access');
   if (reasons.includes('ACCESSIBILITY_MATCH')) phrases.push('accessibility information');
+  if (reasons.includes('SMART_RESTROOM')) phrases.push('connected Smart Restroom capability');
   if (reasons.includes('LOW_DETOUR')) phrases.push('low route detour');
   if (reasons.includes('LOW_DISTANCE')) phrases.push('close to the requested location');
   if (reasons.includes('NEEDS_VERIFICATION')) phrases.push('candidate awaiting consumer verification');

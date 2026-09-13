@@ -42,3 +42,10 @@ Smart Facilities integrations add these signed webhook event types:
 - `device.command_completed`
 
 A bridge consumes `device.command_requested`, performs only a command declared by that device, and reports the result through the Smart Device completion endpoint. Existing HMAC verification, retry, dead-letter, and replay rules apply unchanged.
+
+
+## Smart Restroom amenity provenance
+
+When Business confirmation or live device state changes the published `Connected / Smart Restroom` capability, Kleenest emits `place.amenities_changed` to the integration partner attached to that Smart Device bridge. The payload includes location ID, amenity name, published presence, Business-confirmed state, device-verification state, total devices and online-device count.
+
+Community discovery/review observations remain evidence and do not masquerade as a Business/device state change. Device-specific health and command lifecycle continue through the `device.*` events above.

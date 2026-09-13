@@ -52,7 +52,7 @@ type Summary = {
   }>;
 };
 
-const tabs = ['Overview', 'API keys', 'Usage', 'Webhooks', 'Integration'] as const;
+const tabs = ['Overview', 'API keys', 'Usage', 'Webhooks', 'Smart Facilities', 'Integration'] as const;
 type Tab = typeof tabs[number];
 
 function App() {
@@ -68,10 +68,10 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [oneTimeSecret, setOneTimeSecret] = useState('');
   const [newPartner, setNewPartner] = useState({ slug: '', name: '', plan: 'developer', minute: '60', month: '10000' });
-  const [newKey, setNewKey] = useState({ label: 'Integration key', expiresAt: '' });
+  const [newKey, setNewKey] = useState({ label: 'Integration key', expiresAt: '', scopes: 'recommendations:read' });
   const [newPublicToken, setNewPublicToken] = useState({ label: 'Browser token', origin: '', days: '7', minute: '30' });
   const [billing, setBilling] = useState({ provider: 'manual', status: 'inactive', planCode: 'developer', customerId: '', subscriptionId: '' });
-  const [newWebhook, setNewWebhook] = useState({ label: 'Default', url: '', eventTypes: 'place.updated,place.verification_changed' });
+  const [newWebhook, setNewWebhook] = useState({ label: 'Default', url: '', eventTypes: 'place.updated,place.verification_changed,place.amenities_changed,device.status_changed,device.alert,device.command_requested,device.command_completed' });
 
   const platformApiUrl = useMemo(
     () => functionsBase ? `${functionsBase.replace(/\/$/, '')}/platform-api` : 'https://YOUR_PROJECT.supabase.co/functions/v1/platform-api',
@@ -202,7 +202,7 @@ function App() {
         const result = await admin('issue-key', {
           partnerId,
           label: newKey.label,
-          scopes: ['recommendations:read'],
+          scopes: newKey.scopes.split(',').map(value => value.trim()).filter(Boolean),
           expiresAt: newKey.expiresAt || null,
         });
         setOneTimeSecret(result.api_key ?? '');
@@ -409,6 +409,8 @@ function App() {
               <p>Use server keys only from trusted backend environments.</p>
               <form onSubmit={issueKey}>
                 <input required value={newKey.label} onChange={e => setNewKey({ ...newKey, label: e.target.value })} placeholder="Key label" />
+                <label>Scopes<textarea value={newKey.scopes} onChange={e => setNewKey({ ...newKey, scopes: e.target.value })} placeholder="recommendations:read,devices:read" /></label>
+                <small>Least privilege: Smart Facilities may use devices:read, devices:write, devices:command and devices:events:write in addition to recommendations:read.</small>
                 <label>Optional expiration<input type="datetime-local" value={newKey.expiresAt} onChange={e => setNewKey({ ...newKey, expiresAt: e.target.value })} /></label>
                 <button className="primary" disabled={busy || !partnerId}>Issue server key</button>
               </form>
@@ -498,6 +500,54 @@ function App() {
           </section>
         )}
 
+        {tab === 'Smart Facilities' && (
+          <section className="grid two">
+            <article className="card">
+              <h2>Connected / Smart Restroom</h2>
+              <p>The Smart Restroom signal is shared across Consumer discovery/reviews, Business Growth, Fleet, Enterprise, QR, REST, webhooks and MCP. Community observation, Business confirmation and live-device verification remain distinct provenance signals.</p>
+              <pre>{`curl -X POST "${platformApiUrl}/v1/recommendations/nearby" \\
+  -H "x-kleenest-api-key: YOUR_KEY" \\
+  -H "content-type: application/json" \\
+  -d '{"location":{"latitude":38.627,"longitude":-90.1994},"radiusMeters":16093,"requirements":{"smartRestroom":true}}'`}</pre>
+              <p>Discover the full canonical amenity catalog with <code>GET /v1/amenities</code>. The canonical name is <code>Connected / Smart Restroom</code>.</p>
+            </article>
+            <article className="card">
+              <h2>Smart Device contract</h2>
+              <p>Hardware remains provider-neutral. Matter, MQTT, vendor clouds and generic gateways map into the same scoped device/event/command model.</p>
+              <pre>{`GET  ${platformApiUrl}/v1/devices
+POST ${platformApiUrl}/v1/devices
+POST ${platformApiUrl}/v1/devices/events
+POST ${platformApiUrl}/v1/devices/{deviceId}/commands
+POST ${platformApiUrl}/v1/devices/{deviceId}/commands/{commandId}/complete`}</pre>
+              <small>Commands require declared device capabilities. High-risk commands remain held for KleenestOS approval, including when launched from QR.</small>
+            </article>
+            <article className="card">
+              <h2>Scopes</h2>
+              <dl>
+                <div><dt>recommendations:read</dt><dd>Places, amenities, Smart Restroom discovery</dd></div>
+                <div><dt>devices:read</dt><dd>Device manifest and status</dd></div>
+                <div><dt>devices:write</dt><dd>Register device identities</dd></div>
+                <div><dt>devices:events:write</dt><dd>Telemetry/events and command completion</dd></div>
+                <div><dt>devices:command</dt><dd>Audited command requests</dd></div>
+              </dl>
+            </article>
+            <article className="card">
+              <h2>Webhook events</h2>
+              <p><code>place.amenities_changed</code> carries Smart Restroom presence changes. Device-specific flows use:</p>
+              <pre>{`device.status_changed
+device.alert
+device.telemetry_threshold
+device.command_requested
+device.command_completed`}</pre>
+              <p>Use <code>device.command_requested</code> as the bridge execution handoff, then report the result through the completion endpoint.</p>
+            </article>
+            <article className="card" style={{ gridColumn: '1 / -1' }}>
+              <h2>MCP / agent integrations</h2>
+              <p>The Kleenest MCP exposes <code>list_amenities</code>, <code>find_smart_restrooms</code>, Smart Restroom filtering on recommendation tools, <code>list_smart_devices</code>, and <code>command_smart_device</code>. This gives assistants the same governed capability graph as REST clients.</p>
+            </article>
+          </section>
+        )}
+
         {tab === 'Integration' && (
           <section className="grid two">
             <article className="card">
@@ -506,7 +556,8 @@ function App() {
               <pre>{`curl -X POST "${platformApiUrl}/v1/recommendations/nearby" \\
   -H "x-kleenest-api-key: YOUR_KEY" \\
   -H "content-type: application/json" \\
-  -d '{"location":{"latitude":38.627,"longitude":-90.1994},"radiusMeters":16093}'`}</pre>
+  -d '{"location":{"latitude":38.627,"longitude":-90.1994},"radiusMeters":16093,"requirements":{"smartRestroom":true}}'`}</pre>
+              <p><code>GET /v1/amenities</code> returns the canonical amenity catalog. Smart Facilities server keys can additionally request device scopes from the API Keys tab.</p>
             </article>
             <article className="card">
               <h2>Webhook verification</h2>

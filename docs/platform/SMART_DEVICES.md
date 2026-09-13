@@ -83,3 +83,26 @@ This is the plugin boundary. Vendor-specific SDKs belong in the bridge/adapter, 
 ## Future extensions
 
 The schema leaves room for digital twins, firmware inventory, predictive maintenance, occupancy models, consumable forecasting, energy/water telemetry, offline bridge queues, device certificates, and location-level Smart Bathroom scoring without changing the public command/event contract.
+
+## Connected / Smart Restroom amenity convergence
+
+`Connected / Smart Restroom` is a canonical Kleenest amenity, not a device-only label. It can be:
+
+- observed by consumers through discovery and verified review amenity evidence;
+- confirmed or removed by a Business owner, admin, or manager;
+- verified automatically by an enabled Smart Device attached to the location;
+- used as a recommendation requirement with `requirements.smartRestroom=true`;
+- surfaced in Business Growth, Fleet nearby/routing, Enterprise portfolio readiness, QR workflows, REST, webhooks, and MCP.
+
+The evidence sources intentionally do not overwrite each other. Community observations remain trust evidence. Business confirmation is authoritative Business metadata. Device verification is operational evidence. A Smart Restroom remains published when either Business confirmation or an enabled location-attached device supports it.
+
+## Smart Restroom QR
+
+Businesses can create a `smart_amenity` QR that opens the consumer contribution flow for the Smart Restroom amenity. Device workspaces can also create a `smart_device_command` QR for a real declared device command. Command QR execution uses the same owner/admin/manager authority, device capability checks, control gates, idempotent command queue, and KleenestOS high-risk approval policy as every other command source.
+
+## Developer surfaces
+
+- `GET /v1/amenities` lists the canonical amenity catalog.
+- Nearby and route recommendation requests accept `requirements.smartRestroom=true`.
+- `place.amenities_changed` reports published Smart Restroom presence changes.
+- MCP exposes `list_amenities` and `find_smart_restrooms` in addition to device tools.
