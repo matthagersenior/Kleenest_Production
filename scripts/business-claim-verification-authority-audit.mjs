@@ -33,7 +33,8 @@ if(/access-control-allow-origin['"]?:\s*req\.headers\.get\(['"]origin['"]\)/.tes
 expect(edge,/FREE_EMAIL_DOMAINS/,'generic email providers must not count as company-domain proof');
 expect(edge,/user\.email_confirmed_at/,'company-domain proof must require confirmed account email');
 expect(edge,/location\.website/,'automated domain evidence must be grounded in the canonical location website');
-if(!edge.includes('https://cloudflare-dns.com/dns-query'))failures.push('DNS verification must use a fixed DNS-over-HTTPS authority instead of fetching arbitrary business sites');
+expect(edge,/const DNS_DOH_ENDPOINT=/,'DNS verification must use a fixed DNS-over-HTTPS endpoint constant');
+expect(edge,/new URL\(DNS_DOH_ENDPOINT\)/,'DNS verification requests must derive from the fixed endpoint constant');
 expect(edge,/company_email_domain[\s\S]*dns_txt/,'automatic approval must require two independent domain-control signals');
 expect(edge,/if\(ctx\.claim\.existing_operator_business_id\|\|!evidence\.includes/,'automatic approval must be impossible when an existing operator is present');
 expect(edge,/\.is\('business_id',null\)\.is\('claimed_business_id',null\)/,'auto-approval must atomically require an unclaimed location');
