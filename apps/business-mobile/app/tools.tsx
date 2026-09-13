@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { useMemo,useState } from 'react';
-import { ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
+import { Pressable,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { BUSINESS_ACTIONS,BUSINESS_ACTION_GROUPS } from '../services/actionRegistry';
 import { BusinessCard,BusinessHero,SectionHeader,businessColors } from '../components/BusinessOS';
 
@@ -25,11 +25,15 @@ export default function BusinessTools(){
    if(!rows.length)return null;
    return <View key={group} style={s.section}>
     <SectionHeader title={group} body={group==='Today'?'High-frequency actions that keep the Business running.':undefined}/>
-    <View style={s.grid}>{rows.map(item=><Link key={item.id} href={item.route as any} asChild><BusinessCard style={s.actionCard}>
-     <Text style={s.actionTitle}>{item.title}</Text>
-     <Text style={s.meta}>{item.description}</Text>
-     <View style={s.footer}><Text style={s.route}>{item.route.replace('/','').replaceAll('-',' ')}</Text><Text style={s.open}>OPEN →</Text></View>
-    </BusinessCard></Link>)}</View>
+    <View style={s.grid}>{rows.map(item=><Link key={item.id} href={item.route as any} asChild>
+     <Pressable accessibilityRole="button" accessibilityLabel={item.title} accessibilityHint={`Open ${item.title}`} style={s.actionPressable}>
+      <BusinessCard style={s.actionCard}>
+       <Text style={s.actionTitle}>{item.title}</Text>
+       <Text style={s.meta}>{item.description}</Text>
+       <View style={s.footer}><Text style={s.route}>{item.route.replace('/','').replaceAll('-',' ')}</Text><Text style={s.open}>OPEN →</Text></View>
+      </BusinessCard>
+     </Pressable>
+    </Link>)}</View>
    </View>;
   })}
  </ScrollView>
@@ -42,7 +46,8 @@ const s=StyleSheet.create({
  meta:{fontSize:12,lineHeight:18,color:businessColors.muted},
  section:{gap:9},
  grid:{flexDirection:'row',flexWrap:'wrap',gap:10},
- actionCard:{flexGrow:1,flexBasis:260,minWidth:250,maxWidth:520},
+ actionPressable:{flexGrow:1,flexBasis:260,minWidth:250,maxWidth:520},
+ actionCard:{flex:1},
  actionTitle:{fontSize:16,lineHeight:21,fontWeight:'900',color:businessColors.ink},
  footer:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,marginTop:4},
  route:{fontSize:9,fontWeight:'800',color:'#708178',textTransform:'uppercase'},
