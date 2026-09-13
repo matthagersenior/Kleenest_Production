@@ -39,7 +39,7 @@ export default function GamesHub(){
     <Text style={s.eyebrow}>KLEENEST ARCADE</Text>
     <Text style={s.title}>Play for mastery, not just XP.</Text>
     <Text style={s.body}>Every game has its own arena, rules, difficulty curve and personal-best loop. Useful restroom knowledge is the theme; beating yourself and other players is the reason to come back.</Text>
-    <View style={s.leagueRow}><View style={s.divisionIcon}><Text style={s.divisionGlyph}>{division.icon}</Text></View><View style={{flex:1}}><Text style={s.divisionName}>{division.name} Division</Text><Text style={s.meta}>{next?String(Math.max(0,next.minXp-xp))+' XP to '+next.name:'Top current division'}</Text><View style={s.track}><View style={[s.fill,{width:String(Math.round(pct*100))+'%'}]} /></View></View><Pressable style={s.progressButton} onPress={()=>router.push('/progress')}><Text style={s.progressButtonText}>League →</Text></Pressable></View>
+    <View style={s.leagueRow}><View style={s.divisionIcon}><Text style={s.divisionGlyph}>{division.icon}</Text></View><View style={{flex:1}}><Text style={s.divisionName}>{division.name} Division</Text><Text style={s.meta}>{next?String(Math.max(0,next.minXp-xp))+' XP to '+next.name:'Top current division'}</Text><View style={s.track}><View style={[s.fill,{width:(String(Math.round(pct*100))+'%') as any}]} /></View></View><Pressable style={s.progressButton} onPress={()=>router.push('/progress')}><Text style={s.progressButtonText}>League →</Text></Pressable></View>
    </View>
 
    {groups.map(group=><View key={group.title} style={s.section}>
