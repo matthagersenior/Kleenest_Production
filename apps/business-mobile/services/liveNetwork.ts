@@ -82,3 +82,7 @@ export async function registerLiveNetworkPush(){
  if(error)throw new Error(error.message);
  return token;
 }
+
+export type LiveOpsAttentionItem={source_kind:string;source_id:string;location_id?:string|null;location_name?:string|null;title:string;detail?:string|null;status?:string|null;severity:'critical'|'high'|'elevated'|'active'|'stable'|'quiet';priority_score:number;due_at?:string|null;observed_at?:string|null;action_route:string;action_label:string;action_type:string;verification_required:boolean;evidence?:Record<string,unknown>};
+export type LiveOpsCommandCenter={business_id:string;generated_at:string;window_minutes:number;summary:Record<string,number>;attention_queue:LiveOpsAttentionItem[];verification_queue:any[];device_health:Record<string,number>;fleet_summary:Record<string,number>;service_summary:Record<string,number>;motifs:any[];activity:any[];what_changed:any[]};
+export async function getLiveOpsCommandCenter(businessId:string,windowMinutes=60):Promise<LiveOpsCommandCenter>{const{data,error}=await client().rpc('business_live_ops_command_center',{p_business_id:businessId,p_window_minutes:windowMinutes});if(error)throw error;return(data||{}) as LiveOpsCommandCenter;}
