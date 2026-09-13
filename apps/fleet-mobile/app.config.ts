@@ -39,7 +39,8 @@ const config:ExpoConfig={
     }],
     ['expo-notifications',{defaultChannel:'live-network'}],
   ],
-  experiments:{typedRoutes:true},
-  extra:{appRole:'fleet',otaChannel,productionEnvironment:{supabaseProjectRef:'ssgesjzdvdsqacdtasje'},eas:{projectId:EAS_PROJECT_ID}},
+  web:{output:'single',bundler:'metro',name:'Kleenest Fleet Web',shortName:'Kleenest Fleet'},
+  experiments:{typedRoutes:true,baseUrl:'/Kleenest_Production/fleet'},
+  extra:{appRole:'fleet',webPortalName:'Kleenest Fleet Web',otaChannel,productionEnvironment:{supabaseProjectRef:'ssgesjzdvdsqacdtasje'},eas:{projectId:EAS_PROJECT_ID}},
 };
 export default config;
