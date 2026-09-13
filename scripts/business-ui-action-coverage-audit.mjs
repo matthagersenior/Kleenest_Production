@@ -31,7 +31,7 @@ if(staleActions.length)throw new Error(`Business action registry references miss
 if(missingRoutes.length)throw new Error(`Business action registry references missing UI routes: ${missingRoutes.join(', ')}`);
 
 const toolsUi=fs.readFileSync('apps/business-mobile/app/tools.tsx','utf8');
-if(!/Link[\\s\\S]{0,240}asChild[\\s\\S]{0,120}<Pressable/.test(toolsUi)){
+if(!/Link[\s\S]{0,240}asChild[\s\S]{0,120}<Pressable/.test(toolsUi)){
   throw new Error('Business Action Center cards must route through an interactive Pressable child; Link asChild around a plain View does not perform navigation.');
 }
 if(!toolsUi.includes('accessibilityRole="button"'))throw new Error('Business Action Center cards must expose button semantics.');
