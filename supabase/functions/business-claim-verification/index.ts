@@ -26,18 +26,28 @@ class ClaimError extends Error{
   constructor(message:string,readonly status=400){super(message);this.name='ClaimError'}
 }
 
-function corsHeaders(req:Request){
-  const origin=req.headers.get('origin')||'*';
+function allowedCorsOrigin(req:Request){
+  const origin=req.headers.get('origin');
+  if(!origin)return 'https://matthagersenior.github.io';
+  if(origin==='https://matthagersenior.github.io')return 'https://matthagersenior.github.io';
+  if(origin==='http://localhost:8081')return 'http://localhost:8081';
+  if(origin==='http://127.0.0.1:8081')return 'http://127.0.0.1:8081';
+  if(origin==='http://localhost:19006')return 'http://localhost:19006';
+  if(origin==='http://127.0.0.1:19006')return 'http://127.0.0.1:19006';
+  return null;
+}
+function corsHeaders(origin:string){
   return{
     'access-control-allow-origin':origin,
     'access-control-allow-methods':'POST,OPTIONS',
     'access-control-allow-headers':'authorization,apikey,content-type,x-client-info',
     'access-control-max-age':'600',
-    'vary':origin==='*'?'':'Origin',
+    'vary':'Origin',
   };
 }
 function json(req:Request,body:unknown,status=200){
-  return new Response(JSON.stringify(body),{status,headers:{...corsHeaders(req),'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
+  const origin=allowedCorsOrigin(req)||'https://matthagersenior.github.io';
+  return new Response(JSON.stringify(body),{status,headers:{...corsHeaders(origin),'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
 }
 function clean(value:unknown){return String(value??'').trim()}
 function uuid(value:unknown,label:string){
@@ -278,7 +288,9 @@ async function statusFor(ctx:ClaimContext,actor:Actor){
 }
 
 Deno.serve(async req=>{
-  if(req.method==='OPTIONS')return new Response('ok',{status:204,headers:corsHeaders(req)});
+  const origin=allowedCorsOrigin(req);
+  if(!origin)return new Response(JSON.stringify({error:'Origin not allowed'}),{status:403,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
+  if(req.method==='OPTIONS')return new Response('ok',{status:204,headers:corsHeaders(origin)});
   if(req.method!=='POST')return json(req,{error:'POST required'},405);
   if(!SUPABASE_URL||!SERVICE_KEY||!PUBLISHABLE_KEY)return json(req,{error:'Service unavailable'},503);
 
