@@ -22,7 +22,6 @@ export default function Layout(){
   useEffect(()=>{
     if(!ready)return;
     if(!signedIn&&!onAuthRoute)router.replace('/auth');
-    else if(signedIn&&onAuthRoute)router.replace('/');
   },[ready,signedIn,onAuthRoute,router]);
 
   if(!ready)return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:'#f3f6f4'}}><ActivityIndicator size="large"/></View>;

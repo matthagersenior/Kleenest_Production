@@ -3,14 +3,17 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './runtime/App.jsx';
 import { registerServiceWorker } from './runtime/registerServiceWorker.js';
+import { relayOperatorOAuthCallback } from './runtime/operatorOAuthRelay.js';
 import './styles.css';
 
-registerServiceWorker();
+if (!relayOperatorOAuthCallback()) {
+  registerServiceWorker();
 
-createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <BrowserRouter basename="/Kleenest_Production">
-      <App />
-    </BrowserRouter>
-  </React.StrictMode>
-);
+  createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <BrowserRouter basename="/Kleenest_Production">
+        <App />
+      </BrowserRouter>
+    </React.StrictMode>
+  );
+}

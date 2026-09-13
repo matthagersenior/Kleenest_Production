@@ -77,6 +77,7 @@ export default function Layout(){
       if(!onAuthRoute)router.replace('/auth');
       return;
     }
+    if(onAuthRoute)return;
     if(needsBusinessSetup){
       if(!onAuthRoute)router.replace('/auth');
       return;
@@ -86,7 +87,6 @@ export default function Layout(){
       return;
     }
     if(onboardingRequired&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');
-    if(onAuthRoute)router.replace(onboardingRequired?'/onboarding':'/');
   },[ready,gateReady,signedIn,needsBusinessSetup,workspaceRole,onboardingRequired,onAuthRoute,activeRoute,router]);
 
   if(!ready||(signedIn&&!gateReady))return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:'#f3f6f4'}}><ActivityIndicator size="large"/></View>;

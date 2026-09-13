@@ -3,6 +3,13 @@ import fs from 'node:fs';
 const failures=[];
 const read=path=>fs.readFileSync(path,'utf8');
 const compact=source=>source.replace(/\s+/g,'');
+const mobileCore=read('packages/mobile-core/src/index.ts');
+const mobileCoreCompact=compact(mobileCore);
+if(!mobileCoreCompact.includes("flowType:'pkce'")&&!mobileCoreCompact.includes('flowType:"pkce"'))failures.push('Shared Supabase client must pin OAuth to PKCE so operator callbacks use deterministic code exchange.');
+const webMain=read('src/main.jsx');
+const relay=read('src/runtime/operatorOAuthRelay.js');
+if(!webMain.includes('relayOperatorOAuthCallback()'))failures.push('Consumer web bootstrap must relay operator OAuth callbacks before normal app routing.');
+if(!relay.includes('kleenest.operator.oauth.return')||!relay.includes("'/Kleenest_Production/' + portal")&&!relay.includes("'/Kleenest_Production/'+portal"))failures.push('Root web callback relay must restore Business, Fleet, or Owner auth routes from the remembered operator portal.');
 
 const consumer=read('apps/consumer-mobile/app/profile.tsx');
 const consumerCompact=compact(consumer);
@@ -25,6 +32,9 @@ for(const [label,path,scheme] of operatorAuth){
   if(!sourceCompact.includes("provider:'google'")&&!sourceCompact.includes('provider:"google"'))failures.push(`${label} must authenticate with the canonical Supabase Google provider.`);
   if(!source.includes('signInWithOAuth')||!source.includes('skipBrowserRedirect'))failures.push(`${label} native OAuth must use Supabase OAuth with app-controlled browser navigation.`);
   if(!source.includes('exchangeCodeForSession')||!source.includes('Linking.openURL'))failures.push(`${label} must exchange the OAuth callback and return through its native deep link.`);
+  if(!source.includes('access_token')||!source.includes('refresh_token')||!source.includes('setSession'))failures.push(`${label} must accept token callbacks as a compatibility fallback while PKCE rollout converges.`);
+  if(!source.includes('kleenest.operator.oauth.return'))failures.push(`${label} web OAuth must remember which operator portal initiated Google sign-in.`);
+  if(!sourceCompact.includes("redirectTo:Platform.OS==='web'?webSiteOAuthRedirect:")&&!sourceCompact.includes('redirectTo:Platform.OS==="web"?webSiteOAuthRedirect:'))failures.push(`${label} web Google OAuth must return through the canonical site root relay rather than a nested portal callback.`);
   if(!source.includes(`scheme: '${scheme}'`)&&!sourceCompact.includes(`scheme:'${scheme}'`))failures.push(`${label} OAuth must use the ${scheme} native scheme.`);
   if(source.includes("Linking.createURL('/auth'")||source.includes('Linking.createURL("/auth"'))failures.push(`${label} OAuth callback must use the repaired native auth path without a leading slash.`);
   if(!source.includes("Linking.createURL('auth'")&&!source.includes('Linking.createURL("auth"'))failures.push(`${label} OAuth callback must use Linking.createURL('auth', ...).`);
@@ -32,6 +42,13 @@ for(const [label,path,scheme] of operatorAuth){
 
 const owner=read('apps/platform-mobile/app/auth.tsx');
 if(!owner.includes('isTripleSlashed: false'))failures.push('Owner OAuth callback must preserve the verified non-triple-slashed KleenestOS callback contract.');
+
+const businessLayoutCompact=compact(read('apps/business-mobile/app/_layout.tsx'));
+const fleetLayoutCompact=compact(read('apps/fleet-mobile/app/_layout.tsx'));
+const ownerLayoutCompact=compact(read('apps/platform-mobile/app/_layout.tsx'));
+if(!businessLayoutCompact.includes('if(onAuthRoute)return;'))failures.push('Business layout must let the auth screen finish OAuth/access routing before workspace guards redirect.');
+if(!fleetLayoutCompact.includes('if(onAuthRoute)return;'))failures.push('Fleet layout must let the auth screen finish OAuth/access routing before workspace guards redirect.');
+if(ownerLayoutCompact.includes("signedIn&&onAuthRoute)router.replace('/')"))failures.push('Owner layout must not redirect away from the auth callback before Owner authority verification finishes.');
 
 if(failures.length){
   console.error('Native Google auth audit failed:');

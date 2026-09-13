@@ -92,13 +92,13 @@ export default function Layout() {
       if(!onAuthRoute)router.replace('/auth');
       return;
     }
+    if(onAuthRoute)return;
     if(needsProvisioning){
       if(!PROVISIONING_ALLOWED.has(activeRoute))router.replace('/get-started');
       return;
     }
     if(activeRoute==='get-started'){router.replace(onboardingRequired?'/onboarding':'/');return;}
     if(onboardingRequired&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');
-    if(onAuthRoute)router.replace(onboardingRequired?'/onboarding':'/');
   },[ready,gateReady,signedIn,needsProvisioning,onboardingRequired,onAuthRoute,activeRoute,router]);
 
   if (!ready || (signedIn&&!gateReady)) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f6f4' }}><ActivityIndicator size="large" /></View>;

@@ -5,8 +5,30 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } fr
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { listBusinessWorkspaceOptions } from '../services/capabilityWorkflows';
 
-const googleRedirect = Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/business/auth/` : Linking.createURL('auth', { scheme: 'kleenest-business', isTripleSlashed: false });
+const operatorOAuthReturnKey='kleenest.operator.oauth.return';
+const webSiteOAuthRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/` : '';
+const authRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/business/auth/` : Linking.createURL('auth', { scheme: 'kleenest-business', isTripleSlashed: false });
 type Mode = 'signin' | 'signup';
+function authParam(url: string, key: string) {
+  try {
+    const parsed = new URL(url);
+    const queryValue = parsed.searchParams.get(key);
+    if (queryValue) return queryValue;
+    return new URLSearchParams(parsed.hash.replace(/^#/, '')).get(key) || '';
+  } catch {
+    return '';
+  }
+}
+
+function rememberOperatorOAuthReturn(portal: 'business'|'fleet'|'owner', intent = '') {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  try { window.localStorage.setItem(operatorOAuthReturnKey, JSON.stringify({ portal, intent })); } catch {}
+}
+
+function clearOperatorOAuthReturn() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  try { window.localStorage.removeItem(operatorOAuthReturnKey); } catch {}
+}
 
 function messageOf(value: unknown) {
   if (value instanceof Error && value.message) return value.message;
@@ -38,7 +60,7 @@ export default function BusinessAuth() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const getStartedRoute=()=>intent?`/get-started?intent=${encodeURIComponent(intent)}`:'/get-started';
-  const googleRedirectForIntent=Platform.OS==='web'&&intent?`${googleRedirect}?intent=${encodeURIComponent(intent)}`:googleRedirect;
+  const authRedirectForIntent=Platform.OS==='web'&&intent?`${authRedirect}?intent=${encodeURIComponent(intent)}`:authRedirect;
   async function finishAuthenticated(){
     router.replace((await hasBusinessAccess()?'/':getStartedRoute()) as any);
   }
@@ -47,26 +69,51 @@ export default function BusinessAuth() {
 
   async function finishGoogle(url: string | null) {
     if (!url) return false;
-    const parsed = Linking.parse(url);
-    const code = typeof parsed.queryParams?.code === 'string' ? parsed.queryParams.code : '';
-    if (!code) return false;
+    const oauthError=authParam(url,'error_description')||authParam(url,'error');
+    const code=authParam(url,'code');
+    const access_token=authParam(url,'access_token');
+    const refresh_token=authParam(url,'refresh_token');
+    if(oauthError){
+      clearOperatorOAuthReturn();
+      setError(oauthError);
+      return true;
+    }
+    if(!code&&!(access_token&&refresh_token))return false;
     setBusy(true); setError(null); setNotice(null);
     const client = getKleenestSupabaseClient();
     try {
-      const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
-      if (exchangeError) throw exchangeError;
+      if(access_token&&refresh_token){
+        const {error:sessionError}=await client.auth.setSession({access_token,refresh_token});
+        if(sessionError)throw sessionError;
+      }else{
+        const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
+        if (exchangeError) throw exchangeError;
+      }
+      clearOperatorOAuthReturn();
+      if(Platform.OS==='web'&&typeof window!=='undefined'){
+        const suffix=intent?`?intent=${encodeURIComponent(intent)}`:'';
+        window.history.replaceState({},'',`${window.location.pathname}${suffix}`);
+      }
       await finishAuthenticated();
       return true;
     } catch (cause) {
+      clearOperatorOAuthReturn();
       setError(messageOf(cause));
-      return false;
+      return true;
     } finally { setBusy(false); }
   }
 
   useEffect(() => {
-    void Linking.getInitialURL().then(finishGoogle);
+    let active=true;
+    const client=getKleenestSupabaseClient();
+    void (async()=>{
+      const handled=await finishGoogle(await Linking.getInitialURL());
+      if(!active||handled)return;
+      const {data}=await client.auth.getSession();
+      if(active&&data.session)await finishAuthenticated();
+    })();
     const sub = Linking.addEventListener('url', event => { void finishGoogle(event.url); });
-    return () => sub.remove();
+    return () => { active=false; sub.remove(); };
   }, []);
 
   async function signIn() {
@@ -92,7 +139,7 @@ export default function BusinessAuth() {
       const { data, error: signupError } = await getKleenestSupabaseClient().auth.signUp({
         email: cleanEmail,
         password,
-        options: { emailRedirectTo: googleRedirectForIntent },
+        options: { emailRedirectTo: authRedirectForIntent },
       });
       if (signupError) throw signupError;
       if (data.session) { await finishAuthenticated(); return; }
@@ -106,9 +153,10 @@ export default function BusinessAuth() {
     if (busy) return;
     setBusy(true); setError(null); setNotice(null);
     try {
+      rememberOperatorOAuthReturn('business',intent);
       const { data, error: authError } = await getKleenestSupabaseClient().auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: googleRedirectForIntent, skipBrowserRedirect: Platform.OS!=='web' },
+        options: { redirectTo: Platform.OS==='web'?webSiteOAuthRedirect:authRedirect, skipBrowserRedirect: Platform.OS!=='web' },
       });
       if (authError) throw authError;
       if (!data.url) throw new Error('Google sign-in did not return an authorization URL.');
