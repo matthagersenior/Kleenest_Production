@@ -38,6 +38,12 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
           EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
         run: npm run web:export --workspace @kleenest/consumer-mobile
+      - name: Prepare installable Consumer Web PWA
+        run: |
+          node scripts/prepare-consumer-web-pwa.mjs
+          test -s apps/consumer-mobile/dist/manifest.webmanifest
+          test -s apps/consumer-mobile/dist/sw.js
+          test -s apps/consumer-mobile/dist/app-icon.png
       - name: Download verified Consumer APK from triggering family run
         uses: actions/download-artifact@v4
         with:
