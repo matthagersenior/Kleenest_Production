@@ -4,7 +4,7 @@ import path from 'node:path';
 const servicesDir='apps/business-mobile/services';
 const registryPath=path.join(servicesDir,'actionRegistry.ts');
 const registry=fs.readFileSync(registryPath,'utf8');
-const actionVerb=/^(run|select|invite|change|remove|transfer|reply|upsert|restore|save|archive|create|update|delete|claim|ensure|send|execute|complete|manage|set|activate|pause|record|configure|request|start|disable|register|apply|advance|reset|attach|pick)/;
+const actionVerb=/^(run|select|invite|change|remove|transfer|reply|upsert|restore|save|archive|create|update|delete|claim|ensure|send|execute|complete|manage|set|activate|pause|record|configure|request|start|disable|register|apply|advance|reset|attach|pick|dispute)/;
 const ignored=new Set();
 const files=fs.readdirSync(servicesDir).filter(name=>name.endsWith('.ts')&&name!=='actionRegistry.ts');
 const allExported=[];
@@ -29,6 +29,12 @@ if(missing.length){
 }
 if(staleActions.length)throw new Error(`Business action registry references missing service actions: ${staleActions.join(', ')}`);
 if(missingRoutes.length)throw new Error(`Business action registry references missing UI routes: ${missingRoutes.join(', ')}`);
+
+const toolsUi=fs.readFileSync('apps/business-mobile/app/tools.tsx','utf8');
+if(!/Link[\s\S]{0,240}asChild[\s\S]{0,120}<Pressable/.test(toolsUi)){
+  throw new Error('Business Action Center cards must route through an interactive Pressable child; Link asChild around a plain View does not perform navigation.');
+}
+if(!toolsUi.includes('accessibilityRole="button"'))throw new Error('Business Action Center cards must expose button semantics.');
 for(const token of ["BUSINESS_ACTIONS","serviceActions","updateEnterpriseLocationConfig","manageEnterpriseLocationStaff","pickAndUploadBusinessLocationPhoto","deleteQrBranding"]){
  if(!registry.includes(token))throw new Error(`Business action registry missing ${token}`);
 }

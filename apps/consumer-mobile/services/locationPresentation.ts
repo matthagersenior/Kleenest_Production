@@ -1,21 +1,27 @@
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 
 const LOCATION_BUCKET = 'location-photos';
+const REVIEW_BUCKET = 'review-photos';
 
 export type ConsumerLocationPresentation = {
   location_id: string;
   consumer_photo_id: string | null;
   consumer_photo_storage_path: string | null;
   consumer_photo_caption: string | null;
+  consumer_photo_bucket: string;
+  consumer_photo_source: string;
   consumer_photo_is_featured: boolean;
   consumer_photo_created_at: string | null;
+  consumer_photo_trust_score: number;
+  consumer_photo_freshness_rank: number;
   consumer_photo_url: string | null;
 };
 
-export function publicLocationPhotoUrl(storagePath: string | null | undefined) {
+export function publicLocationPhotoUrl(storagePath: string | null | undefined, bucket = LOCATION_BUCKET) {
   const path = String(storagePath || '').trim();
   if (!path) return null;
-  return getKleenestSupabaseClient().storage.from(LOCATION_BUCKET).getPublicUrl(path).data.publicUrl || null;
+  const targetBucket = bucket === REVIEW_BUCKET ? REVIEW_BUCKET : LOCATION_BUCKET;
+  return getKleenestSupabaseClient().storage.from(targetBucket).getPublicUrl(path).data.publicUrl || null;
 }
 
 export async function listLocationPresentations(locationIds: string[]): Promise<ConsumerLocationPresentation[]> {
@@ -25,15 +31,22 @@ export async function listLocationPresentations(locationIds: string[]): Promise<
     p_location_ids: ids,
   });
   if (error) throw error;
-  return (Array.isArray(data) ? data : []).map((row: any) => ({
-    location_id: String(row.location_id),
-    consumer_photo_id: row.consumer_photo_id ? String(row.consumer_photo_id) : null,
-    consumer_photo_storage_path: row.consumer_photo_storage_path ? String(row.consumer_photo_storage_path) : null,
-    consumer_photo_caption: row.consumer_photo_caption ? String(row.consumer_photo_caption) : null,
-    consumer_photo_is_featured: row.consumer_photo_is_featured === true,
-    consumer_photo_created_at: row.consumer_photo_created_at ? String(row.consumer_photo_created_at) : null,
-    consumer_photo_url: publicLocationPhotoUrl(row.consumer_photo_storage_path),
-  }));
+  return (Array.isArray(data) ? data : []).map((row: any) => {
+    const bucket = String(row.consumer_photo_bucket || LOCATION_BUCKET);
+    return {
+      location_id: String(row.location_id),
+      consumer_photo_id: row.consumer_photo_id ? String(row.consumer_photo_id) : null,
+      consumer_photo_storage_path: row.consumer_photo_storage_path ? String(row.consumer_photo_storage_path) : null,
+      consumer_photo_caption: row.consumer_photo_caption ? String(row.consumer_photo_caption) : null,
+      consumer_photo_bucket: bucket,
+      consumer_photo_source: String(row.consumer_photo_source || 'official'),
+      consumer_photo_is_featured: row.consumer_photo_is_featured === true,
+      consumer_photo_created_at: row.consumer_photo_created_at ? String(row.consumer_photo_created_at) : null,
+      consumer_photo_trust_score: Number(row.consumer_photo_trust_score || 0),
+      consumer_photo_freshness_rank: Number(row.consumer_photo_freshness_rank ?? 99),
+      consumer_photo_url: publicLocationPhotoUrl(row.consumer_photo_storage_path, bucket),
+    };
+  });
 }
 
 export async function attachLocationPresentations<T extends Record<string, any>>(rows: T[]): Promise<T[]> {
