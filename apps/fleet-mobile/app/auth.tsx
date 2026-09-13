@@ -20,7 +20,15 @@ function messageOf(value: unknown) {
   return typeof value === 'string' && value.trim() ? value : 'Fleet authentication could not be completed.';
 }
 
-async function verifyFleetAccess() { await currentFleetBusinessId(); }
+async function hasFleetAccess() { try { await currentFleetBusinessId(); return true; } catch { return false; } }
+
+async function openBusinessSetup() {
+  if (Platform.OS==='web'&&typeof window!=='undefined') {
+    window.location.assign('/Kleenest_Production/business/get-started/?intent=fleet');
+    return;
+  }
+  await Linking.openURL('https://matthagersenior.github.io/Kleenest_Production/business/auth/?mode=signin&intent=fleet');
+}
 
 export default function FleetAuth() {
   const [mode, setMode] = useState<Mode>('signin');
@@ -42,11 +50,10 @@ export default function FleetAuth() {
     try {
       const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
       if (exchangeError) throw exchangeError;
-      await verifyFleetAccess();
-      router.replace('/');
+      if(await hasFleetAccess())router.replace('/');
+      else await openBusinessSetup();
       return true;
     } catch (cause) {
-      await client.auth.signOut({ scope: 'local' });
       setError(messageOf(cause));
       return false;
     } finally { setBusy(false); }
@@ -65,10 +72,9 @@ export default function FleetAuth() {
     try {
       const { error: authError } = await client.auth.signInWithPassword({ email: email.trim(), password });
       if (authError) throw authError;
-      await verifyFleetAccess();
-      router.replace('/');
+      if(await hasFleetAccess())router.replace('/');
+      else await openBusinessSetup();
     } catch (cause) {
-      await client.auth.signOut({ scope: 'local' });
       setError(messageOf(cause));
     } finally { setBusy(false); }
   }
@@ -84,10 +90,11 @@ export default function FleetAuth() {
       const { data, error: signupError } = await client.auth.signUp({ email: cleanEmail, password, options: { emailRedirectTo: googleRedirect } });
       if (signupError) throw signupError;
       if (data.session) {
-        try { await verifyFleetAccess(); router.replace('/'); return; }
-        catch { await client.auth.signOut({ scope: 'local' }); }
+        if(await hasFleetAccess())router.replace('/');
+        else await openBusinessSetup();
+        return;
       }
-      setNotice('Account created. Confirm your email if prompted. Fleet controls unlock only after the account belongs to a Fleet-enabled Business workspace.');
+      setNotice('Account created. Confirm your email if prompted. After sign-in, Kleenest will route you through Business setup and recommend Fleet from your operation profile.');
       setMode('signin'); setPassword(''); setConfirmPassword('');
     } catch (cause) { setError(messageOf(cause)); }
     finally { setBusy(false); }
