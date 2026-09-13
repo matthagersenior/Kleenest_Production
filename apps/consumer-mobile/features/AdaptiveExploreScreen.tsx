@@ -39,6 +39,7 @@ import {
   writeNearbyContinuity,
 } from '../services/nearbyCache';
 import { captureConsumerDiscovery, captureConsumerRouteIntent } from '../services/consumerTelemetry';
+import { listNearbyProgressionOpportunities } from '../services/discoveryProgression';
 import { attachLocationPresentations } from '../services/locationPresentation';
 import {
   CompactRestroomSignals,
@@ -115,6 +116,10 @@ const looksLikeAddressOrArea = (value: string) => {
 };
 const navigateUrl = (row: any) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${row.latitude},${row.longitude}`)}&travelmode=driving`;
+
+const ratingOf=(row:any)=>{const value=Number(row?.rating ?? row?.average_rating ?? row?.star_rating ?? 0);return Number.isFinite(value)?value:0;};
+const freshestEvidenceAt=(row:any)=>{const values=[row?.trust?.latest_verified_at,row?.trust?.latest_amenity_observed_at].map((value:any)=>value?new Date(value).getTime():NaN).filter((value:number)=>Number.isFinite(value));return values.length?Math.max(...values):null;};
+const isFreshWithinDays=(row:any,days:number|null)=>{if(!days)return true;const time=freshestEvidenceAt(row);return time!=null&&Date.now()-time<=days*86400000;};
 
 function trustSummaryLine(item: any) {
   const trust = item?.trust;
@@ -268,14 +273,36 @@ export default function AdaptiveExploreScreen() {
   const [corridor, setCorridor] = useState(16093);
   const [amenities, setAmenities] = useState<AmenityCatalogItem[]>([]);
   const [selectedAmenityNames, setSelectedAmenityNames] = useState<string[]>([]);
+  const [kleenestOnly,setKleenestOnly]=useState(false);
+  const [progressionOnly,setProgressionOnly]=useState(false);
+  const [minimumStars,setMinimumStars]=useState(0);
+  const [freshnessDays,setFreshnessDays]=useState<number|null>(null);
   const [route, setRoute] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [cached, setCached] = useState(false);
 
+  const visibleRows=useMemo(()=>rows.filter((row)=>{
+    if(kleenestOnly&&!row?.business_id)return false;
+    if(progressionOnly&&!row?.progression_opportunity)return false;
+    if(minimumStars>0&&ratingOf(row)<minimumStars)return false;
+    if(!isFreshWithinDays(row,freshnessDays))return false;
+    return true;
+  }),[rows,kleenestOnly,progressionOnly,minimumStars,freshnessDays]);
+  const activeFilterCount=(kleenestOnly?1:0)+(progressionOnly?1:0)+(minimumStars>0?1:0)+(freshnessDays?1:0)+(selectedAmenityNames.length?1:0);
+  const filterSummary=useMemo(()=>{
+    const parts:string[]=[];
+    if(kleenestOnly)parts.push('Kleenest');
+    if(progressionOnly)parts.push('Progression');
+    if(minimumStars>0)parts.push(`${minimumStars}★+`);
+    if(freshnessDays)parts.push(freshnessDays===1?'Fresh 24h':`Fresh ${freshnessDays}d`);
+    if(selectedAmenityNames.length)parts.push(`${selectedAmenityNames.length} amenity${selectedAmenityNames.length===1?'':'ies'}`);
+    return parts.length?parts.join(' · '):'Everything';
+  },[kleenestOnly,progressionOnly,minimumStars,freshnessDays,selectedAmenityNames.length]);
+
   const selected = useMemo(
-    () => rows.find((row) => idOf(row) === selectedId) || null,
-    [rows, selectedId],
+    () => visibleRows.find((row) => idOf(row) === selectedId) || null,
+    [visibleRows, selectedId],
   );
   const selectedRoutePosition = useMemo(() => {
     if (!selected || mode !== 'route' || !route) return '';
@@ -302,10 +329,10 @@ export default function AdaptiveExploreScreen() {
     return [west, south, east, north] as [number, number, number, number];
   }, [route, selectedId]);
   const routeGap = useMemo(() => {
-    if (!route || !rows.length) return null;
+    if (!route || !visibleRows.length) return null;
     const fractions = [
       0,
-      ...rows
+      ...visibleRows
         .map((row) => Math.max(0, Math.min(1, Number(row.route_fraction || 0))))
         .sort((a, b) => a - b),
       1,
@@ -315,7 +342,7 @@ export default function AdaptiveExploreScreen() {
       gap = Math.max(gap, fractions[index] - fractions[index - 1]);
     }
     return gap * Number(route.distanceMiles || 0);
-  }, [route, rows]);
+  }, [route, visibleRows]);
 
   function toggleAmenity(name: string) {
     setSelectedAmenityNames((current) =>
