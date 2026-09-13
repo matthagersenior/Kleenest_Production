@@ -8,6 +8,8 @@ const SERVICE_KEY=secretKeys.default??Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?
 const PUBLISHABLE_KEY=publishableKeys.default??Deno.env.get('SUPABASE_ANON_KEY')??'';
 const admin=createClient(SUPABASE_URL,SERVICE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 
+const DNS_DOH_ENDPOINT='https://cloudflare-dns.com/dns-query';
+
 const FREE_EMAIL_DOMAINS=new Set([
   'gmail.com','googlemail.com','yahoo.com','outlook.com','hotmail.com','live.com','icloud.com',
   'aol.com','proton.me','protonmail.com','pm.me','mail.com','gmx.com','gmx.net','msn.com'
@@ -232,7 +234,9 @@ async function verifyDns(ctx:ClaimContext,actor:Actor,challengeIdRaw:unknown){
   }
 
   const name=clean(challenge.destination_hint);
-  const url=`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=TXT`;
+  const url=new URL(DNS_DOH_ENDPOINT);
+  url.searchParams.set('name',name);
+  url.searchParams.set('type','TXT');
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),8000);
   let response:Response;
