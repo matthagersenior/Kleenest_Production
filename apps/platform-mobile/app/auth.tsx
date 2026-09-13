@@ -5,7 +5,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } fr
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { getOwnerAuthorization } from '../services/ownerAdmin';
 
-const ownerRedirect = Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/owner/auth` : Linking.createURL('auth', { scheme: 'kleenest-owner', isTripleSlashed: false });
+const ownerRedirect = Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/owner/auth/` : Linking.createURL('auth', { scheme: 'kleenest-owner', isTripleSlashed: false });
 type Mode = 'signin' | 'signup' | 'forgot' | 'recovery';
 
 function messageOf(value: unknown) {
