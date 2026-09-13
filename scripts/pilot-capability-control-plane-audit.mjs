@@ -7,6 +7,7 @@ const sessionMigration=required('supabase/migrations/20260912094000_capability_p
 const assuranceMigration=required('supabase/migrations/20260912124500_offer_launch_assurance_control_plane.sql');
 const service=required('apps/platform-mobile/services/capabilityPilot.ts');
 const screen=required('apps/platform-mobile/app/pilots.tsx');
+const control=required('apps/platform-mobile/app/control.tsx');
 const layout=required('apps/platform-mobile/app/_layout.tsx');
 const home=required('apps/platform-mobile/app/index.tsx');
 const familyService=required('apps/consumer-mobile/services/family.ts');
@@ -43,6 +44,33 @@ for(const token of ['Production ready','Pilot ready','Sample ready','Commercial 
   if(!screen.includes(token))failures.push(`KleenestOS pilot workspace missing UI contract: ${token}`);
 
 if(!layout.includes('<Tabs.Screen name="pilots"'))failures.push('KleenestOS must expose the Pilots workspace as a primary owner control surface');
+if(!layout.includes('<Tabs.Screen name="control"'))failures.push('KleenestOS must expose Control Center as a primary mobile tab');
+for(const token of [
+  'KLEENESTOS CONTROL CENTER',
+  'Offer controls',
+  'Capability controls',
+  'Run sample check',
+  'Run pilot check',
+  'Run production check',
+  'Open sample',
+  'Sample enabled',
+  'Pilot enabled',
+  'Commercial state',
+  'Pilot mode',
+  'getOfferReadiness',
+  'getPilotCapabilityDomains',
+  'updateOfferGovernance',
+  'updatePilotCapabilityDomain',
+  'runOfferLaunchCheck',
+  '/notifications',
+  '/progression',
+  '/businesses',
+  '/access',
+  '/moderation',
+  '/developers',
+  '/pilots'
+]) if(!control.includes(token))failures.push(`KleenestOS Control Center missing mobile control contract: ${token}`);
+if(control.includes('TextInput'))failures.push('KleenestOS Control Center must not require search/text entry to reach global platform controls');
 for(const token of ['/pilots','Offers & Pilots','/developers','Developer Platform'])if(!home.includes(token))failures.push(`KleenestOS Home missing owner control route: ${token}`);
 for(const token of ['family_has_premium_access','seatsTotal:5'])if(!familyService.includes(token))failures.push(`Consumer Family production evidence missing: ${token}`);
 
