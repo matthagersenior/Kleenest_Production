@@ -17,6 +17,15 @@ for(const [label,path,context] of [
   if(!source.includes("resolveKleenestTheme(themeMode,systemScheme==='dark','"+context+"')"))failures.push(label+' shell must resolve its own environment context.');
   if(!source.includes('theme.statusBar')||!source.includes('theme.accent')||!source.includes('theme.surface'))failures.push(label+' shell must apply theme colors to navigation chrome.');
 }
+for(const [label,path,context] of [
+  ['Progress World','apps/consumer-mobile/app/progress.tsx','progress'],
+  ['Game Center','apps/consumer-mobile/app/games.tsx','game'],
+  ['Community','apps/consumer-mobile/app/social.tsx','community'],
+]){
+  const source=read(path);
+  if(!source.includes("resolveKleenestTheme(themeMode,systemScheme==='dark','"+context+"')"))failures.push(label+' must use its contextual theme accent.');
+  if(!source.includes('loadKleenestThemeMode')||!source.includes('subscribeKleenestTheme'))failures.push(label+' must react to appearance changes.');
+}
 const preferences=read('apps/consumer-mobile/app/preferences.tsx');
 for(const token of ['KLEENEST_THEME_OPTIONS','chooseTheme','Default','Light','Dark','System'])if(!preferences.includes(token))failures.push('Consumer preferences missing theme control '+token);
 for(const path of ['apps/business-mobile/app/account.tsx','apps/fleet-mobile/app/account.tsx','apps/platform-mobile/app/account.tsx']){
