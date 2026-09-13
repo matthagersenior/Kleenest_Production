@@ -43,6 +43,24 @@ if(builderGame&&builderCount<builderGame.rounds)failures.push(`Amenity Architect
 if(!/values\(v_user,'game_score','game',v_game\.id/.test(migrations))failures.push("Game score persistence must use canonical progression source_type 'game'.");
 if(/values\(v_user,'game_score','progression_game'/.test(migrations.split('20260913').at(-1)||''))failures.push("Latest game score authority must not write unsupported source_type 'progression_game'.");
 if(!screen.includes('Round ')||!screen.includes('game.rounds'))failures.push('Game screen must make round progression visible to the player.');
+const arenaPath='apps/consumer-mobile/app/game/[code].tsx';
+const playPath='apps/consumer-mobile/app/play.tsx';
+const hubPath='apps/consumer-mobile/app/games.tsx';
+if(!fs.existsSync(arenaPath))failures.push('Game Center needs a dedicated per-game arena route.');
+else{
+  const arena=fs.readFileSync(arenaPath,'utf8');
+  if(!arena.includes('getGameFreshnessProfile')||!arena.includes('freshRoundOrder')||!arena.includes('recordGameContentExposure'))failures.push('Game arena must use the freshness/exposure engine to reduce repetition across sessions.');
+  if(!arena.includes('combo')||!arena.includes('bestScore'))failures.push('Game arena must expose replay goals beyond XP: combo and personal best.');
+  for(const label of ['CLEAN SWEEP','SPEED RUN','CASE FILE','ROUTE BOARD','EVIDENCE BUDGET','TRUST BATTLE'])if(!arena.includes(label))failures.push('Game arena missing distinct presentation: '+label);
+}
+if(fs.existsSync(playPath)){
+  const play=fs.readFileSync(playPath,'utf8');
+  if(!play.includes("pathname:'/game/[code]'"))failures.push('Play game cards must launch dedicated game arenas.');
+}
+if(fs.existsSync(hubPath)){
+  const hub=fs.readFileSync(hubPath,'utf8');
+  if(!hub.includes("pathname:'/game/[code]'"))failures.push('Game Center hub must launch dedicated game arenas.');
+}
 
 if(failures.length){
   console.error('Game content depth audit failed:');
