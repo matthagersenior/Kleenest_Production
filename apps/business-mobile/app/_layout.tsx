@@ -77,8 +77,9 @@ export default function Layout() {
 
   return <><StatusBar style="dark"/><Tabs key={`business-workspace-${workspaceRevision}`} screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired?{display:'none'}:undefined}}>
     <Tabs.Screen name="index" options={{title:'Home'}}/>
+    <Tabs.Screen name="tools" options={{title:'Actions'}}/>
     <Tabs.Screen name="locations" options={{title:'Locations'}}/>
-    <Tabs.Screen name="engagement" options={{title:'Growth'}}/>
+    <Tabs.Screen name="engagement" options={{href:null,title:'Growth'}}/>
     <Tabs.Screen name="operations" options={{title:'Operations'}}/>
     <Tabs.Screen name="analytics" options={{title:'Analytics'}}/>
     <Tabs.Screen name="auth" options={{href:null,title:'Sign in',headerShown:false}}/>
@@ -100,7 +101,8 @@ export default function Layout() {
     <Tabs.Screen name="trust-operations" options={{href:null,title:'Trust Operations'}}/>
     <Tabs.Screen name="governance" options={{href:null,title:'Governance & Reporting'}}/>
     <Tabs.Screen name="enterprise-economy" options={{href:null,title:'Enterprise Economy'}}/>
-    <Tabs.Screen name="enterprise-locations" options={{href:null,title:'Enterprise Location'}}/>
+    <Tabs.Screen name="enterprise-locations" options={{href:null,title:'Enterprise Locations'}}/>
+    <Tabs.Screen name="enterprise-location-admin" options={{href:null,title:'Enterprise Location Admin'}}/>
     <Tabs.Screen name="enterprise" options={{href:null,title:'Enterprise'}}/>
     <Tabs.Screen name="partners" options={{href:null,title:'Partners'}}/>
     <Tabs.Screen name="notifications" options={{href:null,title:'Notifications'}}/>

@@ -38,6 +38,15 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
           EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
         run: npm run web:export --workspace @kleenest/consumer-mobile
+      - name: Export Kleenest Business Web
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+        run: npm run web:export --workspace @kleenest/business-mobile
+      - name: Verify Kleenest Business Web
+        run: |
+          test -s apps/business-mobile/dist/index.html
+          grep -q "Kleenest Business" apps/business-mobile/dist/index.html
       - name: Export KleenestOS Web
         env:
           EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
@@ -79,14 +88,20 @@ jobs:
           cp "$RUNNER_TEMP/Kleenest-release-state.json" apps/consumer-mobile/dist/Kleenest-release-state.json
           mkdir -p apps/consumer-mobile/dist/legal
           cp public/legal/*.html apps/consumer-mobile/dist/legal/
-          rm -rf apps/consumer-mobile/dist/developer apps/consumer-mobile/dist/owner
-          mkdir -p apps/consumer-mobile/dist/developer apps/consumer-mobile/dist/owner
+          rm -rf apps/consumer-mobile/dist/developer apps/consumer-mobile/dist/owner apps/consumer-mobile/dist/business
+          mkdir -p apps/consumer-mobile/dist/developer apps/consumer-mobile/dist/owner apps/consumer-mobile/dist/business
           cp -R apps/developer-portal/static/. apps/consumer-mobile/dist/developer/
           cp -R apps/platform-mobile/dist/. apps/consumer-mobile/dist/owner/
+          cp -R apps/business-mobile/dist/. apps/consumer-mobile/dist/business/
           owner_routes="auth control pilots developers operations businesses moderation access accounts history intelligence reports progression capabilities audit data notifications support terms privacy account"
           for route in $owner_routes; do
             mkdir -p "apps/consumer-mobile/dist/owner/$route"
             cp apps/platform-mobile/dist/index.html "apps/consumer-mobile/dist/owner/$route/index.html"
+          done
+          business_routes="auth tools locations engagement operations analytics workspaces onboarding demo profile members assistant reviews qr-studio qr-designer live-network progression intelligence capabilities growth prevention trust-operations governance enterprise-economy enterprise-locations enterprise-location-admin enterprise partners notifications support terms privacy account"
+          for route in $business_routes; do
+            mkdir -p "apps/consumer-mobile/dist/business/$route"
+            cp apps/business-mobile/dist/index.html "apps/consumer-mobile/dist/business/$route/index.html"
           done
           for legal in privacy account-deletion terms community-guidelines; do
             test -s "apps/consumer-mobile/dist/legal/${legal}.html"
@@ -97,6 +112,10 @@ jobs:
           test -s apps/consumer-mobile/dist/owner/index.html
           test -s apps/consumer-mobile/dist/owner/control/index.html
           test -s apps/consumer-mobile/dist/owner/auth/index.html
+          test -s apps/consumer-mobile/dist/business/index.html
+          test -s apps/consumer-mobile/dist/business/tools/index.html
+          test -s apps/consumer-mobile/dist/business/analytics/index.html
+          test -s apps/consumer-mobile/dist/business/enterprise-location-admin/index.html
           test -s apps/consumer-mobile/dist/Kleenest-release-state.json
           grep -q "Kleenest Developer Portal" apps/consumer-mobile/dist/developer/index.html
           grep -q "Browser token" apps/consumer-mobile/dist/developer/index.html
@@ -113,6 +132,6 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/consumer-mobile/dist
-      - name: Deploy Consumer web app, KleenestOS Web, Developer Portal, legal resources, and direct APK
+      - name: Deploy Consumer web app, Business Web, KleenestOS Web, Developer Portal, legal resources, and direct APK
         id: deployment
         uses: actions/deploy-pages@v4
