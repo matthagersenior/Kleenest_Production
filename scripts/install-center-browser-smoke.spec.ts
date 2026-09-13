@@ -6,9 +6,9 @@ const EXPECTED_SHA=process.env.EXPECTED_SHA||'';
 test('Installation Center click-through and release assets',async({page,request})=>{
   await page.goto(BASE,{waitUntil:'domcontentloaded'});
   await expect(page.getByText('Clean bathrooms shouldn’t be a gamble.')).toBeVisible({timeout:30000});
-  await expect(page.getByText('FOR YOU')).toBeVisible();
-  await expect(page.getByText('FOR BUSINESS')).toBeVisible();
-  await expect(page.getByText('TRUST + FRESHNESS')).toBeVisible();
+  await expect(page.getByText('FOR YOU',{exact:true})).toBeVisible();
+  await expect(page.getByText('FOR BUSINESS',{exact:true})).toBeVisible();
+  await expect(page.getByText('TRUST + FRESHNESS',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:/Install Kleenest/i}).first().click();
   await expect(page).toHaveURL(/\/Kleenest_Production\/install\/?$/);
   await expect(page.getByText('KLEENEST · UNIVERSAL INSTALLATION CENTER')).toBeVisible();
@@ -24,6 +24,10 @@ test('Installation Center click-through and release assets',async({page,request}
   await page.getByRole('button',{name:'CHECK INSTALLATION',exact:true}).click();
   await page.getByRole('button',{name:'SHARE INSTALL LINK',exact:true}).click();
   await expect(page.locator('body')).toContainText(/Install link copied|Share this install link|Install link shared/i);
+
+  await page.goto(BASE+'?app=1',{waitUntil:'domcontentloaded'});
+  await expect(page.getByText('YOUR KLEENEST',{exact:true})).toBeVisible({timeout:30000});
+  await expect(page.getByText('Find a bathroom you can trust.',{exact:true})).toBeVisible();
 
   for(const route of ['install/','for-you/','for-business/','trust/']){
     const direct=await request.get(BASE+route,{failOnStatusCode:false});
