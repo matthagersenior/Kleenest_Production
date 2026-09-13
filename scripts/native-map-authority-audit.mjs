@@ -23,7 +23,7 @@ if(!failures.length){
  const nearbyModeIndex=adaptiveExplore.indexOf('accessibilityLabel="Nearby search"');
  const radiusIndex=adaptiveExplore.indexOf('Starting radius');
  if(nearbyModeIndex<0||radiusIndex<0||nearbyModeIndex>radiusIndex)failures.push('Nearby / Along route must be primary controls above radius and filter controls.');
- if(!adaptiveExplore.includes('accessibilityLabel="Advanced filters"')||!adaptiveExplore.includes('<Modal')||!adaptiveExplore.includes('style={s.advancedModalCard}'))failures.push('Advanced Explore controls must open in a modal instead of expanding inline and pushing results down.');
+ if(!adaptiveExplore.includes('accessibilityLabel="Filter places"')||!adaptiveExplore.includes('<Modal')||!adaptiveExplore.includes('style={s.advancedModalCard}')||!adaptiveExplore.includes('Everything'))failures.push('Explore qualification controls must open in the dismissible Filter places modal instead of expanding inline and pushing results down.');
  if(adaptiveExplore.includes('Road trip / advanced'))failures.push('Legacy inline Road trip / advanced expansion must be removed from the main Explore stack.');
  if((adaptiveExplore.match(/<FlatList/g)||[]).length!==1||!adaptiveExplore.includes('ListHeaderComponent={'))failures.push('Explore must use one primary virtualized scroll surface with controls and map in the list header.');
  const mapSectionIndex=adaptiveExplore.indexOf('<View style={s.mapSection}>'), renderItemIndex=adaptiveExplore.indexOf('renderItem={({ item })');
