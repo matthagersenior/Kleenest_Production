@@ -4,6 +4,7 @@ const paths={
   screen:'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
   route:'apps/consumer-mobile/app/route.tsx',
   entry:'apps/consumer-mobile/app/explore.tsx',
+  signals:'apps/consumer-mobile/components/RestroomSignals.tsx',
   core:'packages/mobile-core/src/adaptiveDiscovery.ts',
   publicEntry:'packages/mobile-core/src/publicEntry.ts',
   migration:'supabase/migrations/20260906052000_consumer_adaptive_route_search.sql',
@@ -11,17 +12,16 @@ const paths={
 for(const [label,path] of Object.entries(paths))if(!fs.existsSync(path))throw new Error(`${label} adaptive-search authority missing: ${path}`);
 const read=path=>fs.readFileSync(path,'utf8');
 const requireToken=(text,token,label)=>{if(!text.includes(token))throw new Error(`${label} missing ${token}`)};
-const screen=read(paths.screen), entry=read(paths.entry), core=read(paths.core), publicEntry=read(paths.publicEntry), migration=read(paths.migration);
+const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), migration=read(paths.migration);
 
-for(const token of ['1 mi','2 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Expand for required amenities','Maximum distance','Nearby','Along route','findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route'])requireToken(screen,token,'Consumer adaptive Explore');
+for(const token of ['1 mi','2 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Expand for required amenities','Maximum distance','Nearby','Along route','findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route','Start navigation'])requireToken(screen,token,'Consumer adaptive Explore');
 for(const token of ['AdaptiveExploreScreen'])requireToken(entry,token,'Consumer Explore entry');
+for(const token of ['CompactRestroomSignals','RestroomSignals'])requireToken(signals,token,'Consumer restroom signal presentation');
 for(const token of ['map_network_nearby_v3','map_network_along_route_v1','AmenityMatchRule','findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','402336','targetCount'])requireToken(core,token,'Mobile discovery core');
 requireToken(publicEntry,"export * from './adaptiveDiscovery';",'Mobile public entry');
 for(const token of ['map_network_nearby_v3','map_network_along_route_v1','p_amenity_match','SECURITY INVOKER','REVOKE ALL ON FUNCTION','GRANT EXECUTE ON FUNCTION','anon, authenticated','402336','40234','jsonb_array_length','ST_DWithin','route_fraction','distance_to_route_meters'])requireToken(migration,token,'Adaptive discovery migration');
 if(migration.includes('SECURITY DEFINER'))throw new Error('Adaptive discovery RPCs must not use SECURITY DEFINER.');
 if(/execute\s+format|\bEXECUTE\s+[^;]*\|\|/i.test(migration))throw new Error('Adaptive discovery migration must not use dynamic SQL.');
-// JSX legitimately uses a `placeholder` prop for input hint text. Reject unfinished implementation markers,
-// not framework vocabulary that happens to contain the same word.
 if(/TODO|coming soon|not implemented|placeholder\s+(?:implementation|behavior|logic|code|handler)/i.test(screen+core+migration))throw new Error('Adaptive discovery cannot ship placeholder/TODO behavior.');
 if(!screen.includes("matchRule === 'all'")||!screen.includes('selectedAmenityNames.length'))throw new Error('Amenity all/any controls are not wired to selected amenities.');
 if(!screen.includes('selectedAmenityNames.length > 0 && autoExpand'))throw new Error('Automatic radius expansion must be limited to searches with required amenities.');
@@ -29,8 +29,7 @@ if(!screen.includes('useState(402336)'))throw new Error('Required-amenity expans
 if(!screen.includes('effectiveRadiusMeters')||!screen.includes('attemptedRadiiMeters'))throw new Error('Adaptive expansion provenance is not surfaced to the UI.');
 if(!screen.includes('route.distanceMiles')||!screen.includes('route.durationMinutes'))throw new Error('Along-route distance/ETA must derive from actual built-route totals.');
 
-// The mature Explore composition is the default contract. Nearby / Along route are primary controls,
-// while long-range/corridor/match tuning is modal progressive disclosure so the map and results keep the viewport.
+// Explore is one continuous consumer page: controls → map → results. The map can scroll away.
 for(const token of [
   'const [showAdvanced, setShowAdvanced] = useState(false);',
   'accessibilityLabel="Nearby search"',
@@ -41,20 +40,36 @@ for(const token of [
   'setShowAdvanced(true)',
   'MapLegend',
   'Close selected location',
-  'Start directions →',
-])requireToken(screen,token,'Consumer mature Explore composition');
+  '<CompactRestroomSignals',
+  '<FlatList',
+  'ListHeaderComponent={',
+  'refreshControl={<RefreshControl',
+  'onDirections={() => void directions(item)}',
+  'onAddToRoute={() => addToRoute(item)}',
+  'onDetails={() => router.push',
+  'selectedRoutePosition',
+  'RequestedAmenityMatches',
+  'requestedAmenities={selectedAmenityNames}',
+])requireToken(screen,token,'Consumer continuous-scroll Explore composition');
+
+if(screen.includes('Scroll results · map stays fixed'))throw new Error('Consumer Explore must not describe or implement a fixed-map/separate-results scrolling model.');
+if((screen.match(/<FlatList/g)||[]).length!==1)throw new Error('Consumer Explore must use exactly one primary virtualized vertical scroll surface.');
+
 const modeIndex=screen.indexOf('accessibilityLabel="Nearby search"');
 const radiusIndex=screen.indexOf('radiusChoices.map');
-if(!(modeIndex>0&&radiusIndex>modeIndex))throw new Error('Consumer mature Explore must place Nearby / Along route before radius controls.');
+if(!(modeIndex>0&&radiusIndex>modeIndex))throw new Error('Consumer Explore must place Nearby / Along route before radius controls.');
 const advancedStart=screen.indexOf('<Modal');
 for(const token of ['Expand for required amenities','Maximum distance','Route corridor','Must include all','Include any']){
   const index=screen.indexOf(token);
-  if(index<advancedStart)throw new Error(`Consumer mature Explore must keep ${token} inside advanced modal disclosure.`);
+  if(index<advancedStart)throw new Error(`Consumer Explore must keep ${token} inside advanced modal disclosure.`);
 }
 const amenityIndex=screen.indexOf('filterAmenities.map');
 const advancedButtonIndex=screen.indexOf('accessibilityLabel="Advanced filters"');
 const mapIndex=screen.indexOf('<View style={s.mapSection}>');
-if(!(radiusIndex>0&&amenityIndex>radiusIndex&&advancedButtonIndex>amenityIndex&&mapIndex>advancedButtonIndex))throw new Error('Consumer mature Explore must preserve radius → amenities → compact advanced trigger → fixed map ordering.');
+const listHeaderIndex=screen.indexOf('ListHeaderComponent={');
+const resultsIndex=screen.indexOf('NEARBY OPTIONS');
+const renderItemIndex=screen.indexOf('renderItem={({ item })');
+if(!(listHeaderIndex>0&&radiusIndex>listHeaderIndex&&amenityIndex>radiusIndex&&advancedButtonIndex>amenityIndex&&mapIndex>advancedButtonIndex&&resultsIndex>mapIndex&&renderItemIndex>resultsIndex))throw new Error('Consumer Explore must preserve controls → map → results ordering inside the single virtualized scroll surface.');
 if(screen.includes('Road trip / advanced')||screen.includes('showAdvanced ? ('))throw new Error('Advanced controls must not return to the inline expanding Explore stack.');
 
 console.log('Consumer adaptive nearby and route-aware restroom discovery authority audit passed.');

@@ -37,6 +37,7 @@ import {
 } from '../services/nearbyCache';
 import { captureConsumerDiscovery, captureConsumerRouteIntent } from '../services/consumerTelemetry';
 import {
+  CompactRestroomSignals,
   MapLegend,
   PlaceIcon,
   RestroomSignals,
@@ -119,6 +120,35 @@ function trustSummaryLine(item: any) {
   return parts.length ? parts.join(' · ') : 'Community evidence building';
 }
 
+function matchedRequestedAmenities(item: any, requested: string[]) {
+  if (!requested.length || !Array.isArray(item?.amenities)) return [] as string[];
+  const available = new Set(
+    item.amenities
+      .map((entry: any) => String(typeof entry === 'string' ? entry : entry?.name || '').trim().toLowerCase())
+      .filter(Boolean),
+  );
+  return requested.filter((name) => available.has(String(name).trim().toLowerCase()));
+}
+
+function RequestedAmenityMatches({ item, requested, compact = false }: {
+  item: any;
+  requested: string[];
+  compact?: boolean;
+}) {
+  const matches = matchedRequestedAmenities(item, requested);
+  if (!matches.length) return null;
+  return (
+    <View style={s.amenityMatchRow}>
+      {!compact ? <Text style={s.amenityMatchLabel}>MATCHED</Text> : null}
+      {matches.slice(0, compact ? 3 : 5).map((name) => (
+        <View key={name} style={s.amenityMatchPill}>
+          <Text style={s.amenityMatchText}>✓ {name}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function parseRouteDraft(raw: string | null) {
   if (!raw) return [] as string[];
   try {
@@ -130,49 +160,75 @@ function parseRouteDraft(raw: string | null) {
   }
 }
 
-function ResultCard({ item, selected, onSelect, route }: {
+function ResultCard({ item, selected, onSelect, onDirections, onAddToRoute, onDetails, route, requestedAmenities }: {
   item: any;
   selected: boolean;
   onSelect: () => void;
+  onDirections: () => void;
+  onAddToRoute: () => void;
+  onDetails: () => void;
   route: any;
+  requestedAmenities: string[];
 }) {
   const fraction = Math.max(0, Math.min(1, Number(item.route_fraction || 0)));
   const ahead = route ? Math.max(0, Number(route.distanceMiles || 0) * fraction) : null;
   const eta = route ? Math.max(0, Number(route.durationMinutes || 0) * fraction) : null;
+  const reviewCount = Number(item.review_count || 0);
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      accessibilityLabel={`${item.name || 'Restroom location'}, ${route && ahead != null ? `${ahead.toFixed(ahead < 10 ? 1 : 0)} miles ahead` : distanceLabel(item.distance_meters)}`}
-      onPress={onSelect}
-      style={[s.card, selected && s.cardActive]}
-    >
-      <View style={s.cardTop}>
-        <PlaceIcon item={item} size={34} />
-        <View style={{ flex: 1 }}>
-          <Text style={s.cardTitle}>{item.name || 'Restroom location'}</Text>
-          {item.business_name ? <Text style={s.meta}>{item.business_name}</Text> : null}
-          <Text style={s.meta}>
-            {[item.address, item.city, item.state].filter(Boolean).join(', ') || 'Address unavailable'}
+    <View style={[s.card, selected && s.cardActive]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected }}
+        accessibilityLabel={`${item.name || 'Restroom location'}, ${route && ahead != null ? `${ahead.toFixed(ahead < 10 ? 1 : 0)} miles ahead` : distanceLabel(item.distance_meters)}`}
+        onPress={onSelect}
+        style={s.cardMain}
+      >
+        <View style={s.cardTop}>
+          <PlaceIcon item={item} size={34} />
+          <View style={{ flex: 1 }}>
+            <Text style={s.cardTitle}>{item.name || 'Restroom location'}</Text>
+            {item.business_name ? <Text style={s.meta}>{item.business_name}</Text> : null}
+            <Text style={s.meta}>
+              {[item.address, item.city, item.state].filter(Boolean).join(', ') || 'Address unavailable'}
+            </Text>
+          </View>
+          <Text style={s.distance}>
+            {route && ahead != null
+              ? `~${ahead.toFixed(ahead < 10 ? 1 : 0)} mi ahead`
+              : distanceLabel(item.distance_meters)}
           </Text>
         </View>
-        <Text style={s.distance}>
-          {route && ahead != null
-            ? `~${ahead.toFixed(ahead < 10 ? 1 : 0)} mi ahead`
-            : distanceLabel(item.distance_meters)}
+        {route && eta != null ? (
+          <Text style={s.routeLine}>
+            ~{Math.round(eta)} min ahead · {distanceLabel(item.distance_to_route_meters)} from route
+          </Text>
+        ) : null}
+        <RestroomSignals item={item} compact />
+        <RequestedAmenityMatches item={item} requested={requestedAmenities} />
+        {reviewCount > 0 ? <Text style={s.meta}>{reviewCount} review{reviewCount === 1 ? '' : 's'}</Text> : null}
+        <Text style={s.trustLine}>{trustSummaryLine(item)}</Text>
+        <Text style={s.hint}>
+          {selected ? 'Selected on map' : 'Tap this card to focus its map pin'}
         </Text>
+      </Pressable>
+      <View style={s.cardActionRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Start directions to this location"
+          disabled={!hasCoordinates(item)}
+          style={[s.primarySmall, s.cardAction, !hasCoordinates(item) && s.disabled]}
+          onPress={onDirections}
+        >
+          <Text style={s.primaryText}>Start navigation</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" style={[s.secondarySmall, s.cardAction]} onPress={onAddToRoute}>
+          <Text style={s.secondaryText}>Add to route</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" style={[s.secondarySmall, s.cardAction]} onPress={onDetails}>
+          <Text style={s.secondaryText}>Full details</Text>
+        </Pressable>
       </View>
-      {route && eta != null ? (
-        <Text style={s.routeLine}>
-          ~{Math.round(eta)} min ahead · {distanceLabel(item.distance_to_route_meters)} from route
-        </Text>
-      ) : null}
-      <RestroomSignals item={item} compact />
-      <Text style={s.trustLine}>{trustSummaryLine(item)}</Text>
-      <Text style={s.hint}>
-        {selected ? 'Selected on map · Full details available' : 'Tap to preview this location on the map'}
-      </Text>
-    </Pressable>
+    </View>
   );
 }
 
@@ -206,6 +262,13 @@ export default function AdaptiveExploreScreen() {
     () => rows.find((row) => idOf(row) === selectedId) || null,
     [rows, selectedId],
   );
+  const selectedRoutePosition = useMemo(() => {
+    if (!selected || mode !== 'route' || !route) return '';
+    const fraction = Math.max(0, Math.min(1, Number(selected.route_fraction || 0)));
+    const ahead = Math.max(0, Number(route.distanceMiles || 0) * fraction);
+    const eta = Math.max(0, Number(route.durationMinutes || 0) * fraction);
+    return `~${ahead.toFixed(ahead < 10 ? 1 : 0)} mi ahead · ~${Math.round(eta)} min · ${distanceLabel(selected.distance_to_route_meters)} off route`;
+  }, [selected, mode, route]);
   const filterAmenities = useMemo(
     () => amenities
       .filter((item) => FILTER_CATEGORIES.has(String(item.category || '')))
@@ -537,6 +600,15 @@ export default function AdaptiveExploreScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
+      <FlatList
+        style={s.pageScroll}
+        data={rows}
+        keyExtractor={idOf}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
+        ListHeaderComponent={
+          <>
       <View style={s.hero}>
         <View style={s.heroTop}>
           <View style={{ flex: 1 }}>
@@ -891,29 +963,29 @@ export default function AdaptiveExploreScreen() {
                   <PlaceIcon item={selected} size={34} />
                   <View style={{ flex: 1 }}>
                     <Text numberOfLines={1} style={s.selectedTitle}>{selected.name || 'Restroom location'}</Text>
-                    <Text numberOfLines={1} style={s.meta}>
-                      {mode === 'route'
-                        ? `${distanceLabel(selected.distance_to_route_meters)} from route`
-                        : distanceLabel(selected.distance_meters)}
+                    <Text numberOfLines={2} style={s.meta}>
+                      {selectedRoutePosition || distanceLabel(selected.distance_meters)}
                       {' · '}{[selected.address, selected.city].filter(Boolean).join(', ') || 'Address unavailable'}
                     </Text>
                   </View>
-                  <Pressable style={s.primarySmall} onPress={() => router.push(`/location/${idOf(selected)}`)}>
-                    <Text style={s.primaryText}>Full details</Text>
-                  </Pressable>
                 </View>
-                <RestroomSignals item={selected} compact />
-                <Text style={s.trustLine}>{trustSummaryLine(selected)}</Text>
+                <CompactRestroomSignals item={selected} />
+                <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
                 <View style={s.actionRow}>
-                  <Pressable style={s.secondarySmall} onPress={() => addToRoute(selected)}>
-                    <Text style={s.secondaryText}>Add to route</Text>
-                  </Pressable>
                   <Pressable
-                    style={s.primarySmall}
+                    accessibilityRole="button"
+                    accessibilityLabel="Start directions to this location"
+                    style={[s.primarySmall, s.selectedAction, !hasCoordinates(selected) && s.disabled]}
                     disabled={!hasCoordinates(selected)}
                     onPress={() => void directions(selected)}
                   >
-                    <Text style={s.primaryText}>Start directions →</Text>
+                    <Text style={s.primaryText}>Start navigation</Text>
+                  </Pressable>
+                  <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => addToRoute(selected)}>
+                    <Text style={s.secondaryText}>Add to route</Text>
+                  </Pressable>
+                  <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => router.push(`/location/${idOf(selected)}`)}>
+                    <Text style={s.secondaryText}>Full details</Text>
                   </Pressable>
                 </View>
               </View>
@@ -928,54 +1000,56 @@ export default function AdaptiveExploreScreen() {
         </View>
       ) : null}
 
-      <FlatList
-        style={{ flex: 1 }}
-        data={rows}
-        scrollEnabled
-        nestedScrollEnabled
-        keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
-        keyExtractor={idOf}
-        contentContainerStyle={s.list}
-        ListHeaderComponent={
-          <View style={s.listHeading}>
-            <View>
-              <Text style={s.listEyebrow}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
-              <Text style={s.listTitle}>{mode === 'route' ? 'Bathrooms ahead' : 'Nearby businesses & bathrooms'}</Text>
+
+            <View style={s.listHeading}>
+              <View>
+                <Text style={s.listEyebrow}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
+                <Text style={s.listTitle}>{mode === 'route' ? 'Bathrooms ahead' : 'Nearby businesses & bathrooms'}</Text>
+              </View>
+              <Text style={s.listNote}>{cached ? 'Cached · pull to refresh' : 'Distance + actions on every card'}</Text>
             </View>
-            <Text style={s.listNote}>{cached ? 'Cached · pull to refresh' : 'Scroll results · map stays fixed'}</Text>
-          </View>
-        }
-        ListFooterComponent={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add a missing bathroom"
-            onPress={() => router.push('/discover')}
-            style={s.missingPlace}
-          >
-            <Text style={s.listEyebrow}>MISSING A PLACE?</Text>
-            <Text style={s.missingTitle}>Add a missing bathroom</Text>
-            <Text style={s.help}>Contribute a place that is not in the Kleenest network yet.</Text>
-          </Pressable>
+          </>
         }
         renderItem={({ item }) => (
-          <ResultCard
-            item={item}
-            selected={idOf(item) === selectedId}
-            onSelect={() => selectRow(item)}
-            route={mode === 'route' ? route : null}
-          />
+          <View style={s.resultItem}>
+            <ResultCard
+              item={item}
+              selected={idOf(item) === selectedId}
+              onSelect={() => selectRow(item)}
+              onDirections={() => void directions(item)}
+              onAddToRoute={() => addToRoute(item)}
+              onDetails={() => router.push(`/location/${idOf(item)}`)}
+              route={mode === 'route' ? route : null}
+              requestedAmenities={selectedAmenityNames}
+            />
+          </View>
         )}
         ListEmptyComponent={!loading ? (
-          <View style={s.empty}>
-            <Text style={s.emptyTitle}>No qualifying results yet.</Text>
-            <Text style={s.help}>
-              {mode === 'nearby'
-                ? 'Change the radius, amenity rule, or maximum distance and search again.'
-                : 'Build or adjust your saved route, widen its corridor, or change amenity requirements.'}
-            </Text>
+          <View style={s.resultItem}>
+            <View style={s.empty}>
+              <Text style={s.emptyTitle}>No qualifying results yet.</Text>
+              <Text style={s.help}>
+                {mode === 'nearby'
+                  ? 'Change the radius, amenity rule, or maximum distance and search again.'
+                  : 'Build or adjust your saved route, widen its corridor, or change amenity requirements.'}
+              </Text>
+            </View>
           </View>
         ) : null}
+        ListFooterComponent={
+          <View style={s.listFooter}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add a missing bathroom"
+              onPress={() => router.push('/discover')}
+              style={s.missingPlace}
+            >
+              <Text style={s.listEyebrow}>MISSING A PLACE?</Text>
+              <Text style={s.missingTitle}>Add a missing bathroom</Text>
+              <Text style={s.help}>Contribute a place that is not in the Kleenest network yet.</Text>
+            </Pressable>
+          </View>
+        }
       />
     </SafeAreaView>
   );
@@ -983,6 +1057,7 @@ export default function AdaptiveExploreScreen() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.canvas },
+  pageScroll: { flex: 1 },
   hero: {
     marginHorizontal: 12,
     marginTop: 4,
@@ -1087,6 +1162,7 @@ const s = StyleSheet.create({
   selectedRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   selectedTitle: { fontSize: 14, fontWeight: '900', color: palette.ink },
   actionRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  selectedAction: { flexGrow: 1, alignItems: 'center' },
   primarySmall: { minHeight: 34, borderRadius: 9, backgroundColor: palette.green, paddingHorizontal: 9, paddingVertical: 7, justifyContent: 'center' },
   secondarySmall: { minHeight: 34, borderRadius: 9, backgroundColor: '#e8efea', paddingHorizontal: 9, paddingVertical: 7, justifyContent: 'center' },
   primaryText: { fontSize: 9, fontWeight: '900', color: '#fff' },
@@ -1104,12 +1180,21 @@ const s = StyleSheet.create({
   routeCoverage: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: '#fff7e8', borderWidth: 1, borderColor: '#ead9b4' },
   routeCoverageTitle: { fontSize: 10, fontWeight: '900', color: palette.ink },
   list: { paddingHorizontal: 14, paddingBottom: 34, gap: 8 },
-  listHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 8, paddingTop: 8, paddingBottom: 2 },
+  listHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 8, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 8 },
+  resultItem: { paddingHorizontal: 14, paddingBottom: 8 },
+  listFooter: { paddingHorizontal: 14, paddingBottom: 34 },
   listEyebrow: { fontSize: 8, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
   listTitle: { fontSize: 17, fontWeight: '900', color: palette.ink },
   listNote: { fontSize: 8, fontWeight: '800', color: '#718077' },
   card: { borderRadius: 16, padding: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#dce6df', gap: 6 },
   cardActive: { borderColor: palette.green, borderWidth: 2 },
+  cardMain: { gap: 6 },
+  cardActionRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  cardAction: { flexGrow: 1, alignItems: 'center' },
+  amenityMatchRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 5, marginTop: 2 },
+  amenityMatchLabel: { fontSize: 7, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
+  amenityMatchPill: { borderRadius: 999, backgroundColor: '#e8f1eb', paddingHorizontal: 7, paddingVertical: 4 },
+  amenityMatchText: { fontSize: 8, fontWeight: '900', color: palette.green },
   cardTop: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   cardTitle: { fontSize: 15, fontWeight: '900', color: palette.ink },
   meta: { fontSize: 9, lineHeight: 13, color: '#66776d' },
