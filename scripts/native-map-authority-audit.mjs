@@ -25,7 +25,10 @@ if(!failures.length){
  if(nearbyModeIndex<0||radiusIndex<0||nearbyModeIndex>radiusIndex)failures.push('Nearby / Along route must be primary controls above radius and filter controls.');
  if(!adaptiveExplore.includes('accessibilityLabel="Advanced filters"')||!adaptiveExplore.includes('<Modal')||!adaptiveExplore.includes('style={s.advancedModalCard}'))failures.push('Advanced Explore controls must open in a modal instead of expanding inline and pushing results down.');
  if(adaptiveExplore.includes('Road trip / advanced'))failures.push('Legacy inline Road trip / advanced expansion must be removed from the main Explore stack.');
- if(!explore.includes('<FlatList')||!explore.includes('scrollEnabled'))failures.push('Explore search results must remain independently scrollable.');
+ if((adaptiveExplore.match(/<FlatList/g)||[]).length!==1||!adaptiveExplore.includes('ListHeaderComponent={'))failures.push('Explore must use one primary virtualized scroll surface with controls and map in the list header.');
+ const mapSectionIndex=adaptiveExplore.indexOf('<View style={s.mapSection}>'), renderItemIndex=adaptiveExplore.indexOf('renderItem={({ item })');
+ if(mapSectionIndex<0||renderItemIndex<0||mapSectionIndex>renderItemIndex)failures.push('Explore map must scroll naturally offscreen before virtualized result cards.');
+ if(adaptiveExplore.includes('Scroll results · map stays fixed'))failures.push('Explore must not regress to a fixed-map/separate-results scrolling model.');
  if(!explore.includes('google.com/maps/dir')||!exploreCompact.match(/pathname:["']\/route["']/))failures.push('Discovery must preserve direct directions and route-planner handoff.');
  if(!core.includes("p_category:'restroom'"))failures.push('Canonical nearby discovery must remain bathroom-first for verified restroom evidence.');
  if(core.includes("p_category:null,p_search"))failures.push('Consumer restroom discovery must not become unrestricted category discovery.');
