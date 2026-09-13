@@ -47,6 +47,9 @@ for(const token of [
   'onDirections={() => void directions(item)}',
   'onAddToRoute={() => addToRoute(item)}',
   'onDetails={() => router.push',
+  'selectedRoutePosition',
+  'RequestedAmenityMatches',
+  'requestedAmenities={selectedAmenityNames}',
 ])requireToken(screen,token,'Consumer continuous-scroll Explore composition');
 
 if(screen.includes('Scroll results · map stays fixed'))throw new Error('Consumer Explore must not describe or implement a fixed-map/separate-results scrolling model.');
