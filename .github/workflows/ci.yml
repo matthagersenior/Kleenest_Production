@@ -141,6 +141,8 @@ jobs:
           node scripts/native-public-rpc-authority-audit.mjs
           node scripts/admin-control-plane-rpc-authority-audit.mjs
           node scripts/native-consumer-contribution-rpc-authority-audit.mjs
+      - name: Game content depth
+        run: node scripts/game-content-depth-audit.mjs
       - name: Business canonical authority
         run: node scripts/business-canonical-rpc-authority-audit.mjs
       - name: Consumer location photo authority
