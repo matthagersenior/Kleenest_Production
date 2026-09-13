@@ -100,6 +100,9 @@ jobs:
           test -s apps/consumer-mobile/dist/Kleenest-release-state.json
           grep -q "Kleenest Developer Portal" apps/consumer-mobile/dist/developer/index.html
           grep -q "Browser token" apps/consumer-mobile/dist/developer/index.html
+          mkdir -p apps/consumer-mobile/dist/install
+          cp apps/consumer-mobile/dist/index.html apps/consumer-mobile/dist/install/index.html
+          test -s apps/consumer-mobile/dist/install/index.html
           cp apps/consumer-mobile/dist/index.html apps/consumer-mobile/dist/404.html
           touch apps/consumer-mobile/dist/.nojekyll
           sha256sum apps/consumer-mobile/dist/Kleenest-Consumer.apk > apps/consumer-mobile/dist/Kleenest-Consumer.apk.sha256

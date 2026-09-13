@@ -3,7 +3,7 @@ import fs from 'node:fs';
 function read(path){return fs.readFileSync(path,'utf8')}
 function requireToken(text,token,label){if(!text.includes(token))throw new Error(`${label} missing ${token}.`)}
 
-const required=['scripts/consumer-release-drift-audit.mjs','apps/consumer-mobile/app/install.tsx','apps/platform-mobile/metro.config.js','apps/platform-mobile/web/secureStorePreview.ts','.github/workflows/pages.yml','.github/workflows/publish-standalone-installer.yml','.github/workflows/android-family.yml','apps/consumer-mobile/app.config.ts','apps/consumer-mobile/package.json','apps/consumer-mobile/metro.config.js','apps/consumer-mobile/web/maplibrePreview.tsx','apps/consumer-mobile/web/secureStorePreview.ts','apps/consumer-mobile/web/notificationsPreview.ts','scripts/prepare-consumer-web-pwa.mjs','public/manifest.webmanifest','public/app-icon-512.svg','public/sw.js'];
+const required=['.github/workflows/install-center-smoke.yml','scripts/install-center-browser-smoke.spec.ts','scripts/consumer-release-drift-audit.mjs','apps/consumer-mobile/app/install.tsx','apps/platform-mobile/metro.config.js','apps/platform-mobile/web/secureStorePreview.ts','.github/workflows/pages.yml','.github/workflows/publish-standalone-installer.yml','.github/workflows/android-family.yml','apps/consumer-mobile/app.config.ts','apps/consumer-mobile/package.json','apps/consumer-mobile/metro.config.js','apps/consumer-mobile/web/maplibrePreview.tsx','apps/consumer-mobile/web/secureStorePreview.ts','apps/consumer-mobile/web/notificationsPreview.ts','scripts/prepare-consumer-web-pwa.mjs','public/manifest.webmanifest','public/app-icon-512.svg','public/sw.js'];
 for(const file of required)if(!fs.existsSync(file))throw new Error(`Consumer preview/install file missing: ${file}.`);
 if(fs.existsSync('.github/workflows/static.yml'))throw new Error('Competing GitHub-generated static Pages workflow must not exist.');
 if(fs.existsSync('.github/workflows/android-preview.yml'))throw new Error('Duplicate Consumer-only Android build workflow must be removed; family Android workflow owns verified APKs.');
@@ -41,7 +41,15 @@ if(installer.includes("github.event.workflow_run.conclusion != 'cancelled'"))thr
 
 for(const token of ["output: 'single'","bundler: 'metro'","baseUrl: '/Kleenest_Production'","previewRole: 'non-blocking-web-preview'"])requireToken(appConfig,token,'Expo consumer preview config');
 const consumerInstall=read('apps/consumer-mobile/app/install.tsx');
-for(const token of ['Install Kleenest','beforeinstallprompt','Kleenest-Consumer.apk','INSTALL WEB APP','DOWNLOAD ANDROID APK','iPhone','iPad','Add to Home Screen','Open as Web App','deviceKind','isIOS','isAndroid'])requireToken(consumerInstall,token,'Consumer Installation Center');
+for(const token of ['Install Kleenest','beforeinstallprompt','Kleenest-Consumer.apk','INSTALL WEB APP','DOWNLOAD ANDROID APK','iPhone','iPad','Add to Home Screen','Open as Web App','deviceKind','isIOS','isAndroid','Kleenest-release-state.json','INSTALL HEALTH','SHARE INSTALL LINK','OPEN KLEENEST','CHECK INSTALLATION','browserKind','serviceWorkerReady'])requireToken(consumerInstall,token,'Consumer Installation Center');
+const consumerHome=read('apps/consumer-mobile/app/index.tsx');
+for(const token of ['GET KLEENEST','Install on this device','/install'])requireToken(consumerHome,token,'Consumer Home installation feature');
+const installSmoke=read('.github/workflows/install-center-smoke.yml');
+for(const token of ['Verify Kleenest Installation Center','Publish Consumer Standalone Installer','@playwright/test','EXPECTED_SHA','install-center-browser-smoke.spec.ts'])requireToken(installSmoke,token,'Installation Center post-deploy browser smoke workflow');
+const installSpec=read('scripts/install-center-browser-smoke.spec.ts');
+for(const token of ['Install Kleenest','INSTALL WEB APP','SHARE INSTALL LINK','Kleenest-release-state.json','Kleenest-Consumer.apk.sha256','manifest.webmanifest','EXPECTED_SHA'])requireToken(installSpec,token,'Installation Center browser journey');
+if(!installer.includes('apps/consumer-mobile/dist/install/index.html'))throw new Error('Pages publisher must materialize /install as a first-class direct route.');
+if(!manifest.shortcuts?.some(shortcut=>shortcut.url==='/Kleenest_Production/install'))throw new Error('Consumer PWA manifest must expose the Installation Center as an app shortcut.');
 const ownerConfig=read('apps/platform-mobile/app.config.ts');
 const ownerPkg=JSON.parse(read('apps/platform-mobile/package.json'));
 const ownerMetro=read('apps/platform-mobile/metro.config.js');

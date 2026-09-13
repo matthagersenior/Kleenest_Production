@@ -34,6 +34,12 @@
   ],
   "shortcuts": [
     {
+      "name": "Install Kleenest",
+      "short_name": "Install",
+      "description": "Open the Kleenest Installation Center",
+      "url": "/Kleenest_Production/install"
+    },
+    {
       "name": "Explore restrooms",
       "short_name": "Explore",
       "url": "/Kleenest_Production/explore"
