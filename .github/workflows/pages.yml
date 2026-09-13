@@ -8,6 +8,7 @@ on:
       - apps/consumer-mobile/**
       - apps/platform-mobile/**
       - apps/business-mobile/**
+      - apps/fleet-mobile/**
       - public/manifest.webmanifest
       - public/sw.js
       - scripts/prepare-consumer-web-pwa.mjs
@@ -77,6 +78,15 @@ jobs:
           done
           curl --fail --silent "$BUSINESS_WEB_BASE" >/dev/null
           npx playwright test scripts/business-web-browser-smoke.spec.ts --reporter=line --workers=1
+      - name: Export Kleenest Fleet Web
+        run: npm run web:export --workspace @kleenest/fleet-mobile
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+      - name: Validate Kleenest Fleet Web export
+        run: |
+          test -s apps/fleet-mobile/dist/index.html
+          grep -q "Kleenest Fleet" apps/fleet-mobile/dist/index.html
       - name: Export KleenestOS Web
         run: npm run web:export --workspace @kleenest/owner-mobile
         env:
@@ -107,5 +117,6 @@ jobs:
             apps/consumer-mobile/dist
             apps/platform-mobile/dist
             apps/business-mobile/dist
+            apps/fleet-mobile/dist
           retention-days: 3
           if-no-files-found: error

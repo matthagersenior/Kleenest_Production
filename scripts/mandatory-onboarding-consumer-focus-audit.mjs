@@ -46,7 +46,7 @@ for(const token of [
   'customer_profile','access_model','traffic_pattern','pain_points','qr_intent',
   'success_metrics','reporting_cadence','team_focus','Complete business setup'
 ]) if(!onboarding.includes(token)) failures.push('detailed onboarding UI missing '+token);
-for(const token of ['getFleetOnboardingGate','business_onboarding_gate','business_onboarding_apply_v2']) if(!fleetService.includes(token)) failures.push('Fleet onboarding service missing '+token);
+for(const token of ['getFleetOnboardingGate','fleet_onboarding_gate','business_onboarding_apply_v2']) if(!fleetService.includes(token)) failures.push('Fleet onboarding service missing '+token);
 for(const token of ['getFleetOnboardingGate','onboardingRequired','/onboarding']) if(!fleetLayout.includes(token)) failures.push('Fleet mandatory gate missing '+token);
 for(const token of ['customer_profile','access_model','traffic_pattern','pain_points','qr_intent','success_metrics','reporting_cadence','team_focus','Complete Fleet setup']) if(!fleetOnboarding.includes(token)) failures.push('Fleet detailed onboarding missing '+token);
 for(const token of ['getFleetOnboardingState','YOUR PRIORITIES','Targeted from onboarding']) if(!fleetHome.includes(token)) failures.push('Fleet targeted home missing '+token);

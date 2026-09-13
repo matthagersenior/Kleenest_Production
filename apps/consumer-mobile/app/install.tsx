@@ -2,6 +2,7 @@ import * as Linking from 'expo-linking';
 import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { palette } from '../components/ConsumerUI';
+import { markConsumerAppPresence } from '../services/webExperience';
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -109,7 +110,7 @@ export default function InstallKleenest(){
       event.preventDefault();
       setPrompt(event as InstallPromptEvent);
     };
-    const installedHandler=()=>{setInstalled(true);setPrompt(null);setMessage('Kleenest is installed on this device.');};
+    const installedHandler=()=>{markConsumerAppPresence();setInstalled(true);setPrompt(null);setMessage('Kleenest is installed on this device.');};
     window.addEventListener('beforeinstallprompt',capture);
     window.addEventListener('appinstalled',installedHandler);
     const timer=window.setTimeout(()=>void refreshDiagnostics(),1200);
@@ -147,7 +148,7 @@ export default function InstallKleenest(){
       await prompt.prompt();
       const choice=await prompt.userChoice;
       setMessage(choice.outcome==='accepted'?'Installation accepted. Kleenest can now launch like an app.':'Installation was dismissed. You can install again whenever you are ready.');
-      if(choice.outcome==='accepted')setPrompt(null);
+      if(choice.outcome==='accepted'){markConsumerAppPresence();setPrompt(null);}
       await refreshDiagnostics();
       return;
     }
