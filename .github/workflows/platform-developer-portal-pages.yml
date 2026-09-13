@@ -5,6 +5,14 @@ on:
     branches: [main]
     paths:
       - "apps/developer-portal/static/**"
+      - "apps/platform-mobile/app/developers.tsx"
+      - ".github/workflows/platform-developer-portal-pages.yml"
+      - "scripts/platform-developer-portal-hosting-audit.mjs"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/developer-portal/static/**"
+      - "apps/platform-mobile/app/developers.tsx"
       - ".github/workflows/platform-developer-portal-pages.yml"
       - "scripts/platform-developer-portal-hosting-audit.mjs"
   workflow_dispatch:
@@ -15,7 +23,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: kleenest-developer-portal-pages
+  group: kleenest-developer-portal-pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -24,7 +32,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Validate portal hosting contract
+      - name: Validate portal hosting and developer experience contract
         run: node scripts/platform-developer-portal-hosting-audit.mjs
       - name: Prepare static portal
         shell: bash
@@ -45,15 +53,18 @@ jobs:
           test -s _site/developer/index.html
           test -s _site/developer/404.html
       - name: Configure GitHub Pages
+        if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
         with:
           enablement: true
       - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4
         with:
           path: _site
 
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
