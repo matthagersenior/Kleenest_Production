@@ -204,7 +204,7 @@ function HeroStat({label,value}:{label:string;value:any}){return <View style={s.
 function Metric({label,value,detail}:{label:string;value:any;detail:string}){return <View style={s.metric}><Text style={s.metricValue}>{String(value)}</Text><Text style={s.metricLabel}>{label}</Text><Text style={s.metricDetail}>{detail}</Text></View>}
 function ActionTile({item,priority=false}:{item:Domain;priority?:boolean}){
  return <Link href={item.href as any} asChild>
-  <Pressable accessibilityRole="button" style={[s.actionTile,priority&&s.actionTilePriority]}>
+  <Pressable accessibilityRole="button" style={StyleSheet.flatten([s.actionTile,priority&&s.actionTilePriority])}>
    <View style={s.actionHeader}>
     <View style={[s.actionGlyph,priority&&s.actionGlyphPriority]}><Text style={[s.actionGlyphText,priority&&s.actionGlyphTextPriority]}>{item.glyph}</Text></View>
     <View style={s.actionHeading}>
