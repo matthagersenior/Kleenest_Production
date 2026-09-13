@@ -49,7 +49,7 @@ create table if not exists public.business_claim_verification_challenges(
   business_id uuid not null references public.businesses(id) on delete cascade,
   location_id uuid not null references public.locations(id) on delete cascade,
   created_by uuid not null,
-  method text not null check(method in ('website_file')),
+  method text not null check(method in ('dns_txt')),
   status text not null default 'pending' check(status in ('pending','verified','failed','expired','cancelled')),
   token_hash text not null,
   expected_domain text not null,
