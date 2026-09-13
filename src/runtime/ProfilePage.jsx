@@ -70,7 +70,7 @@ export default function ProfilePage() {
     });
     return () => { active = false; data.subscription.unsubscribe(); };
   }, []);
-  const signIn = async () => { setMessage(''); const { error } = await identity.signIn({ email, password }); setMessage(error ? error.message : 'Signed in.'); };
+  const signIn = async () => { setMessage(''); const { error } = await identity.signIn({ email, password }); if(error){setMessage(error.message);return;} navigate('/',{replace:true}); };
   const magicLink = async () => { setMessage(''); const { error } = await identity.signInWithMagicLink(email); setMessage(error ? error.message : 'Magic link sent.'); };
   if (status === 'loading') return <section className="panel"><div className="eyebrow">ACCOUNT</div><h1>Profile</h1><p>Loading your account…</p></section>;
   if (nativeCallback) return <section className="panel"><div className="eyebrow">KLEENESTOS</div><h1>Return to the Owner app</h1><p>{message}</p><a className="primary" href={nativeCallback}>Open KleenestOS</a><p>If Android does not open the app automatically, tap the button above.</p></section>;

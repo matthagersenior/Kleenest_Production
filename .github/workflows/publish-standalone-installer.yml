@@ -72,6 +72,7 @@ jobs:
           test -s apps/consumer-mobile/dist/sw.js
           test -s apps/consumer-mobile/dist/app-icon.png
           test -s apps/consumer-mobile/dist/app-icon-512.svg
+          test -s apps/consumer-mobile/dist/profile/index.html
       - name: Resolve freshest verified Consumer APK
         id: apk
         env:

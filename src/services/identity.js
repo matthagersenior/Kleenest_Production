@@ -25,13 +25,13 @@ export const identity = Object.freeze({
     return getSupabase().auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName }, emailRedirectTo: redirectUrl('/profile') },
+      options: { data: { full_name: fullName }, emailRedirectTo: redirectUrl('/') },
     });
   },
   signInWithMagicLink(email) {
     return getSupabase().auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: redirectUrl('/profile'), shouldCreateUser: false },
+      options: { emailRedirectTo: redirectUrl('/'), shouldCreateUser: false },
     });
   },
   signOut() {
