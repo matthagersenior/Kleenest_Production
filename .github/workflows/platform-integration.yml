@@ -59,6 +59,7 @@ on:
       - "scripts/platform-public-client-token-audit.mjs"
       - "scripts/platform-developer-portal-hosting-audit.mjs"
       - ".github/workflows/platform-developer-portal-pages.yml"
+      - ".github/workflows/platform-integration.yml"
       - "tsconfig.platform.json"
       - "package-lock.json"
 
