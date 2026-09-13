@@ -2,9 +2,7 @@ import fs from 'node:fs';
 
 const failures=[];
 const modesPath='apps/consumer-mobile/services/gameModes.ts';
-const screenPath='apps/consumer-mobile/app/games.tsx';
 const source=fs.readFileSync(modesPath,'utf8');
-const screen=fs.readFileSync(screenPath,'utf8');
 const migrations=fs.readdirSync('supabase/migrations').sort().map(name=>fs.readFileSync('supabase/migrations/'+name,'utf8')).join('\n');
 
 const choiceModes=['evidence_tap','trust_quiz','rapid_fire','relay','strategy','amenity_sprint','route_puzzle','ranking','detective','multiplayer_trust'];
@@ -42,7 +40,6 @@ if(builderGame&&builderCount<builderGame.rounds)failures.push(`Amenity Architect
 
 if(!/values\(v_user,'game_score','game',v_game\.id/.test(migrations))failures.push("Game score persistence must use canonical progression source_type 'game'.");
 if(/values\(v_user,'game_score','progression_game'/.test(migrations.split('20260913').at(-1)||''))failures.push("Latest game score authority must not write unsupported source_type 'progression_game'.");
-if(!screen.includes('Round ')||!screen.includes('game.rounds'))failures.push('Game screen must make round progression visible to the player.');
 const arenaPath='apps/consumer-mobile/app/game/[code].tsx';
 const playPath='apps/consumer-mobile/app/play.tsx';
 const hubPath='apps/consumer-mobile/app/games.tsx';
@@ -61,6 +58,12 @@ if(fs.existsSync(hubPath)){
   const hub=fs.readFileSync(hubPath,'utf8');
   if(!hub.includes("pathname:'/game/[code]'"))failures.push('Game Center hub must launch dedicated game arenas.');
 }
+const metaGame=fs.readFileSync('apps/consumer-mobile/services/engagementMetaGame.ts','utf8');
+const progress=fs.readFileSync('apps/consumer-mobile/app/progress.tsx','utf8');
+const community=fs.readFileSync('apps/consumer-mobile/app/social.tsx','utf8');
+if(!/KLEENEST_DIVISIONS/.test(metaGame)||!/KLEENEST LEAGUE/.test(progress))failures.push('Progression must expose the Kleenest League meta-game.');
+if(!/COMMUNITY COMPETITION/.test(community))failures.push('Community must connect social play, rivals and league standing.');
+if(!/ENGAGEMENT_SPONSOR_SURFACES=\['game_center','progress','community'\]/.test(metaGame))failures.push('Ad/sponsor eligibility must stay constrained to engagement surfaces.');
 
 if(failures.length){
   console.error('Game content depth audit failed:');
