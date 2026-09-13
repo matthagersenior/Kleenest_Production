@@ -33,7 +33,16 @@ async function dispatch(limit:number){
  const{data,error}=await db.rpc('claim_smart_device_commands',{p_limit:Math.max(1,Math.min(limit,100))});
  if(error)throw error;
  const rows=Array.isArray(data)?data:[];
- let queued=0,simulated=0,failed=0;\n for(const row of rows){\n  try{\n   if(row.protocol==='manual'){\n    const{error:simulationError}=await db.rpc('complete_smart_device_command',{p_command_id:row.command_id,p_success:true,p_result:{simulated:true,bridge:'manual',completedAt:new Date().toISOString()},p_error:null});\n    if(simulationError)throw simulationError;\n    simulated++;\n    continue;\n   }\n   const{error:eventError}=await db.rpc('enqueue_platform_webhook_event',{
+ let queued=0,simulated=0,failed=0;
+ for(const row of rows){
+  try{
+   if(row.protocol==='manual'){
+    const{error:simulationError}=await db.rpc('complete_smart_device_command',{p_command_id:row.command_id,p_success:true,p_result:{simulated:true,bridge:'manual',completedAt:new Date().toISOString()},p_error:null});
+    if(simulationError)throw simulationError;
+    simulated++;
+    continue;
+   }
+   const{error:eventError}=await db.rpc('enqueue_platform_webhook_event',{
     p_partner_id:row.platform_partner_id,
     p_event_type:'device.command_requested',
     p_payload:{
