@@ -1,11 +1,11 @@
 import * as Linking from 'expo-linking';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { getOwnerAuthorization } from '../services/ownerAdmin';
 
-const ownerRedirect = Linking.createURL('auth', { scheme: 'kleenest-owner', isTripleSlashed: false });
+const ownerRedirect = Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/owner/auth` : Linking.createURL('auth', { scheme: 'kleenest-owner', isTripleSlashed: false });
 type Mode = 'signin' | 'signup' | 'forgot' | 'recovery';
 
 function messageOf(value: unknown) {
@@ -180,10 +180,10 @@ export default function OwnerAuth() {
     if (busy) return;
     setBusy(true); setError(null); setNotice(null);
     try {
-      const { data, error: authError } = await getKleenestSupabaseClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: ownerRedirect, skipBrowserRedirect: true } });
+      const { data, error: authError } = await getKleenestSupabaseClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: ownerRedirect, skipBrowserRedirect: Platform.OS!=='web' } });
       if (authError) throw authError;
       if (!data.url) throw new Error('Google sign-in did not return an authorization URL.');
-      await Linking.openURL(data.url);
+      if(Platform.OS==='web'&&typeof window!=='undefined')window.location.assign(data.url);else await Linking.openURL(data.url);
     } catch (cause) { setError(messageOf(cause)); }
     finally { setBusy(false); }
   }
