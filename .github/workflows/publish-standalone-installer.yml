@@ -134,7 +134,9 @@ jobs:
           test -s apps/consumer-mobile/dist/fleet/nearby/index.html
           test -s apps/consumer-mobile/dist/fleet/operations/index.html
           test -s apps/consumer-mobile/dist/fleet/notifications/index.html
-          test -s apps/consumer-mobile/dist/business/tools/index.html\n          test -s apps/consumer-mobile/dist/business/devices/index.html\n          test -s apps/consumer-mobile/dist/owner/devices/index.html
+          test -s apps/consumer-mobile/dist/business/tools/index.html
+          test -s apps/consumer-mobile/dist/business/devices/index.html
+          test -s apps/consumer-mobile/dist/owner/devices/index.html
           test -s apps/consumer-mobile/dist/business/fleet/index.html
           test -s apps/consumer-mobile/dist/business/analytics/index.html
           test -s apps/consumer-mobile/dist/business/enterprise-location-admin/index.html
