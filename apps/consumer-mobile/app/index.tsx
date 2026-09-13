@@ -1,18 +1,20 @@
-import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { router } from 'expo-router';
 import { useEffect,useState } from 'react';
 import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FeatureCard, HeroCard, SectionHeader, palette } from '../components/ConsumerUI';
 import { MarketingHome } from '../components/MarketingSite';
 import { hasCurrentPolicyAcceptance } from '../services/safety';
+import { useConsumerWebExperience } from '../services/webExperience';
 
 const action=(route:string)=>()=>router.push(route as any);
 
 export default function HomeScreen(){
-  const webAppLaunch=Platform.OS==='web'&&typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('app')==='1';
-  const[policyRequired,setPolicyRequired]=useState(false),[signedIn,setSignedIn]=useState(false);
-  useEffect(()=>{if(Platform.OS==='web'&&!webAppLaunch)return;let active=true;const client=getKleenestSupabaseClient();async function check(){const{data}=await client.auth.getSession();if(!active)return;setSignedIn(Boolean(data.session));if(!data.session){setPolicyRequired(false);return}setPolicyRequired(!(await hasCurrentPolicyAcceptance().catch(()=>true)))}void check();const auth=client.auth.onAuthStateChange(()=>{void check()});return()=>{active=false;auth.data.subscription.unsubscribe()}},[webAppLaunch]);
-  if(Platform.OS==='web'&&!webAppLaunch)return <MarketingHome/>;
+  const{ready:webGateReady,signedIn,installed,appActive}=useConsumerWebExperience();
+  const[policyRequired,setPolicyRequired]=useState(false);
+  useEffect(()=>{let active=true;if(!signedIn){setPolicyRequired(false);return()=>{active=false}}void hasCurrentPolicyAcceptance().then(accepted=>{if(active)setPolicyRequired(!accepted)}).catch(()=>{if(active)setPolicyRequired(false)});return()=>{active=false}},[signedIn]);
+  if(Platform.OS==='web'&&!webGateReady)return <SafeAreaView style={s.safe}/>;
+  if(Platform.OS==='web'&&!appActive)return <MarketingHome/>;
+  const showInstall=Platform.OS==='web'&&!signedIn&&!installed;
   return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
     <View style={s.brandRow}><View><Text style={s.brand}>KLEENEST</Text><Text style={s.brandSub}>Trusted restroom discovery network</Text></View><Pressable style={s.profileChip} onPress={action(signedIn?'/profile':'/signup')}><Text style={s.profileChipText}>{signedIn?'PROFILE':'JOIN'}</Text></Pressable></View>
 
@@ -27,7 +29,7 @@ export default function HomeScreen(){
       </View>
     </HeroCard>
 
-    {Platform.OS==='web'?<Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest" style={s.installFeature} onPress={action('/install')}>
+    {showInstall?<Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest" style={s.installFeature} onPress={action('/install')}>
       <View style={s.installFeatureIcon}><Text style={s.installFeatureIconText}>⇩</Text></View>
       <View style={{flex:1}}><Text style={s.installFeatureKicker}>GET KLEENEST</Text><Text style={s.installFeatureTitle}>Install on this device</Text><Text style={s.installFeatureBody}>Add the web app to your Home Screen or desktop, check install health, share the installer, or get the verified Android APK.</Text></View>
       <Text style={s.installFeatureArrow}>›</Text>
@@ -77,7 +79,7 @@ export default function HomeScreen(){
 
     <SectionHeader eyebrow="MORE" title="Account, access and support stay close."/>
     <View style={s.moreRow}>
-      <Pressable style={s.more} onPress={action('/install')}><Text style={s.moreTitle}>Install Kleenest</Text><Text style={s.moreBody}>Web app + verified Android APK</Text></Pressable>
+      {showInstall?<Pressable style={s.more} onPress={action('/install')}><Text style={s.moreTitle}>Install Kleenest</Text><Text style={s.moreBody}>Web app + verified Android APK</Text></Pressable>:null}
       <Pressable style={s.more} onPress={action('/membership')}><Text style={s.moreTitle}>Membership</Text><Text style={s.moreBody}>Premium + Family options</Text></Pressable>
       <Pressable style={s.more} onPress={action('/family')}><Text style={s.moreTitle}>Family</Text><Text style={s.moreBody}>Create or join your group</Text></Pressable>
       <Pressable style={s.more} onPress={action('/messages')}><Text style={s.moreTitle}>Messages</Text><Text style={s.moreBody}>Talk with trusted contributors</Text></Pressable>
