@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { palette } from './ConsumerUI';
 
@@ -36,7 +36,7 @@ function SiteHeader(){
   </View>;
 }
 
-function SiteShell({children}:{children:React.ReactNode}){
+function SiteShell({children}:{children:ReactNode}){
   return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
     <SiteHeader/>
     <View style={s.siteBody}>{children}</View>
