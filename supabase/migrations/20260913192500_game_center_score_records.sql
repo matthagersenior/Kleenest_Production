@@ -131,7 +131,7 @@ grant execute on function public.get_game_personal_record(text) to authenticated
 -- score ceilings. These ceilings include room for speed, combo, survival and
 -- strategy bonuses; they are intentionally higher than the original flat quiz scores.
 update public.progression_games
-set rules = coalesce(rules,'{}'::jsonb) || patch.rules
+set rules = coalesce(public.progression_games.rules,'{}'::jsonb) || patch.rules
 from (values
  ('clean_sweep',        '{"rounds":12,"max_score":250,"score_model":"arena_v3","lives":3}'::jsonb),
  ('bathroom_memory',    '{"pairs":8,"rounds":8,"max_score":250,"score_model":"arena_v3"}'::jsonb),
