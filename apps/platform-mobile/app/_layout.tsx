@@ -29,12 +29,13 @@ export default function Layout(){
 
   return <><StatusBar style="dark"/><Tabs screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute?{display:'none'}:undefined}}>
     <Tabs.Screen name="index" options={{title:'Home'}}/>
-    <Tabs.Screen name="businesses" options={{title:'Businesses'}}/>
-    <Tabs.Screen name="moderation" options={{title:'Moderation'}}/>
-    <Tabs.Screen name="access" options={{title:'Access'}}/>
-    <Tabs.Screen name="operations" options={{title:'Operations'}}/>
-    <Tabs.Screen name="developers" options={{title:'Developers'}}/>
+    <Tabs.Screen name="control" options={{title:'Control'}}/>
     <Tabs.Screen name="pilots" options={{title:'Pilots'}}/>
+    <Tabs.Screen name="developers" options={{title:'Developers'}}/>
+    <Tabs.Screen name="operations" options={{title:'Operations'}}/>
+    <Tabs.Screen name="businesses" options={{href:null,title:'Businesses'}}/>
+    <Tabs.Screen name="moderation" options={{href:null,title:'Moderation'}}/>
+    <Tabs.Screen name="access" options={{href:null,title:'Access'}}/>
     <Tabs.Screen name="auth" options={{href:null,title:'Sign in',headerShown:false}}/>
     <Tabs.Screen name="accounts" options={{href:null,title:'Accounts'}}/>
     <Tabs.Screen name="history" options={{href:null,title:'History'}}/>
