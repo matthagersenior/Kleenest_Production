@@ -1,6 +1,11 @@
 -- Progression World: seasons, collections, community goals, and evidence-backed trust.
 -- game_play does not directly raise contributor_trust; only evidence-backed progression actions can add the progression trust bonus.
 
+-- Converge objective lifecycle states with the already-shipped supply/owner control-plane functions.
+alter table public.progression_objectives_v2 drop constraint if exists progression_objectives_v2_status_check;
+alter table public.progression_objectives_v2 add constraint progression_objectives_v2_status_check
+  check(status in('draft','scheduled','active','paused','completed','ended','archived'));
+
 create table if not exists public.progression_seasons(
   id uuid primary key default gen_random_uuid(),
   code text not null unique,
