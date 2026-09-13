@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
-import { Pressable,RefreshControl,ScrollView,StyleSheet,Text,View } from 'react-native';
+import { Platform,Pressable,RefreshControl,ScrollView,StyleSheet,Text,View } from 'react-native';
 import { getBusinessTierCapabilities,tierLabel,type BusinessTierCapabilities } from '../domain/businessTiers';
 import { getBusinessAnalytics,getBusinessDashboard,getBusinessManagedLocationPortfolio,getBusinessOperations,BUSINESS_PARITY } from '../services/product';
 import { currentBusinessId,listBusinessWorkspaceOptions } from '../services/capabilityWorkflows';
@@ -13,6 +13,7 @@ function count(value:any){
  return Number(value||0);
 }
 function n(value:any){const parsed=Number(value);return Number.isFinite(parsed)?parsed:0}
+function openFleetWebPortal(){if(Platform.OS==='web'&&typeof window!=='undefined')window.location.assign('/Kleenest_Production/fleet/')}
 type Gate=keyof BusinessTierCapabilities|'always';
 type Domain={href:string;title:string;body:string;gate:Gate;glyph:string;group:'Operate'|'Grow'|'Understand'|'Admin'};
 
@@ -124,6 +125,7 @@ export default function BusinessHome(){
    <View style={s.heroActions}>
     <Link href="/locations" asChild><Pressable style={s.primaryAction}><Text style={s.primaryActionText}>Manage locations</Text><Text style={s.primaryActionArrow}>›</Text></Pressable></Link>
     <Link href="/tools" asChild><Pressable style={s.secondaryAction}><Text style={s.secondaryActionText}>Action Center</Text></Pressable></Link>
+    {Platform.OS==='web'&&data?.access?.fleet_enabled?<Pressable accessibilityRole="button" style={s.secondaryAction} onPress={openFleetWebPortal}><Text style={s.secondaryActionText}>Open Fleet portal</Text></Pressable>:null}
    </View>
   </View>
 
