@@ -30,7 +30,7 @@ function SiteHeader(){
       <Pressable style={s.navLink} onPress={go('/for-you')}><Text style={s.navLinkText}>For You</Text></Pressable>
       <Pressable style={s.navLink} onPress={go('/for-business')}><Text style={s.navLinkText}>For Business</Text></Pressable>
       <Pressable style={s.navLink} onPress={go('/trust')}><Text style={s.navLinkText}>Trust</Text></Pressable>
-      <Pressable style={s.openApp} onPress={go('/explore')}><Text style={s.openAppText}>Open App</Text></Pressable>
+      <Pressable style={s.openApp} onPress={go('/?app=1')}><Text style={s.openAppText}>Open App</Text></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest now" style={s.installTop} onPress={go('/install')}><Text style={s.installTopText}>Install Now</Text></Pressable>
     </View>
   </View>;
@@ -113,7 +113,7 @@ export function MarketingHome(){
         <Text style={s.heroBody}>Kleenest helps you find a bathroom you can trust—using fresh reviews, real check-ins, amenity evidence and community verification that gets stronger every time people contribute.</Text>
         <View style={s.heroButtons}>
           <Pressable style={s.heroPrimary} onPress={go('/install')}><Text style={s.heroPrimaryText}>INSTALL KLEENEST</Text></Pressable>
-          <Pressable style={s.heroSecondary} onPress={go('/explore')}><Text style={s.heroSecondaryText}>TRY THE WEB APP</Text></Pressable>
+          <Pressable style={s.heroSecondary} onPress={go('/?app=1')}><Text style={s.heroSecondaryText}>TRY THE WEB APP</Text></Pressable>
         </View>
         <View style={s.heroProof}><Text style={s.heroProofText}>Find it.</Text><Text style={s.heroArrow}>→</Text><Text style={s.heroProofText}>Verify it.</Text><Text style={s.heroArrow}>→</Text><Text style={s.heroProofText}>Make it better for everyone.</Text></View>
       </View>
@@ -165,7 +165,7 @@ export function MarketingHome(){
 
     <View style={s.finalCta}>
       <Text style={s.finalEyebrow}>READY WHEN YOU NEED IT</Text><Text style={s.finalTitle}>Put Kleenest one tap away.</Text><Text style={s.finalBody}>Install the web app on your phone, tablet or computer, or open Kleenest in your browser right now.</Text>
-      <View style={s.heroButtons}><Pressable style={s.heroPrimaryLight} onPress={go('/install')}><Text style={s.heroPrimaryLightText}>INSTALL NOW</Text></Pressable><Pressable style={s.heroSecondaryDark} onPress={go('/explore')}><Text style={s.heroSecondaryDarkText}>OPEN WEB APP</Text></Pressable></View>
+      <View style={s.heroButtons}><Pressable style={s.heroPrimaryLight} onPress={go('/install')}><Text style={s.heroPrimaryLightText}>INSTALL NOW</Text></Pressable><Pressable style={s.heroSecondaryDark} onPress={go('/?app=1')}><Text style={s.heroSecondaryDarkText}>OPEN WEB APP</Text></Pressable></View>
     </View>
   </SiteShell>;
 }
