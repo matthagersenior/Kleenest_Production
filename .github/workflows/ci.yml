@@ -126,6 +126,8 @@ jobs:
           node scripts/native-consumer-contribution-rpc-authority-audit.mjs
       - name: Business canonical authority
         run: node scripts/business-canonical-rpc-authority-audit.mjs
+      - name: Business UI action coverage
+        run: node scripts/business-ui-action-coverage-audit.mjs
       - name: Real-world demo and onboarding convergence
         run: node scripts/real-world-demo-onboarding-audit.mjs
       - name: Mandatory onboarding and Consumer focus convergence
