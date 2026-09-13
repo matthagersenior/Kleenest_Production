@@ -38,6 +38,7 @@ if(!installer.includes("github.event.workflow_run.head_branch == 'main'"))throw 
 if(!installer.includes("github.event.workflow_run.conclusion == 'success'"))throw new Error('Consumer installer deployment must require successful web validation before publishing.');
 if(installer.includes('workflows: ["Build Kleenest App Family Android APKs"]'))throw new Error('Consumer web publishing must not wait on the Android family matrix.');
 if(installer.includes("github.event.workflow_run.conclusion != 'cancelled'"))throw new Error('Consumer installer deployment must not publish from failed or skipped validation runs.');
+for(const token of ['group: kleenest-consumer-preview-pages',"cancel-in-progress: ${{ github.event.workflow_run.conclusion == 'success' }}"])requireToken(installer,token,'Consumer Pages publisher concurrency policy');
 
 for(const token of ["output: 'single'","bundler: 'metro'","baseUrl: '/Kleenest_Production'","previewRole: 'non-blocking-web-preview'"])requireToken(appConfig,token,'Expo consumer preview config');
 const consumerInstall=read('apps/consumer-mobile/app/install.tsx');
@@ -48,6 +49,7 @@ const marketingSite=read('apps/consumer-mobile/components/MarketingSite.tsx');
 for(const token of ['Clean bathrooms shouldn’t be a gamble.','For You','For Business','TRUST + FRESHNESS','INSTALL KLEENEST','KLEENEST ANYWHERE'])requireToken(marketingSite,token,'Public Kleenest marketing site');
 const installSmoke=read('.github/workflows/install-center-smoke.yml');
 for(const token of ['Verify Kleenest Installation Center','Publish Consumer Standalone Installer','@playwright/test','EXPECTED_SHA','install-center-browser-smoke.spec.ts'])requireToken(installSmoke,token,'Installation Center post-deploy browser smoke workflow');
+for(const token of ['group: kleenest-install-center-smoke',"cancel-in-progress: ${{ github.event.workflow_run.conclusion == 'success' }}"])requireToken(installSmoke,token,'Installation Center smoke concurrency policy');
 const installSpec=read('scripts/install-center-browser-smoke.spec.ts');
 for(const token of ['Install Kleenest','INSTALL WEB APP','SHARE INSTALL LINK','Kleenest-release-state.json','Kleenest-Consumer.apk.sha256','manifest.webmanifest','EXPECTED_SHA'])requireToken(installSpec,token,'Installation Center browser journey');
 for(const token of ['public_routes="install for-you for-business trust"','cp apps/consumer-mobile/dist/index.html "apps/consumer-mobile/dist/$route/index.html"'])requireToken(installer,token,'Public marketing route materialization');
