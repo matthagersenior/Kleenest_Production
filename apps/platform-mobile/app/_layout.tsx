@@ -1,15 +1,25 @@
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { ActivityIndicator, useColorScheme, View } from 'react-native';
+import { getKleenestSupabaseClient, loadKleenestThemeMode, resolveKleenestTheme, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
 
 export default function Layout(){
+  const systemScheme=useColorScheme();
+  const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
+  const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','platform');
   const router=useRouter();
   const segments=useSegments();
   const[ready,setReady]=useState(false);
   const[signedIn,setSignedIn]=useState(false);
   const onAuthRoute=segments[0]==='auth';
+
+  useEffect(()=>{
+    let active=true;
+    void loadKleenestThemeMode().then(mode=>{if(active)setThemeMode(mode)});
+    const unsubscribe=subscribeKleenestTheme(mode=>{if(active)setThemeMode(mode)});
+    return()=>{active=false;unsubscribe()};
+  },[]);
 
   useEffect(()=>{
     let active=true;
@@ -22,12 +32,11 @@ export default function Layout(){
   useEffect(()=>{
     if(!ready)return;
     if(!signedIn&&!onAuthRoute)router.replace('/auth');
-    else if(signedIn&&onAuthRoute)router.replace('/');
   },[ready,signedIn,onAuthRoute,router]);
 
-  if(!ready)return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:'#f3f6f4'}}><ActivityIndicator size="large"/></View>;
+  if(!ready)return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:theme.canvas}}><ActivityIndicator size="large"/></View>;
 
-  return <><StatusBar style="dark"/><Tabs screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute?{display:'none'}:undefined}}>
+  return <><StatusBar style={theme.statusBar}/><Tabs screenOptions={{headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{color:theme.ink},tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute?{display:'none'}:{backgroundColor:theme.surface,borderTopColor:theme.line}}}>
     <Tabs.Screen name="index" options={{title:'Home'}}/>
     <Tabs.Screen name="control" options={{title:'Control'}}/>
     <Tabs.Screen name="pilots" options={{title:'Pilots'}}/>

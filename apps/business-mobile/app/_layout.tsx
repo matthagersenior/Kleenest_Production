@@ -1,8 +1,8 @@
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, View } from 'react-native';
-import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { ActivityIndicator, Platform, useColorScheme, View } from 'react-native';
+import { getKleenestSupabaseClient, loadKleenestThemeMode, resolveKleenestTheme, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
 import { currentBusinessId,subscribeBusinessWorkspaceChange } from '../services/capabilityWorkflows';
 import { getBusinessOnboardingGate } from '../services/onboarding';
 
@@ -10,6 +10,9 @@ const ONBOARDING_BYPASS=new Set(['onboarding','workspaces','support','terms','pr
 const PROVISIONING_ALLOWED=new Set(['get-started','onboarding','support','terms','privacy','account']);
 
 export default function Layout() {
+  const systemScheme=useColorScheme();
+  const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
+  const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','business');
   const router = useRouter();
   const segments = useSegments();
   const [ready, setReady] = useState(false);
@@ -20,6 +23,13 @@ export default function Layout() {
   const [workspaceRevision,setWorkspaceRevision]=useState(0);
   const activeRoute=String(segments.at(-1)||'');
   const onAuthRoute = activeRoute === 'auth';
+
+  useEffect(()=>{
+    let active=true;
+    void loadKleenestThemeMode().then(mode=>{if(active)setThemeMode(mode)});
+    const unsubscribe=subscribeKleenestTheme(mode=>{if(active)setThemeMode(mode)});
+    return()=>{active=false;unsubscribe()};
+  },[]);
 
   useEffect(() => {
     let active = true;
@@ -92,21 +102,22 @@ export default function Layout() {
       if(!onAuthRoute)router.replace('/auth');
       return;
     }
+    if(onAuthRoute)return;
     if(needsProvisioning){
       if(!PROVISIONING_ALLOWED.has(activeRoute))router.replace('/get-started');
       return;
     }
     if(activeRoute==='get-started'){router.replace(onboardingRequired?'/onboarding':'/');return;}
     if(onboardingRequired&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');
-    if(onAuthRoute)router.replace(onboardingRequired?'/onboarding':'/');
   },[ready,gateReady,signedIn,needsProvisioning,onboardingRequired,onAuthRoute,activeRoute,router]);
 
-  if (!ready || (signedIn&&!gateReady)) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f6f4' }}><ActivityIndicator size="large" /></View>;
+  if (!ready || (signedIn&&!gateReady)) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.canvas }}><ActivityIndicator size="large" /></View>;
 
-  return <><StatusBar style="dark"/><Tabs key={`business-workspace-${workspaceRevision}`} screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired||activeRoute==='get-started'?{display:'none'}:undefined}}>
+  return <><StatusBar style={theme.statusBar}/><Tabs key={`business-workspace-${workspaceRevision}`} screenOptions={{headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{color:theme.ink},tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired||activeRoute==='get-started'?{display:'none'}:{backgroundColor:theme.surface,borderTopColor:theme.line}}}>
     <Tabs.Screen name="index" options={{title:'Home'}}/>
     <Tabs.Screen name="tools" options={{title:'Actions'}}/>
     <Tabs.Screen name="locations" options={{title:'Locations'}}/>
+    <Tabs.Screen name="verification-center" options={{href:null,title:'Verification Center'}}/>
     <Tabs.Screen name="engagement" options={{href:null,title:'Growth'}}/>
     <Tabs.Screen name="operations" options={{title:'Operations'}}/>
     <Tabs.Screen name="fleet" options={{href:null,title:'Fleet Suite'}}/>

@@ -1,8 +1,8 @@
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { ActivityIndicator, useColorScheme, View } from 'react-native';
+import { getKleenestSupabaseClient, loadKleenestThemeMode, resolveKleenestTheme, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
 import { currentFleetBusinessId,getFleetWorkspaceAccess,subscribeFleetWorkspaceChange,type FleetWorkspaceRole } from '../services/control';
 import { getFleetOnboardingGate } from '../services/onboarding';
 
@@ -10,6 +10,9 @@ const ONBOARDING_BYPASS=new Set(['onboarding','workspaces','support','terms','pr
 const MEMBER_ALLOWED=new Set(['member','nearby','notifications','workspaces','support','terms','privacy','account','auth']);
 
 export default function Layout(){
+  const systemScheme=useColorScheme();
+  const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
+  const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','fleet');
   const router=useRouter();
   const segments=useSegments();
   const[ready,setReady]=useState(false);
@@ -22,6 +25,13 @@ export default function Layout(){
   const activeRoute=String(segments.at(-1)||'');
   const onAuthRoute=activeRoute==='auth';
   const operator=workspaceRole==='operator';
+
+  useEffect(()=>{
+    let active=true;
+    void loadKleenestThemeMode().then(mode=>{if(active)setThemeMode(mode)});
+    const unsubscribe=subscribeKleenestTheme(mode=>{if(active)setThemeMode(mode)});
+    return()=>{active=false;unsubscribe()};
+  },[]);
 
   useEffect(()=>{
     let active=true;
@@ -77,6 +87,7 @@ export default function Layout(){
       if(!onAuthRoute)router.replace('/auth');
       return;
     }
+    if(onAuthRoute)return;
     if(needsBusinessSetup){
       if(!onAuthRoute)router.replace('/auth');
       return;
@@ -86,12 +97,11 @@ export default function Layout(){
       return;
     }
     if(onboardingRequired&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');
-    if(onAuthRoute)router.replace(onboardingRequired?'/onboarding':'/');
   },[ready,gateReady,signedIn,needsBusinessSetup,workspaceRole,onboardingRequired,onAuthRoute,activeRoute,router]);
 
-  if(!ready||(signedIn&&!gateReady))return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:'#f3f6f4'}}><ActivityIndicator size="large"/></View>;
+  if(!ready||(signedIn&&!gateReady))return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:theme.canvas}}><ActivityIndicator size="large"/></View>;
 
-  return <><StatusBar style="dark"/><Tabs key={'fleet-workspace-'+workspaceRevision+'-'+String(workspaceRole)} screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired||needsBusinessSetup?{display:'none'}:undefined}}>
+  return <><StatusBar style={theme.statusBar}/><Tabs key={'fleet-workspace-'+workspaceRevision+'-'+String(workspaceRole)} screenOptions={{headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{color:theme.ink},tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired||needsBusinessSetup?{display:'none'}:{backgroundColor:theme.surface,borderTopColor:theme.line}}}>
     <Tabs.Screen name="index" options={{title:'Home',href:operator?undefined:null}}/>
     <Tabs.Screen name="planner" options={{title:'Planner',href:operator?undefined:null}}/>
     <Tabs.Screen name="dispatch" options={{title:'Dispatch',href:operator?undefined:null}}/>

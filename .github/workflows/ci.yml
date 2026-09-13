@@ -163,6 +163,10 @@ jobs:
         run: node scripts/business-fleet-onboarding-portfolio-home-audit.mjs
       - name: Business self-service onboarding convergence
         run: node scripts/business-self-service-onboarding-audit.mjs
+      - name: Business claim verification authority
+        run: node scripts/business-claim-verification-authority-audit.mjs
+      - name: Theme family convergence
+        run: node scripts/theme-family-audit.mjs
       - name: Business Home mobile card polish
         run: node scripts/business-home-mobile-card-polish-audit.mjs
       - name: Fleet ad-hoc stop and geofence intelligence

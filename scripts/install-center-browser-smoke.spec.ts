@@ -5,7 +5,7 @@ const EXPECTED_SHA=process.env.EXPECTED_SHA||'';
 
 test('Installation Center click-through and release assets',async({page,request})=>{
   await page.goto(BASE,{waitUntil:'domcontentloaded'});
-  await expect(page.getByText('Clean bathrooms shouldn’t be a gamble.')).toBeVisible({timeout:30000});
+  await expect(page.getByText('Find clean bathrooms you can actually trust.')).toBeVisible({timeout:30000});
   await expect(page.getByText('FOR YOU',{exact:true})).toBeVisible();
   await expect(page.getByText('FOR BUSINESS',{exact:true})).toBeVisible();
   await expect(page.getByText('TRUST + FRESHNESS',{exact:true})).toBeVisible();

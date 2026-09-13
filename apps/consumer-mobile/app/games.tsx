@@ -1,7 +1,7 @@
-import { getKleenestSupabaseClient,getMobileProgressionDashboard } from '@kleenest/mobile-core';
+import { getKleenestSupabaseClient,getMobileProgressionDashboard,loadKleenestThemeMode,resolveKleenestTheme,subscribeKleenestTheme,type KleenestThemeMode } from '@kleenest/mobile-core';
 import { router } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
-import { Pressable,SafeAreaView,ScrollView,StyleSheet,Text,View } from 'react-native';
+import { Pressable,SafeAreaView,ScrollView,StyleSheet,Text,useColorScheme,View } from 'react-native';
 import { GAME_DEFINITIONS } from '../services/gameModes';
 import { divisionForXp,divisionProgress,nextDivisionForXp } from '../services/engagementMetaGame';
 import { getProgressionOverviewV2 } from '../services/discoveryProgression';
@@ -28,6 +28,9 @@ const MODE_PROMISE:Record<string,string>={
 };
 
 export default function GamesHub(){
+ const systemScheme=useColorScheme();
+ const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
+ const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','game');
  const[dashboard,setDashboard]=useState<any>({}),[overview,setOverview]=useState<any>({}),[challenges,setChallenges]=useState<any[]>([]),[userId,setUserId]=useState(''),[message,setMessage]=useState('');
  async function load(){
   try{
@@ -35,6 +38,7 @@ export default function GamesHub(){
    setDashboard(d);setOverview(o);setChallenges(cg);setUserId(user?.id||'');
   }catch(error:any){setMessage(error?.message||'Arcade data could not be loaded.')}
  }
+ useEffect(()=>{let active=true;void loadKleenestThemeMode().then(mode=>{if(active)setThemeMode(mode)});const unsubscribe=subscribeKleenestTheme(mode=>{if(active)setThemeMode(mode)});return()=>{active=false;unsubscribe()}},[]);
  useEffect(()=>{void load()},[]);
  async function respond(id:string,accept:boolean){try{await respondGameChallenge(id,accept);setMessage(accept?'Challenge accepted.':'Challenge declined.');await load()}catch(error:any){setMessage(error?.message||'Challenge could not be updated.')}}
  const xp=Number(overview?.lifetime_xp??dashboard?.points??0),division=divisionForXp(xp),next=nextDivisionForXp(xp),pct=divisionProgress(xp);
@@ -43,36 +47,36 @@ export default function GamesHub(){
   {title:'THINK + SOLVE',items:GAME_DEFINITIONS.filter(g=>['trust_quiz','strategy','route_puzzle','ranking','detective','builder'].includes(g.mode))},
   {title:'MATCH + COMPETE',items:GAME_DEFINITIONS.filter(g=>['memory','relay','multiplayer_trust'].includes(g.mode))},
  ],[]);
- return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-   <View style={s.hero}>
+ return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+   <View style={[s.hero,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#34275a',borderColor:theme.accent,borderWidth:1}]}>
     <Text style={s.eyebrow}>KLEENEST ARCADE</Text>
     <Text style={s.title}>Play for mastery, not just XP.</Text>
     <Text style={s.body}>Every game has its own arena, rules, difficulty curve and personal-best loop. Useful restroom knowledge is the theme; beating yourself and other players is the reason to come back.</Text>
-    <View style={s.leagueRow}><View style={s.divisionIcon}><Text style={s.divisionGlyph}>{division.icon}</Text></View><View style={{flex:1}}><Text style={s.divisionName}>{division.name} Division</Text><Text style={s.meta}>{next?String(Math.max(0,next.minXp-xp))+' XP to '+next.name:'Top current division'}</Text><View style={s.track}><View style={[s.fill,{width:(String(Math.round(pct*100))+'%') as any}]} /></View></View><Pressable style={s.progressButton} onPress={()=>router.push('/progress')}><Text style={s.progressButtonText}>League →</Text></Pressable></View>
+    <View style={[s.leagueRow,{backgroundColor:theme.resolved==='dark'?theme.surface:'#4a3976'}]}><View style={[s.divisionIcon,{backgroundColor:theme.surface}]}><Text style={[s.divisionGlyph,{color:theme.accent}]}>{division.icon}</Text></View><View style={{flex:1}}><Text style={s.divisionName}>{division.name} Division</Text><Text style={s.meta}>{next?String(Math.max(0,next.minXp-xp))+' XP to '+next.name:'Top current division'}</Text><View style={s.track}><View style={[s.fill,{backgroundColor:theme.accent,width:(String(Math.round(pct*100))+'%') as any}]} /></View></View><Pressable style={[s.progressButton,{backgroundColor:theme.surface}]} onPress={()=>router.push('/progress')}><Text style={[s.progressButtonText,{color:theme.accent}]}>League →</Text></Pressable></View>
    </View>
 
    {groups.map(group=><View key={group.title} style={s.section}>
-    <Text style={s.sectionLabel}>{group.title}</Text>
-    <View style={s.grid}>{group.items.map(game=><Pressable accessibilityRole="button" accessibilityLabel={'Play '+game.name} key={game.code} style={s.card} onPress={()=>router.push({pathname:'/game/[code]',params:{code:game.code}})}>
-      <View style={s.cardTop}><Text style={s.icon}>{game.accent}</Text><View style={s.difficulty}><Text style={s.difficultyText}>{game.difficulty.toUpperCase()}</Text></View></View>
+    <Text style={[s.sectionLabel,{color:theme.muted}]}>{group.title}</Text>
+    <View style={s.grid}>{group.items.map(game=><Pressable accessibilityRole="button" accessibilityLabel={'Play '+game.name} key={game.code} style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push({pathname:'/game/[code]',params:{code:game.code}})}>
+      <View style={s.cardTop}><Text style={s.icon}>{game.accent}</Text><View style={[s.difficulty,{backgroundColor:theme.accentSoft}]}><Text style={[s.difficultyText,{color:theme.accent}]}>{game.difficulty.toUpperCase()}</Text></View></View>
       <Text style={s.arena}>{ARENA_LABEL[game.code]||'GAME ARENA'}</Text>
-      <Text style={s.gameName}>{game.name}</Text>
-      <Text style={s.cardBody}>{MODE_PROMISE[game.mode]||game.description}</Text>
-      <View style={s.cardFoot}><Text style={s.rounds}>{game.rounds} {game.mode==='memory'?'pairs':'rounds'}</Text><Text style={s.play}>PLAY →</Text></View>
+      <Text style={[s.gameName,{color:theme.ink}]}>{game.name}</Text>
+      <Text style={[s.cardBody,{color:theme.muted}]}>{MODE_PROMISE[game.mode]||game.description}</Text>
+      <View style={s.cardFoot}><Text style={[s.rounds,{color:theme.muted}]}>{game.rounds} {game.mode==='memory'?'pairs':'rounds'}</Text><Text style={[s.play,{color:theme.accent}]}>PLAY →</Text></View>
     </Pressable>)}</View>
    </View>)}
 
    <View style={s.section}>
     <Text style={s.sectionLabel}>COMMUNITY MATCHES</Text>
     {message?<Text style={s.notice}>{message}</Text>:null}
-    {challenges.length?challenges.slice(0,10).map(row=>{const game=GAME_DEFINITIONS.find(g=>g.code===row.game_code);const mineCreator=String(row.creator_id)===userId;const opponent=mineCreator?row.invitee_name:row.creator_name;const myScore=mineCreator?row.creator_score:row.invitee_score;const playable=row.status==='accepted'&&myScore==null;return <View key={String(row.id)} style={s.match}><View style={{flex:1}}><Text style={s.matchTitle}>{game?.accent||'🎮'} {game?.name||row.game_code}</Text><Text style={s.matchMeta}>{opponent||'Opponent'} · {String(row.status).toUpperCase()} · {row.creator_score??'—'}–{row.invitee_score??'—'}</Text></View>{row.status==='pending'&&!mineCreator?<><Pressable style={s.matchAccept} onPress={()=>respond(String(row.id),true)}><Text style={s.matchAcceptText}>ACCEPT</Text></Pressable><Pressable style={s.matchDecline} onPress={()=>respond(String(row.id),false)}><Text style={s.matchDeclineText}>DECLINE</Text></Pressable></>:null}{playable?<Pressable style={s.matchAccept} onPress={()=>router.push({pathname:'/game/[code]',params:{code:String(row.game_code),challengeId:String(row.id)}})}><Text style={s.matchAcceptText}>PLAY</Text></Pressable>:null}</View>}):<View style={s.empty}><Text style={s.emptyText}>No active matches. Open any game and challenge someone from your community.</Text></View>}
+    {challenges.length?challenges.slice(0,10).map(row=>{const game=GAME_DEFINITIONS.find(g=>g.code===row.game_code);const mineCreator=String(row.creator_id)===userId;const opponent=mineCreator?row.invitee_name:row.creator_name;const myScore=mineCreator?row.creator_score:row.invitee_score;const playable=row.status==='accepted'&&myScore==null;return <View key={String(row.id)} style={[s.match,{backgroundColor:theme.surface,borderColor:theme.line}]}><View style={{flex:1}}><Text style={[s.matchTitle,{color:theme.ink}]}>{game?.accent||'🎮'} {game?.name||row.game_code}</Text><Text style={[s.matchMeta,{color:theme.muted}]}>{opponent||'Opponent'} · {String(row.status).toUpperCase()} · {row.creator_score??'—'}–{row.invitee_score??'—'}</Text></View>{row.status==='pending'&&!mineCreator?<><Pressable style={[s.matchAccept,{backgroundColor:theme.accent}]} onPress={()=>respond(String(row.id),true)}><Text style={[s.matchAcceptText,{color:theme.accentText}]}>ACCEPT</Text></Pressable><Pressable style={[s.matchDecline,{backgroundColor:theme.accentSoft}]} onPress={()=>respond(String(row.id),false)}><Text style={[s.matchDeclineText,{color:theme.accent}]}>DECLINE</Text></Pressable></>:null}{playable?<Pressable style={[s.matchAccept,{backgroundColor:theme.accent}]} onPress={()=>router.push({pathname:'/game/[code]',params:{code:String(row.game_code),challengeId:String(row.id)}})}><Text style={[s.matchAcceptText,{color:theme.accentText}]}>PLAY</Text></Pressable>:null}</View>}):<View style={[s.empty,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.emptyText,{color:theme.muted}]}>No active matches. Open any game and challenge someone from your community.</Text></View>}
    </View>
 
-   <View style={s.metaGame}>
+   <View style={[s.metaGame,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#2b2148',borderWidth:1,borderColor:theme.accent}]}>
     <Text style={s.sectionLabelLight}>THE BIGGER GAME</Text>
     <Text style={s.metaTitle}>Games feed your Kleenest identity.</Text>
     <Text style={s.metaBody}>Personal bests, mastery, badges, streaks, useful real-world contributions and community standing all become part of the same long-term climb. XP moves the bar; mastery and reputation make the climb worth defending.</Text>
-    <View style={s.metaActions}><Pressable style={s.lightButton} onPress={()=>router.push('/progress')}><Text style={s.lightButtonText}>Progress + badges</Text></Pressable><Pressable style={s.lightButton} onPress={()=>router.push('/social')}><Text style={s.lightButtonText}>Community + rivals</Text></Pressable></View>
+    <View style={s.metaActions}><Pressable style={[s.lightButton,{backgroundColor:theme.surface}]} onPress={()=>router.push('/progress')}><Text style={[s.lightButtonText,{color:theme.accent}]}>Progress + badges</Text></Pressable><Pressable style={[s.lightButton,{backgroundColor:theme.surface}]} onPress={()=>router.push('/social')}><Text style={[s.lightButtonText,{color:theme.accent}]}>Community + rivals</Text></Pressable></View>
    </View>
  </ScrollView></SafeAreaView>;
 }
