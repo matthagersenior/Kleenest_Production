@@ -83,6 +83,21 @@ const result = await routes.findStops({
 });
 ```
 
+## Developer Portal guided flow
+
+The Developer Portal is designed to get a developer from sign-in to a proven integration without requiring them to create production credentials first.
+
+1. Sign in and open the invited partner workspace.
+2. Choose **Launch sandbox**. The portal issues a publishable token bound to the exact portal origin, capped at 15 requests per minute, expiring after one hour, and kept only in page memory.
+3. Use the **API Playground** to run a live nearby or along-route request against the partner's real Kleenest product access and quota.
+4. Inspect the rendered recommendations, visual result surface, raw response, and generated examples for cURL, JavaScript, Widget, Map, Route SDK, and MCP.
+5. Load a scenario from the **Sample gallery** when a use-case is a better starting point than a blank request.
+6. When the integration is proven, choose **Where will this run?** and issue the correct production credential:
+   - server API key for trusted server/backend/MCP environments,
+   - origin-restricted Browser token for Widget, Map, and browser SDK integrations.
+
+Sandbox tokens are deliberately not persisted to browser storage. Refreshing or closing the portal discards the raw token even though its hashed credential record remains valid until expiration or revocation.
+
 ## External beta onboarding
 
 The Developer Portal is invite-based for partner workspaces:
