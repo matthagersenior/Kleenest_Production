@@ -44,6 +44,13 @@ const openFleetPortal=()=>{
   }
   router.push('/for-business' as any);
 };
+const openBusinessPortal=(mode:'signin'|'signup'='signin')=>()=>{
+  if(Platform.OS==='web'&&typeof window!=='undefined'){
+    window.location.assign(`/Kleenest_Production/business/auth/${mode==='signup'?'?mode=signup':''}`);
+    return;
+  }
+  router.push('/for-business' as any);
+};
 
 function useMarketingMeta(title: string, description: string) {
   useEffect(() => {
@@ -279,12 +286,16 @@ function PurposeHero({
   body,
   primary = 'INSTALL KLEENEST',
   secondary = 'OPEN THE APP',
+  primaryAction,
+  secondaryAction,
 }: {
   eyebrow: string;
   title: string;
   body: string;
   primary?: string;
   secondary?: string;
+  primaryAction?:()=>void;
+  secondaryAction?:()=>void;
 }) {
   const { width } = useWindowDimensions();
   const wide = width >= 900;
@@ -295,8 +306,8 @@ function PurposeHero({
         <Text style={s.detailHeroTitle}>{title}</Text>
         <Text style={s.detailHeroBody}>{body}</Text>
         <View style={s.heroButtonRow}>
-          <Pressable style={s.heroButtonLight} onPress={go('/install')}><Text style={s.heroButtonLightText}>{primary}</Text></Pressable>
-          <Pressable style={s.heroButtonOutline} onPress={go('/?app=1')}><Text style={s.heroButtonOutlineText}>{secondary}</Text></Pressable>
+          <Pressable style={s.heroButtonLight} onPress={primaryAction||go('/install')}><Text style={s.heroButtonLightText}>{primary}</Text></Pressable>
+          <Pressable style={s.heroButtonOutline} onPress={secondaryAction||go('/?app=1')}><Text style={s.heroButtonOutlineText}>{secondary}</Text></Pressable>
         </View>
       </View>
       <View style={s.detailHeroBadge}>
@@ -646,8 +657,10 @@ export function ForBusinessMarketingPage() {
         eyebrow="FOR BUSINESS"
         title="Make a clean restroom part of your customer experience strategy."
         body="Kleenest helps businesses get found, earn trust, engage visitors and act on restroom experience data. The goal is a tighter loop between what customers experience and what the business can improve."
-        primary="INSTALL KLEENEST"
-        secondary="SEE CONSUMER VIEW"
+        primary="START BUSINESS / FLEET / ENTERPRISE"
+        secondary="BUSINESS SIGN IN"
+        primaryAction={openBusinessPortal('signup')}
+        secondaryAction={openBusinessPortal('signin')}
       />
       <View style={s.detailSection}>
         <Eyebrow>BUSINESS VALUE</Eyebrow>
@@ -663,12 +676,12 @@ export function ForBusinessMarketingPage() {
         <Text style={s.businessLoopBody}>When customers can see fresh evidence and businesses can act on that evidence, restroom quality becomes something that can be managed—not just complained about.</Text>
       </View>
       <View style={s.pageCta}>
-        <Text style={s.pageCtaTitle}>Consumer experience and operator workspaces stay connected.</Text>
-        <Text style={s.pageCtaBody}>Open the customer experience, or enter the dedicated Fleet web portal for authorized owners, admins, managers and dispatchers.</Text>
+        <Text style={s.pageCtaTitle}>Start with the organization. Kleenest routes you to the right product.</Text>
+        <Text style={s.pageCtaBody}>Create or claim a Business workspace once. Your locations, mobile workforce, markets and goals determine whether Kleenest recommends Business Standard, Growth, Fleet, Enterprise or Enterprise + Fleet.</Text>
         <View style={s.finalCtaActions}>
-          <Pressable style={s.finalCtaPrimary} onPress={openFleetPortal}><Text style={s.finalCtaPrimaryText}>OPEN FLEET PORTAL</Text></Pressable>
-          <Pressable style={s.finalCtaSecondary} onPress={go('/?app=1')}><Text style={s.finalCtaSecondaryText}>OPEN CONSUMER APP</Text></Pressable>
-          <Pressable style={s.finalCtaSecondary} onPress={go('/install')}><Text style={s.finalCtaSecondaryText}>INSTALL KLEENEST</Text></Pressable>
+          <Pressable style={s.finalCtaPrimary} onPress={openBusinessPortal('signup')}><Text style={s.finalCtaPrimaryText}>START BUSINESS / FLEET / ENTERPRISE</Text></Pressable>
+          <Pressable style={s.finalCtaSecondary} onPress={openBusinessPortal('signin')}><Text style={s.finalCtaSecondaryText}>BUSINESS SIGN IN</Text></Pressable>
+          <Pressable style={s.finalCtaSecondary} onPress={openFleetPortal}><Text style={s.finalCtaSecondaryText}>OPEN FLEET PORTAL</Text></Pressable>
         </View>
       </View>
     </Shell>
