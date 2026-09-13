@@ -35,7 +35,7 @@ test('Installation Center click-through and release assets',async({page,request}
   const manifest=await manifestResponse.json();
   expect(manifest.display).toBe('standalone');
   expect(manifest.scope).toBe('/Kleenest_Production/');
-  expect(manifest.start_url).toBe('/Kleenest_Production/explore');
+  expect(manifest.start_url).toBe('/Kleenest_Production/?app=1');
   expect(manifest.shortcuts.some((x:any)=>x.url==='/Kleenest_Production/install')).toBeTruthy();
 
   const stateResponse=await request.get(BASE+'Kleenest-release-state.json');
