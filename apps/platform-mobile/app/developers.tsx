@@ -77,7 +77,7 @@ export default function DeveloperPartners(){
       ()=>createDeveloperPartner({
         name:'Kleenest Demo '+new Date().toLocaleDateString(),
         slug:'kleenest-demo-'+stamp,
-        bundleKey:'starter_api'
+        bundleKey:'developer_sandbox'
       }),
       false
     );
@@ -107,7 +107,7 @@ export default function DeveloperPartners(){
         <Pressable onPress={()=>void Linking.openURL('https://matthagersenior.github.io/Kleenest_Production/developer/')} style={[s.button,{flex:1}]}><Text style={s.buttonText}>Open Developer Portal</Text></Pressable>
         <Pressable disabled={busy} onPress={()=>void createDemoPartner()} style={[s.primary,{flex:1},busy&&s.disabled]}><Text style={s.primaryText}>Launch Demo Workspace</Text></Pressable>
       </View>
-      <Text style={s.meta}>Demo workspaces use Starter API defaults. The portal sandbox credential is not persisted in the browser and expires after one hour.</Text>
+      <Text style={s.meta}>Demo workspaces use the low-quota Developer Sandbox bundle so Nearby, Route, Place Details and Place Match can all be tested without changing normal customer entitlements. The portal sandbox credential is not persisted in the browser and expires after one hour.</Text>
     </View>
 
     <View style={s.section}>
