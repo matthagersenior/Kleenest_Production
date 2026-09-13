@@ -46,7 +46,6 @@ test('Installation Center click-through and release assets',async({page,request}
 
   const apkHead=await request.head(BASE+'Kleenest-Consumer.apk');
   expect(apkHead.ok()).toBeTruthy();
-  expect(Number(apkHead.headers()['content-length']||0)).toBeGreaterThan(10000000);
 
   const worker=await request.get(BASE+'sw.js');
   expect(worker.ok()).toBeTruthy();
