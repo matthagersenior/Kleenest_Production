@@ -1,5 +1,37 @@
 const prefix='kleenest.business.web.secure.';
-function storage(){return typeof window==='undefined'?null:window.localStorage}
-export async function getItemAsync(key:string){return storage()?.getItem(prefix+key)??null}
-export async function setItemAsync(key:string,value:string){storage()?.setItem(prefix+key,value)}
-export async function deleteItemAsync(key:string){storage()?.removeItem(prefix+key)}
+const memory=new Map<string,string>();
+
+function storage(){
+  if(typeof window==='undefined')return null;
+  try{return window.localStorage}catch{return null}
+}
+
+export async function getItemAsync(key:string){
+  const namespaced=prefix+key;
+  const target=storage();
+  if(target){
+    try{
+      const value=target.getItem(namespaced);
+      if(value!==null)return value;
+    }catch{}
+  }
+  return memory.get(namespaced)??null;
+}
+
+export async function setItemAsync(key:string,value:string){
+  const namespaced=prefix+key;
+  memory.set(namespaced,value);
+  const target=storage();
+  if(target){
+    try{target.setItem(namespaced,value)}catch{}
+  }
+}
+
+export async function deleteItemAsync(key:string){
+  const namespaced=prefix+key;
+  memory.delete(namespaced);
+  const target=storage();
+  if(target){
+    try{target.removeItem(namespaced)}catch{}
+  }
+}
