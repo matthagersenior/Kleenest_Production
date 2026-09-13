@@ -298,6 +298,7 @@ function publicPlaceDetails(row: Record<string, unknown>) {
       open24Hours,
       amenityNames,
       smartBathroom: boolOrNull(row.smart_bathroom),
+      smartRestroom: boolOrNull(row.smart_bathroom) ?? (amenityNames.some(name=>/^(connected \/ smart restroom|smart restroom)$/i.test(name))?true:null),
       cleanlinessPct: finite(row.cleanliness_pct ?? row.cleanliness),
       rating: finite(row.rating),
       reviewCount: finite(row.review_count),
@@ -375,6 +376,7 @@ function normalizeRow(row: Record<string, unknown>) {
       familyRestroom: boolOrNull(row.family_restroom),
       open24Hours: boolOrNull(row.open_24_hours ?? row.open24_hours),
       amenityNames: Array.isArray(row.amenity_names) ? row.amenity_names.map(String) : [],
+      smartRestroom: boolOrNull(row.smart_bathroom) ?? (Array.isArray(row.amenity_names)&&row.amenity_names.some((name:unknown)=>/^(connected \/ smart restroom|smart restroom)$/i.test(String(name)))?true:null),
     },
     distanceMeters,
     distanceAheadMeters: finite(row.distance_ahead_meters),
@@ -577,7 +579,8 @@ async function nearby(body: any) {
   const limit = Math.round(boundedNumber(body?.limit, 1, 100, 10));
   const requirements = body?.requirements ?? {};
   const amenityNames = normalizedAmenities(requirements.amenityNames);
-  const amenityMatch = requirements.amenityMatch === 'all' ? 'all' : 'any';
+  if(requirements.smartRestroom===true&&!amenityNames.some(name=>name.toLowerCase()==='connected / smart restroom'))amenityNames.push('Connected / Smart Restroom');
+  const amenityMatch = requirements.smartRestroom===true?'all':requirements.amenityMatch === 'all' ? 'all' : 'any';
 
   const { data, error } = await db.rpc('map_network_nearby_v3', {
     p_lat: latitude,
@@ -612,7 +615,8 @@ async function route(body: any) {
   const limit = Math.round(boundedNumber(body?.limit, 1, 50, 10));
   const requirements = body?.requirements ?? {};
   const amenityNames = normalizedAmenities(requirements.amenityNames);
-  const amenityMatch = requirements.amenityMatch === 'all' ? 'all' : 'any';
+  if(requirements.smartRestroom===true&&!amenityNames.some(name=>name.toLowerCase()==='connected / smart restroom'))amenityNames.push('Connected / Smart Restroom');
+  const amenityMatch = requirements.smartRestroom===true?'all':requirements.amenityMatch === 'all' ? 'all' : 'any';
 
   const { data, error } = await db.rpc('map_network_along_route_v1', {
     p_route_geojson: geometry,
@@ -741,13 +745,14 @@ Deno.serve(async req => {
   const isNearby = routePath === '/v1/recommendations/nearby';
   const isRoute = routePath === '/v1/recommendations/route';
   const isPlaceMatch = routePath === '/v1/places/match';
+  const isAmenities = routePath === '/v1/amenities';
   const isPlaceDetails = /^\/v1\/places\/[^/]+$/.test(routePath) && !isPlaceMatch;
   const isDevices = routePath === '/v1/devices';
   const isDeviceEvents = routePath === '/v1/devices/events';
   const isDeviceCommand = /^\/v1\/devices\/[0-9a-f-]+\/commands$/i.test(routePath);
   const isDeviceCommandComplete = /^\/v1\/devices\/[0-9a-f-]+\/commands\/[0-9a-f-]+\/complete$/i.test(routePath);
 
-  if (!isNearby && !isRoute && !isPlaceMatch && !isPlaceDetails && !isDevices && !isDeviceEvents && !isDeviceCommand && !isDeviceCommandComplete) {
+  if (!isNearby && !isRoute && !isPlaceMatch && !isAmenities && !isPlaceDetails && !isDevices && !isDeviceEvents && !isDeviceCommand && !isDeviceCommandComplete) {
     return json({ error: 'Not found' }, 404, corsHeaders(req));
   }
   if ((isNearby || isRoute || isPlaceMatch || isDeviceEvents || isDeviceCommand || isDeviceCommandComplete) && req.method !== 'POST') {
@@ -756,13 +761,13 @@ Deno.serve(async req => {
   if (isDevices && req.method !== 'GET' && req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
   }
-  if (isPlaceDetails && req.method !== 'GET') {
+  if ((isPlaceDetails || isAmenities) && req.method !== 'GET') {
     return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
   }
 
   let auth: Authorization;
   try {
-    auth = await authorize(req, routePath);
+    auth = await authorize(req, isAmenities?'/v1/places/amenities':routePath);
   } catch (error) {
     console.error('Kleenest Platform authorization failed', error instanceof Error ? error.name : 'unknown_error');
     return json({ error: 'Service unavailable' }, 503, corsHeaders(req));
@@ -772,7 +777,11 @@ Deno.serve(async req => {
   let status = 200;
   let payload: unknown;
   try {
-    if (isPlaceDetails) {
+    if (isAmenities) {
+      const {data,error}=await db.from('amenities').select('id,name,category').order('category').order('name');
+      if(error)throw error;
+      payload={amenities:Array.isArray(data)?data:[],metadata:{requestedAt:new Date().toISOString(),smartRestroomAmenity:'Connected / Smart Restroom'}};
+    } else if (isPlaceDetails) {
       payload = await placeDetails(routePath);
       if (!payload) {
         status = 404;
