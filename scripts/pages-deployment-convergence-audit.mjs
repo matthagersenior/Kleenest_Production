@@ -64,7 +64,7 @@ for(const token of ['Install Kleenest','beforeinstallprompt','Kleenest-Consumer.
 const consumerHome=read('apps/consumer-mobile/app/index.tsx');
 for(const token of ['GET KLEENEST','Install on this device','/install','MarketingHome','useConsumerWebExperience','showInstall'])requireToken(consumerHome,token,'Consumer Home + public marketing split');
 const marketingSite=read('apps/consumer-mobile/components/MarketingSitePro.tsx');
-for(const token of ['Clean bathrooms shouldn’t be a gamble.','For You','For Business','TRUST + FRESHNESS','INSTALL KLEENEST','KLEENEST ANYWHERE','useConsumerWebExperience','appActive','OPEN FLEET PORTAL','/Kleenest_Production/fleet/'])requireToken(marketingSite,token,'Public Kleenest marketing site');
+for(const token of ['Find clean bathrooms you can actually trust.','For You','For Business','TRUST + FRESHNESS','INSTALL KLEENEST','KLEENEST ANYWHERE','useConsumerWebExperience','appActive','OPEN FLEET PORTAL','/Kleenest_Production/fleet/'])requireToken(marketingSite,token,'Public Kleenest marketing site');
 for(const token of ['APP_PRESENCE_KEY','display-mode: standalone','getInstalledRelatedApps','signedIn','appActive','markConsumerAppPresence'])requireToken(webExperience,token,'Consumer website/app presence gate');
 const installSmoke=read('.github/workflows/install-center-smoke.yml');
 for(const token of ['Verify Kleenest Installation Center','Publish Consumer Standalone Installer','@playwright/test','EXPECTED_SHA','install-center-browser-smoke.spec.ts'])requireToken(installSmoke,token,'Installation Center post-deploy browser smoke workflow');

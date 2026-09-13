@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eef7f1"/><stop offset="1" stop-color="#d7eadf"/></linearGradient>
+  <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#164e36"/><stop offset="1" stop-color="#0a291c"/></linearGradient>
+  <filter id="shadow"><feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#123e2a" flood-opacity=".18"/></filter>
+</defs>
+<rect width="1200" height="760" rx="42" fill="url(#bg)"/>
+<circle cx="1020" cy="110" r="190" fill="#c4e2cf" opacity=".65"/>
+<circle cx="125" cy="690" r="210" fill="#fffdf8" opacity=".9"/>
+<!-- storefront -->
+<rect x="610" y="72" width="510" height="618" rx="34" fill="#fffdf8" filter="url(#shadow)"/>
+<rect x="640" y="104" width="450" height="394" rx="24" fill="url(#glass)"/>
+<rect x="676" y="138" width="218" height="42" rx="12" fill="#fffdf8" opacity=".96"/>
+<text x="699" y="166" font-family="Arial,sans-serif" font-size="20" font-weight="800" fill="#123e2a">KLEENEST PARTNER</text>
+<text x="676" y="224" font-family="Arial,sans-serif" font-size="34" font-weight="800" fill="#ffffff">Clean restroom.</text>
+<text x="676" y="263" font-family="Arial,sans-serif" font-size="34" font-weight="800" fill="#d9f0e2">Fresh evidence.</text>
+<text x="676" y="302" font-family="Arial,sans-serif" font-size="34" font-weight="800" fill="#ffffff">Better stop.</text>
+<!-- qr sticker -->
+<rect x="922" y="328" width="132" height="144" rx="18" fill="#ffffff"/>
+<text x="944" y="352" font-family="Arial,sans-serif" font-size="12" font-weight="900" fill="#123e2a">SCAN KLEENEST</text>
+<g fill="#123e2a">
+<rect x="944" y="369" width="26" height="26"/><rect x="950" y="375" width="14" height="14" fill="#fff"/>
+<rect x="1004" y="369" width="26" height="26"/><rect x="1010" y="375" width="14" height="14" fill="#fff"/>
+<rect x="944" y="421" width="26" height="26"/><rect x="950" y="427" width="14" height="14" fill="#fff"/>
+<rect x="980" y="371" width="10" height="10"/><rect x="980" y="389" width="18" height="8"/><rect x="974" y="405" width="10" height="18"/><rect x="990" y="408" width="12" height="10"/><rect x="1008" y="405" width="16" height="12"/><rect x="986" y="430" width="10" height="16"/><rect x="1004" y="428" width="24" height="9"/>
+</g>
+<!-- phone -->
+<g filter="url(#shadow)">
+<rect x="384" y="116" width="298" height="566" rx="54" fill="#0b2118"/>
+<rect x="398" y="132" width="270" height="534" rx="43" fill="#ffffff"/>
+<rect x="485" y="143" width="95" height="18" rx="9" fill="#0b2118"/>
+</g>
+<text x="426" y="194" font-family="Arial,sans-serif" font-size="20" font-weight="900" fill="#123e2a">KLEENEST</text>
+<text x="426" y="218" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#617066">Find a bathroom you can trust.</text>
+<!-- map -->
+<rect x="420" y="242" width="226" height="150" rx="20" fill="#eef3ef"/>
+<path d="M430 270 L635 338 M452 382 L607 250 M470 246 L515 391 M568 244 L588 391" stroke="#d5ded8" stroke-width="6"/>
+<g fill="#1d5a3d"><circle cx="468" cy="292" r="16"/><circle cx="563" cy="315" r="16"/><circle cx="612" cy="278" r="16"/></g>
+<g fill="#fff"><circle cx="468" cy="289" r="5"/><circle cx="563" cy="312" r="5"/><circle cx="612" cy="275" r="5"/></g>
+<circle cx="525" cy="345" r="10" fill="#2b78ff"/><circle cx="525" cy="345" r="18" fill="none" stroke="#2b78ff" opacity=".25" stroke-width="7"/>
+<!-- listing -->
+<rect x="420" y="410" width="226" height="82" rx="18" fill="#f6faf7" stroke="#cfe3d6"/>
+<rect x="434" y="425" width="48" height="48" rx="12" fill="#123e2a"/><text x="446" y="455" font-family="Arial" font-size="16" font-weight="900" fill="#fff">4.8</text>
+<text x="494" y="435" font-family="Arial" font-size="14" font-weight="800" fill="#11251a">Olive &amp; Oak Coffee</text>
+<text x="494" y="454" font-family="Arial" font-size="11" fill="#617066">0.2 mi · Open now</text>
+<text x="494" y="473" font-family="Arial" font-size="10" font-weight="800" fill="#2f7a50">Verified 9 min ago</text>
+<rect x="420" y="505" width="226" height="112" rx="20" fill="#123e2a"/>
+<text x="438" y="533" font-family="Arial" font-size="11" font-weight="900" fill="#b7d2c1">TODAY'S QUEST</text>
+<text x="438" y="560" font-family="Arial" font-size="20" font-weight="900" fill="#fff">Freshen the route</text>
+<rect x="438" y="578" width="160" height="8" rx="4" fill="#315d46"/><rect x="438" y="578" width="108" height="8" rx="4" fill="#f0d17d"/>
+<text x="438" y="603" font-family="Arial" font-size="10" fill="#c3d3c9">2 of 3 complete</text><text x="582" y="603" font-family="Arial" font-size="10" font-weight="900" fill="#f0d17d">+180 XP</text>
+<!-- floating review -->
+<g filter="url(#shadow)">
+<rect x="72" y="128" width="286" height="152" rx="24" fill="#ffffff"/>
+</g>
+<circle cx="105" cy="164" r="18" fill="#dff0e6"/><text x="98" y="171" font-family="Arial" font-size="17" font-weight="900" fill="#123e2a">T</text>
+<text x="136" y="158" font-family="Arial" font-size="15" font-weight="900" fill="#11251a">Taylor M.</text>
+<text x="136" y="178" font-family="Arial" font-size="11" fill="#617066">2 days ago · verified visit</text>
+<text x="96" y="208" font-family="Arial" font-size="17" fill="#d4a82d">★★★★★</text>
+<text x="96" y="234" font-family="Arial" font-size="13" font-weight="700" fill="#33473b">“Super clean, well stocked.”</text>
+<rect x="96" y="247" width="58" height="20" rx="10" fill="#eef7f1"/><text x="111" y="261" font-family="Arial" font-size="9" font-weight="800" fill="#1d5a3d">FRESH</text>
+<rect x="162" y="247" width="58" height="20" rx="10" fill="#eef7f1"/><text x="177" y="261" font-family="Arial" font-size="9" font-weight="800" fill="#1d5a3d">CLEAN</text>
+<!-- trust card -->
+<g filter="url(#shadow)"><rect x="96" y="328" width="234" height="134" rx="22" fill="#123e2a"/></g>
+<text x="120" y="358" font-family="Arial" font-size="11" font-weight="900" fill="#b7d2c1">KLEENEST TRUST</text>
+<text x="120" y="406" font-family="Arial" font-size="46" font-weight="900" fill="#ffffff">4.8</text>
+<text x="209" y="394" font-family="Arial" font-size="13" font-weight="800" fill="#f0d17d">STRONG</text>
+<text x="209" y="416" font-family="Arial" font-size="11" fill="#c3d3c9">Recent agreement</text>
+<text x="120" y="443" font-family="Arial" font-size="10" fill="#c3d3c9">320+ reviews · refreshed today</text>
+<!-- footer pills -->
+<rect x="74" y="556" width="248" height="112" rx="24" fill="#fffdf8" stroke="#d8e3db"/>
+<text x="98" y="587" font-family="Arial" font-size="13" font-weight="900" fill="#123e2a">DISCOVER · VERIFY · EARN</text>
+<text x="98" y="613" font-family="Arial" font-size="12" fill="#617066">Quests, missions, check-ins,</text>
+<text x="98" y="633" font-family="Arial" font-size="12" fill="#617066">reviews, journeys and rewards</text>
+<text x="98" y="653" font-family="Arial" font-size="12" fill="#617066">that make the network fresher.</text>
+</svg>

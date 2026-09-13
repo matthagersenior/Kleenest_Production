@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e9f4ed"/><stop offset="1" stop-color="#cfe4d7"/></linearGradient><filter id="sh"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#123e2a" flood-opacity=".18"/></filter></defs>
+<rect width="1200" height="760" rx="42" fill="url(#g)"/>
+<text x="64" y="84" font-family="Arial" font-size="13" font-weight="900" fill="#123e2a" letter-spacing="2">KLEENEST BUSINESS</text>
+<text x="64" y="132" font-family="Arial" font-size="38" font-weight="900" fill="#11251a">Customer trust you can see.</text>
+<text x="64" y="166" font-family="Arial" font-size="15" fill="#617066">QR engagement, fresh reviews, customer notifications and measurable progress in one operating loop.</text>
+<!-- laptop -->
+<g filter="url(#sh)">
+<rect x="80" y="218" width="688" height="398" rx="28" fill="#0a291c"/>
+<rect x="102" y="240" width="644" height="352" rx="16" fill="#fff"/>
+<path d="M58 616 H792 L742 654 H110 Z" fill="#224b37"/>
+</g>
+<rect x="102" y="240" width="150" height="352" rx="16" fill="#123e2a"/>
+<text x="126" y="279" font-family="Arial" font-size="18" font-weight="900" fill="#fff">KLEENEST</text>
+<g font-family="Arial" font-size="11" fill="#c6d7cc"><text x="126" y="328">Overview</text><text x="126" y="365">Locations</text><text x="126" y="402">Reviews</text><text x="126" y="439">QR Analytics</text><text x="126" y="476">Customers</text><text x="126" y="513">Live Ops</text><text x="126" y="550">Reports</text></g>
+<text x="282" y="278" font-family="Arial" font-size="13" font-weight="900" fill="#617066">YOUR KLEENEST PROGRESS</text>
+<text x="282" y="316" font-family="Arial" font-size="27" font-weight="900" fill="#11251a">A cleaner restroom is becoming a business advantage.</text>
+<!-- KPI -->
+<g>
+<rect x="282" y="348" width="128" height="94" rx="16" fill="#eef7f1"/><text x="299" y="372" font-family="Arial" font-size="10" font-weight="900" fill="#1d5a3d">QR SCANS</text><text x="299" y="405" font-family="Arial" font-size="25" font-weight="900" fill="#11251a">1,243</text><text x="299" y="426" font-family="Arial" font-size="10" font-weight="800" fill="#2f7a50">↑ 42%</text>
+<rect x="426" y="348" width="128" height="94" rx="16" fill="#eef7f1"/><text x="443" y="372" font-family="Arial" font-size="10" font-weight="900" fill="#1d5a3d">TRUST SCORE</text><text x="443" y="405" font-family="Arial" font-size="25" font-weight="900" fill="#11251a">92</text><text x="443" y="426" font-family="Arial" font-size="10" font-weight="800" fill="#2f7a50">↑ 12</text>
+<rect x="570" y="348" width="128" height="94" rx="16" fill="#eef7f1"/><text x="587" y="372" font-family="Arial" font-size="10" font-weight="900" fill="#1d5a3d">RATING</text><text x="587" y="405" font-family="Arial" font-size="25" font-weight="900" fill="#11251a">4.8 ★</text><text x="587" y="426" font-family="Arial" font-size="10" font-weight="800" fill="#2f7a50">↑ 0.3</text>
+</g>
+<!-- chart -->
+<rect x="282" y="464" width="416" height="104" rx="18" fill="#f7faf8"/>
+<path d="M304 542 L348 525 L390 532 L434 498 L477 508 L522 480 L566 488 L612 456 L674 468" fill="none" stroke="#1d8b59" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M304 552 H678" stroke="#d9e3dc" stroke-width="2"/>
+<!-- customer QR scene -->
+<g filter="url(#sh)"><rect x="818" y="220" width="314" height="416" rx="30" fill="#fffdf8"/></g>
+<rect x="846" y="250" width="258" height="126" rx="20" fill="#123e2a"/>
+<text x="868" y="280" font-family="Arial" font-size="12" font-weight="900" fill="#b7d2c1">CUSTOMER MOMENT</text>
+<text x="868" y="315" font-family="Arial" font-size="23" font-weight="900" fill="#fff">Scan. Check in.</text>
+<text x="868" y="342" font-family="Arial" font-size="23" font-weight="900" fill="#fff">Earn. Return.</text>
+<rect x="854" y="408" width="108" height="138" rx="18" fill="#eef7f1"/>
+<text x="870" y="435" font-family="Arial" font-size="10" font-weight="900" fill="#123e2a">KLEENEST QR</text>
+<g fill="#123e2a"><rect x="874" y="455" width="28" height="28"/><rect x="910" y="455" width="28" height="28"/><rect x="874" y="491" width="28" height="28"/><rect x="910" y="493" width="12" height="12"/><rect x="927" y="492" width="11" height="28"/></g>
+<text x="871" y="535" font-family="Arial" font-size="9" fill="#617066">SCAN TO CHECK IN</text>
+<!-- phone notification -->
+<rect x="980" y="404" width="100" height="170" rx="22" fill="#0a291c"/><rect x="989" y="414" width="82" height="150" rx="17" fill="#fff"/>
+<text x="999" y="443" font-family="Arial" font-size="8" font-weight="900" fill="#123e2a">KLEENEST</text>
+<circle cx="1030" cy="477" r="20" fill="#dff0e6"/><text x="1022" y="484" font-family="Arial" font-size="18" font-weight="900" fill="#123e2a">✓</text>
+<text x="1000" y="514" font-family="Arial" font-size="9" font-weight="900" fill="#11251a">Checked in!</text>
+<text x="1000" y="532" font-family="Arial" font-size="8" fill="#617066">+50 XP</text>
+<text x="1000" y="548" font-family="Arial" font-size="7" fill="#617066">Thanks for helping</text>
+<text x="1000" y="559" font-family="Arial" font-size="7" fill="#617066">keep evidence fresh.</text>
+<!-- notification -->
+<g filter="url(#sh)"><rect x="814" y="90" width="318" height="96" rx="20" fill="#fff"/></g>
+<circle cx="846" cy="138" r="18" fill="#123e2a"/><text x="840" y="145" font-family="Arial" font-size="18" font-weight="900" fill="#fff">K</text>
+<text x="876" y="123" font-family="Arial" font-size="11" font-weight="900" fill="#11251a">Kleenest · now</text>
+<text x="876" y="146" font-family="Arial" font-size="12" font-weight="800" fill="#123e2a">A freshly verified restroom is nearby.</text>
+<text x="876" y="164" font-family="Arial" font-size="10" fill="#617066">Olive &amp; Oak · clean · open now</text>
+</svg>

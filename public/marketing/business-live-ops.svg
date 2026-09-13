@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+<defs><linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#09271b"/><stop offset="1" stop-color="#164e36"/></linearGradient><filter id="sd"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#061b12" flood-opacity=".38"/></filter></defs>
+<rect width="1200" height="760" rx="42" fill="url(#bg2)"/>
+<text x="64" y="80" font-family="Arial" font-size="13" font-weight="900" fill="#b7d2c1" letter-spacing="2">KLEENEST LIVE OPS</text>
+<text x="64" y="128" font-family="Arial" font-size="36" font-weight="900" fill="#ffffff">See the network. Act before the complaint.</text>
+<text x="64" y="161" font-family="Arial" font-size="14" fill="#b8c9bf">Smart devices, service events, geofences, QR activity and customer evidence in one live operating picture.</text>
+<!-- main screen -->
+<g filter="url(#sd)"><rect x="64" y="205" width="742" height="470" rx="28" fill="#0e3525" stroke="#31513e"/></g>
+<rect x="90" y="232" width="690" height="54" rx="16" fill="#123e2a"/>
+<text x="112" y="266" font-family="Arial" font-size="19" font-weight="900" fill="#fff">KLEENEST · LIVE OPERATIONS</text>
+<circle cx="746" cy="260" r="7" fill="#5fd58d"/><text x="635" y="265" font-family="Arial" font-size="10" fill="#b7d2c1">ALL SYSTEMS OPERATIONAL</text>
+<!-- map -->
+<rect x="90" y="305" width="390" height="334" rx="20" fill="#e9f0eb"/>
+<path d="M108 354 L460 506 M128 604 L444 322 M182 318 L238 630 M350 314 L386 634" stroke="#d2dcd5" stroke-width="8"/>
+<g fill="#1d5a3d"><circle cx="178" cy="398" r="18"/><circle cx="296" cy="458" r="18"/><circle cx="398" cy="380" r="18"/><circle cx="352" cy="558" r="18"/><circle cx="222" cy="548" r="18"/></g>
+<g fill="#fff"><circle cx="178" cy="394" r="5"/><circle cx="296" cy="454" r="5"/><circle cx="398" cy="376" r="5"/><circle cx="352" cy="554" r="5"/><circle cx="222" cy="544" r="5"/></g>
+<circle cx="426" cy="500" r="18" fill="#d7872e"/><text x="420" y="507" font-family="Arial" font-size="18" font-weight="900" fill="#fff">!</text>
+<rect x="238" y="386" width="172" height="90" rx="16" fill="#fff"/>
+<text x="256" y="410" font-family="Arial" font-size="10" font-weight="900" fill="#123e2a">UNION SQUARE</text>
+<text x="256" y="432" font-family="Arial" font-size="14" font-weight="900" fill="#11251a">Clean · online</text>
+<text x="256" y="451" font-family="Arial" font-size="9" fill="#617066">Last serviced 12 min ago</text>
+<!-- KPI column -->
+<g>
+<rect x="504" y="305" width="124" height="96" rx="18" fill="#163f2d"/><text x="522" y="329" font-family="Arial" font-size="9" font-weight="900" fill="#b7d2c1">ONLINE</text><text x="522" y="366" font-family="Arial" font-size="30" font-weight="900" fill="#fff">248</text><text x="522" y="386" font-family="Arial" font-size="9" fill="#7fd49c">99% uptime</text>
+<rect x="644" y="305" width="124" height="96" rx="18" fill="#163f2d"/><text x="662" y="329" font-family="Arial" font-size="9" font-weight="900" fill="#b7d2c1">ALERTS</text><text x="662" y="366" font-family="Arial" font-size="30" font-weight="900" fill="#fff">12</text><text x="662" y="386" font-family="Arial" font-size="9" fill="#efb16e">3 high priority</text>
+<rect x="504" y="417" width="124" height="96" rx="18" fill="#163f2d"/><text x="522" y="441" font-family="Arial" font-size="9" font-weight="900" fill="#b7d2c1">ON-TIME</text><text x="522" y="478" font-family="Arial" font-size="30" font-weight="900" fill="#fff">98%</text><text x="522" y="498" font-family="Arial" font-size="9" fill="#7fd49c">↑ 6% this month</text>
+<rect x="644" y="417" width="124" height="96" rx="18" fill="#163f2d"/><text x="662" y="441" font-family="Arial" font-size="9" font-weight="900" fill="#b7d2c1">RATING</text><text x="662" y="478" font-family="Arial" font-size="30" font-weight="900" fill="#fff">4.8</text><text x="662" y="498" font-family="Arial" font-size="9" fill="#7fd49c">↑ 0.3</text>
+</g>
+<!-- device status -->
+<rect x="504" y="529" width="264" height="110" rx="18" fill="#ffffff"/>
+<text x="522" y="553" font-family="Arial" font-size="10" font-weight="900" fill="#123e2a">SMART DEVICE STATUS</text>
+<text x="522" y="578" font-family="Arial" font-size="10" fill="#617066">Soap dispensers</text><circle cx="720" cy="574" r="6" fill="#4bbb78"/><text x="734" y="578" font-family="Arial" font-size="9" fill="#617066">242 online</text>
+<text x="522" y="602" font-family="Arial" font-size="10" fill="#617066">Occupancy sensors</text><circle cx="720" cy="598" r="6" fill="#4bbb78"/><text x="734" y="602" font-family="Arial" font-size="9" fill="#617066">248 online</text>
+<text x="522" y="626" font-family="Arial" font-size="10" fill="#617066">Air quality</text><circle cx="720" cy="622" r="6" fill="#d7872e"/><text x="734" y="626" font-family="Arial" font-size="9" fill="#617066">2 attention</text>
+<!-- right analytics rail -->
+<g filter="url(#sd)"><rect x="838" y="205" width="298" height="470" rx="28" fill="#fff"/></g>
+<text x="866" y="242" font-family="Arial" font-size="12" font-weight="900" fill="#123e2a">LIVE ACTIVITY + INTELLIGENCE</text>
+<rect x="866" y="268" width="242" height="98" rx="18" fill="#eef7f1"/>
+<text x="884" y="293" font-family="Arial" font-size="9" font-weight="900" fill="#1d5a3d">SERVICE PERFORMANCE</text>
+<path d="M884 340 L920 325 L956 330 L992 306 L1028 315 L1064 289" fill="none" stroke="#1d8b59" stroke-width="5"/>
+<rect x="866" y="382" width="242" height="112" rx="18" fill="#f7faf8"/>
+<text x="884" y="407" font-family="Arial" font-size="9" font-weight="900" fill="#123e2a">LIVE EVENTS</text>
+<text x="884" y="432" font-family="Arial" font-size="10" fill="#33473b">● Service complete · Union Square</text>
+<text x="884" y="454" font-family="Arial" font-size="10" fill="#33473b">● QR scan · Riverside Park</text>
+<text x="884" y="476" font-family="Arial" font-size="10" fill="#a66524">● Soap low · Moscone Center</text>
+<rect x="866" y="510" width="242" height="136" rx="18" fill="#123e2a"/>
+<text x="884" y="535" font-family="Arial" font-size="9" font-weight="900" fill="#b7d2c1">LOCATION INSIGHTS</text>
+<text x="884" y="570" font-family="Arial" font-size="24" font-weight="900" fill="#fff">+24%</text>
+<text x="948" y="567" font-family="Arial" font-size="10" fill="#c3d3c9">faster response</text>
+<text x="884" y="603" font-family="Arial" font-size="24" font-weight="900" fill="#fff">742</text>
+<text x="948" y="600" font-family="Arial" font-size="10" fill="#c3d3c9">visits / day</text>
+<text x="884" y="629" font-family="Arial" font-size="9" fill="#7fd49c">High-usage location · Union Square</text>
+</svg>
