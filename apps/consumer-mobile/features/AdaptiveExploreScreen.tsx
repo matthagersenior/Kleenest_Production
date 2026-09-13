@@ -838,7 +838,7 @@ export default function AdaptiveExploreScreen() {
                   <View style={s.filterSection}>
                     <View style={s.rowHeading}><Text style={s.filterSectionTitle}>Starting radius</Text><Text style={s.autoLabel}>Local search</Text></View>
                     <View accessibilityRole="radiogroup"><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
-                      {radiusChoices.map(choice=><Pressable accessibilityRole="radio" accessibilityState={{selected:radius===choice.meters}} key={choice.meters} style={[s.choice,radius===choice.meters&&s.choiceActive]} onPress={()=>chooseRadius(choice.meters)}><Text style={[s.choiceText,radius===choice.meters&&s.choiceTextActive]}>{choice.label}</Text></Pressable>)}
+                      {radiusChoices.map(choice=><Pressable accessibilityRole="radio" accessibilityState={{ selected: radius === choice.meters }} key={choice.meters} style={[s.choice,radius===choice.meters&&s.choiceActive]} onPress={()=>chooseRadius(choice.meters)}><Text style={[s.choiceText,radius===choice.meters&&s.choiceTextActive]}>{choice.label}</Text></Pressable>)}
                     </ScrollView></View>
                   </View>
                 ) : null}
