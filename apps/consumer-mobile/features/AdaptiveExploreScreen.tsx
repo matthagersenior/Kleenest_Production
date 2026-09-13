@@ -14,6 +14,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
+  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -37,6 +38,7 @@ import {
   writeNearbyContinuity,
 } from '../services/nearbyCache';
 import { captureConsumerDiscovery, captureConsumerRouteIntent } from '../services/consumerTelemetry';
+import { attachLocationPresentations } from '../services/locationPresentation';
 import {
   CompactRestroomSignals,
   MapLegend,
@@ -192,7 +194,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onAddToRoute, onDe
         style={s.cardMain}
       >
         <View style={s.cardTop}>
-          <PlaceIcon item={item} size={34} />
+          {item.consumer_photo_url?<Image source={{uri:String(item.consumer_photo_url)}} style={s.cardPhoto}/>:<PlaceIcon item={item} size={34} />}
           <View style={{ flex: 1 }}>
             <Text style={s.cardTitle}>{item.name || 'Restroom location'}</Text>
             {item.business_name ? <Text style={s.meta}>{item.business_name}</Text> : null}
@@ -371,7 +373,8 @@ export default function AdaptiveExploreScreen() {
     const summaries = ids.length
       ? await listLocationTrustSummaries(ids).catch(() => [])
       : [];
-    return attachLocationTrust(data, summaries);
+    const trusted=attachLocationTrust(data, summaries);
+    return attachLocationPresentations(trusted).catch(()=>trusted);
   }
 
   async function currentLocation() {
@@ -926,7 +929,7 @@ export default function AdaptiveExploreScreen() {
                       }}
                       style={[s.marker, active && s.markerActive]}
                     >
-                      <PlaceIcon item={row} size={active ? 28 : 22} />
+                      {row.consumer_photo_url?<Image source={{uri:String(row.consumer_photo_url)}} style={[s.markerPhoto,active&&s.markerPhotoActive]}/>:<PlaceIcon item={row} size={active ? 28 : 22} />}
                     </Pressable>
                   </Marker>
                 );
@@ -965,7 +968,7 @@ export default function AdaptiveExploreScreen() {
                   </Pressable>
                 </View>
                 <View style={s.selectedRow}>
-                  <PlaceIcon item={selected} size={34} />
+                  {selected.consumer_photo_url?<Image source={{uri:String(selected.consumer_photo_url)}} style={s.selectedPhoto}/>:<PlaceIcon item={selected} size={34} />}
                   <View style={{ flex: 1 }}>
                     <Text numberOfLines={1} style={s.selectedTitle}>{selected.name || 'Restroom location'}</Text>
                     <Text numberOfLines={2} style={s.meta}>
@@ -1152,6 +1155,8 @@ const s = StyleSheet.create({
   searchedAreaMarker:{width:30,height:30,borderRadius:15,backgroundColor:'#fff',borderWidth:3,borderColor:'#986c20',alignItems:'center',justifyContent:'center'},searchedAreaMarkerText:{fontSize:18,fontWeight:'900',color:'#986c20'},
   marker: { minWidth: 42, minHeight: 42, borderRadius: 21, backgroundColor: '#fff', borderWidth: 2, borderColor: palette.green, alignItems: 'center', justifyContent: 'center', padding: 4 },
   markerActive: { borderWidth: 4, transform: [{ scale: 1.1 }] },
+  markerPhoto:{width:34,height:34,borderRadius:17,backgroundColor:'#e7eee9'},
+  markerPhotoActive:{width:42,height:42,borderRadius:21},
   mapBadge: { position: 'absolute', top: 9, left: 9, borderRadius: 999, backgroundColor: 'rgba(23,61,43,.9)', paddingHorizontal: 9, paddingVertical: 6 },
   mapBadgeText: { fontSize: 8, fontWeight: '900', color: '#fff' },
   mapControls: { position: 'absolute', right: 9, top: 9, gap: 6 },
@@ -1165,6 +1170,7 @@ const s = StyleSheet.create({
   closeText: { color: '#fff', fontSize: 20, lineHeight: 22, fontWeight: '900' },
   closeLabel: { color: '#fff', fontSize: 9, fontWeight: '900' },
   selectedRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  selectedPhoto:{width:48,height:48,borderRadius:12,backgroundColor:'#e7eee9'},
   selectedTitle: { fontSize: 14, fontWeight: '900', color: palette.ink },
   actionRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   selectedAction: { flexGrow: 1, alignItems: 'center' },
@@ -1201,6 +1207,7 @@ const s = StyleSheet.create({
   amenityMatchPill: { borderRadius: 999, backgroundColor: '#e8f1eb', paddingHorizontal: 7, paddingVertical: 4 },
   amenityMatchText: { fontSize: 8, fontWeight: '900', color: palette.green },
   cardTop: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
+  cardPhoto:{width:68,height:68,borderRadius:14,backgroundColor:'#e7eee9'},
   cardTitle: { fontSize: 15, fontWeight: '900', color: palette.ink },
   meta: { fontSize: 9, lineHeight: 13, color: '#66776d' },
   distance: { fontSize: 9, fontWeight: '900', color: palette.green },
