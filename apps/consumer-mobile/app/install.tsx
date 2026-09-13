@@ -1,4 +1,5 @@
 import * as Linking from 'expo-linking';
+import { router } from 'expo-router';
 import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { palette } from '../components/ConsumerUI';
@@ -171,6 +172,9 @@ export default function InstallKleenest(){
   async function downloadApk(){await Linking.openURL(browserUrl(APK_PATH))}
   async function openChecksum(){await Linking.openURL(browserUrl(CHECKSUM_PATH))}
   async function openKleenest(){await Linking.openURL(browserUrl(APP_PATH))}
+  function continueAsGuest(){router.push('/?app=1' as any)}
+  function joinKleenest(){router.push('/signup' as any)}
+  function signIn(){router.push('/profile' as any)}
 
   const releaseStatus=releaseLoading?'CHECKING':releaseState?.status||'STATUS UNAVAILABLE';
   const releaseGood=releaseState?.otaCompatible===true&&!releaseState?.nativeDrift;
@@ -188,6 +192,18 @@ export default function InstallKleenest(){
     </View>
 
     {message?<View style={s.notice}><Text style={s.noticeText}>{message}</Text></View>:null}
+
+    <View style={s.continueCard}>
+      <Text style={s.kicker}>NO INSTALL REQUIRED</Text>
+      <Text style={s.cardTitle}>Use Kleenest right now.</Text>
+      <Text style={s.cardBody}>If this browser cannot install the web app, installation is optional. Continue into the full consumer experience as a guest, create an account, or sign in with an existing Kleenest account.</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="Continue to Kleenest as a guest" style={s.primary} onPress={continueAsGuest}><Text style={s.primaryText}>CONTINUE AS GUEST</Text></Pressable>
+      <View style={s.buttonRow}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Join Kleenest" style={s.secondary} onPress={joinKleenest}><Text style={s.secondaryText}>JOIN KLEENEST</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Sign in to Kleenest" style={s.secondary} onPress={signIn}><Text style={s.secondaryText}>SIGN IN</Text></Pressable>
+      </View>
+      <Text style={s.help}>Guest mode does not require an account. Join or sign in whenever you want synced saved places, routes, community identity, progression and other account-backed features.</Text>
+    </View>
 
     <View style={s.healthCard}>
       <View style={s.healthHeader}><View style={{flex:1}}><Text style={s.kicker}>INSTALL HEALTH</Text><Text style={s.cardTitle}>Is this device ready?</Text></View><Text style={[s.releaseBadge,releaseGood?s.releaseGood:s.releaseNeutral]}>{releaseStatus}</Text></View>
@@ -286,6 +302,7 @@ const s=StyleSheet.create({
   notice:{borderRadius:14,padding:12,backgroundColor:'#fff7df',borderWidth:1,borderColor:'#ead8a7'},
   noticeText:{fontSize:12,lineHeight:18,fontWeight:'700',color:'#725a1e'},
   card:{backgroundColor:'#fff',borderWidth:1,borderColor:palette.line,borderRadius:19,padding:16,gap:8},
+  continueCard:{backgroundColor:'#f4faf6',borderWidth:2,borderColor:'#bfd8c7',borderRadius:19,padding:16,gap:10},
   healthCard:{backgroundColor:'#eef5f0',borderWidth:1,borderColor:'#cbded1',borderRadius:19,padding:16,gap:11},
   healthHeader:{flexDirection:'row',alignItems:'flex-start',gap:10},
   healthGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},
