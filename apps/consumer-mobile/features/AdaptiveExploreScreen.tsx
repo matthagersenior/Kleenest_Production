@@ -352,6 +352,19 @@ export default function AdaptiveExploreScreen() {
     );
   }
 
+  function resetFilters(){
+    setKleenestOnly(false);
+    setProgressionOnly(false);
+    setMinimumStars(0);
+    setFreshnessDays(null);
+    setSelectedAmenityNames([]);
+    setMatchRule('all');
+    setAutoExpand(true);
+    chooseRadius(8047);
+    setMaxRadius(402336);
+    setCorridor(16093);
+  }
+
   function selectRow(row: any) {
     const id = idOf(row);
     setSelectedId(id);
@@ -407,6 +420,16 @@ export default function AdaptiveExploreScreen() {
       : [];
     const trusted=attachLocationTrust(data, summaries);
     return attachLocationPresentations(trusted).catch(()=>trusted);
+  }
+
+  async function enrichProgression(data:any[],latitude:number,longitude:number,radiusMeters:number){
+    try{
+      const opportunities=await listNearbyProgressionOpportunities(latitude,longitude,Math.min(402336,Math.max(5000,Math.round(radiusMeters))));
+      const byId=new Map((opportunities||[]).map((item:any)=>[String(item.location_id),item]));
+      return data.map((row)=>({...row,progression_opportunity:byId.has(idOf(row)),progression_opportunity_detail:byId.get(idOf(row))||null}));
+    }catch{
+      return data.map((row)=>({...row,progression_opportunity:false,progression_opportunity_detail:null}));
+    }
   }
 
   async function currentLocation() {
@@ -469,7 +492,8 @@ export default function AdaptiveExploreScreen() {
       usedMatureFallback = true;
     }
 
-    const enriched = await enrich(result.rows);
+    const enrichedBase = await enrich(result.rows);
+    const enriched = await enrichProgression(enrichedBase,latitude,longitude,result.effectiveRadiusMeters);
     if (!areaMatch&&!enriched.length && preserveCacheOnEmpty && !query && !selectedAmenityNames.length) {
       const fallback = await readNearbyCache();
       if (fallback?.rows?.length) {
@@ -533,7 +557,9 @@ export default function AdaptiveExploreScreen() {
       amenityMatch: matchRule,
       limit: 40,
     });
-    const enriched = await enrich(data);
+    const enrichedBase = await enrich(data);
+    const progressionRadius=Math.min(402336,Math.max(corridor,Math.round((Number(built.distanceMiles||0)+10)*1609.344)));
+    const enriched = await enrichProgression(enrichedBase,current.coords.latitude,current.coords.longitude,progressionRadius);
     setRows(enriched);
     setRoute(built);
     setSelectedId('');
@@ -657,7 +683,7 @@ export default function AdaptiveExploreScreen() {
     <SafeAreaView style={s.safe}>
       <FlatList
         style={s.pageScroll}
-        data={rows}
+        data={visibleRows}
         keyExtractor={idOf}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -955,7 +981,7 @@ export default function AdaptiveExploreScreen() {
               {searchAreaOrigin?<Marker id="searched-area-marker" lngLat={searchAreaOrigin} anchor="center">
                 <View accessibilityLabel={`Search area: ${searchAreaLabel}`} style={s.searchedAreaMarker}><Text style={s.searchedAreaMarkerText}>◎</Text></View>
               </Marker>:null}
-              {rows.filter(hasCoordinates).map((row) => {
+              {visibleRows.filter(hasCoordinates).map((row) => {
                 const id = idOf(row);
                 const active = id === selectedId;
                 return (
@@ -983,7 +1009,7 @@ export default function AdaptiveExploreScreen() {
               })}
             </Map>
             <View pointerEvents="none" style={s.mapBadge}>
-              <Text style={s.mapBadgeText}>{cached ? 'Cached · ' : ''}{rows.length} results</Text>
+              <Text style={s.mapBadgeText}>{cached ? 'Cached · ' : ''}{visibleRows.length}{activeFilterCount?` of ${rows.length}`:''} results</Text>
             </View>
             <View style={s.mapControls}>
               <Pressable accessibilityRole="button" accessibilityLabel="Zoom map in" style={s.mapControl} onPress={() => changeMapZoom(1)}>
