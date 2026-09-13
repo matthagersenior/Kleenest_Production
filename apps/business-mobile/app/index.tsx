@@ -17,6 +17,7 @@ type Gate=keyof BusinessTierCapabilities|'always';
 type Domain={href:string;title:string;body:string;gate:Gate;glyph:string;group:'Operate'|'Grow'|'Understand'|'Admin'};
 
 const domainSpecs:Domain[]=[
+ {href:'/tools',title:'Action Center',body:'Search every Business action and jump directly to the owning workflow.',gate:'always',glyph:'⌘',group:'Admin'},
  {href:'/locations',title:'Locations',body:'Manage direct locations and see Enterprise portfolio locations.',gate:'coreManagement',glyph:'⌖',group:'Operate'},
  {href:'/operations',title:'Operations command',body:'Resolve remediation, reverification and preventive work from one queue.',gate:'trustOperations',glyph:'✓',group:'Operate'},
  {href:'/trust-operations',title:'Trust operations',body:'Work evidence, SLA, proof and reverification cases.',gate:'trustOperations',glyph:'◎',group:'Operate'},
@@ -122,7 +123,7 @@ export default function BusinessHome(){
    </View>
    <View style={s.heroActions}>
     <Link href="/locations" asChild><Pressable style={s.primaryAction}><Text style={s.primaryActionText}>Manage locations</Text><Text style={s.primaryActionArrow}>›</Text></Pressable></Link>
-    <Link href="/onboarding" asChild><Pressable style={s.secondaryAction}><Text style={s.secondaryActionText}>{onboardingComplete?'Update setup':'Continue setup'}</Text></Pressable></Link>
+    <Link href="/tools" asChild><Pressable style={s.secondaryAction}><Text style={s.secondaryActionText}>Action Center</Text></Pressable></Link>
    </View>
   </View>
 
