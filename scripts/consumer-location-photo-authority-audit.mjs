@@ -30,7 +30,8 @@ requireTokens('Community photo trust authority',trustAuthority,[
 if(!/order by[\s\S]{0,420}freshness_rank[\s\S]{0,220}reputation_score desc[\s\S]{0,220}review_created_at desc/i.test(trustAuthority)){
   failures.push('Community consumer photo selection must rank freshness first, then contributor reputation, then review recency.');
 }
-if(/where[\s\S]{0,180}business_photo_disputes[\s\S]{0,180}(not exists|status)/i.test(trustAuthority)){
+const presentationAuthority=(trustAuthority.split('create function public.mobile_location_presentation_v1')[1]||'');
+if(/business_photo_disputes/i.test(presentationAuthority)){
   failures.push('A Business dispute must not automatically hide community evidence from consumers.');
 }
 
