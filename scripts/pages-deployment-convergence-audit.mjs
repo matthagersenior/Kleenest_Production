@@ -8,18 +8,18 @@ for(const file of required)if(!fs.existsSync(file))throw new Error(`Consumer pre
 if(fs.existsSync('.github/workflows/static.yml'))throw new Error('Competing GitHub-generated static Pages workflow must not exist.');
 if(fs.existsSync('.github/workflows/android-preview.yml'))throw new Error('Duplicate Consumer-only Android build workflow must be removed; family Android workflow owns verified APKs.');
 
-const pages=read(required[0]);
-const installer=read(required[1]);
-const familyAndroid=read(required[2]);
-const appConfig=read(required[3]);
-const pkg=JSON.parse(read(required[4]));
-const metro=read(required[5]);
-const mapPreview=read(required[6]);
-const securePreview=read(required[7]);
-const notificationsPreview=read(required[8]);
-const pwaPrep=read(required[9]);
-const manifest=JSON.parse(read(required[10]));
-const serviceWorker=read(required[11]);
+const pages=read('.github/workflows/pages.yml');
+const installer=read('.github/workflows/publish-standalone-installer.yml');
+const familyAndroid=read('.github/workflows/android-family.yml');
+const appConfig=read('apps/consumer-mobile/app.config.ts');
+const pkg=JSON.parse(read('apps/consumer-mobile/package.json'));
+const metro=read('apps/consumer-mobile/metro.config.js');
+const mapPreview=read('apps/consumer-mobile/web/maplibrePreview.tsx');
+const securePreview=read('apps/consumer-mobile/web/secureStorePreview.ts');
+const notificationsPreview=read('apps/consumer-mobile/web/notificationsPreview.ts');
+const pwaPrep=read('scripts/prepare-consumer-web-pwa.mjs');
+const manifest=JSON.parse(read('public/manifest.webmanifest'));
+const serviceWorker=read('public/sw.js');
 
 for(const token of ['Validate Kleenest Consumer Web Preview','kleenest-consumer-preview-validation-${{ github.event_name }}','workflow_dispatch','pull_request','workflow_run','Production CI','conclusion == \'success\'','head_branch == \'main\'','github.event.workflow_run.head_sha','npm run web:export --workspace @kleenest/consumer-mobile','node scripts/prepare-consumer-web-pwa.mjs','apps/consumer-mobile/dist/index.html','apps/consumer-mobile/dist/404.html','apps/consumer-mobile/dist/.nojekyll','actions/upload-artifact@v4','Kleenest-Consumer-Web-Preview'])requireToken(pages,token,'Pages consumer preview validation workflow');
 if(pages.includes('actions/deploy-pages@')||pages.includes('actions/configure-pages@')||pages.includes('actions/upload-pages-artifact@'))throw new Error('Preview validation must not deploy GitHub Pages or it can overwrite the Consumer APK installer.');
