@@ -5,8 +5,20 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } fr
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { getOwnerAuthorization } from '../services/ownerAdmin';
 
+const operatorOAuthReturnKey='kleenest.operator.oauth.return';
+const webSiteOAuthRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/` : '';
 const ownerRedirect = Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/owner/auth/` : Linking.createURL('auth', { scheme: 'kleenest-owner', isTripleSlashed: false });
 type Mode = 'signin' | 'signup' | 'forgot' | 'recovery';
+
+function rememberOwnerOAuthReturn() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  try { window.localStorage.setItem(operatorOAuthReturnKey, JSON.stringify({ portal: 'owner', createdAt: Date.now() })); } catch {}
+}
+
+function clearOwnerOAuthReturn() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  try { window.localStorage.removeItem(operatorOAuthReturnKey); } catch {}
+}
 
 function messageOf(value: unknown) {
   if (value instanceof Error && value.message) return value.message;
@@ -60,6 +72,8 @@ export default function OwnerAuth() {
     const refresh_token = authParam(url, 'refresh_token');
     const authType = authParam(url, 'type');
     const recoveryLink = authType === 'recovery';
+    const oauthError = authParam(url, 'error_description') || authParam(url, 'error');
+    if (oauthError) { clearOwnerOAuthReturn(); setMode('signin'); setError(oauthError); return true; }
     if (!code && !(access_token && refresh_token)) return false;
 
     const client = getKleenestSupabaseClient();
@@ -72,6 +86,9 @@ export default function OwnerAuth() {
         const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
         if (exchangeError) throw exchangeError;
       }
+
+      clearOwnerOAuthReturn();
+      if(Platform.OS==='web'&&typeof window!=='undefined')window.history.replaceState({},'',window.location.pathname);
 
       if (recoveryLink) {
         setMode('recovery');
@@ -93,8 +110,16 @@ export default function OwnerAuth() {
   }
 
   useEffect(() => {
+    let active=true;
     const client = getKleenestSupabaseClient();
-    void Linking.getInitialURL().then(finishAuthLink);
+    void (async()=>{
+      const handled=await finishAuthLink(await Linking.getInitialURL());
+      if(!active||handled)return;
+      const {data}=await client.auth.getSession();
+      if(!active||!data.session)return;
+      try{await verifyOwner();router.replace('/');}
+      catch(cause){await client.auth.signOut({scope:'local'});if(active)setError(messageOf(cause));}
+    })();
     const linkSub = Linking.addEventListener('url', event => { void finishAuthLink(event.url); });
     const { data: { subscription } } = client.auth.onAuthStateChange(event => {
       if (event === 'PASSWORD_RECOVERY') {
@@ -105,7 +130,7 @@ export default function OwnerAuth() {
         setNotice('Recovery link verified. Choose a new password for this Owner account.');
       }
     });
-    return () => { linkSub.remove(); subscription.unsubscribe(); };
+    return () => { active=false; linkSub.remove(); subscription.unsubscribe(); };
   }, []);
 
   async function signIn() {
@@ -180,11 +205,12 @@ export default function OwnerAuth() {
     if (busy) return;
     setBusy(true); setError(null); setNotice(null);
     try {
-      const { data, error: authError } = await getKleenestSupabaseClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: ownerRedirect, skipBrowserRedirect: Platform.OS!=='web' } });
+      rememberOwnerOAuthReturn();
+      const { data, error: authError } = await getKleenestSupabaseClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: Platform.OS==='web'?webSiteOAuthRedirect:ownerRedirect, skipBrowserRedirect: Platform.OS!=='web' } });
       if (authError) throw authError;
       if (!data.url) throw new Error('Google sign-in did not return an authorization URL.');
       if(Platform.OS==='web'&&typeof window!=='undefined')window.location.assign(data.url);else await Linking.openURL(data.url);
-    } catch (cause) { setError(messageOf(cause)); }
+    } catch (cause) { clearOwnerOAuthReturn(); setError(messageOf(cause)); }
     finally { setBusy(false); }
   }
 
