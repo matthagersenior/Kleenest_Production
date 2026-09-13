@@ -4,7 +4,7 @@ import { Image,Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,Vie
 import { BarChart,BusinessCard,BusinessHero,SectionHeader,businessColors } from '../components/BusinessOS';
 import { deleteBusinessMedia,disputeBusinessReviewPhoto,getBusinessDashboard,getBusinessGrowth,listBusinessLocationCommunityPhotos,manageBusinessCampaign,manageBusinessContest,manageBusinessEvent,manageBusinessPromotion,updateBusinessMedia } from '../services/product';
 import { currentBusinessId } from '../services/capabilityWorkflows';
-import { businessLocationPhotoUrl,businessReviewPhotoUrl,pickAndUploadBusinessLocationPhoto } from '../services/media';
+import { businessLocationPhotoUrl,businessReviewPhotoUrl,pickAndUploadBusinessLocationPhoto,voteBusinessReviewPhoto } from '../services/media';
 
 type Row=Record<string,any>;
 function list(value:any,keys:string[]=[]):Row[]{if(Array.isArray(value))return value;for(const key of keys)if(Array.isArray(value?.[key]))return value[key];return[]}
@@ -54,12 +54,20 @@ export default function Growth(){
   const storage=String(editingMedia.storage_path||editingMedia.path||'');
   await run(()=>updateBusinessMedia(businessId,mediaId,storage,editCaption.trim(),String(editingMedia.media_type||'image'),Number(editingMedia.sort_order||0)),'Media details updated.',()=>{setEditingMedia(null);setEditCaption('')});
  }
+ async function votePhoto(photoId:string,vote:'helpful'|'not_helpful'){
+  setBusy(true);
+  try{
+   await voteBusinessReviewPhoto(businessId,photoId,vote);
+   setMessage(vote==='helpful'?'Helpful photo vote saved.':'Not-helpful photo vote saved.');
+   await loadCommunity(mediaLocationId);
+  }catch(e:any){setMessage(e?.message||'Photo vote could not be saved.')}finally{setBusy(false)}
+ }
  async function submitDispute(){
   if(!disputing||!disputeReason.trim())return;
   setBusy(true);
   try{
    await disputeBusinessReviewPhoto(businessId,String(disputing.review_photo_id||''),disputeReason.trim(),disputeDetails.trim()||null);
-   setMessage('Community photo dispute submitted to Kleenest moderation. The photo remains community evidence unless moderation determines otherwise.');
+   setMessage('Community photo dispute sent to KleenestOS owner moderation. The photo remains community evidence unless owner moderation determines otherwise.');
    setDisputing(null);setDisputeReason('');setDisputeDetails('');
    await loadCommunity(mediaLocationId);
   }catch(e:any){setMessage(e?.message||'Photo dispute could not be submitted.')}finally{setBusy(false)}
@@ -94,11 +102,11 @@ export default function Growth(){
    {media.length?media.slice(0,30).map((row,index)=>{const id=String(row.media_id||row.id||index),photoUrl=businessLocationPhotoUrl(String(row.storage_path||''));return <BusinessCard key={id}><View style={s.item}>{photoUrl?<Image source={{uri:photoUrl}} style={s.mediaThumb}/>:null}<View style={{flex:1}}><Text style={s.itemTitle}>{String(row.caption||row.location_name||'Official Business media')}</Text><Text style={s.meta}>{[row.location_name,row.media_type,row.mime_type].filter(Boolean).join(' · ')||'Official Business media'}</Text><Text style={s.meta}>Controlled by the Business as official profile media, separate from community evidence.</Text></View></View><View style={s.actions}><Action quiet label="Edit" onPress={()=>{setEditingMedia(row);setEditCaption(String(row.caption||''))}}/><Action danger label="Delete" disabled={busy} onPress={()=>run(()=>deleteBusinessMedia(businessId,id),'Official media removed.')}/></View></BusinessCard>}):<View style={s.empty}><Text style={s.meta}>No official Business media yet.</Text></View>}
   </View>
 
-  <View style={s.section}><SectionHeader title="Community photo evidence" body="User-supplied review photos determine the consumer trust image using freshness first, then contributor trust, then exact recency. Businesses cannot choose or reorder these photos; they can flag or dispute evidence for Kleenest moderation."/>
-   {communityPhotos.length?communityPhotos.slice(0,30).map((row,index)=>{const id=String(row.review_photo_id||index),photoUrl=businessReviewPhotoUrl(String(row.storage_path||'')),disputed=['open','reviewing'].includes(String(row.dispute_status||''));return <BusinessCard key={id}><View style={s.item}>{photoUrl?<Image source={{uri:photoUrl}} style={s.mediaThumb}/>:null}<View style={{flex:1,gap:2}}><View style={s.mediaTitleRow}><Text style={s.itemTitle}>{String(row.display_name||row.username||'Kleenest contributor')}</Text>{index===0?<Pill label="TRUST + FRESH LEADER"/>:null}{disputed?<Pill label="DISPUTED"/>:null}</View><Text style={s.meta}>Trust {Math.round(Number(row.reputation_score||0))} · {String(row.verification_level||'new')} · {row.verified_visit?'verified visit':'published review'}</Text><Text style={s.meta}>{row.review_created_at?new Date(String(row.review_created_at)).toLocaleDateString():'Review date unavailable'}</Text></View></View><View style={s.actions}><Action danger label={disputed?'Update dispute':'Flag / dispute'} disabled={busy} onPress={()=>{setDisputing(row);setDisputeReason(String(row.dispute_reason||''));setDisputeDetails('')}}/></View></BusinessCard>}):<View style={s.empty}><Text style={s.meta}>No community review photos for this location yet.</Text></View>}
+  <View style={s.section}><SectionHeader title="Community photo evidence" body="User-supplied review photos determine the consumer trust image using freshness first, then contributor trust, then exact recency. Businesses cannot choose or reorder these photos; they can vote on usefulness and flag or dispute evidence for immediate KleenestOS owner moderation."/>
+   {communityPhotos.length?communityPhotos.slice(0,30).map((row,index)=>{const id=String(row.review_photo_id||index),photoUrl=businessReviewPhotoUrl(String(row.storage_path||'')),disputed=['open','reviewing'].includes(String(row.dispute_status||''));return <BusinessCard key={id}><View style={s.item}>{photoUrl?<Image source={{uri:photoUrl}} style={s.mediaThumb}/>:null}<View style={{flex:1,gap:2}}><View style={s.mediaTitleRow}><Text style={s.itemTitle}>{String(row.display_name||row.username||'Kleenest contributor')}</Text>{index===0?<Pill label="TRUST + FRESH LEADER"/>:null}{disputed?<Pill label="DISPUTED"/>:null}</View><Text style={s.meta}>Trust {Math.round(Number(row.reputation_score||0))} · {String(row.verification_level||'new')} · {row.verified_visit?'verified visit':'published review'}</Text><Text style={s.meta}>{row.review_created_at?new Date(String(row.review_created_at)).toLocaleDateString():'Review date unavailable'}</Text></View></View><View style={s.actions}><Action quiet label={`Helpful · ${Number(row.helpful_votes||0)}`} disabled={busy} onPress={()=>votePhoto(id,'helpful')}/><Action quiet label={`Not helpful · ${Number(row.not_helpful_votes||0)}`} disabled={busy} onPress={()=>votePhoto(id,'not_helpful')}/><Action danger label={disputed?'Update dispute':'Flag / dispute'} disabled={busy} onPress={()=>{setDisputing(row);setDisputeReason(String(row.dispute_reason||''));setDisputeDetails('')}}/></View></BusinessCard>}):<View style={s.empty}><Text style={s.meta}>No community review photos for this location yet.</Text></View>}
   </View>
 
-  {disputing?<BusinessCard><SectionHeader title="Flag / dispute community photo" body="A dispute sends the evidence to Kleenest moderation. It does not let the Business remove, hide, rank or select a user photo."/><Text style={s.label}>REASON</Text><View style={s.chips}>{['Wrong location','Outdated','Misleading','Privacy concern','Inappropriate','Other'].map(reason=><Chip key={reason} label={reason} active={disputeReason===reason} onPress={()=>setDisputeReason(reason)}/>)}</View><TextInput multiline style={[s.input,s.details]} placeholder="Optional details for moderation" value={disputeDetails} onChangeText={setDisputeDetails} maxLength={2000}/><View style={s.actions}><Action label="Submit dispute" disabled={busy||!disputeReason.trim()} onPress={submitDispute}/><Action quiet label="Cancel" onPress={()=>{setDisputing(null);setDisputeReason('');setDisputeDetails('')}}/></View></BusinessCard>:null}
+  {disputing?<BusinessCard><SectionHeader title="Flag / dispute community photo" body="A dispute is sent immediately to the KleenestOS owner moderation queue. It does not let the Business remove, hide, rank or select a user photo."/><Text style={s.label}>REASON</Text><View style={s.chips}>{['Wrong location','Outdated','Misleading','Privacy concern','Inappropriate','Other'].map(reason=><Chip key={reason} label={reason} active={disputeReason===reason} onPress={()=>setDisputeReason(reason)}/>)}</View><TextInput multiline style={[s.input,s.details]} placeholder="Optional details for moderation" value={disputeDetails} onChangeText={setDisputeDetails} maxLength={2000}/><View style={s.actions}><Action label="Submit dispute" disabled={busy||!disputeReason.trim()} onPress={submitDispute}/><Action quiet label="Cancel" onPress={()=>{setDisputing(null);setDisputeReason('');setDisputeDetails('')}}/></View></BusinessCard>:null}
  </ScrollView>
 }
 
