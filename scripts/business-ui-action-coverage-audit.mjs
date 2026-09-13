@@ -4,7 +4,7 @@ import path from 'node:path';
 const servicesDir='apps/business-mobile/services';
 const registryPath=path.join(servicesDir,'actionRegistry.ts');
 const registry=fs.readFileSync(registryPath,'utf8');
-const actionVerb=/^(run|select|invite|change|remove|transfer|reply|upsert|restore|save|archive|create|update|delete|claim|ensure|send|execute|complete|manage|set|activate|pause|record|configure|request|start|disable|register|apply|advance|reset|attach|pick)/;
+const actionVerb=/^(run|select|invite|change|remove|transfer|reply|upsert|restore|save|archive|create|update|delete|claim|ensure|send|execute|complete|manage|set|activate|pause|record|configure|request|start|disable|register|apply|advance|reset|attach|pick|dispute)/;
 const ignored=new Set();
 const files=fs.readdirSync(servicesDir).filter(name=>name.endsWith('.ts')&&name!=='actionRegistry.ts');
 const allExported=[];
