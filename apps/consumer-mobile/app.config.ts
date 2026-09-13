@@ -11,6 +11,9 @@ if (configuredEasProjectId && configuredEasProjectId !== PRODUCTION_EAS_PROJECT_
 
 const easProjectId = configuredEasProjectId || PRODUCTION_EAS_PROJECT_ID;
 const otaChannel = process.env.EXPO_PUBLIC_OTA_CHANNEL || 'consumer-production';
+const nativeRuntimeId=String(process.env.KLEENEST_NATIVE_RUNTIME_ID||'').trim();
+if(nativeRuntimeId&&!/^[a-f0-9]{40}$/i.test(nativeRuntimeId))throw new Error('KLEENEST_NATIVE_RUNTIME_ID must be a full Git commit SHA.');
+const runtimeVersion=nativeRuntimeId?`kleenest-consumer-native-${nativeRuntimeId}`:'kleenest-consumer-1.0.0';
 const devClientPlugins: NonNullable<ExpoConfig['plugins']> = standaloneAndroid
   ? []
   : [['expo-dev-client', { launchMode: 'most-recent' }]];
@@ -19,7 +22,7 @@ const config: ExpoConfig = {
   name: 'Kleenest',
   slug: 'kleenest-consumer',
   version: '1.0.0',
-  runtimeVersion: 'kleenest-consumer-1.0.0',
+  runtimeVersion,
   icon: './assets/app-icon.png',
   updates: {
     enabled: true,

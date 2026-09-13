@@ -2,26 +2,73 @@ name: Build Kleenest App Family Android APKs
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: [Production CI]
-    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - releases/family-native.txt
+  schedule:
+    - cron: '0 9 * * *'
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
-  group: kleenest-app-family-android-${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && 'main' || github.event_name == 'workflow_dispatch' && github.sha || github.run_id }}
+  group: kleenest-app-family-android-main
   cancel-in-progress: true
 
 jobs:
+  plan-family:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      should_build: ${{ steps.plan.outputs.should_build }}
+      baseline_sha: ${{ steps.baseline.outputs.source_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Resolve synchronized native family baseline
+        id: baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/resolve-family-apk-baseline.mjs --optional
+      - name: Decide whether native family rebuild is required
+        id: plan
+        shell: bash
+        env:
+          BASELINE_SHA: ${{ steps.baseline.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+            echo "Explicit native family build requested."
+            exit 0
+          fi
+          if [ -z "${BASELINE_SHA:-}" ]; then
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+            echo "No complete family baseline exists; scheduled native family build is required."
+            exit 0
+          fi
+          node scripts/app-family-release-plan.mjs --baseline "$BASELINE_SHA" --json-out "$RUNNER_TEMP/family-release-plan.json"
+          SHOULD_BUILD="$(node -e "const p=require(process.env.RUNNER_TEMP+'/family-release-plan.json');process.stdout.write(String(Boolean(p.nativeRebuildRequired)))")"
+          echo "should_build=$SHOULD_BUILD" >> "$GITHUB_OUTPUT"
+          if [ "$SHOULD_BUILD" = "true" ]; then
+            echo "Native drift exists; scheduled low-traffic family rebuild will proceed."
+          else
+            echo "Family is OTA-compatible; scheduled native build skipped."
+          fi
+
   verify-family:
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    needs: plan-family
+    if: needs.plan-family.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -97,8 +144,6 @@ jobs:
       EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22

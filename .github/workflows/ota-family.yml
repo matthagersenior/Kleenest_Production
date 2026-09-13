@@ -2,6 +2,9 @@ name: Publish Kleenest App Family OTA
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Production CI"]
+    types: [completed]
   push:
     branches: [main]
     paths:
@@ -9,23 +12,62 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: kleenest-family-ota
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
 
 jobs:
   verify-family:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    outputs:
+      should_publish: ${{ steps.plan.outputs.should_publish }}
+      native_rebuild_required: ${{ steps.plan.outputs.native_rebuild_required }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: package.json
       - run: npm install --no-audit --no-fund
+      - name: Resolve synchronized native family baseline
+        id: baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/resolve-family-apk-baseline.mjs
+      - name: Classify family source against native baseline
+        id: plan
+        env:
+          KLEENEST_FAMILY_NATIVE_BASELINE_SHA: ${{ steps.baseline.outputs.source_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/app-family-release-plan.mjs --json-out "$RUNNER_TEMP/family-release-plan.json"
+          NATIVE_REQUIRED="$(node -e "const p=require(process.env.RUNNER_TEMP+'/family-release-plan.json');process.stdout.write(String(Boolean(p.nativeRebuildRequired)))")"
+          RUNTIME_COUNT="$(node -e "const p=require(process.env.RUNNER_TEMP+'/family-release-plan.json');process.stdout.write(String((p.runtimeApps||[]).length))")"
+          echo "native_rebuild_required=$NATIVE_REQUIRED" >> "$GITHUB_OUTPUT"
+          if [ "$NATIVE_REQUIRED" = "true" ]; then
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            if [ "${{ github.event_name }}" = "workflow_run" ]; then
+              echo "::notice title=Native family rebuild required::OTA skipped. The scheduled low-traffic native-family workflow will rebuild the synchronized APK family."
+              exit 0
+            fi
+            echo "Explicit family OTA request cannot publish across native drift." >&2
+            exit 2
+          fi
+          if [ "${{ github.event_name }}" = "workflow_run" ] && [ "$RUNTIME_COUNT" = "0" ]; then
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            echo "No mobile runtime source changed; automatic family OTA skipped."
+            exit 0
+          fi
+          echo "should_publish=true" >> "$GITHUB_OUTPUT"
       - name: Verify OTA-compatible family source
         run: |
           node scripts/repo-hygiene-audit.mjs
@@ -38,6 +80,7 @@ jobs:
 
   publish:
     needs: verify-family
+    if: needs.verify-family.outputs.should_publish == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -71,6 +114,8 @@ jobs:
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22

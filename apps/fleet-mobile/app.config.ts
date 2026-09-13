@@ -8,9 +8,12 @@ if(configuredEasProjectId&&configuredEasProjectId!==EXPECTED_EAS_PROJECT_ID){
 }
 const EAS_PROJECT_ID=configuredEasProjectId||EXPECTED_EAS_PROJECT_ID;
 const otaChannel=process.env.EXPO_PUBLIC_OTA_CHANNEL||'fleet-production';
+const nativeRuntimeId=String(process.env.KLEENEST_NATIVE_RUNTIME_ID||'').trim();
+if(nativeRuntimeId&&!/^[a-f0-9]{40}$/i.test(nativeRuntimeId))throw new Error('KLEENEST_NATIVE_RUNTIME_ID must be a full Git commit SHA.');
+const runtimeVersion=nativeRuntimeId?`kleenest-fleet-native-${nativeRuntimeId}`:'kleenest-fleet-1.0.0';
 
 const config:ExpoConfig={
-  name:'Kleenest Fleet',slug:'kleenest-fleet',version:'1.0.0',runtimeVersion:'kleenest-fleet-1.0.0',
+  name:'Kleenest Fleet',slug:'kleenest-fleet',version:'1.0.0',runtimeVersion,
   icon:'./assets/app-icon.png',orientation:'portrait',scheme:'kleenest-fleet',userInterfaceStyle:'automatic',
   updates:{enabled:true,url:`https://u.expo.dev/${EAS_PROJECT_ID}`,checkAutomatically:'ON_LOAD',fallbackToCacheTimeout:0,requestHeaders:{'expo-channel-name':otaChannel}},
   ios:{

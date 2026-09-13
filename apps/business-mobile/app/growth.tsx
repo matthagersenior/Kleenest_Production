@@ -1,15 +1,18 @@
 import { useEffect,useMemo,useState } from 'react';
-import { Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { Image,Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { BarChart,BusinessCard,BusinessHero,SectionHeader,businessColors } from '../components/BusinessOS';
-import { deleteBusinessMedia,getBusinessDashboard,getBusinessGrowth,manageBusinessCampaign,manageBusinessContest,manageBusinessEvent,manageBusinessPromotion,updateBusinessMedia } from '../services/product';
+import { deleteBusinessMedia,getBusinessDashboard,getBusinessGrowth,manageBusinessCampaign,manageBusinessContest,manageBusinessEvent,manageBusinessPromotion,setBusinessLocationConsumerPhoto,updateBusinessMedia } from '../services/product';
 import { currentBusinessId } from '../services/capabilityWorkflows';
-import { pickAndUploadBusinessLocationPhoto } from '../services/media';
+import { businessLocationPhotoUrl,pickAndUploadBusinessLocationPhoto } from '../services/media';
 
 type Row=Record<string,any>;
 function list(value:any,keys:string[]=[]):Row[]{if(Array.isArray(value))return value;for(const key of keys)if(Array.isArray(value?.[key]))return value[key];return[]}
 function idOf(row:Row){return String(row.media_id||row.id||row.location_id||'')}
 
 export default function Growth(){
+ const params=useLocalSearchParams<{location?:string}>();
+ const requestedLocationId=String(params.location||'');
  const[businessId,setBusinessId]=useState(''),[data,setData]=useState<any>(null),[locations,setLocations]=useState<Row[]>([]);
  const[promotion,setPromotion]=useState(''),[campaign,setCampaign]=useState(''),[contest,setContest]=useState(''),[event,setEvent]=useState('');
  const[mediaLocationId,setMediaLocationId]=useState(''),[mediaCaption,setMediaCaption]=useState(''),[editingMedia,setEditingMedia]=useState<Row|null>(null),[editCaption,setEditCaption]=useState('');
@@ -21,7 +24,7 @@ export default function Growth(){
    const id=businessId||await currentBusinessId();setBusinessId(id);
    const[growth,dashboard]=await Promise.all([getBusinessGrowth(id),getBusinessDashboard(id)]);
    setData(growth);const rows=Array.isArray(dashboard?.locations)?dashboard.locations:[];setLocations(rows);
-   if(!mediaLocationId&&rows[0])setMediaLocationId(String(rows[0].id||rows[0].location_id||''));
+   if(!mediaLocationId){const preferred=rows.find((row:any)=>String(row.id||row.location_id||'')===requestedLocationId)||rows[0];if(preferred)setMediaLocationId(String(preferred.id||preferred.location_id||''));}
    setMessage('');
   }catch(e:any){setMessage(e?.message||'Growth programs unavailable.')}finally{setBusy(false)}
  }
@@ -60,7 +63,7 @@ export default function Growth(){
    <TextInput style={s.input} placeholder="Event title" value={event} onChangeText={setEvent}/><Action label="Create event" disabled={busy||!event.trim()} onPress={()=>run(()=>manageBusinessEvent(businessId,null,'create',{title:event.trim(),description:'Business event'}),'Event created.',()=>setEvent(''))}/>
   </BusinessCard>
 
-  <BusinessCard><SectionHeader title="Media library" body="Attach customer-facing photos to a canonical managed location, then edit or remove them here."/>
+  <BusinessCard><SectionHeader title="Consumer location photos" body="Add photos to a managed or claimed location, then choose the one consumers see on map pins, search cards and full details. The first photo becomes the default until you choose another."/>
    <Text style={s.label}>LOCATION</Text><View style={s.chips}>{locations.map(row=>{const id=String(row.id||row.location_id||'');return <Chip key={id} label={String(row.name||row.location_name||'Location')} active={id===mediaLocationId} onPress={()=>setMediaLocationId(id)}/>})}</View>
    <TextInput style={s.input} placeholder="Optional photo caption" value={mediaCaption} onChangeText={setMediaCaption}/>
    <Action label={busy?'Working…':'Add location photo'} disabled={busy||!mediaLocationId} onPress={uploadMedia}/>
@@ -72,7 +75,7 @@ export default function Growth(){
   <ProgramSection title="Contests" rows={contests} empty="No contests yet."/>
   <ProgramSection title="Events" rows={events} empty="No events yet."/>
   <View style={s.section}><SectionHeader title="Media" body="Photos and other Business media attached to locations."/>
-   {media.length?media.slice(0,30).map((row,index)=>{const id=String(row.media_id||row.id||index);return <BusinessCard key={id}><View style={s.item}><View style={{flex:1}}><Text style={s.itemTitle}>{String(row.caption||row.location_name||'Business media')}</Text><Text style={s.meta}>{[row.location_name,row.media_type,row.mime_type].filter(Boolean).join(' · ')||'Business media'}</Text></View><Pill label={String(row.media_type||'MEDIA').toUpperCase()}/></View><View style={s.actions}><Action quiet label="Edit" onPress={()=>{setEditingMedia(row);setEditCaption(String(row.caption||''))}}/><Action danger label="Delete" disabled={busy} onPress={()=>run(()=>deleteBusinessMedia(businessId,String(row.media_id||row.id)),'Media removed.')}/></View></BusinessCard>}):<View style={s.empty}><Text style={s.meta}>No Business media yet.</Text></View>}
+   {media.length?media.slice(0,30).map((row,index)=>{const id=String(row.media_id||row.id||index),locationId=String(row.location_id||''),featured=row.is_featured===true,photoUrl=businessLocationPhotoUrl(String(row.storage_path||''));return <BusinessCard key={id}><View style={s.item}>{photoUrl?<Image source={{uri:photoUrl}} style={s.mediaThumb}/>:null}<View style={{flex:1}}><View style={s.mediaTitleRow}><Text style={s.itemTitle}>{String(row.caption||row.location_name||'Business media')}</Text>{featured?<Pill label="CONSUMER PHOTO"/>:null}</View><Text style={s.meta}>{[row.location_name,row.media_type,row.mime_type].filter(Boolean).join(' · ')||'Business media'}</Text><Text style={s.meta}>{featured?'Shown on consumer pins, search cards and details.':'Available to use as this location’s consumer-facing photo.'}</Text></View></View><View style={s.actions}><Action label={featured?'Shown to consumers':'Use on consumer cards'} disabled={busy||featured||!locationId} onPress={()=>run(()=>setBusinessLocationConsumerPhoto(businessId,locationId,id),'Consumer location photo updated.')}/><Action quiet label="Edit" onPress={()=>{setEditingMedia(row);setEditCaption(String(row.caption||''))}}/><Action danger label="Delete" disabled={busy} onPress={()=>run(()=>deleteBusinessMedia(businessId,id),'Media removed.')}/></View></BusinessCard>}):<View style={s.empty}><Text style={s.meta}>No Business media yet.</Text></View>}
   </View>
  </ScrollView>
 }
@@ -82,4 +85,4 @@ function Metric({label,value}:{label:string;value:number}){return <View style={s
 function Action({label,onPress,disabled,quiet=false,danger=false}:{label:string;onPress:()=>void|Promise<void>;disabled?:boolean;quiet?:boolean;danger?:boolean}){return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[s.action,quiet&&s.actionQuiet,danger&&s.actionDanger,disabled&&{opacity:.45}]}><Text style={[s.actionText,(quiet||danger)&&{color:danger?businessColors.danger:businessColors.green}]}>{label}</Text></Pressable>}
 function Chip({label,active,onPress}:{label:string;active:boolean;onPress:()=>void}){return <Pressable onPress={onPress} style={[s.chip,active&&s.chipOn]}><Text style={[s.chipText,active&&s.chipTextOn]}>{label}</Text></Pressable>}
 function Pill({label}:{label:string}){return <View style={s.pill}><Text style={s.pillText}>{label}</Text></View>}
-const s=StyleSheet.create({page:{padding:18,gap:12,backgroundColor:businessColors.paper,paddingBottom:70},message:{fontWeight:'700',color:'#596b61'},metrics:{flexDirection:'row',flexWrap:'wrap',gap:8},metric:{minWidth:'46%',flexGrow:1,backgroundColor:'#fff',borderRadius:16,padding:13,borderWidth:1,borderColor:'#dbe5de'},metricValue:{fontSize:22,fontWeight:'900',color:businessColors.green},meta:{fontSize:12,lineHeight:18,color:businessColors.muted},input:{borderWidth:1,borderColor:'#cbd9d0',borderRadius:12,padding:11,backgroundColor:'#fafcfb',color:businessColors.ink},action:{backgroundColor:businessColors.green,padding:11,borderRadius:12,alignItems:'center'},actionQuiet:{backgroundColor:'#edf3ef'},actionDanger:{backgroundColor:'#fff0f0'},actionText:{color:'#fff',fontWeight:'900'},section:{gap:8},item:{flexDirection:'row',alignItems:'center',gap:8},itemTitle:{fontSize:15,fontWeight:'900',color:businessColors.ink},pill:{backgroundColor:'#edf3ef',borderRadius:999,paddingHorizontal:8,paddingVertical:5},pillText:{fontSize:9,fontWeight:'900',color:'#31533f'},empty:{backgroundColor:'#eef3f0',padding:13,borderRadius:14},chips:{flexDirection:'row',flexWrap:'wrap',gap:7},chip:{backgroundColor:'#edf3ef',paddingHorizontal:10,paddingVertical:7,borderRadius:999},chipOn:{backgroundColor:businessColors.green},chipText:{fontSize:10,fontWeight:'800',color:'#315440'},chipTextOn:{color:'#fff'},label:{fontSize:9,fontWeight:'900',letterSpacing:1,color:businessColors.green},actions:{flexDirection:'row',gap:8,flexWrap:'wrap'}});
+const s=StyleSheet.create({page:{padding:18,gap:12,backgroundColor:businessColors.paper,paddingBottom:70},message:{fontWeight:'700',color:'#596b61'},metrics:{flexDirection:'row',flexWrap:'wrap',gap:8},metric:{minWidth:'46%',flexGrow:1,backgroundColor:'#fff',borderRadius:16,padding:13,borderWidth:1,borderColor:'#dbe5de'},metricValue:{fontSize:22,fontWeight:'900',color:businessColors.green},meta:{fontSize:12,lineHeight:18,color:businessColors.muted},input:{borderWidth:1,borderColor:'#cbd9d0',borderRadius:12,padding:11,backgroundColor:'#fafcfb',color:businessColors.ink},action:{backgroundColor:businessColors.green,padding:11,borderRadius:12,alignItems:'center'},actionQuiet:{backgroundColor:'#edf3ef'},actionDanger:{backgroundColor:'#fff0f0'},actionText:{color:'#fff',fontWeight:'900'},section:{gap:8},item:{flexDirection:'row',alignItems:'center',gap:8},itemTitle:{fontSize:15,fontWeight:'900',color:businessColors.ink},pill:{backgroundColor:'#edf3ef',borderRadius:999,paddingHorizontal:8,paddingVertical:5},pillText:{fontSize:9,fontWeight:'900',color:'#31533f'},empty:{backgroundColor:'#eef3f0',padding:13,borderRadius:14},chips:{flexDirection:'row',flexWrap:'wrap',gap:7},chip:{backgroundColor:'#edf3ef',paddingHorizontal:10,paddingVertical:7,borderRadius:999},chipOn:{backgroundColor:businessColors.green},chipText:{fontSize:10,fontWeight:'800',color:'#315440'},chipTextOn:{color:'#fff'},label:{fontSize:9,fontWeight:'900',letterSpacing:1,color:businessColors.green},actions:{flexDirection:'row',gap:8,flexWrap:'wrap'},mediaThumb:{width:82,height:82,borderRadius:14,backgroundColor:'#e8eeea'},mediaTitleRow:{flexDirection:'row',alignItems:'center',gap:7,flexWrap:'wrap'}});

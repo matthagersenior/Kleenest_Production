@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 
 const LOCATION_BUCKET='location-photos';
+export function businessLocationPhotoUrl(storagePath:string){const path=String(storagePath||'').trim();return path?getKleenestSupabaseClient().storage.from(LOCATION_BUCKET).getPublicUrl(path).data.publicUrl:'';}
 const QR_BUCKET='qr-branding';
 const client=()=>getKleenestSupabaseClient();
 

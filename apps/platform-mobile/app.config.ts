@@ -7,10 +7,13 @@ if(configuredEasProjectId&&configuredEasProjectId!==EXPECTED_EAS_PROJECT_ID){
 }
 const EAS_PROJECT_ID=configuredEasProjectId||EXPECTED_EAS_PROJECT_ID;
 const otaChannel=process.env.EXPO_PUBLIC_OTA_CHANNEL||'owner-production';
+const nativeRuntimeId=String(process.env.KLEENEST_NATIVE_RUNTIME_ID||'').trim();
+if(nativeRuntimeId&&!/^[a-f0-9]{40}$/i.test(nativeRuntimeId))throw new Error('KLEENEST_NATIVE_RUNTIME_ID must be a full Git commit SHA.');
+const runtimeVersion=nativeRuntimeId?`kleenest-owner-native-${nativeRuntimeId}`:'kleenest-owner-1.0.0';
 const nativePushConfigured=process.env.KLEENEST_NATIVE_PUSH_CONFIGURED==='1';
 
 const config:ExpoConfig={
-  name:'KleenestOS',slug:'kleenest-owner',version:'1.0.0',runtimeVersion:'kleenest-owner-1.0.0',
+  name:'KleenestOS',slug:'kleenest-owner',version:'1.0.0',runtimeVersion,
   icon:'./assets/app-icon.png',orientation:'portrait',scheme:'kleenest-owner',userInterfaceStyle:'automatic',
   updates:{enabled:true,url:`https://u.expo.dev/${EAS_PROJECT_ID}`,checkAutomatically:'ON_LOAD',fallbackToCacheTimeout:0,requestHeaders:{'expo-channel-name':otaChannel}},
   ios:{bundleIdentifier:'com.kleenest.platform',supportsTablet:true,config:{usesNonExemptEncryption:false}},
