@@ -3,13 +3,16 @@ import { router } from 'expo-router';
 import { useEffect,useState } from 'react';
 import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FeatureCard, HeroCard, SectionHeader, palette } from '../components/ConsumerUI';
+import { MarketingHome } from '../components/MarketingSite';
 import { hasCurrentPolicyAcceptance } from '../services/safety';
 
 const action=(route:string)=>()=>router.push(route as any);
 
 export default function HomeScreen(){
+  const webAppLaunch=Platform.OS==='web'&&typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('app')==='1';
   const[policyRequired,setPolicyRequired]=useState(false),[signedIn,setSignedIn]=useState(false);
-  useEffect(()=>{let active=true;const client=getKleenestSupabaseClient();async function check(){const{data}=await client.auth.getSession();if(!active)return;setSignedIn(Boolean(data.session));if(!data.session){setPolicyRequired(false);return}setPolicyRequired(!(await hasCurrentPolicyAcceptance().catch(()=>true)))}void check();const auth=client.auth.onAuthStateChange(()=>{void check()});return()=>{active=false;auth.data.subscription.unsubscribe()}},[]);
+  useEffect(()=>{if(Platform.OS==='web'&&!webAppLaunch)return;let active=true;const client=getKleenestSupabaseClient();async function check(){const{data}=await client.auth.getSession();if(!active)return;setSignedIn(Boolean(data.session));if(!data.session){setPolicyRequired(false);return}setPolicyRequired(!(await hasCurrentPolicyAcceptance().catch(()=>true)))}void check();const auth=client.auth.onAuthStateChange(()=>{void check()});return()=>{active=false;auth.data.subscription.unsubscribe()}},[webAppLaunch]);
+  if(Platform.OS==='web'&&!webAppLaunch)return <MarketingHome/>;
   return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
     <View style={s.brandRow}><View><Text style={s.brand}>KLEENEST</Text><Text style={s.brandSub}>Trusted restroom discovery network</Text></View><Pressable style={s.profileChip} onPress={action(signedIn?'/profile':'/signup')}><Text style={s.profileChipText}>{signedIn?'PROFILE':'JOIN'}</Text></Pressable></View>
 

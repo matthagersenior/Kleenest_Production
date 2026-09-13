@@ -20,6 +20,7 @@ type ReleaseState={
 
 const ROOT_PATH='/Kleenest_Production/';
 const INSTALL_PATH='/Kleenest_Production/install';
+const APP_PATH='/Kleenest_Production/?app=1';
 const APK_PATH='/Kleenest_Production/Kleenest-Consumer.apk';
 const CHECKSUM_PATH='/Kleenest_Production/Kleenest-Consumer.apk.sha256';
 const RELEASE_STATE_PATH='/Kleenest_Production/Kleenest-release-state.json';
@@ -168,7 +169,7 @@ export default function InstallKleenest(){
 
   async function downloadApk(){await Linking.openURL(browserUrl(APK_PATH))}
   async function openChecksum(){await Linking.openURL(browserUrl(CHECKSUM_PATH))}
-  async function openKleenest(){await Linking.openURL(browserUrl(ROOT_PATH))}
+  async function openKleenest(){await Linking.openURL(browserUrl(APP_PATH))}
 
   const releaseStatus=releaseLoading?'CHECKING':releaseState?.status||'STATUS UNAVAILABLE';
   const releaseGood=releaseState?.otaCompatible===true&&!releaseState?.nativeDrift;
@@ -182,6 +183,7 @@ export default function InstallKleenest(){
         <View style={s.status}><Text style={s.statusText}>{environment}{installed?' · INSTALLED':''}</Text></View>
         <View style={s.status}><Text style={s.statusText}>{browserLabel(browserKind).toUpperCase()}</Text></View>
       </View>
+      <Pressable accessibilityRole="link" style={s.heroLink} onPress={()=>void Linking.openURL(browserUrl(ROOT_PATH))}><Text style={s.heroLinkText}>← BACK TO KLEENEST SITE</Text></Pressable>
     </View>
 
     {message?<View style={s.notice}><Text style={s.noticeText}>{message}</Text></View>:null}
@@ -228,6 +230,22 @@ export default function InstallKleenest(){
     </View>:null}
 
     <View style={s.card}>
+      <Text style={s.kicker}>IF INSTALLATION DOESN'T WORK</Text>
+      <Text style={s.cardTitle}>Use the easy recovery path.</Text>
+      <Text style={s.cardBody}>Most install problems are browser-menu or stale-shortcut issues. These steps are safe and do not require changing your Kleenest account.</Text>
+      <View style={s.steps}>
+        <View style={s.step}><Text style={s.stepNumber}>1</Text><View style={s.stepCopy}><Text style={s.stepTitle}>Check the browser instructions above</Text><Text style={s.stepBody}>{browserHelp}</Text></View></View>
+        <View style={s.step}><Text style={s.stepNumber}>2</Text><View style={s.stepCopy}><Text style={s.stepTitle}>Run Install Health again</Text><Text style={s.stepBody}>Secure Web and PWA Shell should show READY. If the shell still says LOADING, refresh this page once and check again.</Text></View></View>
+        <View style={s.step}><Text style={s.stepNumber}>3</Text><View style={s.stepCopy}><Text style={s.stepTitle}>Remove an old shortcut if it behaves strangely</Text><Text style={s.stepBody}>If an older Kleenest shortcut only opens a browser tab or looks stale, remove that shortcut and install again from this page.</Text></View></View>
+        <View style={s.step}><Text style={s.stepNumber}>4</Text><View style={s.stepCopy}><Text style={s.stepTitle}>Android has a second path</Text><Text style={s.stepBody}>The web app is recommended for most people. If you specifically want the native Android package, use the verified APK option above.</Text></View></View>
+      </View>
+      <View style={s.buttonRow}>
+        <Pressable accessibilityRole="button" style={s.secondary} onPress={()=>void refreshDiagnostics()}><Text style={s.secondaryText}>CHECK INSTALLATION AGAIN</Text></Pressable>
+        <Pressable accessibilityRole="link" style={s.secondary} onPress={()=>void Linking.openURL(browserUrl('/Kleenest_Production/support'))}><Text style={s.secondaryText}>OPEN SUPPORT</Text></Pressable>
+      </View>
+    </View>
+
+    <View style={s.card}>
       <Text style={s.kicker}>WHY INSTALL?</Text>
       <Text style={s.cardTitle}>Kleenest stays one tap away.</Text>
       <View style={s.benefits}>
@@ -262,6 +280,8 @@ const s=StyleSheet.create({
   statusRow:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:4},
   status:{alignSelf:'flex-start',paddingHorizontal:9,paddingVertical:6,borderRadius:999,backgroundColor:'rgba(255,255,255,.12)'},
   statusText:{fontSize:9,fontWeight:'900',letterSpacing:.8,color:'#fff'},
+  heroLink:{alignSelf:'flex-start',marginTop:5,paddingVertical:5},
+  heroLinkText:{fontSize:9,fontWeight:'900',letterSpacing:.6,color:'#d9e8df'},
   notice:{borderRadius:14,padding:12,backgroundColor:'#fff7df',borderWidth:1,borderColor:'#ead8a7'},
   noticeText:{fontSize:12,lineHeight:18,fontWeight:'700',color:'#725a1e'},
   card:{backgroundColor:'#fff',borderWidth:1,borderColor:palette.line,borderRadius:19,padding:16,gap:8},

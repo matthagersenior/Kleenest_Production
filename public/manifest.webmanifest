@@ -3,7 +3,7 @@
   "short_name": "Kleenest",
   "description": "Find a restroom you can trust, build a route, and keep moving.",
   "id": "/Kleenest_Production/",
-  "start_url": "/Kleenest_Production/",
+  "start_url": "/Kleenest_Production/?app=1",
   "scope": "/Kleenest_Production/",
   "display": "standalone",
   "display_override": [

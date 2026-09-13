@@ -5,8 +5,11 @@ const EXPECTED_SHA=process.env.EXPECTED_SHA||'';
 
 test('Installation Center click-through and release assets',async({page,request})=>{
   await page.goto(BASE,{waitUntil:'domcontentloaded'});
-  await expect(page.getByText('GET KLEENEST')).toBeVisible({timeout:30000});
-  await page.getByRole('button',{name:'Install Kleenest'}).click();
+  await expect(page.getByText('Clean bathrooms shouldn’t be a gamble.')).toBeVisible({timeout:30000});
+  await expect(page.getByText('FOR YOU')).toBeVisible();
+  await expect(page.getByText('FOR BUSINESS')).toBeVisible();
+  await expect(page.getByText('TRUST + FRESHNESS')).toBeVisible();
+  await page.getByRole('button',{name:/Install Kleenest/i}).first().click();
   await expect(page).toHaveURL(/\/Kleenest_Production\/install\/?$/);
   await expect(page.getByText('KLEENEST · UNIVERSAL INSTALLATION CENTER')).toBeVisible();
   await expect(page.getByText('INSTALL HEALTH')).toBeVisible();
@@ -22,14 +25,17 @@ test('Installation Center click-through and release assets',async({page,request}
   await page.getByText('SHARE INSTALL LINK').click();
   await expect(page.locator('body')).toContainText(/Install link copied|Share this install link|Install link shared/i);
 
-  const direct=await request.get(BASE+'install/',{failOnStatusCode:false});
-  expect(direct.status()).toBe(200);
+  for(const route of ['install/','for-you/','for-business/','trust/']){
+    const direct=await request.get(BASE+route,{failOnStatusCode:false});
+    expect(direct.status()).toBe(200);
+  }
 
   const manifestResponse=await request.get(BASE+'manifest.webmanifest');
   expect(manifestResponse.ok()).toBeTruthy();
   const manifest=await manifestResponse.json();
   expect(manifest.display).toBe('standalone');
   expect(manifest.scope).toBe('/Kleenest_Production/');
+  expect(manifest.start_url).toBe('/Kleenest_Production/?app=1');
   expect(manifest.shortcuts.some((x:any)=>x.url==='/Kleenest_Production/install')).toBeTruthy();
 
   const stateResponse=await request.get(BASE+'Kleenest-release-state.json');
