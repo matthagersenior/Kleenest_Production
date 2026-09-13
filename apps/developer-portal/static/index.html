@@ -7,18 +7,27 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://ssgesjzdvdsqacdtasje.supabase.co; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'self'">
 <title>Kleenest Developer Portal</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:#07100d;color:#edf7f2}main{max-width:1180px;margin:auto;padding:26px}header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.mark{width:42px;height:42px;border-radius:13px;background:#56e39f;color:#07100d;display:grid;place-items:center;font-weight:900;font-size:20px}.eyebrow{color:#56e39f;font-size:11px;letter-spacing:.16em}.sub{color:#90aa9f;margin:5px 0 0;line-height:1.5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.card{background:#0e1d17;border:1px solid #203a30;border-radius:16px;padding:18px}.wide{grid-column:1/-1}.hidden{display:none!important}h1{margin:0;font-size:29px}h2{margin:0 0 9px;font-size:18px}h3{margin:15px 0 8px;font-size:14px;color:#bcd3c8}label{font-size:12px;color:#9bb1a8;display:grid;gap:6px;margin:10px 0}input,select,textarea,button{font:inherit;border-radius:10px;padding:10px 11px}input,select,textarea{border:1px solid #2a493d;background:#07130f;color:#fff;width:100%}textarea{min-height:72px}button{border:1px solid #315348;background:#14271f;color:#eaf5ef;cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:#56e39f;color:#07100d;border-color:#56e39f;font-weight:800}.danger{background:#311917;color:#ffc7c0;border-color:#70403b}.row{display:flex;gap:8px;flex-wrap:wrap}.status{margin-top:10px;padding:10px;border:1px solid #294b3d;border-radius:10px;color:#afd2c1;background:#0b1813}.notice{padding:11px;border:1px solid #35594a;border-radius:10px;background:#10241c;margin-bottom:14px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.metric{background:#0a1611;border:1px solid #1c3329;border-radius:12px;padding:14px}.metric span,.metric small{display:block;color:#7f998d}.metric strong{font-size:20px;display:block;margin:6px 0}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#173e2d;color:#8bf0b9;font-size:12px}.pill.alt{background:#1b2b42;color:#a9c9ff}.secret{padding:12px;background:#283819;border:1px solid #536c25;border-radius:12px;overflow:auto;white-space:pre-wrap}.list{display:grid;gap:8px}.item{display:flex;justify-content:space-between;gap:12px;align-items:center;border-top:1px solid #1a3028;padding:10px 0}.item:first-child{border-top:0}.item strong,.item span,.item small,.item code{display:block}.item small{color:#819a90}.item code{color:#95dfbe;max-width:560px;overflow:hidden;text-overflow:ellipsis}.actions{display:flex;gap:7px;align-items:center}pre{white-space:pre-wrap;word-break:break-word;background:#06100c;border:1px solid #1a3328;border-radius:12px;padding:14px;max-height:420px;overflow:auto;color:#a9ebca}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.divider{border-top:1px solid #20362e;margin:16px 0}.muted{color:#80988e;font-size:12px}.owner{border-color:#365a4a}@media(max-width:760px){main{padding:14px}.grid,.metrics{grid-template-columns:1fr}.wide{grid-column:auto}header{flex-direction:column}.item{align-items:flex-start;flex-direction:column}.actions{width:100%;justify-content:flex-end}}
-a{color:inherit;text-decoration:none}</style>
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#07100d;color:#edf7f2}main{max-width:1240px;margin:auto;padding:26px}header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.mark{width:46px;height:46px;border-radius:14px;background:#56e39f;color:#07100d;display:grid;place-items:center;font-weight:950;font-size:21px;box-shadow:0 0 0 5px rgba(86,227,159,.08)}.eyebrow{color:#56e39f;font-size:11px;letter-spacing:.17em;font-weight:900}.sub{color:#90aa9f;margin:5px 0 0;line-height:1.55}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.card{background:#0e1d17;border:1px solid #203a30;border-radius:18px;padding:19px;box-shadow:0 12px 28px rgba(0,0,0,.12)}.wide{grid-column:1/-1}.hidden{display:none!important}h1{margin:0;font-size:30px}h2{margin:0 0 9px;font-size:19px}h3{margin:15px 0 8px;font-size:14px;color:#c4d9cf}label{font-size:12px;color:#9bb1a8;display:grid;gap:6px;margin:10px 0}input,select,textarea,button{font:inherit;border-radius:10px;padding:10px 11px}input,select,textarea{border:1px solid #2a493d;background:#07130f;color:#fff;width:100%}textarea{min-height:88px;resize:vertical}input:focus,select:focus,textarea:focus{outline:2px solid rgba(86,227,159,.25);border-color:#56e39f}button{border:1px solid #315348;background:#14271f;color:#eaf5ef;cursor:pointer}button:hover{border-color:#56e39f}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:#56e39f;color:#07100d;border-color:#56e39f;font-weight:850}.secondary{background:#17372b;border-color:#315c4b}.danger{background:#311917;color:#ffc7c0;border-color:#70403b}.row{display:flex;gap:8px;flex-wrap:wrap}.status{margin-top:10px;padding:10px;border:1px solid #294b3d;border-radius:10px;color:#afd2c1;background:#0b1813}.notice{padding:11px 14px;border:1px solid #35594a;border-radius:11px;background:#10241c;margin-bottom:14px}.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.metric{background:#0a1611;border:1px solid #1c3329;border-radius:13px;padding:14px}.metric span,.metric small{display:block;color:#7f998d}.metric strong{font-size:20px;display:block;margin:6px 0;text-transform:capitalize}.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#173e2d;color:#8bf0b9;font-size:12px}.pill.alt{background:#1b2b42;color:#a9c9ff}.secret{padding:12px;background:#283819;border:1px solid #536c25;border-radius:12px;overflow:auto;white-space:pre-wrap}.list{display:grid;gap:8px}.item{display:flex;justify-content:space-between;gap:12px;align-items:center;border-top:1px solid #1a3028;padding:10px 0}.item:first-child{border-top:0}.item strong,.item span,.item small,.item code{display:block}.item small{color:#819a90}.item code{color:#95dfbe;max-width:560px;overflow:hidden;text-overflow:ellipsis}.actions{display:flex;gap:7px;align-items:center}pre{white-space:pre-wrap;word-break:break-word;background:#06100c;border:1px solid #1a3328;border-radius:12px;padding:14px;max-height:460px;overflow:auto;color:#a9ebca}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.divider{border-top:1px solid #20362e;margin:16px 0}.muted{color:#80988e;font-size:12px}.owner{border-color:#365a4a}.onboarding{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px}.step{border:1px solid #29483b;background:#091611;border-radius:13px;padding:12px;min-height:80px}.step b{display:block;margin-bottom:5px}.step small{color:#7f998d;line-height:1.35}.step.done{border-color:#3d7a60;background:#10281f}.step.done b{color:#73efb1}.hero-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.choice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.choice{background:#0a1712;border:1px solid #244237;border-radius:14px;padding:14px}.choice strong{display:block;margin-bottom:5px}.choice p{color:#829c91;font-size:12px;line-height:1.45;min-height:52px}.highlight{box-shadow:0 0 0 2px #56e39f inset}.play-layout{display:grid;grid-template-columns:.82fr 1.18fr;gap:14px}.mode-tabs,.code-tabs{display:flex;gap:7px;flex-wrap:wrap}.mode-tabs button.active,.code-tabs button.active{background:#56e39f;color:#07100d;border-color:#56e39f;font-weight:800}.map-stage{height:250px;position:relative;overflow:hidden;border:1px solid #27483b;border-radius:14px;background:linear-gradient(rgba(86,227,159,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(86,227,159,.05) 1px,transparent 1px),#081510;background-size:28px 28px}.map-empty{position:absolute;inset:0;display:grid;place-items:center;color:#6f8b7f;font-size:13px}.map-dot{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#56e39f;border:3px solid #07100d;box-shadow:0 0 0 2px rgba(86,227,159,.4)}.map-dot.best{width:20px;height:20px;margin:-10px 0 0 -10px;background:#fff}.results{display:grid;gap:8px;margin-top:10px}.result{display:grid;grid-template-columns:1fr auto;gap:10px;border:1px solid #213c31;background:#0a1712;border-radius:12px;padding:12px}.result strong{display:block}.result small{color:#81998f;line-height:1.4}.score{font-weight:900;color:#56e39f;font-size:18px}.play-meta{padding:9px 11px;border-radius:10px;background:#0a1712;color:#8ea89d;font-size:12px;margin-top:9px}.samples{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.sample{border:1px solid #213e32;background:#091611;border-radius:14px;padding:15px;display:flex;flex-direction:column;gap:9px}.sample .tag{font-size:10px;letter-spacing:.09em;color:#56e39f;font-weight:900}.sample p{color:#819a8f;font-size:12px;line-height:1.5;margin:0;min-height:54px}.sample .row{margin-top:auto}.code-panel{margin-top:10px}.tiny{font-size:11px;color:#708b7f}.success-banner{background:linear-gradient(135deg,#123326,#0c2119);border-color:#346b52}.success-banner h2{font-size:22px}.success-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:13px}.success-action{border:1px solid #2c5947;border-radius:14px;padding:13px;background:#0a1a14}.success-action b{display:block;margin-bottom:5px}.success-action small{display:block;color:#89a398;line-height:1.4;margin-bottom:10px}a{color:inherit;text-decoration:none}
+@media(max-width:980px){.metrics{grid-template-columns:repeat(3,1fr)}.samples{grid-template-columns:1fr 1fr}.play-layout{grid-template-columns:1fr}.onboarding{grid-template-columns:1fr 1fr 1fr}.choice-grid,.success-grid{grid-template-columns:1fr}}
+@media(max-width:760px){main{padding:14px}.grid,.metrics,.samples,.onboarding{grid-template-columns:1fr}.wide{grid-column:auto}header{flex-direction:column}.item{align-items:flex-start;flex-direction:column}.actions{width:100%;justify-content:flex-end}.choice-grid{grid-template-columns:1fr}.result{grid-template-columns:1fr}.brand{align-items:flex-start}}
+</style>
 </head>
 <body>
 <main>
 <header>
-  <div class="brand"><div class="mark">K</div><div><div class="eyebrow">KLEENEST PLATFORM</div><h1>Developer Portal</h1><p class="sub">Invite-only beta access to Kleenest restroom intelligence, APIs, webhooks and integration tooling.</p></div></div>
-  <span class="pill">External Beta</span>
+  <div class="brand"><div class="mark">K</div><div><div class="eyebrow">KLEENEST PLATFORM</div><h1>Kleenest Developer Portal</h1><p class="sub">Build restroom discovery, route intelligence, maps, widgets and AI experiences on the same trusted Kleenest data layer.</p></div></div>
+  <div class="row"><span class="pill">External Beta</span><span class="pill alt">v0.2 Developer Experience</span></div>
 </header>
 <div id="notice" class="notice hidden"></div>
 
 <div class="grid">
+<section class="card wide">
+  <div class="eyebrow">GUIDED ONBOARDING</div>
+  <h2>Get your first result in under 5 minutes</h2>
+  <p class="sub">The portal tracks your path from account creation to a working production integration. Start with a one-hour sandbox; move to production credentials only when you are ready.</p>
+  <div id="onboardingSteps" class="onboarding"></div>
+</section>
+
 <section class="card">
   <h2>Developer account</h2>
   <label>Email<input id="email" type="email" autocomplete="username" /></label>
@@ -50,60 +59,125 @@ a{color:inherit;text-decoration:none}</style>
 </section>
 
 <section id="ownerTools" class="card wide owner hidden">
-  <h2>Kleenest owner controls</h2>
+  <div class="eyebrow">KLEENEST OWNER</div>
+  <h2>Developer platform controls</h2>
   <div class="grid">
     <div>
       <h3>Create partner workspace</h3>
       <label>Name<input id="partnerName" placeholder="Partner Company" /></label>
       <label>Slug<input id="partnerSlug" placeholder="partner-company" /></label>
-      <div class="row"><button id="createPartner" class="primary">Create workspace</button><button id="runDiagnostics">Run internal diagnostics</button></div>
+      <label>Product bundle<select id="partnerBundle"><option value="starter_api">Starter API</option><option value="route_intelligence">Route Intelligence</option><option value="place_intelligence">Place Intelligence</option><option value="fleet_integration">Fleet Integration</option><option value="enterprise_data">Enterprise Data</option></select></label>
+      <div class="row"><button id="createPartner" class="primary">Create workspace</button><button id="createDemoWorkspace">Launch Demo Workspace</button></div>
     </div>
     <div>
-      <h3>Commercial defaults</h3>
-      <label>Plan<select id="partnerPlan"><option>developer</option><option>growth</option><option>fleet</option><option>enterprise</option></select></label>
-      <div class="row">
-        <label style="flex:1">Per minute<input id="partnerMinute" type="number" value="60" min="1" /></label>
-        <label style="flex:1">Per month<input id="partnerMonth" type="number" value="10000" min="1" /></label>
-      </div>
+      <h3>Platform proof</h3>
+      <p class="sub">Launch a disposable demo workspace for meetings, or run the internal contract diagnostics against live Kleenest recommendation surfaces.</p>
+      <div class="row"><button id="runDiagnostics">Run internal diagnostics</button></div>
+      <p class="muted">Demo workspaces use the Starter API bundle. The sandbox credential remains origin-bound and expires automatically.</p>
     </div>
   </div>
 </section>
 
-<section id="inviteMemberCard" class="card hidden">
-  <h2>Invite developer</h2>
-  <label>Email<input id="inviteEmail" type="email" placeholder="developer@partner.com" /></label>
-  <label>Role<select id="inviteRole"><option value="owner">owner</option><option value="admin">admin</option><option value="developer">developer</option></select></label>
-  <button id="createInvite" class="primary">Create invitation</button>
-  <div id="inviteResult" class="secret hidden"></div>
-</section>
-
-<section id="workspaceCard" class="card hidden">
-  <h2>Workspace usage</h2>
+<section id="workspaceCard" class="card wide hidden">
+  <h2>Workspace health</h2>
   <div class="metrics">
     <div class="metric"><span>Plan</span><strong id="metricPlan">—</strong><small id="metricStatus">—</small></div>
     <div class="metric"><span>Month requests</span><strong id="metricUsage">0</strong><small id="metricLimit">—</small></div>
     <div class="metric"><span>Role</span><strong id="metricRole">—</strong><small>partner access</small></div>
     <div class="metric"><span>Webhooks</span><strong id="metricHooks">0</strong><small>active endpoints</small></div>
+    <div class="metric"><span>API products</span><strong id="metricProducts">—</strong><small id="metricBundle">assigned bundle</small></div>
+    <div class="metric"><span>Surfaces</span><strong id="metricSurfaces">—</strong><small>enabled integrations</small></div>
   </div>
 </section>
 
-<section id="keyCard" class="card hidden">
-  <h2>API keys</h2>
-  <label>Key label<input id="keyLabel" value="Integration key" /></label>
-  <div class="row"><button id="issueKey" class="primary">Issue server API key</button></div>
-  <div id="keySecret" class="secret hidden"></div>
-  <div class="divider"></div>
-  <h3>Browser token</h3>
-  <p class="sub">Use this publishable token for Widget/Map/browser integrations. It is read-only, expires automatically, and only works from the exact Allowed origin.</p>
-  <label>Allowed origin<input id="clientOrigin" placeholder="https://app.example.com" /></label>
-  <div class="row">
-    <label style="flex:1">Expires in days<input id="clientExpiryDays" type="number" min="1" max="30" value="7" /></label>
-    <label style="flex:1">Per-minute cap<input id="clientQuota" type="number" min="1" max="120" value="30" /></label>
+<section id="successPath" class="card wide success-banner hidden">
+  <div class="eyebrow">FAST PATH</div>
+  <h2>From workspace to working integration</h2>
+  <div class="success-grid">
+    <div class="success-action"><b>1 · Launch sandbox</b><small>Create a browser-safe credential restricted to this portal origin for one hour.</small><button id="launchSandbox" class="primary">Launch sandbox</button></div>
+    <div class="success-action"><b>2 · Prove the API</b><small>Run a real nearby or route request and inspect the rendered recommendations.</small><button id="jumpPlayground">Open API Playground</button></div>
+    <div class="success-action"><b>3 · Go production</b><small>Choose the correct production credential based on where your code runs.</small><button id="jumpCredentials">Choose production credential</button></div>
   </div>
-  <div class="row"><button id="issuePublicToken" class="primary">Issue Browser token</button></div>
-  <div id="clientTokenSecret" class="secret hidden"></div>
+  <div id="sandboxStatus" class="status">Sandbox not launched.</div>
+</section>
+
+<section id="keyCard" class="card wide hidden">
+  <h2>Where will this run?</h2>
+  <p class="sub">Choose the environment first. Kleenest will point you to the safest credential for that integration.</p>
+  <div class="choice-grid">
+    <div id="choiceServer" class="choice"><strong>My server / backend</strong><p>For server-to-server REST, secure jobs, or MCP services. Keep this secret off browsers and mobile bundles.</p><button id="chooseServer">Use a server API key</button></div>
+    <div id="choiceBrowser" class="choice"><strong>Website / browser</strong><p>For Widget, Map, and browser SDK use. Restricted to exact Allowed origin, read-only, expiring, and separately rate-limited.</p><button id="chooseBrowser">Use a Browser token</button></div>
+    <div class="choice"><strong>Not sure yet</strong><p>Start in the sandbox. It uses the browser-safe credential model and lets you prove the integration before committing.</p><button id="chooseSandbox">Launch sandbox first</button></div>
+  </div>
   <div class="divider"></div>
+  <div class="grid">
+    <div id="serverCredential">
+      <h3>Server API key</h3>
+      <label>Key label<input id="keyLabel" value="Production backend" /></label>
+      <div class="row"><button id="issueKey" class="primary">Issue server API key</button></div>
+      <div id="keySecret" class="secret hidden"></div>
+    </div>
+    <div id="browserCredential">
+      <h3>Browser token</h3>
+      <label>Allowed origin<input id="clientOrigin" placeholder="https://app.example.com" /></label>
+      <div class="row">
+        <label style="flex:1">Expires in days<input id="clientExpiryDays" type="number" min="1" max="30" value="7" /></label>
+        <label style="flex:1">Per-minute cap<input id="clientQuota" type="number" min="1" max="120" value="30" /></label>
+      </div>
+      <div class="row"><button id="issuePublicToken" class="primary">Issue Browser token</button></div>
+      <div id="clientTokenSecret" class="secret hidden"></div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <h3>Workspace credentials</h3>
   <div id="keyList" class="list"></div>
+</section>
+
+<section id="playgroundCard" class="card wide hidden">
+  <div class="eyebrow">LIVE DATA</div>
+  <h2>API Playground</h2>
+  <p class="sub">Run a real Kleenest request using your memory-only sandbox token. The request is counted against the workspace quota just like a production call.</p>
+  <div class="mode-tabs"><button id="modeNearby" class="active">Nearby</button><button id="modeRoute">Along route</button></div>
+  <div class="play-layout" style="margin-top:12px">
+    <div>
+      <div id="nearbyInputs">
+        <div class="row"><label style="flex:1">Latitude<input id="playLat" type="number" step="any" value="38.627" /></label><label style="flex:1">Longitude<input id="playLng" type="number" step="any" value="-90.1994" /></label></div>
+        <div class="row"><label style="flex:1">Radius meters<input id="playRadius" type="number" value="16093" /></label><label style="flex:1">Limit<input id="playLimit" type="number" min="1" max="25" value="5" /></label></div>
+      </div>
+      <div id="routeInputs" class="hidden">
+        <label>Route coordinates (GeoJSON order: longitude, latitude)<textarea id="playRoute">[[-90.1994,38.627],[-89.6501,39.7817]]</textarea></label>
+        <div class="row"><label style="flex:1">Corridor meters<input id="playCorridor" type="number" value="8047" /></label><label style="flex:1">Limit<input id="playRouteLimit" type="number" min="1" max="25" value="8" /></label></div>
+      </div>
+      <label>Amenities, comma separated<input id="playAmenities" placeholder="wheelchair_accessible" /></label>
+      <div class="row"><button id="runPlayground" class="primary">Run live request</button><button id="copyRequest">Copy request JSON</button></div>
+      <div id="playgroundMeta" class="play-meta">Launch the sandbox, then run your first request.</div>
+      <div id="playgroundResults" class="results"></div>
+    </div>
+    <div>
+      <div id="playgroundMap" class="map-stage"><div class="map-empty">Results will appear here.</div></div>
+      <h3>Raw response</h3>
+      <pre id="playgroundJson">No request yet.</pre>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <h3>Generated integration code</h3>
+  <div id="codeTabs" class="code-tabs"></div>
+  <div class="code-panel"><pre id="generatedCode">Run a request to generate cURL, JavaScript, Widget, Map, Route SDK and MCP examples.</pre><button id="copyCode">Copy generated code</button></div>
+</section>
+
+<section id="samplesCard" class="card wide hidden">
+  <div class="eyebrow">READY-MADE USE CASES</div>
+  <h2>Sample gallery</h2>
+  <p class="sub">Start from a working scenario instead of a blank request. Use in my workspace loads the sample directly into the live Playground.</p>
+  <div id="sampleGrid" class="samples"></div>
+</section>
+
+<section id="inviteMemberCard" class="card hidden">
+  <h2>Team access</h2>
+  <label>Email<input id="inviteEmail" type="email" placeholder="developer@partner.com" /></label>
+  <label>Role<select id="inviteRole"><option value="owner">owner</option><option value="admin">admin</option><option value="developer">developer</option></select></label>
+  <button id="createInvite" class="primary">Create invitation</button>
+  <div id="inviteResult" class="secret hidden"></div>
 </section>
 
 <section id="webhookCard" class="card hidden">
@@ -117,8 +191,8 @@ a{color:inherit;text-decoration:none}</style>
 </section>
 
 <section id="integrationCard" class="card wide hidden">
-  <h2>Integration</h2>
-  <p class="sub">Your server API key or origin-restricted Browser token works across the same canonical Kleenest recommendation engine used by REST, the JavaScript SDK, Widget, Map Layer, Route SDK and MCP adapter.</p>
+  <h2>Integration resources</h2>
+  <p class="sub">Use the same canonical Kleenest engine through REST, SDK, Widget, Map Layer, Route SDK, deep links, webhooks and MCP.</p>
   <div class="row" style="margin:12px 0">
     <a class="pill alt" target="_blank" rel="noopener" href="https://ssgesjzdvdsqacdtasje.supabase.co/functions/v1/platform-distribution/v1/sdk.js">SDK module</a>
     <a class="pill alt" target="_blank" rel="noopener" href="https://ssgesjzdvdsqacdtasje.supabase.co/functions/v1/platform-distribution/v1/widget.js">Widget module</a>
@@ -145,20 +219,81 @@ content-type: application/json
 const project='https://ssgesjzdvdsqacdtasje.supabase.co';
 const publishable='sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL';
 const functions=project+'/functions/v1';
+const apiBase=functions+'/platform-api';
+const distBase=functions+'/platform-distribution/v1';
 let token=sessionStorage.getItem('kleenest-developer-access-token')||'';
 let actor=null;
 let memberships=[];
 let selectedPartnerId='';
 let summary=null;
+let sandboxToken='';
+let sandboxKeyId='';
+let sandboxExpiresAt='';
+let lastPlaygroundSuccess=false;
+let playgroundMode='nearby';
+let currentCodeTab='cURL';
+let codeExamples={};
 const $=id=>document.getElementById(id);
+
+const samples=[
+ {tag:'REST + SDK',title:'Nearby restroom finder',description:'Rank trusted restroom options around downtown St. Louis.',mode:'nearby',lat:38.627,lng:-90.1994,radius:16093,limit:5,amenities:''},
+ {tag:'ACCESSIBILITY',title:'Accessible restroom search',description:'Require wheelchair accessibility while keeping the same ranked Kleenest trust model.',mode:'nearby',lat:38.627,lng:-90.1994,radius:40234,limit:8,amenities:'wheelchair_accessible'},
+ {tag:'ROUTE SDK',title:'Fleet route stop finder',description:'Find restroom stops along a St. Louis to Springfield, Illinois route corridor.',mode:'route',route:[[-90.1994,38.627],[-89.6501,39.7817]],corridor:8047,limit:8,amenities:''},
+ {tag:'ROAD TRIP',title:'KC → St. Louis corridor',description:'Load a longer corridor example for road-trip and mobile-workforce planning.',mode:'route',route:[[-94.5786,39.0997],[-92.3341,38.9517],[-90.1994,38.627]],corridor:12000,limit:10,amenities:''},
+ {tag:'WIDGET + MAP',title:'Venue guest experience',description:'Use a local search as the starting point for an embedded finder and map overlay.',mode:'nearby',lat:41.8781,lng:-87.6298,radius:12000,limit:6,amenities:''},
+ {tag:'AI / MCP',title:'Next best restroom',description:'Prove the recommendation contract that powers an assistant asking for the next best stop.',mode:'route',route:[[-90.1994,38.627],[-89.6501,39.7817]],corridor:10000,limit:1,amenities:''}
+];
 
 function notice(message){const el=$('notice');el.textContent=message;el.classList.remove('hidden')}
 function clearNotice(){$('notice').classList.add('hidden')}
 function setAuth(message,ok=false){$('authStatus').textContent=message;$('authStatus').style.borderColor=ok?'#3d7a60':'#294b3d'}
 function selectedMembership(){return memberships.find(m=>(m.partner_id||m.id)===selectedPartnerId)||null}
 function canInvite(){const m=selectedMembership();return !!actor?.platformOwner||['owner','admin','platform_owner'].includes(m?.role)}
-function showWorkspace(show){for(const id of ['workspaceCard','keyCard','webhookCard','integrationCard'])$(id).classList.toggle('hidden',!show);$('inviteMemberCard').classList.toggle('hidden',!show||!canInvite())}
 function sanitizeSlug(value){return value.toLowerCase().trim().replace(/[^a-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,63)}
+function activeKeys(){return (summary?.api_keys||[]).filter(k=>!k.revoked_at&&(!k.expires_at||new Date(k.expires_at)>new Date()))}
+function productionCredentialReady(){return activeKeys().some(k=>!String(k.label||'').toLowerCase().startsWith('portal sandbox'))}
+function sandboxActive(){return !!sandboxToken&&!!sandboxExpiresAt&&new Date(sandboxExpiresAt)>new Date()}
+function scrollToId(id){$(id)?.scrollIntoView({behavior:'smooth',block:'start'})}
+function copyText(value){return navigator.clipboard.writeText(String(value||''))}
+
+function showWorkspace(show){
+ for(const id of ['workspaceCard','successPath','keyCard','playgroundCard','samplesCard','webhookCard','integrationCard'])$(id).classList.toggle('hidden',!show);
+ $('inviteMemberCard').classList.toggle('hidden',!show||!canInvite());
+ renderOnboarding();
+}
+function renderOnboarding(){
+ const steps=[
+  {title:'1 · Account',detail:'Create or sign in to your developer account.',done:!!token},
+  {title:'2 · Workspace',detail:'Claim an invite and open a partner workspace.',done:!!selectedPartnerId&&!!summary},
+  {title:'3 · Credential',detail:'Launch sandbox or issue a production credential.',done:sandboxActive()||activeKeys().length>0},
+  {title:'4 · First result',detail:'Run a live API Playground request.',done:lastPlaygroundSuccess},
+  {title:'5 · Production ready',detail:'Create a non-sandbox server key or Browser token.',done:productionCredentialReady()}
+ ];
+ const root=$('onboardingSteps');root.replaceChildren();
+ for(const step of steps){const el=document.createElement('div');el.className='step'+(step.done?' done':'');const b=document.createElement('b');b.textContent=step.done?'✓ '+step.title:step.title;const s=document.createElement('small');s.textContent=step.detail;el.append(b,s);root.append(el)}
+}
+function setPlaygroundMode(mode){
+ playgroundMode=mode==='route'?'route':'nearby';
+ $('modeNearby').classList.toggle('active',playgroundMode==='nearby');
+ $('modeRoute').classList.toggle('active',playgroundMode==='route');
+ $('nearbyInputs').classList.toggle('hidden',playgroundMode!=='nearby');
+ $('routeInputs').classList.toggle('hidden',playgroundMode!=='route');
+ try{renderCodeExamples(buildPlaygroundBody())}catch{}
+}
+function highlightCredential(kind){
+ $('choiceServer').classList.toggle('highlight',kind==='server');
+ $('choiceBrowser').classList.toggle('highlight',kind==='browser');
+ scrollToId(kind==='server'?'serverCredential':'browserCredential');
+}
+function renderSandbox(){
+ if(sandboxActive()){
+   const minutes=Math.max(0,Math.ceil((new Date(sandboxExpiresAt).getTime()-Date.now())/60000));
+   $('sandboxStatus').textContent='Sandbox active · exact origin '+location.origin+' · expires in about '+minutes+' minutes · 15 requests/minute.';
+ }else{
+   $('sandboxStatus').textContent='Sandbox not launched. Create a one-hour, origin-bound token to use the live Playground.';
+ }
+ renderOnboarding();
+}
 
 async function authRequest(path,body){
  const r=await fetch(project+path,{method:'POST',headers:{'content-type':'application/json','apikey':publishable},body:JSON.stringify(body)});
@@ -174,7 +309,7 @@ async function signIn(){
  const b=await authRequest('/auth/v1/token?grant_type=password',{email,password});
  if(!b.access_token)throw new Error('Authentication did not return a session.');
  token=b.access_token;sessionStorage.setItem('kleenest-developer-access-token',token);$('password').value='';
- await bootstrapSession();notice('Signed in.');
+ await bootstrapSession();notice('Signed in. Open a workspace to continue.');
 }
 async function signUp(){
  clearNotice(); const email=$('email').value.trim(),password=$('password').value;
@@ -182,11 +317,14 @@ async function signUp(){
  if(b.access_token){token=b.access_token;sessionStorage.setItem('kleenest-developer-access-token',token);$('password').value='';await bootstrapSession();notice('Developer account created and signed in.');return}
  notice('Developer account created. If email confirmation is enabled, confirm your email and then return here to sign in.');
 }
-function signOut(){token='';actor=null;memberships=[];selectedPartnerId='';summary=null;sessionStorage.removeItem('kleenest-developer-access-token');setAuth('Not authenticated.');$('ownerTools').classList.add('hidden');$('diagnosticsCard').classList.add('hidden');renderWorkspaces();showWorkspace(false)}
+function signOut(){
+ token='';actor=null;memberships=[];selectedPartnerId='';summary=null;sandboxToken='';sandboxKeyId='';sandboxExpiresAt='';lastPlaygroundSuccess=false;
+ sessionStorage.removeItem('kleenest-developer-access-token');setAuth('Not authenticated.');$('ownerTools').classList.add('hidden');$('diagnosticsCard').classList.add('hidden');renderWorkspaces();showWorkspace(false);renderSandbox();renderOnboarding();
+}
 async function bootstrapSession(){
  actor=await admin('actor');setAuth((actor.platformOwner?'Kleenest platform owner':'Developer')+' authenticated as '+actor.email,true);
  $('ownerTools').classList.toggle('hidden',!actor.platformOwner);$('diagnosticsCard').classList.toggle('hidden',!actor.platformOwner);
- await loadWorkspaces();
+ await loadWorkspaces();renderOnboarding();
 }
 async function loadWorkspaces(){
  const b=await admin('my-partners');memberships=Array.isArray(b.memberships)?b.memberships:[];actor={...(actor||{}),platformOwner:!!b.platformOwner};
@@ -195,11 +333,11 @@ async function loadWorkspaces(){
 }
 function renderWorkspaces(){
  const select=$('workspaceSelect');select.replaceChildren();
- if(!token){select.append(new Option('Sign in to load workspaces',''));$('workspaceMeta').textContent='No workspace selected.';return}
- if(!memberships.length){select.append(new Option('No partner workspaces yet',''));$('workspaceMeta').textContent='Claim an invitation to join a partner workspace.';return}
+ if(!token){select.append(new Option('Sign in to load workspaces',''));$('workspaceMeta').textContent='No workspace selected.';renderOnboarding();return}
+ if(!memberships.length){select.append(new Option('No partner workspaces yet',''));$('workspaceMeta').textContent='Claim an invitation to join a partner workspace.';renderOnboarding();return}
  select.append(new Option('Choose a partner workspace',''));
  for(const m of memberships){const id=m.partner_id||m.id;select.append(new Option(m.name+' · '+m.role,id))}
- if(selectedPartnerId)select.value=selectedPartnerId;
+ if(selectedPartnerId)select.value=selectedPartnerId;renderOnboarding();
 }
 async function loadSummary(){
  selectedPartnerId=$('workspaceSelect').value||selectedPartnerId;if(!selectedPartnerId){showWorkspace(false);return}
@@ -208,36 +346,156 @@ async function loadSummary(){
  $('metricPlan').textContent=summary.partner?.plan||m?.plan||'—';$('metricStatus').textContent=summary.partner?.status||m?.status||'—';
  $('metricUsage').textContent=Number(summary.month_usage?.request_count||0).toLocaleString();$('metricLimit').textContent=summary.partner?.quota_per_month?('of '+Number(summary.partner.quota_per_month).toLocaleString()):'—';
  $('metricRole').textContent=m?.role||summary.membership_role||'member';$('metricHooks').textContent=(summary.webhooks||[]).filter(h=>h.active).length;
- showWorkspace(true);renderKeys();renderWebhooks();
+ const products=summary.product_access?.api_products||[];const surfaces=summary.product_access?.integration_surfaces||[];
+ $('metricProducts').textContent=products.length||'—';$('metricBundle').textContent=summary.product_access?.bundle_label||summary.product_access?.bundle_key||'assigned by Kleenest';
+ $('metricSurfaces').textContent=surfaces.length||'—';
+ showWorkspace(true);renderKeys();renderWebhooks();renderSandbox();renderOnboarding();
 }
 function renderKeys(){
  const root=$('keyList');root.replaceChildren();const keys=summary?.api_keys||[];
- if(!keys.length){root.textContent='No API keys yet.';return}
- for(const key of keys){const row=document.createElement('div');row.className='item';const left=document.createElement('div');const strong=document.createElement('strong');strong.textContent=key.label;const code=document.createElement('code');code.textContent=(key.key_prefix||'key')+'…';const small=document.createElement('small');const kind=key.credential_type||'secret';const detail=kind==='publishable'?('Browser token · Allowed origin: '+(key.allowed_origins||[]).join(', ')+' · '+(key.credential_quota_per_minute||'—')+'/min'):('Server API key · Scopes: '+(key.scopes||[]).join(', '));small.textContent=key.revoked_at?'Revoked':detail;left.append(strong,code,small);const actions=document.createElement('div');actions.className='actions';if(!key.revoked_at){const btn=document.createElement('button');btn.className='danger';btn.textContent='Revoke';btn.onclick=()=>revokeKey(key.id);actions.append(btn)}row.append(left,actions);root.append(row)}
+ if(!keys.length){root.textContent='No credentials yet. Start with the one-hour sandbox or choose a production credential above.';return}
+ for(const key of keys){
+   const row=document.createElement('div');row.className='item';const left=document.createElement('div');const strong=document.createElement('strong');strong.textContent=key.label;
+   const code=document.createElement('code');code.textContent=(key.key_prefix||'key')+'…';const small=document.createElement('small');const kind=key.credential_type||'secret';
+   let detail=kind==='publishable'?('Browser token · Allowed origin: '+(key.allowed_origins||[]).join(', ')+' · '+(key.credential_quota_per_minute||'—')+'/min'):('Server API key · Scopes: '+(key.scopes||[]).join(', '));
+   if(key.expires_at)detail+=' · expires '+new Date(key.expires_at).toLocaleString();
+   small.textContent=key.revoked_at?'Revoked':detail;left.append(strong,code,small);const actions=document.createElement('div');actions.className='actions';
+   if(!key.revoked_at){const btn=document.createElement('button');btn.className='danger';btn.textContent='Revoke';btn.onclick=()=>revokeKey(key.id);actions.append(btn)}
+   row.append(left,actions);root.append(row)
+ }
 }
 function renderWebhooks(){
  const root=$('webhookList');root.replaceChildren();const hooks=summary?.webhooks||[];
  if(!hooks.length){root.textContent='No webhook endpoints yet.';return}
- for(const hook of hooks){const row=document.createElement('div');row.className='item';const left=document.createElement('div');const strong=document.createElement('strong');strong.textContent=hook.label;const code=document.createElement('code');code.textContent=hook.url;const small=document.createElement('small');small.textContent=(hook.active?'Active':'Disabled')+' · '+(hook.event_types||[]).join(', ');left.append(strong,code,small);const actions=document.createElement('div');actions.className='actions';if(hook.active){const btn=document.createElement('button');btn.className='danger';btn.textContent='Disable';btn.onclick=()=>disableWebhook(hook.id);actions.append(btn)}row.append(left,actions);root.append(row)}
+ for(const hook of hooks){
+   const row=document.createElement('div');row.className='item';const left=document.createElement('div');const strong=document.createElement('strong');strong.textContent=hook.label;
+   const code=document.createElement('code');code.textContent=hook.url;const small=document.createElement('small');small.textContent=(hook.active?'Active':'Disabled')+' · '+(hook.event_types||[]).join(', ')+' · failures '+Number(hook.consecutive_failures||0);
+   left.append(strong,code,small);const actions=document.createElement('div');actions.className='actions';if(hook.active){const btn=document.createElement('button');btn.className='danger';btn.textContent='Disable';btn.onclick=()=>disableWebhook(hook.id);actions.append(btn)}row.append(left,actions);root.append(row)
+ }
 }
-async function claimInvite(){const inviteToken=$('inviteToken').value.trim();if(!inviteToken)throw new Error('Paste the invitation token first.');const b=await admin('claim-invite',{inviteToken});notice('Invitation claimed. Workspace access is active.');location.hash='';$('inviteToken').value='';selectedPartnerId=b.partner_id;await loadWorkspaces();$('workspaceSelect').value=selectedPartnerId;await loadSummary()}
-async function createPartner(){const name=$('partnerName').value.trim();let slug=sanitizeSlug($('partnerSlug').value||name);if(!name||!slug)throw new Error('Partner name and slug are required.');const b=await admin('create-partner',{name,slug,plan:$('partnerPlan').value,quotaPerMinute:Number($('partnerMinute').value),quotaPerMonth:Number($('partnerMonth').value)});notice('Partner workspace created.');await loadWorkspaces();selectedPartnerId=b.partnerId;$('workspaceSelect').value=selectedPartnerId;await loadSummary()}
-async function createInvite(){if(!selectedPartnerId)throw new Error('Open a partner workspace first.');const b=await admin('create-invite',{partnerId:selectedPartnerId,email:$('inviteEmail').value.trim(),role:$('inviteRole').value});const link=location.origin+location.pathname+'#invite='+encodeURIComponent(b.invite_token);const el=$('inviteResult');el.classList.remove('hidden');el.textContent='One-time invitation link — copy now:\\n'+link+'\\n\\nExpires: '+b.expires_at}
-async function issueKey(){if(!selectedPartnerId)throw new Error('Open a workspace first.');const b=await admin('issue-key',{partnerId:selectedPartnerId,label:$('keyLabel').value||'Integration key',scopes:['recommendations:read']});const el=$('keySecret');el.classList.remove('hidden');el.textContent='One-time API key — copy now:\\n'+b.api_key;await loadSummary()}
-async function issuePublicToken(){if(!selectedPartnerId)throw new Error('Open a workspace first.');const origin=$('clientOrigin').value.trim();if(!origin)throw new Error('Allowed origin is required.');const days=Math.max(1,Math.min(Number($('clientExpiryDays').value||7),30));const quota=Math.max(1,Math.min(Number($('clientQuota').value||30),120));const expiresAt=new Date(Date.now()+days*86400000).toISOString();const b=await admin('issue-public-token',{partnerId:selectedPartnerId,label:'Browser token',allowedOrigins:[origin],expiresAt,quotaPerMinute:quota});const el=$('clientTokenSecret');el.classList.remove('hidden');el.textContent='Publishable Browser token — copy now:\\n'+b.client_token+'\\n\\nAllowed origin: '+(b.allowed_origins||[]).join(', ')+'\\nExpires: '+b.expires_at;await loadSummary()}
-async function revokeKey(apiKeyId){await admin('revoke-key',{partnerId:selectedPartnerId,apiKeyId});notice('API key revoked.');await loadSummary()}
-async function createWebhook(){if(!selectedPartnerId)throw new Error('Open a workspace first.');const b=await admin('create-webhook',{partnerId:selectedPartnerId,label:'Developer Portal',url:$('webhookUrl').value.trim(),eventTypes:$('webhookEvents').value.split(',').map(x=>x.trim()).filter(Boolean)});const el=$('webhookSecret');el.classList.remove('hidden');el.textContent='One-time signing secret — copy now:\\n'+b.signing_secret;await loadSummary()}
+async function claimInvite(){
+ const inviteToken=$('inviteToken').value.trim();if(!inviteToken)throw new Error('Paste the invitation token first.');
+ const b=await admin('claim-invite',{inviteToken});notice('Invitation claimed. Workspace access is active.');location.hash='';$('inviteToken').value='';selectedPartnerId=b.partner_id;await loadWorkspaces();$('workspaceSelect').value=selectedPartnerId;await loadSummary()
+}
+async function createPartner(){
+ const name=$('partnerName').value.trim();let slug=sanitizeSlug($('partnerSlug').value||name);if(!name||!slug)throw new Error('Partner name and slug are required.');
+ const b=await admin('create-partner',{name,slug,bundleKey:$('partnerBundle').value});notice('Partner workspace created.');await loadWorkspaces();selectedPartnerId=b.partnerId;$('workspaceSelect').value=selectedPartnerId;await loadSummary()
+}
+async function createDemoWorkspace(){
+ const stamp=Date.now().toString(36);const name='Kleenest Demo '+new Date().toLocaleDateString();const slug='kleenest-demo-'+stamp;
+ const b=await admin('create-partner',{name,slug,bundleKey:'starter_api'});notice('Demo workspace created. Launching its one-hour sandbox.');await loadWorkspaces();selectedPartnerId=b.partnerId;$('workspaceSelect').value=selectedPartnerId;await loadSummary();await launchSandbox();scrollToId('playgroundCard')
+}
+async function createInvite(){
+ if(!selectedPartnerId)throw new Error('Open a partner workspace first.');
+ const b=await admin('create-invite',{partnerId:selectedPartnerId,email:$('inviteEmail').value.trim(),role:$('inviteRole').value});
+ const link=location.origin+location.pathname+'#invite='+encodeURIComponent(b.invite_token);const el=$('inviteResult');el.classList.remove('hidden');el.textContent='One-time invitation link — copy now:\n'+link+'\n\nExpires: '+b.expires_at
+}
+async function issueKey(){
+ if(!selectedPartnerId)throw new Error('Open a workspace first.');
+ const b=await admin('issue-key',{partnerId:selectedPartnerId,label:$('keyLabel').value||'Production backend',scopes:['recommendations:read']});const el=$('keySecret');el.classList.remove('hidden');el.textContent='One-time API key — copy now:\n'+b.api_key;await loadSummary();notice('Server API key issued. Save it now; Kleenest will not show the raw key again.')
+}
+async function issuePublicToken(){
+ if(!selectedPartnerId)throw new Error('Open a workspace first.');const origin=$('clientOrigin').value.trim();if(!origin)throw new Error('Allowed origin is required.');
+ const days=Math.max(1,Math.min(Number($('clientExpiryDays').value||7),30));const quota=Math.max(1,Math.min(Number($('clientQuota').value||30),120));const expiresAt=new Date(Date.now()+days*86400000).toISOString();
+ const b=await admin('issue-public-token',{partnerId:selectedPartnerId,label:'Production browser',allowedOrigins:[origin],expiresAt,quotaPerMinute:quota});const el=$('clientTokenSecret');el.classList.remove('hidden');el.textContent='Publishable Browser token — copy now:\n'+b.client_token+'\n\nAllowed origin: '+(b.allowed_origins||[]).join(', ')+'\nExpires: '+b.expires_at;await loadSummary();notice('Browser token issued and origin-restricted.')
+}
+async function launchSandbox(){
+ if(!selectedPartnerId)throw new Error('Open a workspace first.');
+ if(sandboxActive()){notice('Sandbox is already active for this page session.');renderSandbox();return sandboxToken}
+ const expiresAt=new Date(Date.now() + 60 * 60 * 1000).toISOString();
+ const b=await admin('issue-public-token',{partnerId:selectedPartnerId,label:'Portal sandbox',allowedOrigins:[location.origin],expiresAt,quotaPerMinute:15});
+ sandboxToken=b.client_token||'';sandboxKeyId=b.api_key_id||'';sandboxExpiresAt=b.expires_at||expiresAt;
+ if(!sandboxToken)throw new Error('Sandbox credential was not returned.');
+ await loadSummary();renderSandbox();notice('Sandbox ready. Your token exists only in this page memory and expires in one hour.');return sandboxToken
+}
+async function revokeKey(apiKeyId){
+ await admin('revoke-key',{partnerId:selectedPartnerId,apiKeyId});
+ if(apiKeyId===sandboxKeyId){sandboxToken='';sandboxKeyId='';sandboxExpiresAt='';lastPlaygroundSuccess=false}
+ notice('Credential revoked.');await loadSummary();renderSandbox()
+}
+async function createWebhook(){
+ if(!selectedPartnerId)throw new Error('Open a workspace first.');
+ const b=await admin('create-webhook',{partnerId:selectedPartnerId,label:'Developer Portal',url:$('webhookUrl').value.trim(),eventTypes:$('webhookEvents').value.split(',').map(x=>x.trim()).filter(Boolean)});
+ const el=$('webhookSecret');el.classList.remove('hidden');el.textContent='One-time signing secret — copy now:\n'+b.signing_secret;await loadSummary()
+}
 async function disableWebhook(endpointId){await admin('disable-webhook',{partnerId:selectedPartnerId,endpointId});notice('Webhook disabled.');await loadSummary()}
 async function testWebhook(){const b=await admin('enqueue-test-webhook',{partnerId:selectedPartnerId});notice('Test webhook queued: '+b.eventId)}
 async function runDiagnostics(){const b=await admin('diagnostics');$('diagOut').textContent=JSON.stringify(b,null,2);notice('Internal platform diagnostics completed.')}
 
+function amenityList(){return $('playAmenities').value.split(',').map(x=>x.trim()).filter(Boolean).slice(0,24)}
+function buildPlaygroundBody(){
+ if(playgroundMode==='route'){
+   let coordinates;try{coordinates=JSON.parse($('playRoute').value)}catch{throw new Error('Route coordinates must be valid JSON.')}
+   if(!Array.isArray(coordinates)||coordinates.length<2)throw new Error('Route requires at least two [longitude, latitude] coordinates.');
+   return {route:{type:'LineString',coordinates},corridorMeters:Number($('playCorridor').value||8047),limit:Number($('playRouteLimit').value||8),requirements:{amenityNames:amenityList(),amenityMatch:'all'}};
+ }
+ return {location:{latitude:Number($('playLat').value),longitude:Number($('playLng').value)},radiusMeters:Number($('playRadius').value||16093),limit:Number($('playLimit').value||5),requirements:{amenityNames:amenityList(),amenityMatch:'all'}};
+}
+async function runPlayground(){
+ const clientToken=await launchSandbox();const body=buildPlaygroundBody();const path=playgroundMode==='route'?'/v1/recommendations/route':'/v1/recommendations/nearby';
+ $('playgroundMeta').textContent='Running live Kleenest request…';
+ const r=await fetch(apiBase+path,{method:'POST',headers:{'content-type':'application/json','x-kleenest-client-token':clientToken},body:JSON.stringify(body)});
+ const b=await r.json().catch(()=>({}));$('playgroundJson').textContent=JSON.stringify(b,null,2);
+ const remaining=r.headers.get('x-ratelimit-remaining-client-minute');const requestId=r.headers.get('x-kleenest-request-id');
+ $('playgroundMeta').textContent='HTTP '+r.status+(requestId?' · request '+requestId:'')+(remaining!==null?' · sandbox minute remaining '+remaining:'');
+ if(!r.ok){lastPlaygroundSuccess=false;renderRecommendations([]);renderPlaygroundMap([]);renderOnboarding();renderCodeExamples(body);throw new Error(String(b.error||b.reason||('Request failed '+r.status)))}
+ const recommendations=Array.isArray(b.recommendations)?b.recommendations:[];lastPlaygroundSuccess=true;renderRecommendations(recommendations);renderPlaygroundMap(recommendations);renderCodeExamples(body);renderOnboarding();notice('Live request succeeded with '+recommendations.length+' recommendation'+(recommendations.length===1?'':'s')+'.')
+}
+function renderRecommendations(items){
+ const root=$('playgroundResults');root.replaceChildren();
+ if(!items.length){const p=document.createElement('div');p.className='tiny';p.textContent='No recommendations returned for this request.';root.append(p);return}
+ items.slice(0,10).forEach((item,index)=>{
+   const el=document.createElement('div');el.className='result';const left=document.createElement('div');const strong=document.createElement('strong');strong.textContent=(index+1)+'. '+(item.place?.name||'Kleenest place');
+   const small=document.createElement('small');const trust=item.trust||{};small.textContent=(trust.verificationStatus||'unknown')+' · confidence '+(trust.confidence==null?'—':Math.round(Number(trust.confidence)*100)+'%')+(item.explanation?' · '+item.explanation:'');
+   left.append(strong,small);if(item.deepLink){const a=document.createElement('a');a.href=item.deepLink;a.target='_blank';a.rel='noopener';a.className='tiny';a.textContent='Open Kleenest place';left.append(a)}
+   const score=document.createElement('div');score.className='score';score.textContent=Number(item.score||0).toFixed(0);el.append(left,score);root.append(el)
+ })
+}
+function renderPlaygroundMap(items){
+ const map=$('playgroundMap');map.replaceChildren();const points=items.map((item,index)=>({index,name:item.place?.name||'Place',lat:Number(item.place?.latitude),lng:Number(item.place?.longitude)})).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+ if(!points.length){const empty=document.createElement('div');empty.className='map-empty';empty.textContent='No mappable recommendation coordinates returned.';map.append(empty);return}
+ const lats=points.map(p=>p.lat),lngs=points.map(p=>p.lng);const minLat=Math.min(...lats),maxLat=Math.max(...lats),minLng=Math.min(...lngs),maxLng=Math.max(...lngs);
+ points.forEach(p=>{const dot=document.createElement('div');dot.className='map-dot'+(p.index===0?' best':'');const x=maxLng===minLng?50:8+84*((p.lng-minLng)/(maxLng-minLng));const y=maxLat===minLat?50:8+84*(1-((p.lat-minLat)/(maxLat-minLat)));dot.style.left=x+'%';dot.style.top=y+'%';dot.title=(p.index+1)+'. '+p.name;map.append(dot)})
+}
+function renderCodeExamples(body){
+ const path=playgroundMode==='route'?'/v1/recommendations/route':'/v1/recommendations/nearby';const json=JSON.stringify(body,null,2);const compact=JSON.stringify(body);
+ const nearby=playgroundMode==='nearby';
+ codeExamples={
+  'cURL':'curl -X POST "'+apiBase+path+'" \\\n  -H "x-kleenest-api-key: YOUR_SERVER_KEY" \\\n  -H "content-type: application/json" \\\n  -d \''+compact+'\'',
+  'JavaScript':'import { KleenestClient } from "'+distBase+'/sdk.js";\n\nconst client = new KleenestClient({\n  baseUrl: "'+apiBase+'",\n  clientToken: "YOUR_BROWSER_TOKEN"\n});\n\nconst result = await client.'+(nearby?'recommendNearby':'recommendAlongRoute')+'('+json+');\nconsole.log(result.recommendations);',
+  'Widget':'import { KleenestClient } from "'+distBase+'/sdk.js";\nimport { mountKleenestFinder } from "'+distBase+'/widget.js";\n\nconst client = new KleenestClient({ baseUrl: "'+apiBase+'", clientToken: "YOUR_BROWSER_TOKEN" });\n\nmountKleenestFinder(document.querySelector("#restrooms"), {\n  client,\n  latitude: '+(nearby?Number(body.location.latitude):38.627)+',\n  longitude: '+(nearby?Number(body.location.longitude):-90.1994)+',\n  radiusMeters: '+(nearby?Number(body.radiusMeters):16093)+'\n});',
+  'Map':'import { KleenestClient } from "'+distBase+'/sdk.js";\nimport { recommendationsToGeoJSON } from "'+distBase+'/map.js";\n\nconst client = new KleenestClient({ baseUrl: "'+apiBase+'", clientToken: "YOUR_BROWSER_TOKEN" });\nconst result = await client.'+(nearby?'recommendNearby':'recommendAlongRoute')+'('+json+');\nconst geojson = recommendationsToGeoJSON(result.recommendations);',
+  'Route SDK':'import { KleenestClient } from "'+distBase+'/sdk.js";\nimport { KleenestRouteClient, lineStringFromCoordinates } from "'+distBase+'/route.js";\n\nconst client = new KleenestClient({ baseUrl: "'+apiBase+'", clientToken: "YOUR_BROWSER_TOKEN" });\nconst routes = new KleenestRouteClient(client);\nconst result = await routes.findStops({\n  route: lineStringFromCoordinates('+JSON.stringify(playgroundMode==='route'?body.route.coordinates:[[-90.1994,38.627],[-89.6501,39.7817]])+'),\n  corridorMeters: '+(playgroundMode==='route'?Number(body.corridorMeters):8047)+'\n});',
+  'MCP':'KLEENEST_API_BASE_URL='+apiBase+'\nKLEENEST_API_KEY=YOUR_SERVER_KEY\n\nTools:\n- find_nearby_restrooms\n- find_restrooms_along_route\n- find_next_restroom'
+ };
+ const tabs=$('codeTabs');tabs.replaceChildren();for(const name of Object.keys(codeExamples)){const btn=document.createElement('button');btn.textContent=name;btn.className=name===currentCodeTab?'active':'';btn.onclick=()=>selectCodeTab(name);tabs.append(btn)}
+ if(!codeExamples[currentCodeTab])currentCodeTab='cURL';$('generatedCode').textContent=codeExamples[currentCodeTab]
+}
+function selectCodeTab(name){currentCodeTab=name;renderCodeExamples(buildPlaygroundBody())}
+function renderSamples(){
+ const root=$('sampleGrid');root.replaceChildren();
+ samples.forEach((sample,index)=>{const card=document.createElement('div');card.className='sample';const tag=document.createElement('div');tag.className='tag';tag.textContent=sample.tag;const h=document.createElement('strong');h.textContent=sample.title;const p=document.createElement('p');p.textContent=sample.description;const row=document.createElement('div');row.className='row';const load=document.createElement('button');load.textContent='Use in my workspace';load.onclick=()=>loadSample(index,false);const run=document.createElement('button');run.className='primary';run.textContent='Try live';run.onclick=()=>loadSample(index,true);row.append(load,run);card.append(tag,h,p,row);root.append(card)})
+}
+async function loadSample(index,run){
+ const s=samples[index];setPlaygroundMode(s.mode);$('playAmenities').value=s.amenities||'';
+ if(s.mode==='nearby'){$('playLat').value=s.lat;$('playLng').value=s.lng;$('playRadius').value=s.radius;$('playLimit').value=s.limit}
+ else{$('playRoute').value=JSON.stringify(s.route);$('playCorridor').value=s.corridor;$('playRouteLimit').value=s.limit}
+ renderCodeExamples(buildPlaygroundBody());scrollToId('playgroundCard');notice('Sample loaded: '+s.title+'.');
+ if(run)await runPlayground()
+}
+
 function bind(id,fn){$(id).onclick=()=>Promise.resolve(fn()).catch(e=>notice(e.message||String(e)))}
-bind('signin',signIn);bind('signup',signUp);$('signout').onclick=signOut;bind('claimInvite',claimInvite);bind('refreshWorkspaces',loadWorkspaces);bind('loadSummary',loadSummary);bind('createPartner',createPartner);bind('createInvite',createInvite);bind('issueKey',issueKey);bind('issuePublicToken',issuePublicToken);bind('createWebhook',createWebhook);bind('testWebhook',testWebhook);bind('runDiagnostics',runDiagnostics);
-$('workspaceSelect').onchange=()=>{selectedPartnerId=$('workspaceSelect').value;selectedPartnerId?loadSummary().catch(e=>notice(e.message)):showWorkspace(false)};
+bind('signin',signIn);bind('signup',signUp);$('signout').onclick=signOut;bind('claimInvite',claimInvite);bind('refreshWorkspaces',loadWorkspaces);bind('loadSummary',loadSummary);bind('createPartner',createPartner);bind('createDemoWorkspace',createDemoWorkspace);bind('createInvite',createInvite);bind('issueKey',issueKey);bind('issuePublicToken',issuePublicToken);bind('launchSandbox',launchSandbox);bind('chooseSandbox',launchSandbox);bind('createWebhook',createWebhook);bind('testWebhook',testWebhook);bind('runDiagnostics',runDiagnostics);bind('runPlayground',runPlayground);
+$('jumpPlayground').onclick=()=>scrollToId('playgroundCard');$('jumpCredentials').onclick=()=>scrollToId('keyCard');$('chooseServer').onclick=()=>highlightCredential('server');$('chooseBrowser').onclick=()=>highlightCredential('browser');$('modeNearby').onclick=()=>setPlaygroundMode('nearby');$('modeRoute').onclick=()=>setPlaygroundMode('route');
+$('copyRequest').onclick=()=>{try{copyText(JSON.stringify(buildPlaygroundBody(),null,2)).then(()=>notice('Request JSON copied.'))}catch(e){notice(e.message||String(e))}};
+$('copyCode').onclick=()=>copyText(codeExamples[currentCodeTab]||$('generatedCode').textContent).then(()=>notice('Generated code copied.'));
+$('workspaceSelect').onchange=()=>{selectedPartnerId=$('workspaceSelect').value;sandboxToken='';sandboxKeyId='';sandboxExpiresAt='';lastPlaygroundSuccess=false;selectedPartnerId?loadSummary().catch(e=>notice(e.message)):showWorkspace(false)};
 const fragment=new URLSearchParams(location.hash.replace(/^#/,''));
 if(fragment.get('invite'))$('inviteToken').value=fragment.get('invite');
 $('partnerName').oninput=()=>{if(!$('partnerSlug').dataset.touched)$('partnerSlug').value=sanitizeSlug($('partnerName').value)};
 $('partnerSlug').oninput=()=>{$('partnerSlug').dataset.touched='1'};
+$('clientOrigin').value=location.origin;
+renderSamples();renderOnboarding();renderSandbox();renderCodeExamples(buildPlaygroundBody());
 if(token)bootstrapSession().catch(()=>signOut());
 </script>
 </body>
