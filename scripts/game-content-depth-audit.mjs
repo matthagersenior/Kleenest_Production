@@ -4,6 +4,7 @@ const failures=[];
 const modesPath='apps/consumer-mobile/services/gameModes.ts';
 const source=fs.readFileSync(modesPath,'utf8');
 const migrations=fs.readdirSync('supabase/migrations').sort().map(name=>fs.readFileSync('supabase/migrations/'+name,'utf8')).join('\n');
+const latestGameAuthority=fs.readFileSync('supabase/migrations/20260913192500_game_center_score_records.sql','utf8');
 
 const choiceModes=['evidence_tap','trust_quiz','rapid_fire','relay','strategy','amenity_sprint','route_puzzle','ranking','detective','multiplayer_trust'];
 const gameDefs=[...source.matchAll(/\{code:'([^']+)',name:'([^']+)'[^\n]*?mode:'([^']+)'[^\n]*?rounds:(\d+)/g)]
@@ -28,7 +29,7 @@ for(const game of gameDefs){
   }
 }
 
-const memory=source.match(/export const MEMORY_PAIRS=\[(.*?)\];\nexport const BUILDER_SCENARIOS/s)?.[1]||'';
+const memory=source.match(/export const MEMORY_PAIRS=\[(.*?)\];\s*export const BUILDER_SCENARIOS/s)?.[1]||'';
 const memoryPairs=(memory.match(/\['/g)||[]).length;
 const memoryGame=gameDefs.find(g=>g.mode==='memory');
 if(memoryGame&&memoryPairs<memoryGame.rounds)failures.push(`Bathroom Memory: configured for ${memoryGame.rounds} pairs but only has ${memoryPairs}`);
@@ -38,8 +39,8 @@ const builderCount=(builders.match(/\{id:'/g)||[]).length;
 const builderGame=gameDefs.find(g=>g.mode==='builder');
 if(builderGame&&builderCount<builderGame.rounds)failures.push(`Amenity Architect: configured for ${builderGame.rounds} rounds but only has ${builderCount} scenarios`);
 
-if(!/values\(v_user,'game_score','game',v_game\.id/.test(migrations))failures.push("Game score persistence must use canonical progression source_type 'game'.");
-if(/values\(v_user,'game_score','progression_game'/.test(migrations.split('20260913').at(-1)||''))failures.push("Latest game score authority must not write unsupported source_type 'progression_game'.");
+if(!/values\(\s*v_user\s*,\s*'game_score'\s*,\s*'game'\s*,\s*v_game\.id/s.test(latestGameAuthority))failures.push("Game score persistence must use canonical progression source_type 'game'.");
+if(/'game_score'\s*,\s*'progression_game'/.test(latestGameAuthority))failures.push("Latest game score authority must not write unsupported source_type 'progression_game'.");
 const arenaPath='apps/consumer-mobile/app/game/[code].tsx';
 const playPath='apps/consumer-mobile/app/play.tsx';
 const hubPath='apps/consumer-mobile/app/games.tsx';
