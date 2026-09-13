@@ -17,7 +17,15 @@ for(const path of ['apps/business-mobile/app/_layout.tsx','apps/fleet-mobile/app
   }else{
     if(!src.includes("if(needsProvisioning){"))failures.push(path+' must route signed-in users without a Business workspace into provisioning');
   }
-  if(!/if\s*\(onAuthRoute\)\s*\{?[\s\S]{0,120}?router\.replace\(onboardingRequired\?'\/onboarding':'\/'\)/.test(src))failures.push(path+' must retain post-auth routing');
+  if(!src.includes("if(onAuthRoute)return;"))failures.push(path+' must yield to the auth screen while OAuth/session handoff is being completed');
+  const authPath=path.includes('fleet-mobile')?'apps/fleet-mobile/app/auth.tsx':'apps/business-mobile/app/auth.tsx';
+  const authSrc=fs.readFileSync(authPath,'utf8');
+  if(!authSrc.includes('getSession()'))failures.push(authPath+' must recover an already-persisted session on auth-route reload');
+  if(path.includes('fleet-mobile')){
+    if(!authSrc.includes("if(await hasFleetAccess())router.replace('/');")||!authSrc.includes('openBusinessSetup()'))failures.push(authPath+' must own Fleet post-auth access routing');
+  }else{
+    if(!authSrc.includes('finishAuthenticated()'))failures.push(authPath+' must own Business post-auth workspace/provisioning routing');
+  }
 }
 if(failures.length){
  console.error('Onboarding navigation bounce audit failed:');
