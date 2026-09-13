@@ -26,6 +26,7 @@ export type RecommendationReasonCode =
   | 'REQUIRED_AMENITIES_MATCH'
   | 'PUBLIC_ACCESS'
   | 'ACCESSIBILITY_MATCH'
+  | 'SMART_RESTROOM'
   | 'NEEDS_VERIFICATION';
 
 export type TrustSummary = {
@@ -42,6 +43,7 @@ export type RestroomAttributes = {
   changingTable: boolean | null;
   familyRestroom: boolean | null;
   open24Hours: boolean | null;
+  smartRestroom: boolean | null;
   amenityNames: string[];
 };
 
@@ -61,6 +63,7 @@ export type RecommendationRequirements = {
   changingTable?: boolean;
   familyRestroom?: boolean;
   open24Hours?: boolean;
+  smartRestroom?: boolean;
 };
 
 export type NearbyRecommendationRequest = {
