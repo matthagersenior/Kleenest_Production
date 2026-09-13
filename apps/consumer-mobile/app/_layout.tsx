@@ -1,9 +1,9 @@
 import * as Notifications from 'expo-notifications';
 import { markMobileNotificationRead } from '@kleenest/mobile-core';
-import { router, Tabs } from 'expo-router';
+import { router, Tabs, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { AppState,Text, type ColorValue } from 'react-native';
+import { AppState,Platform,Text, type ColorValue } from 'react-native';
 import { notificationDestination } from '../services/notificationRouting';
 import { refreshConsumerLiveNetworkRegions } from '../services/liveNetwork';
 import PolicyAcceptanceGate from '../components/PolicyAcceptanceGate';
@@ -28,6 +28,8 @@ async function openNotificationResponse(response: Notifications.NotificationResp
 const tabIcon=(glyph:string)=>(props:{color:ColorValue;focused:boolean;size:number})=><Text accessible={false} style={{fontSize:props.focused?20:18,color:props.color,fontWeight:'900'}}>{glyph}</Text>;
 
 export default function RootLayout() {
+  const pathname=usePathname();
+  const publicWeb=Platform.OS==='web'&&['/','/for-you','/for-business','/trust','/install'].includes(pathname);
   useEffect(() => {
     let active=true;
     Notifications.getLastNotificationResponseAsync().then(async response=>{if(!active)return;await openNotificationResponse(response);if(response)await Notifications.clearLastNotificationResponseAsync().catch(()=>{})}).catch(() => {});
@@ -36,9 +38,9 @@ export default function RootLayout() {
     void refreshConsumerLiveNetworkRegions().catch(()=>{});
     return () => {active=false;subscription.remove();appState.remove()};
   }, []);
-  return <PolicyAcceptanceGate><StatusBar style="dark"/><Tabs screenOptions={{
+  const tabs=<Tabs screenOptions={{
     headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,headerTitleStyle:{fontWeight:'900',color:'#102218'},
-    tabBarActiveTintColor:'#173d2b',tabBarInactiveTintColor:'#75847b',tabBarStyle:{height:68,paddingTop:6,paddingBottom:8,backgroundColor:'#ffffff',borderTopColor:'#d7e2da'},tabBarLabelStyle:{fontWeight:'900',fontSize:10},
+    tabBarActiveTintColor:'#173d2b',tabBarInactiveTintColor:'#75847b',tabBarStyle:publicWeb?({display:'none'} as any):{height:68,paddingTop:6,paddingBottom:8,backgroundColor:'#ffffff',borderTopColor:'#d7e2da'},tabBarLabelStyle:{fontWeight:'900',fontSize:10},
   }}>
     <Tabs.Screen name="index" options={{ title:'Home',headerShown:false,tabBarIcon:tabIcon('⌂') }}/>
     <Tabs.Screen name="explore" options={{ title:'Explore',headerShown:false,tabBarIcon:tabIcon('⌖') }}/>
@@ -47,6 +49,9 @@ export default function RootLayout() {
     <Tabs.Screen name="profile" options={{ title:'Profile',headerShown:false,tabBarIcon:tabIcon('◉') }}/>
     <Tabs.Screen name="signup" options={{ href:null,title:'Join Kleenest' }}/>
     <Tabs.Screen name="install" options={{ href:null,title:'Install Kleenest' }}/>
+    <Tabs.Screen name="for-you" options={{ href:null,title:'Kleenest for You' }}/>
+    <Tabs.Screen name="for-business" options={{ href:null,title:'Kleenest for Business' }}/>
+    <Tabs.Screen name="trust" options={{ href:null,title:'Trust + Freshness' }}/>
     <Tabs.Screen name="play" options={{ href:null,title:'Legacy progression + play' }}/>
     <Tabs.Screen name="discover" options={{ href:null,title:'Discover a place' }}/>
     <Tabs.Screen name="assistant" options={{ href:null,title:'Kleenest AI' }}/>
@@ -74,5 +79,6 @@ export default function RootLayout() {
     <Tabs.Screen name="privacy" options={{ href:null,title:'Privacy Policy' }}/>
     <Tabs.Screen name="safety" options={{ href:null,title:'Safety' }}/>
     <Tabs.Screen name="terms" options={{ href:null,title:'Terms of Use' }}/>
-  </Tabs></PolicyAcceptanceGate>;
+  </Tabs>;
+  return publicWeb?<><StatusBar style="dark"/>{tabs}</>:<PolicyAcceptanceGate><StatusBar style="dark"/>{tabs}</PolicyAcceptanceGate>;
 }
