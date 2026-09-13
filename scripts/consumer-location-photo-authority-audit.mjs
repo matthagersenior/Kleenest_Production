@@ -5,6 +5,9 @@ const read=(path)=>fs.existsSync(path)?fs.readFileSync(path,'utf8'):'';
 const requireTokens=(label,text,tokens)=>{for(const token of tokens)if(!text.includes(token))failures.push(`${label} missing ${token}`);};
 
 const trustAuthority=read('supabase/migrations/20260913130000_business_community_photo_trust_authority.sql');
+const moderationAuthority=read('supabase/migrations/20260913133000_review_photo_moderation_fleet_operator_convergence.sql');
+const photoActions=read('apps/consumer-mobile/components/PhotoTrustActions.tsx');
+const ownerModeration=read('apps/platform-mobile/app/moderation.tsx');
 const businessProduct=read('apps/business-mobile/services/product.ts');
 const businessMedia=read('apps/business-mobile/services/media.ts');
 const businessLocations=read('apps/business-mobile/app/locations.tsx');
@@ -35,6 +38,9 @@ if(/business_photo_disputes/i.test(presentationAuthority)){
   failures.push('A Business dispute must not automatically hide community evidence from consumers.');
 }
 
+requireTokens('Photo moderation authority',moderationAuthority,['review_photo_reports','review_photo_votes',"'privacy','explicit','relevance','other'",'admin_list_review_photo_reports','admin_resolve_review_photo_report',"rp.moderation_status='visible'","'platform_owner'"]);
+requireTokens('Consumer photo moderation controls',photoActions,['Helpful ·','Not helpful ·','Flag','immediate owner review']);
+requireTokens('KleenestOS photo moderation',ownerModeration,['Photo flags','Hide photo','Restore photo']);
 requireTokens('Business product service',businessProduct,['listBusinessLocationCommunityPhotos','disputeBusinessReviewPhoto']);
 if(businessProduct.includes('setBusinessLocationConsumerPhoto'))failures.push('Business service must not expose authority to choose the consumer community photo.');
 requireTokens('Business media upload',businessMedia,['location-photos','pickAndUploadBusinessLocationPhoto','business_create_media','businessLocationPhotoUrl','businessReviewPhotoUrl','review-photos']);
