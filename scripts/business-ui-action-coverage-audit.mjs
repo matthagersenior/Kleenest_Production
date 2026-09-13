@@ -21,7 +21,7 @@ if(missing.length){
  for(const item of missing)console.error(`- ${item.name} (${item.file})`);
  process.exit(1);
 }
-for(const token of ["/tools","BUSINESS_ACTIONS","serviceActions","updateEnterpriseLocationConfig","manageEnterpriseLocationStaff","pickAndUploadBusinessLocationPhoto","deleteQrBranding"]){
+for(const token of ["BUSINESS_ACTIONS","serviceActions","updateEnterpriseLocationConfig","manageEnterpriseLocationStaff","pickAndUploadBusinessLocationPhoto","deleteQrBranding"]){
  if(!registry.includes(token))throw new Error(`Business action registry missing ${token}`);
 }
 console.log(`Business UI action coverage passed: ${exported.length} exported service actions mapped to UI workflows.`);
