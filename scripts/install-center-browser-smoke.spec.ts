@@ -12,17 +12,17 @@ test('Installation Center click-through and release assets',async({page,request}
   await page.getByRole('button',{name:/Install Kleenest/i}).first().click();
   await expect(page).toHaveURL(/\/Kleenest_Production\/install\/?$/);
   await expect(page.getByText('KLEENEST · UNIVERSAL INSTALLATION CENTER')).toBeVisible();
-  await expect(page.getByText('INSTALL HEALTH')).toBeVisible();
-  await expect(page.getByText('INSTALL WEB APP')).toBeVisible();
-  await expect(page.getByText('CHECK INSTALLATION')).toBeVisible();
-  await expect(page.getByText('SHARE INSTALL LINK')).toBeVisible();
-  await expect(page.getByText('OPEN KLEENEST')).toBeVisible();
+  await expect(page.getByText('INSTALL HEALTH',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'INSTALL WEB APP',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'CHECK INSTALLATION',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'SHARE INSTALL LINK',exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'OPEN KLEENEST',exact:true})).toBeVisible();
 
-  await page.getByText('INSTALL WEB APP').click();
+  await page.getByRole('button',{name:'INSTALL WEB APP',exact:true}).click();
   await expect(page.locator('body')).toContainText(/Install app|Add to Home Screen|automatic prompt|browser menu/i);
 
-  await page.getByText('CHECK INSTALLATION').click();
-  await page.getByText('SHARE INSTALL LINK').click();
+  await page.getByRole('button',{name:'CHECK INSTALLATION',exact:true}).click();
+  await page.getByRole('button',{name:'SHARE INSTALL LINK',exact:true}).click();
   await expect(page.locator('body')).toContainText(/Install link copied|Share this install link|Install link shared/i);
 
   for(const route of ['install/','for-you/','for-business/','trust/']){
