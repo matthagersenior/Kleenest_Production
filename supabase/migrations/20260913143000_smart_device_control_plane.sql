@@ -742,6 +742,53 @@ as $function$
   where c.platform_partner_id=p_partner_id;
 $function$;
 
+create or replace function public.platform_register_smart_device(
+  p_partner_id uuid,
+  p_business_id uuid,
+  p_connector_id uuid,
+  p_external_device_id text,
+  p_name text,
+  p_device_type text default 'sensor',
+  p_location_id uuid default null,
+  p_manufacturer text default null,
+  p_model text default null,
+  p_firmware_version text default null,
+  p_capabilities text[] default '{}'::text[],
+  p_tags text[] default '{}'::text[],
+  p_telemetry_enabled boolean default true,
+  p_metadata jsonb default '{}'::jsonb
+) returns jsonb
+language plpgsql
+security definer
+set search_path=''
+as $function$
+declare v_id uuid; v_row public.smart_devices;
+begin
+  if not exists(
+    select 1 from public.smart_device_connectors c
+    where c.id=p_connector_id and c.business_id=p_business_id and c.platform_partner_id=p_partner_id
+  ) then raise exception 'Paired connector not found'; end if;
+
+  insert into public.smart_devices(
+    business_id,location_id,connector_id,external_device_id,name,device_type,
+    manufacturer,model,firmware_version,capabilities,tags,control_enabled,
+    telemetry_enabled,metadata,created_by
+  ) values(
+    p_business_id,p_location_id,p_connector_id,trim(p_external_device_id),trim(p_name),
+    coalesce(nullif(trim(p_device_type),''),'sensor'),p_manufacturer,p_model,p_firmware_version,
+    coalesce(p_capabilities,'{}'::text[]),coalesce(p_tags,'{}'::text[]),false,
+    p_telemetry_enabled,coalesce(p_metadata,'{}'::jsonb),null
+  )
+  on conflict(connector_id,external_device_id) do update set
+    location_id=excluded.location_id,name=excluded.name,device_type=excluded.device_type,
+    manufacturer=excluded.manufacturer,model=excluded.model,firmware_version=excluded.firmware_version,
+    capabilities=excluded.capabilities,tags=excluded.tags,telemetry_enabled=excluded.telemetry_enabled,
+    metadata=excluded.metadata,updated_at=now()
+  returning * into v_row;
+  return to_jsonb(v_row);
+end;
+$function$;
+
 create or replace function public.platform_smart_device_command(
   p_partner_id uuid,
   p_device_id uuid,
@@ -1068,8 +1115,7 @@ begin
     'public.claim_smart_device_commands(integer)'::regprocedure,
     'public.mark_smart_device_command_dispatched(uuid)'::regprocedure,
     'public.complete_smart_device_command(uuid,boolean,jsonb,text)'::regprocedure,
-    'public.platform_smart_device_manifest(uuid)'::regprocedure,
-    'public.platform_smart_device_command(uuid,uuid,text,jsonb,text)'::regprocedure,
+    'public.platform_smart_device_manifest(uuid)'::regprocedure,\n    'public.platform_register_smart_device(uuid,uuid,uuid,text,text,text,uuid,text,text,text,text[],text[],boolean,jsonb)'::regprocedure,\n    'public.platform_smart_device_command(uuid,uuid,text,jsonb,text)'::regprocedure,
     'public.platform_complete_smart_device_command(uuid,uuid,boolean,jsonb,text)'::regprocedure,
     'public.cleanup_smart_device_events(integer)'::regprocedure,
     'public.platform_webhook_worker_secret_internal()'::regprocedure
