@@ -2,7 +2,7 @@ name: Publish Consumer Standalone Installer
 
 on:
   workflow_run:
-    workflows: ["Build Kleenest App Family Android APKs"]
+    workflows: ["Validate Kleenest Consumer Web Preview"]
     types: [completed]
 
 permissions:
@@ -54,18 +54,29 @@ jobs:
           test -s apps/consumer-mobile/dist/sw.js
           test -s apps/consumer-mobile/dist/app-icon.png
           test -s apps/consumer-mobile/dist/app-icon-512.svg
-      - name: Download verified Consumer APK from triggering family run
+      - name: Resolve freshest verified Consumer APK
+        id: apk
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: node scripts/resolve-consumer-apk-baseline.mjs --target-sha "$TARGET_SHA"
+      - name: Fetch Consumer APK baseline commit
+        run: git fetch --no-tags --depth=1 origin "${{ steps.apk.outputs.source_sha }}"
+      - name: Assess Consumer native and OTA drift
+        run: node scripts/consumer-release-drift-audit.mjs --baseline "${{ steps.apk.outputs.source_sha }}" --report-only --json-out "$RUNNER_TEMP/Kleenest-release-state.json"
+      - name: Download freshest verified Consumer APK
         uses: actions/download-artifact@v4
         with:
           name: Kleenest-Consumer-Standalone-APK
           path: installer
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ steps.apk.outputs.run_id }}
       - name: Publish direct installer and legal resources alongside web app
         run: |
           set -euo pipefail
           test -s installer/Kleenest-Consumer.apk
           cp installer/Kleenest-Consumer.apk apps/consumer-mobile/dist/Kleenest-Consumer.apk
+          cp "$RUNNER_TEMP/Kleenest-release-state.json" apps/consumer-mobile/dist/Kleenest-release-state.json
           mkdir -p apps/consumer-mobile/dist/legal
           cp public/legal/*.html apps/consumer-mobile/dist/legal/
           rm -rf apps/consumer-mobile/dist/developer apps/consumer-mobile/dist/owner
@@ -86,6 +97,7 @@ jobs:
           test -s apps/consumer-mobile/dist/owner/index.html
           test -s apps/consumer-mobile/dist/owner/control/index.html
           test -s apps/consumer-mobile/dist/owner/auth/index.html
+          test -s apps/consumer-mobile/dist/Kleenest-release-state.json
           grep -q "Kleenest Developer Portal" apps/consumer-mobile/dist/developer/index.html
           grep -q "Browser token" apps/consumer-mobile/dist/developer/index.html
           cp apps/consumer-mobile/dist/index.html apps/consumer-mobile/dist/404.html
