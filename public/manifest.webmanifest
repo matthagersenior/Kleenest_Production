@@ -26,10 +26,10 @@
       "purpose": "any"
     },
     {
-      "src": "/Kleenest_Production/app-icon.png",
+      "src": "/Kleenest_Production/app-icon-512.svg",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ],
   "shortcuts": [
