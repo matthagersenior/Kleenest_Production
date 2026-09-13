@@ -25,6 +25,10 @@ expect(migration,/approve_transfer[\s\S]*set business_id=c\.business_id,claimed_
 expect(migration,/admin_resolve_location_claim_v2/,'KleenestOS must use a note-aware platform-owner claim resolution');
 expect(migration,/business_search_claimable_locations_v2/,'Business search must distinguish managed and unclaimed locations');
 
+expect(edge,/allowedCorsOrigin/,'sensitive claim verification must use an explicit web-origin allowlist');
+expect(edge,/origin==='https:\/\/matthagersenior\.github\.io'/,'production GitHub Pages origin must be explicitly allowed');
+expect(edge,/if\(!origin\)return new Response\(JSON\.stringify\(\{error:'Origin not allowed'\}\)/,'untrusted browser origins must be rejected before authentication or claim actions');
+if(/access-control-allow-origin['"]?:\s*origin/.test(edge))failures.push('claim verification must not reflect an arbitrary request Origin into CORS');
 expect(edge,/FREE_EMAIL_DOMAINS/,'generic email providers must not count as company-domain proof');
 expect(edge,/user\.email_confirmed_at/,'company-domain proof must require confirmed account email');
 expect(edge,/location\.website/,'automated domain evidence must be grounded in the canonical location website');
