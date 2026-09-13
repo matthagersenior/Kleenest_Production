@@ -1,1 +1,4 @@
-pilot-launch-assurance-control-plane
+Kleenest app-family OTA trigger
+Reason: Publish KleenestOS phone-first Control Center
+Source commit: d8ef3df6c0f4a4d9881ec607ec7d52e95644c0a9
+Date: 2026-09-12
