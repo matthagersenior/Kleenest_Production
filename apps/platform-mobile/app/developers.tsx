@@ -1,5 +1,5 @@
 import { useEffect,useMemo,useState } from 'react';
-import { Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
+import { Linking,Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import {
   applyDeveloperBundle,createDeveloperPartner,createDeveloperWebhook,disableDeveloperWebhook,
   getDeveloperBundles,getDeveloperPartnerDetail,getDeveloperPartners,inviteDeveloperMember,
@@ -70,6 +70,19 @@ export default function DeveloperPartners(){
     const result:any=await run('Partner workspace created.',()=>createDeveloperPartner({name:newName.trim(),slug:newSlug.trim().toLowerCase(),bundleKey:newBundle}),false);
     if(result){setNewName('');setNewSlug('');await loadDirectory(String(result));}
   }
+  async function createDemoPartner(){
+    const stamp=Date.now().toString(36);
+    const result:any=await run(
+      'Demo workspace created. Open the Developer Portal to launch its one-hour sandbox.',
+      ()=>createDeveloperPartner({
+        name:'Kleenest Demo '+new Date().toLocaleDateString(),
+        slug:'kleenest-demo-'+stamp,
+        bundleKey:'starter_api'
+      }),
+      false
+    );
+    if(result)await loadDirectory(String(result));
+  }
   async function patch(patchValue:Record<string,unknown>,label:string){
     if(!selectedId)return;
     await run(label,()=>updateDeveloperPartner(selectedId,patchValue,label));
@@ -86,6 +99,16 @@ export default function DeveloperPartners(){
     <View style={s.hero}><Text style={s.eyebrow}>KLEENESTOS · DEVELOPER PLATFORM</Text><Text style={s.title}>Developer Platform → Partners</Text><Text style={s.copy}>Create a customer workspace, choose a sellable product bundle, customize API products and quotas, manage team access and credentials, and suspend access from one owner surface.</Text></View>
     {message?<Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text>:null}
     {secret?<View style={s.secret}><Text style={s.secretTitle}>One-time secret / invite</Text><Text selectable style={s.secretText}>{secret}</Text><Text style={s.meta}>Copy this now. Kleenest does not display the raw value again.</Text></View>:null}
+
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>Developer experience</Text>
+      <Text style={s.meta}>The external portal now guides a partner from account and workspace access through a one-hour origin-bound sandbox, live API Playground, code generation, sample integrations, and production credentials.</Text>
+      <View style={s.two}>
+        <Pressable onPress={()=>void Linking.openURL('https://matthagersenior.github.io/Kleenest_Production/developer/')} style={[s.button,{flex:1}]}><Text style={s.buttonText}>Open Developer Portal</Text></Pressable>
+        <Pressable disabled={busy} onPress={()=>void createDemoPartner()} style={[s.primary,{flex:1},busy&&s.disabled]}><Text style={s.primaryText}>Launch Demo Workspace</Text></Pressable>
+      </View>
+      <Text style={s.meta}>Demo workspaces use Starter API defaults. The portal sandbox credential is not persisted in the browser and expires after one hour.</Text>
+    </View>
 
     <View style={s.section}>
       <Text style={s.sectionTitle}>Create partner workspace</Text>
