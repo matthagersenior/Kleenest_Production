@@ -272,12 +272,18 @@ begin
     from scores s
   )
   select coalesce(jsonb_agg(jsonb_build_object(
-    'user_id',r.user_id,'display_name',coalesce(p.display_name,p.username,'Kleenest contributor'),
-    'score',r.score,'rank',r.rank,'is_current_user',r.user_id=v_user
-  ) order by r.rank limit 12),'[]'::jsonb)
+    'user_id',q.user_id,'display_name',q.display_name,
+    'score',q.score,'rank',q.rank,'is_current_user',q.user_id=v_user
+  ) order by q.rank),'[]'::jsonb)
   into v_rivals
-  from ranked r join public.profiles p on p.id=r.user_id
-  where coalesce(p.is_demo_test,false)=false;
+  from (
+    select r.user_id,coalesce(p.display_name,p.username,'Kleenest contributor') display_name,r.score,r.rank
+    from ranked r
+    join public.profiles p on p.id=r.user_id
+    where coalesce(p.is_demo_test,false)=false
+    order by r.rank
+    limit 12
+  ) q;
 
   return jsonb_build_object(
     'season',case when v_season.id is null then null else jsonb_build_object(
