@@ -32,4 +32,4 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Click through live Installation Center
-        run: npx playwright test scripts/install-center-browser-smoke.spec.ts --browser=chromium --reporter=line --workers=1
+        run: npx playwright test scripts/install-center-browser-smoke.spec.ts --reporter=line --workers=1
