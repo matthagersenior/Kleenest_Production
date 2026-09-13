@@ -35,7 +35,7 @@ function sampleTarget(offer:OfferReadiness){
 function Choice({label,selected,onPress,disabled=false}:{label:string;selected:boolean;onPress:()=>void;disabled?:boolean}){
   return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={{
     borderRadius:999,paddingHorizontal:10,paddingVertical:7,
-    backgroundColor:selected?osColors.ink:'#edf3ef',opacity:disabled?.55:1
+    backgroundColor:selected?osColors.ink:'#edf3ef',opacity:disabled?0.55:1
   }}>
     <Text style={{fontSize:11,fontWeight:'900',color:selected?'#fff':osColors.green}}>{label}</Text>
   </Pressable>;
@@ -171,6 +171,7 @@ export default function ControlCenter(){
             {offer.release_blockers.map(blocker=><StatusPill key={blocker} label={pretty(blocker)} tone="warning"/>)}
           </View>
 
+          <ToggleRow label="Offer active" value={offer.active} disabled={disabled} onValueChange={next=>void patchOffer(offer,{active:next},`Offer ${next?'activated':'deactivated'} in KleenestOS Control Center`)}/>
           <ToggleRow label="Sample enabled" value={offer.sample_enabled} disabled={disabled} onValueChange={next=>void patchOffer(offer,{sample_enabled:next},`Sample ${next?'enabled':'disabled'} in KleenestOS Control Center`)}/>
           <ToggleRow label="Pilot enabled" value={offer.pilot_enabled} disabled={disabled} onValueChange={next=>void patchOffer(offer,{pilot_enabled:next},`Pilot ${next?'enabled':'disabled'} in KleenestOS Control Center`)}/>
 
@@ -214,6 +215,7 @@ export default function ControlCenter(){
             </View>
             <StatusPill label={domain.rpc_exists?'RPC LIVE':'RPC MISSING'} tone={domain.rpc_exists?'good':'danger'}/>
           </View>
+          <ToggleRow label="Active canonical domain" value={domain.active} disabled={disabled} onValueChange={next=>void patchDomain(domain,{active:next},`Capability domain ${next?'activated':'deactivated'} in KleenestOS Control Center`)}/>
           <ToggleRow label="Sample enabled" value={domain.sample_enabled} disabled={disabled} onValueChange={next=>void patchDomain(domain,{sample_enabled:next},`Capability sample ${next?'enabled':'disabled'} in KleenestOS Control Center`)}/>
           <ToggleRow label="Pilot enabled" value={domain.pilot_enabled} disabled={disabled} onValueChange={next=>void patchDomain(domain,{pilot_enabled:next},`Capability pilot ${next?'enabled':'disabled'} in KleenestOS Control Center`)}/>
           <Text style={{fontSize:11,fontWeight:'900',color:osColors.muted}}>Promise state</Text>
