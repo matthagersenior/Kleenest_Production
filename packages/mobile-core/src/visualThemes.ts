@@ -20,6 +20,8 @@ export type KleenestTheme={
 };
 
 const PREF_KEY='kleenest.visual_theme_mode.v1';
+let cachedPreference:KleenestThemeMode|null=null;
+const preferenceListeners=new Set<(mode:KleenestThemeMode)=>void>();
 
 const lightBase={
   canvas:'#f3f6f4',surface:'#ffffff',surfaceRaised:'#ffffff',surfaceMuted:'#edf3ef',
@@ -83,9 +85,16 @@ export function resolveKleenestTheme(surface:KleenestSurface,mode:KleenestThemeM
   };
 }
 export async function getKleenestThemePreference():Promise<KleenestThemeMode>{
-  try{const value=await SecureStore.getItemAsync(PREF_KEY);return value==='light'||value==='dark'||value==='system'||value==='default'?value:'default';}catch{return'default'}
+  if(cachedPreference)return cachedPreference;
+  try{const value=await SecureStore.getItemAsync(PREF_KEY);cachedPreference=value==='light'||value==='dark'||value==='system'||value==='default'?value:'default';return cachedPreference;}catch{cachedPreference='default';return cachedPreference}
 }
 export async function setKleenestThemePreference(mode:KleenestThemeMode){
+  cachedPreference=mode;
   await SecureStore.setItemAsync(PREF_KEY,mode);
+  preferenceListeners.forEach(listener=>listener(mode));
   return mode;
+}
+export function subscribeKleenestThemePreference(listener:(mode:KleenestThemeMode)=>void){
+  preferenceListeners.add(listener);
+  return()=>preferenceListeners.delete(listener);
 }
