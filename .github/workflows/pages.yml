@@ -50,6 +50,7 @@ jobs:
           test -s apps/consumer-mobile/dist/manifest.webmanifest
           test -s apps/consumer-mobile/dist/sw.js
           test -s apps/consumer-mobile/dist/app-icon.png
+          test -s apps/consumer-mobile/dist/app-icon-512.svg
       - name: Validate SPA fallback
         run: |
           cp apps/consumer-mobile/dist/index.html apps/consumer-mobile/dist/404.html
