@@ -22,6 +22,14 @@
     {
       "name": "Service",
       "description": "Platform service status."
+    },
+    {
+      "name": "Amenities",
+      "description": "Canonical Kleenest amenity catalog and Smart Restroom capability."
+    },
+    {
+      "name": "Smart Facilities",
+      "description": "Provider-neutral Smart Device and connected-restroom integration."
     }
   ],
   "paths": {
@@ -298,6 +306,390 @@
           }
         }
       }
+    },
+    "/v1/amenities": {
+      "get": {
+        "tags": [
+          "Amenities"
+        ],
+        "summary": "List canonical amenities",
+        "security": [
+          {
+            "KleenestApiKey": []
+          },
+          {
+            "KleenestClientToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Amenity catalog",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "amenities": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Amenity"
+                      }
+                    },
+                    "metadata": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/v1/devices": {
+      "get": {
+        "tags": [
+          "Smart Facilities"
+        ],
+        "summary": "List Smart Devices",
+        "security": [
+          {
+            "KleenestApiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Partner Smart Device manifest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Smart Facilities"
+        ],
+        "summary": "Register a Smart Device",
+        "security": [
+          {
+            "KleenestApiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "businessId",
+                  "connectorId",
+                  "externalDeviceId",
+                  "name"
+                ],
+                "properties": {
+                  "businessId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "connectorId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "externalDeviceId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "locationId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid"
+                  },
+                  "deviceType": {
+                    "type": "string"
+                  },
+                  "capabilities": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "telemetryEnabled": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registered Smart Device"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/v1/devices/events": {
+      "post": {
+        "tags": [
+          "Smart Facilities"
+        ],
+        "summary": "Ingest a normalized Smart Device event",
+        "security": [
+          {
+            "KleenestApiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "externalDeviceId",
+                  "eventType"
+                ],
+                "properties": {
+                  "externalDeviceId": {
+                    "type": "string"
+                  },
+                  "eventType": {
+                    "type": "string"
+                  },
+                  "severity": {
+                    "type": "string"
+                  },
+                  "metric": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "valueNumeric": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "valueText": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "unit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "observedAt": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "dedupeKey": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Event accepted"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/v1/devices/{deviceId}/commands": {
+      "post": {
+        "tags": [
+          "Smart Facilities"
+        ],
+        "summary": "Queue an audited Smart Device command",
+        "security": [
+          {
+            "KleenestApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "deviceId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "command"
+                ],
+                "properties": {
+                  "command": {
+                    "type": "string"
+                  },
+                  "arguments": {
+                    "type": "object"
+                  },
+                  "idempotencyKey": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Command queued or held for approval"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/v1/devices/{deviceId}/commands/{commandId}/complete": {
+      "post": {
+        "tags": [
+          "Smart Facilities"
+        ],
+        "summary": "Report Smart Device command completion",
+        "security": [
+          {
+            "KleenestApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "deviceId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "path",
+            "name": "commandId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "success"
+                ],
+                "properties": {
+                  "success": {
+                    "type": "boolean"
+                  },
+                  "result": {
+                    "type": "object"
+                  },
+                  "error": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Completion recorded"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -399,6 +791,10 @@
           },
           "open24Hours": {
             "type": "boolean"
+          },
+          "smartRestroom": {
+            "type": "boolean",
+            "description": "Require the Connected / Smart Restroom amenity. Equivalent to requiring the canonical amenity name."
           }
         }
       },
@@ -597,6 +993,12 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "smartRestroom": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
               }
             },
             "required": [
@@ -605,7 +1007,8 @@
               "changingTable",
               "familyRestroom",
               "open24Hours",
-              "amenityNames"
+              "amenityNames",
+              "smartRestroom"
             ]
           },
           "distanceMeters": {
@@ -939,6 +1342,12 @@
                   "string",
                   "null"
                 ]
+              },
+              "smartRestroom": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
               }
             },
             "required": [
@@ -952,7 +1361,8 @@
               "cleanlinessPct",
               "rating",
               "reviewCount",
-              "cleaningSchedule"
+              "cleaningSchedule",
+              "smartRestroom"
             ]
           },
           "trust": {
@@ -1400,6 +1810,72 @@
           "candidates",
           "metadata"
         ]
+      },
+      "Amenity": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category"
+        ]
+      },
+      "SmartDevice": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "business_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "location_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "device_type": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "control_enabled": {
+            "type": "boolean"
+          },
+          "telemetry_enabled": {
+            "type": "boolean"
+          }
+        }
       }
     },
     "responses": {
