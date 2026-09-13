@@ -40,7 +40,7 @@ if(installer.includes("github.event.workflow_run.conclusion != 'cancelled'"))thr
 
 for(const token of ["output: 'single'","bundler: 'metro'","baseUrl: '/Kleenest_Production'","previewRole: 'non-blocking-web-preview'"])requireToken(appConfig,token,'Expo consumer preview config');
 const consumerInstall=read('apps/consumer-mobile/app/install.tsx');
-for(const token of ['Install Kleenest','beforeinstallprompt','Kleenest-Consumer.apk','INSTALL WEB APP','DOWNLOAD ANDROID APK'])requireToken(consumerInstall,token,'Consumer Installation Center');
+for(const token of ['Install Kleenest','beforeinstallprompt','Kleenest-Consumer.apk','INSTALL WEB APP','DOWNLOAD ANDROID APK','iPhone','iPad','Add to Home Screen','Open as Web App','deviceKind','isIOS','isAndroid'])requireToken(consumerInstall,token,'Consumer Installation Center');
 const ownerConfig=read('apps/platform-mobile/app.config.ts');
 const ownerPkg=JSON.parse(read('apps/platform-mobile/package.json'));
 const ownerMetro=read('apps/platform-mobile/metro.config.js');
