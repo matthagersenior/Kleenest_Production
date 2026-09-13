@@ -44,6 +44,7 @@ jobs:
           test -s apps/consumer-mobile/dist/manifest.webmanifest
           test -s apps/consumer-mobile/dist/sw.js
           test -s apps/consumer-mobile/dist/app-icon.png
+          test -s apps/consumer-mobile/dist/app-icon-512.svg
       - name: Download verified Consumer APK from triggering family run
         uses: actions/download-artifact@v4
         with:
