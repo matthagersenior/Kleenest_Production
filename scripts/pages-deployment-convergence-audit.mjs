@@ -39,7 +39,7 @@ for(const token of ["output: 'single'","bundler: 'metro'","baseUrl: '/Kleenest_P
 if(pkg.scripts?.['web:export']!=='expo export --platform web')throw new Error('Consumer app must expose canonical Expo web export script.');
 for(const dep of ['react-dom','react-native-web','maplibre-gl'])if(!pkg.dependencies?.[dep])throw new Error(`Consumer web dependency missing ${dep}.`);
 for(const token of ["platform === 'web'","'@maplibre/maplibre-react-native'","'expo-secure-store'","'expo-notifications'",'maplibrePreview.tsx','secureStorePreview.ts','notificationsPreview.ts','context.resolveRequest(context, moduleName, platform)'])requireToken(metro,token,'Web-only Metro compatibility resolver');
-for(const token of ["from 'maplibre-gl'",'new maplibregl.Map','fitBounds','new maplibregl.Marker','maplibregl.supported','fallbackTiles','mapLoadTimer','MapLibre unavailable'])requireToken(mapPreview,token,'Interactive web MapLibre adapter');
+for(const token of ["from 'maplibre-gl'",'new maplibregl.Map','fitBounds','new maplibregl.Marker','supportsWebGL','fallbackTiles','mapLoadTimer','MapLibre unavailable'])requireToken(mapPreview,token,'Interactive web MapLibre adapter');
 if(mapPreview.includes('MAP PREVIEW')||mapPreview.includes('Native MapLibre remains authoritative'))throw new Error('Consumer Web must render a real interactive map rather than a preview placeholder.');
 for(const token of ['window.localStorage','kleenest.preview.secure.'])requireToken(securePreview,token,'SecureStore preview adapter');
 for(const token of ['getLastNotificationResponseAsync','clearLastNotificationResponseAsync','addNotificationResponseReceivedListener'])requireToken(notificationsPreview,token,'Notifications preview adapter');
