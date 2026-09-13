@@ -91,6 +91,7 @@ requireTokens('Fleet web OAuth callback',fleetAuth,[
 ]);
 
 requireTokens('Consumer web experience gate',webExperience,[
+  "kleenest.consumer.installed-presence.v2",
   "kleenest.consumer.app-presence.v1",
   'display-mode: standalone',
   'getInstalledRelatedApps',
@@ -98,8 +99,13 @@ requireTokens('Consumer web experience gate',webExperience,[
   'onAuthStateChange',
   'signedIn',
   'installed',
-  'appActive'
+  'explicitLaunch',
+  "if(standalone)markConsumerAppPresence()",
+  'appActive:native||explicitLaunch||signedIn||installed'
 ]);
+if(webExperience.includes('if(explicit||standalone)markConsumerAppPresence()')||webExperience.includes('if(explicitLaunch||standalone)markConsumerAppPresence()'))failures.push('Guest web launch is still persisted as installed app presence.');
+if(webExperience.includes('const present=explicit||')||webExperience.includes('const present=explicitLaunch||'))failures.push('Explicit guest launch is still counted as an installed app.');
+if(webExperience.includes('setInstalled(explicit||')||webExperience.includes('setInstalled(explicitLaunch||'))failures.push('Explicit guest launch still contaminates installed state.');
 requireTokens('Consumer home install gate',consumerHome,[
   'useConsumerWebExperience',
   'showInstall',
