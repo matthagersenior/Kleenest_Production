@@ -1,0 +1,15 @@
+{
+  "name":"Kleenest Developer Portal",
+  "short_name":"Kleenest Dev",
+  "description":"Build and operate Kleenest API, Map, Route, Widget, Webhook and MCP integrations.",
+  "id":"/Kleenest_Production/developer/",
+  "start_url":"/Kleenest_Production/developer/",
+  "scope":"/Kleenest_Production/developer/",
+  "display":"standalone",
+  "background_color":"#07100d",
+  "theme_color":"#07100d",
+  "icons":[
+    {"src":"/Kleenest_Production/app-icon.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"/Kleenest_Production/app-icon-512.svg","sizes":"512x512","type":"image/svg+xml","purpose":"any"}
+  ]
+}
