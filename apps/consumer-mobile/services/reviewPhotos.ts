@@ -18,12 +18,15 @@ export type ReviewPhotoDraft = {
 };
 
 export type ReviewPhoto = {
+  review_photo_id: string;
   storage_path: string;
   public_url: string;
   mime_type: string | null;
   width: number | null;
   height: number | null;
   sort_order: number;
+  helpful_votes: number;
+  not_helpful_votes: number;
 };
 
 function extensionFor(asset: ReviewPhotoDraft) {
@@ -37,12 +40,15 @@ function extensionFor(asset: ReviewPhotoDraft) {
 function publicPhoto(row:any):ReviewPhoto {
   const client=getKleenestSupabaseClient();
   return {
+    review_photo_id:String(row.review_photo_id||row.id||''),
     storage_path:String(row.storage_path),
     public_url:client.storage.from('review-photos').getPublicUrl(String(row.storage_path)).data.publicUrl,
     mime_type:row.mime_type||null,
     width:row.width==null?null:Number(row.width),
     height:row.height==null?null:Number(row.height),
     sort_order:Number(row.sort_order||0),
+    helpful_votes:Number(row.helpful_votes||0),
+    not_helpful_votes:Number(row.not_helpful_votes||0),
   };
 }
 

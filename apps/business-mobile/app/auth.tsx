@@ -1,11 +1,11 @@
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { listBusinessWorkspaceOptions } from '../services/capabilityWorkflows';
 
-const googleRedirect = Linking.createURL('auth', { scheme: 'kleenest-business' });
+const googleRedirect = Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/business/auth/` : Linking.createURL('auth', { scheme: 'kleenest-business', isTripleSlashed: false });
 type Mode = 'signin' | 'signup';
 
 function messageOf(value: unknown) {
@@ -105,11 +105,11 @@ export default function BusinessAuth() {
     try {
       const { data, error: authError } = await getKleenestSupabaseClient().auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: googleRedirect, skipBrowserRedirect: true },
+        options: { redirectTo: googleRedirect, skipBrowserRedirect: Platform.OS!=='web' },
       });
       if (authError) throw authError;
       if (!data.url) throw new Error('Google sign-in did not return an authorization URL.');
-      await Linking.openURL(data.url);
+      if(Platform.OS==='web'&&typeof window!=='undefined')window.location.assign(data.url);else await Linking.openURL(data.url);
     } catch (cause) { setError(messageOf(cause)); }
     finally { setBusy(false); }
   }

@@ -13,7 +13,6 @@ function count(value:any){
  return Number(value||0);
 }
 function n(value:any){const parsed=Number(value);return Number.isFinite(parsed)?parsed:0}
-function openFleetWebPortal(){if(Platform.OS==='web'&&typeof window!=='undefined')window.location.assign('/Kleenest_Production/fleet/')}
 type Gate=keyof BusinessTierCapabilities|'always';
 type Domain={href:string;title:string;body:string;gate:Gate;glyph:string;group:'Operate'|'Grow'|'Understand'|'Admin'};
 
@@ -21,6 +20,7 @@ const domainSpecs:Domain[]=[
  {href:'/tools',title:'Action Center',body:'Search every Business action and jump directly to the owning workflow.',gate:'always',glyph:'⌘',group:'Admin'},
  {href:'/locations',title:'Locations',body:'Manage direct locations and see Enterprise portfolio locations.',gate:'coreManagement',glyph:'⌖',group:'Operate'},
  {href:'/operations',title:'Operations command',body:'Resolve remediation, reverification and preventive work from one queue.',gate:'trustOperations',glyph:'✓',group:'Operate'},
+ {href:'/fleet',title:'Fleet Suite',body:'Routing, dispatch, assets, operations, alerts and role-gated Fleet client workspaces tied to this Business.',gate:'always',glyph:'↝',group:'Operate'},
  {href:'/trust-operations',title:'Trust operations',body:'Work evidence, SLA, proof and reverification cases.',gate:'trustOperations',glyph:'◎',group:'Operate'},
  {href:'/prevention',title:'Preventive operations',body:'Prevent recurring restroom issues and hand work to Fleet.',gate:'preventiveOperations',glyph:'↻',group:'Operate'},
  {href:'/live-network',title:'Live Network',body:'Geofences, operational coverage and audience updates.',gate:'communications',glyph:'◉',group:'Operate'},
@@ -82,7 +82,7 @@ export default function BusinessHome(){
   return count(o.remediation)+count(o.reverification)+count(o.preventive);
  },[data]);
 
- const allowedDomains=useMemo(()=>domainSpecs.filter(item=>item.gate==='always'||Boolean(caps?.[item.gate])),[caps]);
+ const allowedDomains=useMemo(()=>domainSpecs.filter(item=>(item.href!=='/fleet'||Boolean(data?.access?.fleet_enabled))&&(item.gate==='always'||Boolean(caps?.[item.gate]))),[caps,data?.access?.fleet_enabled]);
  const targetedRoutes:string[]=Array.isArray(data?.onboarding?.experience?.targeted_routes)
   ?data.onboarding.experience.targeted_routes.map(String)
   :Array.isArray(data?.onboarding?.preview?.targeted_routes)
@@ -125,7 +125,7 @@ export default function BusinessHome(){
    <View style={s.heroActions}>
     <Link href="/locations" asChild><Pressable style={s.primaryAction}><Text style={s.primaryActionText}>Manage locations</Text><Text style={s.primaryActionArrow}>›</Text></Pressable></Link>
     <Link href="/tools" asChild><Pressable style={s.secondaryAction}><Text style={s.secondaryActionText}>Action Center</Text></Pressable></Link>
-    {Platform.OS==='web'&&data?.access?.fleet_enabled?<Pressable accessibilityRole="button" style={s.secondaryAction} onPress={openFleetWebPortal}><Text style={s.secondaryActionText}>Open Fleet portal</Text></Pressable>:null}
+    {data?.access?.fleet_enabled?<Link href="/fleet" asChild><Pressable accessibilityRole="button" style={s.secondaryAction}><Text style={s.secondaryActionText}>Fleet Suite</Text></Pressable></Link>:null}
    </View>
   </View>
 

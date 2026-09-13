@@ -11,8 +11,13 @@ const fleetMetro=read('apps/fleet-mobile/metro.config.js');
 const fleetLayout=read('apps/fleet-mobile/app/_layout.tsx');
 const fleetOnboardingService=read('apps/fleet-mobile/services/onboarding.ts');
 const fleetOnboarding=read('apps/fleet-mobile/app/onboarding.tsx');
+const fleetPush=read('apps/fleet-mobile/services/push.ts');
+const fleetWebNotifications=read('apps/fleet-mobile/web/notificationsPreview.ts');
 const members=read('apps/business-mobile/app/members.tsx');
 const businessHome=read('apps/business-mobile/app/index.tsx');
+const businessFleet=read('apps/business-mobile/app/fleet.tsx');
+const businessAuth=read('apps/business-mobile/app/auth.tsx');
+const fleetAuth=read('apps/fleet-mobile/app/auth.tsx');
 const webExperience=read('apps/consumer-mobile/services/webExperience.ts');
 const consumerHome=read('apps/consumer-mobile/app/index.tsx');
 const install=read('apps/consumer-mobile/app/install.tsx');
@@ -47,19 +52,42 @@ requireTokens('Fleet role gate',fleetLayout,[
   "name=\"dispatch\"",
   "name=\"operations\"",
   "name=\"planner\"",
-  "name=\"assets\""
+  "name=\"assets\"",
+  "name=\"notifications\" options={{title:'Alerts'}}",
+  "name=\"account\" options={{title:'Account'}}"
 ]);
+if(fleetLayout.includes("href:operator?null:undefined,title:'Alerts'"))failures.push('Fleet operator Alerts are still hidden by the tab gate.');
 requireTokens('Fleet onboarding authority',fleetOnboardingService,["rpc('fleet_onboarding_gate'"]);
+requireTokens('Fleet web push registration',fleetPush,['PushManager','register_notification_push_subscription','registered-web','serviceWorker.register']);
+requireTokens('Fleet web notification permission',fleetWebNotifications,['window.Notification.permission','window.Notification.requestPermission']);
 requireTokens('Fleet commercial copy',fleetOnboarding,['75 Premium users']);
 requireTokens('Dispatcher team UI',members,[
   "'dispatcher'",
   'Invite dispatcher',
   "inviteBusinessMember(id,userId,'dispatcher')"
 ]);
-requireTokens('Business-to-Fleet portal access',businessHome,[
-  "window.location.assign('/Kleenest_Production/fleet/')",
-  'Open Fleet portal',
+requireTokens('Business-to-Fleet suite access',businessHome,[
+  "href:'/fleet'",
+  'Fleet Suite',
   'fleet_enabled'
+]);
+requireTokens('Business-integrated Fleet suite',businessFleet,[
+  'fleet_current_user_workspace_manifest',
+  'operatorRoutes',
+  'Fleet operator control plane',
+  'Fleet client/member experience',
+  '/Kleenest_Production/fleet/',
+  'kleenest-fleet://'
+]);
+requireTokens('Business web OAuth callback',businessAuth,[
+  '/Kleenest_Production/business/auth/',
+  "skipBrowserRedirect: Platform.OS!=='web'",
+  'window.location.assign(data.url)'
+]);
+requireTokens('Fleet web OAuth callback',fleetAuth,[
+  '/Kleenest_Production/fleet/auth/',
+  "skipBrowserRedirect: Platform.OS!=='web'",
+  'window.location.assign(data.url)'
 ]);
 
 requireTokens('Consumer web experience gate',webExperience,[
@@ -104,7 +132,8 @@ requireTokens('Fleet web publishing',publisher,[
   'fleet_routes=',
   'apps/consumer-mobile/dist/fleet/dispatch/index.html',
   'apps/consumer-mobile/dist/fleet/nearby/index.html',
-  'apps/consumer-mobile/dist/fleet/operations/index.html'
+  'apps/consumer-mobile/dist/fleet/operations/index.html',
+  'apps/consumer-mobile/dist/business/fleet/index.html'
 ]);
 
 if(failures.length){
