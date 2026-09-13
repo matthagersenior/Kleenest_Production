@@ -127,6 +127,14 @@ requireTokens('Marketing suppression',marketing,[
   'OPEN FLEET PORTAL',
   "/Kleenest_Production/fleet/"
 ]);
+requireTokens('Public website no-install entry',marketing,[
+  'Continue as guest',
+  'Join Kleenest',
+  'Sign in to Kleenest',
+  "go('/?app=1')",
+  "go('/signup')",
+  "go('/profile')"
+]);
 requireTokens('Fleet web validation',pages,[
   'apps/fleet-mobile/**',
   'npm run web:export --workspace @kleenest/fleet-mobile',
