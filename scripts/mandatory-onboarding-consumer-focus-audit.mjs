@@ -15,6 +15,7 @@ const required=[
   'apps/fleet-mobile/app/onboarding.tsx',
   'apps/fleet-mobile/services/onboarding.ts',
   'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
+  'apps/consumer-mobile/services/locationResolver.ts',
   'apps/consumer-mobile/app/index.tsx'
 ];
 for(const file of required) if(!fs.existsSync(path.join(root,file))) failures.push('missing '+file);
@@ -54,7 +55,8 @@ const businessHome=read('apps/business-mobile/app/index.tsx');
 for(const token of ['getBusinessOnboardingState','YOUR PRIORITIES','targeted_routes']) if(!businessHome.includes(token)) failures.push('targeted Business home missing '+token);
 
 const explore=read('apps/consumer-mobile/features/AdaptiveExploreScreen.tsx');
-for(const token of ['Location.geocodeAsync','looksLikeAddressOrArea','searchAreaOrigin','Searching near','searched-area-marker']) if(!explore.includes(token)) failures.push('Explore address-origin search missing '+token);
+for(const token of ['resolveConsumerSearchLocation','looksLikeAddressOrArea','searchAreaOrigin','Searching near','searched-area-marker']) if(!explore.includes(token)) failures.push('Explore address-origin search missing '+token);
+if(explore.includes('Location.geocodeAsync')) failures.push('Explore address-origin search must not regress to device geocoding.');
 
 const consumerHome=read('apps/consumer-mobile/app/index.tsx');
 for(const token of ['FIND A BATHROOM','CHECK IN / REVIEW','SCAN QR','homePrimaryCta']) if(!consumerHome.includes(token)) failures.push('Consumer Home focal hierarchy missing '+token);
