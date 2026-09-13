@@ -52,8 +52,8 @@ export function createPartnership(businessId:string,name:string){return rpc('bus
 export function updatePartnership(businessId:string,id:string,name:string,enabled:boolean){return rpc('business_update_partnership',{p_business_id:businessId,p_partnership_id:id,p_name:name,p_enabled:enabled,p_preferred_access:false,p_match_discount_bonus:0,p_custom_perk:null});}
 export function deletePartnership(businessId:string,id:string){return rpc('business_delete_partnership',{p_business_id:businessId,p_partnership_id:id});}
 
-export function searchClaimableLocations(businessId:string,query:string){return rpc('business_search_claimable_locations',{p_business_id:businessId,p_query:query,p_limit:50});}
-export function listLocationClaims(businessId:string){return rpc('business_list_location_claims',{p_business_id:businessId});}
+export function searchClaimableLocations(businessId:string,query:string){return rpc('business_search_claimable_locations_v2',{p_business_id:businessId,p_query:query,p_limit:50});}
+export function listLocationClaims(businessId:string){return rpc('business_list_location_claims_v2',{p_business_id:businessId});}
 export function claimLocation(businessId:string,locationId:string){return rpc('claim_location_for_business',{p_location_id:locationId,p_business_id:businessId});}
 
 export function businessLiveNetworkManifest(businessId:string){return rpc('business_live_network_manifest',{p_business_id:businessId});}
