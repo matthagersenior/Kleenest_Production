@@ -133,6 +133,7 @@ jobs:
           test -s apps/consumer-mobile/dist/fleet/dispatch/index.html
           test -s apps/consumer-mobile/dist/fleet/nearby/index.html
           test -s apps/consumer-mobile/dist/fleet/operations/index.html
+          test -s apps/consumer-mobile/dist/fleet/notifications/index.html
           test -s apps/consumer-mobile/dist/business/tools/index.html
           test -s apps/consumer-mobile/dist/business/fleet/index.html
           test -s apps/consumer-mobile/dist/business/analytics/index.html
