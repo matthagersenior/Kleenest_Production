@@ -635,7 +635,8 @@ async function route(body: any) {
 }
 
 
-const SMART_DEVICE_SCOPES = ['devices:read','devices:command','devices:events:write','devices:write'] as const;\nconst SMART_DEVICE_ROUTE_PREFIX = '/v1/devices/';
+const SMART_DEVICE_SCOPES = ['devices:read','devices:command','devices:events:write','devices:write'] as const;
+const SMART_DEVICE_ROUTE_PREFIX = '/v1/devices/';
 
 function requirePartner(auth: Authorization): string {
   if (!auth.partner_id) throw new ApiInputError('Partner identity is unavailable');
@@ -643,7 +644,8 @@ function requirePartner(auth: Authorization): string {
 }
 
 function smartDeviceRouteIds(routePath: string) {
-  void SMART_DEVICE_SCOPES; void SMART_DEVICE_ROUTE_PREFIX;\n  const command = routePath.match(/^\/v1\/devices\/([0-9a-f-]+)\/commands$/i);
+  void SMART_DEVICE_SCOPES; void SMART_DEVICE_ROUTE_PREFIX;
+  const command = routePath.match(/^\/v1\/devices\/([0-9a-f-]+)\/commands$/i);
   const complete = routePath.match(/^\/v1\/devices\/([0-9a-f-]+)\/commands\/([0-9a-f-]+)\/complete$/i);
   return { deviceId: command?.[1] ?? complete?.[1] ?? null, commandId: complete?.[2] ?? null };
 }
@@ -739,10 +741,21 @@ Deno.serve(async req => {
   const isNearby = routePath === '/v1/recommendations/nearby';
   const isRoute = routePath === '/v1/recommendations/route';
   const isPlaceMatch = routePath === '/v1/places/match';
-  const isPlaceDetails = /^\/v1\/places\/[^/]+$/.test(routePath) && !isPlaceMatch;\n  const isDevices = routePath === '/v1/devices';\n  const isDeviceEvents = routePath === '/v1/devices/events';\n  const isDeviceCommand = /^\\/v1\\/devices\\/[0-9a-f-]+\\/commands$/i.test(routePath);\n  const isDeviceCommandComplete = /^\\/v1\\/devices\\/[0-9a-f-]+\\/commands\\/[0-9a-f-]+\\/complete$/i.test(routePath);\n\n  if (!isNearby && !isRoute && !isPlaceMatch && !isPlaceDetails && !isDevices && !isDeviceRegister && !isDeviceEvents && !isDeviceCommand && !isDeviceCommandComplete) {
+  const isPlaceDetails = /^\/v1\/places\/[^/]+$/.test(routePath) && !isPlaceMatch;
+  const isDevices = routePath === '/v1/devices';
+  const isDeviceEvents = routePath === '/v1/devices/events';
+  const isDeviceCommand = /^\\/v1\\/devices\\/[0-9a-f-]+\\/commands$/i.test(routePath);
+  const isDeviceCommandComplete = /^\\/v1\\/devices\\/[0-9a-f-]+\\/commands\\/[0-9a-f-]+\\/complete$/i.test(routePath);
+
+  if (!isNearby && !isRoute && !isPlaceMatch && !isPlaceDetails && !isDevices && !isDeviceRegister && !isDeviceEvents && !isDeviceCommand && !isDeviceCommandComplete) {
     return json({ error: 'Not found' }, 404, corsHeaders(req));
   }
-  if ((isNearby || isRoute || isPlaceMatch || isDeviceRegister || isDeviceEvents || isDeviceCommand || isDeviceCommandComplete) && req.method !== 'POST') {\n    return json({ error: 'Method not allowed' }, 405, corsHeaders(req));\n  }\n  if (isDevices && req.method !== 'GET' && req.method !== 'POST') {\n    return json({ error: 'Method not allowed' }, 405, corsHeaders(req));\n  }
+  if ((isNearby || isRoute || isPlaceMatch || isDeviceRegister || isDeviceEvents || isDeviceCommand || isDeviceCommandComplete) && req.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
+  }
+  if (isDevices && req.method !== 'GET' && req.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
+  }
   if (isPlaceDetails && req.method !== 'GET') {
     return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
   }
@@ -759,12 +772,32 @@ Deno.serve(async req => {
   let status = 200;
   let payload: unknown;
   try {
-    if (isPlaceDetails) {\n      payload = await placeDetails(routePath);
+    if (isPlaceDetails) {
+      payload = await placeDetails(routePath);
       if (!payload) {
         status = 404;
         payload = { error: 'Place not found' };
       }
-    } else {\n      const body = await req.json().catch(() => ({}));\n      if (isDevices) {\n        payload = await listSmartDevices(auth);\n      } else if (isDeviceEvents) {\n        payload = await ingestSmartDeviceEvent(auth, body);\n        status = 202;\n      } else if (isDeviceCommand) {\n        payload = await queueSmartDeviceCommand(auth, routePath, body);\n        status = 202;\n      } else if (isDeviceCommandComplete) {\n        payload = await completePartnerSmartDeviceCommand(auth, routePath, body);\n      } else if (isPlaceMatch) {\n        payload = await matchPlaces(body);\n      } else if (isNearby) {\n        payload = await nearby(body);\n      } else {\n        payload = await route(body);\n      }\n    }
+    } else {
+      const body = await req.json().catch(() => ({}));
+      if (isDevices) {
+        payload = await listSmartDevices(auth);
+      } else if (isDeviceEvents) {
+        payload = await ingestSmartDeviceEvent(auth, body);
+        status = 202;
+      } else if (isDeviceCommand) {
+        payload = await queueSmartDeviceCommand(auth, routePath, body);
+        status = 202;
+      } else if (isDeviceCommandComplete) {
+        payload = await completePartnerSmartDeviceCommand(auth, routePath, body);
+      } else if (isPlaceMatch) {
+        payload = await matchPlaces(body);
+      } else if (isNearby) {
+        payload = await nearby(body);
+      } else {
+        payload = await route(body);
+      }
+    }
   } catch (error) {
     if (error instanceof ApiInputError) {
       status = 400;
