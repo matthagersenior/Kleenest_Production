@@ -12,7 +12,7 @@ const APK_PATH='/Kleenest_Production/Kleenest-Consumer.apk';
 const CHECKSUM_PATH='/Kleenest_Production/Kleenest-Consumer.apk.sha256';
 
 function browserUrl(path:string){
-  if(typeof window==='undefined')return path;
+  if(typeof window==='undefined')return `https://matthagersenior.github.io${path}`;
   return new URL(path,window.location.origin).toString();
 }
 
