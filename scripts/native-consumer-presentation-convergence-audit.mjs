@@ -5,7 +5,7 @@ const requireAll=(path,tokens)=>{const source=read(path);for(const token of toke
 
 const ui=requireAll('apps/consumer-mobile/components/ConsumerUI.tsx',['HeroCard','FeatureCard','SectionHeader','TrustStrip','MetricTile','palette']);
 const layout=requireAll('apps/consumer-mobile/app/_layout.tsx',["title:'Home'","title:'Explore'","title:'Progress'","title:'Community'","title:'Profile'","name=\"play\"","name=\"discover\"","name=\"preferences\"",'tabBarActiveTintColor']);
-const home=requireAll('apps/consumer-mobile/app/index.tsx',['Find a bathroom you can trust.','FIND A BATHROOM','SCAN QR','CHECK IN / REVIEW','THE KLEENEST LOOP','YOUR NETWORK','XP + levels','Add a missing place','Membership','Game Center','Support']);
+const home=requireAll('apps/consumer-mobile/app/index.tsx',['Find a bathroom you can trust.','FIND A BATHROOM','SCAN QR','CHECK IN / REVIEW','QUICK ACTIONS','GAME CENTER','THE KLEENEST LOOP','YOUR PROGRESS','KLEENEST AI','TRUST GUIDE','ROUTE GUIDE','REVIEW DRAFT','COMMUNITY','OPEN COMMUNITY','Membership','Support']);
 const explorePath='apps/consumer-mobile/app/explore.tsx';
 const adaptiveExplorePath='apps/consumer-mobile/features/AdaptiveExploreScreen.tsx';
 const explore=`${read(explorePath)}\n${read(adaptiveExplorePath)}`;
@@ -29,6 +29,23 @@ for(const [name,source] of Object.entries({layout,home,explore,discover,progress
   if(/\.rpc\(['"](?:business|fleet|enterprise|admin)_/i.test(source)||/from ['"][^'"]*(?:Business|Fleet|Enterprise|Admin)/.test(source))throw new Error(`${name} presentation surface leaked Operations authority into consumer UI`);
 }
 if(!home.includes("'/explore'")||!home.includes("'/discover'")||!home.includes("'/progress'"))throw new Error('Home must keep Explore, Discover and Progress as primary consumer actions');
+const quickStart=home.indexOf('eyebrow="QUICK ACTIONS"');
+const loopStart=home.indexOf('eyebrow="THE KLEENEST LOOP"');
+const progressStart=home.indexOf('eyebrow="YOUR PROGRESS"');
+const aiStart=home.indexOf('eyebrow="KLEENEST AI"');
+const communityStart=home.indexOf('eyebrow="COMMUNITY"');
+const moreStart=home.indexOf('eyebrow="MORE"');
+if([quickStart,loopStart,progressStart,aiStart,communityStart,moreStart].some(index=>index<0))throw new Error('Home hierarchy must expose Quick Actions, Kleenest Loop, Progress, AI, Community and More as distinct sections');
+const quickSection=home.slice(quickStart,loopStart);
+for(const duplicated of ["'/explore'","'/qr'","'/discover'","XP + levels"])if(quickSection.includes(duplicated))throw new Error(`Quick Actions must not duplicate hero/progress action: ${duplicated}`);
+if(!quickSection.includes("'/games'")||!quickSection.includes('GAME CENTER'))throw new Error('Game Center must be promoted into Quick Actions');
+const loopSection=home.slice(loopStart,progressStart);
+for(const token of ['FIND + DISCOVER','VERIFY + DOCUMENT','STRENGTHEN + REWARD'])if(!loopSection.includes(token))throw new Error(`Kleenest Loop must clearly organize the trust cycle around ${token}`);
+const aiSection=home.slice(aiStart,communityStart);
+for(const token of ['TRUST GUIDE','ROUTE GUIDE','REVIEW DRAFT'])if(!aiSection.includes(token))throw new Error(`Kleenest AI homepage feature must showcase ${token}`);
+const communitySection=home.slice(communityStart,moreStart);
+if(!communitySection.includes("'/social'")||!communitySection.includes('OPEN COMMUNITY'))throw new Error('Community section must provide one clear entry into the Community page');
+for(const duplicateRoute of ["'/messages'","'/access'","'/profile'","'/notifications'"])if(communitySection.includes(duplicateRoute))throw new Error(`Community section must not split into duplicate action cards: ${duplicateRoute}`);
 if(!profile.includes("router.push('/preferences')")&&!profile.includes('route="/preferences"'))throw new Error('Profile must expose privacy/preferences from the consumer hub');
 if(!explore.includes('captureConsumerDiscovery')||!explore.includes('captureConsumerRouteIntent'))throw new Error('Rich discovery must preserve lightweight backend data production');
 if(!discover.includes('matchOrCreateDiscovery')||!discover.includes('recordDiscoveryEvidence'))throw new Error('Discover must remain backed by canonical discovery/evidence authority');
