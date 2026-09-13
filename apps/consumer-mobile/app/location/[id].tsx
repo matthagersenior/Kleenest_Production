@@ -51,7 +51,7 @@ export default function LocationDetailScreen(){
       setCheckInId(eligible?.id||null);
       setCheckInAt(eligible?.checked_in_at||null);
       const reviewIds=nextReviews.map((review:any)=>String(review.id||'')).filter(Boolean);
-      const grouped=await listReviewPhotosForReviews(reviewIds).catch(()=>({}));
+      const grouped:Record<string,ReviewPhoto[]>=await listReviewPhotosForReviews(reviewIds).catch(()=>({} as Record<string,ReviewPhoto[]>));
       const photos:CommunityPhoto[]=nextReviews.flatMap((review:any)=>{
         const reviewId=String(review.id||'');
         return (grouped[reviewId]||[]).map((photo:ReviewPhoto)=>({
