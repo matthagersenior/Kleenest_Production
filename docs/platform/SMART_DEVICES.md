@@ -6,7 +6,7 @@ Kleenest Smart Devices is a provider-neutral control plane for connected facilit
 
 Kleenest does **not** embed vendor passwords, broker credentials, or device secrets in Business or Consumer clients. Hardware connects through a bridge identity linked to a Kleenest Partner Platform workspace.
 
-Supported connector classes are:
+Supported connector classes are provider-neutral; each vendor cloud, local bridge, or gateway maps into the same contract.\n\nSupported connector classes are:
 
 - **Matter bridge** — a local or cloud Matter controller translates Matter device state and actions into the Kleenest device contract.
 - **MQTT bridge** — an MQTT gateway owns broker credentials locally and translates topics into Kleenest events/commands.
