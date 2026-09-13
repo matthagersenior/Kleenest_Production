@@ -30,3 +30,15 @@ Consumers should reject timestamps outside a five-minute tolerance by default an
 ## Delivery semantics
 
 Webhook transport is at-least-once. Partner endpoints must be idempotent. A non-2xx response is a failed delivery and may be retried. Durable retry scheduling, partner endpoint storage and dead-letter handling belong to the partner-platform backend lane rather than client SDKs.
+
+## Smart Device events
+
+Smart Facilities integrations add these signed webhook event types:
+
+- `device.status_changed`
+- `device.alert`
+- `device.telemetry_threshold`
+- `device.command_requested`
+- `device.command_completed`
+
+A bridge consumes `device.command_requested`, performs only a command declared by that device, and reports the result through the Smart Device completion endpoint. Existing HMAC verification, retry, dead-letter, and replay rules apply unchanged.
