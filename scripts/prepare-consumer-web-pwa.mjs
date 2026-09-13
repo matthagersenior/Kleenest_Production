@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const dist=path.resolve('apps/consumer-mobile/dist');
-const indexPath=path.join(dist,'index.html');
+const indexPath=path.resolve('apps/consumer-mobile/dist/index.html');
 const manifestSource=path.resolve('public/manifest.webmanifest');
 const workerSource=path.resolve('public/sw.js');
 const iconSource=path.resolve('apps/consumer-mobile/assets/app-icon.png');
