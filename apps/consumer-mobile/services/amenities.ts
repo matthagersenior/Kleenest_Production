@@ -28,6 +28,11 @@ export type LocationAmenityInventoryItem = {
   business_response_status: 'reported' | 'being_addressed' | 'addressed' | null;
   business_response_at: string | null;
   business_proof_available: boolean;
+  business_confirmed: boolean;
+  device_verified: boolean;
+  device_count: number;
+  online_device_count: number;
+  offline_device_count: number;
 };
 
 export type AmenityProgressionAward = {
