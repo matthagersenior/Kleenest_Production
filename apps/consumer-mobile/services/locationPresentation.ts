@@ -4,9 +4,6 @@ const LOCATION_BUCKET = 'location-photos';
 
 export type ConsumerLocationPresentation = {
   location_id: string;
-  business_id: string | null;
-  business_name: string | null;
-  business_logo_url: string | null;
   consumer_photo_id: string | null;
   consumer_photo_storage_path: string | null;
   consumer_photo_caption: string | null;
@@ -30,9 +27,6 @@ export async function listLocationPresentations(locationIds: string[]): Promise<
   if (error) throw error;
   return (Array.isArray(data) ? data : []).map((row: any) => ({
     location_id: String(row.location_id),
-    business_id: row.business_id ? String(row.business_id) : null,
-    business_name: row.business_name ? String(row.business_name) : null,
-    business_logo_url: row.business_logo_url ? String(row.business_logo_url) : null,
     consumer_photo_id: row.consumer_photo_id ? String(row.consumer_photo_id) : null,
     consumer_photo_storage_path: row.consumer_photo_storage_path ? String(row.consumer_photo_storage_path) : null,
     consumer_photo_caption: row.consumer_photo_caption ? String(row.consumer_photo_caption) : null,
