@@ -1,8 +1,8 @@
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, View } from 'react-native';
-import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { ActivityIndicator, Platform, View, useColorScheme } from 'react-native';
+import { getKleenestSupabaseClient,getKleenestThemePreference,resolveKleenestTheme,subscribeKleenestThemePreference,type KleenestThemeMode } from '@kleenest/mobile-core';
 import { currentBusinessId,subscribeBusinessWorkspaceChange } from '../services/capabilityWorkflows';
 import { getBusinessOnboardingGate } from '../services/onboarding';
 
@@ -18,6 +18,9 @@ export default function Layout() {
   const [onboardingRequired,setOnboardingRequired]=useState(false);
   const [needsProvisioning,setNeedsProvisioning]=useState(false);
   const [workspaceRevision,setWorkspaceRevision]=useState(0);
+  const [themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
+  const systemScheme=useColorScheme()==='dark'?'dark':'light';
+  const theme=resolveKleenestTheme('business',themeMode,systemScheme);
   const activeRoute=String(segments.at(-1)||'');
   const onAuthRoute = activeRoute === 'auth';
 
@@ -56,6 +59,7 @@ export default function Layout() {
   }, []);
 
   useEffect(()=>subscribeBusinessWorkspaceChange(()=>setWorkspaceRevision(value=>value+1)),[]);
+  useEffect(()=>{void getKleenestThemePreference().then(setThemeMode);return subscribeKleenestThemePreference(setThemeMode)},[]);
 
   useEffect(()=>{
     if(!ready)return;
@@ -101,9 +105,9 @@ export default function Layout() {
     if(onAuthRoute)router.replace(onboardingRequired?'/onboarding':'/');
   },[ready,gateReady,signedIn,needsProvisioning,onboardingRequired,onAuthRoute,activeRoute,router]);
 
-  if (!ready || (signedIn&&!gateReady)) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f6f4' }}><ActivityIndicator size="large" /></View>;
+  if (!ready || (signedIn&&!gateReady)) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:theme.colors.canvas }}><ActivityIndicator size="large" /></View>;
 
-  return <><StatusBar style="dark"/><Tabs key={`business-workspace-${workspaceRevision}`} screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired||activeRoute==='get-started'?{display:'none'}:undefined}}>
+  return <><StatusBar style={theme.scheme==='dark'?'light':'dark'}/><Tabs key={`business-workspace-${workspaceRevision}`} screenOptions={{headerStyle:{backgroundColor:theme.colors.canvas},headerTintColor:theme.colors.text,headerTitleStyle:{color:theme.colors.text,fontWeight:'900'},headerShadowVisible:false,sceneStyle:{backgroundColor:theme.colors.canvas},tabBarActiveTintColor:theme.colors.brand,tabBarInactiveTintColor:theme.colors.textMuted,tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired||activeRoute==='get-started'?{display:'none'}:{backgroundColor:theme.colors.surface,borderTopColor:theme.colors.border}}}>
     <Tabs.Screen name="index" options={{title:'Home'}}/>
     <Tabs.Screen name="tools" options={{title:'Actions'}}/>
     <Tabs.Screen name="locations" options={{title:'Locations'}}/>
