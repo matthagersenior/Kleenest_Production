@@ -10,8 +10,6 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { palette } from './ConsumerUI';
-
 const brand = {
   forest: '#123E2A',
   forestDark: '#0A291C',
