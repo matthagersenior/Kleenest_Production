@@ -28,7 +28,7 @@ for (const token of [
   "offer_key='developer_platform'",
   "array_append(required_domains,'platform_place_match')",
   "'{sample_capabilities}'",
-  "'place_match'"
+  '"place_match"'
 ]) need(capabilitySql.includes(token), `Place Match capability governance missing token: ${token}`);
 
 const api=file('supabase/functions/platform-api/index.ts');
