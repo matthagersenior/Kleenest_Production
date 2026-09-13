@@ -21,10 +21,11 @@ export default function HomeScreen(){
     {policyRequired?<Pressable accessibilityRole="button" style={s.policyBanner} onPress={action('/legal')}><View style={{flex:1}}><Text style={s.policyKicker}>ACTION REQUIRED</Text><Text style={s.policyTitle}>Review community terms</Text><Text style={s.policyBody}>Accept the current Terms and Community Guidelines before posting reviews, community content or messages.</Text></View><Text style={s.policyArrow}>›</Text></Pressable>:null}
     {!signedIn?<Pressable accessibilityRole="button" style={s.joinBanner} onPress={action('/signup')}><View style={{flex:1}}><Text style={s.joinKicker}>INDIVIDUAL OR FAMILY</Text><Text style={s.joinTitle}>Create your Kleenest account</Text><Text style={s.joinBody}>Start as an individual or choose Family from signup. Family benefits remain entitlement-controlled through the approved membership path.</Text></View><Text style={s.joinArrow}>›</Text></Pressable>:null}
 
-    <HeroCard eyebrow="YOUR KLEENEST" title="Find a bathroom you can trust." body="Search near you or around any address, then use verified community evidence to choose the best stop.">
+    <HeroCard eyebrow="YOUR KLEENEST" title="Find a bathroom you can trust." body="Search near you or around any address. When you are on site, check in with GPS + geofence; use QR when available for stronger proof.">
       <Pressable accessibilityRole="button" accessibilityLabel="Find a bathroom" style={s.homePrimaryCta} onPress={action('/explore')}><Text style={s.homePrimaryLabel}>FIND A BATHROOM</Text><Text style={s.homePrimaryTitle}>Search the map →</Text><Text style={s.homePrimaryBody}>Nearby · any address · amenities · trust · directions</Text></Pressable>
       <View style={s.heroQuickRow}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Scan QR to check in or review" style={s.heroQuick} onPress={action('/qr')}><Text style={s.heroQuickLabel}>SCAN QR</Text><Text style={s.heroQuickTitle}>CHECK IN / REVIEW</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Check in at a restroom" style={s.heroQuick} onPress={action('/explore')}><Text style={s.heroQuickLabel}>CHECK IN</Text><Text style={s.heroQuickTitle}>Nearby or search</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Scan a Kleenest QR code" style={s.heroQuick} onPress={action('/qr')}><Text style={s.heroQuickLabel}>QR PROOF</Text><Text style={s.heroQuickTitle}>Scan code</Text></Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Add a missing place" style={s.heroQuick} onPress={action('/discover')}><Text style={s.heroQuickLabel}>ADD TO MAP</Text><Text style={s.heroQuickTitle}>Missing place</Text></Pressable>
       </View>
     </HeroCard>
@@ -113,8 +114,8 @@ const s=StyleSheet.create({
   homePrimaryLabel:{fontSize:10,fontWeight:'900',letterSpacing:1.2,color:'#557060'},
   homePrimaryTitle:{fontSize:20,fontWeight:'900',color:palette.green,marginTop:2},
   homePrimaryBody:{fontSize:10,lineHeight:15,color:palette.muted,marginTop:3,fontWeight:'700'},
-  heroQuickRow:{flexDirection:'row',gap:8},
-  heroQuick:{flex:1,minHeight:58,backgroundColor:'#2b513e',paddingHorizontal:11,paddingVertical:10,borderRadius:13,justifyContent:'center'},
+  heroQuickRow:{flexDirection:'row',flexWrap:'wrap',gap:8},
+  heroQuick:{flexGrow:1,flexBasis:'31%',minWidth:96,minHeight:58,backgroundColor:'#2b513e',paddingHorizontal:11,paddingVertical:10,borderRadius:13,justifyContent:'center'},
   heroQuickLabel:{fontSize:8,fontWeight:'900',letterSpacing:1,color:'#bcd4c5'},
   heroQuickTitle:{fontSize:12,fontWeight:'900',color:'#fff',marginTop:2},
   installFeature:{backgroundColor:'#fff',borderWidth:2,borderColor:'#bfd8c7',borderRadius:20,padding:15,flexDirection:'row',alignItems:'center',gap:12},
