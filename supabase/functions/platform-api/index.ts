@@ -27,6 +27,7 @@ type Authorization = {
   month_limit?: number;
   month_remaining?: number;
   retry_after_seconds?: number;
+  required_product?: string;
 };
 
 function json(body: unknown, status = 200, extraHeaders: HeadersInit = {}) {
@@ -442,6 +443,7 @@ function authFailure(req: Request, auth: Authorization) {
     error: quota ? 'Rate limit exceeded' : forbidden ? 'Forbidden' : 'Unauthorized',
     code: auth.reason ?? 'unauthorized',
     requestId: auth.request_id,
+    requiredProduct: auth.required_product ?? null,
   }, quota ? 429 : forbidden ? 403 : 401, headers);
 }
 

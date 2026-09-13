@@ -63,6 +63,24 @@ if (/storage\/v1\/object\/public\/platform-public\/developer-portal/i.test(html)
   throw new Error('Portal must not depend on Supabase Storage HTML hosting.');
 }
 
+if (!/developer_sandbox/.test(html)) {
+  throw new Error('Developer Portal demo workspaces must use the developer_sandbox bundle.');
+}
+if (!/productEnabled\('route'\)/.test(html) || !/Route Intelligence not enabled/.test(html)) {
+  throw new Error('Developer Portal must make Route availability product-aware instead of allowing a blind 403.');
+}
+if (!/requiredProduct/.test(html)) {
+  throw new Error('Developer Portal must surface the backend required product when a product is not enabled.');
+}
+const migrations = fs.readdirSync('supabase/migrations').map(name => file('supabase/migrations/' + name)).join('\n');
+if (!/developer_sandbox[\s\S]*nearby[\s\S]*route[\s\S]*place_details[\s\S]*place_match/.test(migrations)) {
+  throw new Error('Database migrations must define a developer_sandbox bundle with all current read/test API products.');
+}
+const platformApi = file('supabase/functions/platform-api/index.ts');
+if (!/required_product\?:\s*string/.test(platformApi) || !/requiredProduct:\s*auth\.required_product/.test(platformApi)) {
+  throw new Error('platform-api must return the exact required product for product_not_enabled failures.');
+}
+
 const ownerApp = file('apps/platform-mobile/app/developers.tsx');
 for (const phrase of ['Launch Demo Workspace', 'Open Developer Portal', 'Developer experience']) {
   if (!ownerApp.includes(phrase)) throw new Error(`KleenestOS developer controls missing: ${phrase}`);

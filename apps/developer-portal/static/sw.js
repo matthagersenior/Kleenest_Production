@@ -1,4 +1,4 @@
-const CACHE='kleenest-developer-portal-v1';
+const CACHE='kleenest-developer-portal-v2';
 const SCOPE='/Kleenest_Production/developer/';
 const SHELL=[SCOPE,`${SCOPE}manifest.webmanifest`];
 
