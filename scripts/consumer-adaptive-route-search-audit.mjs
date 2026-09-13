@@ -41,6 +41,8 @@ for(const token of [
   'MapLegend',
   'Close selected location',
   '<CompactRestroomSignals',
+  '<FlatList',
+  'ListHeaderComponent={',
   'refreshControl={<RefreshControl',
   'onDirections={() => void directions(item)}',
   'onAddToRoute={() => addToRoute(item)}',
@@ -48,7 +50,7 @@ for(const token of [
 ])requireToken(screen,token,'Consumer continuous-scroll Explore composition');
 
 if(screen.includes('Scroll results · map stays fixed'))throw new Error('Consumer Explore must not describe or implement a fixed-map/separate-results scrolling model.');
-if(screen.includes('<FlatList'))throw new Error('Consumer Explore must use one primary vertical scroll surface instead of a nested FlatList results pane.');
+if((screen.match(/<FlatList/g)||[]).length!==1)throw new Error('Consumer Explore must use exactly one primary virtualized vertical scroll surface.');
 
 const modeIndex=screen.indexOf('accessibilityLabel="Nearby search"');
 const radiusIndex=screen.indexOf('radiusChoices.map');
@@ -61,8 +63,10 @@ for(const token of ['Expand for required amenities','Maximum distance','Route co
 const amenityIndex=screen.indexOf('filterAmenities.map');
 const advancedButtonIndex=screen.indexOf('accessibilityLabel="Advanced filters"');
 const mapIndex=screen.indexOf('<View style={s.mapSection}>');
+const listHeaderIndex=screen.indexOf('ListHeaderComponent={');
 const resultsIndex=screen.indexOf('NEARBY OPTIONS');
-if(!(radiusIndex>0&&amenityIndex>radiusIndex&&advancedButtonIndex>amenityIndex&&mapIndex>advancedButtonIndex&&resultsIndex>mapIndex))throw new Error('Consumer Explore must preserve controls → map → results ordering in the single scroll surface.');
+const renderItemIndex=screen.indexOf('renderItem={({ item })');
+if(!(listHeaderIndex>0&&radiusIndex>listHeaderIndex&&amenityIndex>radiusIndex&&advancedButtonIndex>amenityIndex&&mapIndex>advancedButtonIndex&&resultsIndex>mapIndex&&renderItemIndex>resultsIndex))throw new Error('Consumer Explore must preserve controls → map → results ordering inside the single virtualized scroll surface.');
 if(screen.includes('Road trip / advanced')||screen.includes('showAdvanced ? ('))throw new Error('Advanced controls must not return to the inline expanding Explore stack.');
 
 console.log('Consumer adaptive nearby and route-aware restroom discovery authority audit passed.');
