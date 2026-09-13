@@ -17,6 +17,20 @@ need(!/security definer/i.test(sql), 'Place match authority must not bypass RLS 
 need(/grant execute[\s\S]*to service_role/i.test(sql), 'Place match authority must be service-role only.');
 need(/revoke all[\s\S]*from public,anon,authenticated/i.test(sql), 'Place match authority must be denied to public clients.');
 
+
+const capabilityMigrationName=fs.readdirSync('supabase/migrations').find(name=>name.includes('platform_place_match_capability_catalog'));
+need(Boolean(capabilityMigrationName), 'Place Match must be registered in the governed capability catalog.');
+const capabilitySql=file(`supabase/migrations/${capabilityMigrationName}`);
+for (const token of [
+  "'platform_place_match'",
+  "'Place Match / Place Intelligence'",
+  "'platform_match_places'",
+  "offer_key='developer_platform'",
+  "array_append(required_domains,'platform_place_match')",
+  "'{sample_capabilities}'",
+  '"place_match"'
+]) need(capabilitySql.includes(token), `Place Match capability governance missing token: ${token}`);
+
 const api=file('supabase/functions/platform-api/index.ts');
 need(api.includes("'/v1/places/match'"), 'Platform API must expose POST /v1/places/match.');
 need(api.includes('matchPlaces'), 'Platform API must implement a read-only place matcher.');

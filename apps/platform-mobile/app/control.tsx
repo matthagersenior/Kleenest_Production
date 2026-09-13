@@ -17,6 +17,19 @@ const surfaceFilters=['all','consumer','business','fleet','platform'] as const;
 const pretty=(value:unknown)=>String(value??'').replaceAll('_',' ').replaceAll('-',' ');
 const tone=(ready:boolean,enabled=true)=>!enabled?'neutral':ready?'good':'warning';
 
+function capabilityTarget(domain:PilotCapabilityDomain){
+  const route=String(domain.owner_route||'').trim();
+  if(!route)return null;
+  if(route.startsWith('https://'))return route;
+  const normalized=route.replace(/^\/+/, '');
+  const workspace=String(domain.owner_workspace||'');
+  if(workspace==='consumer-mobile')return `kleenest://${normalized}`;
+  if(workspace==='business-mobile')return `kleenest-business://${normalized}`;
+  if(workspace==='fleet-mobile')return `kleenest-fleet://${normalized}`;
+  if(workspace==='platform-mobile')return `kleenest-owner://${normalized}`;
+  return null;
+}
+
 function sampleTarget(offer:OfferReadiness){
   const profile=offer.sample_profile||{};
   const external=String(profile.developer_portal||profile.portal||'');
@@ -111,6 +124,12 @@ export default function ControlCenter(){
     const target=sampleTarget(offer);
     if(!target){setMessage(`${offer.label} does not have a configured sample target.`);return}
     try{await Linking.openURL(target)}catch{setMessage(`Could not open ${offer.label} sample on this device.`)}
+  }
+  async function openCapability(domain:PilotCapabilityDomain){
+    const target=capabilityTarget(domain);
+    if(!target){setMessage(`${domain.canonical_capability} does not have a launchable owner/app route configured.`);return}
+    try{await Linking.openURL(target);setMessage(`Opened ${domain.canonical_capability} capability surface.`)}
+    catch{setMessage(`Could not open ${domain.canonical_capability} on this device.`)}
   }
   async function audit(){
     setBusyKey('audit');
@@ -218,6 +237,9 @@ export default function ControlCenter(){
           <ToggleRow label="Active canonical domain" value={domain.active} disabled={disabled} onValueChange={next=>void patchDomain(domain,{active:next},`Capability domain ${next?'activated':'deactivated'} in KleenestOS Control Center`)}/>
           <ToggleRow label="Sample enabled" value={domain.sample_enabled} disabled={disabled} onValueChange={next=>void patchDomain(domain,{sample_enabled:next},`Capability sample ${next?'enabled':'disabled'} in KleenestOS Control Center`)}/>
           <ToggleRow label="Pilot enabled" value={domain.pilot_enabled} disabled={disabled} onValueChange={next=>void patchDomain(domain,{pilot_enabled:next},`Capability pilot ${next?'enabled':'disabled'} in KleenestOS Control Center`)}/>
+          {capabilityTarget(domain)?<View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>
+            <Choice label="Open capability" selected={false} disabled={disabled||!domain.active||!domain.rpc_exists} onPress={()=>void openCapability(domain)}/>
+          </View>:null}
           <Text style={{fontSize:11,fontWeight:'900',color:osColors.muted}}>Promise state</Text>
           <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>
             {promiseStates.map(state=><Choice key={state} label={pretty(state)} selected={domain.promise_state===state} disabled={disabled} onPress={()=>void patchDomain(domain,{promise_state:state},`Capability promise state set to ${state} in KleenestOS Control Center`)}/>)}
