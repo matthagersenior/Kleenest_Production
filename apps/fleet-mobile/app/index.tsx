@@ -7,6 +7,8 @@ import { getFleetOnboardingGate,getFleetOnboardingState } from '../services/onbo
 
 type FleetRoute=readonly[string,string,string];
 const routes:FleetRoute[]=[
+ ['/member','For Me','Use the role-aware personal Fleet workspace: Consumer discovery, Premium status, assigned-route execution, geofencing, dwell/stall awareness and notifications.'],
+ ['/nearby','Nearby Restrooms','Use the Consumer-connected Kleenest map around your current location or any searched address, with business-selected location photos and navigation.'],
  ['/demo','Guided Demo','Run the field-service story with seeded demo assets, real Kleenest network stops, dispatch, execution and exception recovery.'],
  ['/onboarding','Onboarding','Update the operating profile that targets this Fleet experience.'],
  ['/planner','Map Planner','Build routes visually from the canonical Kleenest location network and assign drivers/vehicles.'],
