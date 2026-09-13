@@ -46,7 +46,7 @@ export default function VerificationCenter(){
   setBusy(key);setMessage('');
   try{
    const result=await fn();
-   if(claimId)try{setClaimStatus(v=>({...v,[claimId]:await getClaimVerificationStatus(claimId)}))}catch{}
+   if(claimId)try{const next=await getClaimVerificationStatus(claimId);setClaimStatus(v=>({...v,[claimId]:next}))}catch{}
    setMessage(result?.autoApproved?'Verification complete. Kleenest automatically approved this unclaimed location.':success);
    await load();
   }catch(e:any){setMessage(e?.message||'Verification action failed.')}
@@ -54,7 +54,7 @@ export default function VerificationCenter(){
  }
  async function inspect(claimId:string){
   setBusy('status:'+claimId);
-  try{setClaimStatus(v=>({...v,[claimId]:await getClaimVerificationStatus(claimId)}));setMessage('')}
+  try{const next=await getClaimVerificationStatus(claimId);setClaimStatus(v=>({...v,[claimId]:next}));setMessage('')}
   catch(e:any){setMessage(e?.message||'Verification details unavailable.')}
   finally{setBusy('')}
  }
@@ -63,7 +63,8 @@ export default function VerificationCenter(){
   try{
    const result=await startClaimDnsVerification(claimId);
    setDns({claimId,challengeId:String(result.challengeId),dnsName:String(result.dnsName),token:String(result.token),expiresAt:String(result.expiresAt)});
-   setClaimStatus(v=>({...v,[claimId]:await getClaimVerificationStatus(claimId)}));
+   const next=await getClaimVerificationStatus(claimId);
+   setClaimStatus(v=>({...v,[claimId]:next}));
    setMessage('DNS challenge created. Publish the TXT value exactly, then verify after DNS propagation.');
   }catch(e:any){setMessage(e?.message||'DNS challenge could not be created.')}
   finally{setBusy('')}
