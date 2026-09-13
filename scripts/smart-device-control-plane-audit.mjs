@@ -4,6 +4,7 @@ const failures=[];
 const required=[
   'supabase/migrations/20260913143000_smart_device_control_plane.sql',
   'supabase/migrations/20260913134913_smart_restroom_amenity_ecosystem_convergence.sql',
+  'supabase/migrations/20260913135711_smart_restroom_state_service_policy.sql',
   'supabase/functions/smart-device-gateway/index.ts',
   'apps/business-mobile/services/smartDevices.ts',
   'apps/business-mobile/app/devices.tsx',
@@ -40,6 +41,7 @@ requireTokens('supabase/migrations/20260913143000_smart_device_control_plane.sql
   'record_smart_device_event','devices:read','devices:write','devices:command','devices:events:write'
 ]);
 requireTokens('supabase/migrations/20260913134913_smart_restroom_amenity_ecosystem_convergence.sql',['Connected / Smart Restroom','location_smart_restroom_state','business_set_location_amenity','business_smart_amenity_snapshot','business_create_smart_restroom_qr','execute_smart_device_qr_action','place.amenities_changed']);
+requireTokens('supabase/migrations/20260913135711_smart_restroom_state_service_policy.sql',['location_smart_restroom_service_role','to service_role','with check (true)']);
 requireTokens('supabase/functions/smart-device-gateway/index.ts',[
   'record_smart_device_event','claim_smart_device_commands','complete_smart_device_command',
   'x-kleenest-api-key','AbortSignal.timeout'
