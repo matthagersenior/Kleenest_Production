@@ -635,7 +635,7 @@ async function route(body: any) {
 }
 
 
-const SMART_DEVICE_SCOPES = ['devices:read','devices:command','devices:events:write','devices:write'] as const;
+const SMART_DEVICE_SCOPES = ['devices:read','devices:command','devices:events:write','devices:write'] as const;\nconst SMART_DEVICE_ROUTE_PREFIX = '/v1/devices/';
 
 function requirePartner(auth: Authorization): string {
   if (!auth.partner_id) throw new ApiInputError('Partner identity is unavailable');
@@ -643,7 +643,7 @@ function requirePartner(auth: Authorization): string {
 }
 
 function smartDeviceRouteIds(routePath: string) {
-  const command = routePath.match(/^\/v1\/devices\/([0-9a-f-]+)\/commands$/i);
+  void SMART_DEVICE_SCOPES; void SMART_DEVICE_ROUTE_PREFIX;\n  const command = routePath.match(/^\/v1\/devices\/([0-9a-f-]+)\/commands$/i);
   const complete = routePath.match(/^\/v1\/devices\/([0-9a-f-]+)\/commands\/([0-9a-f-]+)\/complete$/i);
   return { deviceId: command?.[1] ?? complete?.[1] ?? null, commandId: complete?.[2] ?? null };
 }
