@@ -37,6 +37,12 @@ for(const [token,label] of [
   ['never silently checks you in','arrival detection must not silently create a user check-in'],
 ]) expect(route,token,label);
 
+const qrScreen=read('apps/consumer-mobile/app/qr.tsx');
+for(const [token,label] of [
+  ['accessibilityLabel="Check in without a QR"','QR screen must offer a GPS/search escape hatch for regular check-in'],
+  ['Check in with GPS + geofence','QR screen must explain that a QR is not required for normal check-in'],
+]) expect(qrScreen,token,label);
+
 const qr=read('apps/consumer-mobile/services/qrActions.ts');
 expect(qr,"rpc('verify_checkin'",'QR check-in must use the existing server-authoritative QR + geofence RPC');
 
