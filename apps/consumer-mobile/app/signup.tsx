@@ -20,7 +20,7 @@ export default function SignupScreen(){
    if(error)throw error;
    if(data.session){
     setMessage(intent==='family'?'Account created. Continue to Family setup; Family benefits activate only through your eligible membership entitlement.':'Account created.');
-    router.replace((intent==='family'?'/family':'/profile') as any);
+    router.replace((intent==='family'?'/family':'/') as any);
    }else setMessage(intent==='family'?'Account created. Confirm your email, then sign in to finish Family setup. Family benefits activate only after the eligible membership entitlement is confirmed.':'Account created. Confirm your email, then sign in.');
   }catch(error:any){setMessage(error?.message||'Account could not be created.')}finally{setBusy(false)}
  }

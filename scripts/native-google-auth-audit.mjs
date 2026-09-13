@@ -9,9 +9,14 @@ const consumerCompact=compact(consumer);
 if(!consumer.includes('Continue with Google'))failures.push('Consumer must expose a visible Continue with Google action.');
 if(!consumerCompact.includes("provider:'google'")&&!consumerCompact.includes('provider:"google"'))failures.push('Consumer must authenticate with the canonical Supabase Google provider.');
 if(!consumer.includes('signInWithOAuth'))failures.push('Consumer must initiate Google authentication through Supabase OAuth.');
-if(!consumer.includes('skipBrowserRedirect:true'))failures.push('Consumer native OAuth must hand browser navigation to the app.');
+if(!consumerCompact.includes("skipBrowserRedirect:Platform.OS!=='web'")&&!consumerCompact.includes('skipBrowserRedirect:Platform.OS!=="web"'))failures.push('Consumer OAuth must use browser-native redirect behavior on web and app-controlled browser navigation on native.');
 if(!consumer.includes('mobileAuthRedirect')||!consumer.includes('Linking.openURL'))failures.push('Consumer Google OAuth must return through the Kleenest mobile deep link.');
 if(!consumer.includes('exchangeCodeForSession'))failures.push('Consumer must exchange the OAuth callback code for a Supabase session.');
+if(consumer.includes("Linking.createURL('/profile'")||consumer.includes('Linking.createURL("/profile"'))failures.push('Consumer OAuth callback must not use the broken triple-slashed profile deep link.');
+if(!consumer.includes("Linking.createURL('profile'")&&!consumer.includes('Linking.createURL("profile"'))failures.push("Consumer native OAuth callback must use Linking.createURL('profile', ...).");
+if(!consumer.includes('isTripleSlashed:false')&&!consumerCompact.includes('isTripleSlashed:false'))failures.push('Consumer native OAuth callback must preserve the non-triple-slashed callback contract.');
+if(!consumer.includes('/Kleenest_Production/profile/'))failures.push('Consumer web OAuth must return to the materialized GitHub Pages profile callback.');
+if(!consumer.includes("router.replace('/')")&&!consumer.includes('router.replace("/")'))failures.push('Consumer successful authentication must return to Home instead of leaving the user on Profile.');
 
 const operatorAuth=[
   ['Owner','apps/platform-mobile/app/auth.tsx','kleenest-owner'],

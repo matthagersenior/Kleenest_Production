@@ -49,4 +49,9 @@ if ('serviceWorker' in navigator) {
 }
 
 fs.writeFileSync(indexPath,html);
-console.log('Prepared installable Kleenest Consumer Web PWA.');
+
+const authCallbackDir=path.join(dist,'profile');
+fs.mkdirSync(authCallbackDir,{recursive:true});
+fs.writeFileSync(path.join(authCallbackDir,'index.html'),html);
+
+console.log('Prepared installable Kleenest Consumer Web PWA with a direct /profile/ auth callback.');
