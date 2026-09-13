@@ -47,6 +47,7 @@ requireText(ci, 'node scripts/ci-freshness-policy-audit.mjs', 'Production CI mus
 
 const platformIntegration = read('platform-integration.yml');
 requireText(platformIntegration, 'name: platform-integration', 'Path-specific Platform Integration CI must not publish the generic required verify context.');
+if ((platformIntegration.match(/\\.github\\/workflows\\/platform-integration\\.yml/g) || []).length < 2) throw new Error('Platform Integration CI must test changes to its own workflow on pull requests.');
 
 const onboarding = read('mandatory-onboarding-consumer-focus.yml');
 requireText(onboarding, 'name: mandatory-onboarding-consumer-focus', 'Path-specific onboarding CI must not publish the generic required verify context.');
