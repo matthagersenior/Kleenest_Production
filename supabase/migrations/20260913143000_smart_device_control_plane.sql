@@ -396,7 +396,12 @@ begin
   where d.id=p_device_id and d.business_id=p_business_id;
   if v_device.id is null then raise exception 'Device not found'; end if;
   select * into v_connector from public.smart_device_connectors c where c.id=v_device.connector_id;
-  if not v_device.control_enabled or not v_connector.control_enabled then\n    raise exception 'Device control is disabled';\n  end if;\n  if v_connector.platform_partner_id is null and v_connector.protocol<>'manual' then\n    raise exception 'Device connector is not paired to an integration partner';\n  end if;
+  if not v_device.control_enabled or not v_connector.control_enabled then
+    raise exception 'Device control is disabled';
+  end if;
+  if v_connector.platform_partner_id is null and v_connector.protocol<>'manual' then
+    raise exception 'Device connector is not paired to an integration partner';
+  end if;
   if v_command='' then raise exception 'Command is required'; end if;
   if not (
     ('command:*'=any(v_device.capabilities))
@@ -635,7 +640,9 @@ returns table(
   device_id uuid,
   external_device_id text,
   connector_id uuid,
-  platform_partner_id uuid,\n  protocol text,\n  command text,
+  platform_partner_id uuid,
+  protocol text,
+  command text,
   arguments jsonb,
   risk_class text,
   attempt integer,
@@ -657,7 +664,8 @@ begin
     join public.smart_devices d on d.id=cmd.device_id
     join public.smart_device_connectors c on c.id=cmd.connector_id
     where cmd.status='queued' and cmd.expires_at>now()
-      and d.control_enabled and c.control_enabled and c.status<>'disabled'\n      and (c.platform_partner_id is not null or c.protocol='manual')
+      and d.control_enabled and c.control_enabled and c.status<>'disabled'
+      and (c.platform_partner_id is not null or c.protocol='manual')
     order by cmd.requested_at
     for update of cmd skip locked
     limit greatest(1,least(coalesce(p_limit,25),100))
@@ -1042,7 +1050,10 @@ insert into public.platform_product_bundles(
 ) values(
   'smart_facilities','Smart Facilities',
   'IoT and Smart Device telemetry, commands, automations, webhooks and MCP for connected facilities.',
-  'enterprise',\n  array['recommendations:read','platform:read','devices:read','devices:write','devices:command','devices:events:write']::text[],\n  array['nearby','route','place_details','place_match','smart_devices']::text[],\n  array['rest','sdk','map','route_sdk','webhooks','mcp']::text[],
+  'enterprise',
+  array['recommendations:read','platform:read','devices:read','devices:write','devices:command','devices:events:write']::text[],
+  array['nearby','route','place_details','place_match','smart_devices']::text[],
+  array['rest','sdk','map','route_sdk','webhooks','mcp']::text[],
   120,500000,true,60,now()
 )
 on conflict(bundle_key) do update set
@@ -1115,7 +1126,9 @@ begin
     'public.claim_smart_device_commands(integer)'::regprocedure,
     'public.mark_smart_device_command_dispatched(uuid)'::regprocedure,
     'public.complete_smart_device_command(uuid,boolean,jsonb,text)'::regprocedure,
-    'public.platform_smart_device_manifest(uuid)'::regprocedure,\n    'public.platform_register_smart_device(uuid,uuid,uuid,text,text,text,uuid,text,text,text,text[],text[],boolean,jsonb)'::regprocedure,\n    'public.platform_smart_device_command(uuid,uuid,text,jsonb,text)'::regprocedure,
+    'public.platform_smart_device_manifest(uuid)'::regprocedure,
+    'public.platform_register_smart_device(uuid,uuid,uuid,text,text,text,uuid,text,text,text,text[],text[],boolean,jsonb)'::regprocedure,
+    'public.platform_smart_device_command(uuid,uuid,text,jsonb,text)'::regprocedure,
     'public.platform_complete_smart_device_command(uuid,uuid,boolean,jsonb,text)'::regprocedure,
     'public.cleanup_smart_device_events(integer)'::regprocedure,
     'public.platform_webhook_worker_secret_internal()'::regprocedure
@@ -1126,4 +1139,5 @@ begin
 end;
 $block$;
 
-revoke all on function public.authorize_platform_request(text,text,uuid,text) from public,anon,authenticated;\ngrant execute on function public.authorize_platform_request(text,text,uuid,text) to service_role;
+revoke all on function public.authorize_platform_request(text,text,uuid,text) from public,anon,authenticated;
+grant execute on function public.authorize_platform_request(text,text,uuid,text) to service_role;
