@@ -62,11 +62,16 @@ on:
       - "tsconfig.platform.json"
       - "package-lock.json"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   verify:
+    name: platform-integration
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
