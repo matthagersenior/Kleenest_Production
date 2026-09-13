@@ -145,6 +145,8 @@ jobs:
         run: node scripts/game-content-depth-audit.mjs
       - name: Progression World engagement
         run: node scripts/progression-world-engagement-audit.mjs
+      - name: Environment themes and Live Ops
+        run: node scripts/environment-theme-live-ops-audit.mjs
       - name: Business canonical authority
         run: node scripts/business-canonical-rpc-authority-audit.mjs
       - name: Consumer location photo authority
