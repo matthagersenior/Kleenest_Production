@@ -68,8 +68,8 @@ for(const token of ['name="onboarding"','name="demo"']) if(!businessLayout.inclu
 for(const token of ['/onboarding','/demo']) if(!businessHome.includes(token)) failures.push('Business home missing '+token);
 for(const token of ['name="onboarding"','name="demo"']) if(!fleetLayout.includes(token)) failures.push('Fleet navigation missing '+token);
 for(const token of ['/onboarding','/demo']) if(!fleetHome.includes(token)) failures.push('Fleet home missing '+token);
-if(!fleetControl.includes("p_include_demo:true")) failures.push('Fleet managed demo workspaces are not discoverable');
-if(!fleetControl.includes("is_demo_test?-100000")) failures.push('Fleet demo workspaces are not strongly de-prioritized for automatic selection');
+if(!fleetControl.includes("fleet_current_user_workspace_manifest")) failures.push('Fleet role-aware workspace manifest is not the canonical workspace source');
+if(!fleetControl.includes("is_demo_test?-1000")) failures.push('Fleet demo workspaces are not strongly de-prioritized for automatic selection');
 if(!fleetWorkspaces.includes("DEMO")) failures.push('Fleet workspace selector does not visibly label demo workspaces');
 
 const planRank={standard:0,growth:1,fleet:2,enterprise:3};
