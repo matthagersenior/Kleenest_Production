@@ -7,11 +7,16 @@ for(const path of ['apps/business-mobile/app/_layout.tsx','apps/fleet-mobile/app
   if(!src.includes("const activeRoute=String(segments.at(-1)||'');"))failures.push(path+' must resolve the leaf route segment');
   if(!src.includes("},[ready,signedIn,workspaceRevision]);"))failures.push(path+' gate loading must depend only on auth/workspace state');
   const routingDeps=path.includes('fleet-mobile')
-    ? "},[ready,gateReady,signedIn,workspaceRole,onboardingRequired,onAuthRoute,activeRoute,router]);"
-    : "},[ready,gateReady,signedIn,onboardingRequired,onAuthRoute,activeRoute,router]);";
+    ? "},[ready,gateReady,signedIn,needsBusinessSetup,workspaceRole,onboardingRequired,onAuthRoute,activeRoute,router]);"
+    : "},[ready,gateReady,signedIn,needsProvisioning,onboardingRequired,onAuthRoute,activeRoute,router]);";
   if(!src.includes(routingDeps))failures.push(path+' must enforce routing in a separate effect');
   if(src.includes("setGateReady(false);\n    void (async()=>")&&src.includes("activeRoute,workspaceRevision"))failures.push(path+' still tears down navigator on route changes');
   if(!src.includes("if(onboardingRequired&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');"))failures.push(path+' must retain mandatory onboarding enforcement');
+  if(path.includes('fleet-mobile')){
+    if(!src.includes("if(needsBusinessSetup){"))failures.push(path+' must keep no-workspace Fleet users on the setup path');
+  }else{
+    if(!src.includes("if(needsProvisioning){"))failures.push(path+' must route signed-in users without a Business workspace into provisioning');
+  }
   if(!/if\s*\(onAuthRoute\)\s*\{?[\s\S]{0,120}?router\.replace\(onboardingRequired\?'\/onboarding':'\/'\)/.test(src))failures.push(path+' must retain post-auth routing');
 }
 if(failures.length){
