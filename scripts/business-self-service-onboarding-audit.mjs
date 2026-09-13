@@ -10,8 +10,8 @@ const auth=read('apps/business-mobile/app/auth.tsx');
 const layout=read('apps/business-mobile/app/_layout.tsx');
 const fleetAuth=read('apps/fleet-mobile/app/auth.tsx');
 const marketing=read('apps/consumer-mobile/components/MarketingSitePro.tsx');
-const migration=read('supabase/migrations/20260913165000_business_member_self_service_visibility.sql');
-const policyConvergence=read('supabase/migrations/20260913171200_converge_business_member_select_policy.sql');
+const migration=read('supabase/migrations/20260913170815_business_member_self_service_visibility.sql');
+const policyConvergence=read('supabase/migrations/20260913171236_converge_business_member_select_policy.sql');
 
 expect(edge,/auth\.getUser\(\)/,'Edge Function must validate the caller JWT');
 expect(edge,/SERVICE_ROLE_KEY/,'Edge Function must keep privileged bootstrap server-side');
