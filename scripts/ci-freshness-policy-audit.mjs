@@ -53,14 +53,11 @@ const onboarding = read('mandatory-onboarding-consumer-focus.yml');
 requireText(onboarding, 'name: mandatory-onboarding-consumer-focus', 'Path-specific onboarding CI must not publish the generic required verify context.');
 
 const android = read('android-family.yml');
-requireText(android, 'workflow_run:', 'Android family builds must start from a completed canonical CI run.');
-requireText(android, 'workflows: [Production CI]', 'Android family builds must be downstream of Production CI.');
-requireText(android, "github.event.workflow_run.conclusion == 'success'", 'Android family builds must require successful canonical CI.');
-requireText(android, 'ref: ${{ github.event.workflow_run.head_sha || github.sha }}', 'Android family builds must check out the exact commit that passed CI.');
-requireText(android, "group: kleenest-app-family-android-${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && 'main' || github.event_name == 'workflow_dispatch' && github.sha || github.run_id }}", 'Android family concurrency must isolate ineligible workflow_run invocations so a skipped run cannot cancel a valid native build.');
-if (android.includes('github.event.pull_request.number || github.ref')) throw new Error('Android family concurrency must not collapse all workflow_run events onto github.ref.');
-if (/^\s{2}push:/m.test(android)) throw new Error('Android family builds must not race directly against push CI.');
-if (/^\s{2}pull_request:/m.test(android)) throw new Error('Android family builds must not race directly against pull-request CI.');
+for (const token of ['workflow_dispatch:','push:','branches: [main]','releases/family-native.txt','schedule:',"cron: '0 9 * * *'",'resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_build','group: kleenest-app-family-android-main']) {
+  requireText(android, token, 'Android family native rebuild policy missing '+token);
+}
+if (/^\s{2}workflow_run:/m.test(android)) throw new Error('Android family builds must not rebuild after every canonical CI run.');
+if (/^\s{2}pull_request:/m.test(android)) throw new Error('Android family builds must never run from pull requests.');
 
 const publisher = read('publish-standalone-installer.yml');
 requireText(publisher, 'workflows: ["Validate Kleenest Consumer Web Preview"]', 'Consumer Pages publishing must follow successful canonical web validation rather than the whole Android family matrix.');
@@ -71,10 +68,20 @@ requireText(publisher, 'consumer-release-drift-audit.mjs', 'Consumer Pages publi
 requireText(publisher, 'run-id: ${{ steps.apk.outputs.run_id }}', 'Consumer Pages publishing must download the resolved verified Consumer APK artifact rather than depend on an unrelated family conclusion.');
 if (publisher.includes('workflows: ["Build Kleenest App Family Android APKs"]')) throw new Error('Consumer Pages publishing must not wait for the full Android family matrix.');
 
+const familyOta = read('ota-family.yml');
+for (const token of ['workflow_run:','workflows: ["Production CI"]',"github.event.workflow_run.conclusion == 'success'","github.event.workflow_run.head_branch == 'main'",'ref: ${{ github.event.workflow_run.head_sha || github.sha }}','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_publish','native_rebuild_required','consumer-production','business-production','fleet-production','owner-production']) {
+  requireText(familyOta, token, 'Coordinated family OTA authority missing '+token);
+}
+
 const consumerOta = read('ota-consumer.yml');
-requireText(consumerOta, 'workflows: ["Production CI"]', 'Consumer OTA must be downstream of canonical Production CI.');
-requireText(consumerOta, 'consumer-release-drift-audit.mjs', 'Consumer OTA must run the native drift guard.');
-requireText(consumerOta, '--strict', 'Consumer OTA must block when native drift requires a rebuilt binary.');
-requireText(consumerOta, 'ref: ${{ github.event.workflow_run.head_sha || github.sha }}', 'Consumer OTA must publish the exact CI-validated source.');
+requireText(consumerOta, 'workflow_dispatch:', 'Emergency Consumer OTA must remain explicitly triggered.');
+for (const trigger of ['workflow_run','push','schedule','pull_request']) {
+  if (new RegExp(`^\\s{2}${trigger}:`, 'm').test(consumerOta)) throw new Error(`Emergency Consumer OTA must not run automatically from ${trigger}; coordinated family OTA owns normal production delivery.`);
+}
+requireText(consumerOta, 'consumer-release-drift-audit.mjs', 'Emergency Consumer OTA must run its native drift guard.');
+requireText(consumerOta, '--strict', 'Emergency Consumer OTA must block when Consumer native drift requires a rebuilt binary.');
+requireText(consumerOta, 'resolve-family-apk-baseline.mjs', 'Emergency Consumer OTA must resolve the synchronized family baseline.');
+requireText(consumerOta, 'app-family-release-plan.mjs', 'Emergency Consumer OTA must enforce family native compatibility.');
+requireText(consumerOta, '--strict-ota', 'Emergency Consumer OTA must refuse to cross family native drift.');
 
 console.log('CI freshness policy audit passed.');
