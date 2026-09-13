@@ -4,6 +4,7 @@ import { useEffect,useMemo,useState } from 'react';
 import { Pressable,SafeAreaView,ScrollView,StyleSheet,Text,View } from 'react-native';
 import { GAME_DEFINITIONS } from '../services/gameModes';
 import { divisionForXp,divisionProgress,nextDivisionForXp } from '../services/engagementMetaGame';
+import { getProgressionOverviewV2 } from '../services/discoveryProgression';
 import { listGameChallenges,respondGameChallenge } from '../services/games';
 
 const ARENA_LABEL:Record<string,string>={
@@ -27,16 +28,16 @@ const MODE_PROMISE:Record<string,string>={
 };
 
 export default function GamesHub(){
- const[dashboard,setDashboard]=useState<any>({}),[challenges,setChallenges]=useState<any[]>([]),[userId,setUserId]=useState(''),[message,setMessage]=useState('');
+ const[dashboard,setDashboard]=useState<any>({}),[overview,setOverview]=useState<any>({}),[challenges,setChallenges]=useState<any[]>([]),[userId,setUserId]=useState(''),[message,setMessage]=useState('');
  async function load(){
   try{
-   const[d,cg,{data:{user}}]=await Promise.all([getMobileProgressionDashboard(),listGameChallenges(null,30),getKleenestSupabaseClient().auth.getUser()]);
-   setDashboard(d);setChallenges(cg);setUserId(user?.id||'');
+   const[d,o,cg,{data:{user}}]=await Promise.all([getMobileProgressionDashboard(),getProgressionOverviewV2().catch(()=>({})),listGameChallenges(null,30),getKleenestSupabaseClient().auth.getUser()]);
+   setDashboard(d);setOverview(o);setChallenges(cg);setUserId(user?.id||'');
   }catch(error:any){setMessage(error?.message||'Arcade data could not be loaded.')}
  }
  useEffect(()=>{void load()},[]);
  async function respond(id:string,accept:boolean){try{await respondGameChallenge(id,accept);setMessage(accept?'Challenge accepted.':'Challenge declined.');await load()}catch(error:any){setMessage(error?.message||'Challenge could not be updated.')}}
- const xp=Number(dashboard?.points||0),division=divisionForXp(xp),next=nextDivisionForXp(xp),pct=divisionProgress(xp);
+ const xp=Number(overview?.lifetime_xp??dashboard?.points??0),division=divisionForXp(xp),next=nextDivisionForXp(xp),pct=divisionProgress(xp);
  const groups=useMemo(()=>[
   {title:'FAST + REPLAYABLE',items:GAME_DEFINITIONS.filter(g=>['rapid_fire','amenity_sprint','evidence_tap'].includes(g.mode))},
   {title:'THINK + SOLVE',items:GAME_DEFINITIONS.filter(g=>['trust_quiz','strategy','route_puzzle','ranking','detective','builder'].includes(g.mode))},
