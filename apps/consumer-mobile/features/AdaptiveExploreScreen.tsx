@@ -13,6 +13,7 @@ import {
 } from '@kleenest/mobile-core';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  FlatList,
   Modal,
   Pressable,
   RefreshControl,
@@ -560,13 +561,15 @@ export default function AdaptiveExploreScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView
+      <FlatList
         style={s.pageScroll}
-        contentContainerStyle={s.pageContent}
+        data={rows}
+        keyExtractor={idOf}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
-      >
+        ListHeaderComponent={
+          <>
       <View style={s.hero}>
         <View style={s.heroTop}>
           <View style={{ flex: 1 }}>
@@ -957,51 +960,56 @@ export default function AdaptiveExploreScreen() {
         </View>
       ) : null}
 
-      <View style={s.list}>
-        <View style={s.listHeading}>
-          <View>
-            <Text style={s.listEyebrow}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
-            <Text style={s.listTitle}>{mode === 'route' ? 'Bathrooms ahead' : 'Nearby businesses & bathrooms'}</Text>
+
+            <View style={s.listHeading}>
+              <View>
+                <Text style={s.listEyebrow}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
+                <Text style={s.listTitle}>{mode === 'route' ? 'Bathrooms ahead' : 'Nearby businesses & bathrooms'}</Text>
+              </View>
+              <Text style={s.listNote}>{cached ? 'Cached · pull to refresh' : 'Distance + actions on every card'}</Text>
+            </View>
+          </>
+        }
+        renderItem={({ item }) => (
+          <View style={s.resultItem}>
+            <ResultCard
+              item={item}
+              selected={idOf(item) === selectedId}
+              onSelect={() => selectRow(item)}
+              onDirections={() => void directions(item)}
+              onAddToRoute={() => addToRoute(item)}
+              onDetails={() => router.push(`/location/${idOf(item)}`)}
+              route={mode === 'route' ? route : null}
+            />
           </View>
-          <Text style={s.listNote}>{cached ? 'Cached · pull to refresh' : 'Distance + actions on every card'}</Text>
-        </View>
-
-        {rows.map((item) => (
-          <ResultCard
-            key={idOf(item)}
-            item={item}
-            selected={idOf(item) === selectedId}
-            onSelect={() => selectRow(item)}
-            onDirections={() => void directions(item)}
-            onAddToRoute={() => addToRoute(item)}
-            onDetails={() => router.push(`/location/${idOf(item)}`)}
-            route={mode === 'route' ? route : null}
-          />
-        ))}
-
-        {!loading && rows.length === 0 ? (
-          <View style={s.empty}>
-            <Text style={s.emptyTitle}>No qualifying results yet.</Text>
-            <Text style={s.help}>
-              {mode === 'nearby'
-                ? 'Change the radius, amenity rule, or maximum distance and search again.'
-                : 'Build or adjust your saved route, widen its corridor, or change amenity requirements.'}
-            </Text>
+        )}
+        ListEmptyComponent={!loading ? (
+          <View style={s.resultItem}>
+            <View style={s.empty}>
+              <Text style={s.emptyTitle}>No qualifying results yet.</Text>
+              <Text style={s.help}>
+                {mode === 'nearby'
+                  ? 'Change the radius, amenity rule, or maximum distance and search again.'
+                  : 'Build or adjust your saved route, widen its corridor, or change amenity requirements.'}
+              </Text>
+            </View>
           </View>
         ) : null}
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add a missing bathroom"
-          onPress={() => router.push('/discover')}
-          style={s.missingPlace}
-        >
-          <Text style={s.listEyebrow}>MISSING A PLACE?</Text>
-          <Text style={s.missingTitle}>Add a missing bathroom</Text>
-          <Text style={s.help}>Contribute a place that is not in the Kleenest network yet.</Text>
-        </Pressable>
-      </View>
-      </ScrollView>
+        ListFooterComponent={
+          <View style={s.listFooter}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add a missing bathroom"
+              onPress={() => router.push('/discover')}
+              style={s.missingPlace}
+            >
+              <Text style={s.listEyebrow}>MISSING A PLACE?</Text>
+              <Text style={s.missingTitle}>Add a missing bathroom</Text>
+              <Text style={s.help}>Contribute a place that is not in the Kleenest network yet.</Text>
+            </Pressable>
+          </View>
+        }
+      />
     </SafeAreaView>
   );
 }
@@ -1009,7 +1017,6 @@ export default function AdaptiveExploreScreen() {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.canvas },
   pageScroll: { flex: 1 },
-  pageContent: { paddingBottom: 24 },
   hero: {
     marginHorizontal: 12,
     marginTop: 4,
@@ -1132,7 +1139,9 @@ const s = StyleSheet.create({
   routeCoverage: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: '#fff7e8', borderWidth: 1, borderColor: '#ead9b4' },
   routeCoverageTitle: { fontSize: 10, fontWeight: '900', color: palette.ink },
   list: { paddingHorizontal: 14, paddingBottom: 34, gap: 8 },
-  listHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 8, paddingTop: 8, paddingBottom: 2 },
+  listHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 8, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 8 },
+  resultItem: { paddingHorizontal: 14, paddingBottom: 8 },
+  listFooter: { paddingHorizontal: 14, paddingBottom: 34 },
   listEyebrow: { fontSize: 8, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
   listTitle: { fontSize: 17, fontWeight: '900', color: palette.ink },
   listNote: { fontSize: 8, fontWeight: '800', color: '#718077' },
