@@ -1,3 +1,4 @@
+// Developer Portal branded UX contract.
 import fs from 'node:fs';
 
 function file(path) {
