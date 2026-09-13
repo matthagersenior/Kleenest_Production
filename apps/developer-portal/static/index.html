@@ -99,7 +99,7 @@ button{transition:transform .12s ease,border-color .12s ease,background .12s eas
       <h3>Create partner workspace</h3>
       <label>Name<input id="partnerName" placeholder="Partner Company" /></label>
       <label>Slug<input id="partnerSlug" placeholder="partner-company" /></label>
-      <label>Product bundle<select id="partnerBundle"><option value="starter_api">Starter API</option><option value="route_intelligence">Route Intelligence</option><option value="place_intelligence">Place Intelligence</option><option value="fleet_integration">Fleet Integration</option><option value="enterprise_data">Enterprise Data</option></select></label>
+      <label>Product bundle<select id="partnerBundle"><option value="developer_sandbox">Developer Sandbox</option><option value="starter_api">Starter API</option><option value="route_intelligence">Route Intelligence</option><option value="place_intelligence">Place Intelligence</option><option value="fleet_integration">Fleet Integration</option><option value="enterprise_data">Enterprise Data</option></select></label>
       <div class="row"><button id="createPartner" class="primary">Create workspace</button><button id="createDemoWorkspace">Launch Demo Workspace</button></div>
     </div>
     <div>
@@ -171,6 +171,7 @@ button{transition:transform .12s ease,border-color .12s ease,background .12s eas
   <div class="section-title"><span class="section-icon"><svg><use href="#icon-playground"/></svg></span><h2>API Playground</h2></div>
   <p class="sub">Run a real Kleenest request using your memory-only sandbox token. The request is counted against the workspace quota just like a production call.</p>
   <div class="mode-tabs"><button id="modeNearby" class="active">Nearby</button><button id="modeRoute">Along route</button></div>
+  <div id="playgroundProductNote" class="play-meta">Open a workspace to see enabled API products.</div>
   <div class="play-layout" style="margin-top:12px">
     <div>
       <div id="nearbyInputs">
@@ -284,6 +285,27 @@ function selectedMembership(){return memberships.find(m=>(m.partner_id||m.id)===
 function canInvite(){const m=selectedMembership();return !!actor?.platformOwner||['owner','admin','platform_owner'].includes(m?.role)}
 function sanitizeSlug(value){return value.toLowerCase().trim().replace(/[^a-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,63)}
 function activeKeys(){return (summary?.api_keys||[]).filter(k=>!k.revoked_at&&(!k.expires_at||new Date(k.expires_at)>new Date()))}
+function enabledProducts(){return Array.isArray(summary?.product_access?.api_products)?summary.product_access.api_products:[]}
+function productEnabled(product){return enabledProducts().includes(product)}
+function productLabel(product){return product==='route'?'Route Intelligence':product==='nearby'?'Nearby recommendations':product.replaceAll('_',' ')}
+function updatePlaygroundAvailability(){
+ const nearby=productEnabled('nearby'),route=productEnabled('route');
+ $('modeNearby').disabled=!nearby;$('modeRoute').disabled=!route;
+ $('modeNearby').title=nearby?'':'Nearby recommendations not enabled for this workspace';
+ $('modeRoute').title=route?'':'Route Intelligence not enabled for this workspace';
+ if(playgroundMode==='route'&&!route&&nearby)playgroundMode='nearby';
+ if(playgroundMode==='nearby'&&!nearby&&route)playgroundMode='route';
+ $('modeNearby').classList.toggle('active',playgroundMode==='nearby');
+ $('modeRoute').classList.toggle('active',playgroundMode==='route');
+ $('nearbyInputs').classList.toggle('hidden',playgroundMode!=='nearby');
+ $('routeInputs').classList.toggle('hidden',playgroundMode!=='route');
+ $('runPlayground').disabled=!(nearby||route);
+ const bundle=summary?.product_access?.bundle_label||summary?.product_access?.bundle_key||'this workspace';
+ const missing=[];if(!nearby)missing.push('Nearby');if(!route)missing.push('Route Intelligence');
+ $('playgroundProductNote').textContent=missing.length
+   ? bundle+' does not include '+missing.join(' or ')+'. Choose an enabled mode or ask the workspace owner to enable the product.'
+   : bundle+' enables Nearby and Route Intelligence for live testing.';
+}
 function productionCredentialReady(){return activeKeys().some(k=>!String(k.label||'').toLowerCase().startsWith('portal sandbox'))}
 function sandboxActive(){return !!sandboxToken&&!!sandboxExpiresAt&&new Date(sandboxExpiresAt)>new Date()}
 function scrollToId(id){$(id)?.scrollIntoView({behavior:'smooth',block:'start'})}
@@ -306,11 +328,10 @@ function renderOnboarding(){
  for(const step of steps){const el=document.createElement('div');el.className='step'+(step.done?' done':'');const b=document.createElement('b');b.textContent=step.done?'✓ '+step.title:step.title;const s=document.createElement('small');s.textContent=step.detail;el.append(b,s);root.append(el)}
 }
 function setPlaygroundMode(mode){
- playgroundMode=mode==='route'?'route':'nearby';
- $('modeNearby').classList.toggle('active',playgroundMode==='nearby');
- $('modeRoute').classList.toggle('active',playgroundMode==='route');
- $('nearbyInputs').classList.toggle('hidden',playgroundMode!=='nearby');
- $('routeInputs').classList.toggle('hidden',playgroundMode!=='route');
+ const next=mode==='route'?'route':'nearby';
+ if(!productEnabled(next)){notice(productLabel(next)+' not enabled for this workspace. Select an enabled product or ask the workspace owner to enable it.');updatePlaygroundAvailability();return}
+ playgroundMode=next;
+ updatePlaygroundAvailability();
  try{renderCodeExamples(buildPlaygroundBody())}catch{}
 }
 function highlightCredential(kind){
@@ -382,7 +403,7 @@ async function loadSummary(){
  const products=summary.product_access?.api_products||[];const surfaces=summary.product_access?.integration_surfaces||[];
  $('metricProducts').textContent=products.length||'—';$('metricBundle').textContent=summary.product_access?.bundle_label||summary.product_access?.bundle_key||'assigned by Kleenest';
  $('metricSurfaces').textContent=surfaces.length||'—';
- showWorkspace(true);renderKeys();renderWebhooks();renderSandbox();renderOnboarding();
+ showWorkspace(true);renderKeys();renderWebhooks();renderSandbox();updatePlaygroundAvailability();renderOnboarding();
 }
 function renderKeys(){
  const root=$('keyList');root.replaceChildren();const keys=summary?.api_keys||[];
@@ -416,7 +437,7 @@ async function createPartner(){
 }
 async function createDemoWorkspace(){
  const stamp=Date.now().toString(36);const name='Kleenest Demo '+new Date().toLocaleDateString();const slug='kleenest-demo-'+stamp;
- const b=await admin('create-partner',{name,slug,bundleKey:'starter_api'});notice('Demo workspace created. Launching its one-hour sandbox.');await loadWorkspaces();selectedPartnerId=b.partnerId;$('workspaceSelect').value=selectedPartnerId;await loadSummary();await launchSandbox();scrollToId('playgroundCard')
+ const b=await admin('create-partner',{name,slug,bundleKey:'developer_sandbox'});notice('Demo workspace created with Developer Sandbox access. Launching its one-hour sandbox.');await loadWorkspaces();selectedPartnerId=b.partnerId;$('workspaceSelect').value=selectedPartnerId;await loadSummary();await launchSandbox();scrollToId('playgroundCard')
 }
 async function createInvite(){
  if(!selectedPartnerId)throw new Error('Open a partner workspace first.');
@@ -465,13 +486,23 @@ function buildPlaygroundBody(){
  return {location:{latitude:Number($('playLat').value),longitude:Number($('playLng').value)},radiusMeters:Number($('playRadius').value||16093),limit:Number($('playLimit').value||5),requirements:{amenityNames:amenityList(),amenityMatch:'all'}};
 }
 async function runPlayground(){
+ const requiredProduct=playgroundMode==='route'?'route':'nearby';
+ if(!productEnabled(requiredProduct))throw new Error(productLabel(requiredProduct)+' not enabled for this workspace. The request was not sent.');
  const clientToken=await launchSandbox();const body=buildPlaygroundBody();const path=playgroundMode==='route'?'/v1/recommendations/route':'/v1/recommendations/nearby';
  $('playgroundMeta').textContent='Running live Kleenest request…';
  const r=await fetch(apiBase+path,{method:'POST',headers:{'content-type':'application/json','x-kleenest-client-token':clientToken},body:JSON.stringify(body)});
  const b=await r.json().catch(()=>({}));$('playgroundJson').textContent=JSON.stringify(b,null,2);
  const remaining=r.headers.get('x-ratelimit-remaining-client-minute');const requestId=r.headers.get('x-kleenest-request-id');
  $('playgroundMeta').textContent='HTTP '+r.status+(requestId?' · request '+requestId:'')+(remaining!==null?' · sandbox minute remaining '+remaining:'');
- if(!r.ok){lastPlaygroundSuccess=false;renderRecommendations([]);renderPlaygroundMap([]);renderOnboarding();renderCodeExamples(body);throw new Error(String(b.error||b.reason||('Request failed '+r.status)))}
+ if(!r.ok){
+   lastPlaygroundSuccess=false;renderRecommendations([]);renderPlaygroundMap([]);renderOnboarding();renderCodeExamples(body);
+   if(b.code==='product_not_enabled'){
+     const required=String(b.requiredProduct||requiredProduct);
+     updatePlaygroundAvailability();
+     throw new Error(productLabel(required)+' not enabled for this workspace. Kleenest blocked the request before recommendation processing.');
+   }
+   throw new Error(String(b.error||b.reason||('Request failed '+r.status)))
+ }
  const recommendations=Array.isArray(b.recommendations)?b.recommendations:[];lastPlaygroundSuccess=true;renderRecommendations(recommendations);renderPlaygroundMap(recommendations);renderCodeExamples(body);renderOnboarding();notice('Live request succeeded with '+recommendations.length+' recommendation'+(recommendations.length===1?'':'s')+'.')
 }
 function renderRecommendations(items){
@@ -510,7 +541,9 @@ function renderSamples(){
  samples.forEach((sample,index)=>{const card=document.createElement('div');card.className='sample';const tag=document.createElement('div');tag.className='tag';tag.textContent=sample.tag;const h=document.createElement('strong');h.textContent=sample.title;const p=document.createElement('p');p.textContent=sample.description;const row=document.createElement('div');row.className='row';const load=document.createElement('button');load.textContent='Use in my workspace';load.onclick=()=>loadSample(index,false);const run=document.createElement('button');run.className='primary';run.textContent='Try live';run.onclick=()=>loadSample(index,true);row.append(load,run);card.append(tag,h,p,row);root.append(card)})
 }
 async function loadSample(index,run){
- const s=samples[index];setPlaygroundMode(s.mode);$('playAmenities').value=s.amenities||'';
+ const s=samples[index];const requiredProduct=s.mode==='route'?'route':'nearby';
+ if(!productEnabled(requiredProduct)){scrollToId('playgroundCard');notice(productLabel(requiredProduct)+' not enabled for this workspace. This sample was not run.');updatePlaygroundAvailability();return}
+ setPlaygroundMode(s.mode);$('playAmenities').value=s.amenities||'';
  if(s.mode==='nearby'){$('playLat').value=s.lat;$('playLng').value=s.lng;$('playRadius').value=s.radius;$('playLimit').value=s.limit}
  else{$('playRoute').value=JSON.stringify(s.route);$('playCorridor').value=s.corridor;$('playRouteLimit').value=s.limit}
  renderCodeExamples(buildPlaygroundBody());scrollToId('playgroundCard');notice('Sample loaded: '+s.title+'.');
