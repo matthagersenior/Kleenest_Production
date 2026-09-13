@@ -158,7 +158,7 @@ export default function GameArena(){
    <View style={s.topRow}><Pressable onPress={()=>router.back()} style={s.back}><Text style={s.backText}>‹ ARCADE</Text></Pressable><Text style={[s.arenaLabel,{color:theme.accent}]}>{theme.label}</Text></View>
    <Text style={s.glyph}>{theme.glyph}</Text><Text style={s.title}>{game.name}</Text><Text style={s.tagline}>{theme.tagline}</Text>
    <View style={s.hud}><Hud value={score} label="SCORE"/><Hud value={bestScore} label="BEST"/><Hud value={maxCombo+'×'} label="MAX COMBO"/><Hud value={accuracy+'%'} label="ACCURACY"/></View>
-   <View style={s.roundTrack}><View style={[s.roundFill,{width:String(Math.min(100,Math.round((round/Math.max(1,game.rounds))*100)))+'%',backgroundColor:theme.accent}]} /></View>
+   <View style={s.roundTrack}><View style={[s.roundFill,{width:(String(Math.min(100,Math.round((round/Math.max(1,game.rounds))*100)))+'%') as any,backgroundColor:theme.accent}]} /></View>
    <View style={s.heatRow}><Text style={[s.heat,{color:theme.accent}]}>{heat}</Text><Text style={s.heroMeta}>Round {Math.min(round+1,game.rounds)} / {game.rounds}</Text>{usesLives?<Text style={s.heroMeta}>{'♥'.repeat(lives)}{'♡'.repeat(Math.max(0,3-lives))}</Text>:null}{game.timeLimitSec&&!complete?<Text style={[s.clock,{color:theme.accent}]}>{timeLeft}s</Text>:null}</View>
   </View>
 
