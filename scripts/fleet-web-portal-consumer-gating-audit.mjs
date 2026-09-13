@@ -11,6 +11,8 @@ const fleetMetro=read('apps/fleet-mobile/metro.config.js');
 const fleetLayout=read('apps/fleet-mobile/app/_layout.tsx');
 const fleetOnboardingService=read('apps/fleet-mobile/services/onboarding.ts');
 const fleetOnboarding=read('apps/fleet-mobile/app/onboarding.tsx');
+const fleetPush=read('apps/fleet-mobile/services/push.ts');
+const fleetWebNotifications=read('apps/fleet-mobile/web/notificationsPreview.ts');
 const members=read('apps/business-mobile/app/members.tsx');
 const businessHome=read('apps/business-mobile/app/index.tsx');
 const businessFleet=read('apps/business-mobile/app/fleet.tsx');
@@ -56,6 +58,8 @@ requireTokens('Fleet role gate',fleetLayout,[
 ]);
 if(fleetLayout.includes("href:operator?null:undefined,title:'Alerts'"))failures.push('Fleet operator Alerts are still hidden by the tab gate.');
 requireTokens('Fleet onboarding authority',fleetOnboardingService,["rpc('fleet_onboarding_gate'"]);
+requireTokens('Fleet web push registration',fleetPush,['PushManager','register_notification_push_subscription','registered-web','serviceWorker.register']);
+requireTokens('Fleet web notification permission',fleetWebNotifications,['window.Notification.permission','window.Notification.requestPermission']);
 requireTokens('Fleet commercial copy',fleetOnboarding,['75 Premium users']);
 requireTokens('Dispatcher team UI',members,[
   "'dispatcher'",
