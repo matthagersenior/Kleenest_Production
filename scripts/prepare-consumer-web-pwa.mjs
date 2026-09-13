@@ -6,14 +6,16 @@ const indexPath=path.resolve('apps/consumer-mobile/dist/index.html');
 const manifestSource=path.resolve('public/manifest.webmanifest');
 const workerSource=path.resolve('public/sw.js');
 const iconSource=path.resolve('apps/consumer-mobile/assets/app-icon.png');
+const icon512Source=path.resolve('public/app-icon-512.svg');
 
-for(const required of [indexPath,manifestSource,workerSource,iconSource]){
+for(const required of [indexPath,manifestSource,workerSource,iconSource,icon512Source]){
   if(!fs.existsSync(required))throw new Error(`Consumer PWA input missing: ${required}`);
 }
 
 fs.copyFileSync(manifestSource,path.join(dist,'manifest.webmanifest'));
 fs.copyFileSync(workerSource,path.join(dist,'sw.js'));
 fs.copyFileSync(iconSource,path.join(dist,'app-icon.png'));
+fs.copyFileSync(icon512Source,path.join(dist,'app-icon-512.svg'));
 
 let html=fs.readFileSync(indexPath,'utf8');
 const headMarker='<!-- kleenest-consumer-pwa-head -->';
