@@ -48,7 +48,7 @@ export function Map({ children, style, mapStyle }: any) {
       style: mapStyle || OSM_STYLE,
       center: DEFAULT_CENTER,
       zoom: 11,
-      attributionControl: true,
+      attributionControl: { compact: true },
       renderWorldCopies: false,
       dragRotate: false,
       touchPitch: false,
@@ -223,6 +223,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   host: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
   },
 });
