@@ -11,6 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -30,6 +31,19 @@ jobs:
       - name: Dependency advisory gate
         timeout-minutes: 5
         run: npm audit --audit-level=moderate
+      - name: Resolve latest Consumer APK baseline
+        id: consumer-apk-baseline
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/resolve-consumer-apk-baseline.mjs --target-sha "$TARGET_SHA" --optional
+      - name: Fetch Consumer APK baseline commit
+        if: steps.consumer-apk-baseline.outputs.source_sha != ''
+        run: git fetch --no-tags --depth=1 origin "${{ steps.consumer-apk-baseline.outputs.source_sha }}"
+      - name: Consumer native drift visibility
+        if: steps.consumer-apk-baseline.outputs.source_sha != ''
+        run: node scripts/consumer-release-drift-audit.mjs --baseline "${{ steps.consumer-apk-baseline.outputs.source_sha }}" --report-only
       - name: CI freshness policy
         run: node scripts/ci-freshness-policy-audit.mjs
       - name: Production environment contract

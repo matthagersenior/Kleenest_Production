@@ -63,8 +63,18 @@ if (/^\s{2}push:/m.test(android)) throw new Error('Android family builds must no
 if (/^\s{2}pull_request:/m.test(android)) throw new Error('Android family builds must not race directly against pull-request CI.');
 
 const publisher = read('publish-standalone-installer.yml');
-requireText(publisher, "github.event.workflow_run.conclusion == 'success'", 'Installer publishing must require a successful Android family run.');
-requireText(publisher, 'ref: ${{ github.event.workflow_run.head_sha }}', 'Installer publishing must use the exact Android-tested commit.');
-requireText(publisher, 'run-id: ${{ github.event.workflow_run.id }}', 'Installer publishing must download from the exact triggering Android family run.');
+requireText(publisher, 'workflows: ["Validate Kleenest Consumer Web Preview"]', 'Consumer Pages publishing must follow successful canonical web validation rather than the whole Android family matrix.');
+requireText(publisher, "github.event.workflow_run.conclusion == 'success'", 'Consumer Pages publishing must require successful canonical web validation.');
+requireText(publisher, 'ref: ${{ github.event.workflow_run.head_sha }}', 'Consumer Pages publishing must export the exact web-validated commit.');
+requireText(publisher, 'resolve-consumer-apk-baseline.mjs', 'Consumer Pages publishing must preserve the freshest independently verified Consumer APK.');
+requireText(publisher, 'consumer-release-drift-audit.mjs', 'Consumer Pages publishing must expose native/OTA drift against the installed APK baseline.');
+requireText(publisher, 'run-id: ${{ steps.apk.outputs.run_id }}', 'Consumer Pages publishing must download the resolved verified Consumer APK artifact rather than depend on an unrelated family conclusion.');
+if (publisher.includes('workflows: ["Build Kleenest App Family Android APKs"]')) throw new Error('Consumer Pages publishing must not wait for the full Android family matrix.');
+
+const consumerOta = read('ota-consumer.yml');
+requireText(consumerOta, 'workflows: ["Production CI"]', 'Consumer OTA must be downstream of canonical Production CI.');
+requireText(consumerOta, 'consumer-release-drift-audit.mjs', 'Consumer OTA must run the native drift guard.');
+requireText(consumerOta, '--strict', 'Consumer OTA must block when native drift requires a rebuilt binary.');
+requireText(consumerOta, 'ref: ${{ github.event.workflow_run.head_sha || github.sha }}', 'Consumer OTA must publish the exact CI-validated source.');
 
 console.log('CI freshness policy audit passed.');
