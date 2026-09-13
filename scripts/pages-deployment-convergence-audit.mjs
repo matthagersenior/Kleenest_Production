@@ -91,9 +91,12 @@ if(!manifest.icons.some(icon=>icon.src==='/Kleenest_Production/app-icon.png'&&ic
 for(const token of ['kleenest-shell','showNotification','notificationclick','isVersionedAsset','networkFirst'])requireToken(serviceWorker,token,'Consumer web service worker');
 if(/cached\|\|fetch\(event\.request\)/.test(serviceWorker))throw new Error('Consumer service worker must not keep versioned JS/CSS on a cache-first path across deployments.');
 
+const familyOta=read('.github/workflows/ota-family.yml');
+for(const token of ['workflow_run','workflows: ["Production CI"]',"github.event.workflow_run.conclusion == 'success'","github.event.workflow_run.head_branch == 'main'",'github.event.workflow_run.head_sha','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','consumer-production','business-production','fleet-production','owner-production'])requireToken(familyOta,token,'Coordinated family OTA release workflow');
+for(const token of ['group: kleenest-family-ota',"cancel-in-progress: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}"])requireToken(familyOta,token,'Coordinated family OTA concurrency policy');
 const otaConsumer=read('.github/workflows/ota-consumer.yml');
-for(const token of ['workflow_run','Production CI','consumer-release-drift-audit.mjs','strict','consumer-production','github.event.workflow_run.head_sha'])requireToken(otaConsumer,token,'Consumer OTA release workflow');
-for(const token of ['group: kleenest-consumer-production-ota',"cancel-in-progress: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}"])requireToken(otaConsumer,token,'Consumer OTA concurrency policy');
+for(const token of ['workflow_dispatch:','consumer-release-drift-audit.mjs','--strict','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','--strict-ota','consumer-production'])requireToken(otaConsumer,token,'Emergency Consumer OTA workflow');
+if(/^\s{2}workflow_run:/m.test(otaConsumer))throw new Error('Emergency Consumer OTA must not duplicate coordinated family workflow_run delivery.');
 const productionCi=read('.github/workflows/ci.yml');
 for(const token of ['Consumer native drift visibility','consumer-release-drift-audit.mjs','report-only'])requireToken(productionCi,token,'Production CI release drift visibility');
 console.log('Consumer web app validation, independent PWA deployment, OTA gating, native drift visibility, legal resources, and APK preservation audit passed.');
