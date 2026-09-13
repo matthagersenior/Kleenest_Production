@@ -7,31 +7,24 @@ function storage(){
 }
 
 export async function getItemAsync(key:string){
-  const namespaced=prefix+key;
-  const target=storage();
-  if(target){
+  const store=storage();
+  if(store){
     try{
-      const value=target.getItem(namespaced);
+      const value=store.getItem(prefix+key);
       if(value!==null)return value;
     }catch{}
   }
-  return memory.get(namespaced)??null;
+  return memory.get(prefix+key)??null;
 }
 
 export async function setItemAsync(key:string,value:string){
-  const namespaced=prefix+key;
-  memory.set(namespaced,value);
-  const target=storage();
-  if(target){
-    try{target.setItem(namespaced,value)}catch{}
-  }
+  memory.set(prefix+key,value);
+  const store=storage();
+  if(store){try{store.setItem(prefix+key,value)}catch{}}
 }
 
 export async function deleteItemAsync(key:string){
-  const namespaced=prefix+key;
-  memory.delete(namespaced);
-  const target=storage();
-  if(target){
-    try{target.removeItem(namespaced)}catch{}
-  }
+  memory.delete(prefix+key);
+  const store=storage();
+  if(store){try{store.removeItem(prefix+key)}catch{}}
 }
