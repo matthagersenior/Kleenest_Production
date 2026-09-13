@@ -44,7 +44,7 @@ for(const token of ['Install Kleenest','beforeinstallprompt','Kleenest-Consumer.
 const ownerConfig=read('apps/platform-mobile/app.config.ts');
 const ownerPkg=JSON.parse(read('apps/platform-mobile/package.json'));
 const ownerMetro=read('apps/platform-mobile/metro.config.js');
-for(const token of ["output: 'single'","bundler: 'metro'","baseUrl: '/Kleenest_Production/owner'","KleenestOS Web"])requireToken(ownerConfig,token,'KleenestOS web config');
+for(const token of ["output:'single'","bundler:'metro'","baseUrl:'/Kleenest_Production/owner'","KleenestOS Web"])requireToken(ownerConfig,token,'KleenestOS web config');
 if(ownerPkg.scripts?.['web:export']!=='expo export --platform web')throw new Error('KleenestOS must expose canonical Expo web export script.');
 for(const dep of ['react-dom','react-native-web'])if(!ownerPkg.dependencies?.[dep])throw new Error(`KleenestOS web dependency missing ${dep}.`);
 for(const token of ["platform === 'web'","'expo-secure-store'",'secureStorePreview.ts'])requireToken(ownerMetro,token,'KleenestOS web compatibility resolver');
