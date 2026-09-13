@@ -22,7 +22,7 @@ function authParam(url: string, key: string) {
 
 function rememberOperatorOAuthReturn(portal: 'business'|'fleet'|'owner', intent = '') {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-  try { window.localStorage.setItem(operatorOAuthReturnKey, JSON.stringify({ portal, intent })); } catch {}
+  try { window.localStorage.setItem(operatorOAuthReturnKey, JSON.stringify({ portal, intent, createdAt: Date.now() })); } catch {}
 }
 
 function clearOperatorOAuthReturn() {

@@ -1,5 +1,12 @@
+type OperatorPortal='business'|'fleet'|'owner';
+
 const OPERATOR_OAUTH_RETURN_KEY='kleenest.operator.oauth.return';
-const OPERATOR_PORTALS=new Set(['business','fleet','owner']);
+const OPERATOR_OAUTH_MAX_AGE_MS=15*60*1000;
+const OPERATOR_PORTALS=new Set<OperatorPortal>(['business','fleet','owner']);
+
+function clearRelayState(){
+  try{window.localStorage.removeItem(OPERATOR_OAUTH_RETURN_KEY)}catch{}
+}
 
 function callbackPresent(){
   const search=new URLSearchParams(window.location.search);
@@ -15,17 +22,28 @@ function callbackPresent(){
 
 export function relayOperatorOAuthCallback(){
   if(typeof window==='undefined'||!callbackPresent())return false;
-  let target=null;
+
+  let target:{portal?:string;intent?:string;createdAt?:number}|null=null;
   try{
     const raw=window.localStorage.getItem(OPERATOR_OAUTH_RETURN_KEY);
     target=raw?JSON.parse(raw):null;
-  }catch{target=null;}
-  const portal=String(target?.portal||'');
-  if(!OPERATOR_PORTALS.has(portal))return false;
+  }catch{
+    target=null;
+  }
+
+  const portal=String(target?.portal||'') as OperatorPortal;
+  const createdAt=Number(target?.createdAt||0);
+  const age=Date.now()-createdAt;
+  if(!OPERATOR_PORTALS.has(portal)||!Number.isFinite(age)||age<0||age>OPERATOR_OAUTH_MAX_AGE_MS){
+    clearRelayState();
+    return false;
+  }
+
   const search=new URLSearchParams(window.location.search);
   const intent=portal==='business'?String(target?.intent||'').trim():'';
   if(intent&&!search.has('intent'))search.set('intent',intent);
-  try{window.localStorage.removeItem(OPERATOR_OAUTH_RETURN_KEY)}catch{}
+
+  clearRelayState();
   const query=search.toString();
   const destination=window.location.origin+'/Kleenest_Production/'+portal+'/auth/'+(query?'?'+query:'')+(window.location.hash||'');
   window.location.replace(destination);

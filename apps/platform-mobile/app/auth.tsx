@@ -12,7 +12,7 @@ type Mode = 'signin' | 'signup' | 'forgot' | 'recovery';
 
 function rememberOwnerOAuthReturn() {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-  try { window.localStorage.setItem(operatorOAuthReturnKey, JSON.stringify({ portal: 'owner' })); } catch {}
+  try { window.localStorage.setItem(operatorOAuthReturnKey, JSON.stringify({ portal: 'owner', createdAt: Date.now() })); } catch {}
 }
 
 function clearOwnerOAuthReturn() {

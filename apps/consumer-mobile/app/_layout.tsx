@@ -7,6 +7,9 @@ import { AppState,Platform,Text, type ColorValue } from 'react-native';
 import { notificationDestination } from '../services/notificationRouting';
 import { refreshConsumerLiveNetworkRegions } from '../services/liveNetwork';
 import PolicyAcceptanceGate from '../components/PolicyAcceptanceGate';
+import { relayOperatorOAuthCallback } from '../services/operatorOAuthRelay';
+
+const operatorOAuthRelaying=relayOperatorOAuthCallback();
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }),
@@ -32,6 +35,7 @@ export default function RootLayout() {
   const webAppLaunch=Platform.OS==='web'&&typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('app')==='1';
   const publicWeb=Platform.OS==='web'&&!webAppLaunch&&['/','/for-you','/for-business','/trust','/install'].includes(pathname);
   useEffect(() => {
+    if(operatorOAuthRelaying)return;
     let active=true;
     Notifications.getLastNotificationResponseAsync().then(async response=>{if(!active)return;await openNotificationResponse(response);if(response)await Notifications.clearLastNotificationResponseAsync().catch(()=>{})}).catch(() => {});
     const subscription = Notifications.addNotificationResponseReceivedListener(response => { void openNotificationResponse(response); });
@@ -39,6 +43,7 @@ export default function RootLayout() {
     void refreshConsumerLiveNetworkRegions().catch(()=>{});
     return () => {active=false;subscription.remove();appState.remove()};
   }, []);
+  if(operatorOAuthRelaying)return null;
   const tabs=<Tabs screenOptions={{
     headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,headerTitleStyle:{fontWeight:'900',color:'#102218'},
     tabBarActiveTintColor:'#173d2b',tabBarInactiveTintColor:'#75847b',tabBarStyle:publicWeb?({display:'none'} as any):{height:68,paddingTop:6,paddingBottom:8,backgroundColor:'#ffffff',borderTopColor:'#d7e2da'},tabBarLabelStyle:{fontWeight:'900',fontSize:10},
