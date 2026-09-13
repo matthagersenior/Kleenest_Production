@@ -109,3 +109,9 @@ The worker is idempotent at the claim/delivery-state level and safely supports r
 This design deliberately avoids a raw API-request event table. Minute buckets are short-lived, month totals are compact, and daily route aggregates support partner analytics with much lower storage growth.
 
 `cleanup_platform_rate_buckets` removes minute buckets older than two days.
+
+## Smart Facilities / IoT
+
+The `smart_facilities` bundle extends Enterprise Data with the `smart_devices` API product. It provides `devices:read`, `devices:write`, `devices:command`, and `devices:events:write` scopes plus REST, webhook, and MCP surfaces.
+
+Hardware integrations are bridge-based: Matter controllers, MQTT gateways, or a vendor cloud keep their own device credentials and translate into the canonical Kleenest Smart Device event/command contract. See `docs/platform/SMART_DEVICES.md`.
