@@ -1,9 +1,9 @@
 import * as Notifications from 'expo-notifications';
-import { markMobileNotificationRead } from '@kleenest/mobile-core';
+import { getKleenestThemePreference,markMobileNotificationRead,resolveKleenestTheme,subscribeKleenestThemePreference,type KleenestThemeMode } from '@kleenest/mobile-core';
 import { router, Tabs, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { AppState,Platform,Text, type ColorValue } from 'react-native';
+import { useEffect,useState } from 'react';
+import { AppState,Platform,Text,useColorScheme, type ColorValue } from 'react-native';
 import { notificationDestination } from '../services/notificationRouting';
 import { refreshConsumerLiveNetworkRegions } from '../services/liveNetwork';
 import PolicyAcceptanceGate from '../components/PolicyAcceptanceGate';
@@ -29,8 +29,12 @@ const tabIcon=(glyph:string)=>(props:{color:ColorValue;focused:boolean;size:numb
 
 export default function RootLayout() {
   const pathname=usePathname();
+  const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
+  const systemScheme=useColorScheme()==='dark'?'dark':'light';
   const webAppLaunch=Platform.OS==='web'&&typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('app')==='1';
   const publicWeb=Platform.OS==='web'&&!webAppLaunch&&['/','/for-you','/for-business','/trust','/install'].includes(pathname);
+  const theme=resolveKleenestTheme(publicWeb?'public':'consumer',themeMode,systemScheme);
+  useEffect(()=>{void getKleenestThemePreference().then(setThemeMode);return subscribeKleenestThemePreference(setThemeMode)},[]);
   useEffect(() => {
     let active=true;
     Notifications.getLastNotificationResponseAsync().then(async response=>{if(!active)return;await openNotificationResponse(response);if(response)await Notifications.clearLastNotificationResponseAsync().catch(()=>{})}).catch(() => {});
@@ -40,8 +44,8 @@ export default function RootLayout() {
     return () => {active=false;subscription.remove();appState.remove()};
   }, []);
   const tabs=<Tabs screenOptions={{
-    headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,headerTitleStyle:{fontWeight:'900',color:'#102218'},
-    tabBarActiveTintColor:'#173d2b',tabBarInactiveTintColor:'#75847b',tabBarStyle:publicWeb?({display:'none'} as any):{height:68,paddingTop:6,paddingBottom:8,backgroundColor:'#ffffff',borderTopColor:'#d7e2da'},tabBarLabelStyle:{fontWeight:'900',fontSize:10},
+    headerStyle:{backgroundColor:theme.colors.canvas},headerShadowVisible:false,headerTitleStyle:{fontWeight:'900',color:theme.colors.text},headerTintColor:theme.colors.text,sceneStyle:{backgroundColor:theme.colors.canvas},
+    tabBarActiveTintColor:theme.colors.brand,tabBarInactiveTintColor:theme.colors.textMuted,tabBarStyle:publicWeb?({display:'none'} as any):{height:68,paddingTop:6,paddingBottom:8,backgroundColor:theme.colors.surface,borderTopColor:theme.colors.border},tabBarLabelStyle:{fontWeight:'900',fontSize:10},
   }}>
     <Tabs.Screen name="index" options={{ title:'Home',headerShown:false,tabBarIcon:tabIcon('⌂') }}/>
     <Tabs.Screen name="explore" options={{ title:'Explore',headerShown:false,tabBarIcon:tabIcon('⌖') }}/>
@@ -82,5 +86,5 @@ export default function RootLayout() {
     <Tabs.Screen name="safety" options={{ href:null,title:'Safety' }}/>
     <Tabs.Screen name="terms" options={{ href:null,title:'Terms of Use' }}/>
   </Tabs>;
-  return publicWeb?<><StatusBar style="dark"/>{tabs}</>:<PolicyAcceptanceGate><StatusBar style="dark"/>{tabs}</PolicyAcceptanceGate>;
+  return publicWeb?<><StatusBar style={theme.scheme==='dark'?'light':'dark'}/>{tabs}</>:<PolicyAcceptanceGate><StatusBar style={theme.scheme==='dark'?'light':'dark'}/>{tabs}</PolicyAcceptanceGate>;
 }
