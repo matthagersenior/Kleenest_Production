@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { type ReactNode, useEffect } from 'react';
 import { useConsumerWebExperience } from '../services/webExperience';
 import {
@@ -109,10 +109,12 @@ function Header() {
 }
 
 function Shell({ children }: { children: ReactNode }) {
+  const pathname=usePathname();
   const{ready,appActive}=useConsumerWebExperience();
-  useEffect(()=>{if(Platform.OS==='web'&&ready&&appActive)router.replace('/?app=1' as any)},[ready,appActive]);
+  const autoOpenApp=pathname==='/'&&appActive;
+  useEffect(()=>{if(Platform.OS==='web'&&ready&&autoOpenApp)router.replace('/?app=1' as any)},[ready,autoOpenApp]);
   if(Platform.OS==='web'&&!ready)return <SafeAreaView style={s.safe}/>;
-  if(Platform.OS==='web'&&appActive)return <SafeAreaView style={s.safe}/>;
+  if(Platform.OS==='web'&&autoOpenApp)return <SafeAreaView style={s.safe}/>;
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
