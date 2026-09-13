@@ -47,7 +47,7 @@ const ownerMetro=read('apps/platform-mobile/metro.config.js');
 for(const token of ["output:'single'","bundler:'metro'","baseUrl:'/Kleenest_Production/owner'","KleenestOS Web"])requireToken(ownerConfig,token,'KleenestOS web config');
 if(ownerPkg.scripts?.['web:export']!=='expo export --platform web')throw new Error('KleenestOS must expose canonical Expo web export script.');
 for(const dep of ['react-dom','react-native-web'])if(!ownerPkg.dependencies?.[dep])throw new Error(`KleenestOS web dependency missing ${dep}.`);
-for(const token of ["platform === 'web'","'expo-secure-store'",'secureStorePreview.ts'])requireToken(ownerMetro,token,'KleenestOS web compatibility resolver');
+for(const token of ["platform==='web'","'expo-secure-store'",'secureStorePreview.ts'])requireToken(ownerMetro,token,'KleenestOS web compatibility resolver');
 if(pkg.scripts?.['web:export']!=='expo export --platform web')throw new Error('Consumer app must expose canonical Expo web export script.');
 for(const dep of ['react-dom','react-native-web','maplibre-gl'])if(!pkg.dependencies?.[dep])throw new Error(`Consumer web dependency missing ${dep}.`);
 for(const token of ["platform === 'web'","'@maplibre/maplibre-react-native'","'expo-secure-store'","'expo-notifications'",'maplibrePreview.tsx','secureStorePreview.ts','notificationsPreview.ts','context.resolveRequest(context, moduleName, platform)'])requireToken(metro,token,'Web-only Metro compatibility resolver');
