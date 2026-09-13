@@ -210,7 +210,7 @@ export default function OwnerAuth() {
       if (authError) throw authError;
       if (!data.url) throw new Error('Google sign-in did not return an authorization URL.');
       if(Platform.OS==='web'&&typeof window!=='undefined')window.location.assign(data.url);else await Linking.openURL(data.url);
-    } catch (cause) { setError(messageOf(cause)); }
+    } catch (cause) { clearOwnerOAuthReturn(); setError(messageOf(cause)); }
     finally { setBusy(false); }
   }
 
