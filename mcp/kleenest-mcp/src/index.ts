@@ -102,5 +102,31 @@ serveStdio(() => {
     },
   );
 
+  server.registerTool(
+    'list_smart_devices',
+    {
+      description: 'List Smart Devices exposed to this Kleenest integration, including status and declared capabilities.',
+      inputSchema: z.object({}),
+    },
+    async () => textResult(await call('/v1/devices', {})),
+  );
+
+  server.registerTool(
+    'command_smart_device',
+    {
+      description: 'Queue an audited command for a Smart Device. The device must explicitly declare the command capability; high-risk controls require KleenestOS approval.',
+      inputSchema: z.object({
+        deviceId: z.string().uuid(),
+        command: z.string().min(1).max(120),
+        arguments: z.record(z.string(), z.unknown()).optional(),
+        idempotencyKey: z.string().min(1).max(240).optional(),
+      }),
+    },
+    async input => textResult(await call('/v1/devices/' + input.deviceId + '/commands', {
+      command: input.command,
+      arguments: input.arguments ?? {},
+      idempotencyKey: input.idempotencyKey,
+    })),
+  );
   return server;
 });

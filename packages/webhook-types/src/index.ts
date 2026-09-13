@@ -4,7 +4,12 @@ export type KleenestWebhookEventType =
   | 'place.access_changed'
   | 'place.amenities_changed'
   | 'place.confidence_changed'
-  | 'recommendation.coverage_changed';
+  | 'recommendation.coverage_changed'
+  | 'device.status_changed'
+  | 'device.alert'
+  | 'device.telemetry_threshold'
+  | 'device.command_requested'
+  | 'device.command_completed';
 
 export type KleenestWebhookEnvelope<T = Record<string, unknown>> = {
   id: string;

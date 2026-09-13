@@ -112,6 +112,7 @@ export default function Layout() {
     <Tabs.Screen name="qr-studio" options={{href:null,title:'QR Studio'}}/>
     <Tabs.Screen name="qr-designer" options={{href:null,title:'QR Designer'}}/>
     <Tabs.Screen name="live-network" options={{href:null,title:'Live Network'}}/>
+    <Tabs.Screen name="devices" options={{href:null,title:'Smart Devices'}}/>
     <Tabs.Screen name="progression" options={{href:null,title:'Progression'}}/>
     <Tabs.Screen name="intelligence" options={{href:null,title:'Intelligence'}}/>
     <Tabs.Screen name="capabilities" options={{href:null,title:'Capabilities'}}/>

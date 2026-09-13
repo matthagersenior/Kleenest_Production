@@ -634,6 +634,99 @@ async function route(body: any) {
   };
 }
 
+
+const SMART_DEVICE_SCOPES = ['devices:read','devices:command','devices:events:write','devices:write'] as const;
+const SMART_DEVICE_ROUTE_PREFIX = '/v1/devices/';
+
+function requirePartner(auth: Authorization): string {
+  if (!auth.partner_id) throw new ApiInputError('Partner identity is unavailable');
+  return auth.partner_id;
+}
+
+function smartDeviceRouteIds(routePath: string) {
+  void SMART_DEVICE_SCOPES; void SMART_DEVICE_ROUTE_PREFIX;
+  const command = routePath.match(/^\/v1\/devices\/([0-9a-f-]+)\/commands$/i);
+  const complete = routePath.match(/^\/v1\/devices\/([0-9a-f-]+)\/commands\/([0-9a-f-]+)\/complete$/i);
+  return { deviceId: command?.[1] ?? complete?.[1] ?? null, commandId: complete?.[2] ?? null };
+}
+
+async function listSmartDevices(auth: Authorization) {
+  const { data, error } = await db.rpc('platform_smart_device_manifest', { p_partner_id: requirePartner(auth) });
+  if (error) throw error;
+  return data ?? { devices: [] };
+}
+
+async function registerSmartDevice(auth: Authorization, body: any) {
+  const businessId=String(body?.businessId??'').trim(),connectorId=String(body?.connectorId??'').trim();
+  const externalDeviceId=String(body?.externalDeviceId??'').trim().slice(0,240),name=String(body?.name??'').trim().slice(0,160);
+  if(!/^[0-9a-f-]{36}$/i.test(businessId)||!/^[0-9a-f-]{36}$/i.test(connectorId))throw new ApiInputError('businessId and connectorId are required');
+  if(!externalDeviceId||!name)throw new ApiInputError('externalDeviceId and name are required');
+  const capabilities=Array.isArray(body?.capabilities)?body.capabilities.map((v:unknown)=>String(v).trim()).filter(Boolean).slice(0,64):[];
+  const tags=Array.isArray(body?.tags)?body.tags.map((v:unknown)=>String(v).trim()).filter(Boolean).slice(0,32):[];
+  const {data,error}=await db.rpc('platform_register_smart_device',{
+    p_partner_id:requirePartner(auth),p_business_id:businessId,p_connector_id:connectorId,p_external_device_id:externalDeviceId,
+    p_name:name,p_device_type:String(body?.deviceType??'sensor').trim().slice(0,80),p_location_id:body?.locationId??null,
+    p_manufacturer:body?.manufacturer?String(body.manufacturer).slice(0,120):null,p_model:body?.model?String(body.model).slice(0,120):null,
+    p_firmware_version:body?.firmwareVersion?String(body.firmwareVersion).slice(0,120):null,p_capabilities:capabilities,p_tags:tags,
+    p_telemetry_enabled:body?.telemetryEnabled!==false,p_metadata:body?.metadata&&typeof body.metadata==='object'?body.metadata:{}
+  });
+  if(error)throw error;
+  return{device:data};
+}
+
+async function queueSmartDeviceCommand(auth: Authorization, routePath: string, body: any) {
+  const { deviceId } = smartDeviceRouteIds(routePath);
+  if (!deviceId) throw new ApiInputError('Device id is required');
+  const command = String(body?.command ?? '').trim().slice(0, 120);
+  if (!command) throw new ApiInputError('command is required');
+  const { data, error } = await db.rpc('platform_smart_device_command', {
+    p_partner_id: requirePartner(auth),
+    p_device_id: deviceId,
+    p_command: command,
+    p_arguments: body?.arguments && typeof body.arguments === 'object' ? body.arguments : {},
+    p_idempotency_key: body?.idempotencyKey ? String(body.idempotencyKey).trim().slice(0, 240) : null,
+  });
+  if (error) throw error;
+  return { command: data };
+}
+
+async function ingestSmartDeviceEvent(auth: Authorization, body: any) {
+  const externalDeviceId = String(body?.externalDeviceId ?? '').trim().slice(0, 240);
+  const eventType = String(body?.eventType ?? '').trim().slice(0, 120);
+  if (!externalDeviceId || !eventType) throw new ApiInputError('externalDeviceId and eventType are required');
+  const numeric = body?.valueNumeric === null || body?.valueNumeric === undefined ? null : Number(body.valueNumeric);
+  if (numeric !== null && !Number.isFinite(numeric)) throw new ApiInputError('valueNumeric must be numeric');
+  const { data, error } = await db.rpc('record_smart_device_event', {
+    p_partner_id: requirePartner(auth),
+    p_external_device_id: externalDeviceId,
+    p_event_type: eventType,
+    p_severity: String(body?.severity ?? 'info').trim().slice(0, 24),
+    p_metric: body?.metric ? String(body.metric).trim().slice(0, 120) : null,
+    p_value_numeric: numeric,
+    p_value_text: body?.valueText === null || body?.valueText === undefined ? null : String(body.valueText).slice(0, 500),
+    p_unit: body?.unit ? String(body.unit).trim().slice(0, 40) : null,
+    p_payload: body?.payload && typeof body.payload === 'object' ? body.payload : {},
+    p_observed_at: body?.observedAt ?? null,
+    p_dedupe_key: body?.dedupeKey ? String(body.dedupeKey).trim().slice(0, 240) : null,
+  });
+  if (error) throw error;
+  return { event: data };
+}
+
+async function completePartnerSmartDeviceCommand(auth: Authorization, routePath: string, body: any) {
+  const { deviceId, commandId } = smartDeviceRouteIds(routePath);
+  if (!deviceId || !commandId) throw new ApiInputError('Device and command ids are required');
+  const { data, error } = await db.rpc('platform_complete_smart_device_command', {
+    p_partner_id: requirePartner(auth),
+    p_command_id: commandId,
+    p_success: Boolean(body?.success),
+    p_result: body?.result && typeof body.result === 'object' ? body.result : {},
+    p_error: body?.error ? String(body.error).slice(0, 1000) : null,
+  });
+  if (error) throw error;
+  return { command: data };
+}
+
 Deno.serve(async req => {
   const url = new URL(req.url);
   if (req.method === 'OPTIONS') {
@@ -649,11 +742,18 @@ Deno.serve(async req => {
   const isRoute = routePath === '/v1/recommendations/route';
   const isPlaceMatch = routePath === '/v1/places/match';
   const isPlaceDetails = /^\/v1\/places\/[^/]+$/.test(routePath) && !isPlaceMatch;
+  const isDevices = routePath === '/v1/devices';
+  const isDeviceEvents = routePath === '/v1/devices/events';
+  const isDeviceCommand = /^\/v1\/devices\/[0-9a-f-]+\/commands$/i.test(routePath);
+  const isDeviceCommandComplete = /^\/v1\/devices\/[0-9a-f-]+\/commands\/[0-9a-f-]+\/complete$/i.test(routePath);
 
-  if (!isNearby && !isRoute && !isPlaceMatch && !isPlaceDetails) {
+  if (!isNearby && !isRoute && !isPlaceMatch && !isPlaceDetails && !isDevices && !isDeviceEvents && !isDeviceCommand && !isDeviceCommandComplete) {
     return json({ error: 'Not found' }, 404, corsHeaders(req));
   }
-  if ((isNearby || isRoute || isPlaceMatch) && req.method !== 'POST') {
+  if ((isNearby || isRoute || isPlaceMatch || isDeviceEvents || isDeviceCommand || isDeviceCommandComplete) && req.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
+  }
+  if (isDevices && req.method !== 'GET' && req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
   }
   if (isPlaceDetails && req.method !== 'GET') {
@@ -680,7 +780,18 @@ Deno.serve(async req => {
       }
     } else {
       const body = await req.json().catch(() => ({}));
-      if (isPlaceMatch) {
+      if (isDevices) {
+        payload = req.method === 'POST' ? await registerSmartDevice(auth, body) : await listSmartDevices(auth);
+        if (req.method === 'POST') status = 201;
+      } else if (isDeviceEvents) {
+        payload = await ingestSmartDeviceEvent(auth, body);
+        status = 202;
+      } else if (isDeviceCommand) {
+        payload = await queueSmartDeviceCommand(auth, routePath, body);
+        status = 202;
+      } else if (isDeviceCommandComplete) {
+        payload = await completePartnerSmartDeviceCommand(auth, routePath, body);
+      } else if (isPlaceMatch) {
         payload = await matchPlaces(body);
       } else if (isNearby) {
         payload = await nearby(body);
