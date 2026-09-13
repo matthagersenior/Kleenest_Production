@@ -13,6 +13,7 @@ const locations=read('apps/fleet-mobile/services/locations.ts');
 const map=read('apps/fleet-mobile/components/FleetMap.tsx');
 const premium=read('apps/fleet-mobile/app/premium.tsx');
 const product=read('apps/fleet-mobile/services/product.ts');
+const geofence=read('apps/fleet-mobile/services/geofence.ts');
 
 requireTokens('Fleet member authority',migration,[
  'fleet_product_enabled',
@@ -28,7 +29,11 @@ requireTokens('Fleet member authority',migration,[
  "'route_geofencing',s.can_drive",
  "'dispatch_control',s.can_manage",
  'fleet_premium_limit',
- 'coalesce(v_explicit,75)'
+ 'coalesce(v_explicit,75)',
+ 'materialize_fleet_active_dwell_exceptions',
+ "'route_stop_stall'",
+ "'fleet-active-dwell-watch'",
+ "rec.driver_user_id,'push'"
 ]);
 requireTokens('Fleet observe gate',migration,[
  'create or replace function public.fleet_observe_access',
@@ -63,7 +68,8 @@ requireTokens('Fleet For Me',member,[
  'recordRouteStopTiming',
  'registerFleetPush',
  'Open full Kleenest',
- 'Find nearby bathrooms'
+ 'Find nearby bathrooms',
+ 'setInterval(()=>setClock'
 ]);
 requireTokens('Fleet nearby Consumer experience',nearby,[
  'KLEENEST FOR ME · FLEET CONNECTED',
@@ -81,6 +87,8 @@ requireTokens('Fleet consumer photos',locations,[
  "storage.from('location-photos')"
 ]);
 requireTokens('Fleet map consumer photos',map,['consumer_photo_url',"mode='planner'","mode==='nearby'"]);
+requireTokens('Fleet ad-hoc geofence support',geofence,['location_id:string|null','locationId:string|null','p_location_id:ids.locationId']);
+if(geofence.includes('!ids.locationId'))failures.push('Fleet background geofence still rejects ad-hoc route stops without canonical location IDs.');
 requireTokens('Fleet Premium capacity',premium,['getFleetPremiumLimit','75 by default',' / {limit} active']);
 requireTokens('Fleet parity ledger',product,['role-gated-member-workspace','consumer-nearby-discovery','assigned-driver-route','dwell-stall-awareness']);
 
