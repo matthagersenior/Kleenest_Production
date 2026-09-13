@@ -106,7 +106,7 @@ export default function VerificationCenter(){
       {status?.canonicalDomain?<Text style={s.meta}>Canonical domain: {String(status.canonicalDomain)} · Company email eligible: {status?.companyEmail?.eligible?'YES':'NO'}</Text>:null}
       {activeDns?<View style={s.dnsBox}><Text style={s.dnsTitle}>DNS TXT CHALLENGE</Text><Text style={s.meta}>Create a TXT record at:</Text><Text selectable style={s.code}>{activeDns.dnsName}</Text><Text style={s.meta}>TXT value:</Text><Text selectable style={s.code}>{activeDns.token}</Text><Text style={s.meta}>Expires: {new Date(activeDns.expiresAt).toLocaleString()}</Text><Action label="Verify DNS now" disabled={Boolean(busy)} onPress={()=>run('dns-verify:'+id,()=>verifyClaimDns(id,activeDns.challengeId),'DNS control verified.',id)}/></View>:null}
     </View>
-   }):<Empty text="No outgoing location claims."/ >}
+   }):<Empty text="No outgoing location claims."/>}
   </View>
 
   <View style={s.section}>
