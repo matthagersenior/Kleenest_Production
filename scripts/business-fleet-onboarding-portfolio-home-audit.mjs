@@ -63,7 +63,7 @@ requireTokens('apps/fleet-mobile/services/control.ts',[
 requireTokens('apps/fleet-mobile/app/_layout.tsx',[
   'subscribeFleetWorkspaceChange',
   'workspaceRevision',
-  'key={`fleet-workspace-${workspaceRevision}`}'
+  "key={'fleet-workspace-'+workspaceRevision+'-'+String(workspaceRole)}"
 ]);
 
 if(failures.length){
