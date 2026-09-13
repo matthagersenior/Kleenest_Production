@@ -11,6 +11,7 @@ const layout=read('apps/business-mobile/app/_layout.tsx');
 const fleetAuth=read('apps/fleet-mobile/app/auth.tsx');
 const marketing=read('apps/consumer-mobile/components/MarketingSitePro.tsx');
 const migration=read('supabase/migrations/20260913165000_business_member_self_service_visibility.sql');
+const policyConvergence=read('supabase/migrations/20260913171200_converge_business_member_select_policy.sql');
 
 expect(edge,/auth\.getUser\(\)/,'Edge Function must validate the caller JWT');
 expect(edge,/SERVICE_ROLE_KEY/,'Edge Function must keep privileged bootstrap server-side');
@@ -30,5 +31,9 @@ expect(marketing,/START BUSINESS \/ FLEET \/ ENTERPRISE/,'public For Business pa
 expect(marketing,/BUSINESS SIGN IN/,'public For Business page must expose Business sign-in');
 expect(migration,/businesses_member_select/,'pending Business rows must be visible to their authenticated members');
 expect(migration,/bm\.user_id=\(select auth\.uid\(\)\)/,'member visibility must be scoped to the caller');
+expect(policyConvergence,/drop policy if exists businesses_member_select/,'follow-up policy convergence must remove duplicate authenticated SELECT policy');
+expect(policyConvergence,/verification_status='verified'/,'converged Business SELECT must retain verified visibility');
+expect(policyConvergence,/is_platform_owner_session\(\)/,'converged Business SELECT must retain platform-owner visibility');
+expect(policyConvergence,/bm\.user_id=\(select auth\.uid\(\)\)/,'converged Business SELECT must retain own-member visibility');
 
 console.log('Self-service Business/Fleet/Enterprise onboarding convergence: OK');
