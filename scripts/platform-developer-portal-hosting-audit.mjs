@@ -21,10 +21,18 @@ for (const phrase of [
   'Sample gallery',
   'Where will this run?',
   'Use in my workspace',
+  'Kleenest Developer Cloud',
+  'portal-hero',
+  'icon-sprite',
+  'icon-playground',
+  'icon-credentials',
+  'icon-webhooks',
 ]) {
   if (!html.includes(phrase)) throw new Error(`Static developer portal missing: ${phrase}`);
 }
 if (!/Content-Security-Policy/i.test(html)) throw new Error('Static portal must include a CSP.');
+if (!/data:image\/svg\+xml/i.test(html)) throw new Error('Static portal must carry a self-contained branded SVG favicon.');
+if (!/class="section-icon"/.test(html)) throw new Error('Developer Portal must use branded section iconography, not text-only cards.');
 if (!/connect-src[^;]*ssgesjzdvdsqacdtasje\.supabase\.co/i.test(html)) {
   throw new Error('Static portal CSP must allow the Kleenest Supabase backend.');
 }
@@ -58,20 +66,23 @@ for (const phrase of ['Launch Demo Workspace', 'Open Developer Portal', 'Develop
 const workflow = file('.github/workflows/platform-developer-portal-pages.yml');
 for (const phrase of [
   'pull_request:',
-  'actions/configure-pages@v5',
-  "github.event_name != 'pull_request'",
-  'actions/upload-pages-artifact@v4',
-  'actions/deploy-pages@v4',
+  'actions/upload-artifact@v4',
+  'Kleenest-Developer-Portal-Preview',
+  '_site/developer/index.html',
+]) {
+  if (!workflow.includes(phrase)) throw new Error(`Developer Portal validation workflow missing: ${phrase}`);
+}
+for (const forbidden of [
+  'actions/configure-pages@',
+  'actions/upload-pages-artifact@',
+  'actions/deploy-pages@',
   'pages: write',
   'id-token: write',
 ]) {
-  if (!workflow.includes(phrase)) throw new Error(`Pages workflow missing: ${phrase}`);
+  if (workflow.includes(forbidden)) throw new Error(`Developer Portal workflow must not independently publish GitHub Pages: ${forbidden}`);
 }
 if (!/apps\/developer-portal\/static\/index\.html/.test(workflow)) {
-  throw new Error('Pages workflow must publish the canonical static developer portal.');
-}
-if (!/_site\/developer\/index\.html/.test(workflow)) {
-  throw new Error('Pages workflow must publish the portal at /developer/.');
+  throw new Error('Developer Portal validation must package the canonical static portal.');
 }
 const edgePortal = file('supabase/functions/platform-developer-portal/index.ts');
 if (!/github\.io\/Kleenest_Production\/developer\//.test(edgePortal)) {

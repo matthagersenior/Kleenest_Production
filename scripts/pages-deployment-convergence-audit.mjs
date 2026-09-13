@@ -9,6 +9,7 @@ if(fs.existsSync('.github/workflows/static.yml'))throw new Error('Competing GitH
 if(fs.existsSync('.github/workflows/android-preview.yml'))throw new Error('Duplicate Consumer-only Android build workflow must be removed; family Android workflow owns verified APKs.');
 
 const pages=read('.github/workflows/pages.yml');
+const portalPages=read('.github/workflows/platform-developer-portal-pages.yml');
 const installer=read('.github/workflows/publish-standalone-installer.yml');
 const familyAndroid=read('.github/workflows/android-family.yml');
 const appConfig=read('apps/consumer-mobile/app.config.ts');
@@ -23,6 +24,8 @@ const serviceWorker=read('public/sw.js');
 
 for(const token of ['Validate Kleenest Consumer Web Preview','kleenest-consumer-preview-validation-${{ github.event_name }}','workflow_dispatch','pull_request','workflow_run','Production CI','conclusion == \'success\'','head_branch == \'main\'','github.event.workflow_run.head_sha','npm run web:export --workspace @kleenest/consumer-mobile','node scripts/prepare-consumer-web-pwa.mjs','apps/consumer-mobile/dist/index.html','apps/consumer-mobile/dist/404.html','apps/consumer-mobile/dist/.nojekyll','actions/upload-artifact@v4','Kleenest-Consumer-Web-Preview'])requireToken(pages,token,'Pages consumer preview validation workflow');
 if(pages.includes('actions/deploy-pages@')||pages.includes('actions/configure-pages@')||pages.includes('actions/upload-pages-artifact@'))throw new Error('Preview validation must not deploy GitHub Pages or it can overwrite the Consumer APK installer.');
+if(portalPages.includes('actions/deploy-pages@')||portalPages.includes('actions/configure-pages@')||portalPages.includes('actions/upload-pages-artifact@'))throw new Error('Developer Portal validation must not independently deploy GitHub Pages; the Consumer installer is the single canonical Pages publisher.');
+for(const token of ['Kleenest-Developer-Portal-Preview','actions/upload-artifact@v4','_site/developer/index.html'])requireToken(portalPages,token,'Developer Portal validation workflow');
 if(pages.includes('npm run build\n')||pages.includes('path: dist\n'))throw new Error('Pages validation must not use the competing root Vite consumer shell.');
 
 for(const token of ['Publish Consumer Standalone Installer','Build Kleenest App Family Android APKs','Kleenest-Consumer-Standalone-APK','Kleenest-Consumer.apk','node scripts/prepare-consumer-web-pwa.mjs','manifest.webmanifest','sw.js','app-icon.png','app-icon-512.svg','mkdir -p apps/consumer-mobile/dist/legal','cp public/legal/*.html apps/consumer-mobile/dist/legal/','mkdir -p apps/consumer-mobile/dist/developer','cp apps/developer-portal/static/index.html apps/consumer-mobile/dist/developer/index.html','test -s apps/consumer-mobile/dist/developer/index.html','Kleenest Developer Portal','Browser token','for legal in privacy account-deletion terms community-guidelines','test -s "apps/consumer-mobile/dist/legal/${legal}.html"','actions/configure-pages@v5','actions/upload-pages-artifact@v3','actions/deploy-pages@v4','path: apps/consumer-mobile/dist'])requireToken(installer,token,'Consumer + Developer Portal Pages deployment workflow');
@@ -39,7 +42,7 @@ for(const token of ["output: 'single'","bundler: 'metro'","baseUrl: '/Kleenest_P
 if(pkg.scripts?.['web:export']!=='expo export --platform web')throw new Error('Consumer app must expose canonical Expo web export script.');
 for(const dep of ['react-dom','react-native-web','maplibre-gl'])if(!pkg.dependencies?.[dep])throw new Error(`Consumer web dependency missing ${dep}.`);
 for(const token of ["platform === 'web'","'@maplibre/maplibre-react-native'","'expo-secure-store'","'expo-notifications'",'maplibrePreview.tsx','secureStorePreview.ts','notificationsPreview.ts','context.resolveRequest(context, moduleName, platform)'])requireToken(metro,token,'Web-only Metro compatibility resolver');
-for(const token of ["from 'maplibre-gl'",'new maplibregl.Map','fitBounds','new maplibregl.Marker'])requireToken(mapPreview,token,'Interactive web MapLibre adapter');
+for(const token of ["from 'maplibre-gl'",'new maplibregl.Map','fitBounds','new maplibregl.Marker','supportsWebGL','fallbackTiles','mapLoadTimer','MapLibre unavailable'])requireToken(mapPreview,token,'Interactive web MapLibre adapter');
 if(mapPreview.includes('MAP PREVIEW')||mapPreview.includes('Native MapLibre remains authoritative'))throw new Error('Consumer Web must render a real interactive map rather than a preview placeholder.');
 for(const token of ['window.localStorage','kleenest.preview.secure.'])requireToken(securePreview,token,'SecureStore preview adapter');
 for(const token of ['getLastNotificationResponseAsync','clearLastNotificationResponseAsync','addNotificationResponseReceivedListener'])requireToken(notificationsPreview,token,'Notifications preview adapter');
@@ -49,6 +52,7 @@ for(const token of ['manifest.webmanifest','navigator.serviceWorker.register','a
 if(manifest.display!=='standalone'||manifest.start_url!=='/Kleenest_Production/'||manifest.scope!=='/Kleenest_Production/')throw new Error('Consumer PWA manifest must remain standalone and scoped to the GitHub Pages app path.');
 if(!Array.isArray(manifest.icons)||manifest.icons.length<2)throw new Error('Consumer PWA manifest must provide installable app icons.');
 if(!manifest.icons.some(icon=>icon.src==='/Kleenest_Production/app-icon.png'&&icon.sizes==='192x192')||!manifest.icons.some(icon=>icon.src==='/Kleenest_Production/app-icon-512.svg'&&icon.sizes==='512x512'))throw new Error('Consumer PWA manifest must publish truthful 192px and 512px install icon metadata.');
-for(const token of ['kleenest-shell','showNotification','notificationclick'])requireToken(serviceWorker,token,'Consumer web service worker');
+for(const token of ['kleenest-shell','showNotification','notificationclick','isVersionedAsset','networkFirst'])requireToken(serviceWorker,token,'Consumer web service worker');
+if(/cached\|\|fetch\(event\.request\)/.test(serviceWorker))throw new Error('Consumer service worker must not keep versioned JS/CSS on a cache-first path across deployments.');
 
 console.log('Consumer web app validation, PWA installability, legal resources, and family-owned Pages deployment audit passed.');

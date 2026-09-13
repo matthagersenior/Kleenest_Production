@@ -1,8 +1,92 @@
-const CACHE='kleenest-shell-v3';
+const CACHE='kleenest-shell-v4';
 const SCOPE='/Kleenest_Production/';
 const SHELL=[SCOPE,`${SCOPE}manifest.webmanifest`,`${SCOPE}app-icon.png`,`${SCOPE}app-icon-512.svg`];
-self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));});
-self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));});
-self.addEventListener('fetch',event=>{if(event.request.method!=='GET')return;const url=new URL(event.request.url);if(url.origin!==self.location.origin)return;if(event.request.mode==='navigate'){event.respondWith(fetch(event.request).then(response=>{const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(SCOPE,copy));return response;}).catch(()=>caches.match(SCOPE)));return;}event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy));}return response;})));});
-self.addEventListener('push',event=>{let payload={};try{payload=event.data?.json()||{};}catch{payload={body:event.data?.text()||''};}const title=payload.title||'Kleenest';const options={body:payload.body||'You have a new Kleenest update.',data:payload.data||{},tag:payload.tag||payload.data?.notification_id||undefined,renotify:false};event.waitUntil(self.registration.showNotification(title,options));});
-self.addEventListener('notificationclick',event=>{event.notification.close();const target=event.notification.data?.url||`${SCOPE}notifications`;event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(windows=>{for(const client of windows){if('focus'in client){client.navigate(target);return client.focus();}}return clients.openWindow?clients.openWindow(target):undefined;}));});
+
+self.addEventListener('install',event=>{
+  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));
+});
+
+self.addEventListener('activate',event=>{
+  event.waitUntil(
+    caches.keys()
+      .then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key))))
+      .then(()=>self.clients.claim())
+  );
+});
+
+const isVersionedAsset=url =>
+  /\.(?:js|css|wasm|map)(?:$|\?)/i.test(url.pathname+url.search) ||
+  url.pathname.includes('/_expo/static/');
+
+async function networkFirst(request){
+  const cache=await caches.open(CACHE);
+  try{
+    const response=await fetch(request);
+    if(response.ok)cache.put(request,response.clone());
+    return response;
+  }catch(error){
+    const cached=await cache.match(request);
+    if(cached)return cached;
+    throw error;
+  }
+}
+
+self.addEventListener('fetch',event=>{
+  if(event.request.method!=='GET')return;
+  const url=new URL(event.request.url);
+  if(url.origin!==self.location.origin)return;
+
+  if(event.request.mode==='navigate'){
+    event.respondWith(
+      networkFirst(event.request).catch(()=>caches.match(SCOPE))
+    );
+    return;
+  }
+
+  if(isVersionedAsset(url)){
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then(cached=>{
+      if(cached)return cached;
+      return fetch(event.request).then(response=>{
+        if(response.ok){
+          const copy=response.clone();
+          caches.open(CACHE).then(cache=>cache.put(event.request,copy));
+        }
+        return response;
+      });
+    })
+  );
+});
+
+self.addEventListener('push',event=>{
+  let payload={};
+  try{payload=event.data?.json()||{};}catch{payload={body:event.data?.text()||''};}
+  const title=payload.title||'Kleenest';
+  const options={
+    body:payload.body||'You have a new Kleenest update.',
+    data:payload.data||{},
+    tag:payload.tag||payload.data?.notification_id||undefined,
+    renotify:false
+  };
+  event.waitUntil(self.registration.showNotification(title,options));
+});
+
+self.addEventListener('notificationclick',event=>{
+  event.notification.close();
+  const target=event.notification.data?.url||`${SCOPE}notifications`;
+  event.waitUntil(
+    clients.matchAll({type:'window',includeUncontrolled:true}).then(windows=>{
+      for(const client of windows){
+        if('focus'in client){
+          client.navigate(target);
+          return client.focus();
+        }
+      }
+      return clients.openWindow?clients.openWindow(target):undefined;
+    })
+  );
+});
