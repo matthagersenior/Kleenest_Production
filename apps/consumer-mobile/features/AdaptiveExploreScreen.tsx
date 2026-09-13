@@ -120,6 +120,35 @@ function trustSummaryLine(item: any) {
   return parts.length ? parts.join(' · ') : 'Community evidence building';
 }
 
+function matchedRequestedAmenities(item: any, requested: string[]) {
+  if (!requested.length || !Array.isArray(item?.amenities)) return [] as string[];
+  const available = new Set(
+    item.amenities
+      .map((entry: any) => String(typeof entry === 'string' ? entry : entry?.name || '').trim().toLowerCase())
+      .filter(Boolean),
+  );
+  return requested.filter((name) => available.has(String(name).trim().toLowerCase()));
+}
+
+function RequestedAmenityMatches({ item, requested, compact = false }: {
+  item: any;
+  requested: string[];
+  compact?: boolean;
+}) {
+  const matches = matchedRequestedAmenities(item, requested);
+  if (!matches.length) return null;
+  return (
+    <View style={s.amenityMatchRow}>
+      {!compact ? <Text style={s.amenityMatchLabel}>MATCHED</Text> : null}
+      {matches.slice(0, compact ? 3 : 5).map((name) => (
+        <View key={name} style={s.amenityMatchPill}>
+          <Text style={s.amenityMatchText}>✓ {name}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function parseRouteDraft(raw: string | null) {
   if (!raw) return [] as string[];
   try {
@@ -131,7 +160,7 @@ function parseRouteDraft(raw: string | null) {
   }
 }
 
-function ResultCard({ item, selected, onSelect, onDirections, onAddToRoute, onDetails, route }: {
+function ResultCard({ item, selected, onSelect, onDirections, onAddToRoute, onDetails, route, requestedAmenities }: {
   item: any;
   selected: boolean;
   onSelect: () => void;
@@ -139,6 +168,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onAddToRoute, onDe
   onAddToRoute: () => void;
   onDetails: () => void;
   route: any;
+  requestedAmenities: string[];
 }) {
   const fraction = Math.max(0, Math.min(1, Number(item.route_fraction || 0)));
   const ahead = route ? Math.max(0, Number(route.distanceMiles || 0) * fraction) : null;
@@ -174,6 +204,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onAddToRoute, onDe
           </Text>
         ) : null}
         <RestroomSignals item={item} compact />
+        <RequestedAmenityMatches item={item} requested={requestedAmenities} />
         {reviewCount > 0 ? <Text style={s.meta}>{reviewCount} review{reviewCount === 1 ? '' : 's'}</Text> : null}
         <Text style={s.trustLine}>{trustSummaryLine(item)}</Text>
         <Text style={s.hint}>
@@ -231,6 +262,13 @@ export default function AdaptiveExploreScreen() {
     () => rows.find((row) => idOf(row) === selectedId) || null,
     [rows, selectedId],
   );
+  const selectedRoutePosition = useMemo(() => {
+    if (!selected || mode !== 'route' || !route) return '';
+    const fraction = Math.max(0, Math.min(1, Number(selected.route_fraction || 0)));
+    const ahead = Math.max(0, Number(route.distanceMiles || 0) * fraction);
+    const eta = Math.max(0, Number(route.durationMinutes || 0) * fraction);
+    return `~${ahead.toFixed(ahead < 10 ? 1 : 0)} mi ahead · ~${Math.round(eta)} min · ${distanceLabel(selected.distance_to_route_meters)} off route`;
+  }, [selected, mode, route]);
   const filterAmenities = useMemo(
     () => amenities
       .filter((item) => FILTER_CATEGORIES.has(String(item.category || '')))
@@ -926,14 +964,13 @@ export default function AdaptiveExploreScreen() {
                   <View style={{ flex: 1 }}>
                     <Text numberOfLines={1} style={s.selectedTitle}>{selected.name || 'Restroom location'}</Text>
                     <Text numberOfLines={2} style={s.meta}>
-                      {mode === 'route'
-                        ? `${distanceLabel(selected.distance_to_route_meters)} from route`
-                        : distanceLabel(selected.distance_meters)}
+                      {selectedRoutePosition || distanceLabel(selected.distance_meters)}
                       {' · '}{[selected.address, selected.city].filter(Boolean).join(', ') || 'Address unavailable'}
                     </Text>
                   </View>
                 </View>
                 <CompactRestroomSignals item={selected} />
+                <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
                 <View style={s.actionRow}>
                   <Pressable
                     accessibilityRole="button"
@@ -983,6 +1020,7 @@ export default function AdaptiveExploreScreen() {
               onAddToRoute={() => addToRoute(item)}
               onDetails={() => router.push(`/location/${idOf(item)}`)}
               route={mode === 'route' ? route : null}
+              requestedAmenities={selectedAmenityNames}
             />
           </View>
         )}
@@ -1153,6 +1191,10 @@ const s = StyleSheet.create({
   cardMain: { gap: 6 },
   cardActionRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   cardAction: { flexGrow: 1, alignItems: 'center' },
+  amenityMatchRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 5, marginTop: 2 },
+  amenityMatchLabel: { fontSize: 7, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
+  amenityMatchPill: { borderRadius: 999, backgroundColor: '#e8f1eb', paddingHorizontal: 7, paddingVertical: 4 },
+  amenityMatchText: { fontSize: 8, fontWeight: '900', color: palette.green },
   cardTop: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   cardTitle: { fontSize: 15, fontWeight: '900', color: palette.ink },
   meta: { fontSize: 9, lineHeight: 13, color: '#66776d' },
