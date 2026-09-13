@@ -38,6 +38,7 @@ export default function BusinessAuth() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const getStartedRoute=()=>intent?`/get-started?intent=${encodeURIComponent(intent)}`:'/get-started';
+  const googleRedirectForIntent=Platform.OS==='web'&&intent?`${googleRedirect}?intent=${encodeURIComponent(intent)}`:googleRedirect;
   async function finishAuthenticated(){
     router.replace((await hasBusinessAccess()?'/':getStartedRoute()) as any);
   }
@@ -91,7 +92,7 @@ export default function BusinessAuth() {
       const { data, error: signupError } = await getKleenestSupabaseClient().auth.signUp({
         email: cleanEmail,
         password,
-        options: { emailRedirectTo: googleRedirect },
+        options: { emailRedirectTo: googleRedirectForIntent },
       });
       if (signupError) throw signupError;
       if (data.session) { await finishAuthenticated(); return; }
@@ -107,7 +108,7 @@ export default function BusinessAuth() {
     try {
       const { data, error: authError } = await getKleenestSupabaseClient().auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: googleRedirect, skipBrowserRedirect: Platform.OS!=='web' },
+        options: { redirectTo: googleRedirectForIntent, skipBrowserRedirect: Platform.OS!=='web' },
       });
       if (authError) throw authError;
       if (!data.url) throw new Error('Google sign-in did not return an authorization URL.');
