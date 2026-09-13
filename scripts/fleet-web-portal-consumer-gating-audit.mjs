@@ -112,6 +112,14 @@ requireTokens('Install presence persistence',install,[
   'appinstalled',
   "choice.outcome==='accepted'"
 ]);
+requireTokens('Consumer no-install fallback',install,[
+  'CONTINUE AS GUEST',
+  'JOIN KLEENEST',
+  'SIGN IN',
+  "router.push('/?app=1'",
+  "router.push('/signup'",
+  "router.push('/profile'"
+]);
 requireTokens('Marketing suppression',marketing,[
   'useConsumerWebExperience',
   'appActive',
