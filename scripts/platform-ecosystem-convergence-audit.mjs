@@ -17,6 +17,9 @@ const businessAuth=read('apps/business-mobile/app/auth.tsx');
 const fleetAuth=read('apps/fleet-mobile/app/auth.tsx');
 const ownerAuth=read('apps/platform-mobile/app/auth.tsx');
 const fleetLayout=read('apps/fleet-mobile/app/_layout.tsx');
+const fleetPush=read('apps/fleet-mobile/services/push.ts');
+const fleetNotifications=read('apps/fleet-mobile/web/notificationsPreview.ts');
+const pushWorker=read('supabase/functions/deliver-push-notification/index.ts');
 const businessHome=read('apps/business-mobile/app/index.tsx');
 const businessFleet=read('apps/business-mobile/app/fleet.tsx');
 const publisher=read('.github/workflows/publish-standalone-installer.yml');
@@ -54,6 +57,9 @@ requireTokens('Fleet operator tabs',fleetLayout,[
  "name=\"account\" options={{title:'Account'}}"
 ]);
 if(fleetLayout.includes("href:operator?null:undefined,title:'Alerts'"))failures.push('Fleet operator Alerts remain hidden.');
+requireTokens('Fleet browser push',fleetPush,['PushManager','Notification','serviceWorker.register','register_notification_push_subscription','deliver-push-notification','registered-web']);
+requireTokens('Fleet browser notification permission',fleetNotifications,['window.Notification.permission','window.Notification.requestPermission']);
+requireTokens('Web push worker source authority',pushWorker,['VAPID_PUBLIC_KEY','VAPID_PRIVATE_KEY','req.method==="GET"','vapid_public_key','x-kleenest-worker-secret']);
 
 requireTokens('Business Fleet entry',businessHome,["href:'/fleet'",'Fleet Suite','fleet_enabled']);
 requireTokens('Business Fleet workspace',businessFleet,[
