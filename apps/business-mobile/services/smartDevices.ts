@@ -64,3 +64,22 @@ export function smartDeviceSetAutomationRule(input:{
   p_command_arguments:input.commandArguments??{},p_cooldown_seconds:input.cooldownSeconds??300,p_enabled:input.enabled??true
  });
 }
+
+
+export async function smartRestroomSnapshot(businessId:string,locationId:string|null=null){
+ return rpc('business_smart_amenity_snapshot',{p_business_id:businessId,p_location_id:locationId});
+}
+
+export async function setSmartRestroomAmenity(businessId:string,locationId:string,enabled:boolean){
+ const{data,error}=await client().from('amenities').select('id').eq('name','Connected / Smart Restroom').limit(1).maybeSingle();
+ if(error)throw error;if(!data?.id)throw new Error('Connected / Smart Restroom amenity is unavailable.');
+ return rpc('business_set_location_amenity',{p_business_id:businessId,p_location_id:locationId,p_amenity_id:data.id,p_action:enabled?'add':'remove'});
+}
+
+export function createSmartRestroomQr(businessId:string,locationId:string,mode:'contribute'|'command'='contribute',deviceId:string|null=null,command:string|null=null){
+ return rpc('business_create_smart_restroom_qr',{p_business_id:businessId,p_location_id:locationId,p_mode:mode,p_device_id:deviceId,p_command:command});
+}
+
+export function executeSmartDeviceQr(code:string){
+ return rpc('execute_smart_device_qr_action',{p_qr_code:code});
+}
