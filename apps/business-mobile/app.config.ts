@@ -8,9 +8,12 @@ if(configuredEasProjectId&&configuredEasProjectId!==EXPECTED_EAS_PROJECT_ID){
 }
 const EAS_PROJECT_ID=configuredEasProjectId||EXPECTED_EAS_PROJECT_ID;
 const otaChannel=process.env.EXPO_PUBLIC_OTA_CHANNEL||'business-production';
+const nativeRuntimeId=String(process.env.KLEENEST_NATIVE_RUNTIME_ID||'').trim();
+if(nativeRuntimeId&&!/^[a-f0-9]{40}$/i.test(nativeRuntimeId))throw new Error('KLEENEST_NATIVE_RUNTIME_ID must be a full Git commit SHA.');
+const runtimeVersion=nativeRuntimeId?`kleenest-business-native-${nativeRuntimeId}`:'kleenest-business-1.0.0';
 
 const config:ExpoConfig={
-  name:'Kleenest Business',slug:'kleenest-business',version:'1.0.0',runtimeVersion:'kleenest-business-1.0.0',
+  name:'Kleenest Business',slug:'kleenest-business',version:'1.0.0',runtimeVersion,
   icon:'./assets/app-icon.png',orientation:'portrait',scheme:'kleenest-business',userInterfaceStyle:'automatic',
   updates:{enabled:true,url:`https://u.expo.dev/${EAS_PROJECT_ID}`,checkAutomatically:'ON_LOAD',fallbackToCacheTimeout:0,requestHeaders:{'expo-channel-name':otaChannel}},
   ios:{
