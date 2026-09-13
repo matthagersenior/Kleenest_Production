@@ -21,10 +21,18 @@ for (const phrase of [
   'Sample gallery',
   'Where will this run?',
   'Use in my workspace',
+  'Kleenest Developer Cloud',
+  'portal-hero',
+  'icon-sprite',
+  'icon-playground',
+  'icon-credentials',
+  'icon-webhooks',
 ]) {
   if (!html.includes(phrase)) throw new Error(`Static developer portal missing: ${phrase}`);
 }
 if (!/Content-Security-Policy/i.test(html)) throw new Error('Static portal must include a CSP.');
+if (!/data:image\/svg\+xml/i.test(html)) throw new Error('Static portal must carry a self-contained branded SVG favicon.');
+if (!/class="section-icon"/.test(html)) throw new Error('Developer Portal must use branded section iconography, not text-only cards.');
 if (!/connect-src[^;]*ssgesjzdvdsqacdtasje\.supabase\.co/i.test(html)) {
   throw new Error('Static portal CSP must allow the Kleenest Supabase backend.');
 }
