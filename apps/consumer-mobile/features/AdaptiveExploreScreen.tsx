@@ -425,7 +425,7 @@ export default function AdaptiveExploreScreen() {
   async function enrichProgression(data:any[],latitude:number,longitude:number,radiusMeters:number){
     try{
       const opportunities=await listNearbyProgressionOpportunities(latitude,longitude,Math.min(402336,Math.max(5000,Math.round(radiusMeters))));
-      const byId=new Map((opportunities||[]).map((item:any)=>[String(item.location_id),item]));
+      const byId=new globalThis.Map<string,any>((opportunities||[]).map((item:any)=>[String(item.location_id),item]));
       return data.map((row)=>({...row,progression_opportunity:byId.has(idOf(row)),progression_opportunity_detail:byId.get(idOf(row))||null}));
     }catch{
       return data.map((row)=>({...row,progression_opportunity:false,progression_opportunity_detail:null}));
