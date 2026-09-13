@@ -1,7 +1,7 @@
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { currentBusinessId,subscribeBusinessWorkspaceChange } from '../services/capabilityWorkflows';
 import { getBusinessOnboardingGate } from '../services/onboarding';
@@ -29,11 +29,11 @@ export default function Layout() {
       setSignedIn(Boolean(session));
       setReady(true);
     };
-    const startupFallback = setTimeout(() => {
+    const startupFallback = Platform.OS === 'web' ? setTimeout(() => {
       if (!active || settled) return;
       setSignedIn(false);
       setReady(true);
-    }, 2500);
+    }, 2500) : null;
 
     try {
       const client = getKleenestSupabaseClient();
@@ -48,7 +48,7 @@ export default function Layout() {
 
     return () => {
       active = false;
-      clearTimeout(startupFallback);
+      if (startupFallback !== null) clearTimeout(startupFallback);
       listener?.subscription.unsubscribe();
     };
   }, []);
