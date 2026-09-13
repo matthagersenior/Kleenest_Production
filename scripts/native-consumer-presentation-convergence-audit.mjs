@@ -5,7 +5,7 @@ const requireAll=(path,tokens)=>{const source=read(path);for(const token of toke
 
 const ui=requireAll('apps/consumer-mobile/components/ConsumerUI.tsx',['HeroCard','FeatureCard','SectionHeader','TrustStrip','MetricTile','palette']);
 const layout=requireAll('apps/consumer-mobile/app/_layout.tsx',["title:'Home'","title:'Explore'","title:'Progress'","title:'Community'","title:'Profile'","name=\"play\"","name=\"discover\"","name=\"preferences\"",'tabBarActiveTintColor']);
-const home=requireAll('apps/consumer-mobile/app/index.tsx',['Find a bathroom you can trust.','FIND A BATHROOM','SCAN QR','CHECK IN / REVIEW','QUICK ACTIONS','GAME CENTER','THE KLEENEST LOOP','YOUR PROGRESS','KLEENEST AI','TRUST GUIDE','ROUTE GUIDE','REVIEW DRAFT','COMMUNITY','OPEN COMMUNITY','Membership','Support']);
+const home=requireAll('apps/consumer-mobile/app/index.tsx',['Find a bathroom you can trust.','FIND A BATHROOM','CHECK IN','Nearby or search','QR PROOF','QUICK ACTIONS','GAME CENTER','THE KLEENEST LOOP','YOUR PROGRESS','KLEENEST AI','TRUST GUIDE','ROUTE GUIDE','REVIEW DRAFT','COMMUNITY','OPEN COMMUNITY','Membership','Support']);
 const explorePath='apps/consumer-mobile/app/explore.tsx';
 const adaptiveExplorePath='apps/consumer-mobile/features/AdaptiveExploreScreen.tsx';
 const explore=`${read(explorePath)}\n${read(adaptiveExplorePath)}`;
@@ -23,7 +23,7 @@ const activitySource=read('apps/consumer-mobile/app/activity.tsx');
 for(const token of ['See how the network gets stronger.','Your Kleenest history','Your trusted network','VISIT EVIDENCE','View strengthened restroom','listMyActivity','listMobileCommunityActivity'])if(!activitySource.includes(token))throw new Error(`apps/consumer-mobile/app/activity.tsx missing presentation contract: ${token}`);
 const notifications=requireAll('apps/consumer-mobile/app/notifications.tsx',['What needs your attention.','Recent Kleenest updates','What reaches you','Enable push','Mark all read','listNotificationInbox','notificationDestination']);
 const membership=requireAll('apps/consumer-mobile/app/membership.tsx',['Choose the membership that fits you.','Every Consumer capability included','Authoritative entitlement','Kleenest AI','offline trips','native store purchase boundary','Find a bathroom','getMobileAccountSummary','listMobilePricingCatalog']);
-const qr=requireAll('apps/consumer-mobile/app/qr.tsx',['Scan trust into the network.','Point, scan, continue','MANUAL FALLBACK','One canonical resolver','CameraView','resolveQrAction','executeQrAction']);
+const qr=requireAll('apps/consumer-mobile/app/qr.tsx',['QR is optional proof, not the only check-in.','Choose the proof path that is actually available.','Check in with GPS + geofence','MANUAL FALLBACK','GPS check-in works without QR','CameraView','resolveQrAction','executeQrAction']);
 
 for(const [name,source] of Object.entries({layout,home,explore,discover,progress,profile,prefs,play,social,location,saved,route,activity:activitySource,notifications,membership,qr,ui})){
   if(/\.rpc\(['"](?:business|fleet|enterprise|admin)_/i.test(source)||/from ['"][^'"]*(?:Business|Fleet|Enterprise|Admin)/.test(source))throw new Error(`${name} presentation surface leaked Operations authority into consumer UI`);
