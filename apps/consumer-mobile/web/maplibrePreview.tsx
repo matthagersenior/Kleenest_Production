@@ -35,6 +35,16 @@ type WebMapContext = {
 
 const MapContext = createContext<WebMapContext | null>(null);
 
+function supportsWebGL() {
+  if (typeof document === 'undefined') return false;
+  try {
+    const canvas = document.createElement('canvas');
+    return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'));
+  } catch {
+    return false;
+  }
+}
+
 function ensureMaplibreCss() {
   if (typeof document === 'undefined' || document.getElementById('kleenest-maplibre-web-css')) return;
   const style = document.createElement('style');
@@ -155,7 +165,7 @@ export function Map({ children, style, mapStyle }: any) {
     ensureMaplibreCss();
     setFallback(false);
 
-    if (!maplibregl.supported()) {
+    if (!supportsWebGL()) {
       setFallback(true);
       return;
     }
