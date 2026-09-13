@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { type ReactNode, useEffect } from 'react';
+import { useConsumerWebExperience } from '../services/webExperience';
 import {
   Platform,
   Pressable,
@@ -36,6 +37,13 @@ const webShadow = Platform.OS === 'web'
     };
 
 const go = (route: string) => () => router.push(route as any);
+const openFleetPortal=()=>{
+  if(Platform.OS==='web'&&typeof window!=='undefined'){
+    window.location.assign('/Kleenest_Production/fleet/');
+    return;
+  }
+  router.push('/for-business' as any);
+};
 
 function useMarketingMeta(title: string, description: string) {
   useEffect(() => {
@@ -101,6 +109,10 @@ function Header() {
 }
 
 function Shell({ children }: { children: ReactNode }) {
+  const{ready,appActive}=useConsumerWebExperience();
+  useEffect(()=>{if(Platform.OS==='web'&&ready&&appActive)router.replace('/?app=1' as any)},[ready,appActive]);
+  if(Platform.OS==='web'&&!ready)return <SafeAreaView style={s.safe}/>;
+  if(Platform.OS==='web'&&appActive)return <SafeAreaView style={s.safe}/>;
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
@@ -610,6 +622,7 @@ const businessGroups = [
       'Trend and issue visibility',
       'Preventive and follow-up workflows',
       'Multi-location operational oversight',
+      'Fleet routing, dispatch, geofencing, nearby, dwell and stall signals',
       'Freshness, confidence and verification signals',
     ],
   },
@@ -643,10 +656,11 @@ export function ForBusinessMarketingPage() {
         <Text style={s.businessLoopBody}>When customers can see fresh evidence and businesses can act on that evidence, restroom quality becomes something that can be managed—not just complained about.</Text>
       </View>
       <View style={s.pageCta}>
-        <Text style={s.pageCtaTitle}>See Kleenest from the customer side.</Text>
-        <Text style={s.pageCtaBody}>Open the web app and experience the same discovery path your customers use.</Text>
+        <Text style={s.pageCtaTitle}>Consumer experience and operator workspaces stay connected.</Text>
+        <Text style={s.pageCtaBody}>Open the customer experience, or enter the dedicated Fleet web portal for authorized owners, admins, managers and dispatchers.</Text>
         <View style={s.finalCtaActions}>
-          <Pressable style={s.finalCtaPrimary} onPress={go('/?app=1')}><Text style={s.finalCtaPrimaryText}>OPEN THE APP</Text></Pressable>
+          <Pressable style={s.finalCtaPrimary} onPress={openFleetPortal}><Text style={s.finalCtaPrimaryText}>OPEN FLEET PORTAL</Text></Pressable>
+          <Pressable style={s.finalCtaSecondary} onPress={go('/?app=1')}><Text style={s.finalCtaSecondaryText}>OPEN CONSUMER APP</Text></Pressable>
           <Pressable style={s.finalCtaSecondary} onPress={go('/install')}><Text style={s.finalCtaSecondaryText}>INSTALL KLEENEST</Text></Pressable>
         </View>
       </View>
