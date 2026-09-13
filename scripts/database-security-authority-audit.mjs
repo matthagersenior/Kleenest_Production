@@ -14,8 +14,9 @@ const verificationOpportunitiesMigration='supabase/migrations/20260912070500_ver
 const publicFunctionDefaultPrivilegesMigration='supabase/migrations/20260912072000_public_function_default_privileges.sql';
 const reviewedPublicDefinerMigration='supabase/migrations/20260912073500_reviewed_public_security_definer_allowlist.sql';
 const internalExplicitDenyMigration='supabase/migrations/20260912081500_internal_tables_explicit_deny_policies.sql';
+const authenticatedHelperClosureMigration='supabase/migrations/20260912084000_authenticated_helper_closure.sql';
 const failures=[];
-for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration,anonSecurityDefinerBatch2Migration,publicSecurityInvokerBatch3Migration,businessLocationCapMigration,publicSecurityInvokerBatch5Migration,verificationOpportunitiesMigration,publicFunctionDefaultPrivilegesMigration,reviewedPublicDefinerMigration,internalExplicitDenyMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
+for(const migration of [internalMigration,fleetMigration,purchaseMigration,viewMigration,fkMigration,externalObservationMigration,anonSecurityDefinerMigration,anonSecurityDefinerBatch2Migration,publicSecurityInvokerBatch3Migration,businessLocationCapMigration,publicSecurityInvokerBatch5Migration,verificationOpportunitiesMigration,publicFunctionDefaultPrivilegesMigration,reviewedPublicDefinerMigration,internalExplicitDenyMigration,authenticatedHelperClosureMigration])if(!fs.existsSync(migration))failures.push(`missing database security authority migration: ${migration}`);
 if(!failures.length){
   const internalSql=fs.readFileSync(internalMigration,'utf8');
   const triggerFunctions=['converge_fleet_operational_event_to_intelligence','materialize_fleet_geofence_notification','materialize_fleet_operational_notification','sync_external_location_address'];
@@ -175,6 +176,15 @@ if(!failures.length){
   if((internalExplicitDenySql.match(/for all to anon, authenticated/g)||[]).length<internalExplicitDenyTables.length)failures.push('all internal explicit deny policies must target anon/authenticated roles');
   if((internalExplicitDenySql.match(/using \(false\)/g)||[]).length<internalExplicitDenyTables.length)failures.push('all internal explicit deny policies must deny reads');
   if((internalExplicitDenySql.match(/with check \(false\);/g)||[]).length<internalExplicitDenyTables.length)failures.push('all internal explicit deny policies must deny writes');
+
+  const authenticatedHelperClosureSql=fs.readFileSync(authenticatedHelperClosureMigration,'utf8');
+  for(const fn of [
+    'national_ingestion_storage_status()',
+    'business_enterprise_authorized(uuid)',
+  ]){
+    if(!authenticatedHelperClosureSql.includes(`revoke all on function public.${fn}`))failures.push(`${fn} must revoke direct app-role execution`);
+    if(!authenticatedHelperClosureSql.includes(`grant execute on function public.${fn}`))failures.push(`${fn} must preserve service-role execution`);
+  }
 
   const migrationDir='supabase/migrations';
   const retiredOwnerRightsViews=['locations_public','review_intelligence_signals','v_ai_business_roi'];
