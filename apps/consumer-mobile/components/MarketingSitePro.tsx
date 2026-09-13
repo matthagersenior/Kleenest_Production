@@ -2,6 +2,7 @@ import { router, usePathname } from 'expo-router';
 import { type ReactNode, useEffect } from 'react';
 import { useConsumerWebExperience } from '../services/webExperience';
 import {
+  Image,
   Platform,
   Pressable,
   SafeAreaView,
@@ -37,6 +38,10 @@ const webShadow = Platform.OS === 'web'
     };
 
 const go = (route: string) => () => router.push(route as any);
+const marketingAsset=(name:string)=>Platform.OS==='web'
+  ? `/Kleenest_Production/marketing/${name}`
+  : `https://matthagersenior.github.io/Kleenest_Production/marketing/${name}`;
+
 const openFleetPortal=()=>{
   if(Platform.OS==='web'&&typeof window!=='undefined'){
     window.location.assign('/Kleenest_Production/fleet/');
@@ -234,6 +239,15 @@ function LiveAppPreview() {
   );
 }
 
+function MarketingImage({file,label,contain=false}:{file:string;label:string;contain?:boolean}) {
+  return <Image
+    source={{uri:marketingAsset(file)}}
+    accessibilityLabel={label}
+    resizeMode={contain?'contain':'cover'}
+    style={s.marketingImage}
+  />;
+}
+
 function MetricCard({ value, label, body }: { value: string; label: string; body: string }) {
   return (
     <View style={s.metricCard}>
@@ -351,31 +365,30 @@ export function MarketingHome() {
       <View style={[s.hero, wide && s.heroWide]}>
         <View style={s.heroCopy}>
           <View style={s.heroBadgeRow}>
-            <Text style={s.heroBadge}>FRESH EVIDENCE</Text>
-            <Text style={s.heroBadge}>COMMUNITY VERIFIED</Text>
+            <Text style={s.heroBadge}>FIND CLEAN BATHROOMS</Text>
+            <Text style={s.heroBadge}>REAL REVIEWS + FRESH TRUST</Text>
           </View>
-          <Text style={[s.heroTitle, !wide && s.heroTitleCompact]}>Clean bathrooms shouldn’t be a gamble.</Text>
+          <Text style={[s.heroTitle, !wide && s.heroTitleCompact]}>Find clean bathrooms you can actually trust.</Text>
           <Text style={s.heroBody}>
-            Kleenest helps you find a bathroom you can trust before you stop. Search near you or around any address, compare cleanliness, access, amenities and freshness, then navigate with confidence.
+            Discover better stops using fresh reviews, trust scores, real check-ins, photos, amenities and recent community evidence. Then make discovery useful and fun with quests, missions, journeys, challenges, contests, XP and rewards.
           </Text>
           <View style={s.heroButtonRow}>
             <Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest" style={s.heroPrimary} onPress={go('/install')}><Text style={s.heroPrimaryText}>INSTALL KLEENEST</Text></Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Continue as guest" style={s.heroSecondary} onPress={go('/?app=1')}><Text style={s.heroSecondaryText}>CONTINUE AS GUEST</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Explore Kleenest now" style={s.heroSecondary} onPress={go('/?app=1')}><Text style={s.heroSecondaryText}>EXPLORE NOW</Text></Pressable>
           </View>
-          <Text style={s.heroGuestNote}>No install required. Use the full consumer experience now, then join or sign in whenever you want account-backed features.</Text>
-          <View style={s.heroAuthRow}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Join Kleenest" style={s.heroAuthButton} onPress={go('/signup')}><Text style={s.heroAuthText}>JOIN KLEENEST</Text></Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Sign in to Kleenest" style={s.heroAuthButton} onPress={go('/profile')}><Text style={s.heroAuthText}>SIGN IN</Text></Pressable>
-          </View>
+          <Text style={s.heroGuestNote}>Search any address, find nearby options, understand why Kleenest trusts the evidence, navigate there, then help make the next person’s decision better.</Text>
           <View style={s.heroTrustRow}>
-            <TrustChip value="NOW" label="See what is fresh" />
-            <TrustChip value="WHY" label="Understand the evidence" />
-            <TrustChip value="GO" label="Navigate with confidence" />
+            <TrustChip value="FIND" label="Discover nearby" />
+            <TrustChip value="TRUST" label="Fresh real evidence" />
+            <TrustChip value="PLAY" label="Quests + progress" />
+            <TrustChip value="HELP" label="Keep it current" />
           </View>
         </View>
         <View style={s.heroPreviewWrap}>
           <View style={s.heroGlow} />
-          <LiveAppPreview />
+          <View style={s.heroImageFrame}>
+            <MarketingImage file="home-discovery.svg" label="Kleenest discovery, trust, QR and quest experience" />
+          </View>
         </View>
       </View>
 
@@ -447,6 +460,20 @@ export function MarketingHome() {
         </View>
       </View>
 
+      <View style={[s.visualStory, wide && s.visualStoryWide]}>
+        <View style={s.visualStoryImage}>
+          <MarketingImage file="home-progress.svg" label="Kleenest progress page with missions, journeys, challenges, check-ins and rewards" />
+        </View>
+        <View style={s.visualStoryCopy}>
+          <Eyebrow>DISCOVERY BECOMES PROGRESS</Eyebrow>
+          <Text style={s.visualStoryTitle}>The game is making the map better.</Text>
+          <Text style={s.visualStoryBody}>Quests, missions, journeys, challenges and contests are tied to useful real-world actions—checking in, refreshing stale evidence, confirming amenities, discovering missing places and helping other people avoid a bad stop.</Text>
+          <View style={s.visualStoryPills}>
+            {['QUESTS','MISSIONS','JOURNEYS','CHALLENGES','CONTESTS','XP','BADGES','LEADERBOARDS'].map(item=><Text key={item} style={s.visualStoryPill}>{item}</Text>)}
+          </View>
+        </View>
+      </View>
+
       <View style={s.rewardSection}>
         <View style={s.rewardCopy}>
           <Eyebrow>USEFUL CAN STILL BE FUN</Eyebrow>
@@ -482,6 +509,9 @@ export function MarketingHome() {
       </View>
 
       <View style={s.businessSection}>
+        <View style={s.businessVisualFrame}>
+          <MarketingImage file="business-growth.svg" label="Kleenest Business customer engagement, QR check-in and analytics experience" />
+        </View>
         <View style={s.businessLead}>
           <Eyebrow light>FOR BUSINESS</Eyebrow>
           <Text style={s.businessTitle}>Turn restroom quality into a visible advantage.</Text>
@@ -647,37 +677,73 @@ const businessGroups = [
 ];
 
 export function ForBusinessMarketingPage() {
+  const {width}=useWindowDimensions();
+  const wide=width>=980;
   useMarketingMeta(
-    'Kleenest for Business | Turn clean restrooms into an advantage',
-    'Kleenest gives businesses discovery, trust, QR, review, engagement, analytics and operational tools built around the restroom experience.'
+    'Kleenest for Business | Cleaner restrooms. Stronger businesses.',
+    'Kleenest helps businesses build customer trust with restroom discovery, QR engagement, fresh reviews, analytics, Live Ops and smart-device intelligence.'
   );
   return (
     <Shell>
-      <PurposeHero
-        eyebrow="FOR BUSINESS"
-        title="Make a clean restroom part of your customer experience strategy."
-        body="Kleenest helps businesses get found, earn trust, engage visitors and act on restroom experience data. The goal is a tighter loop between what customers experience and what the business can improve."
-        primary="START BUSINESS / FLEET / ENTERPRISE"
-        secondary="BUSINESS SIGN IN"
-        primaryAction={openBusinessPortal('signup')}
-        secondaryAction={openBusinessPortal('signin')}
-      />
+      <View style={[s.businessHero,wide&&s.businessHeroWide]}>
+        <View style={s.businessHeroCopy}>
+          <Eyebrow>FOR BUSINESS</Eyebrow>
+          <Text style={[s.businessHeroTitle,!wide&&s.businessHeroTitleCompact]}>Cleaner restrooms. Stronger businesses.</Text>
+          <Text style={s.businessHeroBody}>Turn a hidden part of the customer experience into visible trust, measurable engagement and smarter operations. Kleenest connects discovery, QR interactions, reviews, customer notifications, analytics and Live Ops.</Text>
+          <View style={s.heroButtonRow}>
+            <Pressable style={s.heroPrimary} onPress={openBusinessPortal('signup')}><Text style={s.heroPrimaryText}>START BUSINESS / FLEET / ENTERPRISE</Text></Pressable>
+            <Pressable style={s.heroSecondary} onPress={openBusinessPortal('signin')}><Text style={s.heroSecondaryText}>BUSINESS SIGN IN</Text></Pressable>
+          </View>
+          <Text style={s.businessHeroNote}>Explore the value first. Onboarding begins only after you choose to start and create or sign in to your Business account.</Text>
+        </View>
+        <View style={s.businessHeroImage}>
+          <MarketingImage file="business-growth.svg" label="Kleenest Business analytics, QR engagement and customer notification experience" />
+        </View>
+      </View>
+
+      <View style={s.detailSection}>
+        <Eyebrow>THE CUSTOMER + BUSINESS LOOP</Eyebrow>
+        <Text style={s.detailSectionTitle}>The customer sees trust. The business sees what to do next.</Text>
+        <Text style={s.detailSectionLead}>A QR scan, check-in, review or fresh observation can become customer progress, a Business signal, an operational action and better public trust—all without making the experience feel like back-office software.</Text>
+        <View style={s.businessMomentGrid}>
+          {[
+            ['01','DISCOVER','A customer sees a clean, trusted nearby option.'],
+            ['02','ENGAGE','A Kleenest QR turns the physical visit into a check-in, review, reward or offer.'],
+            ['03','RESPOND','The business sees fresh feedback, customer activity and issues that need action.'],
+            ['04','IMPROVE','Progress, remediation and fresh verification flow back into consumer trust.'],
+          ].map(([num,title,body])=><View key={num} style={s.businessMomentCard}><Text style={s.businessMomentNum}>{num}</Text><Text style={s.businessMomentTitle}>{title}</Text><Text style={s.businessMomentBody}>{body}</Text></View>)}
+        </View>
+      </View>
+
+      <View style={[s.liveOpsSection,wide&&s.liveOpsSectionWide]}>
+        <View style={s.liveOpsCopy}>
+          <Eyebrow light>LIVE OPS + SMART DEVICES</Eyebrow>
+          <Text style={s.liveOpsTitle}>See the network. Act before the complaint.</Text>
+          <Text style={s.liveOpsBody}>Kleenest can bring together smart-device status, QR activity, geofences, nearby events, service completion, restroom condition signals and customer evidence. Business, Fleet and Enterprise teams get a live operating picture instead of isolated dashboards.</Text>
+          <View style={s.liveOpsPills}>{['LIVE MAPS','IOT / SMART DEVICES','SERVICE ALERTS','GEOFENCING','QR ACTIVITY','DWELL + STALL','ANALYTICS','NOTIFICATIONS'].map(item=><Text key={item} style={s.liveOpsPill}>{item}</Text>)}</View>
+        </View>
+        <View style={s.liveOpsImage}>
+          <MarketingImage file="business-live-ops.svg" label="Kleenest Live Ops dashboard with smart devices, alerts, service events and location analytics" />
+        </View>
+      </View>
+
       <View style={s.detailSection}>
         <Eyebrow>BUSINESS VALUE</Eyebrow>
         <Text style={s.detailSectionTitle}>Four clear jobs. One connected loop.</Text>
-        <Text style={s.detailSectionLead}>The business experience stays organized around outcomes instead of overwhelming people with a long feature list.</Text>
+        <Text style={s.detailSectionLead}>Kleenest keeps the offer organized around outcomes while still giving operators depth when they need it.</Text>
         <View style={s.groupGrid}>
           {businessGroups.map((group, index) => <GroupCard key={group.title} number={'0' + (index + 1)} {...group} />)}
         </View>
       </View>
+
       <View style={s.businessLoop}>
         <Text style={s.businessLoopKicker}>THE KLEENEST BUSINESS LOOP</Text>
-        <Text style={s.businessLoopTitle}>Discover → visit → verify → respond → improve → earn more trust.</Text>
-        <Text style={s.businessLoopBody}>When customers can see fresh evidence and businesses can act on that evidence, restroom quality becomes something that can be managed—not just complained about.</Text>
+        <Text style={s.businessLoopTitle}>Discover → visit → verify → notify → respond → improve → earn more trust.</Text>
+        <Text style={s.businessLoopBody}>The public experience remains simple, while Business turns the same activity into measurable customer engagement, operational visibility and evidence that conditions actually improved.</Text>
       </View>
       <View style={s.pageCta}>
-        <Text style={s.pageCtaTitle}>Start with the organization. Kleenest routes you to the right product.</Text>
-        <Text style={s.pageCtaBody}>Create or claim a Business workspace once. Your locations, mobile workforce, markets and goals determine whether Kleenest recommends Business Standard, Growth, Fleet, Enterprise or Enterprise + Fleet.</Text>
+        <Text style={s.pageCtaTitle}>See the value. Then start the right Kleenest workspace.</Text>
+        <Text style={s.pageCtaBody}>When you choose Start, create or sign in to one Business account. Kleenest then learns your organization, locations, workforce, markets and goals and recommends Business, Fleet, Enterprise or Enterprise + Fleet.</Text>
         <View style={s.finalCtaActions}>
           <Pressable style={s.finalCtaPrimary} onPress={openBusinessPortal('signup')}><Text style={s.finalCtaPrimaryText}>START BUSINESS / FLEET / ENTERPRISE</Text></Pressable>
           <Pressable style={s.finalCtaSecondary} onPress={openBusinessPortal('signin')}><Text style={s.finalCtaSecondaryText}>BUSINESS SIGN IN</Text></Pressable>
@@ -794,6 +860,8 @@ const s = StyleSheet.create({
   trustChipValue: { color: brand.forest, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   trustChipLabel: { color: '#718076', fontSize: 10, fontWeight: '700', marginTop: 2 },
   heroPreviewWrap: { flex: 0.85, minWidth: 320, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  heroImageFrame: { width: '100%', maxWidth: 650, aspectRatio: 1200/760, borderRadius: 30, overflow: 'hidden', backgroundColor: '#E8F1EB', borderWidth: 1, borderColor: '#D8E3DB', ...webShadow },
+  marketingImage: { width: '100%', height: '100%' },
   heroGlow: { position: 'absolute', width: 340, height: 340, borderRadius: 170, backgroundColor: '#DDEEE3', opacity: 0.8 },
   device: { width: '100%', maxWidth: 430, borderRadius: 34, padding: 22, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCE6DF', transform: [{ rotate: '-1deg' }] },
   deviceTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -861,6 +929,14 @@ const s = StyleSheet.create({
   iconText: { color: brand.forest, fontSize: 20, fontWeight: '900' },
   iconCardTitle: { color: brand.ink, fontSize: 18, lineHeight: 23, fontWeight: '900', marginTop: 16 },
   iconCardBody: { color: brand.muted, fontSize: 12, lineHeight: 19, marginTop: 7 },
+  visualStory: { marginHorizontal: 24, marginVertical: 28, maxWidth: 1192, alignSelf: 'center', width: '100%', borderRadius: 30, overflow: 'hidden', backgroundColor: brand.paper, borderWidth: 1, borderColor: '#DDE5DF' },
+  visualStoryWide: { flexDirection: 'row', alignItems: 'stretch' },
+  visualStoryImage: { flex: 1.2, minHeight: 360, aspectRatio: 1200/760 },
+  visualStoryCopy: { flex: 0.8, padding: 32, justifyContent: 'center' },
+  visualStoryTitle: { color: brand.ink, fontSize: 34, lineHeight: 40, fontWeight: '900', marginTop: 8 },
+  visualStoryBody: { color: brand.muted, fontSize: 14, lineHeight: 22, marginTop: 10 },
+  visualStoryPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 18 },
+  visualStoryPill: { color: brand.forest, backgroundColor: brand.mintSoft, borderWidth: 1, borderColor: '#CFE3D6', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 7, fontSize: 8, fontWeight: '900' },
   rewardSection: { marginHorizontal: 24, marginVertical: 20, maxWidth: 1192, alignSelf: 'center', width: '100%', backgroundColor: '#E7F2EA', borderRadius: 28, padding: 30, gap: 24 },
   rewardCopy: { flex: 1 },
   rewardTitle: { color: brand.ink, fontSize: 35, lineHeight: 40, fontWeight: '900', marginTop: 8 },
@@ -885,6 +961,7 @@ const s = StyleSheet.create({
   scenarioDetail: { color: '#6B786F', fontSize: 9, lineHeight: 14, marginTop: 4 },
   scenarioArrow: { color: brand.forest, fontSize: 22, fontWeight: '700' },
   businessSection: { backgroundColor: '#1B4732', paddingHorizontal: 24, paddingVertical: 62, gap: 26 },
+  businessVisualFrame: { maxWidth: 1000, width: '100%', aspectRatio: 1200/760, alignSelf: 'center', borderRadius: 26, overflow: 'hidden', borderWidth: 1, borderColor: '#376049' },
   businessLead: { maxWidth: 850, width: '100%', alignSelf: 'center' },
   businessTitle: { color: '#FFFFFF', fontSize: 40, lineHeight: 45, fontWeight: '900', letterSpacing: -0.7, marginTop: 8 },
   businessBody: { color: '#BCD0C3', fontSize: 15, lineHeight: 24, marginTop: 12, maxWidth: 780 },
@@ -904,6 +981,27 @@ const s = StyleSheet.create({
   finalCtaPrimaryText: { color: brand.forest, fontSize: 10, fontWeight: '900', letterSpacing: 0.6 },
   finalCtaSecondary: { borderWidth: 1, borderColor: '#6A8173', borderRadius: 11, paddingHorizontal: 18, paddingVertical: 13 },
   finalCtaSecondaryText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900', letterSpacing: 0.6 },
+  businessHero: { paddingHorizontal: 24, paddingVertical: 46, gap: 28, backgroundColor: brand.paper },
+  businessHeroWide: { minHeight: 660, paddingHorizontal: 56, paddingVertical: 60, flexDirection: 'row', alignItems: 'center' },
+  businessHeroCopy: { flex: 0.85, maxWidth: 650 },
+  businessHeroTitle: { color: brand.ink, fontSize: 58, lineHeight: 62, fontWeight: '900', letterSpacing: -1.8, marginTop: 10 },
+  businessHeroTitleCompact: { fontSize: 42, lineHeight: 47, letterSpacing: -1 },
+  businessHeroBody: { color: brand.muted, fontSize: 17, lineHeight: 27, marginTop: 18, maxWidth: 620 },
+  businessHeroNote: { color: '#718076', fontSize: 11, lineHeight: 18, fontWeight: '700', marginTop: 14, maxWidth: 590 },
+  businessHeroImage: { flex: 1.15, minWidth: 320, maxWidth: 700, aspectRatio: 1200/760, borderRadius: 30, overflow: 'hidden', borderWidth: 1, borderColor: '#D8E3DB', ...webShadow },
+  businessMomentGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 28 },
+  businessMomentCard: { flexGrow: 1, flexBasis: 230, minHeight: 170, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DFE6E1', borderRadius: 20, padding: 20 },
+  businessMomentNum: { color: brand.gold, fontSize: 11, fontWeight: '900', letterSpacing: 1.1 },
+  businessMomentTitle: { color: brand.ink, fontSize: 17, fontWeight: '900', marginTop: 9 },
+  businessMomentBody: { color: brand.muted, fontSize: 12, lineHeight: 19, marginTop: 7 },
+  liveOpsSection: { backgroundColor: brand.forestDark, paddingHorizontal: 24, paddingVertical: 54, gap: 28 },
+  liveOpsSectionWide: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 56, paddingVertical: 62 },
+  liveOpsCopy: { flex: 0.7, maxWidth: 560 },
+  liveOpsTitle: { color: '#FFFFFF', fontSize: 38, lineHeight: 44, fontWeight: '900', marginTop: 9 },
+  liveOpsBody: { color: '#B8C9BF', fontSize: 14, lineHeight: 23, marginTop: 12 },
+  liveOpsPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 18 },
+  liveOpsPill: { color: '#D9E8DF', backgroundColor: '#173727', borderWidth: 1, borderColor: '#31513E', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 7, fontSize: 8, fontWeight: '900' },
+  liveOpsImage: { flex: 1.3, minWidth: 320, maxWidth: 760, aspectRatio: 1200/760, borderRadius: 28, overflow: 'hidden', borderWidth: 1, borderColor: '#31513E' },
   detailHero: { backgroundColor: brand.forestDark, paddingHorizontal: 24, paddingVertical: 54, gap: 28 },
   detailHeroWide: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 56, paddingVertical: 72 },
   detailHeroCopy: { flex: 1, maxWidth: 760 },
