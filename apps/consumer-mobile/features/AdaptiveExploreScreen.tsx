@@ -39,6 +39,7 @@ import {
   writeNearbyContinuity,
 } from '../services/nearbyCache';
 import { captureConsumerDiscovery, captureConsumerRouteIntent } from '../services/consumerTelemetry';
+import { listNearbyProgressionOpportunities } from '../services/discoveryProgression';
 import { attachLocationPresentations } from '../services/locationPresentation';
 import {
   CompactRestroomSignals,
@@ -115,6 +116,10 @@ const looksLikeAddressOrArea = (value: string) => {
 };
 const navigateUrl = (row: any) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${row.latitude},${row.longitude}`)}&travelmode=driving`;
+
+const ratingOf=(row:any)=>{const value=Number(row?.rating ?? row?.average_rating ?? row?.star_rating ?? 0);return Number.isFinite(value)?value:0;};
+const freshestEvidenceAt=(row:any)=>{const values=[row?.trust?.latest_verified_at,row?.trust?.latest_amenity_observed_at].map((value:any)=>value?new Date(value).getTime():NaN).filter((value:number)=>Number.isFinite(value));return values.length?Math.max(...values):null;};
+const isFreshWithinDays=(row:any,days:number|null)=>{if(!days)return true;const time=freshestEvidenceAt(row);return time!=null&&Date.now()-time<=days*86400000;};
 
 function trustSummaryLine(item: any) {
   const trust = item?.trust;
@@ -268,14 +273,36 @@ export default function AdaptiveExploreScreen() {
   const [corridor, setCorridor] = useState(16093);
   const [amenities, setAmenities] = useState<AmenityCatalogItem[]>([]);
   const [selectedAmenityNames, setSelectedAmenityNames] = useState<string[]>([]);
+  const [kleenestOnly,setKleenestOnly]=useState(false);
+  const [progressionOnly,setProgressionOnly]=useState(false);
+  const [minimumStars,setMinimumStars]=useState(0);
+  const [freshnessDays,setFreshnessDays]=useState<number|null>(null);
   const [route, setRoute] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [cached, setCached] = useState(false);
 
+  const visibleRows=useMemo(()=>rows.filter((row)=>{
+    if(kleenestOnly&&!row?.business_id)return false;
+    if(progressionOnly&&!row?.progression_opportunity)return false;
+    if(minimumStars>0&&ratingOf(row)<minimumStars)return false;
+    if(!isFreshWithinDays(row,freshnessDays))return false;
+    return true;
+  }),[rows,kleenestOnly,progressionOnly,minimumStars,freshnessDays]);
+  const activeFilterCount=(kleenestOnly?1:0)+(progressionOnly?1:0)+(minimumStars>0?1:0)+(freshnessDays?1:0)+(selectedAmenityNames.length?1:0);
+  const filterSummary=useMemo(()=>{
+    const parts:string[]=[];
+    if(kleenestOnly)parts.push('Kleenest');
+    if(progressionOnly)parts.push('Progression');
+    if(minimumStars>0)parts.push(`${minimumStars}★+`);
+    if(freshnessDays)parts.push(freshnessDays===1?'Fresh 24h':`Fresh ${freshnessDays}d`);
+    if(selectedAmenityNames.length)parts.push(`${selectedAmenityNames.length} amenity${selectedAmenityNames.length===1?'':'ies'}`);
+    return parts.length?parts.join(' · '):'Everything';
+  },[kleenestOnly,progressionOnly,minimumStars,freshnessDays,selectedAmenityNames.length]);
+
   const selected = useMemo(
-    () => rows.find((row) => idOf(row) === selectedId) || null,
-    [rows, selectedId],
+    () => visibleRows.find((row) => idOf(row) === selectedId) || null,
+    [visibleRows, selectedId],
   );
   const selectedRoutePosition = useMemo(() => {
     if (!selected || mode !== 'route' || !route) return '';
@@ -302,10 +329,10 @@ export default function AdaptiveExploreScreen() {
     return [west, south, east, north] as [number, number, number, number];
   }, [route, selectedId]);
   const routeGap = useMemo(() => {
-    if (!route || !rows.length) return null;
+    if (!route || !visibleRows.length) return null;
     const fractions = [
       0,
-      ...rows
+      ...visibleRows
         .map((row) => Math.max(0, Math.min(1, Number(row.route_fraction || 0))))
         .sort((a, b) => a - b),
       1,
@@ -315,7 +342,7 @@ export default function AdaptiveExploreScreen() {
       gap = Math.max(gap, fractions[index] - fractions[index - 1]);
     }
     return gap * Number(route.distanceMiles || 0);
-  }, [route, rows]);
+  }, [route, visibleRows]);
 
   function toggleAmenity(name: string) {
     setSelectedAmenityNames((current) =>
@@ -323,6 +350,19 @@ export default function AdaptiveExploreScreen() {
         ? current.filter((value) => value !== name)
         : [...current, name],
     );
+  }
+
+  function resetFilters(){
+    setKleenestOnly(false);
+    setProgressionOnly(false);
+    setMinimumStars(0);
+    setFreshnessDays(null);
+    setSelectedAmenityNames([]);
+    setMatchRule('all');
+    setAutoExpand(true);
+    chooseRadius(8047);
+    setMaxRadius(402336);
+    setCorridor(16093);
   }
 
   function selectRow(row: any) {
@@ -380,6 +420,16 @@ export default function AdaptiveExploreScreen() {
       : [];
     const trusted=attachLocationTrust(data, summaries);
     return attachLocationPresentations(trusted).catch(()=>trusted);
+  }
+
+  async function enrichProgression(data:any[],latitude:number,longitude:number,radiusMeters:number){
+    try{
+      const opportunities=await listNearbyProgressionOpportunities(latitude,longitude,Math.min(402336,Math.max(5000,Math.round(radiusMeters))));
+      const byId=new globalThis.Map<string,any>((opportunities||[]).map((item:any)=>[String(item.location_id),item]));
+      return data.map((row)=>({...row,progression_opportunity:byId.has(idOf(row)),progression_opportunity_detail:byId.get(idOf(row))||null}));
+    }catch{
+      return data.map((row)=>({...row,progression_opportunity:false,progression_opportunity_detail:null}));
+    }
   }
 
   async function currentLocation() {
@@ -442,7 +492,8 @@ export default function AdaptiveExploreScreen() {
       usedMatureFallback = true;
     }
 
-    const enriched = await enrich(result.rows);
+    const enrichedBase = await enrich(result.rows);
+    const enriched = await enrichProgression(enrichedBase,latitude,longitude,result.effectiveRadiusMeters);
     if (!areaMatch&&!enriched.length && preserveCacheOnEmpty && !query && !selectedAmenityNames.length) {
       const fallback = await readNearbyCache();
       if (fallback?.rows?.length) {
@@ -506,7 +557,9 @@ export default function AdaptiveExploreScreen() {
       amenityMatch: matchRule,
       limit: 40,
     });
-    const enriched = await enrich(data);
+    const enrichedBase = await enrich(data);
+    const progressionRadius=Math.min(402336,Math.max(corridor,Math.round((Number(built.distanceMiles||0)+10)*1609.344)));
+    const enriched = await enrichProgression(enrichedBase,current.coords.latitude,current.coords.longitude,progressionRadius);
     setRows(enriched);
     setRoute(built);
     setSelectedId('');
@@ -630,7 +683,7 @@ export default function AdaptiveExploreScreen() {
     <SafeAreaView style={s.safe}>
       <FlatList
         style={s.pageScroll}
-        data={rows}
+        data={visibleRows}
         keyExtractor={idOf}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -704,81 +757,19 @@ export default function AdaptiveExploreScreen() {
           </Pressable>
         </View>
 
-        {mode === 'nearby' ? (
-          <>
-            <View style={s.rowHeading}>
-              <Text style={s.filterTitle}>Starting radius</Text>
-              <Text style={s.autoLabel}>Local search</Text>
-            </View>
-            <View accessibilityRole="radiogroup">
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
-                {radiusChoices.map((choice) => (
-                  <Pressable
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: radius === choice.meters }}
-                    key={choice.meters}
-                    style={[s.choice, radius === choice.meters && s.choiceActive]}
-                    onPress={() => chooseRadius(choice.meters)}
-                  >
-                    <Text style={[s.choiceText, radius === choice.meters && s.choiceTextActive]}>{choice.label}</Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </View>
-          </>
-        ) : (
-          <View style={s.rowHeading}>
-            <Text style={s.filterTitle}>Along-route search</Text>
-            <Text style={s.autoLabel}>Route controls are under advanced</Text>
-          </View>
-        )}
-
-        <View style={s.amenityHeading}>
-          <Text style={s.amenityTitle}>What matters on this stop?</Text>
-          {selectedAmenityNames.length ? (
-            <Pressable accessibilityRole="button" onPress={() => setSelectedAmenityNames([])}>
-              <Text style={s.clear}>Clear filters</Text>
-            </Pressable>
-          ) : null}
-        </View>
-        {filterAmenities.length ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.amenityRow}>
-            {filterAmenities.map((item) => (
-              <Pressable
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: selectedAmenityNames.includes(item.name) }}
-                key={item.id}
-                style={[
-                  s.amenityPill,
-                  selectedAmenityNames.includes(item.name) && s.amenityPillActive,
-                ]}
-                onPress={() => toggleAmenity(item.name)}
-              >
-                <Text style={[
-                  s.amenityText,
-                  selectedAmenityNames.includes(item.name) && s.amenityTextActive,
-                ]}>{item.name}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        ) : (
-          <Text style={s.help}>Amenity catalog is loading.</Text>
-        )}
-
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Advanced filters"
+          accessibilityLabel="Filter places"
           accessibilityState={{ expanded: showAdvanced }}
           onPress={() => setShowAdvanced(true)}
-          style={s.advancedButton}
+          style={s.filterLauncher}
         >
-          <View style={{ flex: 1 }}>
-            <Text style={s.filterTitle}>Advanced filters</Text>
-            <Text style={s.help}>Trip distance, corridor, and match rules</Text>
+          <View style={{flex:1}}>
+            <Text style={s.filterLauncherKicker}>FILTER PLACES</Text>
+            <Text style={s.filterLauncherTitle}>{filterSummary}</Text>
           </View>
-          <Text style={s.linkText}>Open</Text>
+          <View style={s.filterLauncherBadge}><Text style={s.filterLauncherBadgeText}>{activeFilterCount?`${activeFilterCount} active`:'Everything'} ▾</Text></View>
         </Pressable>
-
         <Modal
           transparent
           animationType="fade"
@@ -788,19 +779,19 @@ export default function AdaptiveExploreScreen() {
           <View style={s.modalBackdrop}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Close advanced filters"
+              accessibilityLabel="Close place filters"
               style={StyleSheet.absoluteFill}
               onPress={() => setShowAdvanced(false)}
             />
             <View style={s.advancedModalCard}>
               <View style={s.advancedModalHeader}>
                 <View style={{ flex: 1 }}>
-                  <Text style={s.advancedModalTitle}>Advanced filters</Text>
-                  <Text style={s.help}>{mode === 'nearby' ? 'Tune required amenities and maximum search distance.' : 'Tune the route corridor and match rules.'}</Text>
+                  <Text style={s.advancedModalTitle}>Filter places</Text>
+                  <Text style={s.help}>Default is Everything. Narrow the map only when you want a specific kind of stop.</Text>
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Close advanced filters"
+                  accessibilityLabel="Close place filters"
                   style={s.modalClose}
                   onPress={() => setShowAdvanced(false)}
                 >
@@ -812,6 +803,50 @@ export default function AdaptiveExploreScreen() {
                 contentContainerStyle={s.advancedModalContent}
                 showsVerticalScrollIndicator={false}
               >
+                <View style={s.filterSection}>
+                  <View style={s.rowHeading}>
+                    <Text style={s.filterSectionTitle}>High-value filters</Text>
+                    <Pressable onPress={resetFilters}><Text style={s.clear}>Reset to Everything</Text></Pressable>
+                  </View>
+                  <View style={s.quickFilterGrid}>
+                    <Pressable accessibilityRole="checkbox" accessibilityState={{checked:kleenestOnly}} style={[s.quickFilterCard,kleenestOnly&&s.quickFilterCardActive]} onPress={()=>setKleenestOnly(value=>!value)}>
+                      <Text style={[s.quickFilterTitle,kleenestOnly&&s.quickFilterTextActive]}>Kleenest places</Text>
+                      <Text style={[s.quickFilterBody,kleenestOnly&&s.quickFilterTextActive]}>Paying Kleenest business locations</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="checkbox" accessibilityState={{checked:progressionOnly}} style={[s.quickFilterCard,progressionOnly&&s.quickFilterCardActive]} onPress={()=>setProgressionOnly(value=>!value)}>
+                      <Text style={[s.quickFilterTitle,progressionOnly&&s.quickFilterTextActive]}>Progression</Text>
+                      <Text style={[s.quickFilterBody,progressionOnly&&s.quickFilterTextActive]}>Places with XP / evidence opportunities</Text>
+                    </Pressable>
+                  </View>
+                </View>
+
+                <View style={s.filterSection}>
+                  <Text style={s.filterSectionTitle}>Stars</Text>
+                  <View style={s.choiceRow}>
+                    {[{label:'Any',value:0},{label:'3★+',value:3},{label:'4★+',value:4},{label:'4.5★+',value:4.5}].map(choice=><Pressable key={choice.label} style={[s.choice,minimumStars===choice.value&&s.choiceActive]} onPress={()=>setMinimumStars(choice.value)}><Text style={[s.choiceText,minimumStars===choice.value&&s.choiceTextActive]}>{choice.label}</Text></Pressable>)}
+                  </View>
+                </View>
+
+                <View style={s.filterSection}>
+                  <Text style={s.filterSectionTitle}>Freshness</Text>
+                  <View style={s.choiceRow}>
+                    {[{label:'Any',value:null},{label:'24h',value:1},{label:'7d',value:7},{label:'30d',value:30}].map(choice=><Pressable key={choice.label} style={[s.choice,freshnessDays===choice.value&&s.choiceActive]} onPress={()=>setFreshnessDays(choice.value)}><Text style={[s.choiceText,freshnessDays===choice.value&&s.choiceTextActive]}>{choice.label}</Text></Pressable>)}
+                  </View>
+                </View>
+
+                {mode === 'nearby' ? (
+                  <View style={s.filterSection}>
+                    <View style={s.rowHeading}><Text style={s.filterSectionTitle}>Starting radius</Text><Text style={s.autoLabel}>Local search</Text></View>
+                    <View accessibilityRole="radiogroup"><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
+                      {radiusChoices.map(choice=><Pressable accessibilityRole="radio" accessibilityState={{ selected: radius === choice.meters }} key={choice.meters} style={[s.choice,radius===choice.meters&&s.choiceActive]} onPress={()=>chooseRadius(choice.meters)}><Text style={[s.choiceText,radius===choice.meters&&s.choiceTextActive]}>{choice.label}</Text></Pressable>)}
+                    </ScrollView></View>
+                  </View>
+                ) : null}
+
+                <View style={s.filterSection}>
+                  <View style={s.amenityHeading}><Text style={s.filterSectionTitle}>What matters on this stop?</Text>{selectedAmenityNames.length?<Pressable onPress={()=>setSelectedAmenityNames([])}><Text style={s.clear}>Clear amenities</Text></Pressable>:null}</View>
+                  {filterAmenities.length?<View style={s.amenityWrap}>{filterAmenities.map(item=><Pressable accessibilityRole="checkbox" accessibilityState={{checked:selectedAmenityNames.includes(item.name)}} key={item.id} style={[s.amenityPill,selectedAmenityNames.includes(item.name)&&s.amenityPillActive]} onPress={()=>toggleAmenity(item.name)}><Text style={[s.amenityText,selectedAmenityNames.includes(item.name)&&s.amenityTextActive]}>{item.name}</Text></Pressable>)}</View>:<Text style={s.help}>Amenity catalog is loading.</Text>}
+                </View>
                 {mode === 'nearby' ? (
                   <>
                     <View style={s.rowHeading}>
@@ -884,8 +919,8 @@ export default function AdaptiveExploreScreen() {
                   </View>
                 ) : null}
               </ScrollView>
-              <Pressable style={s.modalDone} onPress={() => setShowAdvanced(false)}>
-                <Text style={s.primaryText}>Done</Text>
+              <Pressable style={s.modalDone} onPress={()=>{setShowAdvanced(false);void load();}}>
+                <Text style={s.primaryText}>Show results</Text>
               </Pressable>
             </View>
           </View>
@@ -928,7 +963,7 @@ export default function AdaptiveExploreScreen() {
               {searchAreaOrigin?<Marker id="searched-area-marker" lngLat={searchAreaOrigin} anchor="center">
                 <View accessibilityLabel={`Search area: ${searchAreaLabel}`} style={s.searchedAreaMarker}><Text style={s.searchedAreaMarkerText}>◎</Text></View>
               </Marker>:null}
-              {rows.filter(hasCoordinates).map((row) => {
+              {visibleRows.filter(hasCoordinates).map((row) => {
                 const id = idOf(row);
                 const active = id === selectedId;
                 return (
@@ -956,7 +991,7 @@ export default function AdaptiveExploreScreen() {
               })}
             </Map>
             <View pointerEvents="none" style={s.mapBadge}>
-              <Text style={s.mapBadgeText}>{cached ? 'Cached · ' : ''}{rows.length} results</Text>
+              <Text style={s.mapBadgeText}>{cached ? 'Cached · ' : ''}{visibleRows.length}{activeFilterCount?` of ${rows.length}`:''} results</Text>
             </View>
             <View style={s.mapControls}>
               <Pressable accessibilityRole="button" accessibilityLabel="Zoom map in" style={s.mapControl} onPress={() => changeMapZoom(1)}>
@@ -1037,7 +1072,7 @@ export default function AdaptiveExploreScreen() {
                 <Text style={s.listEyebrow}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
                 <Text style={s.listTitle}>{mode === 'route' ? 'Bathrooms ahead' : 'Nearby businesses & bathrooms'}</Text>
               </View>
-              <Text style={s.listNote}>{cached ? 'Cached · pull to refresh' : 'Distance + actions on every card'}</Text>
+              <Text style={s.listNote}>{activeFilterCount?filterSummary:(cached ? 'Cached · pull to refresh' : 'Everything · distance + actions')}</Text>
             </View>
           </>
         }
@@ -1062,7 +1097,7 @@ export default function AdaptiveExploreScreen() {
               <Text style={s.emptyTitle}>No qualifying results yet.</Text>
               <Text style={s.help}>
                 {mode === 'nearby'
-                  ? 'Change the radius, amenity rule, or maximum distance and search again.'
+                  ? (activeFilterCount?'Clear or loosen filters to show more nearby places.':'Change the radius or search area and try again.')
                   : 'Build or adjust your saved route, widen its corridor, or change amenity requirements.'}
               </Text>
             </View>
@@ -1202,6 +1237,20 @@ const s = StyleSheet.create({
   secondarySmall: { minHeight: 34, borderRadius: 9, backgroundColor: '#e8efea', paddingHorizontal: 9, paddingVertical: 7, justifyContent: 'center' },
   primaryText: { fontSize: 9, fontWeight: '900', color: '#fff' },
   secondaryText: { fontSize: 9, fontWeight: '900', color: palette.green },
+  filterLauncher:{minHeight:48,borderRadius:14,borderWidth:1,borderColor:'#cbd9d0',backgroundColor:'#fff',paddingHorizontal:12,paddingVertical:9,flexDirection:'row',alignItems:'center',gap:10},
+  filterLauncherKicker:{fontSize:8,fontWeight:'900',letterSpacing:1,color:palette.green},
+  filterLauncherTitle:{fontSize:13,fontWeight:'900',color:palette.ink,marginTop:1},
+  filterLauncherBadge:{backgroundColor:'#e8f1eb',borderRadius:999,paddingHorizontal:9,paddingVertical:6},
+  filterLauncherBadgeText:{fontSize:8,fontWeight:'900',color:palette.green},
+  filterSection:{gap:8,paddingBottom:12,borderBottomWidth:1,borderBottomColor:'#edf1ee'},
+  filterSectionTitle:{fontSize:12,fontWeight:'900',color:palette.ink},
+  quickFilterGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},
+  quickFilterCard:{flexGrow:1,flexBasis:'47%',minHeight:76,borderRadius:14,borderWidth:1,borderColor:'#d4e0d8',backgroundColor:'#f7faf8',padding:11,gap:3},
+  quickFilterCardActive:{backgroundColor:palette.green,borderColor:palette.green},
+  quickFilterTitle:{fontSize:12,fontWeight:'900',color:palette.ink},
+  quickFilterBody:{fontSize:9,lineHeight:13,fontWeight:'700',color:'#607268'},
+  quickFilterTextActive:{color:'#fff'},
+  amenityWrap:{flexDirection:'row',flexWrap:'wrap',gap:6},
   advancedButton: { minHeight: 34, borderRadius: 11, borderWidth: 1, borderColor: '#d6e2da', backgroundColor: '#f7faf8', paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 8 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(13,31,22,.46)', justifyContent: 'center', padding: 18 },
   advancedModalCard: { maxHeight: '82%', borderRadius: 20, backgroundColor: '#fff', padding: 14, gap: 12 },

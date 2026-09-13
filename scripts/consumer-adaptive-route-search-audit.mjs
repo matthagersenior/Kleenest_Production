@@ -29,15 +29,23 @@ if(!screen.includes('useState(402336)'))throw new Error('Required-amenity expans
 if(!screen.includes('effectiveRadiusMeters')||!screen.includes('attemptedRadiiMeters'))throw new Error('Adaptive expansion provenance is not surfaced to the UI.');
 if(!screen.includes('route.distanceMiles')||!screen.includes('route.durationMinutes'))throw new Error('Along-route distance/ETA must derive from actual built-route totals.');
 
-// Explore is one continuous consumer page: controls → map → results. The map can scroll away.
+// Explore is one continuous consumer page: compact search controls → map → results.
+// Detailed qualification controls live in a dismissible filter menu so the map stays high.
 for(const token of [
   'const [showAdvanced, setShowAdvanced] = useState(false);',
   'accessibilityLabel="Nearby search"',
   'accessibilityLabel="Along route search"',
-  'accessibilityLabel="Advanced filters"',
+  'accessibilityLabel="Filter places"',
+  'Filter places',
+  'Everything',
+  'Kleenest places',
+  'Progression',
+  'minimumStars',
+  'freshnessDays',
+  'listNearbyProgressionOpportunities',
+  'visibleRows',
   '<Modal',
   'visible={showAdvanced}',
-  'setShowAdvanced(true)',
   'MapLegend',
   'Close selected location',
   '<CompactRestroomSignals',
@@ -50,26 +58,27 @@ for(const token of [
   'selectedRoutePosition',
   'RequestedAmenityMatches',
   'requestedAmenities={selectedAmenityNames}',
-])requireToken(screen,token,'Consumer continuous-scroll Explore composition');
+])requireToken(screen,token,'Consumer compact-filter Explore composition');
 
 if(screen.includes('Scroll results · map stays fixed'))throw new Error('Consumer Explore must not describe or implement a fixed-map/separate-results scrolling model.');
 if((screen.match(/<FlatList/g)||[]).length!==1)throw new Error('Consumer Explore must use exactly one primary virtualized vertical scroll surface.');
 
 const modeIndex=screen.indexOf('accessibilityLabel="Nearby search"');
-const radiusIndex=screen.indexOf('radiusChoices.map');
-if(!(modeIndex>0&&radiusIndex>modeIndex))throw new Error('Consumer Explore must place Nearby / Along route before radius controls.');
-const advancedStart=screen.indexOf('<Modal');
-for(const token of ['Expand for required amenities','Maximum distance','Route corridor','Must include all','Include any']){
-  const index=screen.indexOf(token);
-  if(index<advancedStart)throw new Error(`Consumer Explore must keep ${token} inside advanced modal disclosure.`);
-}
-const amenityIndex=screen.indexOf('filterAmenities.map');
-const advancedButtonIndex=screen.indexOf('accessibilityLabel="Advanced filters"');
+const filterButtonIndex=screen.indexOf('accessibilityLabel="Filter places"');
 const mapIndex=screen.indexOf('<View style={s.mapSection}>');
 const listHeaderIndex=screen.indexOf('ListHeaderComponent={');
 const resultsIndex=screen.indexOf('NEARBY OPTIONS');
 const renderItemIndex=screen.indexOf('renderItem={({ item })');
-if(!(listHeaderIndex>0&&radiusIndex>listHeaderIndex&&amenityIndex>radiusIndex&&advancedButtonIndex>amenityIndex&&mapIndex>advancedButtonIndex&&resultsIndex>mapIndex&&renderItemIndex>resultsIndex))throw new Error('Consumer Explore must preserve controls → map → results ordering inside the single virtualized scroll surface.');
-if(screen.includes('Road trip / advanced')||screen.includes('showAdvanced ? ('))throw new Error('Advanced controls must not return to the inline expanding Explore stack.');
+if(!(listHeaderIndex>0&&modeIndex>listHeaderIndex&&filterButtonIndex>modeIndex&&mapIndex>filterButtonIndex&&resultsIndex>mapIndex&&renderItemIndex>resultsIndex))throw new Error('Consumer Explore must preserve compact controls → map → results ordering inside the single virtualized scroll surface.');
+
+const filterModalStart=screen.indexOf('<Modal');
+const filterModalEnd=screen.indexOf('</Modal>',filterModalStart);
+const filterModal=screen.slice(filterModalStart,filterModalEnd);
+for(const token of ['Starting radius','What matters on this stop?','Expand for required amenities','Maximum distance','Route corridor','Must include all','Include any','Kleenest places','Progression','Stars','Freshness']){
+  if(!filterModal.includes(token))throw new Error(`Consumer Explore must keep ${token} inside the filter modal disclosure.`);
+}
+if(!filterModal.includes('filterAmenities.map'))throw new Error('Amenity chips must move into the filter modal so the map rises on the page.');
+if(!filterModal.includes('radiusChoices.map'))throw new Error('Radius controls must move into the filter modal so the map rises on the page.');
+if(screen.includes('Road trip / advanced')||screen.includes('showAdvanced ? ('))throw new Error('Detailed controls must stay in the dismissible filter modal.');
 
 console.log('Consumer adaptive nearby and route-aware restroom discovery authority audit passed.');
