@@ -183,6 +183,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onAddToRoute, onDe
       <View style={s.cardActionRow}>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel="Start directions to this location"
           disabled={!hasCoordinates(item)}
           style={[s.primarySmall, s.cardAction, !hasCoordinates(item) && s.disabled]}
           onPress={onDirections}
@@ -935,6 +936,8 @@ export default function AdaptiveExploreScreen() {
                 <CompactRestroomSignals item={selected} />
                 <View style={s.actionRow}>
                   <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Start directions to this location"
                     style={[s.primarySmall, s.selectedAction, !hasCoordinates(selected) && s.disabled]}
                     disabled={!hasCoordinates(selected)}
                     onPress={() => void directions(selected)}
