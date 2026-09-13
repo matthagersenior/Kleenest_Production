@@ -654,6 +654,24 @@ async function listSmartDevices(auth: Authorization) {
   return data ?? { devices: [] };
 }
 
+async function registerSmartDevice(auth: Authorization, body: any) {
+  const businessId=String(body?.businessId??'').trim(),connectorId=String(body?.connectorId??'').trim();
+  const externalDeviceId=String(body?.externalDeviceId??'').trim().slice(0,240),name=String(body?.name??'').trim().slice(0,160);
+  if(!/^[0-9a-f-]{36}$/i.test(businessId)||!/^[0-9a-f-]{36}$/i.test(connectorId))throw new ApiInputError('businessId and connectorId are required');
+  if(!externalDeviceId||!name)throw new ApiInputError('externalDeviceId and name are required');
+  const capabilities=Array.isArray(body?.capabilities)?body.capabilities.map((v:unknown)=>String(v).trim()).filter(Boolean).slice(0,64):[];
+  const tags=Array.isArray(body?.tags)?body.tags.map((v:unknown)=>String(v).trim()).filter(Boolean).slice(0,32):[];
+  const {data,error}=await db.rpc('platform_register_smart_device',{
+    p_partner_id:requirePartner(auth),p_business_id:businessId,p_connector_id:connectorId,p_external_device_id:externalDeviceId,
+    p_name:name,p_device_type:String(body?.deviceType??'sensor').trim().slice(0,80),p_location_id:body?.locationId??null,
+    p_manufacturer:body?.manufacturer?String(body.manufacturer).slice(0,120):null,p_model:body?.model?String(body.model).slice(0,120):null,
+    p_firmware_version:body?.firmwareVersion?String(body.firmwareVersion).slice(0,120):null,p_capabilities:capabilities,p_tags:tags,
+    p_telemetry_enabled:body?.telemetryEnabled!==false,p_metadata:body?.metadata&&typeof body.metadata==='object'?body.metadata:{}
+  });
+  if(error)throw error;
+  return{device:data};
+}
+
 async function queueSmartDeviceCommand(auth: Authorization, routePath: string, body: any) {
   const { deviceId } = smartDeviceRouteIds(routePath);
   if (!deviceId) throw new ApiInputError('Device id is required');
@@ -721,12 +739,10 @@ Deno.serve(async req => {
   const isNearby = routePath === '/v1/recommendations/nearby';
   const isRoute = routePath === '/v1/recommendations/route';
   const isPlaceMatch = routePath === '/v1/places/match';
-  const isPlaceDetails = /^\/v1\/places\/[^/]+$/.test(routePath) && !isPlaceMatch;\n  const isDevices = routePath === '/v1/devices';\n  const isDeviceEvents = routePath === '/v1/devices/events';\n  const isDeviceCommand = /^\\/v1\\/devices\\/[0-9a-f-]+\\/commands$/i.test(routePath);\n  const isDeviceCommandComplete = /^\\/v1\\/devices\\/[0-9a-f-]+\\/commands\\/[0-9a-f-]+\\/complete$/i.test(routePath);\n\n  if (!isNearby && !isRoute && !isPlaceMatch && !isPlaceDetails && !isDevices && !isDeviceEvents && !isDeviceCommand && !isDeviceCommandComplete) {
+  const isPlaceDetails = /^\/v1\/places\/[^/]+$/.test(routePath) && !isPlaceMatch;\n  const isDevices = routePath === '/v1/devices';\n  const isDeviceEvents = routePath === '/v1/devices/events';\n  const isDeviceCommand = /^\\/v1\\/devices\\/[0-9a-f-]+\\/commands$/i.test(routePath);\n  const isDeviceCommandComplete = /^\\/v1\\/devices\\/[0-9a-f-]+\\/commands\\/[0-9a-f-]+\\/complete$/i.test(routePath);\n\n  if (!isNearby && !isRoute && !isPlaceMatch && !isPlaceDetails && !isDevices && !isDeviceRegister && !isDeviceEvents && !isDeviceCommand && !isDeviceCommandComplete) {
     return json({ error: 'Not found' }, 404, corsHeaders(req));
   }
-  if ((isNearby || isRoute || isPlaceMatch || isDevices || isDeviceEvents || isDeviceCommand || isDeviceCommandComplete) && req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
-  }
+  if ((isNearby || isRoute || isPlaceMatch || isDeviceRegister || isDeviceEvents || isDeviceCommand || isDeviceCommandComplete) && req.method !== 'POST') {\n    return json({ error: 'Method not allowed' }, 405, corsHeaders(req));\n  }\n  if (isDevices && req.method !== 'GET' && req.method !== 'POST') {\n    return json({ error: 'Method not allowed' }, 405, corsHeaders(req));\n  }
   if (isPlaceDetails && req.method !== 'GET') {
     return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
   }
