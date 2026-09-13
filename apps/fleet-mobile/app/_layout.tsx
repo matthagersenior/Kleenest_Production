@@ -16,6 +16,7 @@ export default function Layout(){
   const[gateReady,setGateReady]=useState(false);
   const[signedIn,setSignedIn]=useState(false);
   const[onboardingRequired,setOnboardingRequired]=useState(false);
+  const[needsBusinessSetup,setNeedsBusinessSetup]=useState(false);
   const[workspaceRole,setWorkspaceRole]=useState<FleetWorkspaceRole|null>(null);
   const[workspaceRevision,setWorkspaceRevision]=useState(0);
   const activeRoute=String(segments.at(-1)||'');
@@ -38,6 +39,7 @@ export default function Layout(){
     if(!signedIn){
       setWorkspaceRole(null);
       setOnboardingRequired(false);
+      setNeedsBusinessSetup(false);
       setGateReady(true);
       return()=>{active=false};
     }
@@ -48,6 +50,7 @@ export default function Layout(){
         const businessId=await currentFleetBusinessId();
         const access=await getFleetWorkspaceAccess(businessId);
         if(!active)return;
+        setNeedsBusinessSetup(false);
         setWorkspaceRole(access.workspace_role);
         if(access.workspace_role==='operator'){
           const gate=await getFleetOnboardingGate(businessId);
@@ -59,6 +62,7 @@ export default function Layout(){
       }catch{
         if(!active)return;
         setWorkspaceRole(null);
+        setNeedsBusinessSetup(true);
         setOnboardingRequired(false);
       }finally{
         if(active)setGateReady(true);
@@ -73,17 +77,21 @@ export default function Layout(){
       if(!onAuthRoute)router.replace('/auth');
       return;
     }
+    if(needsBusinessSetup){
+      if(!onAuthRoute)router.replace('/auth');
+      return;
+    }
     if(workspaceRole&&workspaceRole!=='operator'){
       if(onAuthRoute||activeRoute===''||!MEMBER_ALLOWED.has(activeRoute))router.replace('/member');
       return;
     }
     if(onboardingRequired&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');
     if(onAuthRoute)router.replace(onboardingRequired?'/onboarding':'/');
-  },[ready,gateReady,signedIn,workspaceRole,onboardingRequired,onAuthRoute,activeRoute,router]);
+  },[ready,gateReady,signedIn,needsBusinessSetup,workspaceRole,onboardingRequired,onAuthRoute,activeRoute,router]);
 
   if(!ready||(signedIn&&!gateReady))return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:'#f3f6f4'}}><ActivityIndicator size="large"/></View>;
 
-  return <><StatusBar style="dark"/><Tabs key={'fleet-workspace-'+workspaceRevision+'-'+String(workspaceRole)} screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired?{display:'none'}:undefined}}>
+  return <><StatusBar style="dark"/><Tabs key={'fleet-workspace-'+workspaceRevision+'-'+String(workspaceRole)} screenOptions={{headerStyle:{backgroundColor:'#f3f6f4'},headerShadowVisible:false,tabBarActiveTintColor:'#173d2b',tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired||needsBusinessSetup?{display:'none'}:undefined}}>
     <Tabs.Screen name="index" options={{title:'Home',href:operator?undefined:null}}/>
     <Tabs.Screen name="planner" options={{title:'Planner',href:operator?undefined:null}}/>
     <Tabs.Screen name="dispatch" options={{title:'Dispatch',href:operator?undefined:null}}/>
