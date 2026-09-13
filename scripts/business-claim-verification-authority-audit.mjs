@@ -28,7 +28,8 @@ expect(migration,/business_search_claimable_locations_v2/,'Business search must 
 expect(edge,/allowedCorsOrigin/,'sensitive claim verification must use an explicit web-origin allowlist');
 expect(edge,/origin==='https:\/\/matthagersenior\.github\.io'/,'production GitHub Pages origin must be explicitly allowed');
 expect(edge,/if\(!origin\)return new Response\(JSON\.stringify\(\{error:'Origin not allowed'\}\)/,'untrusted browser origins must be rejected before authentication or claim actions');
-if(/access-control-allow-origin['"]?:\s*origin/.test(edge))failures.push('claim verification must not reflect an arbitrary request Origin into CORS');
+if(/const\s+origin\s*=\s*req\.headers\.get\(['"]origin['"]\)\s*\|\|\s*['"]\*['"]/.test(edge))failures.push('claim verification must not default arbitrary request Origin reflection to wildcard CORS');
+if(/access-control-allow-origin['"]?:\s*req\.headers\.get\(['"]origin['"]\)/.test(edge))failures.push('claim verification must not write the raw request Origin directly into CORS');
 expect(edge,/FREE_EMAIL_DOMAINS/,'generic email providers must not count as company-domain proof');
 expect(edge,/user\.email_confirmed_at/,'company-domain proof must require confirmed account email');
 expect(edge,/location\.website/,'automated domain evidence must be grounded in the canonical location website');
