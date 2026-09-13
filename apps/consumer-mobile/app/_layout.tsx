@@ -29,7 +29,8 @@ const tabIcon=(glyph:string)=>(props:{color:ColorValue;focused:boolean;size:numb
 
 export default function RootLayout() {
   const pathname=usePathname();
-  const publicWeb=Platform.OS==='web'&&['/','/for-you','/for-business','/trust','/install'].includes(pathname);
+  const webAppLaunch=Platform.OS==='web'&&typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('app')==='1';
+  const publicWeb=Platform.OS==='web'&&!webAppLaunch&&['/','/for-you','/for-business','/trust','/install'].includes(pathname);
   useEffect(() => {
     let active=true;
     Notifications.getLastNotificationResponseAsync().then(async response=>{if(!active)return;await openNotificationResponse(response);if(response)await Notifications.clearLastNotificationResponseAsync().catch(()=>{})}).catch(() => {});
