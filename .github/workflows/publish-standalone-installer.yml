@@ -113,7 +113,7 @@ jobs:
             mkdir -p "apps/consumer-mobile/dist/owner/$route"
             cp apps/platform-mobile/dist/index.html "apps/consumer-mobile/dist/owner/$route/index.html"
           done
-          business_routes="auth tools locations engagement operations analytics workspaces onboarding demo profile members assistant reviews qr-studio qr-designer live-network progression intelligence capabilities growth prevention trust-operations governance enterprise-economy enterprise-locations enterprise-location-admin enterprise partners notifications support terms privacy account"
+          business_routes="auth tools locations engagement operations fleet analytics workspaces onboarding demo profile members assistant reviews qr-studio qr-designer live-network progression intelligence capabilities growth prevention trust-operations governance enterprise-economy enterprise-locations enterprise-location-admin enterprise partners notifications support terms privacy account"
           for route in $business_routes; do
             mkdir -p "apps/consumer-mobile/dist/business/$route"
             cp apps/business-mobile/dist/index.html "apps/consumer-mobile/dist/business/$route/index.html"
@@ -134,6 +134,7 @@ jobs:
           test -s apps/consumer-mobile/dist/fleet/nearby/index.html
           test -s apps/consumer-mobile/dist/fleet/operations/index.html
           test -s apps/consumer-mobile/dist/business/tools/index.html
+          test -s apps/consumer-mobile/dist/business/fleet/index.html
           test -s apps/consumer-mobile/dist/business/analytics/index.html
           test -s apps/consumer-mobile/dist/business/enterprise-location-admin/index.html
           test -s apps/consumer-mobile/dist/Kleenest-release-state.json
