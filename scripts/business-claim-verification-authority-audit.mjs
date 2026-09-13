@@ -26,14 +26,14 @@ expect(migration,/admin_resolve_location_claim_v2/,'KleenestOS must use a note-a
 expect(migration,/business_search_claimable_locations_v2/,'Business search must distinguish managed and unclaimed locations');
 
 expect(edge,/allowedCorsOrigin/,'sensitive claim verification must use an explicit web-origin allowlist');
-expect(edge,/origin==='https:\/\/matthagersenior\.github\.io'/,'production GitHub Pages origin must be explicitly allowed');
+if(!edge.includes("origin==='https://matthagersenior.github.io'"))failures.push('production GitHub Pages origin must be explicitly allowed');
 expect(edge,/if\(!origin\)return new Response\(JSON\.stringify\(\{error:'Origin not allowed'\}\)/,'untrusted browser origins must be rejected before authentication or claim actions');
 if(/const\s+origin\s*=\s*req\.headers\.get\(['"]origin['"]\)\s*\|\|\s*['"]\*['"]/.test(edge))failures.push('claim verification must not default arbitrary request Origin reflection to wildcard CORS');
 if(/access-control-allow-origin['"]?:\s*req\.headers\.get\(['"]origin['"]\)/.test(edge))failures.push('claim verification must not write the raw request Origin directly into CORS');
 expect(edge,/FREE_EMAIL_DOMAINS/,'generic email providers must not count as company-domain proof');
 expect(edge,/user\.email_confirmed_at/,'company-domain proof must require confirmed account email');
 expect(edge,/location\.website/,'automated domain evidence must be grounded in the canonical location website');
-expect(edge,/cloudflare-dns\.com\/dns-query/,'DNS verification must use a fixed DNS-over-HTTPS authority instead of fetching arbitrary business sites');
+if(!edge.includes('https://cloudflare-dns.com/dns-query'))failures.push('DNS verification must use a fixed DNS-over-HTTPS authority instead of fetching arbitrary business sites');
 expect(edge,/company_email_domain[\s\S]*dns_txt/,'automatic approval must require two independent domain-control signals');
 expect(edge,/if\(ctx\.claim\.existing_operator_business_id\|\|!evidence\.includes/,'automatic approval must be impossible when an existing operator is present');
 expect(edge,/\.is\('business_id',null\)\.is\('claimed_business_id',null\)/,'auto-approval must atomically require an unclaimed location');
