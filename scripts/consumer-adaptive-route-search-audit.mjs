@@ -72,12 +72,13 @@ const renderItemIndex=screen.indexOf('renderItem={({ item })');
 if(!(listHeaderIndex>0&&modeIndex>listHeaderIndex&&filterButtonIndex>modeIndex&&mapIndex>filterButtonIndex&&resultsIndex>mapIndex&&renderItemIndex>resultsIndex))throw new Error('Consumer Explore must preserve compact controls → map → results ordering inside the single virtualized scroll surface.');
 
 const filterModalStart=screen.indexOf('<Modal');
+const filterModalEnd=screen.indexOf('</Modal>',filterModalStart);
+const filterModal=screen.slice(filterModalStart,filterModalEnd);
 for(const token of ['Starting radius','What matters on this stop?','Expand for required amenities','Maximum distance','Route corridor','Must include all','Include any','Kleenest places','Progression','Stars','Freshness']){
-  const index=screen.indexOf(token);
-  if(index<filterModalStart)throw new Error(`Consumer Explore must keep ${token} inside the filter modal disclosure.`);
+  if(!filterModal.includes(token))throw new Error(`Consumer Explore must keep ${token} inside the filter modal disclosure.`);
 }
-if(screen.indexOf('filterAmenities.map')<filterModalStart)throw new Error('Amenity chips must move into the filter modal so the map rises on the page.');
-if(screen.indexOf('radiusChoices.map')<filterModalStart)throw new Error('Radius controls must move into the filter modal so the map rises on the page.');
+if(!filterModal.includes('filterAmenities.map'))throw new Error('Amenity chips must move into the filter modal so the map rises on the page.');
+if(!filterModal.includes('radiusChoices.map'))throw new Error('Radius controls must move into the filter modal so the map rises on the page.');
 if(screen.includes('Road trip / advanced')||screen.includes('showAdvanced ? ('))throw new Error('Detailed controls must stay in the dismissible filter modal.');
 
 console.log('Consumer adaptive nearby and route-aware restroom discovery authority audit passed.');
