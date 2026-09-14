@@ -10,11 +10,12 @@ const paths={
   migration:'supabase/migrations/20260906052000_consumer_adaptive_route_search.sql',
   densityMigration:'supabase/migrations/20260914165745_density_adaptive_discovery_ranking.sql',
   densityCompatMigration:'supabase/migrations/20260914170001_density_discovery_anon_compat.sql',
+  densitySafeMigration:'supabase/migrations/20260914170218_density_discovery_safe_v3_projection.sql',
 };
 for(const [label,path] of Object.entries(paths))if(!fs.existsSync(path))throw new Error(`${label} adaptive-search authority missing: ${path}`);
 const read=path=>fs.readFileSync(path,'utf8');
 const requireToken=(text,token,label)=>{if(!text.includes(token))throw new Error(`${label} missing ${token}`)};
-const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration);
+const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration);
 
 for(const token of ['1 mi','2 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Expand for required amenities','Maximum distance','Nearby','Along route','findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route','Start navigation'])requireToken(screen,token,'Consumer adaptive Explore');
 for(const token of ['AdaptiveExploreScreen'])requireToken(entry,token,'Consumer Explore entry');
@@ -26,7 +27,9 @@ if(migration.includes('SECURITY DEFINER'))throw new Error('Adaptive discovery RP
 if(/execute\s+format|\bEXECUTE\s+[^;]*\|\|/i.test(migration))throw new Error('Adaptive discovery migration must not use dynamic SQL.');
 for(const token of ['p_limit > 500','business_tier','kleenest_business','402336'])requireToken(densityMigration,token,'Density-adaptive discovery migration');
 for(const token of ['security invoker','p_limit > 500','anon,authenticated,service_role'])requireToken(densityCompatMigration.toLowerCase(),token,'Density discovery anonymous compatibility migration');
-if(/TODO|coming soon|not implemented|placeholder\s+(?:implementation|behavior|logic|code|handler)/i.test(screen+core+migration+densityMigration+densityCompatMigration))throw new Error('Adaptive discovery cannot ship placeholder/TODO behavior.');
+for(const token of ['security invoker','map_network_nearby_v2','jsonb_array_elements','p_limit > 500','anon,authenticated,service_role'])requireToken(densitySafeMigration.toLowerCase(),token,'Density discovery safe V3 projection migration');
+if(densitySafeMigration.includes('from public.locations'))throw new Error('Final public V3 discovery must read through the sanitized V2 projection, not raw locations.');
+if(/TODO|coming soon|not implemented|placeholder\s+(?:implementation|behavior|logic|code|handler)/i.test(screen+core+migration+densityMigration+densityCompatMigration+densitySafeMigration))throw new Error('Adaptive discovery cannot ship placeholder/TODO behavior.');
 if(!screen.includes("matchRule === 'all'")||!screen.includes('selectedAmenityNames.length'))throw new Error('Amenity all/any controls are not wired to selected amenities.');
 if(!screen.includes('useState(1609)'))throw new Error('Nearby discovery must start at the dense-area 1 mile default.');
 if(!screen.includes('selectedAmenityNames.length ? autoExpand : true'))throw new Error('Default discovery must keep expanding when local supply is sparse.');
