@@ -362,7 +362,7 @@ export default function AdaptiveExploreScreen() {
   const [searchAreaLabel,setSearchAreaLabel]=useState('');
   const [radius, setRadius] = useState(1609);
   const [maxRadius, setMaxRadius] = useState(402336);
-  const [effectiveRadiusMeters, setEffectiveRadiusMeters] = useState(8047);
+  const [effectiveRadiusMeters, setEffectiveRadiusMeters] = useState(1609);
   const [attemptedRadiiMeters, setAttemptedRadiiMeters] = useState<number[]>([]);
   const [autoExpand, setAutoExpand] = useState(true);
   const [matchRule, setMatchRule] = useState<AmenityMatchRule>('all');
@@ -644,8 +644,8 @@ export default function AdaptiveExploreScreen() {
 
     captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:enriched.length,search:rawQuery,amenityCount:selectedAmenityNames.length});
 
-    if (!areaMatch&&!query && !selectedAmenityNames.length && !result.expanded && enriched.length) {
-      void writeNearbyCache(enriched,{selectedId:preservedId,origin:nextOrigin,radiusMeters:radius});
+    if (!areaMatch&&!query && !selectedAmenityNames.length && enriched.length) {
+      void writeNearbyCache(enriched,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
     }
 
     if(areaMatch){
