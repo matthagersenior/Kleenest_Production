@@ -127,8 +127,8 @@ requireTokens('Fleet Home dark surfaces','apps/fleet-mobile/app/index.tsx',[
 ]);
 requireTokens('Fleet Planner dark surfaces','apps/fleet-mobile/app/planner.tsx',[
   'style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}',
-  'style={[s.route,{backgroundColor:theme.surface,borderColor:theme.line}]}',
-  'style={[s.toggle,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}',
+  'style={[s.route,{backgroundColor:theme.surface,borderColor:theme.line}',
+  'style={[s.toggle,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}',
 ]);
 requireTokens('Fleet Dispatch dark surfaces','apps/fleet-mobile/app/dispatch.tsx',[
   'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
@@ -144,7 +144,7 @@ requireTokens('Fleet Member dark surfaces','apps/fleet-mobile/app/member.tsx',[
 requireTokens('Fleet Nearby dark surfaces','apps/fleet-mobile/app/nearby.tsx',[
   'style={[s.searchCard,{backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.selectedCard,{backgroundColor:theme.surface,borderColor:theme.line}]}',
-  'style={[s.result,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.result,{backgroundColor:theme.surface,borderColor:theme.line}',
 ]);
 
 if(failures.length){
