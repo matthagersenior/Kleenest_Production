@@ -104,6 +104,19 @@ requireTokens('Consumer Preferences dark forms','apps/consumer-mobile/app/prefer
   'placeholderTextColor={theme.muted}',
 ]);
 
+requireTokens('Early Access theme core','packages/mobile-core/src/theme.ts',[
+  "'early-access'",
+  "canvas:'#070b17'",
+  "accent:'#5de2c2'",
+  "earlyAccessAccents",
+]);
+requireTokens('Consumer Early Access theme selector','apps/consumer-mobile/app/preferences.tsx',[
+  "option.value==='early-access'",
+  'BETA · EARLY ACCESS',
+  'earlyAccessChoice',
+  "backgroundColor:earlyAccess?'#0f172a'",
+]);
+
 requireTokens('Business Home dark surfaces','apps/business-mobile/app/index.tsx',[
   'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.metricValue,{color:theme.ink}]}',
