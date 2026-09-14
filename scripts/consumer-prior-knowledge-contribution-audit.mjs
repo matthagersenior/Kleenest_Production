@@ -40,6 +40,7 @@ if(!failures.length){
   }
   if(!migration.includes("if p_input ? 'amenities' then raise exception 'PRIOR_KNOWLEDGE_CANNOT_CREATE_AMENITY_EVIDENCE'; end if;")) failures.push('prior knowledge must reject canonical amenity payloads.');
   if(!migration.includes("case when v_prior then v_claimed_observed_at else now() end")) failures.push('prior knowledge must preserve declared historical recency instead of using submission time as observation freshness.');
+  if(!migration.includes("if not v_prior then\n    select id into v_contrib")) failures.push('prior knowledge must not mutate the canonical discovery-contribution state used by stronger evidence.');
 
   if(!service.includes("rpc('consumer_record_discovery_evidence'")) failures.push('native prior-knowledge service must call the dedicated RPC.');
   if(!screen.includes('I Know This Place')) failures.push('native prior-knowledge screen must explain the I Know This Place path.');
