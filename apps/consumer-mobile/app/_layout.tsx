@@ -72,6 +72,7 @@ export default function RootLayout() {
     <Tabs.Screen name="trust" options={{ href:null,title:'Trust + Freshness' }}/>
     <Tabs.Screen name="play" options={{ href:null,title:'Legacy progression + play' }}/>
     <Tabs.Screen name="discover" options={{ href:null,title:'Discover a place' }}/>
+    <Tabs.Screen name="knowledge" options={{ href:null,title:'Share prior knowledge' }}/>
     <Tabs.Screen name="assistant" options={{ href:null,title:'Kleenest AI' }}/>
     <Tabs.Screen name="access" options={{ href:null,title:'Access & Preferred' }}/>
     <Tabs.Screen name="messages" options={{ href:null,title:'Messages' }}/>
