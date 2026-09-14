@@ -5,3 +5,5 @@ export { listMobileActivity } from './privateActivity';
 export { listMobileNotifications, markMobileNotificationRead, markAllMobileNotificationsRead } from './privateNotifications';
 
 export * from './theme';
+
+export * from './betaReporting';

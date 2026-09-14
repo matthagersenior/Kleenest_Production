@@ -21,7 +21,7 @@ function isRestroomOperations(data:Record<string,unknown>,type:string){return Bo
 
 export function notificationContext(notification:NotificationLike):NotificationContext {
   const {data,type}=notificationParts(notification);
-  if(stringValue(data.support_request_id)||type.includes('support'))return'Support';
+  if(stringValue(data.support_request_id)||type.includes('support')||type.includes('beta_incident'))return'Support';
   if(isProgress(data,type))return'Progress';
   if(stringValue(data.route_id)||type.includes('route'))return'Route';
   if(isRestroomOperations(data,type))return'Restroom';
@@ -34,6 +34,7 @@ export function notificationDestination(notification: NotificationLike): string 
   const {data,type}=notificationParts(notification);
   const explicit=safeInternalDestination(data.destination);
   if(explicit)return explicit==='/play'?'/progress':explicit;
+  if(type.includes('beta_incident'))return'/notifications';
   if(stringValue(data.support_request_id)||type.includes('support'))return'/support';
 
   const locationId=stringValue(data.location_id)||stringValue(data.locationId);

@@ -3,13 +3,15 @@ import { loadKleenestThemeMode, markMobileNotificationRead, resolveKleenestTheme
 import { router, Tabs, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { AppState,Platform,Text,useColorScheme, type ColorValue } from 'react-native';
+import { AppState,Platform,Text,View,useColorScheme, type ColorValue } from 'react-native';
 import { notificationDestination } from '../services/notificationRouting';
 import { refreshConsumerLiveNetworkRegions } from '../services/liveNetwork';
 import { refreshConsumerPresence } from '../services/presence';
 import PolicyAcceptanceGate from '../components/PolicyAcceptanceGate';
 import { relayOperatorOAuthCallback } from '../services/operatorOAuthRelay';
 import { useConsumerWebExperience } from '../services/webExperience';
+import BetaReportButton from '../components/BetaReportButton';
+import { flushQueuedBetaReports,recordBetaBreadcrumb } from '../services/betaReporting';
 
 const operatorOAuthRelaying=relayOperatorOAuthCallback();
 
@@ -45,12 +47,13 @@ export default function RootLayout() {
     const unsubscribe=subscribeKleenestTheme(mode=>{if(active)setThemeMode(mode)});
     return()=>{active=false;unsubscribe()};
   },[]);
+  useEffect(()=>{if(!publicWeb)recordBetaBreadcrumb('route',pathname)},[pathname,publicWeb]);
   useEffect(() => {
     if(operatorOAuthRelaying)return;
     let active=true;
     Notifications.getLastNotificationResponseAsync().then(async response=>{if(!active)return;await openNotificationResponse(response);if(response)await Notifications.clearLastNotificationResponseAsync().catch(()=>{})}).catch(() => {});
     const subscription = Notifications.addNotificationResponseReceivedListener(response => { void openNotificationResponse(response); });
-    const refreshLocationState=()=>{void refreshConsumerPresence().catch(()=>{});void refreshConsumerLiveNetworkRegions().catch(()=>{})};
+    const refreshLocationState=()=>{void refreshConsumerPresence().catch(()=>{});void refreshConsumerLiveNetworkRegions().catch(()=>{});void flushQueuedBetaReports().catch(()=>{})};
     const appState=AppState.addEventListener('change',state=>{if(state==='active')refreshLocationState()});
     refreshLocationState();
     return () => {active=false;subscription.remove();appState.remove()};
@@ -100,5 +103,5 @@ export default function RootLayout() {
     <Tabs.Screen name="safety" options={{ href:null,title:'Safety' }}/>
     <Tabs.Screen name="terms" options={{ href:null,title:'Terms of Use' }}/>
   </Tabs>;
-  return publicWeb?<><StatusBar style="dark"/>{tabs}</>:<PolicyAcceptanceGate><StatusBar style={theme.statusBar}/>{tabs}</PolicyAcceptanceGate>;
+  return publicWeb?<><StatusBar style="dark"/>{tabs}</>:<PolicyAcceptanceGate><StatusBar style={theme.statusBar}/><View style={{flex:1}}>{tabs}<BetaReportButton route={pathname}/></View></PolicyAcceptanceGate>;
 }
