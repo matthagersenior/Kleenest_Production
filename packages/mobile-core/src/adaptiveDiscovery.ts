@@ -2,8 +2,10 @@ import { getKleenestSupabaseClient } from './index';
 
 export type AmenityMatchRule='all'|'any';
 export const MILE_METERS=1609.344;
-export const NEARBY_RADIUS_METERS=[1609,8047,16093,40234,80467] as const;
-export const ADAPTIVE_RADIUS_METERS=[8047,16093,40234,80467,160934,402336] as const;
+export const NEARBY_RADIUS_METERS=[1609,3219,8047,16093,40234,80467] as const;
+export const ADAPTIVE_RADIUS_METERS=[1609,3219,8047,16093,40234,80467,160934,402336] as const;
+export const DENSE_LOCAL_RESULT_COUNT=12;
+export const MODERATE_LOCAL_RESULT_COUNT=8;
 export const MAX_NEARBY_RADIUS_METERS=402336;
 export type AdaptiveNearbyResult={
   rows:any[];
@@ -12,6 +14,8 @@ export type AdaptiveNearbyResult={
   maxRadiusMeters:number;
   expanded:boolean;
   attemptedRadiiMeters:number[];
+  densityClass:'dense'|'moderate'|'sparse';
+  resultCount:number;
 };
 
 function normalizedAmenities(values:string[]){
@@ -76,7 +80,7 @@ export async function listNearbyRestroomsV3(input:{latitude:number;longitude:num
   const radiusMeters=boundedRadius(input.radiusMeters);
   const amenityNames=normalizedAmenities(input.amenityNames||[]);
   const amenityMatch=validMatchRule(input.amenityMatch||'any');
-  const limit=Math.max(1,Math.min(100,Math.round(input.limit||30)));
+  const limit=Math.max(1,Math.min(500,Math.round(input.limit||100)));
   const {data,error}=await getKleenestSupabaseClient().rpc('map_network_nearby_v3',{
     p_lat:latitude,p_lng:longitude,p_radius_m:radiusMeters,p_limit:limit,p_category:'restroom',p_search:boundedSearch(input.search||'')||null,p_amenity_names:amenityNames,p_amenity_match:amenityMatch,
   });
@@ -96,25 +100,26 @@ export async function listNearbyMapCandidates(input:{latitude:number;longitude:n
   return Array.isArray(data)?data:[];
 }
 
-export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitude:number;requestedRadiusMeters:number;maxRadiusMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;autoExpand?:boolean;targetCount?:number;limit?:number}):Promise<AdaptiveNearbyResult>{
+export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitude:number;requestedRadiusMeters:number;maxRadiusMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;autoExpand?:boolean;hardRadius?:boolean;limit?:number}):Promise<AdaptiveNearbyResult>{
   const requestedRadiusMeters=boundedRadius(input.requestedRadiusMeters);
   const maxRadiusMeters=Math.max(requestedRadiusMeters,boundedRadius(input.maxRadiusMeters));
-  const targetCount=Math.max(1,Math.min(10,Math.round(input.targetCount||3)));
   const amenityNames=normalizedAmenities(input.amenityNames||[]);
   const amenityMatch=validMatchRule(input.amenityMatch||'any');
-  const limit=Math.max(targetCount,Math.min(500,Math.round(input.limit||500)));
+  const limit=Math.max(1,Math.min(500,Math.round(input.limit||500)));
+  const hardRadius=input.hardRadius===true;
   const radii=[requestedRadiusMeters];
-  if(input.autoExpand!==false){
+  if(!hardRadius&&input.autoExpand!==false){
     for(const radius of ADAPTIVE_RADIUS_METERS)if(radius>requestedRadiusMeters&&radius<=maxRadiusMeters)radii.push(radius);
     if(radii[radii.length-1]!==maxRadiusMeters)radii.push(maxRadiusMeters);
   }
   const attemptedRadiiMeters:number[]=[];
   let rows:any[]=[];
   let effectiveRadiusMeters=requestedRadiusMeters;
+  let densityClass:'dense'|'moderate'|'sparse'='sparse';
   for(const radiusMeters of [...new Set(radii)]){
     attemptedRadiiMeters.push(radiusMeters);
     effectiveRadiusMeters=radiusMeters;
-    const verifiedPromise=listNearbyRestroomsV3({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,amenityNames,amenityMatch,limit:Math.min(limit,100)});
+    const verifiedPromise=listNearbyRestroomsV3({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,amenityNames,amenityMatch,limit});
     if(amenityNames.length){
       rows=(await verifiedPromise).map(evidenceRow);
     }else{
@@ -124,9 +129,36 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
       ]);
       rows=mergeNearbyDiscoveryRows(restroomRows,candidateRows,limit);
     }
-    if(rows.length>=targetCount)break;
+
+    // Count controls how far discovery widens, never how many local results survive.
+    // Dense neighborhoods stay tight and keep the complete local set.
+    if(radiusMeters<=1609&&rows.length>=DENSE_LOCAL_RESULT_COUNT){
+      densityClass='dense';
+      break;
+    }
+    if(radiusMeters<=3219&&rows.length>=MODERATE_LOCAL_RESULT_COUNT){
+      densityClass='moderate';
+      break;
+    }
+
+    // Once we reach a normal local radius, any usable default result set is
+    // preferable to an unnecessary metro-wide expansion. If there are zero
+    // results, keep widening until something useful appears or max is reached.
+    if(radiusMeters>=8047&&rows.length>0){
+      densityClass='sparse';
+      break;
+    }
   }
-  return {rows,requestedRadiusMeters,effectiveRadiusMeters,maxRadiusMeters,expanded:effectiveRadiusMeters>requestedRadiusMeters,attemptedRadiiMeters};
+  return {
+    rows,
+    requestedRadiusMeters,
+    effectiveRadiusMeters,
+    maxRadiusMeters,
+    expanded:effectiveRadiusMeters>requestedRadiusMeters,
+    attemptedRadiiMeters,
+    densityClass,
+    resultCount:rows.length,
+  };
 }
 
 export async function listRestroomsAlongRoute(input:{routeGeoJSON:any;corridorMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;limit?:number}){
