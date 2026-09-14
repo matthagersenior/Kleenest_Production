@@ -37,3 +37,37 @@ export function captureConsumerDiscovery(input:Parameters<typeof recordConsumerD
 export function captureConsumerRouteIntent(locationId:string,options?:Parameters<typeof recordConsumerRouteIntent>[1]){
   void recordConsumerRouteIntent(locationId,options).catch(()=>{});
 }
+
+
+const coreLoopSessionId='core-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);
+
+export type ConsumerCoreLoopEvent=
+  |'app_open'
+  |'nearby_results_shown'
+  |'place_selected'
+  |'navigation_started'
+  |'arrival_detected'
+  |'review_started'
+  |'review_submit_attempt'
+  |'review_submit_success'
+  |'review_submit_failed'
+  |'review_photo_added'
+  |'review_done';
+
+export function captureConsumerCoreLoopEvent(
+  eventName:ConsumerCoreLoopEvent,
+  locationId?:string|null,
+  metadata:Record<string,unknown>={}
+){
+  const id=String(locationId||'').trim();
+  void getKleenestSupabaseClient().rpc('record_consumer_core_loop_event',{
+    p_event_name:eventName,
+    p_location_id:id||null,
+    p_session_id:coreLoopSessionId,
+    p_metadata:metadata,
+  }).catch(()=>{});
+}
+
+export function currentConsumerCoreLoopSession(){
+  return coreLoopSessionId;
+}
