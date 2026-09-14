@@ -6,6 +6,7 @@ import { MarketingHome } from '../components/MarketingSite';
 import { hasCurrentPolicyAcceptance } from '../services/safety';
 import { useConsumerWebExperience } from '../services/webExperience';
 import { useConsumerTheme } from '../services/theme';
+import { captureConsumerCoreLoopEvent } from '../services/consumerTelemetry';
 
 const action=(route:string)=>()=>router.push(route as any);
 
@@ -13,6 +14,7 @@ export default function HomeScreen(){
   const theme=useConsumerTheme();
   const{ready:webGateReady,signedIn,installed,appActive}=useConsumerWebExperience();
   const[policyRequired,setPolicyRequired]=useState(false);
+  useEffect(()=>{captureConsumerCoreLoopEvent('app_open',null,{surface:'home'})},[]);
   useEffect(()=>{let active=true;if(!signedIn){setPolicyRequired(false);return()=>{active=false}}void hasCurrentPolicyAcceptance().then(accepted=>{if(active)setPolicyRequired(!accepted)}).catch(()=>{if(active)setPolicyRequired(false)});return()=>{active=false}},[signedIn]);
   if(Platform.OS==='web'&&!webGateReady)return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}/>;
   if(Platform.OS==='web'&&!appActive)return <MarketingHome/>;
@@ -23,10 +25,10 @@ export default function HomeScreen(){
     {policyRequired?<Pressable accessibilityRole="button" style={[s.policyBanner,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#fff8e8',borderColor:theme.resolved==='dark'?theme.warning:'#e7cd8e'}]} onPress={action('/legal')}><View style={{flex:1}}><Text style={[s.policyKicker,{color:theme.warning}]}>ACTION REQUIRED</Text><Text style={[s.policyTitle,{color:theme.ink}]}>Review community terms</Text><Text style={[s.policyBody,{color:theme.muted}]}>Accept the current Terms and Community Guidelines before posting reviews, community content or messages.</Text></View><Text style={[s.policyArrow,{color:theme.warning}]}>›</Text></Pressable>:null}
     {!signedIn?<Pressable accessibilityRole="button" style={[s.joinBanner,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/signup')}><View style={{flex:1}}><Text style={[s.joinKicker,{color:theme.accent}]}>INDIVIDUAL OR FAMILY</Text><Text style={[s.joinTitle,{color:theme.ink}]}>Create your Kleenest account</Text><Text style={[s.joinBody,{color:theme.muted}]}>Start as an individual or choose Family from signup. Family benefits remain entitlement-controlled through the approved membership path.</Text></View><Text style={[s.joinArrow,{color:theme.accent}]}>›</Text></Pressable>:null}
 
-    <HeroCard eyebrow="YOUR KLEENEST" title="Find a bathroom you can trust." body="Search near you or around any address. When you are on site, check in with GPS + geofence; use QR when available for stronger proof.">
-      <Pressable accessibilityRole="button" accessibilityLabel="Find a bathroom" style={[s.homePrimaryCta,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/explore')}><Text style={[s.homePrimaryLabel,{color:theme.muted}]}>FIND A BATHROOM</Text><Text style={[s.homePrimaryTitle,{color:theme.accent}]}>Search the map →</Text><Text style={[s.homePrimaryBody,{color:theme.muted}]}>Nearby · any address · amenities · trust · directions</Text></Pressable>
+    <HeroCard eyebrow="YOUR KLEENEST" title="Find a bathroom you can trust." body="Nearby bathrooms are ready when you need them. Pick one, go, and review the visit when you're done.">
+      <Pressable accessibilityRole="button" accessibilityLabel="Find a bathroom" style={[s.homePrimaryCta,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/explore')}><Text style={[s.homePrimaryLabel,{color:theme.muted}]}>FIND A BATHROOM</Text><Text style={[s.homePrimaryTitle,{color:theme.accent}]}>Bathrooms near me →</Text><Text style={[s.homePrimaryBody,{color:theme.muted}]}>Nearby results load automatically · search any address when you need to</Text></Pressable>
       <View style={s.heroQuickRow}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Check in at a restroom" style={s.heroQuick} onPress={action('/explore')}><Text style={s.heroQuickLabel}>CHECK IN</Text><Text style={s.heroQuickTitle}>Nearby or search</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Review a bathroom visit" style={s.heroQuick} onPress={action('/explore')}><Text style={s.heroQuickLabel}>REVIEW</Text><Text style={s.heroQuickTitle}>A recent visit</Text></Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Scan a Kleenest QR code" style={s.heroQuick} onPress={action('/qr')}><Text style={s.heroQuickLabel}>QR PROOF</Text><Text style={s.heroQuickTitle}>Scan code</Text></Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Add a missing place" style={s.heroQuick} onPress={action('/discover')}><Text style={s.heroQuickLabel}>ADD TO MAP</Text><Text style={s.heroQuickTitle}>Missing place</Text></Pressable>
       </View>
@@ -47,7 +49,7 @@ export default function HomeScreen(){
       <FeatureCard kicker="ACTIVITY" title="Your impact" body="See visits, discoveries, reviews, evidence, rewards and network contributions." onPress={action('/activity')}/>
     </View>
 
-    <SectionHeader eyebrow="THE KLEENEST LOOP" title="One useful action strengthens the whole network." body="This is the core Kleenest cycle: discover what is missing, verify what is real, then turn fresh evidence into stronger trust for everyone."/>
+    <SectionHeader eyebrow="THE KLEENEST LOOP" title="Find it. Use it. Help the next person." body="Kleenest handles the trust machinery underneath. You just find a bathroom, go there, and share how it was."/>
     <View style={[s.loopCard,{backgroundColor:theme.surface,borderColor:theme.line}]}>
       <View style={[s.loopLead,{backgroundColor:theme.accentSoft}]}><Text style={[s.loopLeadKicker,{color:theme.accent}]}>WHY IT MATTERS</Text><Text style={[s.loopLeadTitle,{color:theme.ink}]}>Kleenest gets better through repeated, independent evidence.</Text><Text style={[s.loopLeadBody,{color:theme.muted}]}>A restroom can begin as a candidate and become increasingly useful as people document it, verify conditions and keep its trust signals fresh.</Text></View>
       {[
