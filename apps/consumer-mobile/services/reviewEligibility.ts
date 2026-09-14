@@ -26,7 +26,10 @@ export async function findLatestEligibleReviewCheckIn(locationId: string): Promi
     .limit(12);
   if (checkInError) throw checkInError;
 
-  const eligible = (checkIns || []).filter((row: any) => row?.metadata?.progression_eligible === true);
+  const eligible = (checkIns || []).filter((row: any) => {
+    const method=String(row?.verification_method||'').toLowerCase();
+    return ['gps','qr','code','place'].includes(method)||row?.metadata?.server_authoritative===true;
+  });
   if (!eligible.length) return null;
 
   const ids = eligible.map((row: any) => String(row.id));
