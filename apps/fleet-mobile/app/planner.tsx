@@ -6,6 +6,7 @@ import { createRoute } from '../services/product';
 import { currentFleetBusinessId,getFleetInventory,getFleetRouteGeofences,setRouteStops,updateRoute } from '../services/control';
 import { deleteRoute } from '../services/parity';
 import { listFleetRouteLocations,routeLocationId,type FleetRouteLocation } from '../services/locations';
+import { useFleetTheme } from '../services/theme';
 
 type Row=Record<string,any>;
 type DraftStop={
@@ -63,6 +64,7 @@ function detailsFromLocation(item:FleetRouteLocation):DraftStop{
 }
 
 export default function Planner(){
+ const theme=useFleetTheme();
  const[businessId,setBusinessId]=useState('');
  const[inventory,setInventory]=useState<any>(null);
  const[routeId,setRouteId]=useState('');
@@ -323,20 +325,20 @@ export default function Planner(){
   scrollEnabled={!mapInteracting}
   refreshControl={<RefreshControl refreshing={busy} onRefresh={load}/>}
   contentInsetAdjustmentBehavior="automatic"
-  contentContainerStyle={s.page}
+  contentContainerStyle={[s.page,{backgroundColor:theme.canvas}]}
  >
-  <View style={s.hero}>
+  <View style={[s.hero,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#315f8c',borderColor:theme.resolved==='dark'?theme.line:'#315f8c',borderWidth:1}]}>
    <Text style={s.kicker}>MAP ROUTING + DISPATCH</Text>
    <Text style={s.title}>Build missions from canonical or ad-hoc stops.</Text>
    <Text style={s.body}>Search the Kleenest network or geocode any address/place. Every saved stop can drive routing, dispatch, geofencing, notifications, metrics and intelligence even before it becomes canonical.</Text>
   </View>
 
-  {origin.fallback?<Text style={s.warning}>Location permission is off. The planner starts from the U.S. center; nearby-first planning resumes when foreground location is allowed.</Text>:null}
-  {message?<Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text>:null}
+  {origin.fallback?<Text style={[s.warning,{backgroundColor:theme.surface,borderColor:theme.warning,color:theme.warning}]}>Location permission is off. The planner starts from the U.S. center; nearby-first planning resumes when foreground location is allowed.</Text>:null}
+  {message?<Text accessibilityLiveRegion="polite" style={[s.message,{color:theme.muted}]}>{message}</Text>:null}
 
-  <View style={s.card}>
-   <Text style={s.cardTitle}>Find route stops</Text>
-   <Text style={s.meta}>Canonical Kleenest locations stay preferred, but any geocodable place can be added as an operational ad-hoc stop.</Text>
+  <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+   <Text style={[s.cardTitle,{color:theme.ink}]}>Find route stops</Text>
+   <Text style={[s.meta,{color:theme.muted}]}>Canonical Kleenest locations stay preferred, but any geocodable place can be added as an operational ad-hoc stop.</Text>
    <View style={s.row}>
     <TextInput
      placeholderTextColor="#78877f"
@@ -365,9 +367,9 @@ export default function Planner(){
   {selectedLocation?.source_kind==='adhoc'
    ?<View style={[s.card,s.adhocCard]}>
      <Text style={s.adhocBadge}>AD-HOC STOP</Text>
-     <Text style={s.cardTitle}>{String(selectedLocation.name||'Geocoded place')}</Text>
-     <Text style={s.meta}>{String(selectedLocation.address||'Geocoded coordinates')}</Text>
-     <Text style={s.coordinate}>{Number(selectedLocation.latitude).toFixed(5)}, {Number(selectedLocation.longitude).toFixed(5)}</Text>
+     <Text style={[s.cardTitle,{color:theme.ink}]}>{String(selectedLocation.name||'Geocoded place')}</Text>
+     <Text style={[s.meta,{color:theme.muted}]}>{String(selectedLocation.address||'Geocoded coordinates')}</Text>
+     <Text style={[s.coordinate,{color:theme.muted}]}>{Number(selectedLocation.latitude).toFixed(5)}, {Number(selectedLocation.longitude).toFixed(5)}</Text>
      <Action
       label={selectedStopIndex>=0?'Remove ad-hoc stop':'Use this place as an ad-hoc stop'}
       disabled={locked}
@@ -378,49 +380,49 @@ export default function Planner(){
     ?<FleetSelectedLocationCard item={selectedLocation} stopIndex={selectedStopIndex} onToggleStop={()=>toggleLocation(selectedLocation)} onClose={()=>setSelected('')}/>
     :null}
 
-  <View style={s.card}>
-   <Text style={s.cardTitle}>Create route</Text>
-   <TextInput placeholderTextColor="#78877f" style={s.input} value={routeName} onChangeText={setRouteName} placeholder="Route name"/>
-   <Text style={s.label}>Vehicle</Text><Choices rows={vehicles} selected={vehicleId} onSelect={setVehicleId}/>
-   <Text style={s.label}>Driver</Text><Choices rows={drivers} selected={driverId} onSelect={setDriverId}/>
+  <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+   <Text style={[s.cardTitle,{color:theme.ink}]}>Create route</Text>
+   <TextInput placeholderTextColor="#78877f" style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} value={routeName} onChangeText={setRouteName} placeholder="Route name"/>
+   <Text style={[s.label,{color:theme.muted}]}>Vehicle</Text><Choices rows={vehicles} selected={vehicleId} onSelect={setVehicleId}/>
+   <Text style={[s.label,{color:theme.muted}]}>Driver</Text><Choices rows={drivers} selected={driverId} onSelect={setDriverId}/>
    <Action label="Create planned route" disabled={busy||!routeName.trim()} onPress={create}/>
   </View>
 
-  <Text style={s.section}>Routes</Text>
+  <Text style={[s.section,{color:theme.ink}]}>Routes</Text>
   {routes.map(route=><Pressable key={String(route.id)} onPress={()=>chooseRoute(route)} style={[s.route,String(route.id)===routeId&&s.routeOn]}>
    <View style={{flex:1}}>
-    <Text style={s.cardTitle}>{String(route.name||'Fleet route')}</Text>
-    <Text style={s.meta}>{String(route.status||'planned')} · {Number(route.stops_count||0)} saved stops</Text>
+    <Text style={[s.cardTitle,{color:theme.ink}]}>{String(route.name||'Fleet route')}</Text>
+    <Text style={[s.meta,{color:theme.muted}]}>{String(route.status||'planned')} · {Number(route.stops_count||0)} saved stops</Text>
    </View>
   </Pressable>)}
 
-  {selectedRoute?<View style={s.card}>
-   <Text style={s.cardTitle}>Edit route</Text>
-   <TextInput placeholderTextColor="#78877f" style={s.input} value={routeEditName} onChangeText={setRouteEditName} placeholder="Route name"/>
+  {selectedRoute?<View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+   <Text style={[s.cardTitle,{color:theme.ink}]}>Edit route</Text>
+   <TextInput placeholderTextColor="#78877f" style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} value={routeEditName} onChangeText={setRouteEditName} placeholder="Route name"/>
    <View style={s.row}>
     <Action label="Edit route" disabled={busy||!routeEditName.trim()} onPress={editRoute}/>
     <Action danger label="Delete route" disabled={busy||locked} onPress={removeRoute}/>
    </View>
-   <Text style={s.meta}>{locked?'Stop order and deletion are locked after dispatch.':'Add/remove stops, tune geofences and notifications, reorder the draft, then save.'}</Text>
-   <Text style={s.label}>Assign vehicle</Text><Choices rows={vehicles} selected={String(selectedRoute.vehicle_id||'')} onSelect={id=>void assign('vehicle',id)}/>
-   <Text style={s.label}>Assign driver</Text><Choices rows={drivers} selected={String(selectedRoute.driver_id||'')} onSelect={id=>void assign('driver',id)}/>
+   <Text style={[s.meta,{color:theme.muted}]}>{locked?'Stop order and deletion are locked after dispatch.':'Add/remove stops, tune geofences and notifications, reorder the draft, then save.'}</Text>
+   <Text style={[s.label,{color:theme.muted}]}>Assign vehicle</Text><Choices rows={vehicles} selected={String(selectedRoute.vehicle_id||'')} onSelect={id=>void assign('vehicle',id)}/>
+   <Text style={[s.label,{color:theme.muted}]}>Assign driver</Text><Choices rows={drivers} selected={String(selectedRoute.driver_id||'')} onSelect={id=>void assign('driver',id)}/>
 
-   <Text style={s.label}>Draft stop order</Text>
+   <Text style={[s.label,{color:theme.muted}]}>Draft stop order</Text>
    <View style={s.stopList}>
     {draft.length?draft.map((key,index)=>{
      const detail=draftDetails[key];
      if(!detail)return null;
-     return <View key={key} style={s.stop}>
+     return <View key={key} style={[s.stop,{backgroundColor:theme.surface,borderColor:theme.line}]}>
       <View style={s.stopHeader}>
-       <View style={s.stopNumWrap}><Text style={s.stopNum}>{index+1}</Text></View>
+       <View style={[s.stopNumWrap,{backgroundColor:theme.accentSoft}]}><Text style={[s.stopNum,{color:theme.accent}]}>{index+1}</Text></View>
        <View style={{flex:1,minWidth:0}}>
-        <Text style={s.stopType}>{detail.source_kind==='adhoc'?'AD-HOC STOP':'CANONICAL LOCATION'}</Text>
-        <Text style={s.stopTitle}>{detail.stop_name}</Text>
-        <Text style={s.meta}>{detail.stop_address||[detail.latitude,detail.longitude].filter(value=>value!==null).join(', ')}</Text>
+        <Text style={[s.stopType,{color:theme.accent}]}>{detail.source_kind==='adhoc'?'AD-HOC STOP':'CANONICAL LOCATION'}</Text>
+        <Text style={[s.stopTitle,{color:theme.ink}]}>{detail.stop_name}</Text>
+        <Text style={[s.meta,{color:theme.muted}]}>{detail.stop_address||[detail.latitude,detail.longitude].filter(value=>value!==null).join(', ')}</Text>
        </View>
       </View>
 
-      <Text style={s.label}>Geofence radius</Text>
+      <Text style={[s.label,{color:theme.muted}]}>Geofence radius</Text>
       <View style={s.row}>
        {geofenceChoices.map(meters=><Pressable key={meters} disabled={locked} onPress={()=>updateStop(key,{geofence_radius_m:meters})} style={[s.chip,detail.geofence_radius_m===meters&&s.chipOn]}>
         <Text style={[s.chipText,detail.geofence_radius_m===meters&&s.chipTextOn]}>{meters} m</Text>
@@ -439,7 +441,7 @@ export default function Planner(){
        <Action quiet label="Remove" onPress={()=>removeStop(key)}/>
       </View>:null}
      </View>;
-    }):<Text style={s.meta}>Search a canonical location or any address/place, then add it to this route.</Text>}
+    }):<Text style={[s.meta,{color:theme.muted}]}>Search a canonical location or any address/place, then add it to this route.</Text>}
    </View>
    <Action label="Save stop order + geofences" disabled={busy||locked||!draft.length} onPress={save}/>
   </View>:null}
