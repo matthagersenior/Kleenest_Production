@@ -17,6 +17,15 @@ export type ConsumerPresence = {
   geofence_radius_meters?: number | null;
 };
 
+export async function recordConsumerPresenceAt(latitude:number,longitude:number):Promise<ConsumerPresence|null>{
+  const client=getKleenestSupabaseClient();
+  const{data:auth,error:authError}=await client.auth.getUser();
+  if(authError||!auth?.user)return null;
+  const{data,error}=await client.rpc('consumer_presence_heartbeat',{p_lat:latitude,p_lng:longitude});
+  if(error)throw error;
+  return(data&&typeof data==='object'?data:null) as ConsumerPresence|null;
+}
+
 export async function refreshConsumerPresence():Promise<ConsumerPresence|null>{
   const client=getKleenestSupabaseClient();
   const{data:auth,error:authError}=await client.auth.getUser();
@@ -24,12 +33,7 @@ export async function refreshConsumerPresence():Promise<ConsumerPresence|null>{
   const permission=await Location.getForegroundPermissionsAsync();
   if(permission.status!=='granted')return null;
   const current=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Balanced});
-  const{data,error}=await client.rpc('consumer_presence_heartbeat',{
-    p_lat:current.coords.latitude,
-    p_lng:current.coords.longitude,
-  });
-  if(error)throw error;
-  return(data&&typeof data==='object'?data:null) as ConsumerPresence|null;
+  return recordConsumerPresenceAt(current.coords.latitude,current.coords.longitude);
 }
 
 export async function getConsumerLocationPresence(locationId:string):Promise<ConsumerPresence|null>{
