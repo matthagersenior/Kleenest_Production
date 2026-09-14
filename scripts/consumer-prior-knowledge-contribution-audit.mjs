@@ -5,6 +5,7 @@ const required=[
   'supabase/migrations/20260914151500_consumer_prior_knowledge_contributions.sql',
   'apps/consumer-mobile/services/priorKnowledge.ts',
   'apps/consumer-mobile/app/knowledge.tsx',
+  'apps/consumer-mobile/app/_layout.tsx',
   'apps/consumer-mobile/app/location/[id].tsx',
   'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
   'src/services/community.js',
@@ -20,10 +21,11 @@ if(!failures.length){
   const migration=read(required[0]);
   const service=read(required[1]);
   const screen=read(required[2]);
-  const location=read(required[3]);
-  const explore=read(required[4]);
-  const webService=read(required[5]);
-  const webLocation=read(required[6]);
+  const layout=read(required[3]);
+  const location=read(required[4]);
+  const explore=read(required[5]);
+  const webService=read(required[6]);
+  const webLocation=read(required[7]);
 
   for(const token of [
     'consumer_record_discovery_evidence',
@@ -45,6 +47,7 @@ if(!failures.length){
   if(!service.includes("rpc('consumer_record_discovery_evidence'")) failures.push('native prior-knowledge service must call the dedicated RPC.');
   if(!screen.includes('I Know This Place')) failures.push('native prior-knowledge screen must explain the I Know This Place path.');
   if(screen.includes('expo-location')||screen.includes('mobileCheckIn')) failures.push('native prior-knowledge screen must not request location or invoke check-in.');
+  if(!layout.includes('<Tabs.Screen name="knowledge" options={{ href:null')) failures.push('prior-knowledge route must stay hidden from the primary consumer tab bar.');
   if(!screen.includes('not a check-in')||!screen.includes('verified current visit')) failures.push('native prior-knowledge screen must clearly distinguish historical knowledge from verified presence.');
   if(!location.includes('I know this place')||!location.includes("pathname:'/knowledge'")) failures.push('native location detail must expose I know this place.');
   if(!explore.includes('onKnow')||!explore.includes('I know this place')||!explore.includes("pathname: '/knowledge'")) failures.push('native Explore cards and selected map location must expose I know this place.');
