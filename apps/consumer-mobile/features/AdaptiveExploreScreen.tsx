@@ -231,8 +231,8 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         </Text>
       </Pressable>
       <View style={s.cardActionRow}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Check in at this location" style={[s.secondarySmall, s.cardAction]} onPress={onCheckIn}>
-          <Text style={[s.secondaryText,{color:theme.accent}]}>Check in</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={item.active_check_in?'Already checked in at this location':'Check in at this location'} disabled={Boolean(item.active_check_in)} style={[s.secondarySmall, s.cardAction,item.active_check_in&&s.disabled]} onPress={onCheckIn}>
+          <Text style={[s.secondaryText,{color:theme.accent}]}>{item.active_check_in?'Checked in ✓':'Check in'}</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -639,11 +639,22 @@ export default function AdaptiveExploreScreen() {
       if(permission.status!=='granted')throw new Error(permission.canAskAgain===false?'Location permission is blocked in system settings.':'Location permission is required to check in.');
       const current=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.High});
       const result:any=await mobileCheckIn(id,current.coords.latitude,current.coords.longitude);
-      setMessage(`Checked in at ${row.name||'this restroom'}. GPS + geofence verified${result?.distance_meters!=null?` · ${Math.round(Number(result.distance_meters))} m from the location`:''}.`);
+      const distance=result?.distance_meters!=null?` · ${Math.round(Number(result.distance_meters))} m from the location`:'';
+      setRows(currentRows=>currentRows.map(item=>idOf(item)===id?{...item,active_check_in:true}:item));
+      setMessage(result?.already_checked_in
+        ? `You're already checked in at ${row.name||'this restroom'}. Kleenest confirmed you're still inside the geofence${distance}.`
+        : `Checked in at ${row.name||'this restroom'}. GPS + geofence verified${distance}.`);
       setSelectedId(id);
     }catch(error:any){
       const detail=String(error?.message||'');
-      setMessage(detail.includes('OUTSIDE_GEOFENCE')?`Get closer to ${row.name||'this restroom'} to check in. Kleenest only verifies GPS check-ins inside the location geofence.`:detail||'Check-in could not be completed.');
+      const message=detail.includes('OUTSIDE_GEOFENCE')
+        ? `Get closer to ${row.name||'this restroom'} to check in. Kleenest only verifies GPS check-ins inside the location geofence.`
+        : detail.includes('LEAVE_REQUIRED_BEFORE_REPEAT_CHECK_IN')
+          ? `You're already checked in at ${row.name||'this restroom'} and haven't left its geofence yet.`
+          : detail&&detail.length<120&&!/^[A-Z0-9_: =.-]+$/.test(detail)
+            ? detail
+            : 'Check-in could not be completed. Please try again.';
+      setMessage(message);
     }
   }
 
@@ -1038,8 +1049,8 @@ export default function AdaptiveExploreScreen() {
                 <CompactRestroomSignals item={selected} />
                 <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
                 <View style={s.actionRow}>
-                  <Pressable accessibilityRole="button" accessibilityLabel="Check in at selected location" style={[s.secondarySmall, s.selectedAction]} onPress={() => void checkIn(selected)}>
-                    <Text style={[s.secondaryText,{color:theme.accent}]}>Check in</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':'Check in at selected location'} disabled={Boolean(selected.active_check_in)} style={[s.secondarySmall, s.selectedAction,selected.active_check_in&&s.disabled]} onPress={() => void checkIn(selected)}>
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>{selected.active_check_in?'Checked in ✓':'Check in'}</Text>
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
