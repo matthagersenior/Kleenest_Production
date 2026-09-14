@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-export type KleenestThemeMode='default'|'light'|'dark'|'system';
+export type KleenestThemeMode='default'|'light'|'dark'|'system'|'early-access';
 export type KleenestThemeContext='consumer'|'progress'|'game'|'community'|'business'|'fleet'|'platform';
 
 export type KleenestTheme={
@@ -22,22 +22,28 @@ export type KleenestTheme={
   statusBar:'light'|'dark';
 };
 
-export const KLEENEST_THEME_OPTIONS:[
-  {value:KleenestThemeMode;label:string;description:string},
-  {value:KleenestThemeMode;label:string;description:string},
-  {value:KleenestThemeMode;label:string;description:string},
-  {value:KleenestThemeMode;label:string;description:string},
-]=[
+export const KLEENEST_THEME_OPTIONS:ReadonlyArray<{value:KleenestThemeMode;label:string;description:string}>=[
   {value:'default',label:'Default',description:'Kleenest branded light environment.'},
   {value:'light',label:'Light',description:'Bright, high-contrast surfaces.'},
   {value:'dark',label:'Dark',description:'Low-light surfaces with preserved context accents.'},
   {value:'system',label:'System',description:'Follow this device or browser appearance.'},
+  {value:'early-access',label:'Early Access',description:'Limited beta theme for the people helping shape Kleenest before launch.'},
 ];
 
 const STORAGE_KEY='kleenest.theme.mode.v1';
-const MODES=new Set<KleenestThemeMode>(['default','light','dark','system']);
+const MODES=new Set<KleenestThemeMode>(['default','light','dark','system','early-access']);
 const listeners=new Set<(mode:KleenestThemeMode)=>void>();
 let currentMode:KleenestThemeMode='default';
+
+const earlyAccessAccents:Record<KleenestThemeContext,{accent:string;soft:string}>={
+  consumer:{accent:'#5de2c2',soft:'#153b38'},
+  progress:{accent:'#ffd166',soft:'#3c321b'},
+  game:{accent:'#c2a7ff',soft:'#30264d'},
+  community:{accent:'#66d9ff',soft:'#183846'},
+  business:{accent:'#7de3b2',soft:'#173c30'},
+  fleet:{accent:'#7ab8ff',soft:'#1a304b'},
+  platform:{accent:'#e39bff',soft:'#392647'},
+};
 
 const accents:Record<KleenestThemeContext,{light:string;dark:string;soft:string;softDark:string}>={
   consumer:{light:'#2f6f4e',dark:'#74c99a',soft:'#e0efe6',softDark:'#193426'},
@@ -88,8 +94,17 @@ export function subscribeKleenestTheme(listener:(mode:KleenestThemeMode)=>void){
 }
 
 export function resolveKleenestTheme(mode:KleenestThemeMode,systemDark=false,context:KleenestThemeContext='consumer'):KleenestTheme{
-  const resolved:KleenestTheme['resolved']=mode==='dark'||(mode==='system'&&systemDark)?'dark':'light';
+  const earlyAccess=mode==='early-access';
+  const resolved:KleenestTheme['resolved']=earlyAccess||mode==='dark'||(mode==='system'&&systemDark)?'dark':'light';
   const accent=accents[context]||accents.consumer;
+  if(earlyAccess){
+    const edition=earlyAccessAccents[context]||earlyAccessAccents.consumer;
+    return{
+      mode,resolved,context,
+      canvas:'#070b17',surface:'#0f172a',surfaceRaised:'#162238',ink:'#f7faff',muted:'#aab8d1',line:'#2b3b59',
+      accent:edition.accent,accentSoft:edition.soft,accentText:'#06100d',danger:'#ff8fa3',warning:'#ffd166',success:'#66e3c4',statusBar:'light',
+    };
+  }
   if(resolved==='dark'){
     return{
       mode,resolved,context,
