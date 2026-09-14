@@ -50,11 +50,11 @@ if(!failures.length){
 
   if(explore.includes('readTrustMission')||explore.includes('trustMissionAction')||explore.includes('ACTIVE TRUST MISSION')||explore.includes('NEARBY TRUST MISSION'))failures.push('Explore must stay bathroom-first; trust mission lifecycle belongs to Progress, Saved, and Location.');
   const routeHandoff=/pathname\s*:\s*['"]\/route['"]/.test(explore)&&explore.includes('captureConsumerRouteIntent');
-  const directionsAction=explore.includes('navigateUrl')&&explore.includes('Linking.openURL')&&explore.includes('Start directions');
+  const directionsAction=explore.includes('navigateUrl')&&explore.includes('Linking.openURL')&&explore.includes('>Go</Text>');
   const bathroomFirst=[
     ['nearby search',explore.includes('findAdaptiveNearbyRestrooms')&&explore.includes('listNearbyRestrooms')],
     ['trust summaries',explore.includes('listLocationTrustSummaries')&&explore.includes('attachLocationTrust')],
-    ['full details action',explore.includes('Full details')&&explore.includes('router.push(`/location/${idOf(selected)}`)')],
+    ['details action',explore.includes('>Details</Text>')&&explore.includes('router.push(`/location/${idOf(selected)}`)')],
     ['directions action',directionsAction],
     ['route handoff',routeHandoff],
   ];
@@ -71,4 +71,4 @@ if(!failures.length){
   if(/grant\s+(select|insert|update|delete).*authenticated/i.test(base))failures.push('Authenticated clients must not receive direct trust mission table mutation authority.');
 }
 if(failures.length){console.error('Native trust mission platform audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
-console.log('Native trust mission platform audit passed.');
+console.log('Native trust mission platform audit passed: Explore stays bathroom-first while mission lifecycle remains in Progress, Saved, and Location.');
