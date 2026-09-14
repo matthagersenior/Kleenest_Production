@@ -98,6 +98,11 @@ const idOf = (row: any) => String(row?.location_id || row?.place_id || row?.id |
 type CheckInActionFeedback = {
   status: 'checking' | 'success' | 'error';
   message: string;
+  reviewReady?: boolean;
+  verificationExpiresAt?: string | null;
+  pointsAwarded?: number;
+  progressionCapReached?: boolean;
+  alreadyCheckedIn?: boolean;
 };
 function attachPresence(rows:any[],presence:ConsumerPresence|null){
   if(!presence?.check_in_available||!presence.location_id)return rows;
@@ -112,6 +117,15 @@ const distanceLabel = (meters: any) => {
   const value = miles(meters);
   if (value == null) return '—';
   return `${value.toFixed(value < 10 ? 1 : 0)} mi`;
+};
+const verificationWindowLabel = (value: string | null | undefined) => {
+  if (!value) return '';
+  const expires = new Date(value).getTime();
+  if (!Number.isFinite(expires)) return '';
+  const remaining = Math.max(0, expires - Date.now());
+  if (remaining <= 0) return 'review window ending now';
+  const minutes = Math.max(1, Math.ceil(remaining / 60000));
+  return minutes >= 60 ? `${Math.ceil(minutes / 60)}h verified review window` : `${minutes}m verified review window`;
 };
 const radiusLabel = (meters: number) => `${Math.round(meters / 1609.344)} mi`;
 const looksLikeAddressOrArea = (value: string) => {
@@ -187,11 +201,12 @@ function parseRouteDraft(raw: string | null) {
   }
 }
 
-function CheckInStatus({ feedback }: { feedback?: CheckInActionFeedback }) {
+function CheckInStatus({ feedback, onReview }: { feedback?: CheckInActionFeedback; onReview?: () => void }) {
   const theme=useConsumerTheme();
   if(!feedback)return null;
   const isError=feedback.status==='error';
   const isChecking=feedback.status==='checking';
+  const windowLabel=feedback.status==='success'?verificationWindowLabel(feedback.verificationExpiresAt):'';
   return (
     <View
       accessibilityRole="alert"
@@ -207,11 +222,17 @@ function CheckInStatus({ feedback }: { feedback?: CheckInActionFeedback }) {
       <Text style={[s.checkInStatusText,{color:isError?'#8f1f1f':theme.accent}]}>
         {isChecking?'⌖ ':feedback.status==='success'?'✓ ':'! '}{feedback.message}
       </Text>
+      {windowLabel?<Text style={[s.checkInStatusMeta,{color:theme.muted}]}>Verification remains usable after you leave · {windowLabel}</Text>:null}
+      {feedback.status==='success'&&feedback.reviewReady&&onReview?(
+        <Pressable accessibilityRole="button" accessibilityLabel="Review this verified visit" onPress={onReview} style={[s.checkInReviewAction,{backgroundColor:theme.accent}]}>
+          <Text style={[s.checkInReviewText,{color:theme.accentText}]}>Review verified visit</Text>
+        </Pressable>
+      ):null}
     </View>
   );
 }
 
-function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddToRoute, onKnow, onDetails, route, requestedAmenities, checkInFeedback }: {
+function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddToRoute, onKnow, onDetails, onReview, route, requestedAmenities, checkInFeedback }: {
   item: any;
   selected: boolean;
   onSelect: () => void;
@@ -220,6 +241,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
   onAddToRoute: () => void;
   onKnow: () => void;
   onDetails: () => void;
+  onReview: () => void;
   route: any;
   requestedAmenities: string[];
   checkInFeedback?: CheckInActionFeedback;
@@ -291,7 +313,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
           <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
         </Pressable>
       </View>
-      <CheckInStatus feedback={checkInFeedback} />
+      <CheckInStatus feedback={checkInFeedback} onReview={onReview} />
     </View>
   );
 }
@@ -700,13 +722,25 @@ export default function AdaptiveExploreScreen() {
       if(permission.status!=='granted')throw new Error(permission.canAskAgain===false?'Location permission is blocked in system settings.':'Location permission is required to check in.');
       const current=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.High});
       const result:any=await mobileCheckIn(id,current.coords.latitude,current.coords.longitude);
-      const distance=result?.distance_meters!=null?` · ${Math.round(Number(result.distance_meters))} m from the location`:'';
+      const distance=result?.distance_meters!=null?` · ${Math.round(Number(result.distance_meters))} m proof`:'';
+      const points=Math.max(0,Number(result?.points_awarded||0));
+      const windowLabel=verificationWindowLabel(result?.verification_expires_at);
+      const rewardLabel=!result?.already_checked_in&&points>0?` · +${points} points`:(!result?.already_checked_in&&result?.progression_cap_reached?' · visit saved; today’s XP cap reached':'');
+      const reviewLabel=result?.review_ready?' · verified review ready':'';
       const successMessage=result?.already_checked_in
-        ? `You're already checked in at ${placeName}. Kleenest confirmed you're still inside the geofence${distance}.`
-        : `Checked in at ${placeName}. GPS + geofence verified${distance}.`;
-      setRows(currentRows=>currentRows.map(item=>idOf(item)===id?{...item,active_check_in:true,visit_verification_available:true}:item));
+        ? `Visit already verified at ${placeName}${distance}${reviewLabel}${windowLabel?` · ${windowLabel}`:''}.`
+        : `Checked in at ${placeName}. Exact place + GPS verified${distance}${rewardLabel}${reviewLabel}${windowLabel?` · ${windowLabel}`:''}.`;
+      setRows(currentRows=>currentRows.map(item=>idOf(item)===id?{...item,active_check_in:true,visit_verification_available:true,visit_verification_expires_at:result?.verification_expires_at||null}:item));
       setMessage(successMessage);
-      setCheckInFeedback(current=>({...current,[id]:{status:'success',message:successMessage}}));
+      setCheckInFeedback(current=>({...current,[id]:{
+        status:'success',
+        message:successMessage,
+        reviewReady:Boolean(result?.review_ready),
+        verificationExpiresAt:result?.verification_expires_at||null,
+        pointsAwarded:points,
+        progressionCapReached:Boolean(result?.progression_cap_reached),
+        alreadyCheckedIn:Boolean(result?.already_checked_in),
+      }}));
     }catch(error:any){
       const detail=String(error?.message||'');
       const failureMessage=detail.includes('OUTSIDE_GEOFENCE')
@@ -1135,7 +1169,7 @@ export default function AdaptiveExploreScreen() {
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
                   </Pressable>
                 </View>
-                <CheckInStatus feedback={checkInFeedback[idOf(selected)]} />
+                <CheckInStatus feedback={checkInFeedback[idOf(selected)]} onReview={() => router.push(`/location/${idOf(selected)}`)} />
               </View>
             ) : null}
           </View>
@@ -1169,6 +1203,7 @@ export default function AdaptiveExploreScreen() {
               onAddToRoute={() => addToRoute(item)}
               onKnow={() => contributeKnowledge(item)}
               onDetails={() => router.push(`/location/${idOf(item)}`)}
+              onReview={() => router.push(`/location/${idOf(item)}`)}
               route={mode === 'route' ? route : null}
               requestedAmenities={selectedAmenityNames}
               checkInFeedback={checkInFeedback[idOf(item)]}
@@ -1359,8 +1394,11 @@ const s = StyleSheet.create({
   cardMain: { gap: 6 },
   cardActionRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   cardAction: { flexGrow: 1, alignItems: 'center' },
-  checkInStatus:{borderWidth:1,borderRadius:10,paddingHorizontal:9,paddingVertical:7,marginTop:2},
+  checkInStatus:{borderWidth:1,borderRadius:10,paddingHorizontal:9,paddingVertical:7,marginTop:2,gap:6},
   checkInStatusText:{fontSize:9,lineHeight:13,fontWeight:'900'},
+  checkInStatusMeta:{fontSize:8,lineHeight:12,fontWeight:'700'},
+  checkInReviewAction:{minHeight:36,borderRadius:9,paddingHorizontal:10,paddingVertical:8,alignItems:'center',justifyContent:'center'},
+  checkInReviewText:{fontSize:9,fontWeight:'900'},
   amenityMatchRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 5, marginTop: 2 },
   amenityMatchLabel: { fontSize: 7, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
   amenityMatchPill: { borderRadius: 999, backgroundColor: '#e8f1eb', paddingHorizontal: 7, paddingVertical: 4 },
