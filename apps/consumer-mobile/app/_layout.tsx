@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { loadKleenestThemeMode, markMobileNotificationRead, resolveKleenestTheme, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
+import { isKleenestSeasonalThemeMode, loadKleenestThemeMode, markMobileNotificationRead, resolveKleenestTheme, setKleenestThemeMode, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
 import { router, Tabs, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -9,6 +9,7 @@ import { refreshConsumerLiveNetworkRegions } from '../services/liveNetwork';
 import PolicyAcceptanceGate from '../components/PolicyAcceptanceGate';
 import { relayOperatorOAuthCallback } from '../services/operatorOAuthRelay';
 import { useConsumerWebExperience } from '../services/webExperience';
+import { getProgressionRewards } from '../services/discoveryProgression';
 
 const operatorOAuthRelaying=relayOperatorOAuthCallback();
 
@@ -40,8 +41,15 @@ export default function RootLayout() {
   const publicWeb=Platform.OS==='web'&&!appActive&&webGateReady&&['/','/for-you','/for-business','/trust','/install'].includes(pathname);
   useEffect(()=>{
     let active=true;
-    void loadKleenestThemeMode().then(mode=>{if(active)setThemeMode(mode)});
-    const unsubscribe=subscribeKleenestTheme(mode=>{if(active)setThemeMode(mode)});
+    async function enforceRewardTheme(mode:KleenestThemeMode){
+      if(!isKleenestSeasonalThemeMode(mode)){if(active)setThemeMode(mode);return}
+      const rewards=await getProgressionRewards().catch(()=>[]);
+      const allowed=Array.isArray(rewards)&&rewards.some((reward:any)=>reward?.reward_kind==='theme'&&reward?.reward_key===mode&&reward?.unlocked);
+      if(!allowed){await setKleenestThemeMode('default');if(active)setThemeMode('default');return}
+      if(active)setThemeMode(mode);
+    }
+    void loadKleenestThemeMode().then(enforceRewardTheme);
+    const unsubscribe=subscribeKleenestTheme(mode=>{void enforceRewardTheme(mode)});
     return()=>{active=false;unsubscribe()};
   },[]);
   useEffect(() => {
@@ -49,7 +57,7 @@ export default function RootLayout() {
     let active=true;
     Notifications.getLastNotificationResponseAsync().then(async response=>{if(!active)return;await openNotificationResponse(response);if(response)await Notifications.clearLastNotificationResponseAsync().catch(()=>{})}).catch(() => {});
     const subscription = Notifications.addNotificationResponseReceivedListener(response => { void openNotificationResponse(response); });
-    const appState=AppState.addEventListener('change',state=>{if(state==='active')void refreshConsumerLiveNetworkRegions().catch(()=>{})});
+    const appState=AppState.addEventListener('change',state=>{if(state==='active'){void refreshConsumerLiveNetworkRegions().catch(()=>{});void loadKleenestThemeMode().then(async mode=>{if(!isKleenestSeasonalThemeMode(mode))return;const rewards=await getProgressionRewards().catch(()=>[]);if(!Array.isArray(rewards)||!rewards.some((reward:any)=>reward?.reward_key===mode&&reward?.unlocked))await setKleenestThemeMode('default')})}});
     void refreshConsumerLiveNetworkRegions().catch(()=>{});
     return () => {active=false;subscription.remove();appState.remove()};
   }, []);
