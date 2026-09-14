@@ -12,6 +12,7 @@ import { relayOperatorOAuthCallback } from '../services/operatorOAuthRelay';
 import { useConsumerWebExperience } from '../services/webExperience';
 import BetaReportButton from '../components/BetaReportButton';
 import { flushQueuedBetaReports,recordBetaBreadcrumb } from '../services/betaReporting';
+import { captureConsumerCoreLoopEvent } from '../services/consumerTelemetry';
 
 const operatorOAuthRelaying=relayOperatorOAuthCallback();
 
@@ -47,6 +48,7 @@ export default function RootLayout() {
     const unsubscribe=subscribeKleenestTheme(mode=>{if(active)setThemeMode(mode)});
     return()=>{active=false;unsubscribe()};
   },[]);
+  useEffect(()=>{captureConsumerCoreLoopEvent('app_open',null,{surface:Platform.OS==='web'?'web':'native'})},[]);
   useEffect(()=>{if(!publicWeb)recordBetaBreadcrumb('route',pathname)},[pathname,publicWeb]);
   useEffect(() => {
     if(operatorOAuthRelaying)return;
@@ -59,7 +61,7 @@ export default function RootLayout() {
     return () => {active=false;subscription.remove();appState.remove()};
   }, []);
   if(operatorOAuthRelaying)return null;
-  const tabs=<Tabs screenOptions={{
+  const tabs=<Tabs initialRouteName={Platform.OS==='web'?'index':'explore'} screenOptions={{
     headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{fontWeight:'900',color:theme.ink},
     tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarStyle:publicWeb?({display:'none'} as any):{height:68,paddingTop:6,paddingBottom:8,backgroundColor:theme.surface,borderTopColor:theme.line},tabBarLabelStyle:{fontWeight:'900',fontSize:10},
   }}>
@@ -85,6 +87,7 @@ export default function RootLayout() {
     <Tabs.Screen name="route" options={{ href:null,title:'Routes' }}/>
     <Tabs.Screen name="qr" options={{ href:null,title:'Scan QR' }}/>
     <Tabs.Screen name="location/[id]" options={{ href:null,title:'Restroom' }}/>
+    <Tabs.Screen name="review/[id]" options={{ href:null,title:'Quick review',headerShown:false }}/>
     <Tabs.Screen name="contributor/[id]" options={{ href:null,title:'Contributor' }}/>
     <Tabs.Screen name="saved" options={{ href:null,title:'Saved bathrooms' }}/>
     <Tabs.Screen name="activity" options={{ href:null,title:'Your activity' }}/>
