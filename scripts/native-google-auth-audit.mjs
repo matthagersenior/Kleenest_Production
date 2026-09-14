@@ -9,7 +9,8 @@ if(!mobileCoreCompact.includes("flowType:'pkce'")&&!mobileCoreCompact.includes('
 const consumerLayout=read('apps/consumer-mobile/app/_layout.tsx');
 const relay=read('apps/consumer-mobile/services/operatorOAuthRelay.ts');
 if(!consumerLayout.includes('relayOperatorOAuthCallback()')||!consumerLayout.includes('operatorOAuthRelaying'))failures.push('Deployed Consumer Expo root must relay operator OAuth callbacks before normal Consumer rendering.');
-if(!relay.includes('kleenest.operator.oauth.return')||!relay.includes('createdAt')||!relay.includes('OPERATOR_OAUTH_MAX_AGE_MS')||!relay.includes("'/Kleenest_Production/'+portal+'/auth/'"))failures.push('Consumer-root OAuth relay must restore a fresh Business, Fleet, or Owner callback target.');\nif(!relay.includes('getBrowserLocation')||!relay.includes("typeof location.search!=='string'")||!relay.includes('!location||!callbackPresent(location)'))failures.push('Consumer-root OAuth relay must exit safely on native runtimes where window exists without browser location APIs.');
+if(!relay.includes('kleenest.operator.oauth.return')||!relay.includes('createdAt')||!relay.includes('OPERATOR_OAUTH_MAX_AGE_MS')||!relay.includes("'/Kleenest_Production/'+portal+'/auth/'"))failures.push('Consumer-root OAuth relay must restore a fresh Business, Fleet, or Owner callback target.');
+if(!relay.includes('getBrowserLocation')||!relay.includes("typeof location.search!=='string'")||!relay.includes('!location||!callbackPresent(location)'))failures.push('Consumer-root OAuth relay must exit safely on native runtimes where window exists without browser location APIs.');
 
 const consumer=read('apps/consumer-mobile/app/profile.tsx');
 const consumerCompact=compact(consumer);
