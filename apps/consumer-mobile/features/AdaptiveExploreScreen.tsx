@@ -29,7 +29,7 @@ import {
 } from 'react-native';
 import { listAmenityCatalog, type AmenityCatalogItem } from '../services/amenities';
 import { visitFreshness } from '../services/evidenceFormatting';
-import { attachLocationTrust, listLocationTrustSummaries } from '../services/locationTrust';
+import { attachLocationNetwork, attachLocationTrust, listLocationNetworkStatuses, listLocationTrustSummaries, networkEvidenceSummary } from '../services/locationTrust';
 import { useConsumerTheme } from '../services/theme';
 import { resolveConsumerSearchLocation } from '../services/locationResolver';
 import {
@@ -263,6 +263,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         <RequestedAmenityMatches item={item} requested={requestedAmenities} />
         {reviewCount > 0 ? <Text style={[s.meta,{color:theme.muted}]}>{reviewCount} review{reviewCount === 1 ? '' : 's'}</Text> : null}
         <Text style={[s.trustLine,{color:theme.ink}]}>{trustSummaryLine(item)}</Text>
+        {item.network?.network_verified&&!item.network?.business_claimed?<View style={[s.networkCallout,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.networkKicker,{color:theme.accent}]}>K✓ KLEENEST NETWORK VERIFIED</Text><Text style={[s.networkBody,{color:theme.ink}]}>{networkEvidenceSummary(item.network)}</Text><Text style={[s.networkMeta,{color:theme.muted}]}>Verified by independent Kleenest evidence. This business has not claimed the location.</Text></View>:null}
         <Text style={[s.hint,{color:theme.muted}]}>
           {selected ? 'Selected on map' : 'Tap this card to focus its map pin'}
         </Text>
@@ -460,11 +461,15 @@ export default function AdaptiveExploreScreen() {
 
   async function enrich(data: any[]) {
     const ids = data.map(idOf).filter(Boolean);
-    const summaries = ids.length
-      ? await listLocationTrustSummaries(ids).catch(() => [])
-      : [];
+    const [summaries,networkStatuses] = ids.length
+      ? await Promise.all([
+          listLocationTrustSummaries(ids).catch(() => []),
+          listLocationNetworkStatuses(ids).catch(() => []),
+        ])
+      : [[],[]];
     const trusted=attachLocationTrust(data, summaries);
-    return attachLocationPresentations(trusted).catch(()=>trusted);
+    const networked=attachLocationNetwork(trusted,networkStatuses);
+    return attachLocationPresentations(networked).catch(()=>networked);
   }
 
   async function enrichProgression(data:any[],latitude:number,longitude:number,radiusMeters:number){
@@ -1056,7 +1061,7 @@ export default function AdaptiveExploreScreen() {
                       }}
                       style={[s.marker, active && s.markerActive]}
                     >
-                      {row.consumer_photo_url?<Image source={{uri:String(row.consumer_photo_url)}} style={[s.markerPhoto,active&&s.markerPhotoActive]}/>:<PlaceIcon item={row} size={active ? 28 : 22} />}
+                      <PlaceIcon item={row} size={active ? 28 : 22} />
                     </Pressable>
                   </Marker>
                 );
@@ -1105,6 +1110,7 @@ export default function AdaptiveExploreScreen() {
                   </View>
                 </View>
                 <CompactRestroomSignals item={selected} />
+                {selected.network?.network_verified&&!selected.network?.business_claimed?<Text style={[s.networkSelectedLine,{color:theme.accent}]}>K✓ Verified by the Kleenest Network · {networkEvidenceSummary(selected.network)}</Text>:null}
                 <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
                 <View style={s.actionRow}>
                   <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking your location':selected.visit_verification_available?'Verify your detected visit at selected location':'Check in at selected location'} accessibilityState={{disabled:Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking',busy:checkInFeedback[idOf(selected)]?.status==='checking'}} disabled={Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking'} style={[s.secondarySmall, s.selectedAction,(selected.active_check_in||checkInFeedback[idOf(selected)]?.status==='checking')&&s.disabled]} onPress={() => void checkIn(selected)}>
@@ -1366,6 +1372,11 @@ const s = StyleSheet.create({
   distance: { fontSize: 9, fontWeight: '900', color: palette.green },
   routeLine: { fontSize: 10, fontWeight: '900', color: '#365445' },
   trustLine: { fontSize: 9, lineHeight: 13, color: '#52675b', fontWeight: '700' },
+  networkCallout:{borderWidth:1,borderRadius:12,padding:10,gap:3,marginTop:7},
+  networkKicker:{fontSize:8,fontWeight:'900',letterSpacing:1},
+  networkBody:{fontSize:11,lineHeight:16,fontWeight:'900'},
+  networkMeta:{fontSize:10,lineHeight:15,fontWeight:'700'},
+  networkSelectedLine:{fontSize:9,lineHeight:13,fontWeight:'900'},
   hint: { fontSize: 8, color: '#718077' },
   missingPlace: { marginTop: 4, marginBottom: 12, borderRadius: 14, padding: 12, backgroundColor: '#eef4f0', borderWidth: 1, borderColor: '#d4e0d8' },
   missingTitle: { fontSize: 14, fontWeight: '900', color: palette.ink, marginTop: 2 },
