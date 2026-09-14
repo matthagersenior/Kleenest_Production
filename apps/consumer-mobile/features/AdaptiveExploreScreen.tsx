@@ -143,7 +143,32 @@ const navigateUrl = (row: any) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${row.latitude},${row.longitude}`)}&travelmode=driving`;
 
 const ratingOf=(row:any)=>{const value=Number(row?.rating ?? row?.average_rating ?? row?.star_rating ?? 0);return Number.isFinite(value)?value:0;};
-const freshestEvidenceAt=(row:any)=>{const values=[row?.trust?.latest_verified_at,row?.trust?.latest_amenity_observed_at].map((value:any)=>value?new Date(value).getTime():NaN).filter((value:number)=>Number.isFinite(value));return values.length?Math.max(...values):null;};
+const freshestEvidenceAt=(row:any)=>{const values=[row?.network?.latest_evidence_at,row?.trust?.latest_verified_at,row?.trust?.latest_amenity_observed_at,row?.consumer_photo_created_at].map((value:any)=>value?new Date(value).getTime():NaN).filter((value:number)=>Number.isFinite(value));return values.length?Math.max(...values):null;};
+const isKleenestPlace=(row:any)=>Boolean(row?.kleenest_business||row?.business_tier);
+const kleenestDiscoveryRank=(row:any)=>isKleenestPlace(row)?4:row?.network?.network_verified?3:row?.network?.business_claimed?2:row?.network?.network_state==='building'?1:0;
+const amenityDiscoveryRank=(row:any,requested:string[])=>requested.length?matchedRequestedAmenities(row,requested).length:(Array.isArray(row?.amenities)?row.amenities.length:0);
+function organizeDiscoveryRows(rows:any[],requested:string[]){
+  const ordered=[...(rows||[])].sort((a,b)=>{
+    const freshness=(freshestEvidenceAt(b)||0)-(freshestEvidenceAt(a)||0);
+    if(freshness!==0)return freshness;
+    const kleenest=kleenestDiscoveryRank(b)-kleenestDiscoveryRank(a);
+    if(kleenest!==0)return kleenest;
+    const amenities=amenityDiscoveryRank(b,requested)-amenityDiscoveryRank(a,requested);
+    if(amenities!==0)return amenities;
+    return Number(a?.distance_meters||Number.MAX_SAFE_INTEGER)-Number(b?.distance_meters||Number.MAX_SAFE_INTEGER);
+  });
+  return ordered.map((row,index)=>({...row,discovery_recommended:index===0,discovery_rank:index+1}));
+}
+function recommendationReason(row:any,requested:string[]){
+  const parts:string[]=[];
+  const fresh=freshestEvidenceAt(row);
+  if(fresh)parts.push('freshest evidence');
+  if(isKleenestPlace(row))parts.push('Kleenest place');
+  else if(row?.network?.network_verified)parts.push('Kleenest Network verified');
+  const matches=matchedRequestedAmenities(row,requested).length;
+  if(matches)parts.push(`${matches} requested amenit${matches===1?'y':'ies'}`);
+  return parts.length?parts.join(' · '):'best nearby fit';
+}
 const isFreshWithinDays=(row:any,days:number|null)=>{if(!days)return true;const time=freshestEvidenceAt(row);return time!=null&&Date.now()-time<=days*86400000;};
 
 function trustSummaryLine(item: any) {
@@ -264,7 +289,11 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         <View style={s.cardTop}>
           {item.consumer_photo_url?<Image source={{uri:String(item.consumer_photo_url)}} style={s.cardPhoto}/>:<PlaceIcon item={item} size={34} />}
           <View style={{ flex: 1 }}>
-            <Text style={[s.cardTitle,{color:theme.ink}]}>{item.name || 'Restroom location'}</Text>
+            <View style={s.cardTitleRow}>
+              <Text style={[s.cardTitle,{color:theme.ink}]}>{item.name || 'Restroom location'}</Text>
+              {item.discovery_recommended?<View style={[s.recommendedBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.recommendedBadgeText,{color:theme.accent}]}>RECOMMENDED</Text></View>:null}
+            </View>
+            {item.discovery_recommended?<Text style={[s.recommendedReason,{color:theme.muted}]}>{recommendationReason(item,requestedAmenities)}</Text>:null}
             {item.business_name ? <Text style={[s.meta,{color:theme.muted}]}>{item.business_name}</Text> : null}
             <Text style={[s.meta,{color:theme.muted}]}>
               {[item.address, item.city, item.state].filter(Boolean).join(', ') || 'Address unavailable'}
@@ -331,7 +360,7 @@ export default function AdaptiveExploreScreen() {
   const [search, setSearch] = useState('');
   const [searchAreaOrigin,setSearchAreaOrigin]=useState<[number,number]|null>(null);
   const [searchAreaLabel,setSearchAreaLabel]=useState('');
-  const [radius, setRadius] = useState(8047);
+  const [radius, setRadius] = useState(1609);
   const [maxRadius, setMaxRadius] = useState(402336);
   const [effectiveRadiusMeters, setEffectiveRadiusMeters] = useState(8047);
   const [attemptedRadiiMeters, setAttemptedRadiiMeters] = useState<number[]>([]);
@@ -351,7 +380,7 @@ export default function AdaptiveExploreScreen() {
   const [cached, setCached] = useState(false);
 
   const visibleRows=useMemo(()=>rows.filter((row)=>{
-    if(kleenestOnly&&!row?.business_id)return false;
+    if(kleenestOnly&&!isKleenestPlace(row))return false;
     if(progressionOnly&&!row?.progression_opportunity)return false;
     if(minimumStars>0&&ratingOf(row)<minimumStars)return false;
     if(!isFreshWithinDays(row,freshnessDays))return false;
@@ -428,7 +457,7 @@ export default function AdaptiveExploreScreen() {
     setSelectedAmenityNames([]);
     setMatchRule('all');
     setAutoExpand(true);
-    chooseRadius(8047);
+    chooseRadius(1609);
     setMaxRadius(402336);
     setCorridor(16093);
   }
@@ -556,8 +585,8 @@ export default function AdaptiveExploreScreen() {
         search: query,
         amenityNames: selectedAmenityNames,
         amenityMatch: matchRule,
-        autoExpand: selectedAmenityNames.length > 0 && autoExpand,
-        targetCount: 3,
+        autoExpand: selectedAmenityNames.length ? autoExpand : true,
+        hardRadius: selectedAmenityNames.length > 0 && !autoExpand,
         limit: 500,
       });
     } catch (error) {
@@ -567,8 +596,32 @@ export default function AdaptiveExploreScreen() {
       usedMatureFallback = true;
     }
 
-    const enrichedBase = await enrich(result.rows);
-    const enriched = attachPresence(await enrichProgression(enrichedBase,latitude,longitude,result.effectiveRadiusMeters),livePresence);
+    let discoveryRows=result.rows;
+    let relaxedAmenityFallback=false;
+    if(!discoveryRows.length&&selectedAmenityNames.length&&autoExpand&&!query){
+      const fallbackResult=await findAdaptiveNearbyRestrooms({
+        latitude,
+        longitude,
+        requestedRadiusMeters:1609,
+        maxRadiusMeters:maxRadius,
+        search:'',
+        amenityNames:[],
+        amenityMatch:'any',
+        autoExpand:true,
+        hardRadius:false,
+        limit:500,
+      });
+      discoveryRows=fallbackResult.rows;
+      if(discoveryRows.length){
+        result={...fallbackResult,requestedAmenityFallback:true};
+        relaxedAmenityFallback=true;
+      }
+    }
+    const enrichedBase = await enrich(discoveryRows);
+    const enriched = organizeDiscoveryRows(
+      attachPresence(await enrichProgression(enrichedBase,latitude,longitude,result.effectiveRadiusMeters),livePresence),
+      selectedAmenityNames,
+    );
     if (!areaMatch&&!enriched.length && preserveCacheOnEmpty && !query && !selectedAmenityNames.length) {
       const fallback = await readNearbyCache();
       if (fallback?.rows?.length) {
@@ -597,14 +650,25 @@ export default function AdaptiveExploreScreen() {
 
     if(areaMatch){
       setMessage(enriched.length
-        ? `${enriched.length} bathroom${enriched.length===1?'':'s'} found while Searching near ${areaMatch.label} within ${radiusLabel(result.effectiveRadiusMeters)}${result.expanded?' after adaptive expansion':''}.`
-        : `No qualifying bathrooms found while Searching near ${areaMatch.label} through ${radiusLabel(result.effectiveRadiusMeters)}.`);
+        ? `${enriched.length} bathroom${enriched.length===1?'':'s'} found while searching near ${areaMatch.label} within ${radiusLabel(result.effectiveRadiusMeters)}${result.expanded?' after adaptive expansion':''}.`
+        : `No qualifying bathrooms found while searching near ${areaMatch.label} through ${radiusLabel(result.effectiveRadiusMeters)}.`);
     } else if (usedMatureFallback) {
       setMessage(enriched.length?`${enriched.length} nearby bathroom${enriched.length===1?'':'s'} found using the proven nearby search path while adaptive discovery recovers.`:'No bathrooms matched the current nearby search.');
-    } else if (result.expanded) {
-      setMessage(enriched.length?`No sufficient match set within ${radiusLabel(result.requestedRadiusMeters)}. Expanded through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')} and found ${enriched.length} qualifying location${enriched.length===1?'':'s'}.`:`No qualifying locations found after expanding through ${radiusLabel(result.effectiveRadiusMeters)}.`);
+    } else if (relaxedAmenityFallback) {
+      setMessage(`No exact amenity match was found through your expanded search, so Kleenest kept the page useful with ${enriched.length} nearby place${enriched.length===1?'':'s'}. Results are organized by freshness, Kleenest status, amenities, then distance.`);
     } else if (!query && !selectedAmenityNames.length) {
-      setMessage(enriched.length?`${enriched.length} nearby places within ${radiusLabel(result.effectiveRadiusMeters)} · ${restroomEvidence} with restroom evidence · ${verificationCandidates} need bathroom verification.`:`No nearby places found within ${radiusLabel(result.effectiveRadiusMeters)}.`);
+      const densityNote=result.densityClass==='dense'
+        ? 'Dense area · kept discovery to the tight local radius'
+        : result.densityClass==='moderate'
+          ? 'Moderate density · kept discovery within the local 1–2 mile area'
+          : result.expanded
+            ? `Sparse area · expanded automatically through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')}`
+            : 'Local discovery';
+      setMessage(enriched.length
+        ? `${enriched.length} nearby place${enriched.length===1?'':'s'} within ${radiusLabel(result.effectiveRadiusMeters)} · ${densityNote} · ${restroomEvidence} with restroom evidence · ${verificationCandidates} need bathroom verification. Ordered by freshness → Kleenest → amenities.`
+        : 'Live discovery returned no local data, so Kleenest will keep the last useful nearby set when one is available.');
+    } else if (result.expanded) {
+      setMessage(enriched.length?`Expanded through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')} and found ${enriched.length} qualifying location${enriched.length===1?'':'s'}.`:`No qualifying locations found after expanding through ${radiusLabel(result.effectiveRadiusMeters)}.`);
     } else {
       setMessage(enriched.length?`${enriched.length} qualifying bathroom${enriched.length===1?'':'s'} within ${radiusLabel(result.effectiveRadiusMeters)}.`:`No qualifying bathrooms found within ${radiusLabel(result.effectiveRadiusMeters)}.`);
     }
@@ -1136,7 +1200,11 @@ export default function AdaptiveExploreScreen() {
                 <View style={s.selectedRow}>
                   {selected.consumer_photo_url?<Image source={{uri:String(selected.consumer_photo_url)}} style={s.selectedPhoto}/>:<PlaceIcon item={selected} size={34} />}
                   <View style={{ flex: 1 }}>
-                    <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink}]}>{selected.name || 'Restroom location'}</Text>
+                    <View style={s.cardTitleRow}>
+                      <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{selected.name || 'Restroom location'}</Text>
+                      {selected.discovery_recommended?<View style={[s.recommendedBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.recommendedBadgeText,{color:theme.accent}]}>RECOMMENDED</Text></View>:null}
+                    </View>
+                    {selected.discovery_recommended?<Text style={[s.recommendedReason,{color:theme.muted}]}>{recommendationReason(selected,selectedAmenityNames)}</Text>:null}
                     <Text numberOfLines={2} style={[s.meta,{color:theme.muted}]}>
                       {selectedRoutePosition || distanceLabel(selected.distance_meters)}
                       {' · '}{[selected.address, selected.city].filter(Boolean).join(', ') || 'Address unavailable'}
@@ -1405,7 +1473,11 @@ const s = StyleSheet.create({
   amenityMatchText: { fontSize: 8, fontWeight: '900', color: palette.green },
   cardTop: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   cardPhoto:{width:68,height:68,borderRadius:14,backgroundColor:'#e7eee9'},
-  cardTitle: { fontSize: 15, fontWeight: '900', color: palette.ink },
+  cardTitleRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6},
+  cardTitle: { fontSize: 15, fontWeight: '900', color: palette.ink, flexShrink:1 },
+  recommendedBadge:{borderWidth:1,borderRadius:999,paddingHorizontal:7,paddingVertical:3},
+  recommendedBadgeText:{fontSize:7,fontWeight:'900',letterSpacing:0.7},
+  recommendedReason:{fontSize:8,lineHeight:12,fontWeight:'800'},
   meta: { fontSize: 9, lineHeight: 13, color: '#66776d' },
   distance: { fontSize: 9, fontWeight: '900', color: palette.green },
   routeLine: { fontSize: 10, fontWeight: '900', color: '#365445' },
