@@ -16,9 +16,10 @@ export async function createLocationReview({ locationId, checkInId = null, stars
   return data;
 }
 export async function submitPriorKnowledge(locationId, input = {}) {
-  const { data, error } = await getSupabase().rpc('consumer_submit_prior_knowledge', {
+  const { data, error } = await getSupabase().rpc('consumer_record_discovery_evidence', {
     p_location_id: locationId,
     p_input: {
+      method: 'prior_knowledge',
       knowledge_recency: input.knowledgeRecency || 'unknown',
       facts: [...new Set((input.facts || []).map((value) => String(value).trim()).filter(Boolean))],
       cleanliness_tendency: input.cleanlinessTendency || 'unknown',
