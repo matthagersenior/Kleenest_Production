@@ -52,22 +52,42 @@ function publicPhoto(row:any):ReviewPhoto {
   };
 }
 
-export async function chooseReviewPhotos(): Promise<ReviewPhotoDraft[]> {
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['images'],
-    allowsMultipleSelection: true,
-    selectionLimit: MAX_REVIEW_PHOTOS,
-    quality: 0.82,
-  });
-  if (result.canceled) return [];
-  return (result.assets || []).slice(0, MAX_REVIEW_PHOTOS).map(asset => ({
+function draftFromAsset(asset: ImagePicker.ImagePickerAsset): ReviewPhotoDraft {
+  return {
     uri: asset.uri,
     width: Number.isFinite(asset.width) ? asset.width : null,
     height: Number.isFinite(asset.height) ? asset.height : null,
     fileName: asset.fileName || null,
     mimeType: asset.mimeType || null,
     fileSize: asset.fileSize ?? null,
-  }));
+  };
+}
+
+export async function chooseReviewPhotos(limit=MAX_REVIEW_PHOTOS): Promise<ReviewPhotoDraft[]> {
+  const selectionLimit=Math.max(1,Math.min(MAX_REVIEW_PHOTOS,Math.floor(limit||MAX_REVIEW_PHOTOS)));
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsMultipleSelection: selectionLimit>1,
+    selectionLimit,
+    quality: 0.82,
+  });
+  if (result.canceled) return [];
+  return (result.assets || []).slice(0, selectionLimit).map(draftFromAsset);
+}
+
+export async function captureReviewPhoto(): Promise<ReviewPhotoDraft | null> {
+  const permission=await ImagePicker.requestCameraPermissionsAsync();
+  if(permission.status!=='granted'){
+    throw new Error(permission.canAskAgain===false
+      ? 'Camera permission is blocked. Enable camera access for Kleenest in your phone settings.'
+      : 'Camera permission is required to take a review photo.');
+  }
+  const result=await ImagePicker.launchCameraAsync({
+    mediaTypes:['images'],
+    quality:0.82,
+  });
+  if(result.canceled||!result.assets?.length)return null;
+  return draftFromAsset(result.assets[0]);
 }
 
 export async function uploadReviewPhotos(reviewId: string, photos: ReviewPhotoDraft[]) {
