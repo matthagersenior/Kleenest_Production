@@ -108,7 +108,7 @@ requireTokens('Business Home dark surfaces','apps/business-mobile/app/index.tsx'
   'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.metricValue,{color:theme.ink}]}',
   'style={[s.metricDetail,{color:theme.muted}]}',
-  'style={[s.actionTile,{backgroundColor:theme.surface,borderColor:theme.line}',
+  'style={StyleSheet.flatten([s.actionTile,{backgroundColor:theme.surface,borderColor:theme.line}',
 ]);
 requireTokens('Business Locations dark surfaces','apps/business-mobile/app/locations.tsx',[
   'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
