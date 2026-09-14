@@ -8,6 +8,7 @@ import { notificationDestination } from '../services/notificationRouting';
 import { refreshConsumerLiveNetworkRegions } from '../services/liveNetwork';
 import PolicyAcceptanceGate from '../components/PolicyAcceptanceGate';
 import { relayOperatorOAuthCallback } from '../services/operatorOAuthRelay';
+import { useConsumerWebExperience } from '../services/webExperience';
 
 const operatorOAuthRelaying=relayOperatorOAuthCallback();
 
@@ -35,8 +36,8 @@ export default function RootLayout() {
   const systemScheme=useColorScheme();
   const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
   const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','consumer');
-  const webAppLaunch=Platform.OS==='web'&&typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('app')==='1';
-  const publicWeb=Platform.OS==='web'&&!webAppLaunch&&['/','/for-you','/for-business','/trust','/install'].includes(pathname);
+  const {ready:webGateReady,appActive}=useConsumerWebExperience();
+  const publicWeb=Platform.OS==='web'&&!appActive&&webGateReady&&['/','/for-you','/for-business','/trust','/install'].includes(pathname);
   useEffect(()=>{
     let active=true;
     void loadKleenestThemeMode().then(mode=>{if(active)setThemeMode(mode)});
