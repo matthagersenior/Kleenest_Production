@@ -58,6 +58,6 @@ export function relayOperatorOAuthCallback(){
   clearRelayState();
   const query=search.toString();
   const destination=location.origin+'/Kleenest_Production/'+portal+'/auth/'+(query?'?'+query:'')+(location.hash||'');
-  location.replace(destination);
+  window.location.replace(destination);
   return true;
 }
