@@ -60,12 +60,16 @@ export function captureConsumerCoreLoopEvent(
   metadata:Record<string,unknown>={}
 ){
   const id=String(locationId||'').trim();
-  void getKleenestSupabaseClient().rpc('record_consumer_core_loop_event',{
-    p_event_name:eventName,
-    p_location_id:id||null,
-    p_session_id:coreLoopSessionId,
-    p_metadata:metadata,
-  }).catch(()=>{});
+  void (async()=>{
+    try{
+      await getKleenestSupabaseClient().rpc('record_consumer_core_loop_event',{
+        p_event_name:eventName,
+        p_location_id:id||null,
+        p_session_id:coreLoopSessionId,
+        p_metadata:metadata,
+      });
+    }catch{}
+  })();
 }
 
 export function currentConsumerCoreLoopSession(){
