@@ -60,7 +60,11 @@ export function mergeNearbyDiscoveryRows(restroomRows:any[],candidateRows:any[],
   const candidatesById=new Map<string,any>();
   for(const row of candidateRows||[]){
     const id=rowId(row);
-    if(!id||knownRestroomNegative(row)||evidenceById.has(id))continue;
+    if(!id||knownRestroomNegative(row))continue;
+    if(evidenceById.has(id)){
+      evidenceById.set(id,{...candidateRow(row),...evidenceById.get(id)});
+      continue;
+    }
     candidatesById.set(id,candidateRow(row));
   }
   const evidence=[...evidenceById.values()].sort((a,b)=>distanceOf(a)-distanceOf(b));
@@ -121,7 +125,12 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
     effectiveRadiusMeters=radiusMeters;
     const verifiedPromise=listNearbyRestroomsV3({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,amenityNames,amenityMatch,limit});
     if(amenityNames.length){
-      rows=(await verifiedPromise).map(evidenceRow);
+      const [restroomRows,candidateRows]=await Promise.all([
+        verifiedPromise,
+        listNearbyMapCandidates({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,limit}),
+      ]);
+      const metadataById=new Map(candidateRows.map((row:any)=>[rowId(row),row]));
+      rows=restroomRows.map((row:any)=>evidenceRow({...metadataById.get(rowId(row)),...row}));
     }else{
       const [restroomRows,candidateRows]=await Promise.all([
         verifiedPromise,
