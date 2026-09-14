@@ -95,6 +95,10 @@ const FILTER_CATEGORIES = new Set([
 ]);
 
 const idOf = (row: any) => String(row?.location_id || row?.place_id || row?.id || '');
+type CheckInActionFeedback = {
+  status: 'checking' | 'success' | 'error';
+  message: string;
+};
 function attachPresence(rows:any[],presence:ConsumerPresence|null){
   if(!presence?.check_in_available||!presence.location_id)return rows;
   const locationId=String(presence.location_id);
@@ -183,7 +187,31 @@ function parseRouteDraft(raw: string | null) {
   }
 }
 
-function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddToRoute, onKnow, onDetails, route, requestedAmenities }: {
+function CheckInStatus({ feedback }: { feedback?: CheckInActionFeedback }) {
+  const theme=useConsumerTheme();
+  if(!feedback)return null;
+  const isError=feedback.status==='error';
+  const isChecking=feedback.status==='checking';
+  return (
+    <View
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+      style={[
+        s.checkInStatus,
+        {
+          backgroundColor:isError?'#fff0f0':theme.accentSoft,
+          borderColor:isError?'#e2a8a8':theme.line,
+        },
+      ]}
+    >
+      <Text style={[s.checkInStatusText,{color:isError?'#8f1f1f':theme.accent}]}>
+        {isChecking?'⌖ ':feedback.status==='success'?'✓ ':'! '}{feedback.message}
+      </Text>
+    </View>
+  );
+}
+
+function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddToRoute, onKnow, onDetails, route, requestedAmenities, checkInFeedback }: {
   item: any;
   selected: boolean;
   onSelect: () => void;
@@ -194,12 +222,14 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
   onDetails: () => void;
   route: any;
   requestedAmenities: string[];
+  checkInFeedback?: CheckInActionFeedback;
 }) {
   const theme=useConsumerTheme();
   const fraction = Math.max(0, Math.min(1, Number(item.route_fraction || 0)));
   const ahead = route ? Math.max(0, Number(route.distanceMiles || 0) * fraction) : null;
   const eta = route ? Math.max(0, Number(route.durationMinutes || 0) * fraction) : null;
   const reviewCount = Number(item.review_count || 0);
+  const checkInBusy=checkInFeedback?.status==='checking';
   return (
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}, selected && s.cardActive]}>
       <Pressable
@@ -238,8 +268,8 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         </Text>
       </Pressable>
       <View style={s.cardActionRow}>
-        <Pressable accessibilityRole="button" accessibilityLabel={item.active_check_in?'Already checked in at this location':item.visit_verification_available?'Verify your detected visit at this location':'Check in at this location'} disabled={Boolean(item.active_check_in)} style={[s.secondarySmall, s.cardAction,item.active_check_in&&s.disabled]} onPress={onCheckIn}>
-          <Text style={[s.secondaryText,{color:theme.accent}]}>{item.active_check_in?'Checked in ✓':item.visit_verification_available?'Verify visit':'Check in'}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={item.active_check_in?'Already checked in at this location':checkInBusy?'Checking your location':item.visit_verification_available?'Verify your detected visit at this location':'Check in at this location'} accessibilityState={{disabled:Boolean(item.active_check_in)||checkInBusy,busy:checkInBusy}} disabled={Boolean(item.active_check_in)||checkInBusy} style={[s.secondarySmall, s.cardAction,(item.active_check_in||checkInBusy)&&s.disabled]} onPress={onCheckIn}>
+          <Text style={[s.secondaryText,{color:theme.accent}]}>{item.active_check_in?'Checked in ✓':checkInBusy?'Checking location…':item.visit_verification_available?'Verify visit':'Check in'}</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -260,6 +290,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
           <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
         </Pressable>
       </View>
+      <CheckInStatus feedback={checkInFeedback} />
     </View>
   );
 }
@@ -293,6 +324,7 @@ export default function AdaptiveExploreScreen() {
   const [route, setRoute] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [checkInFeedback,setCheckInFeedback]=useState<Record<string,CheckInActionFeedback>>({});
   const [cached, setCached] = useState(false);
 
   const visibleRows=useMemo(()=>rows.filter((row)=>{
@@ -654,27 +686,33 @@ export default function AdaptiveExploreScreen() {
 
   async function checkIn(row:any){
     const id=idOf(row);if(!id)return;
+    if(checkInFeedback[id]?.status==='checking')return;
+    const placeName=String(row?.name||'this restroom');
+    setSelectedId(id);
+    setCheckInFeedback(current=>({...current,[id]:{status:'checking',message:`Checking your location for ${placeName}…`}}));
     try{
       const permission=await Location.requestForegroundPermissionsAsync();
       if(permission.status!=='granted')throw new Error(permission.canAskAgain===false?'Location permission is blocked in system settings.':'Location permission is required to check in.');
       const current=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.High});
       const result:any=await mobileCheckIn(id,current.coords.latitude,current.coords.longitude);
       const distance=result?.distance_meters!=null?` · ${Math.round(Number(result.distance_meters))} m from the location`:'';
+      const successMessage=result?.already_checked_in
+        ? `You're already checked in at ${placeName}. Kleenest confirmed you're still inside the geofence${distance}.`
+        : `Checked in at ${placeName}. GPS + geofence verified${distance}.`;
       setRows(currentRows=>currentRows.map(item=>idOf(item)===id?{...item,active_check_in:true,visit_verification_available:true}:item));
-      setMessage(result?.already_checked_in
-        ? `You're already checked in at ${row.name||'this restroom'}. Kleenest confirmed you're still inside the geofence${distance}.`
-        : `Checked in at ${row.name||'this restroom'}. GPS + geofence verified${distance}.`);
-      setSelectedId(id);
+      setMessage(successMessage);
+      setCheckInFeedback(current=>({...current,[id]:{status:'success',message:successMessage}}));
     }catch(error:any){
       const detail=String(error?.message||'');
-      const message=detail.includes('OUTSIDE_GEOFENCE')
-        ? `Get closer to ${row.name||'this restroom'} to check in. Kleenest only verifies GPS check-ins inside the location geofence.`
+      const failureMessage=detail.includes('OUTSIDE_GEOFENCE')
+        ? `Get closer to ${placeName} to check in. Kleenest only verifies GPS check-ins inside the location geofence.`
         : detail.includes('LEAVE_REQUIRED_BEFORE_REPEAT_CHECK_IN')
-          ? `You're already checked in at ${row.name||'this restroom'} and haven't left its geofence yet.`
+          ? `You're already checked in at ${placeName} and haven't left its geofence yet.`
           : detail&&detail.length<120&&!/^[A-Z0-9_: =.-]+$/.test(detail)
             ? detail
             : 'Check-in could not be completed. Please try again.';
-      setMessage(message);
+      setMessage(failureMessage);
+      setCheckInFeedback(current=>({...current,[id]:{status:'error',message:failureMessage}}));
     }
   }
 
@@ -1069,8 +1107,8 @@ export default function AdaptiveExploreScreen() {
                 <CompactRestroomSignals item={selected} />
                 <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
                 <View style={s.actionRow}>
-                  <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':selected.visit_verification_available?'Verify your detected visit at selected location':'Check in at selected location'} disabled={Boolean(selected.active_check_in)} style={[s.secondarySmall, s.selectedAction,selected.active_check_in&&s.disabled]} onPress={() => void checkIn(selected)}>
-                    <Text style={[s.secondaryText,{color:theme.accent}]}>{selected.active_check_in?'Checked in ✓':selected.visit_verification_available?'Verify visit':'Check in'}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking your location':selected.visit_verification_available?'Verify your detected visit at selected location':'Check in at selected location'} accessibilityState={{disabled:Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking',busy:checkInFeedback[idOf(selected)]?.status==='checking'}} disabled={Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking'} style={[s.secondarySmall, s.selectedAction,(selected.active_check_in||checkInFeedback[idOf(selected)]?.status==='checking')&&s.disabled]} onPress={() => void checkIn(selected)}>
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>{selected.active_check_in?'Checked in ✓':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking location…':selected.visit_verification_available?'Verify visit':'Check in'}</Text>
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
@@ -1091,6 +1129,7 @@ export default function AdaptiveExploreScreen() {
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
                   </Pressable>
                 </View>
+                <CheckInStatus feedback={checkInFeedback[idOf(selected)]} />
               </View>
             ) : null}
           </View>
@@ -1126,6 +1165,7 @@ export default function AdaptiveExploreScreen() {
               onDetails={() => router.push(`/location/${idOf(item)}`)}
               route={mode === 'route' ? route : null}
               requestedAmenities={selectedAmenityNames}
+              checkInFeedback={checkInFeedback[idOf(item)]}
             />
           </View>
         )}
@@ -1313,6 +1353,8 @@ const s = StyleSheet.create({
   cardMain: { gap: 6 },
   cardActionRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   cardAction: { flexGrow: 1, alignItems: 'center' },
+  checkInStatus:{borderWidth:1,borderRadius:10,paddingHorizontal:9,paddingVertical:7,marginTop:2},
+  checkInStatusText:{fontSize:9,lineHeight:13,fontWeight:'900'},
   amenityMatchRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 5, marginTop: 2 },
   amenityMatchLabel: { fontSize: 7, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
   amenityMatchPill: { borderRadius: 999, backgroundColor: '#e8f1eb', paddingHorizontal: 7, paddingVertical: 4 },
