@@ -69,6 +69,41 @@ requireTokens('Business operational cards','apps/business-mobile/app/operations.
 requireTokens('Fleet low-light field surfaces','apps/fleet-mobile/app/member.tsx',['theme.surface','theme.accentSoft']);
 requireTokens('KleenestOS control cards','apps/platform-mobile/app/control.tsx',['useOSCardStyle','theme.surface']);
 
+requireTokens('Consumer web-app navigation persistence','apps/consumer-mobile/app/_layout.tsx',[
+  'useConsumerWebExperience',
+  'appActive',
+  "const publicWeb=Platform.OS==='web'&&!appActive",
+]);
+requireTokens('Consumer web-app session persistence','apps/consumer-mobile/services/webExperience.ts',[
+  'APP_SESSION_KEY',
+  'sessionStorage',
+  'appSession',
+  'markConsumerAppSession',
+]);
+requireTokens('Consumer Profile dark contrast','apps/consumer-mobile/app/profile.tsx',[
+  'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.metricValue,{color:theme.ink}]}',
+  'style={[s.metricLabel,{color:theme.muted}]}',
+  'style={[s.hubLink,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.hubTitle,{color:theme.ink}]}',
+  'style={[s.hubBody,{color:theme.muted}]}',
+]);
+requireTokens('Consumer Home dark surfaces','apps/consumer-mobile/app/index.tsx',[
+  'style={[s.joinBanner,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.installFeature,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+]);
+requireTokens('Consumer Explore dark controls','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',[
+  'style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}',
+  'style={[s.filterLauncher,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.advancedModalCard,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'placeholderTextColor={theme.muted}',
+]);
+requireTokens('Consumer Preferences dark forms','apps/consumer-mobile/app/preferences.tsx',[
+  'style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}',
+  'placeholderTextColor={theme.muted}',
+]);
+
 if(failures.length){
   console.error('Deep theme surface audit failed:');
   for(const failure of failures)console.error('- '+failure);

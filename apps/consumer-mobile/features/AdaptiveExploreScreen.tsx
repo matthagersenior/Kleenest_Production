@@ -725,7 +725,7 @@ export default function AdaptiveExploreScreen() {
             onSubmitEditing={() => void load()}
             returnKeyType="search"
             placeholder="Address, school, workplace, city or brand"
-            placeholderTextColor="#7b8b82"
+            placeholderTextColor={theme.muted}
           />
           <Pressable
             accessibilityRole="button"
@@ -737,26 +737,26 @@ export default function AdaptiveExploreScreen() {
           </Pressable>
         </View>
 
-        {searchAreaLabel?<View style={s.searchAreaChip}><Text style={s.searchAreaText}>Searching near {searchAreaLabel}</Text><Pressable onPress={()=>{setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');void load({clearQuery:true});}}><Text style={s.searchAreaAction}>Use my location</Text></Pressable></View>:null}
+        {searchAreaLabel?<View style={[s.searchAreaChip,{backgroundColor:theme.accentSoft}]}><Text style={[s.searchAreaText,{color:theme.ink}]}>Searching near {searchAreaLabel}</Text><Pressable onPress={()=>{setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');void load({clearQuery:true});}}><Text style={[s.searchAreaAction,{color:theme.accent}]}>Use my location</Text></Pressable></View>:null}
 
-        <View style={s.segment} accessibilityRole="tablist">
+        <View style={[s.segment,{backgroundColor:theme.surfaceRaised}]} accessibilityRole="tablist">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Nearby search"
             accessibilityState={{ selected: mode === 'nearby' }}
             onPress={() => chooseMode('nearby')}
-            style={[s.segmentButton, mode === 'nearby' && s.segmentActive]}
+            style={[s.segmentButton,mode==='nearby'&&{backgroundColor:theme.accent}]}
           >
-            <Text style={[s.segmentText, mode === 'nearby' && s.segmentTextActive]}>Nearby</Text>
+            <Text style={[s.segmentText,{color:mode==='nearby'?theme.accentText:theme.ink}]}>Nearby</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Along route search"
             accessibilityState={{ selected: mode === 'route' }}
             onPress={() => chooseMode('route')}
-            style={[s.segmentButton, mode === 'route' && s.segmentActive]}
+            style={[s.segmentButton,mode==='route'&&{backgroundColor:theme.accent}]}
           >
-            <Text style={[s.segmentText, mode === 'route' && s.segmentTextActive]}>Along route</Text>
+            <Text style={[s.segmentText,{color:mode==='route'?theme.accentText:theme.ink}]}>Along route</Text>
           </Pressable>
         </View>
 
@@ -812,13 +812,13 @@ export default function AdaptiveExploreScreen() {
                     <Pressable onPress={resetFilters}><Text style={[s.clear,{color:theme.accent}]}>Reset to Everything</Text></Pressable>
                   </View>
                   <View style={s.quickFilterGrid}>
-                    <Pressable accessibilityRole="checkbox" accessibilityState={{checked:kleenestOnly}} style={[s.quickFilterCard,kleenestOnly&&s.quickFilterCardActive]} onPress={()=>setKleenestOnly(value=>!value)}>
-                      <Text style={[s.quickFilterTitle,kleenestOnly&&s.quickFilterTextActive]}>Kleenest places</Text>
-                      <Text style={[s.quickFilterBody,kleenestOnly&&s.quickFilterTextActive]}>Paying Kleenest business locations</Text>
+                    <Pressable accessibilityRole="checkbox" accessibilityState={{checked:kleenestOnly}} style={[s.quickFilterCard,{backgroundColor:kleenestOnly?theme.accent:theme.surfaceRaised,borderColor:kleenestOnly?theme.accent:theme.line}]} onPress={()=>setKleenestOnly(value=>!value)}>
+                      <Text style={[s.quickFilterTitle,{color:kleenestOnly?theme.accentText:theme.ink}]}>Kleenest places</Text>
+                      <Text style={[s.quickFilterBody,{color:kleenestOnly?theme.accentText:theme.muted}]}>Paying Kleenest business locations</Text>
                     </Pressable>
-                    <Pressable accessibilityRole="checkbox" accessibilityState={{checked:progressionOnly}} style={[s.quickFilterCard,progressionOnly&&s.quickFilterCardActive]} onPress={()=>setProgressionOnly(value=>!value)}>
-                      <Text style={[s.quickFilterTitle,progressionOnly&&s.quickFilterTextActive]}>Progression</Text>
-                      <Text style={[s.quickFilterBody,progressionOnly&&s.quickFilterTextActive]}>Places with XP / evidence opportunities</Text>
+                    <Pressable accessibilityRole="checkbox" accessibilityState={{checked:progressionOnly}} style={[s.quickFilterCard,{backgroundColor:progressionOnly?theme.accent:theme.surfaceRaised,borderColor:progressionOnly?theme.accent:theme.line}]} onPress={()=>setProgressionOnly(value=>!value)}>
+                      <Text style={[s.quickFilterTitle,{color:progressionOnly?theme.accentText:theme.ink}]}>Progression</Text>
+                      <Text style={[s.quickFilterBody,{color:progressionOnly?theme.accentText:theme.muted}]}>Places with XP / evidence opportunities</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -826,14 +826,14 @@ export default function AdaptiveExploreScreen() {
                 <View style={s.filterSection}>
                   <Text style={[s.filterSectionTitle,{color:theme.ink}]}>Stars</Text>
                   <View style={s.choiceRow}>
-                    {[{label:'Any',value:0},{label:'3★+',value:3},{label:'4★+',value:4},{label:'4.5★+',value:4.5}].map(choice=><Pressable key={choice.label} style={[s.choice,minimumStars===choice.value&&s.choiceActive]} onPress={()=>setMinimumStars(choice.value)}><Text style={[s.choiceText,minimumStars===choice.value&&s.choiceTextActive]}>{choice.label}</Text></Pressable>)}
+                    {[{label:'Any',value:0},{label:'3★+',value:3},{label:'4★+',value:4},{label:'4.5★+',value:4.5}].map(choice=><Pressable key={choice.label} style={[s.choice,{backgroundColor:minimumStars===choice.value?theme.accent:theme.surfaceRaised,borderColor:minimumStars===choice.value?theme.accent:theme.line}]} onPress={()=>setMinimumStars(choice.value)}><Text style={[s.choiceText,{color:minimumStars===choice.value?theme.accentText:theme.ink}]}>{choice.label}</Text></Pressable>)}
                   </View>
                 </View>
 
                 <View style={s.filterSection}>
                   <Text style={[s.filterSectionTitle,{color:theme.ink}]}>Freshness</Text>
                   <View style={s.choiceRow}>
-                    {[{label:'Any',value:null},{label:'24h',value:1},{label:'7d',value:7},{label:'30d',value:30}].map(choice=><Pressable key={choice.label} style={[s.choice,freshnessDays===choice.value&&s.choiceActive]} onPress={()=>setFreshnessDays(choice.value)}><Text style={[s.choiceText,freshnessDays===choice.value&&s.choiceTextActive]}>{choice.label}</Text></Pressable>)}
+                    {[{label:'Any',value:null},{label:'24h',value:1},{label:'7d',value:7},{label:'30d',value:30}].map(choice=><Pressable key={choice.label} style={[s.choice,{backgroundColor:freshnessDays===choice.value?theme.accent:theme.surfaceRaised,borderColor:freshnessDays===choice.value?theme.accent:theme.line}]} onPress={()=>setFreshnessDays(choice.value)}><Text style={[s.choiceText,{color:freshnessDays===choice.value?theme.accentText:theme.ink}]}>{choice.label}</Text></Pressable>)}
                   </View>
                 </View>
 
@@ -841,14 +841,14 @@ export default function AdaptiveExploreScreen() {
                   <View style={s.filterSection}>
                     <View style={s.rowHeading}><Text style={[s.filterSectionTitle,{color:theme.ink}]}>Starting radius</Text><Text style={s.autoLabel}>Local search</Text></View>
                     <View accessibilityRole="radiogroup"><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
-                      {radiusChoices.map(choice=><Pressable accessibilityRole="radio" accessibilityState={{ selected: radius === choice.meters }} key={choice.meters} style={[s.choice,radius===choice.meters&&s.choiceActive]} onPress={()=>chooseRadius(choice.meters)}><Text style={[s.choiceText,radius===choice.meters&&s.choiceTextActive]}>{choice.label}</Text></Pressable>)}
+                      {radiusChoices.map(choice=><Pressable accessibilityRole="radio" accessibilityState={{ selected: radius === choice.meters }} key={choice.meters} style={[s.choice,{backgroundColor:radius===choice.meters?theme.accent:theme.surfaceRaised,borderColor:radius===choice.meters?theme.accent:theme.line}]} onPress={()=>chooseRadius(choice.meters)}><Text style={[s.choiceText,{color:radius===choice.meters?theme.accentText:theme.ink}]}>{choice.label}</Text></Pressable>)}
                     </ScrollView></View>
                   </View>
                 ) : null}
 
                 <View style={s.filterSection}>
                   <View style={s.amenityHeading}><Text style={[s.filterSectionTitle,{color:theme.ink}]}>What matters on this stop?</Text>{selectedAmenityNames.length?<Pressable onPress={()=>setSelectedAmenityNames([])}><Text style={[s.clear,{color:theme.accent}]}>Clear amenities</Text></Pressable>:null}</View>
-                  {filterAmenities.length?<View style={s.amenityWrap}>{filterAmenities.map(item=><Pressable accessibilityRole="checkbox" accessibilityState={{checked:selectedAmenityNames.includes(item.name)}} key={item.id} style={[s.amenityPill,selectedAmenityNames.includes(item.name)&&s.amenityPillActive]} onPress={()=>toggleAmenity(item.name)}><Text style={[s.amenityText,selectedAmenityNames.includes(item.name)&&s.amenityTextActive]}>{item.name}</Text></Pressable>)}</View>:<Text style={[s.help,{color:theme.muted}]}>Amenity catalog is loading.</Text>}
+                  {filterAmenities.length?<View style={s.amenityWrap}>{filterAmenities.map(item=><Pressable accessibilityRole="checkbox" accessibilityState={{checked:selectedAmenityNames.includes(item.name)}} key={item.id} style={[s.amenityPill,{backgroundColor:selectedAmenityNames.includes(item.name)?theme.accent:theme.surfaceRaised,borderColor:selectedAmenityNames.includes(item.name)?theme.accent:theme.line}]} onPress={()=>toggleAmenity(item.name)}><Text style={[s.amenityText,{color:selectedAmenityNames.includes(item.name)?theme.accentText:theme.ink}]}>{item.name}</Text></Pressable>)}</View>:<Text style={[s.help,{color:theme.muted}]}>Amenity catalog is loading.</Text>}
                 </View>
                 {mode === 'nearby' ? (
                   <>
@@ -872,10 +872,10 @@ export default function AdaptiveExploreScreen() {
                             return (
                               <Pressable
                                 key={choice.meters}
-                                style={[s.choice, maxRadius === enabledValue && s.choiceActive]}
+                                style={[s.choice,{backgroundColor:maxRadius===enabledValue?theme.accent:theme.surfaceRaised,borderColor:maxRadius===enabledValue?theme.accent:theme.line}]}
                                 onPress={() => setMaxRadius(enabledValue)}
                               >
-                                <Text style={[s.choiceText, maxRadius === enabledValue && s.choiceTextActive]}>{choice.label}</Text>
+                                <Text style={[s.choiceText,{color:maxRadius===enabledValue?theme.accentText:theme.ink}]}>{choice.label}</Text>
                               </Pressable>
                             );
                           })}
@@ -895,10 +895,10 @@ export default function AdaptiveExploreScreen() {
                       {corridorChoices.map((choice) => (
                         <Pressable
                           key={choice.meters}
-                          style={[s.choice, corridor === choice.meters && s.choiceActive]}
+                          style={[s.choice,{backgroundColor:corridor===choice.meters?theme.accent:theme.surfaceRaised,borderColor:corridor===choice.meters?theme.accent:theme.line}]}
                           onPress={() => setCorridor(choice.meters)}
                         >
-                          <Text style={[s.choiceText, corridor === choice.meters && s.choiceTextActive]}>{choice.label}</Text>
+                          <Text style={[s.choiceText,{color:corridor===choice.meters?theme.accentText:theme.ink}]}>{choice.label}</Text>
                         </Pressable>
                       ))}
                     </ScrollView>
@@ -909,15 +909,15 @@ export default function AdaptiveExploreScreen() {
                   <View style={s.ruleRow}>
                     <Pressable
                       onPress={() => setMatchRule('all')}
-                      style={[s.rule, matchRule === 'all' && s.ruleActive]}
+                      style={[s.rule,{backgroundColor:matchRule === 'all'?theme.accent:theme.surfaceRaised,borderColor:matchRule === 'all'?theme.accent:theme.line}]}
                     >
-                      <Text style={[s.ruleText, matchRule === 'all' && s.ruleTextActive]}>Must include all</Text>
+                      <Text style={[s.ruleText,{color:matchRule === 'all'?theme.accentText:theme.ink}]}>Must include all</Text>
                     </Pressable>
                     <Pressable
                       onPress={() => setMatchRule('any')}
-                      style={[s.rule, matchRule === 'any' && s.ruleActive]}
+                      style={[s.rule,{backgroundColor:matchRule === 'any'?theme.accent:theme.surfaceRaised,borderColor:matchRule === 'any'?theme.accent:theme.line}]}
                     >
-                      <Text style={[s.ruleText, matchRule === 'any' && s.ruleTextActive]}>Include any</Text>
+                      <Text style={[s.ruleText,{color:matchRule === 'any'?theme.accentText:theme.ink}]}>Include any</Text>
                     </Pressable>
                   </View>
                 ) : null}
@@ -929,13 +929,13 @@ export default function AdaptiveExploreScreen() {
           </View>
         </Modal>
 
-        {message ? <Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text> : null}
+        {message ? <Text accessibilityLiveRegion="polite" style={[s.message,{color:theme.muted}]}>{message}</Text> : null}
         {mode === 'nearby' && attemptedRadiiMeters.length > 1 ? (
-          <Text style={s.provenance}>
+          <Text style={[s.provenance,{color:theme.muted}]}>
             Requested {radiusLabel(radius)} · effective {radiusLabel(effectiveRadiusMeters)} · searched {attemptedRadiiMeters.map(radiusLabel).join(' → ')}
           </Text>
         ) : null}
-        {cached ? <Text style={s.provenance}>Offline continuity result — refresh for live qualification.</Text> : null}
+        {cached ? <Text style={[s.provenance,{color:theme.muted}]}>Offline continuity result — refresh for live qualification.</Text> : null}
       </View>
 
       {(origin||searchAreaOrigin) ? (
@@ -997,14 +997,14 @@ export default function AdaptiveExploreScreen() {
               <Text style={s.mapBadgeText}>{cached ? 'Cached · ' : ''}{visibleRows.length}{activeFilterCount?` of ${rows.length}`:''} results</Text>
             </View>
             <View style={s.mapControls}>
-              <Pressable accessibilityRole="button" accessibilityLabel="Zoom map in" style={s.mapControl} onPress={() => changeMapZoom(1)}>
-                <Text style={s.mapControlText}>＋</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Zoom map in" style={[s.mapControl,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={() => changeMapZoom(1)}>
+                <Text style={[s.mapControlText,{color:theme.accent}]}>＋</Text>
               </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel="Zoom map out" style={s.mapControl} onPress={() => changeMapZoom(-1)}>
-                <Text style={s.mapControlText}>−</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Zoom map out" style={[s.mapControl,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={() => changeMapZoom(-1)}>
+                <Text style={[s.mapControlText,{color:theme.accent}]}>−</Text>
               </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel={searchAreaOrigin?'Center map on searched area':'Center map on my location'} style={s.mapControl} onPress={recenterMap}>
-                <Text style={s.mapControlText}>⌖</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel={searchAreaOrigin?'Center map on searched area':'Center map on my location'} style={[s.mapControl,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={recenterMap}>
+                <Text style={[s.mapControlText,{color:theme.accent}]}>⌖</Text>
               </Pressable>
             </View>
             <View pointerEvents="box-none" style={s.legendWrap}>

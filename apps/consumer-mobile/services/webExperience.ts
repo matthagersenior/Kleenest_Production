@@ -3,6 +3,7 @@ import { useEffect,useState } from 'react';
 import { Platform } from 'react-native';
 
 const APP_PRESENCE_KEY='kleenest.consumer.installed-presence.v2';
+const APP_SESSION_KEY='kleenest.consumer.web-app-session.v1';
 const LEGACY_APP_PRESENCE_KEY='kleenest.consumer.app-presence.v1';
 
 function browser(){
@@ -25,6 +26,18 @@ export function isExplicitConsumerAppLaunch(){
   const w=browser();
   if(!w)return Platform.OS!=='web';
   return new URLSearchParams(w.location.search).get('app')==='1';
+}
+
+export function markConsumerAppSession(){
+  const w=browser();
+  if(!w)return;
+  try{w.sessionStorage.setItem(APP_SESSION_KEY,'1')}catch{}
+}
+
+function storedConsumerAppSession(){
+  const w=browser();
+  if(!w)return false;
+  try{return w.sessionStorage.getItem(APP_SESSION_KEY)==='1'}catch{return false}
 }
 
 export function markConsumerAppPresence(){
@@ -68,6 +81,13 @@ export function useConsumerWebExperience(){
   const[ready,setReady]=useState(native);
   const[signedIn,setSignedIn]=useState(false);
   const[installed,setInstalled]=useState(native);
+  const[appSession,setAppSession]=useState(native||explicitLaunch||storedConsumerAppSession());
+
+  useEffect(()=>{
+    if(native||!explicitLaunch)return;
+    markConsumerAppSession();
+    setAppSession(true);
+  },[native,explicitLaunch]);
 
   useEffect(()=>{
     if(native)return;
@@ -96,6 +116,6 @@ export function useConsumerWebExperience(){
     ready,
     signedIn,
     installed,
-    appActive:native||explicitLaunch||signedIn||installed,
+    appActive:native||appSession||signedIn||installed,
   };
 }
