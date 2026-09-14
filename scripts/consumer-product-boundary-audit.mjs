@@ -11,6 +11,7 @@ const required=[
   'apps/consumer-mobile/app/discover.tsx',
   'apps/consumer-mobile/app/progress.tsx',
   'apps/consumer-mobile/app/location/[id].tsx',
+  'apps/consumer-mobile/app/review/[id].tsx',
   'apps/consumer-mobile/app/route.tsx',
   'apps/consumer-mobile/app/saved.tsx',
   'apps/consumer-mobile/app/play.tsx',
@@ -47,14 +48,15 @@ if(!failures.length){
  const progressionService=fs.readFileSync('apps/consumer-mobile/services/discoveryProgression.ts','utf8');
  const layout=fs.readFileSync('apps/consumer-mobile/app/_layout.tsx','utf8');
  const location=fs.readFileSync('apps/consumer-mobile/app/location/[id].tsx','utf8');
+ const quickReview=fs.readFileSync('apps/consumer-mobile/app/review/[id].tsx','utf8');
  const core=fs.readFileSync('packages/mobile-core/src/index.ts','utf8');
- for(const token of ["'/explore'",'Find a bathroom','homePrimaryCta','CHECK IN','Nearby or search','QR PROOF','THE KLEENEST LOOP','XP + levels','YOUR NETWORK','Add a missing place'])if(!home.includes(token))failures.push(`Consumer Home missing discovery/progression behavior: ${token}`);
+ for(const token of ["'/explore'",'Find a bathroom','homePrimaryCta','REVIEW','A recent visit','QR PROOF','THE KLEENEST LOOP','XP + levels','YOUR NETWORK','Add a missing place'])if(!home.includes(token))failures.push(`Consumer Home missing discovery/progression behavior: ${token}`);
  if(home.includes('Scan QR to check in or review'))failures.push('Consumer Home must not collapse regular check-in into QR proof.');
  for(const token of ['resolveConsumerSearchLocation','looksLikeAddressOrArea','searchAreaOrigin','searched-area-marker'])if(!explore.includes(token))failures.push(`Consumer Explore missing address-origin discovery behavior: ${token}`);
  if(explore.includes('Location.geocodeAsync'))failures.push('Consumer Explore must not require device geocoding for a typed destination.');
  if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Consumer Explore route must delegate to the canonical adaptive discovery screen.');
- for(const token of ['findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','listAmenityCatalog','selectedAmenityNames','Must include all','Include any','Expand for required amenities','Maximum distance','Along route','Full details','Add to route','captureConsumerDiscovery','captureConsumerRouteIntent','readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Consumer discovery missing mature capability: ${token}`);
- if(!explore.includes('navigateUrl')||!explore.includes('Linking.openURL')||!explore.includes('Start directions'))failures.push('Consumer discovery missing mature capability: directions');
+ for(const token of ['findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','listAmenityCatalog','selectedAmenityNames','Must include all','Include any','Expand for required amenities','Maximum distance','Along route','Details','Add to route','Review this visit','captureConsumerDiscovery','captureConsumerRouteIntent','readNearbyCache','writeNearbyCache','listLocationTrustSummaries'])if(!explore.includes(token))failures.push(`Consumer discovery missing mature capability: ${token}`);
+ if(!explore.includes('navigateUrl')||!explore.includes('Linking.openURL')||!explore.includes('>Go</Text>'))failures.push('Consumer discovery missing mature capability: directions');
  if(!/pathname\s*:\s*['"]\/route['"]/.test(explore))failures.push('Consumer discovery missing mature capability: route navigation');
  for(const token of ['Remote','Address','Map pin','GPS','On-site live','Save / match discovery','Save restroom evidence','Take photo'])if(!discover.includes(token))failures.push(`Consumer contribution flow missing: ${token}`);
  for(const token of ['SPECIALTY LEVELS','WHAT TO DO NEXT','Quests','Missions','Challenges','Journeys','Campaigns','Contests','BADGES','RANKINGS','XP HISTORY'])if(!progress.includes(token))failures.push(`Consumer Progress missing expansive progression surface: ${token}`);
@@ -62,7 +64,9 @@ if(!failures.length){
  for(const token of ['explore','progress','social','profile'])if(!layout.includes(`name="${token}"`))failures.push(`Consumer primary navigation missing ${token}.`);
  if(!layout.includes('name="discover"')||!layout.includes('href:null'))failures.push('Consumer Discover route must exist without creating a sixth primary tab.');
  for(const token of ['mobileCheckIn','createMobileReview'])if(!core.includes(token))failures.push(`Mobile core missing canonical consumer production authority: ${token}`);
- if(!location.includes('mobileCheckIn'))failures.push('Location details must expose canonical check-in behavior.');
+ if(!location.includes('mobileCheckIn'))failures.push('Location details must preserve optional canonical check-in behavior.');
+ for(const token of ['QUICK REVIEW','Dirty','Okay','Clean','Excellent','Submit review','consumer_quick_review'])if(!quickReview.includes(token))failures.push(`Quick review missing core-loop behavior: ${token}`);
+ if(quickReview.includes('geofence')||quickReview.includes('verification window'))failures.push('Quick review must not expose implementation terminology.');
 }
 
 if(failures.length){console.error('Consumer product boundary audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
