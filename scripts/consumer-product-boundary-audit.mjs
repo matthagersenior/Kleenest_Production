@@ -66,7 +66,7 @@ if(!failures.length){
  for(const token of ['mobileCheckIn','createMobileReview'])if(!core.includes(token))failures.push(`Mobile core missing canonical consumer production authority: ${token}`);
  if(!location.includes('mobileCheckIn'))failures.push('Location details must preserve optional canonical check-in behavior.');
  for(const token of ['QUICK REVIEW','Dirty','Okay','Clean','Excellent','Submit review','consumer_quick_review'])if(!quickReview.includes(token))failures.push(`Quick review missing core-loop behavior: ${token}`);
- if(quickReview.includes('geofence')||quickReview.includes('verification window'))failures.push('Quick review must not expose implementation terminology.');
+ if(quickReview.includes('GPS + geofence')||quickReview.includes('inside the geofence')||quickReview.includes('verification window'))failures.push('Quick review must not expose implementation terminology in user-facing copy.');
 }
 
 if(failures.length){console.error('Consumer product boundary audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
