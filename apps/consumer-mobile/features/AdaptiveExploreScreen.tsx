@@ -30,6 +30,7 @@ import {
 import { listAmenityCatalog, type AmenityCatalogItem } from '../services/amenities';
 import { visitFreshness } from '../services/evidenceFormatting';
 import { attachLocationTrust, listLocationTrustSummaries } from '../services/locationTrust';
+import { useConsumerTheme } from '../services/theme';
 import { resolveConsumerSearchLocation } from '../services/locationResolver';
 import {
   cachedAgeLabel,
@@ -204,8 +205,8 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
           {item.consumer_photo_url?<Image source={{uri:String(item.consumer_photo_url)}} style={s.cardPhoto}/>:<PlaceIcon item={item} size={34} />}
           <View style={{ flex: 1 }}>
             <Text style={s.cardTitle}>{item.name || 'Restroom location'}</Text>
-            {item.business_name ? <Text style={s.meta}>{item.business_name}</Text> : null}
-            <Text style={s.meta}>
+            {item.business_name ? <Text style={[s.meta,{color:theme.muted}]}>{item.business_name}</Text> : null}
+            <Text style={[s.meta,{color:theme.muted}]}>
               {[item.address, item.city, item.state].filter(Boolean).join(', ') || 'Address unavailable'}
             </Text>
           </View>
@@ -222,7 +223,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         ) : null}
         <RestroomSignals item={item} compact />
         <RequestedAmenityMatches item={item} requested={requestedAmenities} />
-        {reviewCount > 0 ? <Text style={s.meta}>{reviewCount} review{reviewCount === 1 ? '' : 's'}</Text> : null}
+        {reviewCount > 0 ? <Text style={[s.meta,{color:theme.muted}]}>{reviewCount} review{reviewCount === 1 ? '' : 's'}</Text> : null}
         <Text style={s.trustLine}>{trustSummaryLine(item)}</Text>
         <Text style={s.hint}>
           {selected ? 'Selected on map' : 'Tap this card to focus its map pin'}
@@ -239,7 +240,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
           style={[s.primarySmall, s.cardAction, !hasCoordinates(item) && s.disabled]}
           onPress={onDirections}
         >
-          <Text style={s.primaryText}>Start navigation</Text>
+          <Text style={[s.primaryText,{color:theme.accentText}]}>Start navigation</Text>
         </Pressable>
         <Pressable accessibilityRole="button" style={[s.secondarySmall, s.cardAction]} onPress={onAddToRoute}>
           <Text style={s.secondaryText}>Add to route</Text>
@@ -253,6 +254,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
 }
 
 export default function AdaptiveExploreScreen() {
+ const theme=useConsumerTheme();
   const [mode, setMode] = useState<'nearby' | 'route'>('nearby');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
@@ -680,7 +682,7 @@ export default function AdaptiveExploreScreen() {
     : { center: mapCenter || searchAreaOrigin || origin || [0, 0], zoom: mapZoom };
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}>
       <FlatList
         style={s.pageScroll}
         data={visibleRows}
@@ -712,11 +714,11 @@ export default function AdaptiveExploreScreen() {
         </View>
       </View>
 
-      <View style={s.searchPanel}>
+      <View style={[s.searchPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
         <View style={s.searchRow}>
           <TextInput
             accessibilityLabel="Search bathrooms"
-            style={s.input}
+            style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}
             value={search}
             onChangeText={setSearch}
             onSubmitEditing={() => void load()}
@@ -726,11 +728,11 @@ export default function AdaptiveExploreScreen() {
           />
           <Pressable
             accessibilityRole="button"
-            style={s.searchButton}
+            style={[s.searchButton,{backgroundColor:theme.accent}]}
             disabled={loading}
             onPress={() => void load()}
           >
-            <Text style={s.searchButtonText}>{loading ? 'WORKING…' : 'SEARCH'}</Text>
+            <Text style={[s.searchButtonText,{color:theme.accentText}]}>{loading ? 'WORKING…' : 'SEARCH'}</Text>
           </Pressable>
         </View>
 
@@ -762,13 +764,13 @@ export default function AdaptiveExploreScreen() {
           accessibilityLabel="Filter places"
           accessibilityState={{ expanded: showAdvanced }}
           onPress={() => setShowAdvanced(true)}
-          style={s.filterLauncher}
+          style={[s.filterLauncher,{backgroundColor:theme.surface,borderColor:theme.line}]}
         >
           <View style={{flex:1}}>
-            <Text style={s.filterLauncherKicker}>FILTER PLACES</Text>
-            <Text style={s.filterLauncherTitle}>{filterSummary}</Text>
+            <Text style={[s.filterLauncherKicker,{color:theme.muted}]}>FILTER PLACES</Text>
+            <Text style={[s.filterLauncherTitle,{color:theme.ink}]}>{filterSummary}</Text>
           </View>
-          <View style={s.filterLauncherBadge}><Text style={s.filterLauncherBadgeText}>{activeFilterCount?`${activeFilterCount} active`:'Everything'} ▾</Text></View>
+          <View style={[s.filterLauncherBadge,{backgroundColor:theme.accentSoft}]}><Text style={[s.filterLauncherBadgeText,{color:theme.accent}]}>{activeFilterCount?`${activeFilterCount} active`:'Everything'} ▾</Text></View>
         </Pressable>
         <Modal
           transparent
@@ -783,19 +785,19 @@ export default function AdaptiveExploreScreen() {
               style={StyleSheet.absoluteFill}
               onPress={() => setShowAdvanced(false)}
             />
-            <View style={s.advancedModalCard}>
+            <View style={[s.advancedModalCard,{backgroundColor:theme.surface,borderColor:theme.line}]}>
               <View style={s.advancedModalHeader}>
                 <View style={{ flex: 1 }}>
-                  <Text style={s.advancedModalTitle}>Filter places</Text>
-                  <Text style={s.help}>Default is Everything. Narrow the map only when you want a specific kind of stop.</Text>
+                  <Text style={[s.advancedModalTitle,{color:theme.ink}]}>Filter places</Text>
+                  <Text style={[s.help,{color:theme.muted}]}>Default is Everything. Narrow the map only when you want a specific kind of stop.</Text>
                 </View>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Close place filters"
-                  style={s.modalClose}
+                  style={[s.modalClose,{backgroundColor:theme.accentSoft}]}
                   onPress={() => setShowAdvanced(false)}
                 >
-                  <Text style={s.modalCloseText}>×</Text>
+                  <Text style={[s.modalCloseText,{color:theme.accent}]}>×</Text>
                 </Pressable>
               </View>
               <ScrollView
@@ -805,8 +807,8 @@ export default function AdaptiveExploreScreen() {
               >
                 <View style={s.filterSection}>
                   <View style={s.rowHeading}>
-                    <Text style={s.filterSectionTitle}>High-value filters</Text>
-                    <Pressable onPress={resetFilters}><Text style={s.clear}>Reset to Everything</Text></Pressable>
+                    <Text style={[s.filterSectionTitle,{color:theme.ink}]}>High-value filters</Text>
+                    <Pressable onPress={resetFilters}><Text style={[s.clear,{color:theme.accent}]}>Reset to Everything</Text></Pressable>
                   </View>
                   <View style={s.quickFilterGrid}>
                     <Pressable accessibilityRole="checkbox" accessibilityState={{checked:kleenestOnly}} style={[s.quickFilterCard,kleenestOnly&&s.quickFilterCardActive]} onPress={()=>setKleenestOnly(value=>!value)}>
@@ -821,14 +823,14 @@ export default function AdaptiveExploreScreen() {
                 </View>
 
                 <View style={s.filterSection}>
-                  <Text style={s.filterSectionTitle}>Stars</Text>
+                  <Text style={[s.filterSectionTitle,{color:theme.ink}]}>Stars</Text>
                   <View style={s.choiceRow}>
                     {[{label:'Any',value:0},{label:'3★+',value:3},{label:'4★+',value:4},{label:'4.5★+',value:4.5}].map(choice=><Pressable key={choice.label} style={[s.choice,minimumStars===choice.value&&s.choiceActive]} onPress={()=>setMinimumStars(choice.value)}><Text style={[s.choiceText,minimumStars===choice.value&&s.choiceTextActive]}>{choice.label}</Text></Pressable>)}
                   </View>
                 </View>
 
                 <View style={s.filterSection}>
-                  <Text style={s.filterSectionTitle}>Freshness</Text>
+                  <Text style={[s.filterSectionTitle,{color:theme.ink}]}>Freshness</Text>
                   <View style={s.choiceRow}>
                     {[{label:'Any',value:null},{label:'24h',value:1},{label:'7d',value:7},{label:'30d',value:30}].map(choice=><Pressable key={choice.label} style={[s.choice,freshnessDays===choice.value&&s.choiceActive]} onPress={()=>setFreshnessDays(choice.value)}><Text style={[s.choiceText,freshnessDays===choice.value&&s.choiceTextActive]}>{choice.label}</Text></Pressable>)}
                   </View>
@@ -836,7 +838,7 @@ export default function AdaptiveExploreScreen() {
 
                 {mode === 'nearby' ? (
                   <View style={s.filterSection}>
-                    <View style={s.rowHeading}><Text style={s.filterSectionTitle}>Starting radius</Text><Text style={s.autoLabel}>Local search</Text></View>
+                    <View style={s.rowHeading}><Text style={[s.filterSectionTitle,{color:theme.ink}]}>Starting radius</Text><Text style={s.autoLabel}>Local search</Text></View>
                     <View accessibilityRole="radiogroup"><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
                       {radiusChoices.map(choice=><Pressable accessibilityRole="radio" accessibilityState={{ selected: radius === choice.meters }} key={choice.meters} style={[s.choice,radius===choice.meters&&s.choiceActive]} onPress={()=>chooseRadius(choice.meters)}><Text style={[s.choiceText,radius===choice.meters&&s.choiceTextActive]}>{choice.label}</Text></Pressable>)}
                     </ScrollView></View>
@@ -844,8 +846,8 @@ export default function AdaptiveExploreScreen() {
                 ) : null}
 
                 <View style={s.filterSection}>
-                  <View style={s.amenityHeading}><Text style={s.filterSectionTitle}>What matters on this stop?</Text>{selectedAmenityNames.length?<Pressable onPress={()=>setSelectedAmenityNames([])}><Text style={s.clear}>Clear amenities</Text></Pressable>:null}</View>
-                  {filterAmenities.length?<View style={s.amenityWrap}>{filterAmenities.map(item=><Pressable accessibilityRole="checkbox" accessibilityState={{checked:selectedAmenityNames.includes(item.name)}} key={item.id} style={[s.amenityPill,selectedAmenityNames.includes(item.name)&&s.amenityPillActive]} onPress={()=>toggleAmenity(item.name)}><Text style={[s.amenityText,selectedAmenityNames.includes(item.name)&&s.amenityTextActive]}>{item.name}</Text></Pressable>)}</View>:<Text style={s.help}>Amenity catalog is loading.</Text>}
+                  <View style={s.amenityHeading}><Text style={[s.filterSectionTitle,{color:theme.ink}]}>What matters on this stop?</Text>{selectedAmenityNames.length?<Pressable onPress={()=>setSelectedAmenityNames([])}><Text style={[s.clear,{color:theme.accent}]}>Clear amenities</Text></Pressable>:null}</View>
+                  {filterAmenities.length?<View style={s.amenityWrap}>{filterAmenities.map(item=><Pressable accessibilityRole="checkbox" accessibilityState={{checked:selectedAmenityNames.includes(item.name)}} key={item.id} style={[s.amenityPill,selectedAmenityNames.includes(item.name)&&s.amenityPillActive]} onPress={()=>toggleAmenity(item.name)}><Text style={[s.amenityText,selectedAmenityNames.includes(item.name)&&s.amenityTextActive]}>{item.name}</Text></Pressable>)}</View>:<Text style={[s.help,{color:theme.muted}]}>Amenity catalog is loading.</Text>}
                 </View>
                 {mode === 'nearby' ? (
                   <>
@@ -861,7 +863,7 @@ export default function AdaptiveExploreScreen() {
                       </View>
                     </View>
                     {selectedAmenityNames.length > 0 && autoExpand ? (
-                      <View style={s.inlineBlock}>
+                      <View style={[s.inlineBlock,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
                         <Text style={s.filterTitle}>Maximum distance</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
                           {maxChoices.map((choice) => {
@@ -881,11 +883,11 @@ export default function AdaptiveExploreScreen() {
                     ) : null}
                   </>
                 ) : (
-                  <View style={s.inlineBlock}>
+                  <View style={[s.inlineBlock,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
                     <View style={s.rowHeading}>
                       <Text style={s.filterTitle}>Route corridor</Text>
                       <Pressable onPress={() => { setShowAdvanced(false); router.push('/route'); }}>
-                        <Text style={s.linkText}>Open Route planner</Text>
+                        <Text style={[s.linkText,{color:theme.accent}]}>Open Route planner</Text>
                       </Pressable>
                     </View>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
@@ -919,8 +921,8 @@ export default function AdaptiveExploreScreen() {
                   </View>
                 ) : null}
               </ScrollView>
-              <Pressable style={s.modalDone} onPress={()=>{setShowAdvanced(false);void load();}}>
-                <Text style={s.primaryText}>Show results</Text>
+              <Pressable style={[s.modalDone,{backgroundColor:theme.accent}]} onPress={()=>{setShowAdvanced(false);void load();}}>
+                <Text style={[s.primaryText,{color:theme.accentText}]}>Show results</Text>
               </Pressable>
             </View>
           </View>
@@ -1008,7 +1010,7 @@ export default function AdaptiveExploreScreen() {
               <MapLegend />
             </View>
             {selected ? (
-              <View pointerEvents="box-none" style={s.selectedPanel}>
+              <View pointerEvents="box-none" style={[s.selectedPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
                 <View style={s.selectedHead}>
                   <Text style={s.selectedLabel}>BEST NEXT DECISION</Text>
                   <Pressable
@@ -1025,8 +1027,8 @@ export default function AdaptiveExploreScreen() {
                 <View style={s.selectedRow}>
                   {selected.consumer_photo_url?<Image source={{uri:String(selected.consumer_photo_url)}} style={s.selectedPhoto}/>:<PlaceIcon item={selected} size={34} />}
                   <View style={{ flex: 1 }}>
-                    <Text numberOfLines={1} style={s.selectedTitle}>{selected.name || 'Restroom location'}</Text>
-                    <Text numberOfLines={2} style={s.meta}>
+                    <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink}]}>{selected.name || 'Restroom location'}</Text>
+                    <Text numberOfLines={2} style={[s.meta,{color:theme.muted}]}>
                       {selectedRoutePosition || distanceLabel(selected.distance_meters)}
                       {' · '}{[selected.address, selected.city].filter(Boolean).join(', ') || 'Address unavailable'}
                     </Text>
@@ -1045,7 +1047,7 @@ export default function AdaptiveExploreScreen() {
                     disabled={!hasCoordinates(selected)}
                     onPress={() => void directions(selected)}
                   >
-                    <Text style={s.primaryText}>Start navigation</Text>
+                    <Text style={[s.primaryText,{color:theme.accentText}]}>Start navigation</Text>
                   </Pressable>
                   <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => addToRoute(selected)}>
                     <Text style={s.secondaryText}>Add to route</Text>
@@ -1060,7 +1062,7 @@ export default function AdaptiveExploreScreen() {
           {mode === 'route' && routeGap != null ? (
             <View style={s.routeCoverage}>
               <Text style={s.routeCoverageTitle}>Largest qualifying-restroom gap: ~{routeGap.toFixed(routeGap < 10 ? 1 : 0)} mi</Text>
-              <Text style={s.help}>Based on current qualifying candidates along the route; opening hours and availability can change.</Text>
+              <Text style={[s.help,{color:theme.muted}]}>Based on current qualifying candidates along the route; opening hours and availability can change.</Text>
             </View>
           ) : null}
         </View>
@@ -1077,7 +1079,7 @@ export default function AdaptiveExploreScreen() {
           </>
         }
         renderItem={({ item }) => (
-          <View style={s.resultItem}>
+          <View style={[s.resultItem,{backgroundColor:theme.surface,borderColor:theme.line}]}>
             <ResultCard
               item={item}
               selected={idOf(item) === selectedId}
@@ -1092,10 +1094,10 @@ export default function AdaptiveExploreScreen() {
           </View>
         )}
         ListEmptyComponent={!loading ? (
-          <View style={s.resultItem}>
-            <View style={s.empty}>
-              <Text style={s.emptyTitle}>No qualifying results yet.</Text>
-              <Text style={s.help}>
+          <View style={[s.resultItem,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+            <View style={[s.empty,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+              <Text style={[s.emptyTitle,{color:theme.ink}]}>No qualifying results yet.</Text>
+              <Text style={[s.help,{color:theme.muted}]}>
                 {mode === 'nearby'
                   ? (activeFilterCount?'Clear or loosen filters to show more nearby places.':'Change the radius or search area and try again.')
                   : 'Build or adjust your saved route, widen its corridor, or change amenity requirements.'}
@@ -1109,11 +1111,11 @@ export default function AdaptiveExploreScreen() {
               accessibilityRole="button"
               accessibilityLabel="Add a missing bathroom"
               onPress={() => router.push('/discover')}
-              style={s.missingPlace}
+              style={[s.missingPlace,{backgroundColor:theme.surface,borderColor:theme.line}]}
             >
               <Text style={s.listEyebrow}>MISSING A PLACE?</Text>
-              <Text style={s.missingTitle}>Add a missing bathroom</Text>
-              <Text style={s.help}>Contribute a place that is not in the Kleenest network yet.</Text>
+              <Text style={[s.missingTitle,{color:theme.ink}]}>Add a missing bathroom</Text>
+              <Text style={[s.help,{color:theme.muted}]}>Contribute a place that is not in the Kleenest network yet.</Text>
             </Pressable>
           </View>
         }
