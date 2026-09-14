@@ -211,34 +211,36 @@ begin
     end loop;
   end if;
 
-  select id into v_contrib
-  from public.discovery_contributions
-  where location_id=p_location_id and user_id=v_user
-  order by created_at desc
-  limit 1;
+  if not v_prior then
+    select id into v_contrib
+    from public.discovery_contributions
+    where location_id=p_location_id and user_id=v_user
+    order by created_at desc
+    limit 1;
 
-  if v_contrib is null then
-    insert into public.discovery_contributions(
-      location_id,user_id,method,discovery_state,evidence_tier,confidence,payload
-    )
-    values(
-      p_location_id,v_user,
-      case when v_method in ('gps','onsite_live') then v_method else 'remote' end,
-      case when v_tier>=4 then 'on_site_observed' else 'documented' end,
-      v_tier,v_conf,v_payload
-    )
-    returning id into v_contrib;
-  else
-    update public.discovery_contributions
-       set evidence_tier=greatest(evidence_tier,v_tier),
-           confidence=greatest(confidence,v_conf),
-           discovery_state=case
-             when v_tier>=4 then 'on_site_observed'
-             else case when discovery_state='candidate' then 'documented' else discovery_state end
-           end,
-           payload=payload||v_payload,
-           updated_at=now()
-     where id=v_contrib;
+    if v_contrib is null then
+      insert into public.discovery_contributions(
+        location_id,user_id,method,discovery_state,evidence_tier,confidence,payload
+      )
+      values(
+        p_location_id,v_user,
+        case when v_method in ('gps','onsite_live') then v_method else 'remote' end,
+        case when v_tier>=4 then 'on_site_observed' else 'documented' end,
+        v_tier,v_conf,v_payload
+      )
+      returning id into v_contrib;
+    else
+      update public.discovery_contributions
+         set evidence_tier=greatest(evidence_tier,v_tier),
+             confidence=greatest(confidence,v_conf),
+             discovery_state=case
+               when v_tier>=4 then 'on_site_observed'
+               else case when discovery_state='candidate' then 'documented' else discovery_state end
+             end,
+             payload=payload||v_payload,
+             updated_at=now()
+       where id=v_contrib;
+    end if;
   end if;
 
   v_action:=case when v_amenity_count>0 then 'add_amenity' else 'helpful_contribution' end;
