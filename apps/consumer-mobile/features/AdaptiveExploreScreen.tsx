@@ -319,6 +319,7 @@ export default function AdaptiveExploreScreen() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [checkInFeedback,setCheckInFeedback]=useState<Record<string,CheckInActionFeedback>>({});
+  const [recentVisit,setRecentVisit]=useState<ConsumerPresence|null>(null);
   const [cached, setCached] = useState(false);
 
   const visibleRows=useMemo(()=>rows.filter((row)=>{
@@ -511,6 +512,7 @@ export default function AdaptiveExploreScreen() {
     const livePresence=areaMatch
       ? await refreshConsumerPresence().catch(()=>null)
       : await recordConsumerPresenceAt(Number(current!.coords.latitude),Number(current!.coords.longitude)).catch(()=>null);
+    setRecentVisit(livePresence?.check_in_available?livePresence:null);
     const nextOrigin:[number,number]=areaMatch?areaMatch.origin:[Number(current!.coords.longitude),Number(current!.coords.latitude)];
     const latitude=nextOrigin[1],longitude=nextOrigin[0];
     const query=areaMatch?'':rawQuery;
@@ -608,6 +610,7 @@ export default function AdaptiveExploreScreen() {
     const enrichedBase = await enrich(data);
     const progressionRadius=Math.min(402336,Math.max(corridor,Math.round((Number(built.distanceMiles||0)+10)*1609.344)));
     const livePresence=await recordConsumerPresenceAt(current.coords.latitude,current.coords.longitude).catch(()=>null);
+    setRecentVisit(livePresence?.check_in_available?livePresence:null);
     const enriched = attachPresence(await enrichProgression(enrichedBase,current.coords.latitude,current.coords.longitude,progressionRadius),livePresence);
     setRows(enriched);
     captureConsumerCoreLoopEvent('nearby_results_shown',null,{resultCount:enriched.length,mode:'route',cached:false});
@@ -787,6 +790,8 @@ export default function AdaptiveExploreScreen() {
           </Pressable>
         </View>
       </View>
+
+      {recentVisit?.location_id?<View style={[s.recentVisitCard,{backgroundColor:theme.surface,borderColor:theme.line}]}><View style={{flex:1}}><Text style={[s.recentVisitKicker,{color:theme.accent}]}>RECENT VISIT</Text><Text style={[s.recentVisitTitle,{color:theme.ink}]}>{recentVisit.location_name||'Bathroom visit'}</Text><Text style={[s.recentVisitBody,{color:theme.muted}]}>Your visit is ready. Review it now or shortly after you leave.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Review recent bathroom visit" style={[s.recentVisitButton,{backgroundColor:theme.accent}]} onPress={()=>router.push(`/review/${recentVisit.location_id}`)}><Text style={[s.recentVisitButtonText,{color:theme.accentText}]}>Review</Text></Pressable></View>:null}
 
       <View style={[s.searchPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
         <View style={s.searchRow}>
@@ -1218,6 +1223,12 @@ const s = StyleSheet.create({
   eyebrow: { fontSize: 8, fontWeight: '900', letterSpacing: 1.5, color: '#bed4c6' },
   title: { fontSize: 17, lineHeight: 20, fontWeight: '900', color: '#fff', marginTop: 1 },
   heroBody: { fontSize: 10, lineHeight: 15, color: '#dfeae3', marginTop: 3 },
+  recentVisitCard:{marginHorizontal:14,marginTop:7,borderWidth:1,borderRadius:15,padding:11,flexDirection:'row',alignItems:'center',gap:10},
+  recentVisitKicker:{fontSize:8,fontWeight:'900',letterSpacing:1},
+  recentVisitTitle:{fontSize:14,fontWeight:'900',marginTop:1},
+  recentVisitBody:{fontSize:10,lineHeight:14,fontWeight:'700',marginTop:2},
+  recentVisitButton:{borderRadius:11,paddingHorizontal:13,paddingVertical:10},
+  recentVisitButtonText:{fontSize:10,fontWeight:'900'},
   locate: {
     minHeight: 40,
     minWidth: 62,
