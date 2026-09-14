@@ -341,8 +341,8 @@ export default function Planner(){
    <Text style={[s.meta,{color:theme.muted}]}>Canonical Kleenest locations stay preferred, but any geocodable place can be added as an operational ad-hoc stop.</Text>
    <View style={s.row}>
     <TextInput
-     placeholderTextColor="#78877f"
-     style={[s.input,{flexGrow:1,flexBasis:210}]}
+     placeholderTextColor={theme.muted}
+     style={[s.input,{flexGrow:1,flexBasis:210,backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}
      value={query}
      onChangeText={setQuery}
      onSubmitEditing={()=>void searchStops()}
@@ -365,7 +365,7 @@ export default function Planner(){
   />
 
   {selectedLocation?.source_kind==='adhoc'
-   ?<View style={[s.card,s.adhocCard]}>
+   ?<View style={[s.card,s.adhocCard,{backgroundColor:theme.surface,borderColor:theme.line}]}>
      <Text style={s.adhocBadge}>AD-HOC STOP</Text>
      <Text style={[s.cardTitle,{color:theme.ink}]}>{String(selectedLocation.name||'Geocoded place')}</Text>
      <Text style={[s.meta,{color:theme.muted}]}>{String(selectedLocation.address||'Geocoded coordinates')}</Text>
@@ -382,14 +382,14 @@ export default function Planner(){
 
   <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
    <Text style={[s.cardTitle,{color:theme.ink}]}>Create route</Text>
-   <TextInput placeholderTextColor="#78877f" style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} value={routeName} onChangeText={setRouteName} placeholder="Route name"/>
+   <TextInput placeholderTextColor={theme.muted} style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} value={routeName} onChangeText={setRouteName} placeholder="Route name"/>
    <Text style={[s.label,{color:theme.muted}]}>Vehicle</Text><Choices rows={vehicles} selected={vehicleId} onSelect={setVehicleId}/>
    <Text style={[s.label,{color:theme.muted}]}>Driver</Text><Choices rows={drivers} selected={driverId} onSelect={setDriverId}/>
    <Action label="Create planned route" disabled={busy||!routeName.trim()} onPress={create}/>
   </View>
 
   <Text style={[s.section,{color:theme.ink}]}>Routes</Text>
-  {routes.map(route=><Pressable key={String(route.id)} onPress={()=>chooseRoute(route)} style={[s.route,String(route.id)===routeId&&s.routeOn]}>
+  {routes.map(route=><Pressable key={String(route.id)} onPress={()=>chooseRoute(route)} style={[s.route,{backgroundColor:theme.surface,borderColor:theme.line},String(route.id)===routeId&&{backgroundColor:theme.accentSoft,borderColor:theme.accent}]}>
    <View style={{flex:1}}>
     <Text style={[s.cardTitle,{color:theme.ink}]}>{String(route.name||'Fleet route')}</Text>
     <Text style={[s.meta,{color:theme.muted}]}>{String(route.status||'planned')} · {Number(route.stops_count||0)} saved stops</Text>
@@ -398,7 +398,7 @@ export default function Planner(){
 
   {selectedRoute?<View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
    <Text style={[s.cardTitle,{color:theme.ink}]}>Edit route</Text>
-   <TextInput placeholderTextColor="#78877f" style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} value={routeEditName} onChangeText={setRouteEditName} placeholder="Route name"/>
+   <TextInput placeholderTextColor={theme.muted} style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} value={routeEditName} onChangeText={setRouteEditName} placeholder="Route name"/>
    <View style={s.row}>
     <Action label="Edit route" disabled={busy||!routeEditName.trim()} onPress={editRoute}/>
     <Action danger label="Delete route" disabled={busy||locked} onPress={removeRoute}/>
@@ -452,12 +452,14 @@ function Choices({rows,selected,onSelect}:{rows:Row[];selected:string;onSelect:(
  return <View style={s.row}>{rows.slice(0,15).map(row=>{const id=String(row.id||'');return <Pressable key={id} onPress={()=>onSelect(selected===id?'':id)} style={[s.chip,selected===id&&s.chipOn]}><Text style={[s.chipText,selected===id&&s.chipTextOn]}>{String(row.name||row.unit_code||'Option')}</Text></Pressable>})}</View>;
 }
 function ToggleChip({label,active,onPress,disabled}:{label:string;active:boolean;onPress:()=>void;disabled?:boolean}){
- return <Pressable accessibilityRole="switch" accessibilityState={{checked:active,disabled}} disabled={disabled} onPress={onPress} style={[s.toggle,active&&s.toggleOn,disabled&&{opacity:.5}]}>
-  <Text style={[s.toggleText,active&&s.toggleTextOn]}>{active?'✓ ':''}{label}</Text>
+ const theme=useFleetTheme();
+ return <Pressable accessibilityRole="switch" accessibilityState={{checked:active,disabled}} disabled={disabled} onPress={onPress} style={[s.toggle,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},active&&{backgroundColor:theme.accent,borderColor:theme.accent},disabled&&{opacity:.5}]}>
+  <Text style={[s.toggleText,{color:active?theme.accentText:theme.ink}]}>{active?'✓ ':''}{label}</Text>
  </Pressable>;
 }
 function Action({label,onPress,disabled,danger=false,quiet=false}:{label:string;onPress:()=>void|Promise<void>;disabled?:boolean;danger?:boolean;quiet?:boolean}){
- return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[s.action,quiet&&s.actionQuiet,danger&&s.actionDanger,disabled&&{opacity:.45}]}><Text style={[s.actionText,quiet&&s.actionQuietText]}>{label}</Text></Pressable>;
+ const theme=useFleetTheme();
+ return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[s.action,{backgroundColor:quiet?theme.surfaceRaised:danger?theme.danger:theme.accent,borderColor:quiet?theme.line:danger?theme.danger:theme.accent},disabled&&{opacity:.45}]}><Text style={[s.actionText,{color:quiet?theme.accent:theme.accentText}]}>{label}</Text></Pressable>;
 }
 
 const s=StyleSheet.create({
