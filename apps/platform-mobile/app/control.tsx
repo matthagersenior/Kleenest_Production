@@ -7,7 +7,8 @@ import {
   type OfferReadiness,type PilotCapabilityDomain
 } from '../services/capabilityPilot';
 import { runCapabilityAudit } from '../services/ownerAdmin';
-import { OSHero,SectionHeader,StatusPill,osCard,osColors } from '../components/KleenestOS';
+import { OSHero,SectionHeader,StatusPill,osCard,osColors,useOSCardStyle } from '../components/KleenestOS';
+import { usePlatformTheme } from '../services/theme';
 
 const commercialStates=['sample','pilot','offered','production','gated'] as const;
 const pilotModes=['off','sample','sandbox','limited-live','live'] as const;
@@ -45,33 +46,35 @@ function sampleTarget(offer:OfferReadiness){
   return null;
 }
 
-function Choice({label,selected,onPress,disabled=false}:{label:string;selected:boolean;onPress:()=>void;disabled?:boolean}){
+function Choice({label,selected,onPress,disabled=false}:{label:string;selected:boolean;onPress:()=>void;disabled?:boolean}){const theme=usePlatformTheme();
   return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={{
     borderRadius:999,paddingHorizontal:10,paddingVertical:7,
-    backgroundColor:selected?osColors.ink:'#edf3ef',opacity:disabled?0.55:1
+    backgroundColor:selected?theme.accent:theme.accentSoft,opacity:disabled?0.55:1
   }}>
-    <Text style={{fontSize:11,fontWeight:'900',color:selected?'#fff':osColors.green}}>{label}</Text>
+    <Text style={{fontSize:11,fontWeight:'900',color:selected?theme.accentText:theme.accent}}>{label}</Text>
   </Pressable>;
 }
 
-function ToggleRow({label,value,onValueChange,disabled=false}:{label:string;value:boolean;onValueChange:(next:boolean)=>void;disabled?:boolean}){
+function ToggleRow({label,value,onValueChange,disabled=false}:{label:string;value:boolean;onValueChange:(next:boolean)=>void;disabled?:boolean}){const theme=usePlatformTheme();
   return <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12}}>
-    <Text style={{fontWeight:'800',color:osColors.ink,flex:1}}>{label}</Text>
+    <Text style={{fontWeight:'800',color:theme.ink,flex:1}}>{label}</Text>
     <Switch value={value} disabled={disabled} onValueChange={onValueChange}/>
   </View>;
 }
 
-function WorkspaceLink({href,title,body}:{href:string;title:string;body:string}){
+function WorkspaceLink({href,title,body}:{href:string;title:string;body:string}){const theme=usePlatformTheme();const card=useOSCardStyle();
   return <Link href={href as any} asChild>
-    <Pressable style={{...osCard,flexBasis:150,flexGrow:1}}>
-      <Text style={{fontWeight:'900',color:osColors.ink}}>{title}</Text>
-      <Text style={{fontSize:12,color:osColors.muted,lineHeight:17}}>{body}</Text>
-      <Text style={{fontWeight:'900',color:osColors.green}}>Open →</Text>
+    <Pressable style={{...card,flexBasis:150,flexGrow:1}}>
+      <Text style={{fontWeight:'900',color:theme.ink}}>{title}</Text>
+      <Text style={{fontSize:12,color:theme.muted,lineHeight:17}}>{body}</Text>
+      <Text style={{fontWeight:'900',color:theme.accent}}>Open →</Text>
     </Pressable>
   </Link>;
 }
 
 export default function ControlCenter(){
+  const theme=usePlatformTheme();
+  const card=useOSCardStyle();
   const[offers,setOffers]=useState<OfferReadiness[]>([]);
   const[domains,setDomains]=useState<PilotCapabilityDomain[]>([]);
   const[busyKey,setBusyKey]=useState('');
@@ -142,7 +145,7 @@ export default function ControlCenter(){
 
   return <ScrollView
     refreshControl={<RefreshControl refreshing={busyKey==='load'} onRefresh={load}/>}
-    contentContainerStyle={{padding:14,gap:15,paddingBottom:90,backgroundColor:osColors.paper}}
+    contentContainerStyle={{padding:14,gap:15,paddingBottom:90,backgroundColor:theme.canvas}}
   >
     <OSHero eyebrow="KLEENESTOS CONTROL CENTER" title="CONTROL" body="Operate what Kleenest can demonstrate, pilot, sell and run. Global controls live here; search is only for individual records.">
       <View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>
@@ -153,7 +156,7 @@ export default function ControlCenter(){
       </View>
     </OSHero>
 
-    {message?<View style={{...osCard,backgroundColor:'#fffaf0'}}><Text style={{fontWeight:'800',color:osColors.warning}}>{message}</Text></View>:null}
+    {message?<View style={{...card,backgroundColor:theme.surface,borderColor:theme.warning}}><Text style={{fontWeight:'800',color:theme.warning}}>{message}</Text></View>:null}
 
     <View style={{gap:9}}>
       <SectionHeader title="Global workspaces" body="Reach the real owner controls directly. Search is reserved for record-level administration."/>
@@ -174,11 +177,11 @@ export default function ControlCenter(){
       {offers.map(offer=>{
         const key=`offer:${offer.offer_key}`,disabled=Boolean(busyKey&&busyKey!==key);
         const target=sampleTarget(offer);
-        return <View key={offer.offer_key} style={{...osCard,gap:10}}>
+        return <View key={offer.offer_key} style={{...card,gap:10}}>
           <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',gap:10}}>
             <View style={{flex:1,gap:3}}>
-              <Text style={{fontSize:17,fontWeight:'900',color:osColors.ink}}>{offer.label}</Text>
-              <Text style={{fontSize:12,color:osColors.muted}}>{pretty(offer.audience)} · {offer.description}</Text>
+              <Text style={{fontSize:17,fontWeight:'900',color:theme.ink}}>{offer.label}</Text>
+              <Text style={{fontSize:12,color:theme.muted}}>{pretty(offer.audience)} · {offer.description}</Text>
             </View>
             <StatusPill label={pretty(offer.commercial_state).toUpperCase()} tone={offer.production_ready?'good':offer.pilot_ready?'warning':'danger'}/>
           </View>
@@ -194,12 +197,12 @@ export default function ControlCenter(){
           <ToggleRow label="Sample enabled" value={offer.sample_enabled} disabled={disabled} onValueChange={next=>void patchOffer(offer,{sample_enabled:next},`Sample ${next?'enabled':'disabled'} in KleenestOS Control Center`)}/>
           <ToggleRow label="Pilot enabled" value={offer.pilot_enabled} disabled={disabled} onValueChange={next=>void patchOffer(offer,{pilot_enabled:next},`Pilot ${next?'enabled':'disabled'} in KleenestOS Control Center`)}/>
 
-          <Text style={{fontSize:11,fontWeight:'900',color:osColors.muted}}>Commercial state</Text>
+          <Text style={{fontSize:11,fontWeight:'900',color:theme.muted}}>Commercial state</Text>
           <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>
             {commercialStates.map(state=><Choice key={state} label={pretty(state)} selected={offer.commercial_state===state} disabled={disabled} onPress={()=>void patchOffer(offer,{commercial_state:state},`Commercial state set to ${state} in KleenestOS Control Center`)}/>)}
           </View>
 
-          <Text style={{fontSize:11,fontWeight:'900',color:osColors.muted}}>Pilot mode</Text>
+          <Text style={{fontSize:11,fontWeight:'900',color:theme.muted}}>Pilot mode</Text>
           <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>
             {pilotModes.map(mode=><Choice key={mode} label={pretty(mode)} selected={offer.pilot_mode===mode} disabled={disabled} onPress={()=>void patchOffer(offer,{pilot_mode:mode},`Pilot mode set to ${mode} in KleenestOS Control Center`)}/>)}
           </View>
@@ -211,10 +214,10 @@ export default function ControlCenter(){
             <Choice label="Run production check" selected={false} disabled={Boolean(busyKey)} onPress={()=>void check(offer,'production')}/>
           </View>
 
-          <Text style={{fontSize:11,color:osColors.muted}}>
+          <Text style={{fontSize:11,color:theme.muted}}>
             {offer.required_domains.length} required domains · {offer.missing_domains.length} missing · {offer.inactive_domains.length} inactive
           </Text>
-          {offer.owner_notes?<Text style={{fontSize:12,color:osColors.muted,lineHeight:17}}>{offer.owner_notes}</Text>:null}
+          {offer.owner_notes?<Text style={{fontSize:12,color:theme.muted,lineHeight:17}}>{offer.owner_notes}</Text>:null}
         </View>
       })}
     </View>
@@ -229,8 +232,8 @@ export default function ControlCenter(){
         return <View key={domain.domain} style={osCard}>
           <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',gap:9}}>
             <View style={{flex:1,gap:2}}>
-              <Text style={{fontWeight:'900',color:osColors.ink}}>{domain.canonical_capability}</Text>
-              <Text style={{fontSize:11,color:osColors.muted}}>{domain.domain} · {pretty(domain.owner_surface)} · {domain.canonical_rpc}</Text>
+              <Text style={{fontWeight:'900',color:theme.ink}}>{domain.canonical_capability}</Text>
+              <Text style={{fontSize:11,color:theme.muted}}>{domain.domain} · {pretty(domain.owner_surface)} · {domain.canonical_rpc}</Text>
             </View>
             <StatusPill label={domain.rpc_exists?'RPC LIVE':'RPC MISSING'} tone={domain.rpc_exists?'good':'danger'}/>
           </View>
@@ -240,11 +243,11 @@ export default function ControlCenter(){
           {capabilityTarget(domain)?<View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>
             <Choice label="Open capability" selected={false} disabled={disabled||!domain.active||!domain.rpc_exists} onPress={()=>void openCapability(domain)}/>
           </View>:null}
-          <Text style={{fontSize:11,fontWeight:'900',color:osColors.muted}}>Promise state</Text>
+          <Text style={{fontSize:11,fontWeight:'900',color:theme.muted}}>Promise state</Text>
           <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>
             {promiseStates.map(state=><Choice key={state} label={pretty(state)} selected={domain.promise_state===state} disabled={disabled} onPress={()=>void patchDomain(domain,{promise_state:state},`Capability promise state set to ${state} in KleenestOS Control Center`)}/>)}
           </View>
-          <Text style={{fontSize:11,fontWeight:'900',color:osColors.muted}}>Pilot mode</Text>
+          <Text style={{fontSize:11,fontWeight:'900',color:theme.muted}}>Pilot mode</Text>
           <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>
             {pilotModes.map(mode=><Choice key={mode} label={pretty(mode)} selected={domain.pilot_mode===mode} disabled={disabled} onPress={()=>void patchDomain(domain,{pilot_mode:mode},`Capability pilot mode set to ${mode} in KleenestOS Control Center`)}/>)}
           </View>

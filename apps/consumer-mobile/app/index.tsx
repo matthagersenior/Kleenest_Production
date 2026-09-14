@@ -5,18 +5,20 @@ import { FeatureCard, HeroCard, SectionHeader, palette } from '../components/Con
 import { MarketingHome } from '../components/MarketingSite';
 import { hasCurrentPolicyAcceptance } from '../services/safety';
 import { useConsumerWebExperience } from '../services/webExperience';
+import { useConsumerTheme } from '../services/theme';
 
 const action=(route:string)=>()=>router.push(route as any);
 
 export default function HomeScreen(){
+  const theme=useConsumerTheme();
   const{ready:webGateReady,signedIn,installed,appActive}=useConsumerWebExperience();
   const[policyRequired,setPolicyRequired]=useState(false);
   useEffect(()=>{let active=true;if(!signedIn){setPolicyRequired(false);return()=>{active=false}}void hasCurrentPolicyAcceptance().then(accepted=>{if(active)setPolicyRequired(!accepted)}).catch(()=>{if(active)setPolicyRequired(false)});return()=>{active=false}},[signedIn]);
-  if(Platform.OS==='web'&&!webGateReady)return <SafeAreaView style={s.safe}/>;
+  if(Platform.OS==='web'&&!webGateReady)return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}/>;
   if(Platform.OS==='web'&&!appActive)return <MarketingHome/>;
   const showInstall=Platform.OS==='web'&&!signedIn&&!installed;
-  return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-    <View style={s.brandRow}><View><Text style={s.brand}>KLEENEST</Text><Text style={s.brandSub}>Trusted restroom discovery network</Text></View><Pressable style={s.profileChip} onPress={action(signedIn?'/profile':'/signup')}><Text style={s.profileChipText}>{signedIn?'PROFILE':'JOIN'}</Text></Pressable></View>
+  return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+    <View style={s.brandRow}><View><Text style={[s.brand,{color:theme.ink}]}>KLEENEST</Text><Text style={[s.brandSub,{color:theme.muted}]}>Trusted restroom discovery network</Text></View><Pressable style={[s.profileChip,{backgroundColor:theme.accentSoft}]} onPress={action(signedIn?'/profile':'/signup')}><Text style={[s.profileChipText,{color:theme.accent}]}>{signedIn?'PROFILE':'JOIN'}</Text></Pressable></View>
 
     {policyRequired?<Pressable accessibilityRole="button" style={s.policyBanner} onPress={action('/legal')}><View style={{flex:1}}><Text style={s.policyKicker}>ACTION REQUIRED</Text><Text style={s.policyTitle}>Review community terms</Text><Text style={s.policyBody}>Accept the current Terms and Community Guidelines before posting reviews, community content or messages.</Text></View><Text style={s.policyArrow}>›</Text></Pressable>:null}
     {!signedIn?<Pressable accessibilityRole="button" style={s.joinBanner} onPress={action('/signup')}><View style={{flex:1}}><Text style={s.joinKicker}>INDIVIDUAL OR FAMILY</Text><Text style={s.joinTitle}>Create your Kleenest account</Text><Text style={s.joinBody}>Start as an individual or choose Family from signup. Family benefits remain entitlement-controlled through the approved membership path.</Text></View><Text style={s.joinArrow}>›</Text></Pressable>:null}
@@ -46,49 +48,49 @@ export default function HomeScreen(){
     </View>
 
     <SectionHeader eyebrow="THE KLEENEST LOOP" title="One useful action strengthens the whole network." body="This is the core Kleenest cycle: discover what is missing, verify what is real, then turn fresh evidence into stronger trust for everyone."/>
-    <View style={s.loopCard}>
-      <View style={s.loopLead}><Text style={s.loopLeadKicker}>WHY IT MATTERS</Text><Text style={s.loopLeadTitle}>Kleenest gets better through repeated, independent evidence.</Text><Text style={s.loopLeadBody}>A restroom can begin as a candidate and become increasingly useful as people document it, verify conditions and keep its trust signals fresh.</Text></View>
+    <View style={[s.loopCard,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+      <View style={[s.loopLead,{backgroundColor:theme.accentSoft}]}><Text style={[s.loopLeadKicker,{color:theme.accent}]}>WHY IT MATTERS</Text><Text style={[s.loopLeadTitle,{color:theme.ink}]}>Kleenest gets better through repeated, independent evidence.</Text><Text style={[s.loopLeadBody,{color:theme.muted}]}>A restroom can begin as a candidate and become increasingly useful as people document it, verify conditions and keep its trust signals fresh.</Text></View>
       {[
         {number:'1',kicker:'FIND + DISCOVER',title:'Start with what exists',body:'Search the network first. When a useful place is missing, add it from an address, map point, GPS or on-site evidence.'},
         {number:'2',kicker:'VERIFY + DOCUMENT',title:'Make the place more useful',body:'Check in, confirm the restroom, add photos, amenities and fresh observations that other people can actually rely on.'},
         {number:'3',kicker:'STRENGTHEN + REWARD',title:'Trust compounds',body:'Independent evidence strengthens confidence while eligible contributions advance your Kleenest progression without duplicate rewards.'},
-      ].map(stage=><View style={s.loopStage} key={stage.number}><View style={s.loopNumber}><Text style={s.loopNumberText}>{stage.number}</Text></View><View style={{flex:1}}><Text style={s.loopStageKicker}>{stage.kicker}</Text><Text style={s.loopStageTitle}>{stage.title}</Text><Text style={s.loopStageBody}>{stage.body}</Text></View></View>)}
+      ].map(stage=><View style={s.loopStage} key={stage.number}><View style={[s.loopNumber,{backgroundColor:theme.accentSoft}]}><Text style={[s.loopNumberText,{color:theme.accent}]}>{stage.number}</Text></View><View style={{flex:1}}><Text style={[s.loopStageKicker,{color:theme.accent}]}>{stage.kicker}</Text><Text style={[s.loopStageTitle,{color:theme.ink}]}>{stage.title}</Text><Text style={[s.loopStageBody,{color:theme.muted}]}>{stage.body}</Text></View></View>)}
     </View>
 
     <SectionHeader eyebrow="YOUR PROGRESS" title="Every verified action can move you forward." body="XP + levels are only the beginning. Kleenest progression also connects specialties, quests, missions, challenges, journeys, campaigns, contests, badges and rankings."/>
-    <View style={s.actionBand}><View style={{flex:1}}><Text style={s.actionBandTitle}>See what your contributions are unlocking</Text><Text style={s.actionBandBody}>Remote discovery can earn useful XP. GPS-supported evidence earns more. Fresh on-site evidence carries the strongest discovery weighting, while the server keeps rewards authoritative.</Text><View style={s.progressRow}><View style={s.progressPill}><Text style={s.progressPillTitle}>LEVELS</Text><Text style={s.progressPillBody}>Specialties + XP</Text></View><View style={s.progressPill}><Text style={s.progressPillTitle}>OBJECTIVES</Text><Text style={s.progressPillBody}>Quests + missions</Text></View><View style={s.progressPill}><Text style={s.progressPillTitle}>STANDING</Text><Text style={s.progressPillBody}>Badges + rankings</Text></View></View></View><Pressable style={s.actionBandButton} onPress={action('/progress')}><Text style={s.actionBandButtonText}>VIEW PROGRESS</Text></Pressable></View>
+    <View style={[s.actionBand,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><View style={{flex:1}}><Text style={[s.actionBandTitle,{color:theme.ink}]}>See what your contributions are unlocking</Text><Text style={[s.actionBandBody,{color:theme.muted}]}>Remote discovery can earn useful XP. GPS-supported evidence earns more. Fresh on-site evidence carries the strongest discovery weighting, while the server keeps rewards authoritative.</Text><View style={s.progressRow}><View style={[s.progressPill,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.progressPillTitle,{color:theme.accent}]}>LEVELS</Text><Text style={[s.progressPillBody,{color:theme.ink}]}>Specialties + XP</Text></View><View style={[s.progressPill,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.progressPillTitle,{color:theme.accent}]}>OBJECTIVES</Text><Text style={[s.progressPillBody,{color:theme.ink}]}>Quests + missions</Text></View><View style={[s.progressPill,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.progressPillTitle,{color:theme.accent}]}>STANDING</Text><Text style={[s.progressPillBody,{color:theme.ink}]}>Badges + rankings</Text></View></View></View><Pressable style={[s.actionBandButton,{backgroundColor:theme.accent}]} onPress={action('/progress')}><Text style={[s.actionBandButtonText,{color:theme.accentText}]}>VIEW PROGRESS</Text></Pressable></View>
 
     <SectionHeader eyebrow="KLEENEST AI" title="A copilot grounded in your Kleenest context." body="Use AI to understand the evidence you already have, reason about saved stops, or turn your own observations into a useful draft—without creating a second source of truth."/>
-    <View style={s.aiBand}>
-      <View><Text style={s.aiTitle}>Ask better questions about the places you already trust.</Text><Text style={s.aiBody}>Kleenest AI stays grounded in the canonical context supplied for your request and clearly separates what is supported from what still needs human verification.</Text></View>
+    <View style={[s.aiBand,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}>
+      <View><Text style={[s.aiTitle,{color:theme.ink}]}>Ask better questions about the places you already trust.</Text><Text style={[s.aiBody,{color:theme.muted}]}>Kleenest AI stays grounded in the canonical context supplied for your request and clearly separates what is supported from what still needs human verification.</Text></View>
       <View style={s.aiCapabilityRow}>
-        <View style={s.aiCapability}><Text style={s.aiCapabilityKicker}>TRUST GUIDE</Text><Text style={s.aiCapabilityTitle}>Understand evidence</Text><Text style={s.aiCapabilityBody}>Explain what is supported, uncertain and worth verifying before you rely on a restroom.</Text></View>
-        <View style={s.aiCapability}><Text style={s.aiCapabilityKicker}>ROUTE GUIDE</Text><Text style={s.aiCapabilityTitle}>Reason about saved stops</Text><Text style={s.aiCapabilityBody}>Compare your saved restroom context and discuss a sensible ordering strategy without inventing travel times.</Text></View>
-        <View style={s.aiCapability}><Text style={s.aiCapabilityKicker}>REVIEW DRAFT</Text><Text style={s.aiCapabilityTitle}>Turn facts into a draft</Text><Text style={s.aiCapabilityBody}>Draft concise review text from details you personally provide, with a reminder to verify before publishing.</Text></View>
+        <View style={[s.aiCapability,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.aiCapabilityKicker,{color:theme.accent}]}>TRUST GUIDE</Text><Text style={[s.aiCapabilityTitle,{color:theme.ink}]}>Understand evidence</Text><Text style={[s.aiCapabilityBody,{color:theme.muted}]}>Explain what is supported, uncertain and worth verifying before you rely on a restroom.</Text></View>
+        <View style={[s.aiCapability,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.aiCapabilityKicker,{color:theme.accent}]}>ROUTE GUIDE</Text><Text style={[s.aiCapabilityTitle,{color:theme.ink}]}>Reason about saved stops</Text><Text style={[s.aiCapabilityBody,{color:theme.muted}]}>Compare your saved restroom context and discuss a sensible ordering strategy without inventing travel times.</Text></View>
+        <View style={[s.aiCapability,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.aiCapabilityKicker,{color:theme.accent}]}>REVIEW DRAFT</Text><Text style={[s.aiCapabilityTitle,{color:theme.ink}]}>Turn facts into a draft</Text><Text style={[s.aiCapabilityBody,{color:theme.muted}]}>Draft concise review text from details you personally provide, with a reminder to verify before publishing.</Text></View>
       </View>
-      <Pressable style={s.aiButton} onPress={action('/assistant')}><Text style={s.aiButtonText}>OPEN KLEENEST AI</Text></Pressable>
+      <Pressable style={[s.aiButton,{backgroundColor:theme.accent}]} onPress={action('/assistant')}><Text style={[s.aiButtonText,{color:theme.accentText}]}>OPEN KLEENEST AI</Text></Pressable>
     </View>
 
     <SectionHeader eyebrow="COMMUNITY" title="People helping people find better bathrooms." body="Community combines the people, evidence and activity that make the map smarter. Follow useful contributors, see verified visit evidence, understand contributor reputation and keep up with what your network is learning."/>
-    <View style={s.communityCard}>
-      <Text style={s.communityKicker}>YOUR NETWORK</Text>
-      <Text style={s.communityTitle}>One community, one clear destination.</Text>
-      <Text style={s.communityBody}>The Community page brings together Following, Followers, Community Pulse, verified visit evidence and contributor reputation so you do not need several homepage cards saying the same thing.</Text>
-      <View style={s.communitySignals}><Text style={s.communitySignal}>Following + followers</Text><Text style={s.communitySignal}>Community pulse</Text><Text style={s.communitySignal}>Verified evidence</Text><Text style={s.communitySignal}>Contributor reputation</Text></View>
-      <Pressable style={s.communityButton} onPress={action('/social')}><Text style={s.communityButtonText}>OPEN COMMUNITY</Text></Pressable>
+    <View style={[s.communityCard,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+      <Text style={[s.communityKicker,{color:theme.accent}]}>YOUR NETWORK</Text>
+      <Text style={[s.communityTitle,{color:theme.ink}]}>One community, one clear destination.</Text>
+      <Text style={[s.communityBody,{color:theme.muted}]}>The Community page brings together Following, Followers, Community Pulse, verified visit evidence and contributor reputation so you do not need several homepage cards saying the same thing.</Text>
+      <View style={s.communitySignals}><Text style={[s.communitySignal,{backgroundColor:theme.accentSoft,color:theme.accent}]}>Following + followers</Text><Text style={[s.communitySignal,{backgroundColor:theme.accentSoft,color:theme.accent}]}>Community pulse</Text><Text style={[s.communitySignal,{backgroundColor:theme.accentSoft,color:theme.accent}]}>Verified evidence</Text><Text style={[s.communitySignal,{backgroundColor:theme.accentSoft,color:theme.accent}]}>Contributor reputation</Text></View>
+      <Pressable style={[s.communityButton,{backgroundColor:theme.accent}]} onPress={action('/social')}><Text style={[s.communityButtonText,{color:theme.accentText}]}>OPEN COMMUNITY</Text></Pressable>
     </View>
 
     <SectionHeader eyebrow="MORE" title="Account, access and support stay close."/>
     <View style={s.moreRow}>
-      {showInstall?<Pressable style={s.more} onPress={action('/install')}><Text style={s.moreTitle}>Install Kleenest</Text><Text style={s.moreBody}>Web app + verified Android APK</Text></Pressable>:null}
-      <Pressable style={s.more} onPress={action('/membership')}><Text style={s.moreTitle}>Membership</Text><Text style={s.moreBody}>Premium + Family options</Text></Pressable>
-      <Pressable style={s.more} onPress={action('/family')}><Text style={s.moreTitle}>Family</Text><Text style={s.moreBody}>Create or join your group</Text></Pressable>
-      <Pressable style={s.more} onPress={action('/messages')}><Text style={s.moreTitle}>Messages</Text><Text style={s.moreBody}>Talk with trusted contributors</Text></Pressable>
-      <Pressable style={s.more} onPress={action('/access')}><Text style={s.moreTitle}>Access</Text><Text style={s.moreBody}>Preferred + single-use access</Text></Pressable>
-      <Pressable style={s.more} onPress={action('/notifications')}><Text style={s.moreTitle}>Notifications</Text><Text style={s.moreBody}>Updates + trust opportunities</Text></Pressable>
-      <Pressable style={s.more} onPress={action('/support')}><Text style={s.moreTitle}>Support</Text><Text style={s.moreBody}>Help + feedback</Text></Pressable>
+      {showInstall?<Pressable style={[s.more,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/install')}><Text style={[s.moreTitle,{color:theme.accent}]}>Install Kleenest</Text><Text style={[s.moreBody,{color:theme.muted}]}>Web app + verified Android APK</Text></Pressable>:null}
+      <Pressable style={[s.more,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/membership')}><Text style={[s.moreTitle,{color:theme.accent}]}>Membership</Text><Text style={[s.moreBody,{color:theme.muted}]}>Premium + Family options</Text></Pressable>
+      <Pressable style={[s.more,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/family')}><Text style={[s.moreTitle,{color:theme.accent}]}>Family</Text><Text style={[s.moreBody,{color:theme.muted}]}>Create or join your group</Text></Pressable>
+      <Pressable style={[s.more,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/messages')}><Text style={[s.moreTitle,{color:theme.accent}]}>Messages</Text><Text style={[s.moreBody,{color:theme.muted}]}>Talk with trusted contributors</Text></Pressable>
+      <Pressable style={[s.more,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/access')}><Text style={[s.moreTitle,{color:theme.accent}]}>Access</Text><Text style={[s.moreBody,{color:theme.muted}]}>Preferred + single-use access</Text></Pressable>
+      <Pressable style={[s.more,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/notifications')}><Text style={[s.moreTitle,{color:theme.accent}]}>Notifications</Text><Text style={[s.moreBody,{color:theme.muted}]}>Updates + trust opportunities</Text></Pressable>
+      <Pressable style={[s.more,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/support')}><Text style={[s.moreTitle,{color:theme.accent}]}>Support</Text><Text style={[s.moreBody,{color:theme.muted}]}>Help + feedback</Text></Pressable>
     </View>
-    <Text style={s.footer}>Kleenest gets better when every useful discovery makes the network smarter.</Text>
+    <Text style={[s.footer,{color:theme.muted}]}>Kleenest gets better when every useful discovery makes the network smarter.</Text>
   </ScrollView></SafeAreaView>;
 }
 

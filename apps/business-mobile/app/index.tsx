@@ -6,6 +6,7 @@ import { getBusinessAnalytics,getBusinessDashboard,getBusinessManagedLocationPor
 import { currentBusinessId,listBusinessWorkspaceOptions } from '../services/capabilityWorkflows';
 import { getBusinessProductAccess,getBusinessServiceEntitlement } from '../services/productAccess';
 import { getBusinessOnboardingGate,getBusinessOnboardingState } from '../services/onboarding';
+import { useBusinessTheme } from '../services/theme';
 
 function count(value:any){
  if(Array.isArray(value))return value.length;
@@ -46,6 +47,7 @@ const domainSpecs:Domain[]=[
 ];
 
 export default function BusinessHome(){
+ const theme=useBusinessTheme();
  const[data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('Loading Business control center…');
 
  async function load(){
@@ -104,8 +106,8 @@ export default function BusinessHome(){
  const partnerBusinesses=n(portfolioSummary.partner_business_count);
  const groups=(['Operate','Grow','Understand','Admin'] as const).map(group=>({group,items:remainingDomains.filter(item=>item.group===group)})).filter(row=>row.items.length);
 
- return <ScrollView contentInsetAdjustmentBehavior="automatic" refreshControl={<RefreshControl refreshing={busy} onRefresh={load}/>} contentContainerStyle={s.page}>
-  <View style={s.hero}>
+ return <ScrollView contentInsetAdjustmentBehavior="automatic" refreshControl={<RefreshControl refreshing={busy} onRefresh={load}/>} contentContainerStyle={[s.page,{backgroundColor:theme.canvas}]}>
+  <View style={[s.hero,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#173f2d',borderColor:theme.resolved==='dark'?theme.line:'#173f2d',borderWidth:1}]}>
    <View style={s.heroTop}>
     <View style={s.brandMark}><Text style={s.brandMarkText}>K</Text></View>
     <View style={{flex:1}}>
@@ -130,32 +132,32 @@ export default function BusinessHome(){
    </View>
   </View>
 
-  {message?<View style={s.alert}><Text accessibilityLiveRegion="polite" style={s.alertText}>{message}</Text></View>:null}
+  {message?<View style={[s.alert,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text accessibilityLiveRegion="polite" style={[s.alertText,{color:theme.ink}]}>{message}</Text></View>:null}
 
   <View style={[s.onboardingPanel,onboardingComplete?s.onboardingComplete:hasDraft?s.onboardingProgress:s.onboardingMissing]}>
    <View style={s.panelIcon}><Text style={s.panelIconText}>{onboardingComplete?'✓':hasDraft?'…':'!'}</Text></View>
    <View style={{flex:1,gap:3}}>
     <Text style={s.panelEyebrow}>{onboardingStatus}</Text>
-    <Text style={s.panelTitle}>{onboardingComplete?'Your workspace is personalized.':hasDraft?'Your answers are saved. Finish setup to lock in the operating plan.':'Tell Kleenest how this business operates.'}</Text>
-    <Text style={s.panelBody}>{hasDraft?'Home priorities now reflect your saved goals, pain points, success measures and team focus.':'Detailed onboarding determines which workflows, metrics, QR actions and operating surfaces appear first.'}</Text>
+    <Text style={[s.panelTitle,{color:theme.ink}]}>{onboardingComplete?'Your workspace is personalized.':hasDraft?'Your answers are saved. Finish setup to lock in the operating plan.':'Tell Kleenest how this business operates.'}</Text>
+    <Text style={[s.panelBody,{color:theme.muted}]}>{hasDraft?'Home priorities now reflect your saved goals, pain points, success measures and team focus.':'Detailed onboarding determines which workflows, metrics, QR actions and operating surfaces appear first.'}</Text>
    </View>
-   <Link href="/onboarding" style={s.panelLink}>{onboardingComplete?'Review':'Continue'} →</Link>
+   <Link href="/onboarding" style={[s.panelLink,{color:theme.accent}]}>{onboardingComplete?'Review':'Continue'} →</Link>
   </View>
 
-  <View style={s.portfolioPanel}>
+  <View style={[s.portfolioPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
    <View style={s.portfolioHeader}>
     <View style={{flex:1}}>
      <Text style={s.portfolioEyebrow}>LOCATION AUTHORITY</Text>
-     <Text style={s.portfolioTitle}>{portfolioLocations} Portfolio locations</Text>
+     <Text style={[s.portfolioTitle,{color:theme.ink}]}>{portfolioLocations} Portfolio locations</Text>
     </View>
     <View style={s.portfolioBadge}><Text style={s.portfolioBadgeText}>{networkLocations>0?'ENTERPRISE NETWORK':'DIRECT'}</Text></View>
    </View>
-   <Text style={s.portfolioBody}>{networkLocations>0
+   <Text style={[s.portfolioBody,{color:theme.muted}]}>{networkLocations>0
     ?String(directLocations)+' direct · '+String(networkLocations)+' network portfolio · '+String(partnerBusinesses)+' partner business'+(partnerBusinesses===1?'':'es')+'. Network locations are visible as portfolio scope and are not mislabeled as directly owned.'
     :String(directLocations)+' direct or claimed location'+(directLocations===1?'':'s')+' currently belong to this Business workspace.'}</Text>
    <View style={s.portfolioActions}>
     <Link href="/locations" style={s.darkLink}>Open locations</Link>
-    {caps?.enterpriseLocationFeatures?<Link href="/enterprise-locations" style={s.lightLink}>Portfolio view</Link>:null}
+    {caps?.enterpriseLocationFeatures?<Link href="/enterprise-locations" style={[s.lightLink,{backgroundColor:theme.accentSoft}]}>Portfolio view</Link>:null}
    </View>
   </View>
 
@@ -168,36 +170,36 @@ export default function BusinessHome(){
   {priorityDomains.length?<View style={s.prioritySection}>
    <View style={s.sectionHeader}>
     <View>
-     <Text style={s.sectionEyebrow}>YOUR PRIORITIES</Text>
-     <Text style={s.sectionTitle}>Start here</Text>
+     <Text style={[s.sectionEyebrow,{color:theme.accent}]}>YOUR PRIORITIES</Text>
+     <Text style={[s.sectionTitle,{color:theme.ink}]}>Start here</Text>
     </View>
-    <Text style={s.sectionMeta}>{String(experience.operating_mode||'targeted').replaceAll('_',' ')}</Text>
+    <Text style={[s.sectionMeta,{color:theme.muted}]}>{String(experience.operating_mode||'targeted').replaceAll('_',' ')}</Text>
    </View>
-   <Text style={s.sectionCopy}>These actions are elevated from your onboarding goals and current entitlements—not a generic feature list.</Text>
+   <Text style={[s.sectionCopy,{color:theme.muted}]}>These actions are elevated from your onboarding goals and current entitlements—not a generic feature list.</Text>
    <View style={s.actionGrid}>{priorityDomains.map(item=><ActionTile key={item.href} item={item} priority/>)}</View>
   </View>:null}
 
-  {caps?.enterpriseLocationFeatures&&!caps?.enterpriseNetworks?<View style={s.notice}>
-   <Text style={s.noticeTitle}>Growth multi-location controls are active</Text>
-   <Text style={s.panelBody}>Cross-location operating tools are available. Full partner-network and Enterprise Economy authority remains Enterprise-only.</Text>
+  {caps?.enterpriseLocationFeatures&&!caps?.enterpriseNetworks?<View style={[s.notice,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+   <Text style={[s.noticeTitle,{color:theme.ink}]}>Growth multi-location controls are active</Text>
+   <Text style={[s.panelBody,{color:theme.muted}]}>Cross-location operating tools are available. Full partner-network and Enterprise Economy authority remains Enterprise-only.</Text>
   </View>:null}
 
   <View style={s.workspaceHeader}>
-   <Text style={s.sectionEyebrow}>BUSINESS WORKSPACE</Text>
-   <Text style={s.sectionTitle}>Everything available to this account</Text>
-   <Text style={s.sectionCopy}>Organized by the job you are trying to do, with entitlement rules enforced behind every surface.</Text>
+   <Text style={[s.sectionEyebrow,{color:theme.accent}]}>BUSINESS WORKSPACE</Text>
+   <Text style={[s.sectionTitle,{color:theme.ink}]}>Everything available to this account</Text>
+   <Text style={[s.sectionCopy,{color:theme.muted}]}>Organized by the job you are trying to do, with entitlement rules enforced behind every surface.</Text>
   </View>
 
-  {groups.map(({group,items})=><View key={group} style={s.toolGroup}>
-   <View style={s.groupHeader}><Text style={s.groupTitle}>{group}</Text><Text style={s.groupCount}>{items.length}</Text></View>
+  {groups.map(({group,items})=><View key={group} style={[s.toolGroup,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+   <View style={s.groupHeader}><Text style={[s.groupTitle,{color:theme.ink}]}>{group}</Text><Text style={[s.groupCount,{color:theme.muted}]}>{items.length}</Text></View>
    <View style={s.toolList}>{items.map(item=><ActionTile key={item.href} item={item}/>)}</View>
   </View>)}
 
-  <View style={s.footer}>
-   <Link href="/workspaces" style={s.footerLink}>Switch workspace</Link>
-   <Link href="/notifications" style={s.footerLink}>Notifications</Link>
-   <Link href="/support" style={s.footerLink}>Support</Link>
-   <Link href="/account" style={s.footerLink}>Account</Link>
+  <View style={[s.footer,{borderColor:theme.line}]}>
+   <Link href="/workspaces" style={[s.footerLink,{color:theme.accent}]}>Switch workspace</Link>
+   <Link href="/notifications" style={[s.footerLink,{color:theme.accent}]}>Notifications</Link>
+   <Link href="/support" style={[s.footerLink,{color:theme.accent}]}>Support</Link>
+   <Link href="/account" style={[s.footerLink,{color:theme.accent}]}>Account</Link>
   </View>
  </ScrollView>
 }
