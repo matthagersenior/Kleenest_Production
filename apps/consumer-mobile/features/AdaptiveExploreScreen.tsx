@@ -909,15 +909,15 @@ export default function AdaptiveExploreScreen() {
                   <View style={s.ruleRow}>
                     <Pressable
                       onPress={() => setMatchRule('all')}
-                      style={[s.rule,{backgroundColor:matchRule==='all'?theme.accent:theme.surfaceRaised,borderColor:matchRule==='all'?theme.accent:theme.line}]}
+                      style={[s.rule,{backgroundColor:matchRule === 'all'?theme.accent:theme.surfaceRaised,borderColor:matchRule === 'all'?theme.accent:theme.line}]}
                     >
-                      <Text style={[s.ruleText,{color:matchRule==='all'?theme.accentText:theme.ink}]}>Must include all</Text>
+                      <Text style={[s.ruleText,{color:matchRule === 'all'?theme.accentText:theme.ink}]}>Must include all</Text>
                     </Pressable>
                     <Pressable
                       onPress={() => setMatchRule('any')}
-                      style={[s.rule,{backgroundColor:matchRule==='any'?theme.accent:theme.surfaceRaised,borderColor:matchRule==='any'?theme.accent:theme.line}]}
+                      style={[s.rule,{backgroundColor:matchRule === 'any'?theme.accent:theme.surfaceRaised,borderColor:matchRule === 'any'?theme.accent:theme.line}]}
                     >
-                      <Text style={[s.ruleText,{color:matchRule==='any'?theme.accentText:theme.ink}]}>Include any</Text>
+                      <Text style={[s.ruleText,{color:matchRule === 'any'?theme.accentText:theme.ink}]}>Include any</Text>
                     </Pressable>
                   </View>
                 ) : null}
