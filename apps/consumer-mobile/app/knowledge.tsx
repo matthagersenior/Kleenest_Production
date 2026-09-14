@@ -62,7 +62,7 @@ export default function PriorKnowledgeScreen(){
     setSubmitting(true);setMessage('');
     try{
       const result:any=await submitPriorKnowledge(locationId,{knowledgeRecency:recency,facts,cleanlinessTendency:cleanliness,accessNotes,notes});
-      const points=Number(result?.progression?.points||0);
+      const points=Number(result?.progression?.xp_awarded??result?.progression?.points??0);
       setSubmitted(true);
       setMessage(`Recorded as prior knowledge — not a check-in or verified current visit.${points>0?` +${points} contribution points.`:''}`);
     }catch(error:any){
