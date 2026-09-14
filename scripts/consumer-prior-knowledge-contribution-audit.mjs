@@ -34,6 +34,7 @@ if(!failures.length){
     "'visit_verified',false",
     "'freshness_eligible',false",
     "'prior_knowledge',8",
+    "0,12,true",
     "'community_contributor'",
     "v_action:=case when v_prior then 'prior_knowledge'",
     "'consumer_prior_knowledge'",
