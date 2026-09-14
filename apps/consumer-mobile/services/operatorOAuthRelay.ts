@@ -8,9 +8,20 @@ function clearRelayState(){
   try{window.localStorage.removeItem(OPERATOR_OAUTH_RETURN_KEY)}catch{}
 }
 
-function callbackPresent(){
-  const search=new URLSearchParams(window.location.search);
-  const hash=new URLSearchParams(String(window.location.hash||'').replace(/^#/,''));
+function getBrowserLocation(){
+  if(typeof window==='undefined')return null;
+  const location=window.location;
+  if(!location
+    || typeof location.search!=='string'
+    || typeof location.hash!=='string'
+    || typeof location.origin!=='string'
+    || typeof location.replace!=='function')return null;
+  return location;
+}
+
+function callbackPresent(location:Location){
+  const search=new URLSearchParams(location.search);
+  const hash=new URLSearchParams(String(location.hash||'').replace(/^#/,''));
   return search.has('code')
     || search.has('error')
     || search.has('error_code')
@@ -21,7 +32,8 @@ function callbackPresent(){
 }
 
 export function relayOperatorOAuthCallback(){
-  if(typeof window==='undefined'||!callbackPresent())return false;
+  const location=getBrowserLocation();
+  if(!location||!callbackPresent(location))return false;
 
   let target:{portal?:string;intent?:string;createdAt?:number}|null=null;
   try{
@@ -39,13 +51,13 @@ export function relayOperatorOAuthCallback(){
     return false;
   }
 
-  const search=new URLSearchParams(window.location.search);
+  const search=new URLSearchParams(location.search);
   const intent=portal==='business'?String(target?.intent||'').trim():'';
   if(intent&&!search.has('intent'))search.set('intent',intent);
 
   clearRelayState();
   const query=search.toString();
-  const destination=window.location.origin+'/Kleenest_Production/'+portal+'/auth/'+(query?'?'+query:'')+(window.location.hash||'');
+  const destination=location.origin+'/Kleenest_Production/'+portal+'/auth/'+(query?'?'+query:'')+(location.hash||'');
   window.location.replace(destination);
   return true;
 }
