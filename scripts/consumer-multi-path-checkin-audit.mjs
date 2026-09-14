@@ -6,27 +6,30 @@ const expect=(source,token,label)=>{if(!source.includes(token))failures.push(lab
 
 const home=read('apps/consumer-mobile/app/index.tsx');
 for(const [token,label] of [
-  ['accessibilityLabel="Check in at a restroom"','consumer Home must expose a first-class check-in action'],
-  ['<Text style={s.heroQuickLabel}>CHECK IN</Text>','consumer Home must label check-in independently of QR'],
-  ['<Text style={s.heroQuickTitle}>Nearby or search</Text>','consumer Home check-in must lead users toward GPS/search location selection'],
-  ['accessibilityLabel="Scan a Kleenest QR code"','consumer Home must keep QR as a separate optional verification path'],
+  ['FIND A BATHROOM','consumer Home must keep bathroom discovery first'],
+  ['<Text style={s.heroQuickLabel}>REVIEW</Text>','consumer Home must make recent-visit review easy to find'],
+  ['accessibilityLabel="Scan a Kleenest QR code"','consumer Home must keep QR as a separate optional path'],
 ]) expect(home,token,label);
 if(home.includes('Scan QR to check in or review')) failures.push('consumer Home must not teach users that QR is the general check-in entry point');
+if(home.includes('GPS + geofence')||home.includes('verification window')) failures.push('consumer Home must not expose check-in implementation terminology');
 
 const explore=read('apps/consumer-mobile/features/AdaptiveExploreScreen.tsx');
 for(const [token,label] of [
-  ['mobileCheckIn','native Explore must use the canonical GPS check-in RPC'],
-  ['onCheckIn','native Explore result cards must expose Check in'],
-  ['Check in','native Explore selected map place must expose Check in'],
-  ['OUTSIDE_GEOFENCE','native Explore must explain geofence qualification'],
+  ['mobileCheckIn','native Explore must preserve canonical explicit check-in authority'],
+  ['accessibilityLabel="Check in at selected location"','selected map place must keep optional explicit Check in'],
+  ['Review this visit','native Explore must make review the primary post-visit action'],
+  ['>Go</Text>','native Explore must keep one-tap directions prominent'],
+  ['OUTSIDE_GEOFENCE','native Explore may map internal check-in qualification errors to human copy'],
 ]) expect(explore,token,label);
+if(explore.includes('inside the geofence')||explore.includes('GPS + geofence')) failures.push('native Explore must not expose geofence implementation language in user-facing copy');
 
 const location=read('apps/consumer-mobile/app/location/[id].tsx');
 for(const [token,label] of [
-  ['CHECK IN HERE','location detail must make Check in explicit'],
-  ['GPS + geofence','location detail must explain GPS verification'],
-  ["router.push('/qr')",'location detail must keep QR available as an optional stronger proof path'],
+  ["'✓ Check in'",'location detail must keep explicit Check in available as a secondary action'],
+  ['Review this visit','location detail must make Review this visit the primary contribution path'],
+  ["router.push('/qr')",'location detail must keep QR available as an optional path'],
 ]) expect(location,token,label);
+if(location.includes('GPS + geofence')||location.includes('inside the geofence')) failures.push('location detail must not expose check-in implementation terminology in normal UX');
 
 const route=read('apps/consumer-mobile/app/route.tsx');
 for(const [token,label] of [
@@ -39,9 +42,11 @@ for(const [token,label] of [
 
 const qrScreen=read('apps/consumer-mobile/app/qr.tsx');
 for(const [token,label] of [
-  ['accessibilityLabel="Check in without a QR"','QR screen must offer a GPS/search escape hatch for regular check-in'],
-  ['Check in with GPS + geofence','QR screen must explain that a QR is not required for normal check-in'],
+  ['accessibilityLabel="Check in without a QR"','QR screen must offer a normal check-in escape hatch'],
+  ['Check in without QR','QR screen must explain that QR is optional'],
+  ['Check in at this location','QR screen must offer the normal location-based check-in path'],
 ]) expect(qrScreen,token,label);
+if(qrScreen.includes('GPS + geofence')||qrScreen.includes('inside the location geofence')) failures.push('QR screen must not expose location-verification implementation terminology');
 
 const qr=read('apps/consumer-mobile/services/qrActions.ts');
 expect(qr,"rpc('verify_checkin'",'QR check-in must use the existing server-authoritative QR + geofence RPC');
@@ -70,4 +75,4 @@ if(failures.length){
   process.exit(1);
 }
 
-console.log('Consumer multi-path check-in audit passed: Home, GPS/geofence, QR, Explore, location detail, route stops, opt-in arrival prompts, and web parity converge on server-authoritative check-in paths.');
+console.log('Consumer multi-path check-in audit passed: explicit check-in remains available without becoming a prerequisite for the find → go → review journey.');
