@@ -210,7 +210,7 @@ function Metric({label,value,detail}:{label:string;value:any;detail:string}){con
 function ActionTile({item,priority=false}:{item:Domain;priority?:boolean}){
  const theme=useBusinessTheme();
  return <Link href={item.href as any} asChild>
-  <Pressable accessibilityRole="button" style={[s.actionTile,{backgroundColor:theme.surface,borderColor:theme.line},priority&&{backgroundColor:theme.accentSoft,borderColor:theme.accent}]}>
+  <Pressable accessibilityRole="button" style={StyleSheet.flatten([s.actionTile,{backgroundColor:theme.surface,borderColor:theme.line},priority&&{backgroundColor:theme.accentSoft,borderColor:theme.accent}])}>
    <View style={s.actionHeader}>
     <View style={[s.actionGlyph,{backgroundColor:theme.accentSoft},priority&&{backgroundColor:theme.accent}]}><Text style={[s.actionGlyphText,{color:priority?theme.accentText:theme.accent}]}>{item.glyph}</Text></View>
     <View style={s.actionHeading}>
