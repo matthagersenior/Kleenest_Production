@@ -183,13 +183,14 @@ function parseRouteDraft(raw: string | null) {
   }
 }
 
-function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddToRoute, onDetails, route, requestedAmenities }: {
+function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddToRoute, onKnow, onDetails, route, requestedAmenities }: {
   item: any;
   selected: boolean;
   onSelect: () => void;
   onDirections: () => void;
   onCheckIn: () => void;
   onAddToRoute: () => void;
+  onKnow: () => void;
   onDetails: () => void;
   route: any;
   requestedAmenities: string[];
@@ -251,6 +252,9 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         </Pressable>
         <Pressable accessibilityRole="button" style={[s.secondarySmall, s.cardAction]} onPress={onAddToRoute}>
           <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Share what I already know about this location" style={[s.secondarySmall, s.cardAction]} onPress={onKnow}>
+          <Text style={[s.secondaryText,{color:theme.accent}]}>I know this place</Text>
         </Pressable>
         <Pressable accessibilityRole="button" style={[s.secondarySmall, s.cardAction]} onPress={onDetails}>
           <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
@@ -633,6 +637,12 @@ export default function AdaptiveExploreScreen() {
     if (!id) return;
     captureConsumerRouteIntent(id);
     router.push({ pathname: '/route', params: { add: id } });
+  }
+
+  function contributeKnowledge(row: any) {
+    const id = idOf(row);
+    if (!id) return;
+    router.push({ pathname: '/knowledge', params: { locationId: id, name: String(row?.name || '') } });
   }
 
   async function directions(row: any) {
@@ -1074,6 +1084,9 @@ export default function AdaptiveExploreScreen() {
                   <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => addToRoute(selected)}>
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
                   </Pressable>
+                  <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => contributeKnowledge(selected)}>
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>I know this place</Text>
+                  </Pressable>
                   <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => router.push(`/location/${idOf(selected)}`)}>
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
                   </Pressable>
@@ -1109,6 +1122,7 @@ export default function AdaptiveExploreScreen() {
               onDirections={() => void directions(item)}
               onCheckIn={() => void checkIn(item)}
               onAddToRoute={() => addToRoute(item)}
+              onKnow={() => contributeKnowledge(item)}
               onDetails={() => router.push(`/location/${idOf(item)}`)}
               route={mode === 'route' ? route : null}
               requestedAmenities={selectedAmenityNames}
