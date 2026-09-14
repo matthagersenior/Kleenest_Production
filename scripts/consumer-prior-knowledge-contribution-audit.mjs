@@ -26,7 +26,7 @@ if(!failures.length){
   const webLocation=read(required[6]);
 
   for(const token of [
-    'consumer_submit_prior_knowledge',
+    'consumer_record_discovery_evidence',
     "'evidence_class','prior_knowledge'",
     "'presence_verified',false",
     "'visit_verified',false",
@@ -35,17 +35,19 @@ if(!failures.length){
     "'consumer_prior_knowledge'",
   ]) if(!migration.includes(token)) failures.push(`prior-knowledge migration missing token: ${token}`);
 
-  for(const forbidden of ['insert into public.check_ins','kleenest_map_check_in','insert into public.location_amenity_observations']){
-    if(migration.toLowerCase().includes(forbidden)) failures.push(`prior knowledge must not create verified/current evidence: ${forbidden}`);
+  for(const forbidden of ['insert into public.check_ins','kleenest_map_check_in','create or replace function public.consumer_submit_prior_knowledge']){
+    if(migration.toLowerCase().includes(forbidden)) failures.push(`prior knowledge must not create a parallel privileged or verified-visit path: ${forbidden}`);
   }
+  if(!migration.includes("if p_input ? 'amenities' then raise exception 'PRIOR_KNOWLEDGE_CANNOT_CREATE_AMENITY_EVIDENCE'; end if;")) failures.push('prior knowledge must reject canonical amenity payloads.');
+  if(!migration.includes("case when v_prior then v_claimed_observed_at else now() end")) failures.push('prior knowledge must preserve declared historical recency instead of using submission time as observation freshness.');
 
-  if(!service.includes("rpc('consumer_submit_prior_knowledge'")) failures.push('native prior-knowledge service must call the dedicated RPC.');
+  if(!service.includes("rpc('consumer_record_discovery_evidence'")) failures.push('native prior-knowledge service must call the dedicated RPC.');
   if(!screen.includes('I Know This Place')) failures.push('native prior-knowledge screen must explain the I Know This Place path.');
   if(screen.includes('expo-location')||screen.includes('mobileCheckIn')) failures.push('native prior-knowledge screen must not request location or invoke check-in.');
   if(!screen.includes('not a check-in')||!screen.includes('verified current visit')) failures.push('native prior-knowledge screen must clearly distinguish historical knowledge from verified presence.');
   if(!location.includes('I know this place')||!location.includes("pathname:'/knowledge'")) failures.push('native location detail must expose I know this place.');
   if(!explore.includes('onKnow')||!explore.includes('I know this place')||!explore.includes("pathname: '/knowledge'")) failures.push('native Explore cards and selected map location must expose I know this place.');
-  if(!webService.includes('submitPriorKnowledge')||!webService.includes("rpc('consumer_submit_prior_knowledge'")) failures.push('web community service must expose prior-knowledge submission.');
+  if(!webService.includes('submitPriorKnowledge')||!webService.includes("rpc('consumer_record_discovery_evidence'")) failures.push('web community service must expose prior-knowledge submission.');
   if(!webLocation.includes('I know this place')||!webLocation.includes('PRIOR KNOWLEDGE')) failures.push('web location page must expose a separate prior-knowledge form.');
 }
 
