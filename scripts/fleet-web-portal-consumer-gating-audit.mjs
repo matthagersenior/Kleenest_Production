@@ -100,8 +100,12 @@ requireTokens('Consumer web experience gate',webExperience,[
   'signedIn',
   'installed',
   'explicitLaunch',
+  'APP_SESSION_KEY',
+  'sessionStorage',
+  'appSession',
+  'markConsumerAppSession',
   "if(standalone)markConsumerAppPresence()",
-  'appActive:native||explicitLaunch||signedIn||installed'
+  'appActive:native||appSession||signedIn||installed'
 ]);
 if(webExperience.includes('if(explicit||standalone)markConsumerAppPresence()')||webExperience.includes('if(explicitLaunch||standalone)markConsumerAppPresence()'))failures.push('Guest web launch is still persisted as installed app presence.');
 if(webExperience.includes('const present=explicit||')||webExperience.includes('const present=explicitLaunch||'))failures.push('Explicit guest launch is still counted as an installed app.');
