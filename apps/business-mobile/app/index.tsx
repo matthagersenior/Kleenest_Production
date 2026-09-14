@@ -141,7 +141,7 @@ export default function BusinessHome(){
     <Text style={[s.panelTitle,{color:theme.ink}]}>{onboardingComplete?'Your workspace is personalized.':hasDraft?'Your answers are saved. Finish setup to lock in the operating plan.':'Tell Kleenest how this business operates.'}</Text>
     <Text style={[s.panelBody,{color:theme.muted}]}>{hasDraft?'Home priorities now reflect your saved goals, pain points, success measures and team focus.':'Detailed onboarding determines which workflows, metrics, QR actions and operating surfaces appear first.'}</Text>
    </View>
-   <Link href="/onboarding" style={[s.panelLink,{color:theme.accent}]}>{onboardingComplete?'Review':'Continue'} →</Link>
+   <Link href="/onboarding" style={StyleSheet.flatten([s.panelLink,{color:theme.accent}])}>{onboardingComplete?'Review':'Continue'} →</Link>
   </View>
 
   <View style={[s.portfolioPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
@@ -157,7 +157,7 @@ export default function BusinessHome(){
     :String(directLocations)+' direct or claimed location'+(directLocations===1?'':'s')+' currently belong to this Business workspace.'}</Text>
    <View style={s.portfolioActions}>
     <Link href="/locations" style={s.darkLink}>Open locations</Link>
-    {caps?.enterpriseLocationFeatures?<Link href="/enterprise-locations" style={[s.lightLink,{backgroundColor:theme.accentSoft}]}>Portfolio view</Link>:null}
+    {caps?.enterpriseLocationFeatures?<Link href="/enterprise-locations" style={StyleSheet.flatten([s.lightLink,{backgroundColor:theme.accentSoft}])}>Portfolio view</Link>:null}
    </View>
   </View>
 
@@ -196,10 +196,10 @@ export default function BusinessHome(){
   </View>)}
 
   <View style={[s.footer,{borderColor:theme.line}]}>
-   <Link href="/workspaces" style={[s.footerLink,{color:theme.accent}]}>Switch workspace</Link>
-   <Link href="/notifications" style={[s.footerLink,{color:theme.accent}]}>Notifications</Link>
-   <Link href="/support" style={[s.footerLink,{color:theme.accent}]}>Support</Link>
-   <Link href="/account" style={[s.footerLink,{color:theme.accent}]}>Account</Link>
+   <Link href="/workspaces" style={StyleSheet.flatten([s.footerLink,{color:theme.accent}])}>Switch workspace</Link>
+   <Link href="/notifications" style={StyleSheet.flatten([s.footerLink,{color:theme.accent}])}>Notifications</Link>
+   <Link href="/support" style={StyleSheet.flatten([s.footerLink,{color:theme.accent}])}>Support</Link>
+   <Link href="/account" style={StyleSheet.flatten([s.footerLink,{color:theme.accent}])}>Account</Link>
   </View>
  </ScrollView>
 }
