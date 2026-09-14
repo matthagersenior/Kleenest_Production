@@ -206,20 +206,21 @@ export default function BusinessHome(){
 
 function StatusBadge({label,strong=false}:{label:string;strong?:boolean}){return <View style={[s.statusBadge,strong&&s.statusBadgeStrong]}><Text style={[s.statusBadgeText,strong&&s.statusBadgeTextStrong]}>{label}</Text></View>}
 function HeroStat({label,value}:{label:string;value:any}){return <View style={s.heroStat}><Text style={s.heroStatValue}>{String(value)}</Text><Text style={s.heroStatLabel}>{label}</Text></View>}
-function Metric({label,value,detail}:{label:string;value:any;detail:string}){return <View style={s.metric}><Text style={s.metricValue}>{String(value)}</Text><Text style={s.metricLabel}>{label}</Text><Text style={s.metricDetail}>{detail}</Text></View>}
+function Metric({label,value,detail}:{label:string;value:any;detail:string}){const theme=useBusinessTheme();return <View style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.metricValue,{color:theme.ink}]}>{String(value)}</Text><Text style={[s.metricLabel,{color:theme.accent}]}>{label}</Text><Text style={[s.metricDetail,{color:theme.muted}]}>{detail}</Text></View>}
 function ActionTile({item,priority=false}:{item:Domain;priority?:boolean}){
+ const theme=useBusinessTheme();
  return <Link href={item.href as any} asChild>
-  <Pressable accessibilityRole="button" style={StyleSheet.flatten([s.actionTile,priority&&s.actionTilePriority])}>
+  <Pressable accessibilityRole="button" style={[s.actionTile,{backgroundColor:theme.surface,borderColor:theme.line},priority&&{backgroundColor:theme.accentSoft,borderColor:theme.accent}]}>
    <View style={s.actionHeader}>
-    <View style={[s.actionGlyph,priority&&s.actionGlyphPriority]}><Text style={[s.actionGlyphText,priority&&s.actionGlyphTextPriority]}>{item.glyph}</Text></View>
+    <View style={[s.actionGlyph,{backgroundColor:theme.accentSoft},priority&&{backgroundColor:theme.accent}]}><Text style={[s.actionGlyphText,{color:priority?theme.accentText:theme.accent}]}>{item.glyph}</Text></View>
     <View style={s.actionHeading}>
-     <View style={s.actionTitleRow}><Text style={s.actionTitle}>{item.title}</Text>{priority?<Text style={s.priorityTag}>PRIORITY</Text>:null}</View>
+     <View style={s.actionTitleRow}><Text style={[s.actionTitle,{color:theme.ink}]}>{item.title}</Text>{priority?<Text style={[s.priorityTag,{backgroundColor:theme.accent,color:theme.accentText}]}>PRIORITY</Text>:null}</View>
     </View>
    </View>
-   <Text style={s.actionBody}>{item.body}</Text>
+   <Text style={[s.actionBody,{color:theme.muted}]}>{item.body}</Text>
    <View style={s.actionFooter}>
-    <Text style={s.actionGroupLabel}>{item.group.toUpperCase()}</Text>
-    <View style={s.actionCta}><Text style={s.actionCtaText}>Open</Text><Text style={s.actionCtaArrow}>→</Text></View>
+    <Text style={[s.actionGroupLabel,{color:theme.muted}]}>{item.group.toUpperCase()}</Text>
+    <View style={[s.actionCta,{backgroundColor:theme.accentSoft}]}><Text style={[s.actionCtaText,{color:theme.accent}]}>Open</Text><Text style={[s.actionCtaArrow,{color:theme.accent}]}>→</Text></View>
    </View>
   </Pressable>
  </Link>;
