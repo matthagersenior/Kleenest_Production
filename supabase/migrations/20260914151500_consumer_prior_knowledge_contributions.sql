@@ -2,6 +2,25 @@
 -- adding another authenticated SECURITY DEFINER RPC. Prior knowledge stays
 -- historical, non-presence evidence and cannot become a check-in or fresh amenity signal.
 
+insert into public.progression_xp_actions(
+  action,base_xp,specialty,cooldown_seconds,max_per_day,enabled,metadata
+)
+values(
+  'prior_knowledge',8,'community_contributor',0,12,true,
+  jsonb_build_object(
+    'evidence_class','prior_knowledge',
+    'verification','historical_member_report',
+    'presence_required',false
+  )
+)
+on conflict(action) do update
+set base_xp=excluded.base_xp,
+    specialty=excluded.specialty,
+    cooldown_seconds=excluded.cooldown_seconds,
+    max_per_day=excluded.max_per_day,
+    enabled=excluded.enabled,
+    metadata=excluded.metadata;
+
 create or replace function public.consumer_record_discovery_evidence(
   p_location_id uuid,p_input jsonb
 )
@@ -243,7 +262,7 @@ begin
     end if;
   end if;
 
-  v_action:=case when v_amenity_count>0 then 'add_amenity' else 'helpful_contribution' end;
+  v_action:=case when v_prior then 'prior_knowledge' when v_amenity_count>0 then 'add_amenity' else 'helpful_contribution' end;
   v_xp:=public.record_progression_event_v2(
     v_action,
     jsonb_strip_nulls(jsonb_build_object(
