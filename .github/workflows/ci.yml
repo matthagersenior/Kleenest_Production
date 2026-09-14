@@ -167,6 +167,8 @@ jobs:
         run: node scripts/business-claim-verification-authority-audit.mjs
       - name: Theme family convergence
         run: node scripts/theme-family-audit.mjs
+      - name: Deep theme surface convergence
+        run: node scripts/deep-theme-surface-audit.mjs
       - name: Business Home mobile card polish
         run: node scripts/business-home-mobile-card-polish-audit.mjs
       - name: Fleet ad-hoc stop and geofence intelligence
