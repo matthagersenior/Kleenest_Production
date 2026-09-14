@@ -104,6 +104,49 @@ requireTokens('Consumer Preferences dark forms','apps/consumer-mobile/app/prefer
   'placeholderTextColor={theme.muted}',
 ]);
 
+requireTokens('Business Home dark surfaces','apps/business-mobile/app/index.tsx',[
+  'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.metricValue,{color:theme.ink}]}',
+  'style={[s.metricDetail,{color:theme.muted}]}',
+  'style={[s.actionTile,{backgroundColor:theme.surface,borderColor:theme.line}',
+]);
+requireTokens('Business Locations dark surfaces','apps/business-mobile/app/locations.tsx',[
+  'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.input,{flex:1,backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}',
+  'placeholderTextColor={theme.muted}',
+]);
+requireTokens('Business Operations dark surfaces','apps/business-mobile/app/operations.tsx',[
+  'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.metricValue,{color:theme.ink}]}',
+  'style={[s.factValue,{color:theme.ink}]}',
+]);
+requireTokens('Fleet Home dark surfaces','apps/fleet-mobile/app/index.tsx',[
+  'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.metricValue,{color:theme.ink}]}',
+  'style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+]);
+requireTokens('Fleet Planner dark surfaces','apps/fleet-mobile/app/planner.tsx',[
+  'style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.route,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.toggle,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}',
+]);
+requireTokens('Fleet Dispatch dark surfaces','apps/fleet-mobile/app/dispatch.tsx',[
+  'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.routeCard,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+]);
+requireTokens('Fleet Member dark surfaces','apps/fleet-mobile/app/member.tsx',[
+  'style={[s.consumerCard,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.infoCard,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.stop,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+]);
+requireTokens('Fleet Nearby dark surfaces','apps/fleet-mobile/app/nearby.tsx',[
+  'style={[s.searchCard,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.selectedCard,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.result,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+]);
+
 if(failures.length){
   console.error('Deep theme surface audit failed:');
   for(const failure of failures)console.error('- '+failure);
