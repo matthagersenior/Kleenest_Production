@@ -6,7 +6,6 @@ import { MarketingHome } from '../components/MarketingSite';
 import { hasCurrentPolicyAcceptance } from '../services/safety';
 import { useConsumerWebExperience } from '../services/webExperience';
 import { useConsumerTheme } from '../services/theme';
-import { captureConsumerCoreLoopEvent } from '../services/consumerTelemetry';
 
 const action=(route:string)=>()=>router.push(route as any);
 
@@ -14,7 +13,6 @@ export default function HomeScreen(){
   const theme=useConsumerTheme();
   const{ready:webGateReady,signedIn,installed,appActive}=useConsumerWebExperience();
   const[policyRequired,setPolicyRequired]=useState(false);
-  useEffect(()=>{captureConsumerCoreLoopEvent('app_open',null,{surface:'home'})},[]);
   useEffect(()=>{let active=true;if(!signedIn){setPolicyRequired(false);return()=>{active=false}}void hasCurrentPolicyAcceptance().then(accepted=>{if(active)setPolicyRequired(!accepted)}).catch(()=>{if(active)setPolicyRequired(false)});return()=>{active=false}},[signedIn]);
   if(Platform.OS==='web'&&!webGateReady)return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}/>;
   if(Platform.OS==='web'&&!appActive)return <MarketingHome/>;
