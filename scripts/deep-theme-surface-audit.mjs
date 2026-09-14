@@ -1,0 +1,77 @@
+import fs from 'node:fs';
+
+const failures=[];
+const read=path=>fs.readFileSync(path,'utf8');
+const requireTokens=(label,path,tokens)=>{
+  const source=read(path);
+  for(const token of tokens)if(!source.includes(token))failures.push(label+' missing '+token+' in '+path);
+};
+
+for(const [label,path,hook] of [
+  ['Consumer hook','apps/consumer-mobile/services/theme.ts','useConsumerTheme'],
+  ['Business hook','apps/business-mobile/services/theme.ts','useBusinessTheme'],
+  ['Fleet hook','apps/fleet-mobile/services/theme.ts','useFleetTheme'],
+  ['Platform hook','apps/platform-mobile/services/theme.ts','usePlatformTheme'],
+]){
+  requireTokens(label,path,[hook,'loadKleenestThemeMode','subscribeKleenestTheme','resolveKleenestTheme']);
+}
+
+for(const [label,path,hook] of [
+  ['Consumer primitives','apps/consumer-mobile/components/ConsumerUI.tsx','useConsumerTheme'],
+  ['Business primitives','apps/business-mobile/components/BusinessOS.tsx','useBusinessTheme'],
+  ['Fleet map surfaces','apps/fleet-mobile/components/FleetMap.tsx','useFleetTheme'],
+  ['KleenestOS primitives','apps/platform-mobile/components/KleenestOS.tsx','usePlatformTheme'],
+]){
+  requireTokens(label,path,[hook,'theme.surface','theme.line','theme.accent']);
+}
+
+const screenGroups=[
+  ['Consumer Home','apps/consumer-mobile/app/index.tsx','useConsumerTheme'],
+  ['Consumer Explore','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','useConsumerTheme'],
+  ['Consumer Location','apps/consumer-mobile/app/location/[id].tsx','useConsumerTheme'],
+  ['Consumer Profile','apps/consumer-mobile/app/profile.tsx','useConsumerTheme'],
+  ['Consumer Route','apps/consumer-mobile/app/route.tsx','useConsumerTheme'],
+  ['Business Home','apps/business-mobile/app/index.tsx','useBusinessTheme'],
+  ['Business Locations','apps/business-mobile/app/locations.tsx','useBusinessTheme'],
+  ['Business Operations','apps/business-mobile/app/operations.tsx','useBusinessTheme'],
+  ['Fleet Home','apps/fleet-mobile/app/index.tsx','useFleetTheme'],
+  ['Fleet Planner','apps/fleet-mobile/app/planner.tsx','useFleetTheme'],
+  ['Fleet Dispatch','apps/fleet-mobile/app/dispatch.tsx','useFleetTheme'],
+  ['Fleet Member','apps/fleet-mobile/app/member.tsx','useFleetTheme'],
+  ['Fleet Nearby','apps/fleet-mobile/app/nearby.tsx','useFleetTheme'],
+  ['KleenestOS Home','apps/platform-mobile/app/index.tsx','usePlatformTheme'],
+  ['KleenestOS Businesses','apps/platform-mobile/app/businesses.tsx','usePlatformTheme'],
+  ['KleenestOS Control','apps/platform-mobile/app/control.tsx','usePlatformTheme'],
+  ['KleenestOS Operations','apps/platform-mobile/app/operations.tsx','usePlatformTheme'],
+  ['KleenestOS Moderation','apps/platform-mobile/app/moderation.tsx','usePlatformTheme'],
+];
+for(const [label,path,hook] of screenGroups){
+  requireTokens(label,path,[hook,'theme.canvas']);
+}
+
+for(const [label,path] of [
+  ['Consumer Explore forms','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx'],
+  ['Consumer Location forms','apps/consumer-mobile/app/location/[id].tsx'],
+  ['Consumer Profile forms','apps/consumer-mobile/app/profile.tsx'],
+  ['Business Location forms','apps/business-mobile/app/locations.tsx'],
+  ['Fleet Planner forms','apps/fleet-mobile/app/planner.tsx'],
+  ['Fleet Dispatch forms','apps/fleet-mobile/app/dispatch.tsx'],
+  ['Fleet Nearby forms','apps/fleet-mobile/app/nearby.tsx'],
+  ['KleenestOS Business forms','apps/platform-mobile/app/businesses.tsx'],
+  ['KleenestOS Operations forms','apps/platform-mobile/app/operations.tsx'],
+]){
+  requireTokens(label,path,['theme.surfaceRaised','theme.line','theme.ink']);
+}
+
+requireTokens('Consumer Explore modal','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',['advancedModalCard','theme.surface','theme.line']);
+requireTokens('Consumer review cards','apps/consumer-mobile/app/location/[id].tsx',['reviewCard','theme.surface','theme.muted']);
+requireTokens('Business operational cards','apps/business-mobile/app/operations.tsx',['theme.surface','theme.warning']);
+requireTokens('Fleet low-light field surfaces','apps/fleet-mobile/app/member.tsx',['theme.surface','theme.accentSoft']);
+requireTokens('KleenestOS control cards','apps/platform-mobile/app/control.tsx',['useOSCardStyle','theme.surface']);
+
+if(failures.length){
+  console.error('Deep theme surface audit failed:');
+  for(const failure of failures)console.error('- '+failure);
+  process.exit(1);
+}
+console.log('Deep theme surface audit passed for shared primitives, high-traffic routes, forms, modal surfaces, and operator workspaces.');
