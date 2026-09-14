@@ -188,12 +188,13 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
   route: any;
   requestedAmenities: string[];
 }) {
+  const theme=useConsumerTheme();
   const fraction = Math.max(0, Math.min(1, Number(item.route_fraction || 0)));
   const ahead = route ? Math.max(0, Number(route.distanceMiles || 0) * fraction) : null;
   const eta = route ? Math.max(0, Number(route.durationMinutes || 0) * fraction) : null;
   const reviewCount = Number(item.review_count || 0);
   return (
-    <View style={[s.card, selected && s.cardActive]}>
+    <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}, selected && s.cardActive]}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ selected }}
@@ -204,34 +205,34 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         <View style={s.cardTop}>
           {item.consumer_photo_url?<Image source={{uri:String(item.consumer_photo_url)}} style={s.cardPhoto}/>:<PlaceIcon item={item} size={34} />}
           <View style={{ flex: 1 }}>
-            <Text style={s.cardTitle}>{item.name || 'Restroom location'}</Text>
+            <Text style={[s.cardTitle,{color:theme.ink}]}>{item.name || 'Restroom location'}</Text>
             {item.business_name ? <Text style={[s.meta,{color:theme.muted}]}>{item.business_name}</Text> : null}
             <Text style={[s.meta,{color:theme.muted}]}>
               {[item.address, item.city, item.state].filter(Boolean).join(', ') || 'Address unavailable'}
             </Text>
           </View>
-          <Text style={s.distance}>
+          <Text style={[s.distance,{color:theme.accent}]}>
             {route && ahead != null
               ? `~${ahead.toFixed(ahead < 10 ? 1 : 0)} mi ahead`
               : distanceLabel(item.distance_meters)}
           </Text>
         </View>
         {route && eta != null ? (
-          <Text style={s.routeLine}>
+          <Text style={[s.routeLine,{color:theme.muted}]}>
             ~{Math.round(eta)} min ahead · {distanceLabel(item.distance_to_route_meters)} from route
           </Text>
         ) : null}
         <RestroomSignals item={item} compact />
         <RequestedAmenityMatches item={item} requested={requestedAmenities} />
         {reviewCount > 0 ? <Text style={[s.meta,{color:theme.muted}]}>{reviewCount} review{reviewCount === 1 ? '' : 's'}</Text> : null}
-        <Text style={s.trustLine}>{trustSummaryLine(item)}</Text>
-        <Text style={s.hint}>
+        <Text style={[s.trustLine,{color:theme.ink}]}>{trustSummaryLine(item)}</Text>
+        <Text style={[s.hint,{color:theme.muted}]}>
           {selected ? 'Selected on map' : 'Tap this card to focus its map pin'}
         </Text>
       </Pressable>
       <View style={s.cardActionRow}>
         <Pressable accessibilityRole="button" accessibilityLabel="Check in at this location" style={[s.secondarySmall, s.cardAction]} onPress={onCheckIn}>
-          <Text style={s.secondaryText}>Check in</Text>
+          <Text style={[s.secondaryText,{color:theme.accent}]}>Check in</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -243,10 +244,10 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
           <Text style={[s.primaryText,{color:theme.accentText}]}>Start navigation</Text>
         </Pressable>
         <Pressable accessibilityRole="button" style={[s.secondarySmall, s.cardAction]} onPress={onAddToRoute}>
-          <Text style={s.secondaryText}>Add to route</Text>
+          <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
         </Pressable>
         <Pressable accessibilityRole="button" style={[s.secondarySmall, s.cardAction]} onPress={onDetails}>
-          <Text style={s.secondaryText}>Full details</Text>
+          <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
         </Pressable>
       </View>
     </View>
@@ -1038,7 +1039,7 @@ export default function AdaptiveExploreScreen() {
                 <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
                 <View style={s.actionRow}>
                   <Pressable accessibilityRole="button" accessibilityLabel="Check in at selected location" style={[s.secondarySmall, s.selectedAction]} onPress={() => void checkIn(selected)}>
-                    <Text style={s.secondaryText}>Check in</Text>
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>Check in</Text>
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
@@ -1050,10 +1051,10 @@ export default function AdaptiveExploreScreen() {
                     <Text style={[s.primaryText,{color:theme.accentText}]}>Start navigation</Text>
                   </Pressable>
                   <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => addToRoute(selected)}>
-                    <Text style={s.secondaryText}>Add to route</Text>
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
                   </Pressable>
                   <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => router.push(`/location/${idOf(selected)}`)}>
-                    <Text style={s.secondaryText}>Full details</Text>
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
                   </Pressable>
                 </View>
               </View>
