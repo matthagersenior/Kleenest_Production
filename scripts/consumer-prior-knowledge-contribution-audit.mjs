@@ -1,0 +1,57 @@
+import fs from 'node:fs';
+
+const failures=[];
+const required=[
+  'supabase/migrations/20260914151500_consumer_prior_knowledge_contributions.sql',
+  'apps/consumer-mobile/services/priorKnowledge.ts',
+  'apps/consumer-mobile/app/knowledge.tsx',
+  'apps/consumer-mobile/app/location/[id].tsx',
+  'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
+  'src/services/community.js',
+  'src/runtime/LocationPage.jsx',
+];
+
+for(const file of required){
+  if(!fs.existsSync(file)) failures.push(`missing prior-knowledge feature file: ${file}`);
+}
+
+if(!failures.length){
+  const read=file=>fs.readFileSync(file,'utf8');
+  const migration=read(required[0]);
+  const service=read(required[1]);
+  const screen=read(required[2]);
+  const location=read(required[3]);
+  const explore=read(required[4]);
+  const webService=read(required[5]);
+  const webLocation=read(required[6]);
+
+  for(const token of [
+    'consumer_submit_prior_knowledge',
+    "'evidence_class','prior_knowledge'",
+    "'presence_verified',false",
+    "'visit_verified',false",
+    "'freshness_eligible',false",
+    "'helpful_contribution'",
+    "'consumer_prior_knowledge'",
+  ]) if(!migration.includes(token)) failures.push(`prior-knowledge migration missing token: ${token}`);
+
+  for(const forbidden of ['insert into public.check_ins','kleenest_map_check_in','insert into public.location_amenity_observations']){
+    if(migration.toLowerCase().includes(forbidden)) failures.push(`prior knowledge must not create verified/current evidence: ${forbidden}`);
+  }
+
+  if(!service.includes("rpc('consumer_submit_prior_knowledge'")) failures.push('native prior-knowledge service must call the dedicated RPC.');
+  if(!screen.includes('I Know This Place')) failures.push('native prior-knowledge screen must explain the I Know This Place path.');
+  if(screen.includes('expo-location')||screen.includes('mobileCheckIn')) failures.push('native prior-knowledge screen must not request location or invoke check-in.');
+  if(!screen.includes('not a check-in')||!screen.includes('verified current visit')) failures.push('native prior-knowledge screen must clearly distinguish historical knowledge from verified presence.');
+  if(!location.includes('I know this place')||!location.includes("pathname:'/knowledge'")) failures.push('native location detail must expose I know this place.');
+  if(!explore.includes('onKnow')||!explore.includes('I know this place')||!explore.includes("pathname: '/knowledge'")) failures.push('native Explore cards and selected map location must expose I know this place.');
+  if(!webService.includes('submitPriorKnowledge')||!webService.includes("rpc('consumer_submit_prior_knowledge'")) failures.push('web community service must expose prior-knowledge submission.');
+  if(!webLocation.includes('I know this place')||!webLocation.includes('PRIOR KNOWLEDGE')) failures.push('web location page must expose a separate prior-knowledge form.');
+}
+
+if(failures.length){
+  console.error('Consumer prior-knowledge contribution audit failed:');
+  for(const failure of failures) console.error(`- ${failure}`);
+  process.exit(1);
+}
+console.log('Consumer prior-knowledge contribution audit passed.');
