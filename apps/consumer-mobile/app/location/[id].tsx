@@ -55,7 +55,8 @@ export default function LocationDetailScreen(){
         getLocationPresentation(locationId).catch(()=>null),
         getLocationNetworkStatus(locationId).catch(()=>null),
       ]);
-      setPlace(presentation?{...nextPlace,...presentation}:nextPlace);
+      const presented=presentation?{...nextPlace,...presentation}:nextPlace;
+      setPlace(nextNetwork?{...presented,network:nextNetwork,network_verified:nextNetwork.network_verified,business_claimed:nextNetwork.business_claimed,network_state:nextNetwork.network_state}:presented);
       setReviews(nextReviews);
       setCheckInId(eligible?.id||null);
       setCheckInAt(eligible?.checked_in_at||nextPresence?.entered_at||null);
