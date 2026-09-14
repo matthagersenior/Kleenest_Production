@@ -39,7 +39,7 @@ import {
   writeNearbyCache,
   writeNearbyContinuity,
 } from '../services/nearbyCache';
-import { captureConsumerDiscovery, captureConsumerRouteIntent } from '../services/consumerTelemetry';
+import { captureConsumerCoreLoopEvent, captureConsumerDiscovery, captureConsumerRouteIntent } from '../services/consumerTelemetry';
 import { listNearbyProgressionOpportunities } from '../services/discoveryProgression';
 import { attachLocationPresentations } from '../services/locationPresentation';
 import { recordConsumerPresenceAt, refreshConsumerPresence, type ConsumerPresence } from '../services/presence';
@@ -211,25 +211,22 @@ function CheckInStatus({ feedback }: { feedback?: CheckInActionFeedback }) {
   );
 }
 
-function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddToRoute, onKnow, onDetails, route, requestedAmenities, checkInFeedback }: {
+function ResultCard({ item, selected, onSelect, onDirections, onReview, onAddToRoute, onDetails, route, requestedAmenities }: {
   item: any;
   selected: boolean;
   onSelect: () => void;
   onDirections: () => void;
-  onCheckIn: () => void;
+  onReview: () => void;
   onAddToRoute: () => void;
-  onKnow: () => void;
   onDetails: () => void;
   route: any;
   requestedAmenities: string[];
-  checkInFeedback?: CheckInActionFeedback;
 }) {
   const theme=useConsumerTheme();
   const fraction = Math.max(0, Math.min(1, Number(item.route_fraction || 0)));
   const ahead = route ? Math.max(0, Number(route.distanceMiles || 0) * fraction) : null;
   const eta = route ? Math.max(0, Number(route.durationMinutes || 0) * fraction) : null;
   const reviewCount = Number(item.review_count || 0);
-  const checkInBusy=checkInFeedback?.status==='checking';
   return (
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}, selected && s.cardActive]}>
       <Pressable
@@ -269,29 +266,25 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         </Text>
       </Pressable>
       <View style={s.cardActionRow}>
-        <Pressable accessibilityRole="button" accessibilityLabel={item.active_check_in?'Already checked in at this location':checkInBusy?'Checking your location':item.visit_verification_available?'Verify your detected visit at this location':'Check in at this location'} accessibilityState={{disabled:Boolean(item.active_check_in)||checkInBusy,busy:checkInBusy}} disabled={Boolean(item.active_check_in)||checkInBusy} style={[s.secondarySmall, s.cardAction,(item.active_check_in||checkInBusy)&&s.disabled]} onPress={onCheckIn}>
-          <Text style={[s.secondaryText,{color:theme.accent}]}>{item.active_check_in?'Checked in ✓':checkInBusy?'Checking location…':item.visit_verification_available?'Verify visit':'Check in'}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Review this bathroom" style={[s.secondarySmall,s.cardAction]} onPress={onReview}>
+          <Text style={[s.secondaryText,{color:theme.accent}]}>{item.visit_verification_available?'Review this visit':'Review'}</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Start directions to this location"
+          accessibilityLabel="Go to this location"
           disabled={!hasCoordinates(item)}
           style={[s.primarySmall, s.cardAction, !hasCoordinates(item) && s.disabled]}
           onPress={onDirections}
         >
-          <Text style={[s.primaryText,{color:theme.accentText}]}>Start navigation</Text>
+          <Text style={[s.primaryText,{color:theme.accentText}]}>Go</Text>
         </Pressable>
         <Pressable accessibilityRole="button" style={[s.secondarySmall, s.cardAction]} onPress={onAddToRoute}>
           <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Share what I already know about this location" style={[s.secondarySmall, s.cardAction]} onPress={onKnow}>
-          <Text style={[s.secondaryText,{color:theme.accent}]}>I know this place</Text>
-        </Pressable>
         <Pressable accessibilityRole="button" style={[s.secondarySmall, s.cardAction]} onPress={onDetails}>
-          <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
+          <Text style={[s.secondaryText,{color:theme.accent}]}>Details</Text>
         </Pressable>
       </View>
-      <CheckInStatus feedback={checkInFeedback} />
     </View>
   );
 }
@@ -413,6 +406,7 @@ export default function AdaptiveExploreScreen() {
 
   function selectRow(row: any) {
     const id = idOf(row);
+    if(id)captureConsumerCoreLoopEvent('place_selected',id,{source:'explore'});
     setSelectedId(id);
     if (hasCoordinates(row)) {
       setMapCenter([Number(row.longitude), Number(row.latitude)]);
@@ -568,6 +562,7 @@ export default function AdaptiveExploreScreen() {
     setEffectiveRadiusMeters(result.effectiveRadiusMeters);setAttemptedRadiiMeters(result.attemptedRadiiMeters);setCached(false);setSelectedId(preservedId);
 
     captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:enriched.length,search:rawQuery,amenityCount:selectedAmenityNames.length});
+    captureConsumerCoreLoopEvent('nearby_results_shown',null,{resultCount:enriched.length,radiusMeters:result.effectiveRadiusMeters,search:Boolean(rawQuery),cached:false});
 
     if (!areaMatch&&!query && !selectedAmenityNames.length && !result.expanded && enriched.length) {
       void writeNearbyCache(enriched,{selectedId:preservedId,origin:nextOrigin,radiusMeters:radius});
@@ -615,6 +610,7 @@ export default function AdaptiveExploreScreen() {
     const livePresence=await recordConsumerPresenceAt(current.coords.latitude,current.coords.longitude).catch(()=>null);
     const enriched = attachPresence(await enrichProgression(enrichedBase,current.coords.latitude,current.coords.longitude,progressionRadius),livePresence);
     setRows(enriched);
+    captureConsumerCoreLoopEvent('nearby_results_shown',null,{resultCount:enriched.length,mode:'route',cached:false});
     setRoute(built);
     setSelectedId('');
     setCached(false);
@@ -685,7 +681,10 @@ export default function AdaptiveExploreScreen() {
   async function directions(row: any) {
     if (!hasCoordinates(row)) return;
     const id = idOf(row);
-    if (id) captureConsumerRouteIntent(id);
+    if (id) {
+      captureConsumerRouteIntent(id);
+      captureConsumerCoreLoopEvent('navigation_started',id,{source:'explore'});
+    }
     await Linking.openURL(navigateUrl(row));
   }
 
@@ -702,17 +701,17 @@ export default function AdaptiveExploreScreen() {
       const result:any=await mobileCheckIn(id,current.coords.latitude,current.coords.longitude);
       const distance=result?.distance_meters!=null?` · ${Math.round(Number(result.distance_meters))} m from the location`:'';
       const successMessage=result?.already_checked_in
-        ? `You're already checked in at ${placeName}. Kleenest confirmed you're still inside the geofence${distance}.`
-        : `Checked in at ${placeName}. GPS + geofence verified${distance}.`;
+        ? `You're already checked in at ${placeName}. Your location is still confirmed${distance}.`
+        : `Checked in at ${placeName}. Location confirmed${distance}.`;
       setRows(currentRows=>currentRows.map(item=>idOf(item)===id?{...item,active_check_in:true,visit_verification_available:true}:item));
       setMessage(successMessage);
       setCheckInFeedback(current=>({...current,[id]:{status:'success',message:successMessage}}));
     }catch(error:any){
       const detail=String(error?.message||'');
       const failureMessage=detail.includes('OUTSIDE_GEOFENCE')
-        ? `Get closer to ${placeName} to check in. Kleenest only verifies GPS check-ins inside the location geofence.`
+        ? `Get closer to ${placeName} to check in. Kleenest can confirm a check-in only when your phone is at the location.`
         : detail.includes('LEAVE_REQUIRED_BEFORE_REPEAT_CHECK_IN')
-          ? `You're already checked in at ${placeName} and haven't left its geofence yet.`
+          ? `You're already checked in at ${placeName}. A new check-in becomes available after a later visit.`
           : detail&&detail.length<120&&!/^[A-Z0-9_: =.-]+$/.test(detail)
             ? detail
             : 'Check-in could not be completed. Please try again.';
@@ -1113,26 +1112,26 @@ export default function AdaptiveExploreScreen() {
                 {selected.network?.network_verified&&!selected.network?.business_claimed?<Text style={[s.networkSelectedLine,{color:theme.accent}]}>K✓ Verified by the Kleenest Network · {networkEvidenceSummary(selected.network)}</Text>:null}
                 <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
                 <View style={s.actionRow}>
-                  <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking your location':selected.visit_verification_available?'Verify your detected visit at selected location':'Check in at selected location'} accessibilityState={{disabled:Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking',busy:checkInFeedback[idOf(selected)]?.status==='checking'}} disabled={Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking'} style={[s.secondarySmall, s.selectedAction,(selected.active_check_in||checkInFeedback[idOf(selected)]?.status==='checking')&&s.disabled]} onPress={() => void checkIn(selected)}>
-                    <Text style={[s.secondaryText,{color:theme.accent}]}>{selected.active_check_in?'Checked in ✓':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking location…':selected.visit_verification_available?'Verify visit':'Check in'}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Review this bathroom" style={[s.secondarySmall,s.selectedAction]} onPress={() => router.push(`/review/${idOf(selected)}`)}>
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>{selected.visit_verification_available?'Review this visit':'Review'}</Text>
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Start directions to this location"
+                    accessibilityLabel="Go to this location"
                     style={[s.primarySmall, s.selectedAction, !hasCoordinates(selected) && s.disabled]}
                     disabled={!hasCoordinates(selected)}
                     onPress={() => void directions(selected)}
                   >
-                    <Text style={[s.primaryText,{color:theme.accentText}]}>Start navigation</Text>
+                    <Text style={[s.primaryText,{color:theme.accentText}]}>Go</Text>
                   </Pressable>
                   <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => addToRoute(selected)}>
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
                   </Pressable>
-                  <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => contributeKnowledge(selected)}>
-                    <Text style={[s.secondaryText,{color:theme.accent}]}>I know this place</Text>
-                  </Pressable>
                   <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => router.push(`/location/${idOf(selected)}`)}>
-                    <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>Details</Text>
+                  </Pressable>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Check in at selected location" style={[s.secondarySmall,s.selectedAction,(selected.active_check_in||checkInFeedback[idOf(selected)]?.status==='checking')&&s.disabled]} disabled={Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking'} onPress={() => void checkIn(selected)}>
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>{selected.active_check_in?'Checked in ✓':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking…':'Check in'}</Text>
                   </Pressable>
                 </View>
                 <CheckInStatus feedback={checkInFeedback[idOf(selected)]} />
@@ -1165,13 +1164,11 @@ export default function AdaptiveExploreScreen() {
               selected={idOf(item) === selectedId}
               onSelect={() => selectRow(item)}
               onDirections={() => void directions(item)}
-              onCheckIn={() => void checkIn(item)}
+              onReview={() => router.push(`/review/${idOf(item)}`)}
               onAddToRoute={() => addToRoute(item)}
-              onKnow={() => contributeKnowledge(item)}
               onDetails={() => router.push(`/location/${idOf(item)}`)}
               route={mode === 'route' ? route : null}
               requestedAmenities={selectedAmenityNames}
-              checkInFeedback={checkInFeedback[idOf(item)]}
             />
           </View>
         )}
