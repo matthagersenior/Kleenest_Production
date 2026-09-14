@@ -74,6 +74,12 @@ requireTokens('Consumer web-app navigation persistence','apps/consumer-mobile/ap
   'appActive',
   "const publicWeb=Platform.OS==='web'&&!appActive",
 ]);
+requireTokens('Consumer web-app session persistence','apps/consumer-mobile/services/webExperience.ts',[
+  'APP_SESSION_KEY',
+  'sessionStorage',
+  'appSession',
+  'markConsumerAppSession',
+]);
 requireTokens('Consumer Profile dark contrast','apps/consumer-mobile/app/profile.tsx',[
   'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.metricValue,{color:theme.ink}]}',
