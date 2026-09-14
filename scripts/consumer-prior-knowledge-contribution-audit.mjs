@@ -33,7 +33,9 @@ if(!failures.length){
     "'presence_verified',false",
     "'visit_verified',false",
     "'freshness_eligible',false",
-    "'helpful_contribution'",
+    "'prior_knowledge',8",
+    "'community_contributor'",
+    "v_action:=case when v_prior then 'prior_knowledge'",
     "'consumer_prior_knowledge'",
   ]) if(!migration.includes(token)) failures.push(`prior-knowledge migration missing token: ${token}`);
 
@@ -49,10 +51,12 @@ if(!failures.length){
   if(screen.includes('expo-location')||screen.includes('mobileCheckIn')) failures.push('native prior-knowledge screen must not request location or invoke check-in.');
   if(!layout.includes('<Tabs.Screen name="knowledge" options={{ href:null')) failures.push('prior-knowledge route must stay hidden from the primary consumer tab bar.');
   if(!screen.includes('not a check-in')||!screen.includes('verified current visit')) failures.push('native prior-knowledge screen must clearly distinguish historical knowledge from verified presence.');
+  if(!screen.includes('xp_awarded')) failures.push('native prior-knowledge success state must surface the canonical XP award field.');
   if(!location.includes('I know this place')||!location.includes("pathname:'/knowledge'")) failures.push('native location detail must expose I know this place.');
   if(!explore.includes('onKnow')||!explore.includes('I know this place')||!explore.includes("pathname: '/knowledge'")) failures.push('native Explore cards and selected map location must expose I know this place.');
   if(!webService.includes('submitPriorKnowledge')||!webService.includes("rpc('consumer_record_discovery_evidence'")) failures.push('web community service must expose prior-knowledge submission.');
   if(!webLocation.includes('I know this place')||!webLocation.includes('PRIOR KNOWLEDGE')) failures.push('web location page must expose a separate prior-knowledge form.');
+  if(!webLocation.includes('xp_awarded')) failures.push('web prior-knowledge success state must surface the canonical XP award field.');
 }
 
 if(failures.length){
