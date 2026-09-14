@@ -117,6 +117,69 @@ requireTokens('Consumer Early Access theme selector','apps/consumer-mobile/app/p
   "backgroundColor:earlyAccess?'#0f172a'",
 ]);
 
+requireTokens('Seasonal progression theme core','packages/mobile-core/src/theme.ts',[
+  "'fall'","'halloween'","'thanksgiving'","'christmas'",
+  'KLEENEST_SEASONAL_THEME_MODES',
+  'seasonalEditions',
+  "canvas:'#0b0710'",
+  "canvas:'#07130f'",
+]);
+requireTokens('Consumer seasonal entitlement selector','apps/consumer-mobile/app/preferences.tsx',[
+  'getProgressionRewards',
+  'allowedSeasonal',
+  'visibleThemeOptions',
+  'isKleenestSeasonalThemeMode',
+  'UNLOCKED ·',
+]);
+requireTokens('Consumer seasonal runtime enforcement','apps/consumer-mobile/app/_layout.tsx',[
+  'isKleenestSeasonalThemeMode',
+  'getProgressionRewards',
+  "setKleenestThemeMode('default')",
+]);
+requireTokens('Consumer seasonal reward vault','apps/consumer-mobile/app/progress.tsx',[
+  'SEASONAL REWARD VAULT',
+  'TRUST DISCOVERY',
+  'PUBLIC SHOWCASE',
+  'showcaseSlots',
+]);
+requireTokens('Community public trust identity','apps/consumer-mobile/app/social.tsx',[
+  'listProgressionIdentities',
+  'TRUST ·',
+  'progressionIdentity',
+]);
+requireTokens('Location reviewer trust identity','apps/consumer-mobile/app/location/[id].tsx',[
+  'listProgressionIdentities',
+  'trustDiscoveryXp',
+  'item.progressionIdentity?.trust_rank',
+]);
+requireTokens('Contributor gated showcase','apps/consumer-mobile/app/contributor/[id].tsx',[
+  'progression_identity',
+  'PUBLIC TRUST IDENTITY',
+  'Trust showcase',
+  'showcaseSlots',
+]);
+requireTokens('KleenestOS seasonal reward control','apps/platform-mobile/app/progression.tsx',[
+  'SEASONAL REWARD VAULT',
+  'grantOwnerProgressionReward',
+  'revokeOwnerProgressionReward',
+  'OWNER ONLY',
+]);
+requireTokens('Seasonal reward migrations','supabase/migrations/20260914150017_seasonal_progression_reward_vault.sql',[
+  'progression_reward_catalog',
+  'review_trust_discovery_awards',
+  'consumer_progression_rewards',
+  'seasonal-winter-guardian-crest',
+]);
+requireTokens('Seasonal reward hardening','supabase/migrations/20260914150246_harden_seasonal_progression_reward_vault.sql',[
+  'is_actual_platform_owner',
+  'progression_reward_catalog_deny_direct',
+  'v_daily_cap',
+]);
+requireTokens('Public progression identity migration','supabase/migrations/20260914150712_community_progression_public_identity.sql',[
+  'community_progression_identities',
+  'users_have_block_relationship',
+]);
+
 requireTokens('Business Home dark surfaces','apps/business-mobile/app/index.tsx',[
   'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.metricValue,{color:theme.ink}]}',
