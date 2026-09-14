@@ -24,9 +24,10 @@ export type PriorKnowledgeInput = {
 };
 
 export async function submitPriorKnowledge(locationId: string, input: PriorKnowledgeInput) {
-  const { data, error } = await getKleenestSupabaseClient().rpc('consumer_submit_prior_knowledge', {
+  const { data, error } = await getKleenestSupabaseClient().rpc('consumer_record_discovery_evidence', {
     p_location_id: locationId,
     p_input: {
+      method: 'prior_knowledge',
       knowledge_recency: input.knowledgeRecency,
       facts: [...new Set(input.facts.map((value) => value.trim()).filter(Boolean))],
       cleanliness_tendency: input.cleanlinessTendency,
