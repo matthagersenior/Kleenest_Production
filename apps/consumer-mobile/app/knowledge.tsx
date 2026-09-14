@@ -120,7 +120,7 @@ const s=StyleSheet.create({
   eyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.4},
   title:{fontSize:28,lineHeight:32,fontWeight:'900'},
   place:{fontSize:16,fontWeight:'900'},
-  body:{fontSize:13,lineHeight:19,fontWeight:'650'},
+  body:{fontSize:13,lineHeight:19,fontWeight:'600'},
   guardrail:{padding:14,borderRadius:18,borderWidth:1,gap:4},
   guardrailTitle:{fontSize:16,fontWeight:'900'},
   card:{padding:16,borderRadius:20,borderWidth:1,gap:11},
