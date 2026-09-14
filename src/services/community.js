@@ -15,6 +15,21 @@ export async function createLocationReview({ locationId, checkInId = null, stars
   if (error) throw error;
   return data;
 }
+export async function submitPriorKnowledge(locationId, input = {}) {
+  const { data, error } = await getSupabase().rpc('consumer_submit_prior_knowledge', {
+    p_location_id: locationId,
+    p_input: {
+      knowledge_recency: input.knowledgeRecency || 'unknown',
+      facts: [...new Set((input.facts || []).map((value) => String(value).trim()).filter(Boolean))],
+      cleanliness_tendency: input.cleanlinessTendency || 'unknown',
+      access_notes: String(input.accessNotes || '').trim() || null,
+      notes: String(input.notes || '').trim() || null,
+    },
+  });
+  if (error) throw error;
+  return data || {};
+}
+
 export async function toggleReviewLike(reviewId) {
   const { data, error } = await getSupabase().rpc('toggle_review_like', { p_review_id: reviewId });
   if (error) throw error;
