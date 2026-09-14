@@ -54,6 +54,8 @@ if(!failures.length){
   if(!screen.includes('not a check-in')||!screen.includes('verified current visit')) failures.push('native prior-knowledge screen must clearly distinguish historical knowledge from verified presence.');
   if(!screen.includes('xp_awarded')) failures.push('native prior-knowledge success state must surface the canonical XP award field.');
   if(!location.includes('I know this place')||!location.includes("pathname:'/knowledge'")) failures.push('native location detail must expose I know this place.');
+  if(!location.includes('Not here right now?')||!location.includes('Share prior knowledge instead')) failures.push('native verified-review dead end must offer the prior-knowledge path.');
+  if(!location.includes('No verified reviews yet')||!location.includes('Know this place?')) failures.push('native empty review state must distinguish verified reviews from prior knowledge.');
   if(!explore.includes('onKnow')||!explore.includes('I know this place')||!explore.includes("pathname: '/knowledge'")) failures.push('native Explore cards and selected map location must expose I know this place.');
   if(!webService.includes('submitPriorKnowledge')||!webService.includes("rpc('consumer_record_discovery_evidence'")) failures.push('web community service must expose prior-knowledge submission.');
   if(!webLocation.includes('I know this place')||!webLocation.includes('PRIOR KNOWLEDGE')) failures.push('web location page must expose a separate prior-knowledge form.');
