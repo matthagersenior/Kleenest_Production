@@ -180,6 +180,64 @@ requireTokens('Public progression identity migration','supabase/migrations/20260
   'users_have_block_relationship',
 ]);
 
+const consumerDeepThemeRoutes=[
+  'apps/consumer-mobile/app/signup.tsx',
+  'apps/consumer-mobile/app/access.tsx',
+  'apps/consumer-mobile/app/account-deletion.tsx',
+  'apps/consumer-mobile/app/delete-account.tsx',
+  'apps/consumer-mobile/app/activity.tsx',
+  'apps/consumer-mobile/app/assistant.tsx',
+  'apps/consumer-mobile/app/blocked-users.tsx',
+  'apps/consumer-mobile/app/discover.tsx',
+  'apps/consumer-mobile/app/family.tsx',
+  'apps/consumer-mobile/app/game/[code].tsx',
+  'apps/consumer-mobile/app/games.tsx',
+  'apps/consumer-mobile/app/index.tsx',
+  'apps/consumer-mobile/app/install.tsx',
+  'apps/consumer-mobile/app/live-network.tsx',
+  'apps/consumer-mobile/app/location/[id].tsx',
+  'apps/consumer-mobile/app/membership.tsx',
+  'apps/consumer-mobile/app/messages.tsx',
+  'apps/consumer-mobile/app/notifications.tsx',
+  'apps/consumer-mobile/app/offline.tsx',
+  'apps/consumer-mobile/app/play.tsx',
+  'apps/consumer-mobile/app/preferences.tsx',
+  'apps/consumer-mobile/app/profile.tsx',
+  'apps/consumer-mobile/app/progress.tsx',
+  'apps/consumer-mobile/app/qr.tsx',
+  'apps/consumer-mobile/app/route.tsx',
+  'apps/consumer-mobile/app/safety.tsx',
+  'apps/consumer-mobile/app/saved.tsx',
+  'apps/consumer-mobile/app/social.tsx',
+  'apps/consumer-mobile/app/support.tsx',
+  'apps/consumer-mobile/components/ConsumerUI.tsx',
+  'apps/consumer-mobile/components/LegalDocument.tsx',
+];
+for(const path of consumerDeepThemeRoutes){
+  requireTokens('Consumer deep-theme coverage',path,['useConsumerTheme']);
+}
+requireTokens('Join Kleenest full theme coverage','apps/consumer-mobile/app/signup.tsx',[
+  'theme.canvas','theme.surface','theme.surfaceRaised','theme.line','theme.ink','theme.muted','theme.accentSoft'
+]);
+requireTokens('Shared Consumer theme-native primitives','apps/consumer-mobile/components/ConsumerUI.tsx',[
+  'theme.surfaceRaised','theme.accentSoft','theme.line','theme.ink'
+]);
+requireTokens('Shared legal full theme coverage','apps/consumer-mobile/components/LegalDocument.tsx',[
+  'theme.canvas','theme.surface','theme.line','theme.ink','theme.muted','theme.accentSoft'
+]);
+requireTokens('Progression nested theme coverage','apps/consumer-mobile/app/progress.tsx',[
+  'backgroundColor:theme.surfaceRaised','backgroundColor:theme.surface','backgroundColor:theme.accentSoft',
+  'borderColor:theme.line','PUBLIC SHOWCASE','SEASONAL REWARD VAULT'
+]);
+requireTokens('Location nested theme coverage','apps/consumer-mobile/app/location/[id].tsx',[
+  'backgroundColor:theme.surfaceRaised','backgroundColor:theme.surface','backgroundColor:theme.accentSoft',
+  'borderColor:theme.line','placeholderTextColor={theme.muted}'
+]);
+requireTokens('Community helper theme coverage','apps/consumer-mobile/app/social.tsx',[
+  'function Avatar','const theme=useConsumerTheme()','function TrustLine','function Stat',
+  'backgroundColor:theme.surface','backgroundColor:theme.accentSoft'
+]);
+
 requireTokens('Business Home dark surfaces','apps/business-mobile/app/index.tsx',[
   'style={[s.metric,{backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.metricValue,{color:theme.ink}]}',
