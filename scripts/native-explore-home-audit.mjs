@@ -5,12 +5,20 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 
 const index = read('apps/consumer-mobile/app/index.tsx');
 const layout = read('apps/consumer-mobile/app/_layout.tsx');
+const home = read('apps/consumer-mobile/app/home.tsx');
 const explore = read('apps/consumer-mobile/features/AdaptiveExploreScreen.tsx');
 
 assert.match(index, /Redirect/);
 assert.match(index, /href=["']\/explore["']/);
 assert.match(layout, /initialRouteName=\{Platform\.OS==='web'\?'index':'explore'\}/);
 assert.match(layout, /name="index" options=\{\{[^}]*href:null/s);
+assert.match(layout, /name="home" options=\{\{[^}]*title:'Home'/s);
+assert.doesNotMatch(layout, /name="home" options=\{\{[^}]*href:null/s);
+assert.match(home, /export default function HomeScreen/);
+assert.match(home, /RelevanceHeroCarousel/);
+assert.match(home, /QUICK ACTIONS/);
+assert.match(home, /OPEN KLEENEST AI/);
+assert.match(home, /OPEN COMMUNITY/);
 
 assert.doesNotMatch(explore, /Find a trusted bathroom\./);
 assert.match(explore, /useWindowDimensions/);
