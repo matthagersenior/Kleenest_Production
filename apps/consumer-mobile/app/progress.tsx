@@ -6,6 +6,7 @@ import { getMobileProgressionDashboard,loadKleenestThemeMode,resolveKleenestThem
 import { getProgressionOverviewV2,getProgressionWorld,listActiveObjectivesV2,listNearbyProgressionOpportunities,listProgressionRankingsV2 } from '../services/discoveryProgression';
 import { clearTrustMission,readTrustMission,type TrustMission } from '../services/trustMissions';
 import { palette } from '../components/ConsumerUI';
+import { SponsoredSlot } from '../components/SponsoredSlot';
 import { badgeCollectionTier,divisionForXp,divisionProgress,nextDivisionForXp } from '../services/engagementMetaGame';
 import { useConsumerTheme } from '../services/theme';
 
@@ -76,6 +77,8 @@ export default function ProgressScreen(){
    <View style={s.track}><View style={[s.fill,{backgroundColor:theme.accent,width:(String(Math.round(pct*100))+'%') as any}]} /></View>
    <Text style={s.heroMeta}>{nextThreshold>totalXp?(nextThreshold-totalXp).toLocaleString()+' XP to Level '+Number((level.level||1)+1):'Current top threshold reached'}{level.unlock_text?' · '+level.unlock_text:''}</Text>
   </View>
+
+  <SponsoredSlot surface="progress" contextClass="progress_between_sections"/>
 
   <View style={s.actions}><Pressable style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>router.push('/discover')}><Text style={[s.primaryText,{color:theme.accentText}]}>Find useful work nearby</Text></Pressable><Pressable style={[s.secondary,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/games')}><Text style={[s.secondaryText,{color:theme.accent}]}>Game Center</Text></Pressable></View>
 
