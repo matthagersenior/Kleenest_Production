@@ -1,0 +1,22 @@
+name: Seasonal theme progression
+
+on:
+  pull_request:
+    paths:
+      - 'apps/consumer-mobile/app/preferences.tsx'
+      - 'apps/consumer-mobile/app/progress.tsx'
+      - 'apps/platform-mobile/app/progression.tsx'
+      - 'supabase/migrations/**'
+      - 'scripts/seasonal-theme-progression-audit.mjs'
+      - '.github/workflows/seasonal-theme-progression.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/seasonal-theme-progression-audit.mjs
