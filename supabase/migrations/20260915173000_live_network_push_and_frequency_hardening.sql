@@ -440,7 +440,7 @@ begin
   if auth.uid() is null then raise exception 'Authentication required'; end if;
   if nullif(normalized_token,'') is null then raise exception 'Push token is required'; end if;
   if p_platform not in ('ios','android') then raise exception 'Unsupported push platform'; end if;
-  if normalized_token !~ '^Expo(nent)?PushToken\\[[^]]+\\]$' then raise exception 'Invalid Expo push token'; end if;
+  if normalized_token !~ '^Expo(nent)?PushToken\[[^]]+\]$' then raise exception 'Invalid Expo push token'; end if;
 
   update public.notification_native_push_tokens
   set active=false,updated_at=pg_catalog.now()
