@@ -201,14 +201,15 @@ function RequestedAmenityMatches({ item, requested, compact = false }: {
   requested: string[];
   compact?: boolean;
 }) {
+  const theme=useConsumerTheme();
   const matches = matchedRequestedAmenities(item, requested);
   if (!matches.length) return null;
   return (
     <View style={s.amenityMatchRow}>
-      {!compact ? <Text style={s.amenityMatchLabel}>MATCHED</Text> : null}
+      {!compact ? <Text style={[s.amenityMatchLabel,{color:theme.muted}]}>MATCHED</Text> : null}
       {matches.slice(0, compact ? 3 : 5).map((name) => (
-        <View key={name} style={s.amenityMatchPill}>
-          <Text style={s.amenityMatchText}>✓ {name}</Text>
+        <View key={name} style={[s.amenityMatchPill,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}>
+          <Text style={[s.amenityMatchText,{color:theme.accent}]}>✓ {name}</Text>
         </View>
       ))}
     </View>
@@ -239,12 +240,12 @@ function CheckInStatus({ feedback, onReview }: { feedback?: CheckInActionFeedbac
       style={[
         s.checkInStatus,
         {
-          backgroundColor:isError?'#fff0f0':theme.accentSoft,
-          borderColor:isError?'#e2a8a8':theme.line,
+          backgroundColor:isError?theme.surfaceRaised:theme.accentSoft,
+          borderColor:isError?theme.danger:theme.line,
         },
       ]}
     >
-      <Text style={[s.checkInStatusText,{color:isError?'#8f1f1f':theme.accent}]}>
+      <Text style={[s.checkInStatusText,{color:isError?theme.danger:theme.accent}]}>
         {isChecking?'⌖ ':feedback.status==='success'?'✓ ':'! '}{feedback.message}
       </Text>
       {windowLabel?<Text style={[s.checkInStatusMeta,{color:theme.muted}]}>Verification remains usable after you leave · {windowLabel}</Text>:null}
@@ -287,7 +288,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         style={s.cardMain}
       >
         <View style={s.cardTop}>
-          {item.consumer_photo_url?<Image source={{uri:String(item.consumer_photo_url)}} style={s.cardPhoto}/>:<PlaceIcon item={item} size={34} />}
+          {item.consumer_photo_url?<Image source={{uri:String(item.consumer_photo_url)}} style={[s.cardPhoto,{backgroundColor:theme.surfaceRaised}]}/>:<PlaceIcon item={item} size={34} />}
           <View style={{ flex: 1 }}>
             <View style={s.cardTitleRow}>
               <Text style={[s.cardTitle,{color:theme.ink}]}>{item.name || 'Restroom location'}</Text>
@@ -320,7 +321,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         </Text>
       </Pressable>
       <View style={s.cardActionRow}>
-        <Pressable accessibilityRole="button" accessibilityLabel={item.active_check_in?'Already checked in at this location':checkInBusy?'Checking your location':item.visit_verification_available?'Verify your detected visit at this location':'Check in at this location'} accessibilityState={{disabled:Boolean(item.active_check_in)||checkInBusy,busy:checkInBusy}} disabled={Boolean(item.active_check_in)||checkInBusy} style={[s.secondarySmall, s.cardAction,(item.active_check_in||checkInBusy)&&s.disabled]} onPress={onCheckIn}>
+        <Pressable accessibilityRole="button" accessibilityLabel={item.active_check_in?'Already checked in at this location':checkInBusy?'Checking your location':item.visit_verification_available?'Verify your detected visit at this location':'Check in at this location'} accessibilityState={{disabled:Boolean(item.active_check_in)||checkInBusy,busy:checkInBusy}} disabled={Boolean(item.active_check_in)||checkInBusy} style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},(item.active_check_in||checkInBusy)&&s.disabled]} onPress={onCheckIn}>
           <Text style={[s.secondaryText,{color:theme.accent}]}>{item.active_check_in?'Checked in ✓':checkInBusy?'Checking location…':item.visit_verification_available?'Verify visit':'Check in'}</Text>
         </Pressable>
         <Pressable
@@ -332,13 +333,13 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         >
           <Text style={[s.primaryText,{color:theme.accentText}]}>Start navigation</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" style={[s.secondarySmall, s.cardAction]} onPress={onAddToRoute}>
+        <Pressable accessibilityRole="button" style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={onAddToRoute}>
           <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Share what I already know about this location" style={[s.secondarySmall, s.cardAction]} onPress={onKnow}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Share what I already know about this location" style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={onKnow}>
           <Text style={[s.secondaryText,{color:theme.accent}]}>I know this place</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" style={[s.secondarySmall, s.cardAction]} onPress={onDetails}>
+        <Pressable accessibilityRole="button" style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={onDetails}>
           <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
         </Pressable>
       </View>
@@ -874,15 +875,15 @@ export default function AdaptiveExploreScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Find bathrooms near my current location"
-            style={s.locate}
+            style={[s.locate,{backgroundColor:theme.surface,borderColor:theme.line,borderWidth:1}]}
             disabled={loading}
             onPress={() => {
               if (mode !== 'nearby') chooseMode('nearby');
               void load({ clearQuery: true });
             }}
           >
-            <Text style={s.locateIcon}>⌖</Text>
-            <Text style={s.locateText}>{loading ? 'Finding…' : 'Locate'}</Text>
+            <Text style={[s.locateIcon,{color:theme.accent}]}>⌖</Text>
+            <Text style={[s.locateText,{color:theme.accent}]}>{loading ? 'Finding…' : 'Locate'}</Text>
           </Pressable>
         </View>
       </View>
@@ -1136,7 +1137,7 @@ export default function AdaptiveExploreScreen() {
                 </View>
               </Marker>:null}
               {searchAreaOrigin?<Marker id="searched-area-marker" lngLat={searchAreaOrigin} anchor="center">
-                <View accessibilityLabel={`Search area: ${searchAreaLabel}`} style={s.searchedAreaMarker}><Text style={s.searchedAreaMarkerText}>◎</Text></View>
+                <View accessibilityLabel={`Search area: ${searchAreaLabel}`} style={[s.searchedAreaMarker,{backgroundColor:theme.surface,borderColor:theme.accent}]}><Text style={[s.searchedAreaMarkerText,{color:theme.accent}]}>◎</Text></View>
               </Marker>:null}
               {visibleRows.filter(hasCoordinates).map((row) => {
                 const id = idOf(row);
@@ -1157,7 +1158,7 @@ export default function AdaptiveExploreScreen() {
                         event.stopPropagation();
                         selectRow(row);
                       }}
-                      style={[s.marker, active && s.markerActive]}
+                      style={[s.marker,{backgroundColor:theme.surface,borderColor:theme.line},active&&{backgroundColor:theme.accentSoft,borderColor:theme.accent}]}
                     >
                       <PlaceIcon item={row} size={active ? 28 : 22} />
                     </Pressable>
@@ -1191,14 +1192,14 @@ export default function AdaptiveExploreScreen() {
                     accessibilityLabel="Close selected location"
                     hitSlop={12}
                     onPress={() => setSelectedId('')}
-                    style={s.close}
+                    style={[s.close,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
                   >
-                    <Text style={s.closeText}>×</Text>
-                    <Text style={s.closeLabel}>Close</Text>
+                    <Text style={[s.closeText,{color:theme.accent}]}>×</Text>
+                    <Text style={[s.closeLabel,{color:theme.muted}]}>Close</Text>
                   </Pressable>
                 </View>
                 <View style={s.selectedRow}>
-                  {selected.consumer_photo_url?<Image source={{uri:String(selected.consumer_photo_url)}} style={s.selectedPhoto}/>:<PlaceIcon item={selected} size={34} />}
+                  {selected.consumer_photo_url?<Image source={{uri:String(selected.consumer_photo_url)}} style={[s.selectedPhoto,{backgroundColor:theme.surfaceRaised}]}/>:<PlaceIcon item={selected} size={34} />}
                   <View style={{ flex: 1 }}>
                     <View style={s.cardTitleRow}>
                       <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{selected.name || 'Restroom location'}</Text>
@@ -1215,7 +1216,7 @@ export default function AdaptiveExploreScreen() {
                 {selected.network?.network_verified&&!selected.network?.business_claimed?<Text style={[s.networkSelectedLine,{color:theme.accent}]}>K✓ Verified by the Kleenest Network · {networkEvidenceSummary(selected.network)}</Text>:null}
                 <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
                 <View style={s.actionRow}>
-                  <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking your location':selected.visit_verification_available?'Verify your detected visit at selected location':'Check in at selected location'} accessibilityState={{disabled:Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking',busy:checkInFeedback[idOf(selected)]?.status==='checking'}} disabled={Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking'} style={[s.secondarySmall, s.selectedAction,(selected.active_check_in||checkInFeedback[idOf(selected)]?.status==='checking')&&s.disabled]} onPress={() => void checkIn(selected)}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking your location':selected.visit_verification_available?'Verify your detected visit at selected location':'Check in at selected location'} accessibilityState={{disabled:Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking',busy:checkInFeedback[idOf(selected)]?.status==='checking'}} disabled={Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking'} style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},(selected.active_check_in||checkInFeedback[idOf(selected)]?.status==='checking')&&s.disabled]} onPress={() => void checkIn(selected)}>
                     <Text style={[s.secondaryText,{color:theme.accent}]}>{selected.active_check_in?'Checked in ✓':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking location…':selected.visit_verification_available?'Verify visit':'Check in'}</Text>
                   </Pressable>
                   <Pressable
@@ -1227,13 +1228,13 @@ export default function AdaptiveExploreScreen() {
                   >
                     <Text style={[s.primaryText,{color:theme.accentText}]}>Start navigation</Text>
                   </Pressable>
-                  <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => addToRoute(selected)}>
+                  <Pressable style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => addToRoute(selected)}>
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
                   </Pressable>
-                  <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => contributeKnowledge(selected)}>
+                  <Pressable style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => contributeKnowledge(selected)}>
                     <Text style={[s.secondaryText,{color:theme.accent}]}>I know this place</Text>
                   </Pressable>
-                  <Pressable style={[s.secondarySmall, s.selectedAction]} onPress={() => router.push(`/location/${idOf(selected)}`)}>
+                  <Pressable style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => router.push(`/location/${idOf(selected)}`)}>
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
                   </Pressable>
                 </View>
@@ -1242,8 +1243,8 @@ export default function AdaptiveExploreScreen() {
             ) : null}
           </View>
           {mode === 'route' && routeGap != null ? (
-            <View style={s.routeCoverage}>
-              <Text style={s.routeCoverageTitle}>Largest qualifying-restroom gap: ~{routeGap.toFixed(routeGap < 10 ? 1 : 0)} mi</Text>
+            <View style={[s.routeCoverage,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+              <Text style={[s.routeCoverageTitle,{color:theme.ink}]}>Largest qualifying-restroom gap: ~{routeGap.toFixed(routeGap < 10 ? 1 : 0)} mi</Text>
               <Text style={[s.help,{color:theme.muted}]}>Based on current qualifying candidates along the route; opening hours and availability can change.</Text>
             </View>
           ) : null}
