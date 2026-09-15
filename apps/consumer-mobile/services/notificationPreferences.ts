@@ -4,7 +4,7 @@ export type NotificationPreferences={
   intelligence:boolean;rewards:boolean;community:boolean;push:boolean;
   platform_updates:boolean;progression:boolean;offers:boolean;sponsored:boolean;
   location_alerts:boolean;social:boolean;personalized_ads:boolean;location_based_offers:boolean;
-  quiet_hours_start:string|null;quiet_hours_end:string|null;
+  quiet_hours_start:string|null;quiet_hours_end:string|null;quiet_hours_timezone:string|null;
 };
 export type NotificationSuppressionCounts={community:number;rewards:number;intelligence:number;total:number};
 export type NotificationPreferenceStatus={preferences:NotificationPreferences;suppressed30d:NotificationSuppressionCounts};
@@ -25,6 +25,7 @@ function normalizePreferences(data:any):NotificationPreferences{
     location_based_offers:data?.location_based_offers===true,
     quiet_hours_start:data?.quiet_hours_start||null,
     quiet_hours_end:data?.quiet_hours_end||null,
+    quiet_hours_timezone:data?.quiet_hours_timezone||null,
   };
 }
 
@@ -51,6 +52,18 @@ export async function updateNotificationPreferences(patch:Partial<NotificationPr
     p_location_alerts:patch.location_alerts??null,p_social:patch.social??null,p_personalized_ads:patch.personalized_ads??null,p_location_based_offers:patch.location_based_offers??null,
     p_quiet_hours_start:patch.quiet_hours_start??null,p_quiet_hours_end:patch.quiet_hours_end??null,
   });
+  if(error)throw error;
+  return normalizePreferences(data);
+}
+
+export async function setNotificationQuietHours(start:string,end:string,timezone:string):Promise<NotificationPreferences>{
+  const {data,error}=await getKleenestSupabaseClient().rpc('set_my_notification_quiet_hours',{p_start:start,p_end:end,p_timezone:timezone});
+  if(error)throw error;
+  return normalizePreferences(data);
+}
+
+export async function clearNotificationQuietHours():Promise<NotificationPreferences>{
+  const {data,error}=await getKleenestSupabaseClient().rpc('clear_my_notification_quiet_hours');
   if(error)throw error;
   return normalizePreferences(data);
 }
