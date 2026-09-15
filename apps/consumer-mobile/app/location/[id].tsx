@@ -21,7 +21,7 @@ import { useConsumerTheme } from '../../services/theme';
 import { cachedAgeLabel,readNearbyCache } from '../../services/nearbyCache';
 import { captureBetaError,friendlyConsumerError,recordBetaBreadcrumb } from '../../services/betaReporting';
 import { captureConsumerCoreLoopEvent } from '../../services/consumerTelemetry';
-import { getProgressionOverviewV2 } from '../../services/discoveryProgression';
+import { getProgressionOverviewV2, getProgressionWorld } from '../../services/discoveryProgression';
 import { listProgressionIdentities } from '../../services/progressionIdentity';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
