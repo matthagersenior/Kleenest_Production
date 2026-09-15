@@ -75,6 +75,16 @@ requireText(publisher, 'resolve-consumer-apk-baseline.mjs', 'Consumer Pages publ
 requireText(publisher, 'consumer-release-drift-audit.mjs', 'Consumer Pages publishing must expose native/OTA drift against the installed APK baseline.');
 requireText(publisher, 'run-id: ${{ steps.apk.outputs.run_id }}', 'Consumer Pages publishing must download the resolved verified Consumer APK artifact rather than depend on an unrelated family conclusion.');
 if (publisher.includes('workflows: ["Build Kleenest App Family Android APKs"]')) throw new Error('Consumer Pages publishing must not wait for the full Android family matrix.');
+requireText(publisher, 'Preserve deployed release state', 'Consumer Pages publishing must preserve the exact deployed release-state metadata for smoke verification.');
+requireText(publisher, 'Kleenest-deployed-release-state', 'Consumer Pages publishing must upload the exact deployed release-state artifact.');
+
+const installSmoke = read('install-center-smoke.yml');
+for (const token of ['actions: read','Kleenest-deployed-release-state','run-id: ${{ github.event.workflow_run.id }}','EXPECTED_SHA=$SOURCE_SHA','steps.deployed.outputs.source_sha || github.sha']) {
+  requireText(installSmoke, token, 'Installation Center smoke deployed-SHA contract missing '+token);
+}
+if (installSmoke.includes('EXPECTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}')) {
+  throw new Error('Installation Center smoke must not infer the deployed SHA from a nested workflow_run head.');
+}
 
 const familyOta = read('ota-family.yml');
 for (const token of ['workflow_run:','workflows: ["Production CI"]',"github.event.workflow_run.conclusion == 'success'","github.event.workflow_run.head_branch == 'main'",'ref: ${{ github.event.workflow_run.head_sha || github.sha }}','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_publish','native_rebuild_required','consumer-production','business-production','fleet-production','owner-production']) {
