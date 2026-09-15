@@ -28,7 +28,7 @@ assert.doesNotMatch(home, /People helping people find better bathrooms/);
 
 assert.doesNotMatch(explore, /Find a trusted bathroom\./);
 assert.match(explore, /useWindowDimensions/);
-assert.match(explore, /const exploreMapHeight=Math\.max\(360,Math\.min\(480,Math\.round\(windowHeight\*0\.48\)\)\)/);
+assert.match(explore, /const exploreMapHeight=Math\.max\(380,Math\.min\(500,Math\.round\(windowHeight\*0\.56\)\)\)/);
 assert.match(explore, /style=\{\[s\.mapFrame,\{height:exploreMapHeight\}\]\}/);
 assert.doesNotMatch(explore, /height:\s*Math\.max\(440,\s*windowHeight\s*-\s*96\)/);
 assert.match(explore, /searchPanel:\s*\{[^}]*position:\s*'absolute'/s);
