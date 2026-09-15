@@ -69,6 +69,47 @@ requireTokens('Business operational cards','apps/business-mobile/app/operations.
 requireTokens('Fleet low-light field surfaces','apps/fleet-mobile/app/member.tsx',['theme.surface','theme.accentSoft']);
 requireTokens('KleenestOS control cards','apps/platform-mobile/app/control.tsx',['useOSCardStyle','theme.surface']);
 
+
+const consumerThemeCompleteness=[
+  ['Consumer Signup','apps/consumer-mobile/app/signup.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised','placeholderTextColor={theme.muted}']],
+  ['Consumer Family','apps/consumer-mobile/app/family.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.accentSoft']],
+  ['Consumer Activity','apps/consumer-mobile/app/activity.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer AI','apps/consumer-mobile/app/assistant.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Access','apps/consumer-mobile/app/access.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Account deletion','apps/consumer-mobile/app/account-deletion.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Public deletion','apps/consumer-mobile/app/delete-account.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Blocked users','apps/consumer-mobile/app/blocked-users.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Contributor','apps/consumer-mobile/app/contributor/[id].tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Discovery','apps/consumer-mobile/app/discover.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised','placeholderTextColor={theme.muted}']],
+  ['Consumer Install','apps/consumer-mobile/app/install.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Legal center','apps/consumer-mobile/app/legal.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Live Network','apps/consumer-mobile/app/live-network.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Membership','apps/consumer-mobile/app/membership.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Messages','apps/consumer-mobile/app/messages.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Notifications','apps/consumer-mobile/app/notifications.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Offline','apps/consumer-mobile/app/offline.tsx',['useConsumerTheme','theme.canvas','theme.surface']],
+  ['Consumer Play','apps/consumer-mobile/app/play.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer QR','apps/consumer-mobile/app/qr.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Safety','apps/consumer-mobile/app/safety.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Saved','apps/consumer-mobile/app/saved.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Support','apps/consumer-mobile/app/support.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Week review','apps/consumer-mobile/app/week-in-review.tsx',['useConsumerTheme','theme.canvas','theme.surface']],
+  ['Consumer Game arena','apps/consumer-mobile/app/game/[code].tsx',['useConsumerTheme','ui.canvas','ui.surface','ui.surfaceRaised']],
+];
+for(const [label,path,tokens] of consumerThemeCompleteness)requireTokens(label,path,tokens);
+
+for(const [label,path,tokens] of [
+  ['Consumer Legal documents','apps/consumer-mobile/components/LegalDocument.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Policy gate','apps/consumer-mobile/components/PolicyAcceptanceGate.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
+  ['Consumer Restroom signals','apps/consumer-mobile/components/RestroomSignals.tsx',['useConsumerTheme','theme.surface','theme.surfaceRaised','theme.line']],
+  ['Consumer Review photos','apps/consumer-mobile/components/ReviewPhotoStrip.tsx',['useConsumerTheme','theme.accentSoft','theme.surfaceRaised']],
+  ['Consumer Photo trust actions','apps/consumer-mobile/components/PhotoTrustActions.tsx',['useConsumerTheme','theme.surfaceRaised','theme.danger']],
+  ['Consumer Recovery history','apps/consumer-mobile/components/LocationRecoveryHistory.tsx',['useConsumerTheme','theme.surface','theme.surfaceRaised']],
+  ['Consumer Amenity inventory','apps/consumer-mobile/components/LocationAmenityInventory.tsx',['useConsumerTheme','theme.surface','theme.surfaceRaised','theme.accentSoft']],
+  ['Consumer Preventive verification','apps/consumer-mobile/components/PreventiveVerificationCard.tsx',['useConsumerTheme','theme.surface','theme.surfaceRaised']],
+  ['Consumer Review reporting','apps/consumer-mobile/components/ReviewReportAction.tsx',['useConsumerTheme','theme.surface','theme.surfaceRaised']],
+])requireTokens(label,path,tokens);
+
 requireTokens('Consumer web-app navigation persistence','apps/consumer-mobile/app/_layout.tsx',[
   'useConsumerWebExperience',
   'appActive',
@@ -165,4 +206,4 @@ if(failures.length){
   for(const failure of failures)console.error('- '+failure);
   process.exit(1);
 }
-console.log('Deep theme surface audit passed for shared primitives, high-traffic routes, forms, modal surfaces, and operator workspaces.');
+console.log('Deep theme surface audit passed for shared primitives, Consumer theme-completeness routes, forms, modal surfaces, and operator workspaces.');

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable,StyleSheet,Text,View } from 'react-native';
 import { reportReviewPhoto,voteReviewPhoto,type ReviewPhotoReportReason,type ReviewPhotoVote } from '../services/photoModeration';
+import { useConsumerTheme } from '../services/theme';
 
 const reportReasons:{id:ReviewPhotoReportReason;label:string}[]=[
   {id:'privacy',label:'Privacy'},
@@ -16,6 +17,7 @@ export default function PhotoTrustActions({
   businessId=null,
   onChanged,
 }:{photoId:string;helpfulVotes?:number;notHelpfulVotes?:number;businessId?:string|null;onChanged?:()=>void}){
+  const theme=useConsumerTheme();
   const[helpful,setHelpful]=useState(Number(helpfulVotes||0));
   const[notHelpful,setNotHelpful]=useState(Number(notHelpfulVotes||0));
   const[reporting,setReporting]=useState(false);
@@ -49,12 +51,12 @@ export default function PhotoTrustActions({
 
   return <View style={s.wrap}>
     <View style={s.row}>
-      <Pressable accessibilityRole="button" disabled={busy} style={s.vote} onPress={()=>void vote('helpful')}><Text style={s.voteText}>Helpful · {helpful}</Text></Pressable>
-      <Pressable accessibilityRole="button" disabled={busy} style={s.vote} onPress={()=>void vote('not_helpful')}><Text style={s.voteText}>Not helpful · {notHelpful}</Text></Pressable>
-      <Pressable accessibilityRole="button" disabled={busy} style={s.flag} onPress={()=>setReporting(value=>!value)}><Text style={s.flagText}>Flag</Text></Pressable>
+      <Pressable accessibilityRole="button" disabled={busy} style={[s.vote,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void vote('helpful')}><Text style={[s.voteText,{color:theme.accent}]}>Helpful · {helpful}</Text></Pressable>
+      <Pressable accessibilityRole="button" disabled={busy} style={[s.vote,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void vote('not_helpful')}><Text style={[s.voteText,{color:theme.accent}]}>Not helpful · {notHelpful}</Text></Pressable>
+      <Pressable accessibilityRole="button" disabled={busy} style={[s.flag,{backgroundColor:theme.surfaceRaised,borderColor:theme.danger}]} onPress={()=>setReporting(value=>!value)}><Text style={[s.flagText,{color:theme.danger}]}>Flag</Text></Pressable>
     </View>
-    {reporting?<View style={s.reasons}>{reportReasons.map(reason=><Pressable accessibilityRole="button" disabled={busy} key={reason.id} style={s.reason} onPress={()=>void report(reason.id)}><Text style={s.reasonText}>{reason.label}</Text></Pressable>)}</View>:null}
-    {message?<Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text>:null}
+    {reporting?<View style={s.reasons}>{reportReasons.map(reason=><Pressable accessibilityRole="button" disabled={busy} key={reason.id} style={[s.reason,{backgroundColor:theme.surfaceRaised,borderColor:theme.danger}]} onPress={()=>void report(reason.id)}><Text style={[s.reasonText,{color:theme.danger}]}>{reason.label}</Text></Pressable>)}</View>:null}
+    {message?<Text accessibilityLiveRegion="polite" style={[s.message,{color:theme.muted}]}>{message}</Text>:null}
   </View>;
 }
 

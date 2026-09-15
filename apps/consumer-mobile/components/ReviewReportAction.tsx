@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { reportReview, type SafetyReportReason } from '../services/safety';
+import { useConsumerTheme } from '../services/theme';
 
 const REPORT_REASONS: Array<{ value: SafetyReportReason; label: string; detail: string }> = [
   { value: 'unsafe', label: 'Unsafe or dangerous', detail: 'Encourages unsafe behavior or could put someone at risk.' },
@@ -19,6 +20,7 @@ type Props = {
 };
 
 export default function ReviewReportAction({ reviewId, onReported }: Props) {
+  const theme=useConsumerTheme();
   const [visible, setVisible] = useState(false);
   const [reason, setReason] = useState<SafetyReportReason | null>(null);
   const [details, setDetails] = useState('');
@@ -60,20 +62,20 @@ export default function ReviewReportAction({ reviewId, onReported }: Props) {
   }
 
   return <>
-    <Pressable accessibilityRole="button" accessibilityLabel="Report review" style={styles.reportButton} onPress={open}>
-      <Text style={styles.reportButtonText}>Report review</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel="Report review" style={[styles.reportButton,{backgroundColor:theme.surfaceRaised,borderColor:theme.danger}]} onPress={open}>
+      <Text style={[styles.reportButtonText,{color:theme.danger}]}>Report review</Text>
     </Pressable>
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
       <View style={styles.backdrop}>
-        <View style={styles.sheet} accessibilityViewIsModal>
+        <View style={[styles.sheet,{backgroundColor:theme.surface,borderColor:theme.line}]} accessibilityViewIsModal>
           <View style={styles.header}>
             <View style={styles.headerCopy}>
-              <Text style={styles.eyebrow}>COMMUNITY SAFETY</Text>
-              <Text style={styles.title}>Why are you reporting this review?</Text>
-              <Text style={styles.body}>Choose the closest reason. Reports go to Kleenest moderation and are not shown to the contributor.</Text>
+              <Text style={[styles.eyebrow,{color:theme.accent}]}>COMMUNITY SAFETY</Text>
+              <Text style={[styles.title,{color:theme.ink}]}>Why are you reporting this review?</Text>
+              <Text style={[styles.body,{color:theme.muted}]}>Choose the closest reason. Reports go to Kleenest moderation and are not shown to the contributor.</Text>
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close report review" hitSlop={10} onPress={close} style={styles.closeButton}>
-              <Text style={styles.closeText}>×</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close report review" hitSlop={10} onPress={close} style={[styles.closeButton,{backgroundColor:theme.surfaceRaised}]}>
+              <Text style={[styles.closeText,{color:theme.accent}]}>×</Text>
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.reasonList} keyboardShouldPersistTaps="handled">
@@ -84,16 +86,16 @@ export default function ReviewReportAction({ reviewId, onReported }: Props) {
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
                 onPress={() => setReason(option.value)}
-                style={[styles.reason, selected && styles.reasonSelected]}
+                style={[styles.reason,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},selected&&[styles.reasonSelected,{backgroundColor:theme.accentSoft,borderColor:theme.accent}]]}
               >
-                <View style={[styles.radio, selected && styles.radioSelected]}>{selected ? <View style={styles.radioDot}/> : null}</View>
+                <View style={[styles.radio,{borderColor:theme.muted},selected&&[styles.radioSelected,{borderColor:theme.accent}]]}>{selected ? <View style={[styles.radioDot,{backgroundColor:theme.accent}]}/> : null}</View>
                 <View style={styles.reasonCopy}>
-                  <Text style={styles.reasonLabel}>{option.label}</Text>
-                  <Text style={styles.reasonDetail}>{option.detail}</Text>
+                  <Text style={[styles.reasonLabel,{color:theme.ink}]}>{option.label}</Text>
+                  <Text style={[styles.reasonDetail,{color:theme.muted}]}>{option.detail}</Text>
                 </View>
               </Pressable>;
             })}
-            <Text style={styles.detailsLabel}>OPTIONAL DETAILS</Text>
+            <Text style={[styles.detailsLabel,{color:theme.muted}]}>OPTIONAL DETAILS</Text>
             <TextInput
               accessibilityLabel="Additional report details"
               value={details}
@@ -102,14 +104,15 @@ export default function ReviewReportAction({ reviewId, onReported }: Props) {
               multiline
               textAlignVertical="top"
               placeholder="Add context that will help moderation understand the concern."
-              style={styles.detailsInput}
+              placeholderTextColor={theme.muted}
+              style={[styles.detailsInput,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}
             />
-            <Text style={styles.counter}>{details.length}/1000</Text>
-            {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+            <Text style={[styles.counter,{color:theme.muted}]}>{details.length}/1000</Text>
+            {error ? <Text accessibilityRole="alert" style={[styles.error,{color:theme.danger,backgroundColor:theme.surfaceRaised,borderColor:theme.danger}]}>{error}</Text> : null}
           </ScrollView>
           <View style={styles.actions}>
-            <Pressable accessibilityRole="button" disabled={submitting} onPress={close} style={styles.cancelButton}>
-              <Text style={styles.cancelText}>Cancel</Text>
+            <Pressable accessibilityRole="button" disabled={submitting} onPress={close} style={[styles.cancelButton,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+              <Text style={[styles.cancelText,{color:theme.accent}]}>Cancel</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -117,9 +120,9 @@ export default function ReviewReportAction({ reviewId, onReported }: Props) {
               accessibilityState={{ disabled: !reason || submitting }}
               disabled={!reason || submitting}
               onPress={() => { void submit(); }}
-              style={[styles.submitButton, (!reason || submitting) && styles.submitDisabled]}
+              style={[styles.submitButton,{backgroundColor:theme.accent},(!reason||submitting)&&styles.submitDisabled]}
             >
-              <Text style={styles.submitText}>{submitting ? 'Submitting…' : 'Submit report'}</Text>
+              <Text style={[styles.submitText,{color:theme.accentText}]}>{submitting ? 'Submitting…' : 'Submit report'}</Text>
             </Pressable>
           </View>
         </View>
