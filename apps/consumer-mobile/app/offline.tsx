@@ -2,10 +2,12 @@ import { useEffect,useState } from 'react';
 import { Pressable,SafeAreaView,ScrollView,StyleSheet,Text,View } from 'react-native';
 import { TrustStrip,palette } from '../components/ConsumerUI';
 import { listOfflinePacks,listSavedRoutePlans,prepareRouteOfflinePack,readLocalOfflinePacks } from '../services/offline';
+import { useConsumerTheme } from '../services/theme';
 
 type Row=Record<string,any>;
 
 export default function OfflineScreen(){
+  const theme=useConsumerTheme();
   const[routes,setRoutes]=useState<Row[]>([]);
   const[packs,setPacks]=useState<Row[]>([]);
   const[busy,setBusy]=useState('');
@@ -58,49 +60,49 @@ export default function OfflineScreen(){
     }
   }
 
-  return <SafeAreaView style={s.safe}>
+  return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}>
     <ScrollView contentContainerStyle={s.content}>
-      <View style={s.hero}>
+      <View style={[s.hero,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:theme.accent,borderColor:theme.line}]}>
         <Text style={s.eyebrow}>OFFLINE TRIPS</Text>
-        <Text style={s.heroTitle}>Take trusted restroom context with you.</Text>
-        <Text style={s.heroBody}>Saved routes prepare a canonical Supabase corridor, then copy that exact restroom snapshot onto this device. When the network disappears, the local copy remains readable until the pack expires.</Text>
+        <Text style={[s.heroTitle,{color:theme.resolved==='dark'?theme.ink:theme.accentText}]}>Take trusted restroom context with you.</Text>
+        <Text style={[s.heroBody,{color:theme.resolved==='dark'?theme.muted:theme.accentText}]}>Saved routes prepare a canonical Supabase corridor, then copy that exact restroom snapshot onto this device. When the network disappears, the local copy remains readable until the pack expires.</Text>
         <TrustStrip items={['Canonical route sessions','24-hour device snapshots','No second source of truth']}/>
       </View>
 
-      {message?<Text style={s.message} accessibilityLiveRegion="polite">{message}</Text>:null}
+      {message?<Text style={[s.message,{color:theme.muted}]} accessibilityLiveRegion="polite">{message}</Text>:null}
 
       <View style={s.section}>
-        <Text style={s.sectionTitle}>Saved routes</Text>
-        {routes.length?routes.map(route=><View key={String(route.id)} style={s.card}>
-          <Text style={s.cardTitle}>{route.name||'Saved route'}</Text>
-          <Text style={s.meta}>{route.distance_miles!=null?`${route.distance_miles} mi`:''}{route.estimated_minutes!=null?` · about ${route.estimated_minutes} min`:''}</Text>
-          <Pressable disabled={!!busy} style={[s.primary,!!busy&&{opacity:.5}]} onPress={()=>prepare(route)} accessibilityRole="button">
-            <Text style={s.primaryText}>{busy===String(route.id)?'Preparing…':'Prepare offline corridor'}</Text>
+        <Text style={[s.sectionTitle,{color:theme.ink}]}>Saved routes</Text>
+        {routes.length?routes.map(route=><View key={String(route.id)} style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+          <Text style={[s.cardTitle,{color:theme.ink}]}>{route.name||'Saved route'}</Text>
+          <Text style={[s.meta,{color:theme.muted}]}>{route.distance_miles!=null?`${route.distance_miles} mi`:''}{route.estimated_minutes!=null?` · about ${route.estimated_minutes} min`:''}</Text>
+          <Pressable disabled={!!busy} style={[s.primary,{backgroundColor:theme.accent},!!busy&&{opacity:.5}]} onPress={()=>prepare(route)} accessibilityRole="button">
+            <Text style={[s.primaryText,{color:theme.accentText}]}>{busy===String(route.id)?'Preparing…':'Prepare offline corridor'}</Text>
           </Pressable>
-        </View>):<Text style={s.body}>Save a route from the Route Planner first.</Text>}
+        </View>):<Text style={[s.body,{color:theme.muted}]}>Save a route from the Route Planner first.</Text>}
       </View>
 
       <View style={s.section}>
-        <Text style={s.sectionTitle}>Prepared packs</Text>
+        <Text style={[s.sectionTitle,{color:theme.ink}]}>Prepared packs</Text>
         {packs.length?packs.map(pack=>{
           const locations:Array<Row>=Array.isArray(pack.locations)?pack.locations:[];
-          return <View key={String(pack.id)} style={s.card}>
-            <Text style={s.cardTitle}>{pack.name||'Offline route'}</Text>
-            <Text style={pack.status==='ready'?s.good:s.meta}>{String(pack.status||'unknown').toUpperCase()}</Text>
-            <Text style={s.meta}>Expires {pack.expires_at?new Date(pack.expires_at).toLocaleString():'on server schedule'}</Text>
+          return <View key={String(pack.id)} style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+            <Text style={[s.cardTitle,{color:theme.ink}]}>{pack.name||'Offline route'}</Text>
+            <Text style={[pack.status==='ready'?s.good:s.meta,{color:pack.status==='ready'?theme.success:theme.muted}]}>{String(pack.status||'unknown').toUpperCase()}</Text>
+            <Text style={[s.meta,{color:theme.muted}]}>Expires {pack.expires_at?new Date(pack.expires_at).toLocaleString():'on server schedule'}</Text>
             {locations.length?<>
-              <Text style={s.localCount}>{locations.length} restroom{locations.length===1?'':'s'} saved on this device</Text>
-              {locations.slice(0,8).map((snapshot:Row,index:number)=><View key={String(snapshot.location_id||snapshot.id||index)} style={s.snapshotRow}>
+              <Text style={[s.localCount,{color:theme.success}]}>{locations.length} restroom{locations.length===1?'':'s'} saved on this device</Text>
+              {locations.slice(0,8).map((snapshot:Row,index:number)=><View key={String(snapshot.location_id||snapshot.id||index)} style={[s.snapshotRow,{borderTopColor:theme.line}]}>
                 <View style={s.snapshotCopy}>
-                  <Text style={s.snapshotName}>{snapshot.name||'Restroom'}</Text>
-                  <Text style={s.snapshotMeta}>{snapshot.address||[snapshot.city,snapshot.state].filter(Boolean).join(', ')||'Address unavailable'}</Text>
+                  <Text style={[s.snapshotName,{color:theme.ink}]}>{snapshot.name||'Restroom'}</Text>
+                  <Text style={[s.snapshotMeta,{color:theme.muted}]}>{snapshot.address||[snapshot.city,snapshot.state].filter(Boolean).join(', ')||'Address unavailable'}</Text>
                 </View>
-                <Text style={snapshot.is_verified?s.verified:s.meta}>{snapshot.is_verified?'VERIFIED':'LOCAL'}</Text>
+                <Text style={[snapshot.is_verified?s.verified:s.meta,{color:snapshot.is_verified?theme.success:theme.muted}]}>{snapshot.is_verified?'VERIFIED':'LOCAL'}</Text>
               </View>)}
-              {locations.length>8?<Text style={s.meta}>+ {locations.length-8} more stored in this pack</Text>:null}
-            </>:<Text style={s.body}>This server pack is not stored on this device yet. Prepare the saved route again while online to make it truly offline-ready.</Text>}
+              {locations.length>8?<Text style={[s.meta,{color:theme.muted}]}>+ {locations.length-8} more stored in this pack</Text>:null}
+            </>:<Text style={[s.body,{color:theme.muted}]}>This server pack is not stored on this device yet. Prepare the saved route again while online to make it truly offline-ready.</Text>}
           </View>;
-        }):<Text style={s.body}>No offline packs prepared yet.</Text>}
+        }):<Text style={[s.body,{color:theme.muted}]}>No offline packs prepared yet.</Text>}
       </View>
     </ScrollView>
   </SafeAreaView>;
