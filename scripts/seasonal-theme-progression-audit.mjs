@@ -18,6 +18,9 @@ for(const code of ['theme_fall_2026','theme_halloween_2026','theme_thanksgiving_
 }
 requireText(migration,'owner_only=false','seasonal rewards are not owner-only');
 requireText(migration,'progression_unlock_enabled=true','seasonal rewards unlock through progression');
+requireText(migration,'internal.award_progression_theme_rewards','eligible themes are persisted as earned rewards');
+requireText(migration,"'progression'",'earned reward grants record progression as their source');
+requireText(migration,'progression_earned','consumer reward state distinguishes earned progression access');
 requireText(prefs,'const visibleThemeOptions=KLEENEST_THEME_OPTIONS;','locked seasonal themes remain visible');
 requireText(prefs,'Earn it at Level','preferences explains earned theme gate');
 requireText(prefs,"seasonal&&!unlocked",'locked seasonal theme choice is disabled');
