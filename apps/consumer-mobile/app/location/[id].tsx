@@ -46,6 +46,7 @@ export default function LocationDetailScreen(){
   const locationId=String(id||''),missionMode=String(contribute||mission||'')==='1',reviewMode=String(review||'')==='1',photoReviewId=String(photos||''),photoFirstMode=String(photoFirst||'')==='1';
   const [place,setPlace]=useState<any>(null),[reviews,setReviews]=useState<any[]>([]),[communityPhotos,setCommunityPhotos]=useState<CommunityPhoto[]>([]),[message,setMessage]=useState(''),[checkInId,setCheckInId]=useState<string|null>(null),[checkInAt,setCheckInAt]=useState<string|null>(null),[presence,setPresence]=useState<ConsumerPresence|null>(null),[stars,setStars]=useState(''),[cleanliness,setCleanliness]=useState(''),[comment,setComment]=useState(''),[amenities,setAmenities]=useState<AmenityCatalogItem[]>([]),[amenityDraft,setAmenityDraft]=useState<Record<string,AmenityDraft>>({}),[reviewPhotos,setReviewPhotos]=useState<ReviewPhotoDraft[]>([]),[submitting,setSubmitting]=useState(false),[amenityRefresh,setAmenityRefresh]=useState(0),[photoRefresh,setPhotoRefresh]=useState(0),[activeMission,setActiveMission]=useState<TrustMission|null>(null),[draftHydrated,setDraftHydrated]=useState(false),[currentUserId,setCurrentUserId]=useState(''),[photoBusy,setPhotoBusy]=useState(''),[network,setNetwork]=useState<LocationNetworkStatus|null>(null);
   const [showEvidence,setShowEvidence]=useState(false),[submittedReviewId,setSubmittedReviewId]=useState<string|null>(null);
+  const [facilities,setFacilities]=useState<RestroomFacility[]>([]),[selectedFacilityId,setSelectedFacilityId]=useState('');
   const reviewListRef=useRef<FlatList<any>>(null),reviewScrollDone=useRef(false);
   const missionMatches=missionMode&&activeMission?.status==='active'&&activeMission.locationId===locationId;
   const missionRequirement=missionMatches?missionEvidenceRequirement(activeMission):null;
@@ -74,6 +75,13 @@ export default function LocationDetailScreen(){
       setCheckInAt(eligible?.checked_in_at||nextPresence?.entered_at||null);
       setPresence(nextPresence);
       setNetwork(nextNetwork);
+      setFacilities(nextFacilities);
+      setSelectedFacilityId(current=>{
+        const recovered=String(eligible?.restroom_facility_id||'');
+        if(recovered&&nextFacilities.some(facility=>facility.id===recovered))return recovered;
+        if(current&&nextFacilities.some(facility=>facility.id===current))return current;
+        return nextFacilities.length===1?nextFacilities[0].id:'';
+      });
       const reviewIds=nextReviews.map((review:any)=>String(review.id||'')).filter(Boolean);
       const grouped:Record<string,ReviewPhoto[]>=await listReviewPhotosForReviews(reviewIds).catch(()=>({} as Record<string,ReviewPhoto[]>));
       setReviews(enrichedReviews.map((review:any)=>({...review,reviewPhotoCount:(grouped[String(review.id||'')]||[]).length})));
@@ -108,6 +116,8 @@ export default function LocationDetailScreen(){
   useEffect(()=>{let active=true;reviewScrollDone.current=false;setDraftHydrated(false);setStars('');setCleanliness('');setComment('');setAmenityDraft({});setReviewPhotos([]);setShowEvidence(false);setSubmittedReviewId(null);readContributionDraft(locationId).then(draft=>{if(!active||!draft)return;setStars(draft.stars);setCleanliness(draft.cleanliness);setComment(draft.comment);setAmenityDraft(draft.amenityDraft);setReviewPhotos(draft.reviewPhotos);if(Object.values(draft.amenityDraft||{}).some((item:any)=>item?.selected))setShowEvidence(true);setMessage('Restored your unfinished verified contribution draft.')}).finally(()=>{if(active)setDraftHydrated(true)});return()=>{active=false}},[locationId]);
   useEffect(()=>{if(!draftHydrated||!locationId||submitting)return;const timer=setTimeout(()=>{void writeContributionDraft({locationId,stars,cleanliness,comment,amenityDraft,reviewPhotos})},300);return()=>clearTimeout(timer)},[locationId,draftHydrated,stars,cleanliness,comment,amenityDraft,reviewPhotos,submitting]);
   const address=useMemo(()=>[place?.address,place?.city,place?.state,place?.postal_code].filter(Boolean).join(', '),[place]);
+  const selectedFacility=useMemo(()=>facilities.find(facility=>facility.id===selectedFacilityId)||null,[facilities,selectedFacilityId]);
+  const facilityRequired=facilities.length>1&&!selectedFacilityId;
   const selectedAmenities=useMemo(()=>amenities.flatMap(amenity=>{const draft=amenityDraft[amenity.id];if(!draft?.selected)return[];return[{amenity_id:amenity.id,quantity:draft.quantity.trim()===''?null:Number(draft.quantity),sentiment:draft.sentiment}] as const}),[amenities,amenityDraft]);
   const deferredPhotoReview=useMemo(()=>{
     const owned=reviews.filter((item:any)=>currentUserId&&String(item.user_id)===currentUserId&&Number(item.reviewPhotoCount||0)<3);
@@ -118,7 +128,49 @@ export default function LocationDetailScreen(){
   async function navigate(){if(!place)return;captureConsumerCoreLoopEvent('navigation_started',locationId,{source:'location_detail'});try{await Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${place.latitude},${place.longitude}`)}&travelmode=driving`)}catch{setMessage('Directions could not be opened. This restroom is still here when you return.')}}
   async function save(){try{await toggleMobileFavorite(locationId);setMessage('Saved state updated.')}catch(error:any){setMessage(friendlyActionError(error,'Saved state could not be changed.'))}}
   async function helpful(reviewId:string){try{const liked=await toggleHelpfulReview(reviewId);await refresh();setMessage(liked?'Marked helpful. Useful reviews can earn contributor badges.':'Helpful vote removed.')}catch(error:any){setMessage(friendlyActionError(error,'Helpful vote could not be updated.'))}}
-  async function checkIn(){try{const before=await progressionSnapshot();const permission=await Location.requestForegroundPermissionsAsync();if(permission.status!=='granted')throw new Error(permission.canAskAgain===false?'Location permission is blocked. Enable location for Kleenest in your phone settings, then try again.':'Location permission is required to check in.');const current=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.High});const result:any=await mobileCheckIn(locationId,current.coords.latitude,current.coords.longitude);const[eligible,nextPresence]=await Promise.all([findLatestEligibleReviewCheckIn(locationId).catch(()=>null),getConsumerLocationPresence(locationId).catch(()=>null)]);setCheckInId(eligible?.id||(result?.review_ready?result?.check_in_id||result?.id:null)||null);setCheckInAt(eligible?.checked_in_at||result?.checked_in_at||nextPresence?.entered_at||new Date().toISOString());setPresence(nextPresence);const after=await progressionSnapshot();const distance=result?.distance_meters!=null?` · ${Math.round(Number(result.distance_meters))} m proof`:'';const recentPresence=result?.verified_from==='recent_presence_window';const base=result?.already_checked_in?`This visit is already verified.${eligible?' Your verified review is ready.':''}`:recentPresence?`Visit verified from your recent on-site presence${distance}. You can now leave a verified review.`:missionMatches?`GPS + geofence visit verified${distance}. Continue with the server-defined mission evidence goal.`:`Visit verified · GPS + geofence proof${distance}. You can now leave a verified review.`;setMessage(rewardMessage(before.dashboard,after.dashboard,before.quests,after.quests,base));captureConsumerCoreLoopEvent('arrival_detected',locationId,{source:'location_detail',alreadyCheckedIn:Boolean(result?.already_checked_in)})}catch(error:any){setMessage(checkInErrorMessage(error))}}
+  async function identifyFacility(facilityType:RestroomFacilityType){
+    try{
+      const identified=await identifyRestroomFacility(locationId,facilityType);
+      const nextFacilities=await listRestroomFacilities(locationId);
+      setFacilities(nextFacilities);
+      const facilityId=String(identified?.id||'');
+      if(facilityId){
+        setSelectedFacilityId(facilityId);
+        if(checkInId)await assignCheckInRestroomFacility(checkInId,facilityId);
+      }
+      setMessage(`${restroomFacilityTypeLabel(facilityType)} restroom identified. Facility identity is separate from trust; verified visits and reviews establish freshness and quality.`);
+    }catch(error:any){setMessage(friendlyActionError(error,'That restroom type could not be identified.'))}
+  }
+  async function chooseFacility(restroomFacilityId:string){
+    setSelectedFacilityId(restroomFacilityId);
+    if(!checkInId)return;
+    try{
+      await assignCheckInRestroomFacility(checkInId,restroomFacilityId);
+      const facility=facilities.find(item=>item.id===restroomFacilityId);
+      setMessage(`Verified visit linked to ${facility?restroomFacilityLabel(facility):'the selected restroom'}.`);
+    }catch(error:any){setMessage(friendlyActionError(error,'That restroom could not be linked to this verified visit.'))}
+  }
+  async function checkIn(){
+    if(facilityRequired){setMessage('Which restroom did you use? Choose the specific restroom before verifying this visit.');return}
+    try{
+      const before=await progressionSnapshot();
+      const permission=await Location.requestForegroundPermissionsAsync();
+      if(permission.status!=='granted')throw new Error(permission.canAskAgain===false?'Location permission is blocked. Enable location for Kleenest in your phone settings, then try again.':'Location permission is required to check in.');
+      const current=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.High});
+      const result:any=await mobileCheckIn(locationId,current.coords.latitude,current.coords.longitude,selectedFacilityId||null);
+      const[eligible,nextPresence]=await Promise.all([findLatestEligibleReviewCheckIn(locationId).catch(()=>null),getConsumerLocationPresence(locationId).catch(()=>null)]);
+      setCheckInId(eligible?.id||(result?.review_ready?result?.check_in_id||result?.id:null)||null);
+      if(eligible?.restroom_facility_id)setSelectedFacilityId(String(eligible.restroom_facility_id));
+      setCheckInAt(eligible?.checked_in_at||result?.checked_in_at||nextPresence?.entered_at||new Date().toISOString());
+      setPresence(nextPresence);
+      const after=await progressionSnapshot();
+      const distance=result?.distance_meters!=null?` · ${Math.round(Number(result.distance_meters))} m proof`:'';
+      const recentPresence=result?.verified_from==='recent_presence_window';
+      const base=result?.already_checked_in?`This visit is already verified.${eligible?' Your verified review is ready.':''}`:recentPresence?`Visit verified from your recent on-site presence${distance}. You can now leave a verified review.`:missionMatches?`GPS + geofence visit verified${distance}. Continue with the server-defined mission evidence goal.`:`Visit verified · GPS + geofence proof${distance}. You can now leave a verified review.`;
+      setMessage(rewardMessage(before.dashboard,after.dashboard,before.quests,after.quests,base));
+      captureConsumerCoreLoopEvent('arrival_detected',locationId,{source:'location_detail',alreadyCheckedIn:Boolean(result?.already_checked_in),restroomFacilityId:selectedFacilityId||null});
+    }catch(error:any){setMessage(checkInErrorMessage(error))}
+  }
   async function choosePhotos(){try{const remaining=Math.max(1,3-reviewPhotos.length);const next=await chooseReviewPhotos(remaining);if(next.length)setReviewPhotos(current=>[...current,...next].slice(0,3))}catch(error:any){setMessage(friendlyActionError(error,'Review photos could not be selected.'))}}
   async function takePhoto(){try{if(reviewPhotos.length>=3){setMessage('You already selected the maximum of 3 review photos.');return}const next=await captureReviewPhoto();if(next)setReviewPhotos(current=>[...current,next].slice(0,3))}catch(error:any){setMessage(friendlyActionError(error,'Review photo could not be taken.'))}}
   function removePhoto(index:number){setReviewPhotos(current=>current.filter((_,i)=>i!==index));}
