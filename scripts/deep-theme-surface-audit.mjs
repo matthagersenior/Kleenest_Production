@@ -105,6 +105,7 @@ for(const [label,path,tokens] of [
   ['Consumer Review photos','apps/consumer-mobile/components/ReviewPhotoStrip.tsx',['useConsumerTheme','theme.accentSoft','theme.surfaceRaised']],
   ['Consumer Photo trust actions','apps/consumer-mobile/components/PhotoTrustActions.tsx',['useConsumerTheme','theme.surfaceRaised','theme.danger']],
   ['Consumer Recovery history','apps/consumer-mobile/components/LocationRecoveryHistory.tsx',['useConsumerTheme','theme.surface','theme.surfaceRaised']],
+  ['Consumer Amenity inventory','apps/consumer-mobile/components/LocationAmenityInventory.tsx',['useConsumerTheme','theme.surface','theme.surfaceRaised','theme.accentSoft']],
   ['Consumer Preventive verification','apps/consumer-mobile/components/PreventiveVerificationCard.tsx',['useConsumerTheme','theme.surface','theme.surfaceRaised']],
   ['Consumer Review reporting','apps/consumer-mobile/components/ReviewReportAction.tsx',['useConsumerTheme','theme.surface','theme.surfaceRaised']],
 ])requireTokens(label,path,tokens);
