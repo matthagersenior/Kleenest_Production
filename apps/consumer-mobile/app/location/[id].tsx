@@ -183,7 +183,7 @@ export default function LocationDetailScreen(){
       const count=Number(result?.photo_count||reviewPhotos.length);
       const xp=Number(result?.xp?.xp_awarded??result?.xp?.points??0);
       setReviewPhotos([]);
-      captureConsumerCoreLoopEvent('prior_visit_photo_added',locationId,{count,knowledgeRecency:previousVisitPhotoRecency,progressionXp:xp});
+      captureConsumerCoreLoopEvent('review_photo_added',locationId,{count,source:'prior_visit',knowledgeRecency:previousVisitPhotoRecency,progressionXp:xp});
       setMessage(`${count} previous-visit photo${count===1?'':'s'} added as historical evidence — not a current check-in.${xp>0?` +${xp} contribution XP.`:''}`);
     }catch(error:any){
       setMessage(friendlyActionError(error,'Previous-visit photos could not be added. Your selected photos are still here.'));
