@@ -160,7 +160,7 @@ function ObjectiveWorldCard({item,theme}:{item:any;theme:any}){
   <Text style={[s.objectiveRule,{color:theme.muted}]}>{special}</Text>
   <View style={s.trackSmall}><View style={[s.fillSmall,{width:(String(Math.round(pct*100))+'%') as any,backgroundColor:flavor.accent}]} /></View>
   {chapterMarks.length?<View style={s.milestones}>{chapterMarks.map((mark:any)=><View key={String(mark)} style={[s.milestone,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},progress>=Number(mark)&&{backgroundColor:flavor.accent,borderColor:flavor.accent}]}><Text style={[s.milestoneText,{color:theme.accent},progress>=Number(mark)&&{color:theme.accentText}]}>{mark}</Text></View>)}</View>:null}
-  <Text style={[s.meta,{color:theme.muted}]}>{progress/{target} · {String(item.state||'active').toUpperCase()}</Text>
+  <Text style={[s.meta,{color:theme.muted}]}>{progress}/{target} · {String(item.state||'active').toUpperCase()}</Text>
  </View>
 }
 function WorldMeter({progress,target,label}:{progress:number;target:number;label:string}){const pct=percent(progress,Math.max(1,target));return <View style={{gap:5}}><View style={s.trackSmall}><View style={[s.fillSmall,{width:(String(Math.round(pct*100))+'%') as any}]} /></View><View style={s.meterLine}><Text style={s.meta}>{label}</Text><Text style={s.meterValue}>{Math.min(progress,target).toLocaleString()} / {target.toLocaleString()}</Text></View></View>}
