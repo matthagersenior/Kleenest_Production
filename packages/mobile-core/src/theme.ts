@@ -62,7 +62,7 @@ const seasonalEditions:Record<'fall'|'halloween'|'thanksgiving'|'christmas',{
     soft:'#f0d9bd',accentText:'#ffffff',danger:'#9d3f34',warning:'#9b6518',success:'#55734c',statusBar:'dark',
   },
   halloween:{
-    resolved:'dark',canvas:'#0b0710',surface:'#17101e',surfaceRaised:'#22162c',ink:'#fff7ed',muted:'#c9b8cf',line:'#493454',
+    resolved:'dark',canvas:'#050208',surface:'#1b1024',surfaceRaised:'#332040',ink:'#fff7ed',muted:'#c9b8cf',line:'#594068',
     accents:{consumer:'#ff8a2b',progress:'#f4c95d',game:'#b58cff',community:'#6fe7d8',business:'#83d483',fleet:'#73a9ff',platform:'#d787ff'},
     soft:'#33203f',accentText:'#140a04',danger:'#ff718b',warning:'#ffb347',success:'#6fe7d8',statusBar:'light',
   },
