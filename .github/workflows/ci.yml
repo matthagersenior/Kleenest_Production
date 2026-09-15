@@ -127,6 +127,7 @@ jobs:
           node scripts/native-review-photo-batch-authority-audit.mjs
           node scripts/native-evidence-presentation-audit.mjs
           node scripts/native-map-authority-audit.mjs
+          node scripts/map-freshness-heat-ring-audit.mjs
           node scripts/native-location-trust-summary-audit.mjs
           node scripts/native-contributor-relationship-audit.mjs
           node scripts/native-route-trust-presentation-audit.mjs
