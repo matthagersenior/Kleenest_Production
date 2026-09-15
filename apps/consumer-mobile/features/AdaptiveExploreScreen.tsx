@@ -51,6 +51,7 @@ import {
   restroomMarkerLabel,
 } from '../components/RestroomSignals';
 import { palette } from '../components/ConsumerUI';
+import { SponsoredSlot } from '../components/SponsoredSlot';
 
 const DRAFT_KEY = 'kleenest.native.route.draft';
 const OSM_STYLE: any = {
@@ -1259,6 +1260,8 @@ export default function AdaptiveExploreScreen() {
         </View>
       ) : null}
 
+
+            <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results"/>
 
             <View style={s.listHeading}>
               <View>

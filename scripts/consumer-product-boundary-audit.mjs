@@ -24,6 +24,9 @@ const required=[
   'apps/consumer-mobile/app/membership.tsx',
   'apps/consumer-mobile/services/discoveryProgression.ts',
   'apps/consumer-mobile/services/locationResolver.ts',
+  'apps/consumer-mobile/services/heroRelevance.ts',
+  'apps/consumer-mobile/components/RelevanceHeroCarousel.tsx',
+  'apps/consumer-mobile/components/SponsoredSlot.tsx',
   'packages/mobile-core/src/adaptiveDiscovery.ts',
   'packages/mobile-core/src/index.ts'
 ];
@@ -48,7 +51,7 @@ if(!failures.length){
  const layout=fs.readFileSync('apps/consumer-mobile/app/_layout.tsx','utf8');
  const location=fs.readFileSync('apps/consumer-mobile/app/location/[id].tsx','utf8');
  const core=fs.readFileSync('packages/mobile-core/src/index.ts','utf8');
- for(const token of ["'/explore'",'Find a bathroom','homePrimaryCta','CHECK IN','Nearby or search','QR PROOF','THE KLEENEST LOOP','XP + levels','YOUR NETWORK','Add a missing place'])if(!home.includes(token))failures.push(`Consumer Home missing discovery/progression behavior: ${token}`);
+ for(const token of ["'/explore'",'RelevanceHeroCarousel','buildConsumerHomeHeroes','SponsoredSlot','THE KLEENEST LOOP','XP + levels','YOUR NETWORK'])if(!home.includes(token))failures.push(`Consumer Home missing discovery/progression behavior: ${token}`);
  if(home.includes('Scan QR to check in or review'))failures.push('Consumer Home must not collapse regular check-in into QR proof.');
  for(const token of ['resolveConsumerSearchLocation','looksLikeAddressOrArea','searchAreaOrigin','searched-area-marker'])if(!explore.includes(token))failures.push(`Consumer Explore missing address-origin discovery behavior: ${token}`);
  if(explore.includes('Location.geocodeAsync'))failures.push('Consumer Explore must not require device geocoding for a typed destination.');

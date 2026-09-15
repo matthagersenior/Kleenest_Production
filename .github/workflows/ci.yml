@@ -65,6 +65,8 @@ jobs:
         run: node scripts/production-live-config-source-control-audit.mjs
       - name: Consumer product boundary
         run: node scripts/consumer-product-boundary-audit.mjs
+      - name: Relevance and sponsorship separation
+        run: node scripts/relevance-sponsorship-audit.mjs
       - name: Consumer presentation convergence
         run: node scripts/native-consumer-presentation-convergence-audit.mjs
       - name: Public marketing imagery convergence

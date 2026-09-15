@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
 import { SectionHeader, TrustStrip, palette } from '../components/ConsumerUI';
+import { SponsoredSlot } from '../components/SponsoredSlot';
 import { divisionForXp } from '../services/engagementMetaGame';
 import { getProgressionWorld } from '../services/discoveryProgression';
 import { useConsumerTheme } from '../services/theme';
@@ -32,6 +33,8 @@ export default function CommunityScreen(){
   const openActivity=(item:any)=>{if(item.locationId)router.push(`/location/${String(item.locationId)}`)};
   return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
     <View style={[s.hero,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#174c50',borderWidth:1,borderColor:theme.accent}]}><Text style={s.heroEyebrow}>COMMUNITY</Text><Text style={s.heroTitle}>People helping people find better bathrooms.</Text><Text style={s.heroBody}>Follow contributors whose real-world evidence you value. Reputation, verified visits, reviews and helpful signals stay visible so trust has context.</Text><TrustStrip items={['Visit-backed evidence','Contributor reputation','Local trust network']}/><View style={s.stats}><Stat value={following.length} label="following" dark/><Stat value={followers.length} label="followers" dark/><Stat value={activity.length} label="trusted updates" dark/></View></View>
+
+    <SponsoredSlot surface="social" contextClass="community_feed"/>
 
     <View style={[s.competition,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#12383b',borderWidth:1,borderColor:theme.accent}]}><View style={{flex:1}}><Text style={s.competitionKicker}>COMMUNITY COMPETITION</Text><Text style={s.competitionTitle}>Rivals, challenges and the Kleenest League.</Text><Text style={s.competitionBody}>Your badges, game mastery, useful contributions and standing become part of the social game. Follow people you respect, challenge them, and climb against the same community whose evidence you rely on.</Text></View><View style={s.competitionActions}><Pressable style={[s.competitionPrimary,{backgroundColor:theme.surface,borderColor:theme.line,borderWidth:1}]} onPress={()=>router.push('/games')}><Text style={[s.competitionPrimaryText,{color:theme.accent}]}>Game Center</Text></Pressable><Pressable style={[s.competitionSecondary,{backgroundColor:theme.accent,borderColor:theme.accent,borderWidth:1}]} onPress={()=>router.push('/progress')}><Text style={[s.competitionSecondaryText,{color:theme.accentText}]}>League + badges</Text></Pressable></View></View>
 
