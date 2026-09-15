@@ -8,6 +8,7 @@ const required=[
   'supabase/migrations/20260915061012_harden_relevance_public_rpc_boundary.sql',
   'supabase/migrations/20260915061134_harden_sponsored_event_integrity.sql',
   'supabase/migrations/20260915061440_repair_sponsored_campaign_owner_upsert.sql',
+  'supabase/migrations/20260915064351_keep_checkin_first_class_in_relevance.sql',
   'apps/consumer-mobile/services/heroRelevance.ts',
   'apps/consumer-mobile/components/RelevanceHeroCarousel.tsx',
   'apps/consumer-mobile/services/sponsorship.ts',
@@ -40,7 +41,7 @@ if(!failures.length){
   for(const token of ['sponsored_campaign_destination_https_check','revoke insert on public.sponsored_events','60 seconds','security definer'])if(!eventHardening.toLowerCase().includes(token))failures.push(`Sponsored event integrity missing hardening: ${token}`);
   for(const token of ['as keys(key)','as u(code)'])if(!campaignRepair.toLowerCase().includes(token))failures.push(`Owner campaign upsert repair missing: ${token}`);
 
-  for(const kind of ['review_ready','active_mission','fresh_kleenest','saved_choice','top_ranked','next_objective','find_bathroom','share_knowledge','scan_qr'])
+  for(const kind of ['review_ready','active_mission','fresh_kleenest','check_in','saved_choice','top_ranked','next_objective','find_bathroom','share_knowledge','scan_qr'])
     if(!hero.includes(kind))failures.push(`Organic hero ranking missing candidate: ${kind}`);
   if(/sponsored|advertisement|paid/i.test(hero))failures.push('Organic hero ranking service must not contain paid inventory.');
   if(!carousel.includes('pagingEnabled')||!carousel.includes('dotIndicators')||!carousel.includes('onMomentumScrollEnd'))failures.push('Organic hero carousel must support swipe paging and moving dot indicators.');
