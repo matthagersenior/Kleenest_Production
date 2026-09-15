@@ -89,7 +89,9 @@ need('Route nested cards','apps/consumer-mobile/app/route.tsx',[
 need('Explore nested cards','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',[
   'style={[s.routeCoverage,{backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.amenityMatchPill,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}',
-  'style={[s.locate,{backgroundColor:theme.surface,borderColor:theme.line,borderWidth:1}]}',
+  'style={[s.searchPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.searchThisArea,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.nearbySummary,{backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.primarySmall,s.cardAction,{backgroundColor:theme.accent}',
   'style={[s.primarySmall,s.selectedAction,{backgroundColor:theme.accent}',
 ]);
