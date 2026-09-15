@@ -671,6 +671,58 @@ for each row execute function public.copy_preventive_restroom_facility();
 
 -- Claimed businesses can explicitly create, correct, close, and reopen the
 -- restroom facilities they operate.
+create or replace function public.business_list_restroom_facilities(
+  p_business_id uuid,
+  p_location_id uuid,
+  p_include_closed boolean default true
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path to ''
+as $function$
+declare
+  v_result jsonb;
+begin
+  if auth.uid() is null then raise exception 'AUTH_REQUIRED'; end if;
+  if not public.business_can_manage(p_business_id) then raise exception 'BUSINESS_MANAGEMENT_REQUIRED'; end if;
+  if not exists(
+    select 1 from public.locations l
+    where l.id=p_location_id
+      and coalesce(l.business_id,l.claimed_business_id)=p_business_id
+  ) then raise exception 'LOCATION_NOT_MANAGED_BY_BUSINESS'; end if;
+
+  select coalesce(jsonb_agg(
+    jsonb_build_object(
+      'id',f.id,
+      'location_id',f.location_id,
+      'facility_type',f.facility_type,
+      'label',f.label,
+      'ordinal',f.ordinal,
+      'floor_label',f.floor_label,
+      'area_label',f.area_label,
+      'attributes',f.attributes,
+      'status',f.status,
+      'source',f.source,
+      'business_confirmed',f.business_confirmed,
+      'verified_at',f.verified_at,
+      'review_count',f.evidence_review_count,
+      'cleanliness_pct',f.evidence_cleanliness_pct,
+      'freshest_observed_at',f.latest_evidence_at
+    )
+    order by case f.status when 'active' then 1 when 'temporarily_closed' then 2 else 3 end,
+             f.facility_type,f.ordinal,coalesce(f.label,'')
+  ),'[]'::jsonb)
+  into v_result
+  from public.restroom_facilities f
+  where f.location_id=p_location_id
+    and (coalesce(p_include_closed,true) or f.status<>'closed');
+
+  return v_result;
+end;
+$function$;
+
 create or replace function public.business_manage_restroom_facility(
   p_business_id uuid,
   p_location_id uuid,
@@ -925,6 +977,7 @@ revoke all on function public.copy_qr_restroom_facility_to_check_in() from publi
 revoke all on function public.copy_remediation_restroom_facility() from public,anon,authenticated;
 revoke all on function public.copy_preventive_restroom_facility() from public,anon,authenticated;
 revoke all on function public.record_review_amenity_inventory(uuid,jsonb) from public,anon;
+revoke all on function public.business_list_restroom_facilities(uuid,uuid,boolean) from public,anon;
 revoke all on function public.business_manage_restroom_facility(uuid,uuid,uuid,text,jsonb) from public,anon;
 revoke all on function public.business_restroom_facility_analytics(uuid,uuid,integer) from public,anon;
 revoke all on function public.business_assign_qr_restroom_facility(uuid,uuid,uuid) from public,anon;
@@ -934,6 +987,7 @@ grant execute on function public.list_restroom_facility_summaries(uuid[]) to ano
 grant execute on function public.identify_restroom_facility(uuid,text,text) to authenticated,service_role;
 grant execute on function public.assign_check_in_restroom_facility(uuid,uuid) to authenticated,service_role;
 grant execute on function public.record_review_amenity_inventory(uuid,jsonb) to authenticated,service_role;
+grant execute on function public.business_list_restroom_facilities(uuid,uuid,boolean) to authenticated,service_role;
 grant execute on function public.business_manage_restroom_facility(uuid,uuid,uuid,text,jsonb) to authenticated,service_role;
 grant execute on function public.business_restroom_facility_analytics(uuid,uuid,integer) to authenticated,service_role;
 grant execute on function public.business_assign_qr_restroom_facility(uuid,uuid,uuid) to authenticated,service_role;
