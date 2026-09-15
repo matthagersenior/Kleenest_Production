@@ -5,6 +5,7 @@ const modesPath='apps/consumer-mobile/services/gameModes.ts';
 const source=fs.readFileSync(modesPath,'utf8');
 const migrations=fs.readdirSync('supabase/migrations').sort().map(name=>fs.readFileSync('supabase/migrations/'+name,'utf8')).join('\n');
 const latestGameAuthority=fs.readFileSync('supabase/migrations/20260913192500_game_center_score_records.sql','utf8');
+const challengeStatusFix=fs.readFileSync('supabase/migrations/20260915162500_fix_game_challenge_status_ambiguity.sql','utf8');
 
 const choiceModes=['evidence_tap','trust_quiz','rapid_fire','relay','strategy','amenity_sprint','route_puzzle','ranking','detective','multiplayer_trust'];
 const gameDefs=[...source.matchAll(/\{code:'([^']+)',name:'([^']+)'[^\n]*?mode:'([^']+)'[^\n]*?rounds:(\d+)/g)]
@@ -41,6 +42,8 @@ if(builderGame&&builderCount<builderGame.rounds)failures.push(`Amenity Architect
 
 if(!/values\(\s*v_user\s*,\s*'game_score'\s*,\s*'game'\s*,\s*v_game\.id/s.test(latestGameAuthority))failures.push("Game score persistence must use canonical progression source_type 'game'.");
 if(/'game_score'\s*,\s*'progression_game'/.test(latestGameAuthority))failures.push("Latest game score authority must not write unsupported source_type 'progression_game'.");
+if(!/update public\.game_challenges as gc[\s\S]*where gc\.status\s*=\s*'pending'/i.test(challengeStatusFix))failures.push('Game challenge listing must qualify status against the game_challenges table to avoid PL/pgSQL output-column ambiguity.');
+if(!/c\.status\s*=\s*p_status/i.test(challengeStatusFix))failures.push('Game challenge status filter must remain qualified to the challenge row.');
 const arenaPath='apps/consumer-mobile/app/game/[code].tsx';
 const playPath='apps/consumer-mobile/app/play.tsx';
 const hubPath='apps/consumer-mobile/app/games.tsx';
