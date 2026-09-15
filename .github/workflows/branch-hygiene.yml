@@ -1,0 +1,71 @@
+name: Branch Hygiene
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: kleenest-branch-hygiene-main
+  cancel-in-progress: true
+
+jobs:
+  cleanup:
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Delete merged pull-request branch
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [ "$HEAD_REF" != "main" ] || exit 0
+          CURRENT_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$HEAD_REF" --jq '.object.sha' 2>/dev/null || true)"
+          if [ -z "$CURRENT_SHA" ]; then
+            echo "Branch already absent: $HEAD_REF"
+            exit 0
+          fi
+          if [ "$CURRENT_SHA" != "$HEAD_SHA" ]; then
+            echo "Branch moved after PR merge; preserving $HEAD_REF at $CURRENT_SHA"
+            exit 0
+          fi
+          gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$HEAD_REF"
+          echo "Deleted merged branch: $HEAD_REF"
+
+      - name: Remove historical branches still pinned to merged PR heads
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=closed&per_page=100" \
+            --jq '.[] | select(.merged_at != null and .head.repo.full_name == .base.repo.full_name and .head.ref != "main") | [.head.ref,.head.sha] | @tsv' \
+            > "$RUNNER_TEMP/merged-pr-heads.tsv"
+
+          deleted=0
+          preserved=0
+          while IFS=$'\t' read -r ref merged_sha; do
+            [ -n "$ref" ] || continue
+            current_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$ref" --jq '.object.sha' 2>/dev/null || true)"
+            [ -n "$current_sha" ] || continue
+            if [ "$current_sha" != "$merged_sha" ]; then
+              preserved=$((preserved+1))
+              continue
+            fi
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$ref"
+            echo "Deleted historical merged branch: $ref"
+            deleted=$((deleted+1))
+          done < "$RUNNER_TEMP/merged-pr-heads.tsv"
+
+          echo "Historical branch cleanup: deleted=$deleted preserved_moved=$preserved"
