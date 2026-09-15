@@ -10,13 +10,14 @@ if(!failures.length){
   const [layout,home,exploreEntry,adaptiveExplore,discover,progress,location,profile,preferences,play,social,saved,route,qr,activity,notifications,membership,support,deletion,heroRelevance,adaptiveCore,core,mobilePackage,appConfig]=required.map(read);
   const explore=`${exploreEntry}\n${adaptiveExplore}`;
   if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Explore entry must resolve to the canonical adaptive Explore implementation.');
-  for(const [name,title] of [['index','Home'],['explore','Explore'],['progress','Progress'],['social','Community'],['profile','Profile']]){
+  for(const [name,title] of [['explore','Explore'],['progress','Progress'],['social','Community'],['profile','Profile']]){
     if(!layout.includes(`name="${name}"`)||!layout.includes(`title:'${title}'`))failures.push(`primary consumer tab missing or renamed: ${title}`);
   }
-  for(const hidden of ['play','discover','games','route','qr','saved','activity','notifications','membership','preferences','support','account-deletion'])if(!new RegExp(`name=["']${hidden}["'][^>]*href:\\s*null`).test(layout))failures.push(`secondary consumer route must remain reachable but hidden from primary tabs: ${hidden}`);
+  for(const hidden of ['index','play','discover','games','route','qr','saved','activity','notifications','membership','preferences','support','account-deletion'])if(!new RegExp(`name=["']${hidden}["'][^>]*href:\\s*null`).test(layout))failures.push(`secondary consumer route must remain reachable but hidden from primary tabs: ${hidden}`);
   for(const forbidden of ['Business','Fleet','Enterprise','Admin','Owner Control'])if(new RegExp(`title:\\s*['"]${forbidden}`).test(layout))failures.push(`consumer tab shell must not expose operations workspace: ${forbidden}`);
-  for(const token of ["'/explore'",'/saved','THE KLEENEST LOOP','YOUR NETWORK','/progress'])if(!home.includes(token))failures.push(`Home missing rich discovery/progression activation capability: ${token}`);
-  for(const token of ["route:'/qr'","route:'/discover'","route:'/explore'","route:'/progress'"])if(!heroRelevance.includes(token))failures.push(`Home organic relevance missing rich activation capability: ${token}`);
+  for(const token of ['Redirect','/explore','MarketingHome','useConsumerWebExperience'])if(!home.includes(token))failures.push(`Consumer app entry missing Explore-first activation capability: ${token}`);
+  for(const token of ['organizeDiscoveryRows','Search this area','Swipe up for results','SponsoredSlot surface="maps"'])if(!adaptiveExplore.includes(token))failures.push(`Explore functional home missing rich activation capability: ${token}`);
+  for(const token of ["route:'/qr'","route:'/discover'","route:'/explore'","route:'/progress'"])if(!heroRelevance.includes(token))failures.push(`Organic relevance policy missing rich activation capability: ${token}`);
 
   const matureDiscoveryCapabilities=[
     ['nearby restroom search',explore.includes('findAdaptiveNearbyRestrooms')&&explore.includes('listNearbyRestrooms')&&adaptiveCore.includes('listNearbyRestroomsV3')&&adaptiveCore.includes("rpc('map_network_nearby_v3'")],
