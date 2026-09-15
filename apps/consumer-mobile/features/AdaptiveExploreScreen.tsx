@@ -47,6 +47,7 @@ import {
   CompactRestroomSignals,
   MapLegend,
   PlaceIcon,
+  FreshnessHeatRing,
   RestroomSignals,
   restroomMarkerLabel,
 } from '../components/RestroomSignals';
@@ -1166,9 +1167,9 @@ export default function AdaptiveExploreScreen() {
                         event.stopPropagation();
                         selectRow(row);
                       }}
-                      style={[s.marker,{backgroundColor:theme.surface,borderColor:theme.line},active&&{backgroundColor:theme.accentSoft,borderColor:theme.accent}]}
+                      style={[s.marker,active&&s.markerActive]}
                     >
-                      <PlaceIcon item={row} size={active ? 28 : 22} />
+                      <FreshnessHeatRing item={row} size={active ? 28 : 22} active={active} />
                     </Pressable>
                   </Marker>
                 );
@@ -1411,8 +1412,8 @@ const s = StyleSheet.create({
   userLocationRing: { width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(32,106,69,.2)', alignItems: 'center', justifyContent: 'center' },
   userLocationDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: palette.green, borderWidth: 2, borderColor: '#fff' },
   searchedAreaMarker:{width:30,height:30,borderRadius:15,backgroundColor:'#fff',borderWidth:3,borderColor:'#986c20',alignItems:'center',justifyContent:'center'},searchedAreaMarkerText:{fontSize:18,fontWeight:'900',color:'#986c20'},
-  marker: { minWidth: 42, minHeight: 42, borderRadius: 21, backgroundColor: '#fff', borderWidth: 2, borderColor: palette.green, alignItems: 'center', justifyContent: 'center', padding: 4 },
-  markerActive: { borderWidth: 4, transform: [{ scale: 1.1 }] },
+  marker: { minWidth: 44, minHeight: 44, borderRadius: 22, backgroundColor: 'transparent', borderWidth: 0, alignItems: 'center', justifyContent: 'center', padding: 2 },
+  markerActive: { transform: [{ scale: 1.08 }] },
   markerPhoto:{width:34,height:34,borderRadius:17,backgroundColor:'#e7eee9'},
   markerPhotoActive:{width:42,height:42,borderRadius:21},
   mapBadge: { position: 'absolute', top: 9, left: 9, borderRadius: 999, backgroundColor: 'rgba(23,61,43,.9)', paddingHorizontal: 9, paddingVertical: 6 },
