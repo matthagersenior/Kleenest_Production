@@ -1,0 +1,21 @@
+name: Native explore home current
+
+on:
+  pull_request:
+    paths:
+      - 'apps/consumer-mobile/app/index.tsx'
+      - 'apps/consumer-mobile/app/_layout.tsx'
+      - 'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx'
+      - 'scripts/native-explore-home-current-audit.mjs'
+      - '.github/workflows/native-explore-home-current.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/native-explore-home-current-audit.mjs
