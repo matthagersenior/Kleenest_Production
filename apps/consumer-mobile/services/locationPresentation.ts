@@ -1,4 +1,5 @@
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { listRestroomFacilitySummaries } from './restroomFacilities';
 
 const LOCATION_BUCKET = 'location-photos';
 const REVIEW_BUCKET = 'review-photos';
@@ -51,12 +52,17 @@ export async function listLocationPresentations(locationIds: string[]): Promise<
 
 export async function attachLocationPresentations<T extends Record<string, any>>(rows: T[]): Promise<T[]> {
   const ids = rows.map((row) => String(row.location_id || row.id || '')).filter(Boolean);
-  const presentations = await listLocationPresentations(ids);
+  const [presentations,facilitySummaries] = await Promise.all([
+    listLocationPresentations(ids),
+    listRestroomFacilitySummaries(ids).catch(()=>[]),
+  ]);
   const byId = new Map(presentations.map((item) => [item.location_id, item]));
+  const facilitiesById = new Map(facilitySummaries.map((item)=>[item.location_id,item]));
   return rows.map((row) => {
     const id = String(row.location_id || row.id || '');
     const presentation = byId.get(id);
-    return presentation ? { ...row, ...presentation } : row;
+    const restroomFacilitySummary=facilitiesById.get(id)||null;
+    return { ...row, ...(presentation||{}), restroom_facility_summary:restroomFacilitySummary };
   });
 }
 
