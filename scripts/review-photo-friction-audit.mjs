@@ -12,6 +12,9 @@ const required=[
   "hasOptionalEvidence:Boolean(reviewPhotos.length||selectedAmenities.length)",
   'photoLaterHint',
   'photoFastPath',
+  'ADD PHOTOS FROM A PREVIOUS VISIT',
+  'photoFirstMode',
+  'reviewPhotoCount',
 ];
 let failed=false;
 for(const token of required){

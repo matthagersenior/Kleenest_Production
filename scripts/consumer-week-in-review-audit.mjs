@@ -15,9 +15,11 @@ need('supabase/migrations/20260914202500_consumer_week_in_review_and_review_prom
   "'consumer-week-in-review'"
 );
 need('apps/consumer-mobile/services/weekInReview.ts','my_week_in_review','reviewReady','verificationAvailable');
-need('apps/consumer-mobile/app/week-in-review.tsx','YOUR WEEK IN REVIEW','Review this visit','Presence detected');
+need('apps/consumer-mobile/app/week-in-review.tsx','YOUR WEEK IN REVIEW','Review + add photos','Choose saved photos','addPreviousVisitPhotos','chooseReviewPhotos','uploadReviewPhotos',"photoFirst:'1'",'Presence detected');
 need('apps/consumer-mobile/services/liveNetwork.ts','GeofencingEventType.Exit','notifyOnExit:true','consumer_presence_heartbeat');
 need('apps/consumer-mobile/app/_layout.tsx','name="week-in-review"');
+need('apps/consumer-mobile/app/location/[id].tsx','ADD PHOTOS FROM A PREVIOUS VISIT','photoFirstMode','reviewPhotoCount','Choose saved photos');
+need('apps/consumer-mobile/app/activity.tsx','Add previous-visit photos →',"/week-in-review");
 need('src/services/weekInReview.js','my_week_in_review');
 need('src/runtime/WeekInReviewPage.jsx','Week in review','Review this visit');
 need('src/runtime/App.jsx',"'/week-in-review'",'WrappedWeekInReview');

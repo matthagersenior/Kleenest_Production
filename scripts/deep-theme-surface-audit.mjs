@@ -69,6 +69,19 @@ requireTokens('Business operational cards','apps/business-mobile/app/operations.
 requireTokens('Fleet low-light field surfaces','apps/fleet-mobile/app/member.tsx',['theme.surface','theme.accentSoft']);
 requireTokens('KleenestOS control cards','apps/platform-mobile/app/control.tsx',['useOSCardStyle','theme.surface']);
 
+const platformThemeRoutes=[
+  'access','accounts','audit','auth','beta-incidents','businesses','capabilities','control','data','developers','feedback-inbox','history','index','intelligence','moderation','notifications','operations','pilots','privacy','progression','relevance','reports','support','terms'
+];
+for(const route of platformThemeRoutes){
+  const path=`apps/platform-mobile/app/${route}.tsx`;
+  requireTokens(`KleenestOS ${route} theme coverage`,path,['usePlatformTheme','theme.canvas','theme.ink','theme.muted']);
+}
+requireTokens('KleenestOS account theme coverage','apps/platform-mobile/app/account.tsx',['resolveKleenestTheme','theme.canvas','theme.surface','theme.ink','theme.muted']);
+requireTokens('KleenestOS Developer deep theme','apps/platform-mobile/app/developers.tsx',['theme.surface','theme.surfaceRaised','theme.accentText','theme.line']);
+requireTokens('KleenestOS Pilots deep theme','apps/platform-mobile/app/pilots.tsx',['theme.surface','theme.surfaceRaised','theme.accentText','theme.line']);
+requireTokens('KleenestOS Devices deep theme','apps/platform-mobile/app/devices.tsx',['usePlatformTheme','useOSCardStyle','theme.canvas','theme.ink','theme.muted','theme.accent']);
+
+
 
 const consumerThemeCompleteness=[
   ['Consumer Signup','apps/consumer-mobile/app/signup.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised','placeholderTextColor={theme.muted}']],

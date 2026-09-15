@@ -1,3 +1,4 @@
+import { usePlatformTheme } from '../services/theme';
 import { useEffect,useState } from 'react';
 import { RefreshControl,ScrollView,StyleSheet,Text,View } from 'react-native';
 import { getPlatformDashboard } from '../services/product';
@@ -14,34 +15,37 @@ function label(value:string){return value.replaceAll('_',' ').replace(/\b\w/g,ch
 function formatTimestamp(value:unknown){if(value===null||value===undefined||value==='')return'';const date=new Date(String(value));return Number.isNaN(date.getTime())?String(value):date.toLocaleString();}
 
 export default function History(){
+  const theme=usePlatformTheme();
  const[data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('Loading control history…');
  async function load(){setBusy(true);try{setData(await getPlatformDashboard());setMessage('')}catch(e:any){setMessage(e?.message||'Control history unavailable.')}finally{setBusy(false)}}
  useEffect(()=>{void load()},[]);
- return <ScrollView contentInsetAdjustmentBehavior="automatic" refreshControl={<RefreshControl refreshing={busy} onRefresh={load}/>} contentContainerStyle={s.page}>
-  <View style={s.hero}><Text style={s.eyebrow}>AUDITED CONTROL PLANE</Text><Text style={s.heroTitle}>Platform history</Text><Text style={s.heroCopy}>Review administrative mutations and recent platform activity as readable operator events instead of raw backend payloads.</Text></View>
-  {message?<Text style={s.message}>{message}</Text>:null}
+ return <ScrollView contentInsetAdjustmentBehavior="automatic" refreshControl={<RefreshControl refreshing={busy} onRefresh={load}/>} contentContainerStyle={[s.page,{backgroundColor:theme.canvas},{backgroundColor:theme.canvas}]}>
+  <View style={[s.hero,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:theme.accent,borderColor:theme.line},{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:theme.accent,borderColor:theme.line}]}><Text style={[s.eyebrow,{color:theme.accentText},{color:theme.accentText}]}>AUDITED CONTROL PLANE</Text><Text style={[s.heroTitle,{color:theme.accentText},{color:theme.accentText}]}>Platform history</Text><Text style={[s.heroCopy,{color:theme.accentText},{color:theme.accentText}]}>Review administrative mutations and recent platform activity as readable operator events instead of raw backend payloads.</Text></View>
+  {message?<Text style={[s.message,{color:theme.muted},{color:theme.muted}]}>{message}</Text>:null}
   <Section title="Control history" value={data?.history} emptyText="No control history recorded."/>
   <Section title="Platform activity" value={data?.activity} emptyText="No platform activity recorded."/>
  </ScrollView>;
 }
 
 function Section({title,value,emptyText}:{title:string;value:unknown;emptyText:string}){
+  const theme=usePlatformTheme();
  const rows=listRows(value);
- return <View style={s.section}><View style={s.sectionHead}><Text style={s.sectionTitle}>{title}</Text><Text style={s.count}>{rows.length} events</Text></View>{rows.length?rows.slice(0,100).map((row,index)=><HistoryCard key={field(row,['id','event_id','created_at'])||`${title}:${index}`} row={row}/>):<View style={s.empty}><Text style={s.emptyText}>{emptyText}</Text></View>}</View>;
+ return <View style={[s.section,{backgroundColor:theme.surface,borderColor:theme.line},{backgroundColor:theme.surface,borderColor:theme.line}]}><View style={s.sectionHead}><Text style={[s.sectionTitle,{color:theme.ink},{color:theme.ink}]}>{title}</Text><Text style={[s.count,{color:theme.ink},{color:theme.ink}]}>{rows.length} events</Text></View>{rows.length?rows.slice(0,100).map((row,index)=><HistoryCard key={field(row,['id','event_id','created_at'])||`${title}:${index}`} row={row}/>):<View style={[s.empty,{backgroundColor:theme.surface,borderColor:theme.line},{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={s.emptyText}>{emptyText}</Text></View>}</View>;
 }
 
 function HistoryCard({row}:{row:Row}){
+  const theme=usePlatformTheme();
  const action=field(row,['action','event_type','event','operation','kind','type'])||'Platform event';
  const subject=field(row,['resource','table_name','domain','target_type','entity_type','capability']);
  const status=field(row,['status','result','outcome','resolution']);
  const actor=field(row,['actor_email','admin_email','email','admin_user_id','user_id','actor_id']);
  const detail=field(row,['reason','message','description','issue','note']);
  const timestamp=formatTimestamp(row.created_at??row.occurred_at??row.recorded_at??row.updated_at);
- return <View style={s.card}>
-  <View style={s.cardHead}><Text style={s.cardTitle}>{label(action)}</Text>{status?<View style={s.status}><Text style={s.statusText}>{label(status)}</Text></View>:null}</View>
-  {subject?<Text style={s.subject}>{label(subject)}</Text>:null}
-  {detail?<Text style={s.detail}>{detail}</Text>:null}
-  <View style={s.metaRow}>{actor?<Text style={s.meta}>Actor · {actor}</Text>:null}{timestamp?<Text style={s.meta}>{timestamp}</Text>:null}</View>
+ return <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line},{backgroundColor:theme.surface,borderColor:theme.line}]}>
+  <View style={s.cardHead}><Text style={[s.cardTitle,{color:theme.ink},{color:theme.ink}]}>{label(action)}</Text>{status?<View style={s.status}><Text style={s.statusText}>{label(status)}</Text></View>:null}</View>
+  {subject?<Text style={[s.subject,{color:theme.ink},{color:theme.ink}]}>{label(subject)}</Text>:null}
+  {detail?<Text style={[s.detail,{color:theme.muted},{color:theme.muted}]}>{detail}</Text>:null}
+  <View style={s.metaRow}>{actor?<Text style={[s.meta,{color:theme.muted},{color:theme.muted}]}>Actor · {actor}</Text>:null}{timestamp?<Text style={[s.meta,{color:theme.muted},{color:theme.muted}]}>{timestamp}</Text>:null}</View>
  </View>;
 }
 
