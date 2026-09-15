@@ -44,6 +44,14 @@ for (const name of [
 const ci = read('ci.yml');
 requireText(ci, 'npm audit --audit-level=moderate', 'Production CI must reject every published moderate-or-higher dependency advisory.');
 requireText(ci, 'node scripts/ci-freshness-policy-audit.mjs', 'Production CI must enforce its own freshness policy.');
+requireText(ci, 'fetch-depth: 0', 'Production CI must fetch enough history to prove PR ancestry.');
+requireText(ci, 'Require PR branch current with main', 'Production CI must reject PR branches that drift behind main.');
+requireText(ci, 'git merge-base --is-ancestor', 'Production CI must prove the PR head contains current main before merge.');
+
+const branchHygiene = read('branch-hygiene.yml');
+for (const token of ['pull_request:','types: [closed]','push:','branches: [main]','contents: write','Delete merged pull-request branch','Remove historical branches still pinned to merged PR heads','github.event.pull_request.merged == true']) {
+  requireText(branchHygiene, token, 'Branch hygiene policy missing '+token);
+}
 
 const platformIntegration = read('platform-integration.yml');
 requireText(platformIntegration, 'name: platform-integration', 'Path-specific Platform Integration CI must not publish the generic required verify context.');
