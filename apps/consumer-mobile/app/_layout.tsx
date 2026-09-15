@@ -96,6 +96,7 @@ export default function RootLayout() {
     <Tabs.Screen name="game/[code]" options={{ href:null,title:'Game Arena',headerShown:false }}/>
     <Tabs.Screen name="route" options={{ href:null,title:'Routes' }}/>
     <Tabs.Screen name="qr" options={{ href:null,title:'Scan QR' }}/>
+    <Tabs.Screen name="location-qr" options={{ href:null,title:'Location QR' }}/>
     <Tabs.Screen name="location/[id]" options={{ href:null,title:'Restroom' }}/>
     <Tabs.Screen name="contributor/[id]" options={{ href:null,title:'Contributor' }}/>
     <Tabs.Screen name="saved" options={{ href:null,title:'Saved bathrooms' }}/>
