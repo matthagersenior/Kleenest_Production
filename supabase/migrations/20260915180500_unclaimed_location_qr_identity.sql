@@ -165,7 +165,7 @@ begin
   end if;
 
   if v_qr.business_id is distinct from v_business
-     or v_qr.identity_scope is distinct from case when v_business is null then 'community' else 'business' end then
+     or v_qr.identity_scope is distinct from (case when v_business is null then 'community' else 'business' end) then
     update public.qr_codes
     set business_id=v_business,
         identity_scope=case when v_business is null then 'community' else 'business' end,
