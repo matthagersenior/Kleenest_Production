@@ -16,7 +16,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   FlatList,
-  Image,
   Modal,
   Platform,
   Pressable,
@@ -312,7 +311,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         style={s.cardMain}
       >
         <View style={s.cardTop}>
-          {item.consumer_photo_url?<Image source={{uri:String(item.consumer_photo_url)}} style={[s.cardPhoto,{backgroundColor:theme.surfaceRaised}]}/>:<FreshnessHeatRing item={item} size={34} />}
+          <FreshnessHeatRing item={item} size={34} photoUrl={item.consumer_photo_url ? String(item.consumer_photo_url) : undefined} />
           <View style={{ flex: 1 }}>
             <View style={s.cardTitleRow}>
               <Text style={[s.cardTitle,{color:theme.ink}]}>{item.name || 'Restroom location'}</Text>
@@ -1275,7 +1274,7 @@ export default function AdaptiveExploreScreen() {
                 </View>
                 <ScrollView style={s.selectedBodyScroll} contentContainerStyle={s.selectedBodyContent} showsVerticalScrollIndicator={false}>
                   <View style={s.selectedRow}>
-                    {selected.consumer_photo_url?<Image source={{uri:String(selected.consumer_photo_url)}} style={[s.selectedPhoto,{backgroundColor:theme.surfaceRaised}]}/>:<FreshnessHeatRing item={selected} size={34} />}
+                    <FreshnessHeatRing item={selected} size={34} photoUrl={selected.consumer_photo_url ? String(selected.consumer_photo_url) : undefined} />
                     <View style={{ flex: 1 }}>
                       <View style={s.cardTitleRow}>
                         <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{selected.name || 'Restroom location'}</Text>
@@ -1513,7 +1512,7 @@ const s = StyleSheet.create({
   nearbySummary:{position:'absolute',left:10,right:10,bottom:82,zIndex:34,elevation:10,borderRadius:14,borderWidth:1,paddingHorizontal:12,paddingVertical:8},
   nearbySummaryTitle:{fontSize:11,fontWeight:'900'},
   nearbySummaryHint:{fontSize:9,fontWeight:'800',marginTop:2},
-  selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 252, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
+  selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
   selectedBodyScroll:{flex:1},
   selectedBodyContent:{gap:4,paddingBottom:0},
   selectedHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },

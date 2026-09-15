@@ -5,6 +5,7 @@ const read=file=>fs.readFileSync(file,'utf8');
 const required=[
   'apps/consumer-mobile/components/RestroomSignals.tsx',
   'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
+  'apps/consumer-mobile/app/location/[id].tsx',
   'src/services/nearby.js',
   'src/runtime/ExplorePage.jsx',
   'src/styles.css',
@@ -14,25 +15,27 @@ for(const file of required)if(!fs.existsSync(file))failures.push('Missing freshn
 if(!failures.length){
   const signals=read(required[0]);
   const explore=read(required[1]);
-  const nearby=read(required[2]);
-  const web=read(required[3]);
-  const css=read(required[4]);
+  const locationDetail=read(required[2]);
+  const nearby=read(required[3]);
+  const web=read(required[4]);
+  const css=read(required[5]);
 
   for(const token of [
     'FreshnessHeatRing','freshnessHeatSignal','freshestEvidenceAt',
     "'#ef4444'","'#f97316'","'#facc15'","'#84cc16'","'#06b6d4'","'#3b82f6'","'#94a3b8'",
     'evidenceFrame={false}','FRESHNESS RING',
-    'borderColor:heat.color','borderWidth:4','const ringSize=size+12'
+    'borderColor:heat.color','borderWidth:4','const ringSize=size+12',
+    'photoUrl?:string','source={{uri:photoUrl}}'
   ])if(!signals.includes(token))failures.push('Native freshness ring missing '+token);
   if(signals.includes("Needs verification · dashed ring"))failures.push('Map legend must not describe freshness as a dashed verification ring.');
   if(/freshestEvidenceAt\([^)]*\)[\s\S]{0,800}updated_at/.test(signals))failures.push('Freshness must not use generic updated_at metadata.');
 
   for(const token of ['FreshnessHeatRing','<FreshnessHeatRing',"backgroundColor: 'transparent'"])
     if(!explore.includes(token))failures.push('Native Explore heat-ring wiring missing '+token);
-  if(!explore.includes('<FreshnessHeatRing item={item} size={34} />'))
-    failures.push('Native Explore search-result cards must render their place icon inside the freshness heat ring.');
-  if(!explore.includes('<FreshnessHeatRing item={selected} size={34} />'))
-    failures.push('Native Explore selected map-pin card must use the exact same freshness ring geometry as result cards.');
+  if(!explore.includes('<FreshnessHeatRing item={item} size={34} photoUrl={item.consumer_photo_url ? String(item.consumer_photo_url) : undefined} />'))
+    failures.push('Native Explore search-result cards must keep the freshness heat ring even when a community photo is available.');
+  if(!explore.includes('<FreshnessHeatRing item={selected} size={34} photoUrl={selected.consumer_photo_url ? String(selected.consumer_photo_url) : undefined} />'))
+    failures.push('Native Explore selected map-pin card must keep the freshness heat ring even when a community photo is available.');
   if(!explore.includes('<FreshnessHeatRing item={row} size={22} />'))
     failures.push('Native map markers must keep one freshness-ring geometry; selection belongs to the marker wrapper.');
   if(signals.includes('active?5:4')||signals.includes('active?16:12')||explore.includes('active={active}')||explore.includes('size={active ? 28 : 22}'))
@@ -40,12 +43,15 @@ if(!failures.length){
   for(const token of [
     '<ScrollView style={s.selectedBodyScroll}',
     'showsVerticalScrollIndicator={false}',
-    "selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 252",
+    "selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228",
     'selectedBodyScroll:{flex:1}',
     'selectedBodyContent:{gap:4,paddingBottom:0}',
   ])if(!explore.includes(token))failures.push('Native selected map card containment missing '+token);
   if(explore.includes("style={[s.marker,{backgroundColor:theme.surface,borderColor:theme.line}"))
     failures.push('Native map marker wrapper must not replace the freshness ring with a generic border.');
+
+  if(!locationDetail.includes('<FreshnessHeatRing item={place} size={50}/>'))
+    failures.push('Native full details must keep the freshness heat ring visible in location identity.');
 
   for(const token of ['mobile_location_trust_summaries','mobile_location_network_statuses','trustById','networkById'])
     if(!nearby.includes(token))failures.push('Web nearby freshness enrichment missing '+token);
@@ -65,4 +71,4 @@ if(failures.length){
   for(const failure of failures)console.error('- '+failure);
   process.exit(1);
 }
-console.log('Map freshness heat-ring audit passed: freshness owns the heat ring, selection stays separate, and verification remains an independent signal.');
+console.log('Map freshness heat-ring audit passed: freshness owns the heat ring across map, cards and full details, photos stay inside the signal, selection stays separate, and verification remains independent.');
