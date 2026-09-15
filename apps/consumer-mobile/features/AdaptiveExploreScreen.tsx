@@ -39,7 +39,7 @@ import {
   writeNearbyCache,
   writeNearbyContinuity,
 } from '../services/nearbyCache';
-import { captureConsumerDiscovery, captureConsumerRouteIntent } from '../services/consumerTelemetry';
+import { captureConsumerCoreLoopEvent, captureConsumerDiscovery, captureConsumerRouteIntent } from '../services/consumerTelemetry';
 import { listNearbyProgressionOpportunities } from '../services/discoveryProgression';
 import { attachLocationPresentations } from '../services/locationPresentation';
 import { recordConsumerPresenceAt, refreshConsumerPresence, type ConsumerPresence } from '../services/presence';
@@ -466,6 +466,7 @@ export default function AdaptiveExploreScreen() {
 
   function selectRow(row: any) {
     const id = idOf(row);
+    if(id)captureConsumerCoreLoopEvent('place_selected',id,{source:'explore'});
     setSelectedId(id);
     if (hasCoordinates(row)) {
       setMapCenter([Number(row.longitude), Number(row.latitude)]);
@@ -645,6 +646,7 @@ export default function AdaptiveExploreScreen() {
     setEffectiveRadiusMeters(result.effectiveRadiusMeters);setAttemptedRadiiMeters(result.attemptedRadiiMeters);setCached(false);setSelectedId(preservedId);
 
     captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:enriched.length,search:rawQuery,amenityCount:selectedAmenityNames.length});
+    captureConsumerCoreLoopEvent('nearby_results_shown',null,{resultCount:enriched.length,radiusMeters:result.effectiveRadiusMeters,search:Boolean(rawQuery),cached:false});
 
     if (!areaMatch&&!query && !selectedAmenityNames.length && enriched.length) {
       void writeNearbyCache(enriched,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
@@ -773,7 +775,10 @@ export default function AdaptiveExploreScreen() {
   async function directions(row: any) {
     if (!hasCoordinates(row)) return;
     const id = idOf(row);
-    if (id) captureConsumerRouteIntent(id);
+    if (id) {
+      captureConsumerRouteIntent(id);
+      captureConsumerCoreLoopEvent('navigation_started',id,{source:'explore'});
+    }
     await Linking.openURL(navigateUrl(row));
   }
 
@@ -807,6 +812,7 @@ export default function AdaptiveExploreScreen() {
         progressionCapReached:Boolean(result?.progression_cap_reached),
         alreadyCheckedIn:Boolean(result?.already_checked_in),
       }}));
+      captureConsumerCoreLoopEvent('arrival_detected',id,{reviewReady:Boolean(result?.review_ready),alreadyCheckedIn:Boolean(result?.already_checked_in)});
     }catch(error:any){
       const detail=String(error?.message||'');
       const failureMessage=detail.includes('OUTSIDE_GEOFENCE')
