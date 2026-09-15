@@ -328,7 +328,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
           accessibilityLabel="Start directions to this location"
           accessibilityHint="Start navigation"
           disabled={!hasCoordinates(item)}
-          style={[s.primarySmall, s.cardAction, !hasCoordinates(item) && s.disabled]}
+          style={[s.primarySmall,s.cardAction,{backgroundColor:theme.accent},!hasCoordinates(item)&&s.disabled]}
           onPress={onDirections}
         >
           <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
@@ -1195,7 +1195,7 @@ export default function AdaptiveExploreScreen() {
             {selected ? (
               <View pointerEvents="auto" style={[s.selectedPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
                 <View style={s.selectedHead}>
-                  <Text style={s.selectedLabel}>BEST NEXT DECISION</Text>
+                  <Text style={[s.selectedLabel,{color:theme.accent}]}>BEST NEXT DECISION</Text>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Close selected location"
@@ -1207,48 +1207,50 @@ export default function AdaptiveExploreScreen() {
                     <Text style={[s.closeLabel,{color:theme.muted}]}>Close</Text>
                   </Pressable>
                 </View>
-                <View style={s.selectedRow}>
-                  {selected.consumer_photo_url?<Image source={{uri:String(selected.consumer_photo_url)}} style={[s.selectedPhoto,{backgroundColor:theme.surfaceRaised}]}/>:<FreshnessHeatRing item={selected} size={34} active />}
-                  <View style={{ flex: 1 }}>
-                    <View style={s.cardTitleRow}>
-                      <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{selected.name || 'Restroom location'}</Text>
-                      {selected.discovery_recommended?<View style={[s.recommendedBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.recommendedBadgeText,{color:theme.accent}]}>RECOMMENDED</Text></View>:null}
+                <ScrollView style={s.selectedBodyScroll} contentContainerStyle={s.selectedBodyContent} showsVerticalScrollIndicator={false}>
+                  <View style={s.selectedRow}>
+                    {selected.consumer_photo_url?<Image source={{uri:String(selected.consumer_photo_url)}} style={[s.selectedPhoto,{backgroundColor:theme.surfaceRaised}]}/>:<FreshnessHeatRing item={selected} size={34} active />}
+                    <View style={{ flex: 1 }}>
+                      <View style={s.cardTitleRow}>
+                        <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{selected.name || 'Restroom location'}</Text>
+                        {selected.discovery_recommended?<View style={[s.recommendedBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.recommendedBadgeText,{color:theme.accent}]}>RECOMMENDED</Text></View>:null}
+                      </View>
+                      {selected.discovery_recommended?<Text style={[s.recommendedReason,{color:theme.muted}]}>{recommendationReason(selected,selectedAmenityNames)}</Text>:null}
+                      <Text numberOfLines={2} style={[s.meta,{color:theme.muted}]}>
+                        {selectedRoutePosition || distanceLabel(selected.distance_meters)}
+                        {' · '}{[selected.address, selected.city].filter(Boolean).join(', ') || 'Address unavailable'}
+                      </Text>
                     </View>
-                    {selected.discovery_recommended?<Text style={[s.recommendedReason,{color:theme.muted}]}>{recommendationReason(selected,selectedAmenityNames)}</Text>:null}
-                    <Text numberOfLines={2} style={[s.meta,{color:theme.muted}]}>
-                      {selectedRoutePosition || distanceLabel(selected.distance_meters)}
-                      {' · '}{[selected.address, selected.city].filter(Boolean).join(', ') || 'Address unavailable'}
-                    </Text>
                   </View>
-                </View>
-                <CompactRestroomSignals item={selected} />
-                {selected.network?.network_verified&&!selected.network?.business_claimed?<Text style={[s.networkSelectedLine,{color:theme.accent}]}>K✓ Verified by the Kleenest Network · {networkEvidenceSummary(selected.network)}</Text>:null}
-                <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
-                <View style={s.actionRow}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Start directions to this location"
-          accessibilityHint="Start navigation"
-                    style={[s.primarySmall, s.selectedAction, !hasCoordinates(selected) && s.disabled]}
-                    disabled={!hasCoordinates(selected)}
-                    onPress={() => void directions(selected)}
-                  >
-                    <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
-                  </Pressable>
-                  <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking your location':selected.visit_verification_available?'Verify your detected visit at selected location':'Verify that I am at selected location'} accessibilityHint="Check in" accessibilityState={{disabled:Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking',busy:checkInFeedback[idOf(selected)]?.status==='checking'}} disabled={Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking'} style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},(selected.active_check_in||checkInFeedback[idOf(selected)]?.status==='checking')&&s.disabled]} onPress={() => void checkIn(selected)}>
-                    <Text style={[s.secondaryText,{color:theme.accent}]}>{selected.active_check_in?'Checked in ✓':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking location…':selected.visit_verification_available?'Verify visit':"I'm here"}</Text>
-                  </Pressable>
-                  <Pressable style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => addToRoute(selected)}>
-                    <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
-                  </Pressable>
-                  <Pressable style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => contributeKnowledge(selected)}>
-                    <Text style={[s.secondaryText,{color:theme.accent}]}>I know this place</Text>
-                  </Pressable>
-                  <Pressable style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => router.push(`/location/${idOf(selected)}`)}>
-                    <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
-                  </Pressable>
-                </View>
-                <CheckInStatus feedback={checkInFeedback[idOf(selected)]} onReview={() => router.push({pathname:'/location/[id]',params:{id:idOf(selected),review:'1'}})} />
+                  <CompactRestroomSignals item={selected} />
+                  {selected.network?.network_verified&&!selected.network?.business_claimed?<Text style={[s.networkSelectedLine,{color:theme.accent}]}>K✓ Verified by the Kleenest Network · {networkEvidenceSummary(selected.network)}</Text>:null}
+                  <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
+                  <View style={s.actionRow}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Start directions to this location"
+                      accessibilityHint="Start navigation"
+                      style={[s.primarySmall,s.selectedAction,{backgroundColor:theme.accent},!hasCoordinates(selected)&&s.disabled]}
+                      disabled={!hasCoordinates(selected)}
+                      onPress={() => void directions(selected)}
+                    >
+                      <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking your location':selected.visit_verification_available?'Verify your detected visit at selected location':'Verify that I am at selected location'} accessibilityHint="Check in" accessibilityState={{disabled:Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking',busy:checkInFeedback[idOf(selected)]?.status==='checking'}} disabled={Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking'} style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},(selected.active_check_in||checkInFeedback[idOf(selected)]?.status==='checking')&&s.disabled]} onPress={() => void checkIn(selected)}>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>{selected.active_check_in?'Checked in ✓':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking location…':selected.visit_verification_available?'Verify visit':"I'm here"}</Text>
+                    </Pressable>
+                    <Pressable style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => addToRoute(selected)}>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
+                    </Pressable>
+                    <Pressable style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => contributeKnowledge(selected)}>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>I know this place</Text>
+                    </Pressable>
+                    <Pressable style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => router.push(`/location/${idOf(selected)}`)}>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
+                    </Pressable>
+                  </View>
+                  <CheckInStatus feedback={checkInFeedback[idOf(selected)]} onReview={() => router.push({pathname:'/location/[id]',params:{id:idOf(selected),review:'1'}})} />
+                </ScrollView>
               </View>
             ) : null}
           </View>
@@ -1422,7 +1424,9 @@ const s = StyleSheet.create({
   mapControl: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cbd9d0', alignItems: 'center', justifyContent: 'center' },
   mapControlText: { fontSize: 19, fontWeight: '900', color: palette.green },
   legendWrap: { position: 'absolute', top: 50, left: 9, right: 54 },
-  selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, zIndex: 40, elevation: 12, borderRadius: 13, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 5 },
+  selectedPanel: { position: 'absolute', left: 9, right: 54, top: 9, bottom: 9, zIndex: 40, elevation: 12, borderRadius: 13, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 5, overflow:'hidden' },
+  selectedBodyScroll:{flex:1},
+  selectedBodyContent:{gap:5,paddingBottom:2},
   selectedHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   selectedLabel: { flex: 1, fontSize: 8, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
   close: { minWidth: 72, minHeight: 44, zIndex: 41, elevation: 13, borderRadius: 22, backgroundColor: palette.green, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 12 },
