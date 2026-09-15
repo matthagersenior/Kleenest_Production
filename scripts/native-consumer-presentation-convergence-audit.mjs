@@ -4,7 +4,7 @@ const read=path=>fs.readFileSync(path,'utf8');
 const requireAll=(path,tokens)=>{const source=read(path);for(const token of tokens){if(!source.includes(token))throw new Error(`${path} missing presentation contract: ${token}`)}return source};
 
 const ui=requireAll('apps/consumer-mobile/components/ConsumerUI.tsx',['HeroCard','FeatureCard','SectionHeader','TrustStrip','MetricTile','palette']);
-const layout=requireAll('apps/consumer-mobile/app/_layout.tsx',["title:'Home'","title:'Explore'","title:'Progress'","title:'Community'","title:'Profile'","name=\"play\"","name=\"discover\"","name=\"preferences\"",'tabBarActiveTintColor']);
+const layout=requireAll('apps/consumer-mobile/app/_layout.tsx',["title:'Home'","title:'Explore'","title:'Progress'","title:'Community'","title:'Profile'","name=\"play\"","name=\"discover\"","name=\"preferences\"",'tabBarActiveTintColor','const tabLabel=','adjustsFontSizeToFit',"tabBarLabel:tabLabel('Community')"]);
 const home=requireAll('apps/consumer-mobile/app/index.tsx',['Redirect','/explore','MarketingHome','useConsumerWebExperience']);
 const heroRelevance=requireAll('apps/consumer-mobile/services/heroRelevance.ts',['review_ready','active_mission','fresh_kleenest','saved_choice','top_ranked','next_objective','find_bathroom','share_knowledge','scan_qr',"route:'/explore'","route:'/discover'","route:'/progress'","route:'/qr'"]);
 const explorePath='apps/consumer-mobile/app/explore.tsx';
