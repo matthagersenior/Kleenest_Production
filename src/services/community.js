@@ -1,7 +1,7 @@
 import { getSupabase } from '../lib/supabase.js';
 
 export async function listLocationReviews(locationId, limit = 30) {
-  const { data, error } = await getSupabase().from('reviews').select('id,location_id,user_id,check_in_id,stars,cleanliness_pct,comment,status,business_reply,business_replied_at,created_at').eq('location_id', locationId).eq('status', 'published').order('created_at', { ascending: false }).limit(limit);
+  const { data, error } = await getSupabase().from('reviews').select('id,location_id,user_id,check_in_id,restroom_facility_id,stars,cleanliness_pct,comment,status,business_reply,business_replied_at,created_at').eq('location_id', locationId).eq('status', 'published').order('created_at', { ascending: false }).limit(limit);
   if (error) throw error;
   return data || [];
 }
