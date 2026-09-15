@@ -18,6 +18,7 @@ import {
   FlatList,
   Image,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   SafeAreaView,
@@ -413,7 +414,7 @@ export default function AdaptiveExploreScreen() {
   const [cached, setCached] = useState(false);
   const [mapInteracting,setMapInteracting]=useState(false);
   const [searchPanelHeight,setSearchPanelHeight]=useState(0);
-  const searchPanelTop=Math.max(8,insets.top+4);
+  const searchPanelTop=Platform.OS==='android'?Math.max(8,insets.top+4):8;
   const mapChromeTop=searchPanelTop+searchPanelHeight+10;
 
   const visibleRows=useMemo(()=>rows.filter((row)=>{
