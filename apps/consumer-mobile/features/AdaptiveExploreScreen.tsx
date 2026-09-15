@@ -49,7 +49,6 @@ import {
   MapLegend,
   PlaceIcon,
   FreshnessHeatRing,
-  RestroomSignals,
   restroomMarkerLabel,
 } from '../components/RestroomSignals';
 import { palette } from '../components/ConsumerUI';
@@ -188,6 +187,24 @@ function trustSummaryLine(item: any) {
   ].filter(Boolean);
   return parts.length ? parts.join(' · ') : 'Community evidence building';
 }
+function trustEvidenceLine(item:any){
+  const trust=item?.trust||{};
+  const network=item?.network||{};
+  const confirmations=Math.max(Number(trust?.verified_visit_count||0),Number(network?.verified_visits||0));
+  const photos=Number(trust?.photo_evidence_count||0);
+  const amenities=Number(trust?.amenity_evidence_count||0);
+  const contradictionRaw=trust?.contradiction_count??network?.contradiction_count;
+  const contradictions=contradictionRaw==null?null:Number(contradictionRaw);
+  const fresh=visitFreshness(trust?.latest_verified_at||network?.latest_evidence_at);
+  const parts=[
+    fresh?`Freshness: ${fresh}`:null,
+    confirmations?`${confirmations} independent verified visit${confirmations===1?'':'s'}`:null,
+    photos?`${photos} photo evidence`:null,
+    amenities?`${amenities} amenity confirmation${amenities===1?'':'s'}`:null,
+    contradictions!=null&&Number.isFinite(contradictions)&&contradictions>0?`${contradictions} contradiction signal${contradictions===1?'':'s'} to review`:null,
+  ].filter(Boolean);
+  return parts.length?parts.join(' · '):'Evidence is still building. Another independent visit can make this recommendation stronger.';
+}
 
 function matchedRequestedAmenities(item: any, requested: string[]) {
   if (!requested.length || !Array.isArray(item?.amenities)) return [] as string[];
@@ -281,6 +298,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
   const eta = route ? Math.max(0, Number(route.durationMinutes || 0) * fraction) : null;
   const reviewCount = Number(item.review_count || 0);
   const checkInBusy=checkInFeedback?.status==='checking';
+  const [showTrustEvidence,setShowTrustEvidence]=useState(false);
   return (
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}, selected && s.cardActive]}>
       <Pressable
@@ -314,14 +332,19 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
             ~{Math.round(eta)} min ahead · {distanceLabel(item.distance_to_route_meters)} from route
           </Text>
         ) : null}
-        <RestroomSignals item={item} compact />
+        <CompactRestroomSignals item={item} />
         <RequestedAmenityMatches item={item} requested={requestedAmenities} />
+        <View style={s.trustSummaryRow}>
+          <Text style={[s.trustLine,{color:theme.ink}]}>{trustSummaryLine(item)}</Text>
+          <Pressable accessibilityRole="button" accessibilityState={{expanded:showTrustEvidence}} onPress={()=>setShowTrustEvidence(value=>!value)} hitSlop={8}>
+            <Text style={[s.trustWhy,{color:theme.accent}]}>{showTrustEvidence?'Hide evidence':'Why trusted?'}</Text>
+          </Pressable>
+        </View>
+        {showTrustEvidence?<View style={[s.trustEvidenceBox,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+          <Text style={[s.trustEvidenceText,{color:theme.ink}]}>{trustEvidenceLine(item)}</Text>
+          {item.network?.network_verified&&!item.network?.business_claimed?<Text style={[s.networkSelectedLine,{color:theme.accent}]}>K✓ Kleenest Network verified · {networkEvidenceSummary(item.network)}</Text>:null}
+        </View>:null}
         {reviewCount > 0 ? <Text style={[s.meta,{color:theme.muted}]}>{reviewCount} review{reviewCount === 1 ? '' : 's'}</Text> : null}
-        <Text style={[s.trustLine,{color:theme.ink}]}>{trustSummaryLine(item)}</Text>
-        {item.network?.network_verified&&!item.network?.business_claimed?<View style={[s.networkCallout,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.networkKicker,{color:theme.accent}]}>K✓ KLEENEST NETWORK VERIFIED</Text><Text style={[s.networkBody,{color:theme.ink}]}>{networkEvidenceSummary(item.network)}</Text><Text style={[s.networkMeta,{color:theme.muted}]}>Verified by independent Kleenest evidence. This business has not claimed the location.</Text></View>:null}
-        <Text style={[s.hint,{color:theme.muted}]}>
-          {selected ? 'Selected on map' : 'Tap this card to focus its map pin'}
-        </Text>
       </Pressable>
       <View style={s.cardActionRow}>
         <Pressable
@@ -1182,7 +1205,7 @@ export default function AdaptiveExploreScreen() {
                       }}
                       style={[s.marker,active&&s.markerActive]}
                     >
-                      <FreshnessHeatRing item={row} size={active ? 28 : 22} active={active} />
+                      <FreshnessHeatRing item={row} size={22} />
                     </Pressable>
                   </Marker>
                 );
@@ -1234,12 +1257,11 @@ export default function AdaptiveExploreScreen() {
                     style={[s.close,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
                   >
                     <Text style={[s.closeText,{color:theme.accent}]}>×</Text>
-                    <Text style={[s.closeLabel,{color:theme.muted}]}>Close</Text>
                   </Pressable>
                 </View>
                 <ScrollView style={s.selectedBodyScroll} contentContainerStyle={s.selectedBodyContent} showsVerticalScrollIndicator={false}>
                   <View style={s.selectedRow}>
-                    {selected.consumer_photo_url?<Image source={{uri:String(selected.consumer_photo_url)}} style={[s.selectedPhoto,{backgroundColor:theme.surfaceRaised}]}/>:<FreshnessHeatRing item={selected} size={34} active />}
+                    {selected.consumer_photo_url?<Image source={{uri:String(selected.consumer_photo_url)}} style={[s.selectedPhoto,{backgroundColor:theme.surfaceRaised}]}/>:<FreshnessHeatRing item={selected} size={34} />}
                     <View style={{ flex: 1 }}>
                       <View style={s.cardTitleRow}>
                         <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{selected.name || 'Restroom location'}</Text>
@@ -1329,9 +1351,13 @@ export default function AdaptiveExploreScreen() {
               <Text style={[s.emptyTitle,{color:theme.ink}]}>No qualifying results yet.</Text>
               <Text style={[s.help,{color:theme.muted}]}>
                 {mode === 'nearby'
-                  ? (activeFilterCount?'Clear or loosen filters to show more nearby places.':'Change the radius or search area and try again.')
+                  ? (activeFilterCount?'Your filters are hiding the broader nearby network.':'Kleenest does not have a strong nearby match yet. You can expand the search or add what is missing.')
                   : 'Build or adjust your saved route, widen its corridor, or change amenity requirements.'}
               </Text>
+              <View style={s.emptyActions}>
+                {mode==='nearby'&&activeFilterCount?<Pressable accessibilityRole="button" style={[s.emptyPrimary,{backgroundColor:theme.accent}]} onPress={()=>{resetFilters();setTimeout(()=>void load(),0)}}><Text style={[s.primaryText,{color:theme.accentText}]}>Show everything nearby</Text></Pressable>:null}
+                <Pressable accessibilityRole="button" accessibilityLabel="Add a missing bathroom" style={[s.emptySecondary,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={()=>router.push('/discover')}><Text style={[s.secondaryText,{color:theme.accent}]}>Add a missing bathroom</Text></Pressable>
+              </View>
             </View>
           </View>
         ) : null}
@@ -1345,7 +1371,7 @@ export default function AdaptiveExploreScreen() {
             >
               <Text style={s.listEyebrow}>MISSING A PLACE?</Text>
               <Text style={[s.missingTitle,{color:theme.ink}]}>Add a missing bathroom</Text>
-              <Text style={[s.help,{color:theme.muted}]}>Contribute a place that is not in the Kleenest network yet.</Text>
+              <Text style={[s.help,{color:theme.muted}]}>Name + address is enough to start. Add stronger evidence now or later and earn progression when it qualifies.</Text>
             </Pressable>
           </View>
         }
@@ -1462,19 +1488,18 @@ const s = StyleSheet.create({
   nearbySummaryHint:{fontSize:9,fontWeight:'800',marginTop:2},
   selectedPanel: { position: 'absolute', left: 9, right: 54, top: 9, bottom: 9, zIndex: 40, elevation: 12, borderRadius: 13, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 5, overflow:'hidden' },
   selectedBodyScroll:{flex:1},
-  selectedBodyContent:{gap:5,paddingBottom:2},
+  selectedBodyContent:{gap:4,paddingBottom:0},
   selectedHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   selectedLabel: { flex: 1, fontSize: 8, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
-  close: { minWidth: 72, minHeight: 44, zIndex: 41, elevation: 13, borderRadius: 22, backgroundColor: palette.green, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 12 },
+  close: { minWidth: 38, minHeight: 38, zIndex: 41, elevation: 13, borderRadius: 19, backgroundColor: palette.green, alignItems: 'center', justifyContent: 'center' },
   closeText: { color: '#fff', fontSize: 20, lineHeight: 22, fontWeight: '900' },
-  closeLabel: { color: '#fff', fontSize: 9, fontWeight: '900' },
   selectedRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   selectedPhoto:{width:48,height:48,borderRadius:12,backgroundColor:'#e7eee9'},
   selectedTitle: { fontSize: 14, fontWeight: '900', color: palette.ink },
   actionRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   selectedAction: { flexGrow: 1, alignItems: 'center' },
-  primarySmall: { minHeight: 34, borderRadius: 9, backgroundColor: palette.green, paddingHorizontal: 9, paddingVertical: 7, justifyContent: 'center' },
-  secondarySmall: { minHeight: 34, borderRadius: 9, backgroundColor: '#e8efea', paddingHorizontal: 9, paddingVertical: 7, justifyContent: 'center' },
+  primarySmall: { minHeight: 30, borderRadius: 9, backgroundColor: palette.green, paddingHorizontal: 9, paddingVertical: 6, justifyContent: 'center' },
+  secondarySmall: { minHeight: 30, borderRadius: 9, backgroundColor: '#e8efea', paddingHorizontal: 9, paddingVertical: 6, justifyContent: 'center' },
   primaryText: { fontSize: 9, fontWeight: '900', color: '#fff' },
   secondaryText: { fontSize: 9, fontWeight: '900', color: palette.green },
   filterLauncher:{minHeight:48,borderRadius:14,borderWidth:1,borderColor:'#cbd9d0',backgroundColor:'#fff',paddingHorizontal:12,paddingVertical:9,flexDirection:'row',alignItems:'center',gap:10},
@@ -1510,10 +1535,10 @@ const s = StyleSheet.create({
   listEyebrow: { fontSize: 8, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
   listTitle: { fontSize: 17, fontWeight: '900', color: palette.ink },
   listNote: { fontSize: 8, fontWeight: '800', color: '#718077' },
-  card: { borderRadius: 16, padding: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#dce6df', gap: 6 },
+  card: { borderRadius: 16, padding: 10, backgroundColor: '#fff', borderWidth: 1, borderColor: '#dce6df', gap: 5 },
   cardActive: { borderColor: palette.green, borderWidth: 2 },
-  cardMain: { gap: 6 },
-  cardActionRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  cardMain: { gap: 4 },
+  cardActionRow: { flexDirection: 'row', gap: 5, flexWrap: 'wrap' },
   cardAction: { flexGrow: 1, alignItems: 'center' },
   checkInStatus:{borderWidth:1,borderRadius:10,paddingHorizontal:9,paddingVertical:7,marginTop:2,gap:6},
   checkInStatusText:{fontSize:9,lineHeight:13,fontWeight:'900'},
@@ -1534,13 +1559,19 @@ const s = StyleSheet.create({
   meta: { fontSize: 9, lineHeight: 13, color: '#66776d' },
   distance: { fontSize: 9, fontWeight: '900', color: palette.green },
   routeLine: { fontSize: 10, fontWeight: '900', color: '#365445' },
-  trustLine: { fontSize: 9, lineHeight: 13, color: '#52675b', fontWeight: '700' },
+  trustSummaryRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
+  trustLine: { flex:1,fontSize: 9, lineHeight: 13, color: '#52675b', fontWeight: '700' },
+  trustWhy:{fontSize:8,fontWeight:'900',textDecorationLine:'underline'},
+  trustEvidenceBox:{borderWidth:1,borderRadius:10,paddingHorizontal:9,paddingVertical:7,gap:3},
+  trustEvidenceText:{fontSize:9,lineHeight:13,fontWeight:'700'},
   networkCallout:{borderWidth:1,borderRadius:12,padding:10,gap:3,marginTop:7},
   networkKicker:{fontSize:8,fontWeight:'900',letterSpacing:1},
   networkBody:{fontSize:11,lineHeight:16,fontWeight:'900'},
   networkMeta:{fontSize:10,lineHeight:15,fontWeight:'700'},
   networkSelectedLine:{fontSize:9,lineHeight:13,fontWeight:'900'},
-  hint: { fontSize: 8, color: '#718077' },
+  emptyActions:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:6},
+  emptyPrimary:{minHeight:36,borderRadius:10,paddingHorizontal:11,justifyContent:'center'},
+  emptySecondary:{minHeight:36,borderRadius:10,borderWidth:1,paddingHorizontal:11,justifyContent:'center'},
   missingPlace: { marginTop: 4, marginBottom: 12, borderRadius: 14, padding: 12, backgroundColor: '#eef4f0', borderWidth: 1, borderColor: '#d4e0d8' },
   missingTitle: { fontSize: 14, fontWeight: '900', color: palette.ink, marginTop: 2 },
   empty: { borderRadius: 16, padding: 14, backgroundColor: '#fff', gap: 4 },
