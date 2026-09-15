@@ -1263,7 +1263,7 @@ export default function AdaptiveExploreScreen() {
                 </View>
                 <ScrollView style={s.selectedBodyScroll} contentContainerStyle={s.selectedBodyContent} showsVerticalScrollIndicator={false}>
                   <View style={s.selectedRow}>
-                    {selected.consumer_photo_url?<Image source={{uri:String(selected.consumer_photo_url)}} style={[s.selectedPhoto,{backgroundColor:theme.surfaceRaised}]}/>:<FreshnessHeatRing item={selected} size={32} />}
+                    {selected.consumer_photo_url?<Image source={{uri:String(selected.consumer_photo_url)}} style={[s.selectedPhoto,{backgroundColor:theme.surfaceRaised}]}/>:<FreshnessHeatRing item={selected} size={34} />}
                     <View style={{ flex: 1 }}>
                       <View style={s.cardTitleRow}>
                         <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{selected.name || 'Restroom location'}</Text>
@@ -1490,7 +1490,7 @@ const s = StyleSheet.create({
   nearbySummaryHint:{fontSize:9,fontWeight:'800',marginTop:2},
   selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 252, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
   selectedBodyScroll:{flex:1},
-  selectedBodyContent:{gap:4,paddingBottom:2},
+  selectedBodyContent:{gap:4,paddingBottom:0},
   selectedHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   selectedLabel: { flex: 1, fontSize: 8, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
   close: { minWidth: 38, minHeight: 38, zIndex: 41, elevation: 13, borderRadius: 19, backgroundColor: palette.green, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 8 },
