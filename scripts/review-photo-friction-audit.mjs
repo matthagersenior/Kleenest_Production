@@ -15,6 +15,10 @@ const required=[
   'ADD PHOTOS FROM A PREVIOUS VISIT',
   'photoFirstMode',
   'reviewPhotoCount',
+  'ADD PREVIOUS-VISIT PHOTOS',
+  'Add selected photos as previous-visit evidence',
+  'submitPriorKnowledgePhotos',
+  'previousVisitPhotoRecency',
 ];
 let failed=false;
 for(const token of required){
@@ -27,3 +31,12 @@ if(src.includes("OPTIONAL EVIDENCE</Text><Text style={[s.blockTitle")) {
 }
 if(failed) process.exit(1);
 console.log('Review photo friction contract satisfied.');
+
+if(!src.includes("reviewPhotos.length>0&&!checkInId")){
+  console.error('FAIL previous-visit photo submission must be available without a verified check-in');
+  failed=true;
+}
+if(src.includes("reviewPhotos.length>=3&&s.disabled") && !src.includes("Add selected photos as previous-visit evidence")){
+  console.error('FAIL selected photos still dead-end behind review verification');
+  failed=true;
+}
