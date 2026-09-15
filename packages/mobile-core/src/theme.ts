@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-export type KleenestThemeMode='default'|'light'|'dark'|'system'|'early-access';
+export type KleenestThemeMode='default'|'light'|'dark'|'system'|'early-access'|'fall'|'halloween'|'thanksgiving'|'christmas';
 export type KleenestThemeContext='consumer'|'progress'|'game'|'community'|'business'|'fleet'|'platform';
 
 export type KleenestTheme={
@@ -28,10 +28,17 @@ export const KLEENEST_THEME_OPTIONS:ReadonlyArray<{value:KleenestThemeMode;label
   {value:'dark',label:'Dark',description:'Low-light surfaces with preserved context accents.'},
   {value:'system',label:'System',description:'Follow this device or browser appearance.'},
   {value:'early-access',label:'Early Access',description:'Limited beta theme for the people helping shape Kleenest before launch.'},
+  {value:'fall',label:'Autumn Trail',description:'Seasonal reward · parchment, copper, leaves and moss.'},
+  {value:'halloween',label:'Night Watch',description:'Seasonal reward · pumpkin fire, moonlight and midnight violet.'},
+  {value:'thanksgiving',label:'Harvest Table',description:'Seasonal reward · cranberry, walnut, copper and harvest gold.'},
+  {value:'christmas',label:'Winter Guardian',description:'Seasonal reward · evergreen night, snow, winter red and gold.'},
 ];
 
+export const KLEENEST_SEASONAL_THEME_MODES:ReadonlyArray<KleenestThemeMode>=['fall','halloween','thanksgiving','christmas'];
+export function isKleenestSeasonalThemeMode(mode:KleenestThemeMode|string):mode is KleenestThemeMode{return KLEENEST_SEASONAL_THEME_MODES.includes(mode as KleenestThemeMode)}
+
 const STORAGE_KEY='kleenest.theme.mode.v1';
-const MODES=new Set<KleenestThemeMode>(['default','light','dark','system','early-access']);
+const MODES=new Set<KleenestThemeMode>(['default','light','dark','system','early-access','fall','halloween','thanksgiving','christmas']);
 const listeners=new Set<(mode:KleenestThemeMode)=>void>();
 let currentMode:KleenestThemeMode='default';
 
@@ -43,6 +50,32 @@ const earlyAccessAccents:Record<KleenestThemeContext,{accent:string;soft:string}
   business:{accent:'#7de3b2',soft:'#173c30'},
   fleet:{accent:'#7ab8ff',soft:'#1a304b'},
   platform:{accent:'#e39bff',soft:'#392647'},
+};
+
+const seasonalEditions:Record<'fall'|'halloween'|'thanksgiving'|'christmas',{
+  resolved:'light'|'dark';canvas:string;surface:string;surfaceRaised:string;ink:string;muted:string;line:string;
+  accents:Record<KleenestThemeContext,string>;soft:string;accentText:string;danger:string;warning:string;success:string;statusBar:'light'|'dark';
+}>={
+  fall:{
+    resolved:'light',canvas:'#f4ecdf',surface:'#fffaf1',surfaceRaised:'#efe1cc',ink:'#2b1d14',muted:'#725b49',line:'#ddc7a6',
+    accents:{consumer:'#b85d24',progress:'#c17b18',game:'#7e5b43',community:'#65743b',business:'#8b5b32',fleet:'#55734c',platform:'#8a4c2d'},
+    soft:'#f0d9bd',accentText:'#ffffff',danger:'#9d3f34',warning:'#9b6518',success:'#55734c',statusBar:'dark',
+  },
+  halloween:{
+    resolved:'dark',canvas:'#0b0710',surface:'#17101e',surfaceRaised:'#22162c',ink:'#fff7ed',muted:'#c9b8cf',line:'#493454',
+    accents:{consumer:'#ff8a2b',progress:'#f4c95d',game:'#b58cff',community:'#6fe7d8',business:'#83d483',fleet:'#73a9ff',platform:'#d787ff'},
+    soft:'#33203f',accentText:'#140a04',danger:'#ff718b',warning:'#ffb347',success:'#6fe7d8',statusBar:'light',
+  },
+  thanksgiving:{
+    resolved:'light',canvas:'#f5eadb',surface:'#fffaf2',surfaceRaised:'#eedbc3',ink:'#321d17',muted:'#77594d',line:'#dec4a5',
+    accents:{consumer:'#9b3f36',progress:'#b77821',game:'#7c4a63',community:'#a05a3d',business:'#6c6a3a',fleet:'#765946',platform:'#8b4d3b'},
+    soft:'#efd4c2',accentText:'#ffffff',danger:'#943a36',warning:'#a46518',success:'#5d6e3c',statusBar:'dark',
+  },
+  christmas:{
+    resolved:'dark',canvas:'#07130f',surface:'#0e211a',surfaceRaised:'#163126',ink:'#f7fbf9',muted:'#b6c9c0',line:'#315044',
+    accents:{consumer:'#f0c75e',progress:'#f0c75e',game:'#8fd9c7',community:'#7fcdf2',business:'#91d186',fleet:'#9ac4f4',platform:'#f0c75e'},
+    soft:'#193d30',accentText:'#102018',danger:'#ef6a6a',warning:'#f0c75e',success:'#83d6a6',statusBar:'light',
+  },
 };
 
 const accents:Record<KleenestThemeContext,{light:string;dark:string;soft:string;softDark:string}>={
@@ -95,8 +128,17 @@ export function subscribeKleenestTheme(listener:(mode:KleenestThemeMode)=>void){
 
 export function resolveKleenestTheme(mode:KleenestThemeMode,systemDark=false,context:KleenestThemeContext='consumer'):KleenestTheme{
   const earlyAccess=mode==='early-access';
-  const resolved:KleenestTheme['resolved']=earlyAccess||mode==='dark'||(mode==='system'&&systemDark)?'dark':'light';
+  const seasonal=isKleenestSeasonalThemeMode(mode)?seasonalEditions[mode as keyof typeof seasonalEditions]:null;
+  const resolved:KleenestTheme['resolved']=seasonal?.resolved||(earlyAccess||mode==='dark'||(mode==='system'&&systemDark)?'dark':'light');
   const accent=accents[context]||accents.consumer;
+  if(seasonal){
+    return{
+      mode,resolved:seasonal.resolved,context,
+      canvas:seasonal.canvas,surface:seasonal.surface,surfaceRaised:seasonal.surfaceRaised,ink:seasonal.ink,muted:seasonal.muted,line:seasonal.line,
+      accent:seasonal.accents[context]||seasonal.accents.consumer,accentSoft:seasonal.soft,accentText:seasonal.accentText,
+      danger:seasonal.danger,warning:seasonal.warning,success:seasonal.success,statusBar:seasonal.statusBar,
+    };
+  }
   if(earlyAccess){
     const edition=earlyAccessAccents[context]||earlyAccessAccents.consumer;
     return{

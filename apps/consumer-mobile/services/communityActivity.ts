@@ -1,12 +1,13 @@
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { listReviewPhotosForReviews } from './reviewPhotos';
+import { listProgressionIdentities } from './progressionIdentity';
 
 export async function listMobileCommunityActivity(limit=30){
   const bounded=Math.min(Math.max(Number(limit)||30,1),100);
   const {data,error}=await getKleenestSupabaseClient().rpc('community_following_review_activity',{p_limit:bounded});
   if(error)throw error;
   const source=Array.isArray(data)?data:[];
-  const photosByReview=await listReviewPhotosForReviews(source.map((row:any)=>String(row.review_id)));
+  const[photosByReview,identities]=await Promise.all([listReviewPhotosForReviews(source.map((row:any)=>String(row.review_id))),listProgressionIdentities(source.map((row:any)=>String(row.user_id))).catch(()=>({}))]);
   return source.map((row:any)=>({
     id:`review:${row.review_id}`,
     reviewId:String(row.review_id),
@@ -24,7 +25,8 @@ export async function listMobileCommunityActivity(limit=30){
     photos:photosByReview[String(row.review_id)]||[],
     helpfulCount:Number(row.helpful_count||0),
     reputationLevel:row.reputation_level||'new',
-    contributor:{id:row.user_id,display_name:row.display_name,username:row.username,avatar_url:row.avatar_url},
+    progressionIdentity:(identities as any)[String(row.user_id)]||null,
+    contributor:{id:row.user_id,display_name:row.display_name,username:row.username,avatar_url:row.avatar_url,progressionIdentity:(identities as any)[String(row.user_id)]||null},
     location:{id:row.location_id,name:row.location_name},
   }));
 }
