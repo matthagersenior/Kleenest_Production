@@ -7,6 +7,7 @@ on:
       - 'apps/consumer-mobile/components/RestroomSignals.tsx'
       - 'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx'
       - 'apps/consumer-mobile/app/discover.tsx'
+      - 'apps/consumer-mobile/app/location/[id].tsx'
       - 'apps/business-mobile/app/index.tsx'
       - 'scripts/core-loop-trust-polish-audit.mjs'
       - 'scripts/map-freshness-heat-ring-audit.mjs'
