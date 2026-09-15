@@ -7,6 +7,7 @@ const required=[
   'supabase/migrations/20260915060229_relevance_sponsorship_public_policy_and_fallbacks.sql',
   'supabase/migrations/20260915061012_harden_relevance_public_rpc_boundary.sql',
   'supabase/migrations/20260915061134_harden_sponsored_event_integrity.sql',
+  'supabase/migrations/20260915061440_repair_sponsored_campaign_owner_upsert.sql',
   'apps/consumer-mobile/services/heroRelevance.ts',
   'apps/consumer-mobile/components/RelevanceHeroCarousel.tsx',
   'apps/consumer-mobile/services/sponsorship.ts',
@@ -23,6 +24,7 @@ if(!failures.length){
   const hardening=read(required[1]);
   const publicBoundary=read(required[2]);
   const eventHardening=read(required[3]);
+  const campaignRepair=read(required[4]);
   const hero=read('apps/consumer-mobile/services/heroRelevance.ts');
   const carousel=read('apps/consumer-mobile/components/RelevanceHeroCarousel.tsx');
   const sponsored=read('apps/consumer-mobile/components/SponsoredSlot.tsx');
@@ -36,6 +38,7 @@ if(!failures.length){
   if(!hardening.includes("owner_enabled=true"))failures.push('Public sponsored placement visibility must honor the owner kill switch.');
   for(const token of ['security invoker','revoke execute on function public.consumer_sponsored_cards','organic_hero_policy_public_read'])if(!publicBoundary.toLowerCase().includes(token))failures.push(`Public relevance boundary missing hardening: ${token}`);
   for(const token of ['sponsored_campaign_destination_https_check','revoke insert on public.sponsored_events','60 seconds','security definer'])if(!eventHardening.toLowerCase().includes(token))failures.push(`Sponsored event integrity missing hardening: ${token}`);
+  for(const token of ['as keys(key)','as u(code)'])if(!campaignRepair.toLowerCase().includes(token))failures.push(`Owner campaign upsert repair missing: ${token}`);
 
   for(const kind of ['review_ready','active_mission','fresh_kleenest','saved_choice','top_ranked','next_objective','find_bathroom','share_knowledge','scan_qr'])
     if(!hero.includes(kind))failures.push(`Organic hero ranking missing candidate: ${kind}`);
