@@ -5,12 +5,10 @@ import { Platform } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 
 const PUSH_INTENT_KEY='kleenestos:push-enabled:v1';
+const nativePushConfigured=Constants.expoConfig?.extra?.nativePushConfigured===true;
 export type RolePushStatus='registered'|'disabled'|'available'|'needs_permission'|'blocked'|'unsupported'|'unconfigured'|'needs_repair';
 export type RolePushState={status:RolePushStatus;message:string;token?:string};
 
-function nativePushConfigured(){
-  return Platform.OS!=='android'||Constants.expoConfig?.extra?.nativePushConfigured===true;
-}
 async function readPushIntent(){
   if(Platform.OS==='web')return false;
   return (await SecureStore.getItemAsync(PUSH_INTENT_KEY).catch(()=>null))==='true';
@@ -32,8 +30,9 @@ async function registerToken(token:string):Promise<RolePushState>{
 
 export async function getRolePushStatus():Promise<RolePushState>{
   if(!Device.isDevice||Platform.OS==='web')return{status:'unsupported',message:'Push requires the installed KleenestOS app on a physical device.'};
-  if(!nativePushConfigured())return{status:'unconfigured',message:'KleenestOS push is not configured in this build yet.'};
+  if(Platform.OS==='android'&&!nativePushConfigured)return{status:'unconfigured',message:'KleenestOS push is not configured in this build yet.'};
   const Notifications=await import('expo-notifications');
+  if(Platform.OS==='android')await Notifications.setNotificationChannelAsync('kleenestos-operations',{name:'KleenestOS Operations',importance:Notifications.AndroidImportance.DEFAULT});
   const intent=await readPushIntent();
   const permission=await Notifications.getPermissionsAsync();
   if(permission.status!=='granted'){
@@ -53,7 +52,7 @@ export async function getRolePushStatus():Promise<RolePushState>{
 
 export async function registerRolePush():Promise<RolePushState>{
   if(!Device.isDevice||Platform.OS==='web')return{status:'unsupported',message:'Push requires a physical device.'};
-  if(!nativePushConfigured())return{status:'unconfigured',message:'KleenestOS push is not configured in this build yet. The app stayed open safely; add the Owner Firebase credential and install the next verified build to enable device notifications.'};
+  if(Platform.OS==='android'&&!nativePushConfigured)return{status:'unconfigured',message:'KleenestOS push is not configured in this build yet. The app stayed open safely; add the Owner Firebase credential and install the next verified build to enable device notifications.'};
 
   const Notifications=await import('expo-notifications');
   if(Platform.OS==='android')await Notifications.setNotificationChannelAsync('kleenestos-operations',{name:'KleenestOS Operations',importance:Notifications.AndroidImportance.DEFAULT});
@@ -73,7 +72,7 @@ export async function registerRolePush():Promise<RolePushState>{
 
 export async function syncRolePushRegistration():Promise<RolePushState>{
   if(!Device.isDevice||Platform.OS==='web')return{status:'unsupported',message:'Push requires a physical device.'};
-  if(!nativePushConfigured())return{status:'unconfigured',message:'KleenestOS push is not configured in this build yet.'};
+  if(Platform.OS==='android'&&!nativePushConfigured)return{status:'unconfigured',message:'KleenestOS push is not configured in this build yet.'};
   const intent=await readPushIntent();
   if(!intent)return{status:'disabled',message:'Device push has not been enabled in KleenestOS.'};
 
