@@ -21,7 +21,8 @@ if(!failures.length){
   for(const token of [
     'FreshnessHeatRing','freshnessHeatSignal','freshestEvidenceAt',
     "'#ef4444'","'#f97316'","'#facc15'","'#84cc16'","'#06b6d4'","'#3b82f6'","'#94a3b8'",
-    'evidenceFrame={false}','FRESHNESS RING'
+    'evidenceFrame={false}','FRESHNESS RING',
+    'borderColor:heat.color','borderWidth:active?5:4'
   ])if(!signals.includes(token))failures.push('Native freshness ring missing '+token);
   if(signals.includes("Needs verification · dashed ring"))failures.push('Map legend must not describe freshness as a dashed verification ring.');
   if(/freshestEvidenceAt\([^)]*\)[\s\S]{0,800}updated_at/.test(signals))failures.push('Freshness must not use generic updated_at metadata.');
@@ -32,6 +33,13 @@ if(!failures.length){
     failures.push('Native Explore search-result cards must render their place icon inside the freshness heat ring.');
   if(!explore.includes('<FreshnessHeatRing item={selected} size={34} active />'))
     failures.push('Native Explore selected map-pin card must render its place icon inside the freshness heat ring.');
+  for(const token of [
+    '<ScrollView style={s.selectedBodyScroll}',
+    'showsVerticalScrollIndicator={false}',
+    "selectedPanel: { position: 'absolute', left: 9, right: 54, top: 9, bottom: 9",
+    'selectedBodyScroll:{flex:1}',
+    'selectedBodyContent:{gap:5,paddingBottom:2}',
+  ])if(!explore.includes(token))failures.push('Native selected map card containment missing '+token);
   if(explore.includes("style={[s.marker,{backgroundColor:theme.surface,borderColor:theme.line}"))
     failures.push('Native map marker wrapper must not replace the freshness ring with a generic border.');
 

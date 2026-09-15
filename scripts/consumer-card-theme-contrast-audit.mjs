@@ -90,6 +90,8 @@ need('Explore nested cards','apps/consumer-mobile/features/AdaptiveExploreScreen
   'style={[s.routeCoverage,{backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.amenityMatchPill,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}',
   'style={[s.locate,{backgroundColor:theme.surface,borderColor:theme.line,borderWidth:1}]}',
+  'style={[s.primarySmall,s.cardAction,{backgroundColor:theme.accent}',
+  'style={[s.primarySmall,s.selectedAction,{backgroundColor:theme.accent}',
 ]);
 need('Location nested cards','apps/consumer-mobile/app/location/[id].tsx',[
   'style={[s.verifyAction,{backgroundColor:checkInId?theme.accentSoft:theme.surface,borderColor:theme.line,borderWidth:1}',
