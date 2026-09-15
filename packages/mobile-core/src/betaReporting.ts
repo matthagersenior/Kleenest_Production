@@ -1,6 +1,8 @@
 import { getKleenestSupabaseClient } from './index';
 
 export type BetaIncidentStatus='new'|'reproduced'|'investigating'|'fixed'|'shipped';
+export type FeedbackOwnerQueue='incident'|'ux_friction'|'product_gap'|'ideas'|'voice_of_customer';
+export type FeedbackOwnerStatus='new'|'reviewing'|'planned'|'resolved'|'archived';
 export type BetaReportKind='manual'|'automatic';
 export type BetaReportCategory='bug'|'glitch'|'network'|'data'|'performance'|'feedback'|'crash'|'other';
 
@@ -64,7 +66,29 @@ export type BetaReportEvent={
   platform_version:string|null;
   metadata:Record<string,unknown>|null;
   breadcrumbs:unknown[]|null;
+  owner_queue:FeedbackOwnerQueue;
+  owner_status:FeedbackOwnerStatus;
+  owner_note:string|null;
+  owner_updated_at:string|null;
   created_at:string;
+};
+
+export type OwnerFeedbackQueueItem=BetaReportEvent&{
+  incident_fingerprint:string;
+  incident_occurrence_count:number;
+  incident_status:BetaIncidentStatus;
+};
+
+export type OwnerFeedbackQueueSummary={
+  incident:number;
+  ux_friction:number;
+  product_gap:number;
+  ideas:number;
+  voice_of_customer:number;
+  new_total:number;
+  reviewing_total:number;
+  planned_total:number;
+  resolved_total:number;
 };
 
 export async function submitBetaDiagnosticReport(input:BetaReportInput){
@@ -113,4 +137,32 @@ export async function setOwnerBetaIncidentStatus(incidentId:string,status:BetaIn
   });
   if(error)throw error;
   return data as {incident_id:string;status:BetaIncidentStatus;occurrence_count:number;updated_at?:string};
+}
+
+
+export async function listOwnerFeedbackQueue(queue:FeedbackOwnerQueue|null=null,status:FeedbackOwnerStatus|null=null,limit=200){
+  const {data,error}=await getKleenestSupabaseClient().rpc('owner_list_feedback_queue',{
+    p_queue:queue,
+    p_status:status,
+    p_limit:Math.min(Math.max(limit,1),500),
+  });
+  if(error)throw error;
+  return (Array.isArray(data)?data:[]) as OwnerFeedbackQueueItem[];
+}
+
+export async function getOwnerFeedbackQueueSummary(){
+  const {data,error}=await getKleenestSupabaseClient().rpc('owner_feedback_queue_summary');
+  if(error)throw error;
+  return (data||{}) as OwnerFeedbackQueueSummary;
+}
+
+export async function updateOwnerFeedbackEvent(eventId:string,status:FeedbackOwnerStatus,note:string|null=null,queue:FeedbackOwnerQueue|null=null){
+  const {data,error}=await getKleenestSupabaseClient().rpc('owner_update_feedback_event',{
+    p_event_id:eventId,
+    p_status:status,
+    p_note:note?.trim()||null,
+    p_queue:queue,
+  });
+  if(error)throw error;
+  return data as {id:string;owner_queue:FeedbackOwnerQueue;owner_status:FeedbackOwnerStatus;owner_note:string|null;owner_updated_at?:string|null};
 }
