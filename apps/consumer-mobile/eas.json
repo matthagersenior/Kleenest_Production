@@ -19,7 +19,8 @@
       "distribution": "internal",
       "autoIncrement": true,
       "env": {
-        "EAS_PROJECT_ID": "22a65aa3-c615-4c4f-a34d-084babc28fd7"
+        "EAS_PROJECT_ID": "22a65aa3-c615-4c4f-a34d-084babc28fd7",
+        "KLEENEST_STANDALONE_ANDROID": "1"
       },
       "android": {
         "buildType": "apk"
@@ -31,7 +32,8 @@
       "env": {
         "EAS_PROJECT_ID": "22a65aa3-c615-4c4f-a34d-084babc28fd7",
         "KLEENEST_RELEASE_CHANNEL": "candidate",
-        "EXPO_PUBLIC_OTA_CHANNEL": "consumer-candidate"
+        "EXPO_PUBLIC_OTA_CHANNEL": "consumer-candidate",
+        "KLEENEST_STANDALONE_ANDROID": "1"
       },
       "android": {
         "buildType": "apk"
@@ -44,7 +46,8 @@
       "env": {
         "EAS_PROJECT_ID": "22a65aa3-c615-4c4f-a34d-084babc28fd7",
         "KLEENEST_RELEASE_CHANNEL": "production",
-        "EXPO_PUBLIC_OTA_CHANNEL": "consumer-production"
+        "EXPO_PUBLIC_OTA_CHANNEL": "consumer-production",
+        "KLEENEST_STANDALONE_ANDROID": "1"
       },
       "android": {
         "buildType": "app-bundle"
