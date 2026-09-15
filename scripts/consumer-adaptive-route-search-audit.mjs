@@ -93,7 +93,7 @@ for(const token of ['Starting radius','What matters on this stop?','Expand for r
 if(!filterModal.includes('filterAmenities.map'))throw new Error('Amenity chips must move into the filter modal so the map rises on the page.');
 if(!filterModal.includes('radiusChoices.map'))throw new Error('Radius controls must move into the filter modal so the map rises on the page.');
 if(!screen.includes('<View pointerEvents="auto" style={[s.selectedPanel'))throw new Error('Selected map-pin panel must own touch events so its close control works above the native map.');
-if(!screen.includes("selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, zIndex: 40, elevation: 12"))throw new Error('Selected map-pin panel must render above the native map interaction surface.');
+if(!screen.includes("selectedPanel: { position: 'absolute', left: 9, right: 54, top: 9, bottom: 9, zIndex: 40, elevation: 12"))throw new Error('Selected map-pin panel must stay bounded above the native map interaction surface.');
 if(!screen.includes("close: { minWidth: 72, minHeight: 44, zIndex: 41, elevation: 13"))throw new Error('Selected map-pin close control must preserve an Android-safe touch target and stacking order.');
 if(!screen.includes('hitSlop={12}'))throw new Error('Selected map-pin close control must preserve forgiving hit slop.');
 if(screen.includes('Road trip / advanced')||screen.includes('showAdvanced ? ('))throw new Error('Detailed controls must stay in the dismissible filter modal.');
