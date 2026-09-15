@@ -14,10 +14,10 @@ export function SponsoredSlot({surface,context={},contextClass}:{surface:string;
   async function open(current:SponsoredCard){void recordSponsoredEvent(current,'click',contextClass||surface);await Linking.openURL(current.destination_url)}
   function dismiss(current:SponsoredCard){void recordSponsoredEvent(current,'dismiss',contextClass||surface);setCard(null)}
   return <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-    <View style={s.top}><Text style={[s.label,{color:theme.muted}]}>{card.label.toUpperCase()} · {card.sponsor_name}</Text><Pressable accessibilityLabel="Hide sponsored card" onPress={()=>dismiss(card)}><Text style={[s.close,{color:theme.muted}]}>×</Text></Pressable></View>
+    <View style={s.top}><Text style={[s.label,{color:theme.muted}]}>{card.label.toUpperCase()} · {card.sponsor_name}</Text><Pressable accessibilityRole="button" accessibilityLabel="Hide sponsored card" onPress={()=>dismiss(card)}><Text style={[s.close,{color:theme.muted}]}>×</Text></Pressable></View>
     <Text style={[s.title,{color:theme.ink}]}>{card.headline}</Text>
     {card.body?<Text style={[s.body,{color:theme.muted}]}>{card.body}</Text>:null}
-    <Pressable style={[s.cta,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={()=>void open(card)}><Text style={[s.ctaText,{color:theme.accent}]}>{card.cta_label} →</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${card.cta_label} from ${card.sponsor_name}`} style={[s.cta,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={()=>void open(card)}><Text style={[s.ctaText,{color:theme.accent}]}>{card.cta_label} →</Text></Pressable>
     <Text style={[s.note,{color:theme.muted}]}>Paid placement. Sponsorship does not change Kleenest trust, freshness, verification or ranking.</Text>
   </View>;
 }
