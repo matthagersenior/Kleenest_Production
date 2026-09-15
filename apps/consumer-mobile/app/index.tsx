@@ -35,6 +35,7 @@ export default function HomeScreen(){
       items={heroItems}
       dotIndicators={heroPolicy.dot_indicators}
       swipeEnabled={heroPolicy.swipe_enabled}
+      autoplay={heroPolicy.autoplay}
       onOpen={route=>router.push(route as any)}
     />
     <SponsoredSlot surface="home" contextClass="home_after_relevance"/>
