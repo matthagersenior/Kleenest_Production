@@ -290,7 +290,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         style={s.cardMain}
       >
         <View style={s.cardTop}>
-          {item.consumer_photo_url?<Image source={{uri:String(item.consumer_photo_url)}} style={[s.cardPhoto,{backgroundColor:theme.surfaceRaised}]}/>:<PlaceIcon item={item} size={34} />}
+          <FreshnessHeatRing item={item} size={34} active={selected} showPhoto />
           <View style={{ flex: 1 }}>
             <View style={s.cardTitleRow}>
               <Text style={[s.cardTitle,{color:theme.ink}]}>{item.name || 'Restroom location'}</Text>
@@ -1208,7 +1208,7 @@ export default function AdaptiveExploreScreen() {
                   </Pressable>
                 </View>
                 <View style={s.selectedRow}>
-                  {selected.consumer_photo_url?<Image source={{uri:String(selected.consumer_photo_url)}} style={[s.selectedPhoto,{backgroundColor:theme.surfaceRaised}]}/>:<PlaceIcon item={selected} size={34} />}
+                  <FreshnessHeatRing item={selected} size={34} active showPhoto />
                   <View style={{ flex: 1 }}>
                     <View style={s.cardTitleRow}>
                       <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{selected.name || 'Restroom location'}</Text>
