@@ -30,5 +30,8 @@ assert.match(explore, /getLastKnownPositionAsync/);
 assert.match(explore, /onRegionDidChange/);
 assert.match(explore, /Search this area/);
 assert.match(explore, /Swipe up for results/);
+assert.match(explore, /scrollEnabled=\{!mapInteracting\}/);
+assert.match(explore, /onTouchStart=\{\(\)=>setMapInteracting\(true\)\}/);
+assert.match(explore, /discoveryStatus/);
 
 console.log('native explore-home contract: PASS');
