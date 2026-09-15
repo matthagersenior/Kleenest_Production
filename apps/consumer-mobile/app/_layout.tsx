@@ -88,6 +88,7 @@ export default function RootLayout() {
     <Tabs.Screen name="contributor/[id]" options={{ href:null,title:'Contributor' }}/>
     <Tabs.Screen name="saved" options={{ href:null,title:'Saved bathrooms' }}/>
     <Tabs.Screen name="activity" options={{ href:null,title:'Your activity' }}/>
+    <Tabs.Screen name="week-in-review" options={{ href:null,title:'Week in review' }}/>
     <Tabs.Screen name="notifications" options={{ href:null,title:'Notifications' }}/>
     <Tabs.Screen name="membership" options={{ href:null,title:'Membership' }}/>
     <Tabs.Screen name="family" options={{ href:null,title:'Kleenest Family' }}/>
