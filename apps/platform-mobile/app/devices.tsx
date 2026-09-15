@@ -1,9 +1,11 @@
+import { usePlatformTheme } from '../services/theme';
 import { useEffect,useState } from 'react';
 import { Pressable,RefreshControl,ScrollView,Text,View } from 'react-native';
 import { HealthCard,OSHero,SectionHeader,osCard,osColors } from '../components/KleenestOS';
 import { getOwnerSmartDeviceSnapshot,ownerApproveSmartDeviceCommand } from '../services/smartDevices';
 
 export default function OwnerSmartDevices(){
+  const theme=usePlatformTheme();
  const[data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
  async function load(){setBusy(true);try{setData(await getOwnerSmartDeviceSnapshot());setMessage('')}catch(e:any){setMessage(e?.message||'Smart-device owner control unavailable.')}finally{setBusy(false)}}
  useEffect(()=>{void load()},[]);
