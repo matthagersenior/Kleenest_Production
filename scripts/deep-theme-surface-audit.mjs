@@ -182,7 +182,7 @@ requireTokens('Contributor gated showcase','apps/consumer-mobile/app/contributor
   'progression_identity','PUBLIC TRUST IDENTITY','Trust showcase','showcaseSlots',
 ]);
 requireTokens('KleenestOS seasonal reward control','apps/platform-mobile/app/progression.tsx',[
-  'SEASONAL REWARD VAULT','grantOwnerProgressionReward','revokeOwnerProgressionReward','OWNER ONLY',
+  'SEASONAL REWARD VAULT','grantOwnerProgressionReward','revokeOwnerProgressionReward','updateOwnerProgressionRewardPolicy','Pause progression unlock','Enable progression unlock',
 ]);
 requireTokens('Seasonal reward migrations','supabase/migrations/20260914150017_seasonal_progression_reward_vault.sql',[
   'progression_reward_catalog','review_trust_discovery_awards','consumer_progression_rewards','seasonal-winter-guardian-crest',
