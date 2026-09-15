@@ -130,6 +130,7 @@ export default function ProgressScreen(){
 }
 
 function ObjectiveWorldCard({item}:{item:any}){
+ const theme=useConsumerTheme('progress');
  const kind=String(item.kind||'quest'),flavor=objectiveFlavor(kind),progress=Number(item.progress||0),target=Math.max(1,Number(item.target||1)),pct=percent(progress,target),reward=Number(item?.rewards?.xp||0),mechanic=String(item?.rules?.mechanic||'progress').replaceAll('_',' ');
  const special=kind==='quest'?'One sharp objective. Finish it and move on.':kind==='mission'?'A purposeful assignment that builds evidence in the real world.':kind==='challenge'?'Constraints create the difficulty—time, count, accuracy or freshness.':kind==='journey'?'Milestones reveal as the journey advances.':kind==='campaign'?'Your progress contributes to something larger than your own account.':kind==='contest'?'Your progress qualifies you; ranking decides the podium.':'Useful progress.';
  const chapterMarks=kind==='journey'?safeArray(item?.rules?.chapters):[];
