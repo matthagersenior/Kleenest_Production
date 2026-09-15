@@ -1,19 +1,27 @@
 import { router } from 'expo-router';
 import { useEffect,useState } from 'react';
 import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { FeatureCard, HeroCard, SectionHeader, palette } from '../components/ConsumerUI';
+import { FeatureCard, SectionHeader, palette } from '../components/ConsumerUI';
+import { RelevanceHeroCarousel } from '../components/RelevanceHeroCarousel';
+import { SponsoredSlot } from '../components/SponsoredSlot';
 import { MarketingHome } from '../components/MarketingSite';
 import { hasCurrentPolicyAcceptance } from '../services/safety';
 import { useConsumerWebExperience } from '../services/webExperience';
 import { useConsumerTheme } from '../services/theme';
+import { buildConsumerHomeHeroes,type OrganicHeroItem,type OrganicHeroPolicy } from '../services/heroRelevance';
 
 const action=(route:string)=>()=>router.push(route as any);
+const initialHero:OrganicHeroItem={id:'find',kind:'find_bathroom',eyebrow:'FIND THE BEST BATHROOM',title:'What is useful near you right now?',body:'Search nearby or around any address, then compare freshness, Kleenest status, amenities, trust and distance.',cta:'Search the map',route:'/explore',meta:'Organic discovery',score:60};
+const initialPolicy:OrganicHeroPolicy={surface_code:'consumer_home',active:true,max_cards:5,allowed_kinds:['find_bathroom'],weights:{find_bathroom:60},swipe_enabled:true,dot_indicators:true,autoplay:false};
 
 export default function HomeScreen(){
   const theme=useConsumerTheme();
   const{ready:webGateReady,signedIn,installed,appActive}=useConsumerWebExperience();
   const[policyRequired,setPolicyRequired]=useState(false);
+  const[heroItems,setHeroItems]=useState<OrganicHeroItem[]>([initialHero]);
+  const[heroPolicy,setHeroPolicy]=useState<OrganicHeroPolicy>(initialPolicy);
   useEffect(()=>{let active=true;if(!signedIn){setPolicyRequired(false);return()=>{active=false}}void hasCurrentPolicyAcceptance().then(accepted=>{if(active)setPolicyRequired(!accepted)}).catch(()=>{if(active)setPolicyRequired(false)});return()=>{active=false}},[signedIn]);
+  useEffect(()=>{let active=true;void buildConsumerHomeHeroes(signedIn).then(result=>{if(!active)return;setHeroPolicy(result.policy);setHeroItems(result.items.length?result.items:[initialHero])});return()=>{active=false}},[signedIn]);
   if(Platform.OS==='web'&&!webGateReady)return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}/>;
   if(Platform.OS==='web'&&!appActive)return <MarketingHome/>;
   const showInstall=Platform.OS==='web'&&!signedIn&&!installed;
@@ -23,14 +31,14 @@ export default function HomeScreen(){
     {policyRequired?<Pressable accessibilityRole="button" style={[s.policyBanner,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#fff8e8',borderColor:theme.resolved==='dark'?theme.warning:'#e7cd8e'}]} onPress={action('/legal')}><View style={{flex:1}}><Text style={[s.policyKicker,{color:theme.warning}]}>ACTION REQUIRED</Text><Text style={[s.policyTitle,{color:theme.ink}]}>Review community terms</Text><Text style={[s.policyBody,{color:theme.muted}]}>Accept the current Terms and Community Guidelines before posting reviews, community content or messages.</Text></View><Text style={[s.policyArrow,{color:theme.warning}]}>›</Text></Pressable>:null}
     {!signedIn?<Pressable accessibilityRole="button" style={[s.joinBanner,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/signup')}><View style={{flex:1}}><Text style={[s.joinKicker,{color:theme.accent}]}>INDIVIDUAL OR FAMILY</Text><Text style={[s.joinTitle,{color:theme.ink}]}>Create your Kleenest account</Text><Text style={[s.joinBody,{color:theme.muted}]}>Start as an individual or choose Family from signup. Family benefits remain entitlement-controlled through the approved membership path.</Text></View><Text style={[s.joinArrow,{color:theme.accent}]}>›</Text></Pressable>:null}
 
-    <HeroCard eyebrow="YOUR KLEENEST" title="Find a bathroom you can trust." body="Search near you or around any address. When you are on site, check in with GPS + geofence; use QR when available for stronger proof.">
-      <Pressable accessibilityRole="button" accessibilityLabel="Find a bathroom" style={[s.homePrimaryCta,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/explore')}><Text style={[s.homePrimaryLabel,{color:theme.muted}]}>FIND A BATHROOM</Text><Text style={[s.homePrimaryTitle,{color:theme.accent}]}>Search the map →</Text><Text style={[s.homePrimaryBody,{color:theme.muted}]}>Nearby · any address · amenities · trust · directions</Text></Pressable>
-      <View style={s.heroQuickRow}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Check in at a restroom" style={[s.heroQuick,{backgroundColor:theme.surface,borderColor:theme.line,borderWidth:1}]} onPress={action('/explore')}><Text style={[s.heroQuickLabel,{color:theme.muted}]}>CHECK IN</Text><Text style={[s.heroQuickTitle,{color:theme.ink}]}>Nearby or search</Text></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Scan a Kleenest QR code" style={[s.heroQuick,{backgroundColor:theme.surface,borderColor:theme.line,borderWidth:1}]} onPress={action('/qr')}><Text style={[s.heroQuickLabel,{color:theme.muted}]}>QR PROOF</Text><Text style={[s.heroQuickTitle,{color:theme.ink}]}>Scan code</Text></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Add a missing place" style={[s.heroQuick,{backgroundColor:theme.surface,borderColor:theme.line,borderWidth:1}]} onPress={action('/discover')}><Text style={[s.heroQuickLabel,{color:theme.muted}]}>ADD TO MAP</Text><Text style={[s.heroQuickTitle,{color:theme.ink}]}>Missing place</Text></Pressable>
-      </View>
-    </HeroCard>
+    <RelevanceHeroCarousel
+      items={heroItems}
+      dotIndicators={heroPolicy.dot_indicators}
+      swipeEnabled={heroPolicy.swipe_enabled}
+      onOpen={route=>router.push(route as any)}
+    />
+    <SponsoredSlot surface="home" contextClass="home_after_relevance"/>
+
 
     {showInstall?<Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest" style={[s.installFeature,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/install')}>
       <View style={[s.installFeatureIcon,{backgroundColor:theme.accent}]}><Text style={[s.installFeatureIconText,{color:theme.accentText}]}>⇩</Text></View>
