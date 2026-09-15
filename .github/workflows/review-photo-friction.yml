@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'apps/consumer-mobile/app/location/[id].tsx'
+      - 'apps/consumer-mobile/app/week-in-review.tsx'
+      - 'apps/consumer-mobile/app/activity.tsx'
+      - 'scripts/consumer-week-in-review-audit.mjs'
       - 'scripts/review-photo-friction-audit.mjs'
       - '.github/workflows/review-photo-friction.yml'
   workflow_dispatch:
@@ -17,3 +20,4 @@ jobs:
         with:
           node-version: 20
       - run: node scripts/review-photo-friction-audit.mjs
+      - run: node scripts/consumer-week-in-review-audit.mjs
