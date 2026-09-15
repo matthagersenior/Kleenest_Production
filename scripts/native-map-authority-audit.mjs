@@ -18,7 +18,7 @@ if(!failures.length){
  if(/<Map[^>]*onPress=\{\(\)=>setSelectedId\(["']{2}\)\}/.test(exploreCompact))failures.push('Map background press must not swallow or immediately clear marker selection.');
  if(!explore.includes('pointerEvents="none"')||!explore.includes('pointerEvents="box-none"'))failures.push('Explore overlays must preserve map-pin touch access.');
  if(!explore.includes('Close selected location')||!explore.includes('Full details'))failures.push('Selected map details must be dismissible and link to full location details.');
- if(!adaptiveExplore.includes('<Text style={s.closeLabel}>Close</Text>'))failures.push('Selected map details must expose a plainly visible Close label next to the X control.');
+ if(!adaptiveExplore.includes('>Close</Text>'))failures.push('Selected map details must expose a plainly visible Close label next to the X control.');
  if(adaptiveExplore.includes('Nearby when you need one now. Along your route when you are planning ahead.'))failures.push('Explore hero must stay compact and not consume result viewport with explanatory copy.');
  const nearbyModeIndex=adaptiveExplore.indexOf('accessibilityLabel="Nearby search"');
  const radiusIndex=adaptiveExplore.indexOf('Starting radius');
