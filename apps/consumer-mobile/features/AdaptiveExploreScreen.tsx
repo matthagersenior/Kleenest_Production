@@ -26,6 +26,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { listAmenityCatalog, type AmenityCatalogItem } from '../services/amenities';
 import { visitFreshness } from '../services/evidenceFormatting';
@@ -353,6 +354,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
 
 export default function AdaptiveExploreScreen() {
  const theme=useConsumerTheme();
+  const {height:windowHeight}=useWindowDimensions();
   const [mode, setMode] = useState<'nearby' | 'route'>('nearby');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
@@ -364,6 +366,7 @@ export default function AdaptiveExploreScreen() {
   const [search, setSearch] = useState('');
   const [searchAreaOrigin,setSearchAreaOrigin]=useState<[number,number]|null>(null);
   const [searchAreaLabel,setSearchAreaLabel]=useState('');
+  const [pendingMapOrigin,setPendingMapOrigin]=useState<[number,number]|null>(null);
   const [radius, setRadius] = useState(1609);
   const [maxRadius, setMaxRadius] = useState(402336);
   const [effectiveRadiusMeters, setEffectiveRadiusMeters] = useState(1609);
@@ -390,6 +393,8 @@ export default function AdaptiveExploreScreen() {
     if(!isFreshWithinDays(row,freshnessDays))return false;
     return true;
   }),[rows,kleenestOnly,progressionOnly,minimumStars,freshnessDays]);
+  const freshNearbyCount=useMemo(()=>visibleRows.filter((row)=>isFreshWithinDays(row,7)).length,[visibleRows]);
+  const kleenestNearbyCount=useMemo(()=>visibleRows.filter(isKleenestPlace).length,[visibleRows]);
   const activeFilterCount=(kleenestOnly?1:0)+(progressionOnly?1:0)+(minimumStars>0?1:0)+(freshnessDays?1:0)+(selectedAmenityNames.length?1:0);
   const filterSummary=useMemo(()=>{
     const parts:string[]=[];
@@ -505,9 +510,20 @@ export default function AdaptiveExploreScreen() {
     const target=searchAreaOrigin||origin;
     if (!target) return;
     setSelectedId('');
+    setPendingMapOrigin(null);
     setMapCenter(target);
     setMapZoom(13);
     setCameraNonce((value) => value + 1);
+  }
+
+  function handleMapRegionDidChange(event:any){
+    const viewState=event?.nativeEvent;
+    if(mode!=='nearby'||!viewState?.userInteraction||!Array.isArray(viewState.center))return;
+    const next:[number,number]=[Number(viewState.center[0]),Number(viewState.center[1])];
+    if(!Number.isFinite(next[0])||!Number.isFinite(next[1]))return;
+    const activeOrigin=searchAreaOrigin||origin;
+    if(activeOrigin&&Math.abs(next[0]-activeOrigin[0])+Math.abs(next[1]-activeOrigin[1])<0.002)return;
+    setPendingMapOrigin(next);
   }
 
   function changeMapZoom(delta: number) {
@@ -545,10 +561,11 @@ export default function AdaptiveExploreScreen() {
         'Location access is needed for restroom discovery. Enable it in phone settings and try again.',
       );
     }
-    const current = await Location.getCurrentPositionAsync({
+    const lastKnown=await Location.getLastKnownPositionAsync().catch(()=>null);
+    const recentLastKnown=lastKnown&&Date.now()-Number(lastKnown.timestamp||0)<=15*60*1000?lastKnown:null;
+    const current = recentLastKnown || await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     }).catch(async (freshLocationError) => {
-      const lastKnown = await Location.getLastKnownPositionAsync();
       if (!lastKnown) throw freshLocationError;
       return lastKnown;
     });
@@ -558,9 +575,9 @@ export default function AdaptiveExploreScreen() {
     return current;
   }
 
-  async function loadNearby(clearQuery = false, preserveCacheOnEmpty = false) {
+  async function loadNearby(clearQuery = false, preserveCacheOnEmpty = false, overrideOrigin:[number,number]|null=null) {
     const rawQuery=clearQuery?'':search.trim();
-    if(clearQuery){setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');}
+    if(clearQuery){setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');setPendingMapOrigin(null);}
 
     let areaMatch:{origin:[number,number];label:string}|null=null;
     if(rawQuery&&looksLikeAddressOrArea(rawQuery)){
@@ -569,15 +586,22 @@ export default function AdaptiveExploreScreen() {
       areaMatch={origin:[match.longitude,match.latitude],label:match.label||rawQuery};
     }
 
-    const current=areaMatch?null:await currentLocation();
-    const livePresence=areaMatch
+    const retainedMapOrigin=!rawQuery&&searchAreaLabel==='Map area'&&searchAreaOrigin?searchAreaOrigin:null;
+    const mapAreaOrigin=overrideOrigin||retainedMapOrigin;
+    const current=areaMatch||mapAreaOrigin?null:await currentLocation();
+    const livePresence=areaMatch||mapAreaOrigin
       ? await refreshConsumerPresence().catch(()=>null)
       : await recordConsumerPresenceAt(Number(current!.coords.latitude),Number(current!.coords.longitude)).catch(()=>null);
-    const nextOrigin:[number,number]=areaMatch?areaMatch.origin:[Number(current!.coords.longitude),Number(current!.coords.latitude)];
+    const nextOrigin:[number,number]=areaMatch
+      ? areaMatch.origin
+      : mapAreaOrigin
+        ? mapAreaOrigin
+        : [Number(current!.coords.longitude),Number(current!.coords.latitude)];
     const latitude=nextOrigin[1],longitude=nextOrigin[0];
     const query=areaMatch?'':rawQuery;
-    if(areaMatch){setSearchAreaOrigin(areaMatch.origin);setSearchAreaLabel(areaMatch.label);}
-    else if(rawQuery){setSearchAreaOrigin(null);setSearchAreaLabel('');}
+    if(areaMatch){setSearchAreaOrigin(areaMatch.origin);setSearchAreaLabel(areaMatch.label);setPendingMapOrigin(null);}
+    else if(overrideOrigin){setSearch('');setSearchAreaOrigin(overrideOrigin);setSearchAreaLabel('Map area');setPendingMapOrigin(null);}
+    else if(rawQuery){setSearchAreaOrigin(null);setSearchAreaLabel('');setPendingMapOrigin(null);}
 
     let result: any;
     let usedMatureFallback = false;
@@ -719,7 +743,7 @@ export default function AdaptiveExploreScreen() {
     );
   }
 
-  async function load(options: { clearQuery?: boolean; preserveCacheOnEmpty?: boolean } = {}) {
+  async function load(options: { clearQuery?: boolean; preserveCacheOnEmpty?: boolean; mapOrigin?: [number,number] | null } = {}) {
     if (loading) return;
     setLoading(true);
     setMessage(mode === 'nearby' ? 'Searching nearby…' : 'Building route and searching its corridor…');
@@ -727,6 +751,7 @@ export default function AdaptiveExploreScreen() {
       if (mode === 'nearby') await loadNearby(
         Boolean(options.clearQuery),
         Boolean(options.preserveCacheOnEmpty),
+        options.mapOrigin||null,
       );
       else await loadRoute();
     } catch (error: any) {
@@ -844,9 +869,19 @@ export default function AdaptiveExploreScreen() {
         }
         if (cache?.rows?.length) {
           setRows(cache.rows);
+          const restoredSelectedId=
+            continuity?.selectedId && cache.rows.some((row:any)=>idOf(row)===continuity.selectedId)
+              ? continuity.selectedId
+              : cache.selectedId && cache.rows.some((row:any)=>idOf(row)===cache.selectedId)
+                ? cache.selectedId
+                : '';
+          if(restoredSelectedId)setSelectedId(restoredSelectedId);
           if (cache.origin) {
             setOrigin(cache.origin);
-            setMapCenter(cache.origin);
+            const restoredRow=restoredSelectedId?cache.rows.find((row:any)=>idOf(row)===restoredSelectedId):null;
+            setMapCenter(restoredRow&&hasCoordinates(restoredRow)
+              ? [Number(restoredRow.longitude),Number(restoredRow.latitude)]
+              : cache.origin);
           }
           setCached(true);
           setMessage(
@@ -874,29 +909,7 @@ export default function AdaptiveExploreScreen() {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
         ListHeaderComponent={
-          <>
-      <View style={s.hero}>
-        <View style={s.heroTop}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.eyebrow}>DISCOVER</Text>
-            <Text style={s.title}>Find a trusted bathroom.</Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Find bathrooms near my current location"
-            style={[s.locate,{backgroundColor:theme.surface,borderColor:theme.line,borderWidth:1}]}
-            disabled={loading}
-            onPress={() => {
-              if (mode !== 'nearby') chooseMode('nearby');
-              void load({ clearQuery: true });
-            }}
-          >
-            <Text style={[s.locateIcon,{color:theme.accent}]}>⌖</Text>
-            <Text style={[s.locateText,{color:theme.accent}]}>{loading ? 'Finding…' : 'Locate'}</Text>
-          </Pressable>
-        </View>
-      </View>
-
+          <View style={s.exploreCanvas}>
       <View style={[s.searchPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
         <View style={s.searchRow}>
           <TextInput
@@ -1122,8 +1135,8 @@ export default function AdaptiveExploreScreen() {
 
       {(origin||searchAreaOrigin) ? (
         <View style={s.mapSection}>
-          <View style={s.mapFrame}>
-            <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE}>
+          <View style={[s.mapFrame,{height:Math.max(440,windowHeight-96)}]}>
+            <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE} onRegionDidChange={handleMapRegionDidChange}>
               <Camera
                 key={`explore-camera-${cameraNonce}-${selectedId}-${mode}`}
                 initialViewState={cameraViewState}
@@ -1189,9 +1202,26 @@ export default function AdaptiveExploreScreen() {
                 <Text style={[s.mapControlText,{color:theme.accent}]}>⌖</Text>
               </Pressable>
             </View>
+            {pendingMapOrigin&&mode==='nearby'?(
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Search this map area"
+                style={[s.searchThisArea,{backgroundColor:theme.surface,borderColor:theme.line}]}
+                disabled={loading}
+                onPress={()=>void load({mapOrigin:pendingMapOrigin})}
+              >
+                <Text style={[s.searchThisAreaText,{color:theme.accent}]}>{loading?'Searching…':'Search this area'}</Text>
+              </Pressable>
+            ):null}
             <View pointerEvents="box-none" style={s.legendWrap}>
               <MapLegend />
             </View>
+            {!selected?(
+              <View pointerEvents="none" style={[s.nearbySummary,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+                <Text style={[s.nearbySummaryTitle,{color:theme.ink}]}>{visibleRows.length} nearby · {freshNearbyCount} fresh · {kleenestNearbyCount} Kleenest</Text>
+                <Text style={[s.nearbySummaryHint,{color:theme.muted}]}>Swipe up for results</Text>
+              </View>
+            ):null}
             {selected ? (
               <View pointerEvents="auto" style={[s.selectedPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
                 <View style={s.selectedHead}>
@@ -1273,7 +1303,7 @@ export default function AdaptiveExploreScreen() {
               </View>
               <Text style={s.listNote}>{activeFilterCount?filterSummary:(cached ? 'Cached · pull to refresh' : 'Everything · distance + actions')}</Text>
             </View>
-          </>
+          </View>
         }
         renderItem={({ item }) => (
           <View style={[s.resultItem,{backgroundColor:theme.surface,borderColor:theme.line}]}>
@@ -1327,6 +1357,7 @@ export default function AdaptiveExploreScreen() {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.canvas },
   pageScroll: { flex: 1 },
+  exploreCanvas:{position:'relative'},
   hero: {
     marginHorizontal: 12,
     marginTop: 4,
@@ -1350,7 +1381,7 @@ const s = StyleSheet.create({
   },
   locateIcon: { fontSize: 16, fontWeight: '900', color: palette.green },
   locateText: { fontSize: 8, fontWeight: '900', color: palette.green },
-  searchPanel: { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 5, gap: 5 },
+  searchPanel:{position:'absolute',top:10,left:10,right:10,zIndex:60,elevation:20,paddingHorizontal:10,paddingTop:9,paddingBottom:9,gap:6,borderRadius:16,borderWidth:1},
   searchAreaChip:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,backgroundColor:'#e8f1eb',borderRadius:11,paddingHorizontal:10,paddingVertical:7},
   searchAreaText:{flex:1,fontSize:10,fontWeight:'900',color:palette.green},searchAreaAction:{fontSize:9,fontWeight:'900',color:palette.green,textDecorationLine:'underline'},
   segment: { flexDirection: 'row', padding: 3, borderRadius: 12, backgroundColor: '#e8efea' },
@@ -1400,12 +1431,12 @@ const s = StyleSheet.create({
   message: { fontSize: 9, lineHeight: 14, color: '#66776d', fontWeight: '700' },
   provenance: { fontSize: 8, lineHeight: 12, color: '#718077', fontWeight: '700' },
   help: { fontSize: 10, lineHeight: 15, color: '#5f7468' },
-  mapSection: { paddingHorizontal: 14, gap: 5 },
+  mapSection:{paddingHorizontal:0,gap:0,position:'relative'},
   mapFrame: {
-    height: 230,
-    borderRadius: 20,
+    minHeight: 440,
+    borderRadius: 0,
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: 0,
     borderColor: '#d4e0d8',
     backgroundColor: '#dde6e0',
     position: 'relative',
@@ -1418,12 +1449,17 @@ const s = StyleSheet.create({
   markerActive: { transform: [{ scale: 1.08 }] },
   markerPhoto:{width:34,height:34,borderRadius:17,backgroundColor:'#e7eee9'},
   markerPhotoActive:{width:42,height:42,borderRadius:21},
-  mapBadge: { position: 'absolute', top: 9, left: 9, borderRadius: 999, backgroundColor: 'rgba(23,61,43,.9)', paddingHorizontal: 9, paddingVertical: 6 },
+  mapBadge: { position: 'absolute', top: 174, left: 10, borderRadius: 999, backgroundColor: 'rgba(23,61,43,.9)', paddingHorizontal: 9, paddingVertical: 6 },
   mapBadgeText: { fontSize: 8, fontWeight: '900', color: '#fff' },
-  mapControls: { position: 'absolute', right: 9, top: 9, gap: 6 },
+  mapControls: { position: 'absolute', right: 10, top: 174, gap: 6 },
   mapControl: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cbd9d0', alignItems: 'center', justifyContent: 'center' },
   mapControlText: { fontSize: 19, fontWeight: '900', color: palette.green },
-  legendWrap: { position: 'absolute', top: 50, left: 9, right: 54 },
+  searchThisArea:{position:'absolute',top:174,left:92,right:72,zIndex:52,elevation:16,minHeight:38,borderRadius:999,borderWidth:1,alignItems:'center',justifyContent:'center',paddingHorizontal:12},
+  searchThisAreaText:{fontSize:10,fontWeight:'900'},
+  legendWrap: { position: 'absolute', top: 218, left: 10, right: 56 },
+  nearbySummary:{position:'absolute',left:10,right:56,bottom:10,zIndex:34,elevation:10,borderRadius:14,borderWidth:1,paddingHorizontal:12,paddingVertical:9},
+  nearbySummaryTitle:{fontSize:11,fontWeight:'900'},
+  nearbySummaryHint:{fontSize:9,fontWeight:'800',marginTop:2},
   selectedPanel: { position: 'absolute', left: 9, right: 54, top: 9, bottom: 9, zIndex: 40, elevation: 12, borderRadius: 13, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 5, overflow:'hidden' },
   selectedBodyScroll:{flex:1},
   selectedBodyContent:{gap:5,paddingBottom:2},
