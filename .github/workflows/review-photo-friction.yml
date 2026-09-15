@@ -1,0 +1,19 @@
+name: Review photo friction
+
+on:
+  pull_request:
+    paths:
+      - 'apps/consumer-mobile/app/location/[id].tsx'
+      - 'scripts/review-photo-friction-audit.mjs'
+      - '.github/workflows/review-photo-friction.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/review-photo-friction-audit.mjs
