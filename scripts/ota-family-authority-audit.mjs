@@ -19,6 +19,8 @@ const nativeFamily=read('.github/workflows/android-family.yml');
 for(const token of ['schedule:','0 9 * * *','releases/family-native.txt','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_build'])if(!nativeFamily.includes(token))failures.push('family native workflow missing '+token);
 if(nativeFamily.includes('workflow_run:'))failures.push('family native workflow must not rebuild after every Production CI');
 for(const file of ['scripts/resolve-family-apk-baseline.mjs','scripts/app-family-release-plan.mjs'])if(!fs.existsSync(file))failures.push('family release authority missing '+file);
+const releasePlan=read('scripts/app-family-release-plan.mjs');
+for(const token of ['sourceNativeImports','undeclared native dependency referenced'])if(!releasePlan.includes(token))failures.push('family release plan missing undeclared-native-import protection '+token);
 const productionCi=read('.github/workflows/ci.yml');
 for(const token of ['Resolve synchronized family APK baseline','App-family OTA/native drift visibility','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs'])if(!productionCi.includes(token))failures.push('Production CI family drift visibility missing '+token);
 const releaseMarker=read('releases/family-ota.txt').trim();
