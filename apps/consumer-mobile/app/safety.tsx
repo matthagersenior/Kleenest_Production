@@ -3,10 +3,12 @@ import { useEffect, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { blockUser, getBlockState, reportReview, reportUser, unblockUser, type SafetyReportReason } from '../services/safety';
 import { palette } from '../components/ConsumerUI';
+import { useConsumerTheme } from '../services/theme';
 
 const REASONS:{code:SafetyReportReason;label:string}[] = [{code:'harassment',label:'Harassment or bullying'},{code:'hate',label:'Hate or abusive content'},{code:'sexual',label:'Sexual or inappropriate content'},{code:'spam',label:'Spam or scam'},{code:'privacy',label:'Privacy or impersonation'},{code:'other',label:'Other safety concern'}];
 
 export default function SafetyScreen() {
+  const theme=useConsumerTheme();
   const params = useLocalSearchParams<{ userId?: string; reviewId?: string; context?: string; name?: string }>();
   const userId = String(params.userId || '');
   const reviewId = String(params.reviewId || '');
@@ -47,20 +49,20 @@ export default function SafetyScreen() {
     } finally { setBusy(false); }
   }
 
-  return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-    <Text style={s.eyebrow}>SAFETY & MODERATION</Text>
-    <Text accessibilityRole="header" style={s.title}>Report a concern</Text>
-    <Text style={s.body}>Reports are private and reviewed for violations of Kleenest Community Guidelines. For immediate danger, contact local emergency services.</Text>
-    <View style={s.card}>
-      <Text style={s.cardTitle}>What happened?</Text>
-      <View style={s.reasons}>{REASONS.map(item => <Pressable accessibilityRole="radio" accessibilityState={{selected: reason === item.code}} key={item.code} onPress={() => setReason(item.code)} style={[s.reason, reason === item.code && s.reasonOn]}><Text style={[s.reasonText, reason === item.code && s.reasonTextOn]}>{item.label}</Text></Pressable>)}</View>
-      <TextInput accessibilityLabel="Report details" value={details} onChangeText={setDetails} multiline maxLength={2000} placeholder="Optional details that help our moderation team understand the issue" style={[s.input, s.textarea]} />
-      <Text style={s.counter}>{details.length}/2000</Text>
-      <Pressable accessibilityRole="button" disabled={busy || (!userId && !reviewId)} onPress={submitReport} style={[s.primary, busy && s.disabled]}><Text style={s.primaryText}>{busy ? 'Submitting…' : 'Submit report'}</Text></Pressable>
+  return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+    <Text style={[s.eyebrow,{color:theme.accent}]}>SAFETY & MODERATION</Text>
+    <Text accessibilityRole="header" style={[s.title,{color:theme.ink}]}>Report a concern</Text>
+    <Text style={[s.body,{color:theme.muted}]}>Reports are private and reviewed for violations of Kleenest Community Guidelines. For immediate danger, contact local emergency services.</Text>
+    <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+      <Text style={[s.cardTitle,{color:theme.ink}]}>What happened?</Text>
+      <View style={s.reasons}>{REASONS.map(item => <Pressable accessibilityRole="radio" accessibilityState={{selected: reason === item.code}} key={item.code} onPress={() => setReason(item.code)} style={[s.reason,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}, reason === item.code && s.reasonOn,reason===item.code&&{backgroundColor:theme.accent,borderColor:theme.accent}]}><Text style={[s.reasonText,{color:theme.ink}, reason === item.code && s.reasonTextOn,reason===item.code&&{color:theme.accentText}]}>{item.label}</Text></Pressable>)}</View>
+      <TextInput accessibilityLabel="Report details" value={details} onChangeText={setDetails} multiline maxLength={2000} placeholder="Optional details that help our moderation team understand the issue" placeholderTextColor={theme.muted} style={[s.input, s.textarea,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} />
+      <Text style={[s.counter,{color:theme.muted}]}>{details.length}/2000</Text>
+      <Pressable accessibilityRole="button" disabled={busy || (!userId && !reviewId)} onPress={submitReport} style={[s.primary,{backgroundColor:theme.accent}, busy && s.disabled]}><Text style={[s.primaryText,{color:theme.accentText}]}>{busy ? 'Submitting…' : 'Submit report'}</Text></Pressable>
     </View>
-    {userId ? <View style={s.card}><Text style={s.cardTitle}>Block {targetName}</Text><Text style={s.body}>Blocking prevents direct messages in either direction. You can reverse this later.</Text>{signedIn ? <Pressable accessibilityRole="button" disabled={busy} onPress={toggleBlock} style={[blocked ? s.secondary : s.danger, busy && s.disabled]}><Text style={blocked ? s.secondaryText : s.dangerText}>{blocked ? 'Unblock contributor' : 'Block contributor'}</Text></Pressable> : <Text style={s.notice}>Sign in to block contributors.</Text>}</View> : null}
-    {message ? <View accessibilityRole="alert" style={s.noticeBox}><Text style={s.notice}>{message}</Text></View> : null}
-    <Pressable accessibilityRole="button" onPress={() => router.back()} style={s.secondary}><Text style={s.secondaryText}>Back</Text></Pressable>
+    {userId ? <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.cardTitle,{color:theme.ink}]}>Block {targetName}</Text><Text style={[s.body,{color:theme.muted}]}>Blocking prevents direct messages in either direction. You can reverse this later.</Text>{signedIn ? <Pressable accessibilityRole="button" disabled={busy} onPress={toggleBlock} style={[blocked ? s.secondary : s.danger,blocked?{backgroundColor:theme.accentSoft}:{backgroundColor:theme.danger}, busy && s.disabled]}><Text style={[blocked ? s.secondaryText : s.dangerText,blocked?{color:theme.accent}:{color:theme.accentText}]}>{blocked ? 'Unblock contributor' : 'Block contributor'}</Text></Pressable> : <Text style={[s.notice,{color:theme.muted}]}>Sign in to block contributors.</Text>}</View> : null}
+    {message ? <View accessibilityRole="alert" style={[s.noticeBox,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={s.notice}>{message}</Text></View> : null}
+    <Pressable accessibilityRole="button" onPress={() => router.back()} style={[s.secondary,{backgroundColor:theme.accentSoft}]}><Text style={[s.secondaryText,{color:theme.accent}]}>Back</Text></Pressable>
   </ScrollView></SafeAreaView>;
 }
 
