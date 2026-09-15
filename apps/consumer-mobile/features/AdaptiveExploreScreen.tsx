@@ -1183,13 +1183,13 @@ export default function AdaptiveExploreScreen() {
               <MapLegend />
             </View>
             {selected ? (
-              <View pointerEvents="box-none" style={[s.selectedPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+              <View pointerEvents="auto" style={[s.selectedPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
                 <View style={s.selectedHead}>
                   <Text style={s.selectedLabel}>BEST NEXT DECISION</Text>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Close selected location"
-                    hitSlop={8}
+                    hitSlop={12}
                     onPress={() => setSelectedId('')}
                     style={s.close}
                   >
@@ -1409,10 +1409,10 @@ const s = StyleSheet.create({
   mapControl: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cbd9d0', alignItems: 'center', justifyContent: 'center' },
   mapControlText: { fontSize: 19, fontWeight: '900', color: palette.green },
   legendWrap: { position: 'absolute', top: 50, left: 9, right: 54 },
-  selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, borderRadius: 13, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 5 },
+  selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, zIndex: 40, elevation: 12, borderRadius: 13, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 5 },
   selectedHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   selectedLabel: { flex: 1, fontSize: 8, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
-  close: { minHeight: 38, borderRadius: 19, backgroundColor: palette.green, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 10 },
+  close: { minWidth: 72, minHeight: 44, zIndex: 41, elevation: 13, borderRadius: 22, backgroundColor: palette.green, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 12 },
   closeText: { color: '#fff', fontSize: 20, lineHeight: 22, fontWeight: '900' },
   closeLabel: { color: '#fff', fontSize: 9, fontWeight: '900' },
   selectedRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
