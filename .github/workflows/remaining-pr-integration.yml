@@ -1,0 +1,36 @@
+name: Remaining PR integration
+
+on:
+  pull_request:
+    paths:
+      - 'apps/consumer-mobile/app/progress.tsx'
+      - 'apps/consumer-mobile/app/_layout.tsx'
+      - 'apps/consumer-mobile/components/BetaReportButton.tsx'
+      - 'apps/consumer-mobile/app/location/[id].tsx'
+      - 'apps/consumer-mobile/components/RestroomSignals.tsx'
+      - 'apps/consumer-mobile/services/restroomFacilities.ts'
+      - 'apps/consumer-mobile/services/locationPresentation.ts'
+      - 'apps/consumer-mobile/services/reviewEligibility.ts'
+      - 'apps/business-mobile/app/locations.tsx'
+      - 'apps/business-mobile/services/product.ts'
+      - 'packages/mobile-core/src/index.ts'
+      - 'src/runtime/ExplorePage.jsx'
+      - 'src/runtime/LocationPage.jsx'
+      - 'src/services/restroomFacilities.js'
+      - 'src/services/nearby.js'
+      - 'supabase/migrations/*restroom_facility_identity.sql'
+      - 'scripts/restroom-facility-model-audit.mjs'
+      - 'scripts/progress-mobile-polish-audit.mjs'
+      - '.github/workflows/remaining-pr-integration.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/progress-mobile-polish-audit.mjs
+      - run: node scripts/restroom-facility-model-audit.mjs
