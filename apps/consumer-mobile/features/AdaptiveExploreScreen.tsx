@@ -324,6 +324,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Start directions to this location"
+          accessibilityHint="Start navigation"
           disabled={!hasCoordinates(item)}
           style={[s.primarySmall, s.cardAction, !hasCoordinates(item) && s.disabled]}
           onPress={onDirections}
@@ -1219,6 +1220,7 @@ export default function AdaptiveExploreScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Start directions to this location"
+          accessibilityHint="Start navigation"
                     style={[s.primarySmall, s.selectedAction, !hasCoordinates(selected) && s.disabled]}
                     disabled={!hasCoordinates(selected)}
                     onPress={() => void directions(selected)}
