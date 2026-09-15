@@ -98,7 +98,7 @@ export default function DeveloperPartners(){
   const sortedPartners=useMemo(()=>[...partners].sort((a,b)=>a.name.localeCompare(b.name)),[partners]);
 
   return <ScrollView refreshControl={<RefreshControl refreshing={busy} onRefresh={()=>loadDirectory(selectedId)}/>} contentContainerStyle={[s.page,{backgroundColor:theme.canvas}]}>
-    <View style={[s.hero,{backgroundColor:theme.accent,borderColor:theme.line}]}><Text style={[s.eyebrow,{color:theme.accentText,opacity:.76}]}>KLEENESTOS · DEVELOPER PLATFORM</Text><Text style={[s.title,{color:theme.accentText}]}>Developer Platform → Partners</Text><Text style={[s.copy,{color:theme.accentText,opacity:.88}]}>Create a customer workspace, choose a sellable product bundle, customize API products and quotas, manage team access and credentials, and suspend access from one owner surface.</Text></View>
+    <View style={[s.hero,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:theme.accent,borderColor:theme.line}]}><Text style={[s.eyebrow,{color:theme.resolved==='dark'?theme.muted:theme.accentText}]}>KLEENESTOS · DEVELOPER PLATFORM</Text><Text style={[s.title,{color:theme.resolved==='dark'?theme.ink:theme.accentText}]}>Developer Platform → Partners</Text><Text style={[s.copy,{color:theme.resolved==='dark'?theme.muted:theme.accentText}]}>Create a customer workspace, choose a sellable product bundle, customize API products and quotas, manage team access and credentials, and suspend access from one owner surface.</Text></View>
     {message?<Text accessibilityLiveRegion="polite" style={[s.message,{color:theme.warning}]}>{message}</Text>:null}
     {secret?<View style={[s.secret,{backgroundColor:theme.accentSoft,borderColor:theme.warning}]}><Text style={[s.secretTitle,{color:theme.warning}]}>One-time secret / invite</Text><Text selectable style={[s.secretText,{color:theme.ink}]}>{secret}</Text><Text style={[s.meta,{color:theme.muted}]}>Copy this now. Kleenest does not display the raw value again.</Text></View>:null}
 
@@ -106,7 +106,7 @@ export default function DeveloperPartners(){
       <Text style={[s.sectionTitle,{color:theme.ink}]}>Developer experience</Text>
       <Text style={[s.meta,{color:theme.muted}]}>The external portal now guides a partner from account and workspace access through a one-hour origin-bound sandbox, live API Playground, code generation, sample integrations, and production credentials.</Text>
       <View style={s.two}>
-        <Pressable onPress={()=>void Linking.openURL('https://matthagersenior.github.io/Kleenest_Production/developer/')} style={[s.button,{flex:1}]}><Text style={[s.buttonText,{color:theme.accent}]}>Open Developer Portal</Text></Pressable>
+        <Pressable onPress={()=>void Linking.openURL('https://matthagersenior.github.io/Kleenest_Production/developer/')} style={[s.button,{flex:1,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}]}><Text style={[s.buttonText,{color:theme.ink}]}>Open Developer Portal</Text></Pressable>
         <Pressable disabled={busy} onPress={()=>void createDemoPartner()} style={[s.primary,{flex:1,backgroundColor:theme.accent},busy&&s.disabled]}><Text style={[s.primaryText,{color:theme.accentText}]}>Launch Demo Workspace</Text></Pressable>
       </View>
       <Text style={[s.meta,{color:theme.muted}]}>Demo workspaces use the low-quota Developer Sandbox bundle so Nearby, Route, Place Details and Place Match can all be tested without changing normal customer entitlements. The portal sandbox credential is not persisted in the browser and expires after one hour.</Text>
