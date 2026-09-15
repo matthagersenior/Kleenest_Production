@@ -22,7 +22,7 @@ export default function Locations(){
 async function openFacilities(locationId:string){
   setBusy(`facilities:${locationId}`);
   try{
-    const data=await listBusinessRestroomFacilities(locationId);
+    const data=await listBusinessRestroomFacilities(businessId,locationId);
     setFacilityLocationId(locationId);
     setFacilityRows(Array.isArray(data)?data:[]);
     setMessage('');
@@ -34,7 +34,7 @@ async function facilityAction(key:string,fn:()=>Promise<unknown>,success:string)
   try{
     await fn();
     if(facilityLocationId){
-      const data=await listBusinessRestroomFacilities(facilityLocationId);
+      const data=await listBusinessRestroomFacilities(businessId,facilityLocationId);
       setFacilityRows(Array.isArray(data)?data:[]);
     }
     setMessage(success);
