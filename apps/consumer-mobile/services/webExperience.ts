@@ -90,15 +90,26 @@ export function useConsumerWebExperience(){
   },[native,explicitLaunch]);
 
   useEffect(()=>{
-    if(native)return;
     let active=true;
     const client=getKleenestSupabaseClient();
-    const standalone=isConsumerStandaloneWebApp();
-    clearLegacyConsumerAppPresence();
-    if(standalone)markConsumerAppPresence();
+    const standalone=native?true:isConsumerStandaloneWebApp();
+
+    if(!native){
+      clearLegacyConsumerAppPresence();
+      if(standalone)markConsumerAppPresence();
+    }
 
     async function refresh(sessionOverride?:unknown){
       const session=sessionOverride===undefined?(await client.auth.getSession()).data.session:sessionOverride;
+      if(!active)return;
+
+      if(native){
+        setInstalled(true);
+        setSignedIn(Boolean(session));
+        setReady(true);
+        return;
+      }
+
       const related=await relatedInstalledApp();
       if(!active)return;
       const present=standalone||storedConsumerAppPresence()||related;
@@ -107,7 +118,12 @@ export function useConsumerWebExperience(){
       setReady(true);
     }
 
-    void refresh().catch(()=>{if(active){setInstalled(standalone||storedConsumerAppPresence());setSignedIn(false);setReady(true)}});
+    void refresh().catch(()=>{
+      if(!active)return;
+      setInstalled(native||standalone||storedConsumerAppPresence());
+      setSignedIn(false);
+      setReady(true);
+    });
     const auth=client.auth.onAuthStateChange((_event,session)=>{void refresh(session)});
     return()=>{active=false;auth.data.subscription.unsubscribe()};
   },[native]);
