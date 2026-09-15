@@ -129,9 +129,15 @@ requireTokens('Consumer Profile dark contrast','apps/consumer-mobile/app/profile
   'style={[s.hubTitle,{color:theme.ink}]}',
   'style={[s.hubBody,{color:theme.muted}]}',
 ]);
-requireTokens('Consumer Home dark surfaces','apps/consumer-mobile/app/index.tsx',[
-  'style={[s.joinBanner,{backgroundColor:theme.surface,borderColor:theme.line}]}',
-  'style={[s.installFeature,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+requireTokens('Consumer app entry dark handoff','apps/consumer-mobile/app/index.tsx',[
+  'useConsumerTheme',
+  'backgroundColor:theme.canvas',
+  'Redirect',
+  '/explore',
+]);
+requireTokens('Consumer Explore functional-home dark surfaces','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',[
+  'style={[s.searchPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.nearbySummary,{backgroundColor:theme.surface,borderColor:theme.line}]}',
 ]);
 requireTokens('Consumer Explore dark controls','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',[
   'style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}',
