@@ -1,17 +1,20 @@
-import { useState } from 'react';
+import { useEffect,useRef,useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { HeroCard } from './ConsumerUI';
 import { useConsumerTheme } from '../services/theme';
 import type { OrganicHeroItem } from '../services/heroRelevance';
 
-export function RelevanceHeroCarousel({items,onOpen,dotIndicators=true,swipeEnabled=true}:{items:OrganicHeroItem[];onOpen:(route:string)=>void;dotIndicators?:boolean;swipeEnabled?:boolean}){
+export function RelevanceHeroCarousel({items,onOpen,dotIndicators=true,swipeEnabled=true,autoplay=false}:{items:OrganicHeroItem[];onOpen:(route:string)=>void;dotIndicators?:boolean;swipeEnabled?:boolean;autoplay?:boolean}){
   const theme=useConsumerTheme();
+  const scrollRef=useRef<ScrollView|null>(null);
   const[width,setWidth]=useState(0);
   const[index,setIndex]=useState(0);
   if(!items.length)return null;
   const updateIndex=(x:number)=>{if(width>0)setIndex(Math.max(0,Math.min(items.length-1,Math.round(x/width))))};
+  useEffect(()=>{if(!autoplay||!swipeEnabled||width<=0||items.length<2)return;const timer=setInterval(()=>{setIndex(current=>{const next=(current+1)%items.length;scrollRef.current?.scrollTo({x:next*width,y:0,animated:true});return next})},7000);return()=>clearInterval(timer)},[autoplay,swipeEnabled,width,items.length]);
   return <View onLayout={event=>setWidth(Math.round(event.nativeEvent.layout.width))} style={s.wrap}>
     <ScrollView
+      ref={scrollRef}
       horizontal
       pagingEnabled={swipeEnabled}
       scrollEnabled={swipeEnabled&&items.length>1}
