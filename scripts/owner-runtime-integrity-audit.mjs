@@ -37,6 +37,7 @@ requireAll('Owner push native safety',push,[
   'getExpoPushTokenAsync',
 ]);
 must(!/^import .*expo-notifications/m.test(push),'Owner push activation must not import expo-notifications at module load; native registration must stay behind runtime guards.');
+must(!/^import .*expo-device/m.test(push),'Owner push activation must not import expo-device at module load; OTA-safe startup must not require an undeclared native module.');
 requireAll('Owner push activation safety',push,[
   "await import('expo-notifications')",
   "setNotificationChannelAsync('kleenestos-operations'",
