@@ -381,7 +381,7 @@ export default function AdaptiveExploreScreen() {
  const theme=useConsumerTheme();
   const insets=useSafeAreaInsets();
   const {height:windowHeight}=useWindowDimensions();
-  const exploreMapHeight=Math.max(380,Math.min(500,Math.round(windowHeight*0.56)));
+  const exploreMapHeight=Math.max(320,Math.min(430,Math.round(windowHeight*0.38)));
   const [mode, setMode] = useState<'nearby' | 'route'>('nearby');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
@@ -413,9 +413,8 @@ export default function AdaptiveExploreScreen() {
   const [checkInFeedback,setCheckInFeedback]=useState<Record<string,CheckInActionFeedback>>({});
   const [cached, setCached] = useState(false);
   const [mapInteracting,setMapInteracting]=useState(false);
-  const [searchPanelHeight,setSearchPanelHeight]=useState(0);
   const searchPanelTop=Platform.OS==='android'?Math.max(8,insets.top+4):8;
-  const mapChromeTop=searchPanelTop+searchPanelHeight+10;
+  const mapChromeTop=10;
 
   const visibleRows=useMemo(()=>rows.filter((row)=>{
     if(kleenestOnly&&!isKleenestPlace(row))return false;
@@ -944,7 +943,7 @@ export default function AdaptiveExploreScreen() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
         ListHeaderComponent={
           <View style={s.exploreCanvas}>
-      <View onLayout={event=>setSearchPanelHeight(Math.ceil(event.nativeEvent.layout.height))} style={[s.searchPanel,{top:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
+      <View style={[s.searchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
         <View style={s.searchRow}>
           <TextInput
             accessibilityLabel="Search bathrooms"
@@ -1438,7 +1437,7 @@ const s = StyleSheet.create({
   },
   locateIcon: { fontSize: 16, fontWeight: '900', color: palette.green },
   locateText: { fontSize: 8, fontWeight: '900', color: palette.green },
-  searchPanel:{position:'absolute',left:10,right:10,zIndex:60,elevation:20,paddingHorizontal:9,paddingTop:7,paddingBottom:7,gap:5,borderRadius:15,borderWidth:1},
+  searchPanel:{position:'relative',marginHorizontal:10,zIndex:60,elevation:20,paddingHorizontal:9,paddingTop:7,paddingBottom:7,gap:5,borderRadius:15,borderWidth:1},
   searchAreaChip:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,backgroundColor:'#e8f1eb',borderRadius:11,paddingHorizontal:10,paddingVertical:7},
   searchAreaText:{flex:1,fontSize:10,fontWeight:'900',color:palette.green},searchAreaAction:{fontSize:9,fontWeight:'900',color:palette.green,textDecorationLine:'underline'},
   segment: { flexDirection: 'row', padding: 3, borderRadius: 12, backgroundColor: '#e8efea' },
@@ -1489,7 +1488,7 @@ const s = StyleSheet.create({
   provenance: { fontSize: 8, lineHeight: 12, color: '#718077', fontWeight: '700' },
   discoveryStatus:{paddingHorizontal:12,paddingVertical:8,gap:4},
   help: { fontSize: 10, lineHeight: 15, color: '#5f7468' },
-  mapSection:{paddingHorizontal:0,gap:0,position:'relative'},
+  mapSection:{paddingHorizontal:0,gap:0,position:'relative',marginTop:8},
   mapFrame: {
     minHeight: 380,
     borderRadius: 0,
