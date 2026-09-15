@@ -22,7 +22,7 @@ if(!failures.length){
     'FreshnessHeatRing','freshnessHeatSignal','freshestEvidenceAt',
     "'#ef4444'","'#f97316'","'#facc15'","'#84cc16'","'#06b6d4'","'#3b82f6'","'#94a3b8'",
     'evidenceFrame={false}','FRESHNESS RING',
-    'borderColor:heat.color','borderWidth:active?5:4'
+    'borderColor:heat.color','borderWidth:4','const ringSize=size+12'
   ])if(!signals.includes(token))failures.push('Native freshness ring missing '+token);
   if(signals.includes("Needs verification · dashed ring"))failures.push('Map legend must not describe freshness as a dashed verification ring.');
   if(/freshestEvidenceAt\([^)]*\)[\s\S]{0,800}updated_at/.test(signals))failures.push('Freshness must not use generic updated_at metadata.');
@@ -31,8 +31,12 @@ if(!failures.length){
     if(!explore.includes(token))failures.push('Native Explore heat-ring wiring missing '+token);
   if(!explore.includes('<FreshnessHeatRing item={item} size={34} />'))
     failures.push('Native Explore search-result cards must render their place icon inside the freshness heat ring.');
-  if(!explore.includes('<FreshnessHeatRing item={selected} size={34} active />'))
-    failures.push('Native Explore selected map-pin card must render its place icon inside the freshness heat ring.');
+  if(!explore.includes('<FreshnessHeatRing item={selected} size={34} />'))
+    failures.push('Native Explore selected map-pin card must use the exact same freshness ring geometry as result cards.');
+  if(!explore.includes('<FreshnessHeatRing item={row} size={22} />'))
+    failures.push('Native map markers must keep one freshness-ring geometry; selection belongs to the marker wrapper.');
+  if(signals.includes('active?5:4')||signals.includes('active?16:12')||explore.includes('active={active}')||explore.includes('size={active ? 28 : 22}'))
+    failures.push('Freshness ring geometry must not change for selected/active state.');
   for(const token of [
     '<ScrollView style={s.selectedBodyScroll}',
     'showsVerticalScrollIndicator={false}',
