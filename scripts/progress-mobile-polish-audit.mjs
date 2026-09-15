@@ -13,7 +13,7 @@ for(const token of ['const tabLabel=',"tabBarItemStyle:{minWidth:0,paddingHorizo
   if(!layout.includes(token))failures.push('Bottom navigation polish missing '+token);
 }
 for(const token of [
-  'accessibilityLabel="Tell Kleenest"',
+  'accessibilityLabel="Tell Kleenest what you think"',
   '✦ Tell Kleenest</Text>',
   "right:14,bottom:78",
   "borderRadius:999",
