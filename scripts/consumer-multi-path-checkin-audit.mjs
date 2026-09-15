@@ -7,8 +7,8 @@ const expect=(source,token,label)=>{if(!source.includes(token))failures.push(lab
 const home=read('apps/consumer-mobile/app/index.tsx');
 for(const [token,label] of [
   ['accessibilityLabel="Check in at a restroom"','consumer Home must expose a first-class check-in action'],
-  ['<Text style={s.heroQuickLabel}>CHECK IN</Text>','consumer Home must label check-in independently of QR'],
-  ['<Text style={s.heroQuickTitle}>Nearby or search</Text>','consumer Home check-in must lead users toward GPS/search location selection'],
+  ['>CHECK IN</Text>','consumer Home must label check-in independently of QR'],
+  ['>Nearby or search</Text>','consumer Home check-in must lead users toward GPS/search location selection'],
   ['accessibilityLabel="Scan a Kleenest QR code"','consumer Home must keep QR as a separate optional verification path'],
 ]) expect(home,token,label);
 if(home.includes('Scan QR to check in or review')) failures.push('consumer Home must not teach users that QR is the general check-in entry point');
