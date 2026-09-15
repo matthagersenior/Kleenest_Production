@@ -65,7 +65,7 @@ const consumerInstall=read('apps/consumer-mobile/app/install.tsx');
 for(const token of ['Install Kleenest','beforeinstallprompt','Kleenest-Consumer.apk','INSTALL WEB APP','DOWNLOAD ANDROID APK','iPhone','iPad','Add to Home Screen','Open as Web App','deviceKind','isIOS','isAndroid','Kleenest-release-state.json','INSTALL HEALTH','SHARE INSTALL LINK','OPEN KLEENEST','CHECK INSTALLATION','browserKind','serviceWorkerReady'])requireToken(consumerInstall,token,'Consumer Installation Center');
 const consumerAuth=read('apps/consumer-mobile/app/profile.tsx');
 const consumerHome=read('apps/consumer-mobile/app/index.tsx');
-for(const token of ['GET KLEENEST','Install on this device','/install','MarketingHome','useConsumerWebExperience','showInstall'])requireToken(consumerHome,token,'Consumer Home + public marketing split');
+for(const token of ['Redirect','/explore','MarketingHome','useConsumerWebExperience'])requireToken(consumerHome,token,'Consumer app entry + public marketing split');
 for(const token of ['/Kleenest_Production/profile/',"Linking.createURL('profile'","isTripleSlashed:false","skipBrowserRedirect:Platform.OS!=='web'","router.replace('/')"])requireToken(consumerAuth,token,'Consumer web/native OAuth callback and Home handoff');
 const marketingSite=read('apps/consumer-mobile/components/MarketingSitePro.tsx');
 for(const token of ['Find clean bathrooms you can actually trust.','For You','For Business','TRUST + FRESHNESS','INSTALL KLEENEST','KLEENEST ANYWHERE','useConsumerWebExperience','appActive','OPEN FLEET PORTAL','/Kleenest_Production/fleet/'])requireToken(marketingSite,token,'Public Kleenest marketing site');
