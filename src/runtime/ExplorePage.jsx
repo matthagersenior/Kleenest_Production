@@ -12,13 +12,64 @@ const RADII = [1609, 3219, 8047, 16093, 40234];
 const miles = place => place.distance_meters == null ? null : `${(Number(place.distance_meters) / 1609.344).toFixed(1)} mi`;
 const signals = place => [miles(place), place.cleanliness_pct != null ? `${Math.round(Number(place.cleanliness_pct))}% clean` : null, place.rating != null ? `${Number(place.rating).toFixed(1)} ★${place.review_count ? ` · ${place.review_count} reviews` : ''}` : null, place.is_verified ? 'Verified' : null, place.brand || null].filter(Boolean);
 
+const HEAT_STOPS = [
+  { day: 0, color: '#ef4444' },
+  { day: 1, color: '#f97316' },
+  { day: 7, color: '#facc15' },
+  { day: 30, color: '#84cc16' },
+  { day: 90, color: '#06b6d4' },
+  { day: 180, color: '#3b82f6' },
+];
+const hexRgb = hex => [0, 2, 4].map(index => parseInt(hex.replace('#', '').slice(index, index + 2), 16));
+const rgbHex = rgb => '#' + rgb.map(value => Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, '0')).join('');
+const heatColor = ageDays => {
+  const age = Math.max(0, ageDays);
+  for (let index = 0; index < HEAT_STOPS.length - 1; index += 1) {
+    const from = HEAT_STOPS[index], to = HEAT_STOPS[index + 1];
+    if (age <= to.day) {
+      const t = Math.max(0, Math.min(1, (age - from.day) / Math.max(1, to.day - from.day)));
+      const a = hexRgb(from.color), b = hexRgb(to.color);
+      return rgbHex(a.map((value, i) => value + (b[i] - value) * t));
+    }
+  }
+  return HEAT_STOPS[HEAT_STOPS.length - 1].color;
+};
+const freshestEvidenceAt = place => {
+  const values = [
+    place?.network?.latest_evidence_at,
+    place?.latest_evidence_at,
+    place?.trust?.latest_verified_at,
+    place?.latest_verified_at,
+    place?.trust?.latest_amenity_observed_at,
+    place?.latest_amenity_observed_at,
+    place?.consumer_photo_created_at,
+  ].map(value => value ? new Date(value).getTime() : NaN).filter(Number.isFinite);
+  return values.length ? Math.max(...values) : null;
+};
+const freshnessHeat = place => {
+  const timestamp = freshestEvidenceAt(place);
+  if (timestamp == null) return { color: '#94a3b8', label: 'Freshness unknown' };
+  const ageDays = Math.max(0, (Date.now() - timestamp) / 86400000);
+  const label = ageDays < 1 ? 'Hot freshness · <24h'
+    : ageDays <= 3 ? 'Very fresh · 1–3d'
+    : ageDays <= 7 ? 'Fresh · <7d'
+    : ageDays <= 30 ? 'Recent · <30d'
+    : ageDays <= 90 ? 'Cooling · 1–3mo'
+    : 'Stale · 3mo+';
+  return { color: heatColor(ageDays), label };
+};
+
 function markerElement(place, selected) {
   const el = document.createElement('button');
+  const heat = freshnessHeat(place);
   el.type = 'button';
   el.className = selected ? 'map-pin selected' : 'map-pin';
-  el.setAttribute('aria-label', place.name || 'Restroom location');
-  const label = (place.brand || place.name || 'K').trim().slice(0, 1).toUpperCase();
-  el.textContent = label || 'K';
+  el.style.setProperty('--freshness-ring', heat.color);
+  el.setAttribute('aria-label', `${place.name || 'Restroom location'}, ${heat.label}`);
+  const icon = document.createElement('span');
+  icon.className = 'map-pin-icon';
+  icon.textContent = (place.brand || place.name || 'K').trim().slice(0, 1).toUpperCase() || 'K';
+  el.appendChild(icon);
   return el;
 }
 
@@ -81,7 +132,7 @@ export default function ExplorePage() {
       <button type="button" className="secondary" onClick={locate}>Use my location</button>
     </section>
     {error ? <div className="explore-alert" role="alert">{error}</div> : null}{checkInMessage ? <div className="notice" role="status">{checkInMessage}</div> : null}
-    <section className="explore-map-shell" aria-label="Restroom map"><div ref={hostRef} className="explore-map" /><div className="map-legend"><strong>Map</strong><span>Pin letter = business or brand</span><span>Selected pins highlight</span></div>{selected ? <article className="map-selection"><button type="button" className="map-selection-close" onClick={() => setSelectedId(null)} aria-label="Close selected location">×</button><strong>{selected.name}</strong><span>{signals(selected).join(' · ')}</span><div><button type="button" onClick={() => checkIn(selected)}>Check in</button><button type="button" onClick={() => navigate(`/locations/${selected.location_id || selected.place_id}?knowledge=1`)}>I know this place</button><button type="button" onClick={() => navigate(`/locations/${selected.location_id || selected.place_id}`)}>Full details</button><a href={directNavigationUrl(selected)} target="_blank" rel="noreferrer">Directions</a></div></article> : null}</section>
+    <section className="explore-map-shell" aria-label="Restroom map"><div ref={hostRef} className="explore-map" /><div className="map-legend"><strong>Map</strong><span>Ring = freshness</span><span className="freshness-scale" aria-label="Freshness heat scale"><i style={{'--heat':'#ef4444'}}/>Hot <i style={{'--heat':'#f97316'}}/>1–3d <i style={{'--heat':'#facc15'}}/>&lt;7d <i style={{'--heat':'#84cc16'}}/>&lt;30d <i style={{'--heat':'#06b6d4'}}/>1–3mo <i style={{'--heat':'#3b82f6'}}/>3mo+ <i style={{'--heat':'#94a3b8'}}/>Unknown</span><span>Selection uses a separate outline</span></div>{selected ? <article className="map-selection"><button type="button" className="map-selection-close" onClick={() => setSelectedId(null)} aria-label="Close selected location">×</button><strong>{selected.name}</strong><span>{signals(selected).join(' · ')}</span><div><button type="button" onClick={() => checkIn(selected)}>Check in</button><button type="button" onClick={() => navigate(`/locations/${selected.location_id || selected.place_id}?knowledge=1`)}>I know this place</button><button type="button" onClick={() => navigate(`/locations/${selected.location_id || selected.place_id}`)}>Full details</button><a href={directNavigationUrl(selected)} target="_blank" rel="noreferrer">Directions</a></div></article> : null}</section>
     <section className="explore-results"><div className="explore-results-heading"><div><span className="eyebrow">Nearby</span><h2>{status === 'loading' ? 'Searching…' : `${places.length} result${places.length === 1 ? '' : 's'}`}</h2></div></div><div className="explore-result-list">{places.map((place) => { const id = place.location_id || place.place_id; return <article className={id === selectedId ? 'explore-result selected' : 'explore-result'} key={id}><button type="button" className="explore-result-main" onClick={() => setSelectedId(id)}><span className="explore-result-brand">{(place.brand || place.name || 'K').slice(0, 1).toUpperCase()}</span><span><strong>{place.name}</strong><small>{place.address || 'Address unavailable'}</small><em>{signals(place).join(' · ')}</em></span></button><div className="explore-result-actions"><button type="button" onClick={() => checkIn(place)}>Check in</button><button type="button" onClick={() => navigate(`/locations/${id}?knowledge=1`)}>I know this place</button><button type="button" onClick={() => navigate(`/locations/${id}`)}>Full details</button><a href={directNavigationUrl(place)} target="_blank" rel="noreferrer">Directions</a></div></article>;})}{status !== 'loading' && places.length === 0 ? <div className="explore-empty">No matching locations in this radius yet. Try a wider radius or remove the text filter.</div> : null}</div></section>
   </main>;
 }
