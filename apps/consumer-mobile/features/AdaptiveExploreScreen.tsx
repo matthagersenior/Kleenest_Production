@@ -381,6 +381,7 @@ export default function AdaptiveExploreScreen() {
  const theme=useConsumerTheme();
   const insets=useSafeAreaInsets();
   const {height:windowHeight}=useWindowDimensions();
+  const exploreMapHeight=Math.max(380,Math.min(500,Math.round(windowHeight*0.56)));
   const [mode, setMode] = useState<'nearby' | 'route'>('nearby');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
@@ -1162,7 +1163,7 @@ export default function AdaptiveExploreScreen() {
 
       {(origin||searchAreaOrigin) ? (
         <View style={s.mapSection}>
-          <View style={[s.mapFrame,{height:Math.max(440,windowHeight-96)}]}>
+          <View style={[s.mapFrame,{height:exploreMapHeight}]}>
             <View
               style={s.mapGestureSurface}
               onTouchStart={()=>setMapInteracting(true)}
@@ -1254,7 +1255,7 @@ export default function AdaptiveExploreScreen() {
             {!selected?(
               <View pointerEvents="none" style={[s.nearbySummary,{backgroundColor:theme.surface,borderColor:theme.line}]}>
                 <Text style={[s.nearbySummaryTitle,{color:theme.ink}]}>{visibleRows.length} nearby · {freshNearbyCount} fresh · {kleenestNearbyCount} Kleenest</Text>
-                <Text style={[s.nearbySummaryHint,{color:theme.muted}]}>Swipe up for results</Text>
+                <Text style={[s.nearbySummaryHint,{color:theme.muted}]}>Results are below · scroll to browse</Text>
               </View>
             ):null}
             {selected ? (
@@ -1484,7 +1485,7 @@ const s = StyleSheet.create({
   help: { fontSize: 10, lineHeight: 15, color: '#5f7468' },
   mapSection:{paddingHorizontal:0,gap:0,position:'relative'},
   mapFrame: {
-    minHeight: 440,
+    minHeight: 380,
     borderRadius: 0,
     overflow: 'hidden',
     borderWidth: 0,
@@ -1509,7 +1510,7 @@ const s = StyleSheet.create({
   searchThisArea:{position:'absolute',left:92,right:58,zIndex:52,elevation:16,minHeight:38,borderRadius:999,borderWidth:1,alignItems:'center',justifyContent:'center',paddingHorizontal:12},
   searchThisAreaText:{fontSize:10,fontWeight:'900'},
   legendWrap: { position: 'absolute', left: 10, right: 56, zIndex:48 },
-  nearbySummary:{position:'absolute',left:10,right:10,bottom:82,zIndex:34,elevation:10,borderRadius:14,borderWidth:1,paddingHorizontal:12,paddingVertical:8},
+  nearbySummary:{position:'absolute',left:10,right:10,bottom:12,zIndex:34,elevation:10,borderRadius:14,borderWidth:1,paddingHorizontal:12,paddingVertical:8},
   nearbySummaryTitle:{fontSize:11,fontWeight:'900'},
   nearbySummaryHint:{fontSize:9,fontWeight:'800',marginTop:2},
   selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
