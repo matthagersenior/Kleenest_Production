@@ -155,7 +155,7 @@ requireTokens('Consumer Early Access theme selector','apps/consumer-mobile/app/p
   "option.value==='early-access'",
   'BETA · EARLY ACCESS',
   'earlyAccessChoice',
-  "backgroundColor:earlyAccess?'#0f172a'",
+  "backgroundColor:preview?.background||(earlyAccess?'#0f172a'",
 ]);
 
 requireTokens('Seasonal progression theme core','packages/mobile-core/src/theme.ts',[
