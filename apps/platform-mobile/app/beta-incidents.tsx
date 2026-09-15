@@ -74,7 +74,7 @@ export default function BetaIncidentsScreen(){
       <OSHero
         eyebrow="KLEENESTOS · OPEN BETA"
         title="BETA INCIDENTS"
-        body="Live reports from the app, automatically deduplicated by failure signature so repeated user taps become evidence instead of duplicate tickets."
+        body="Technical bugs, crashes, network/data failures and automatic diagnostics. Product feedback is routed separately into the Tell Kleenest Inbox."
       >
         <View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>
           <StatusPill label={`${counts.active} ACTIVE`} tone={counts.active?'warning':'good'}/>
