@@ -1,5 +1,7 @@
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 
+export type ConsumerFeedbackEvent='tell_kleenest_open'|'pulse_response'|'feedback_detail_opened'|'feedback_submitted';
+
 function sourcesForDiscovery({search='',amenityCount=0,cached=false}:{search?:string;amenityCount?:number;cached?:boolean}={}){
   const sources=['native_mobile'];
   if(search.trim())sources.push('search');
@@ -30,10 +32,23 @@ export async function recordConsumerRouteIntent(locationId:string,{fromFavorite=
   if(error)throw error;
 }
 
+export async function recordConsumerFeedbackEvent(eventName:ConsumerFeedbackEvent,input:{route?:string;metadata?:Record<string,unknown>}={}){
+  const {error}=await getKleenestSupabaseClient().rpc('record_consumer_feedback_event',{
+    p_event_name:eventName,
+    p_route:String(input.route||'').trim()||null,
+    p_metadata:input.metadata||{},
+  });
+  if(error)throw error;
+}
+
 export function captureConsumerDiscovery(input:Parameters<typeof recordConsumerDiscovery>[0]){
   void recordConsumerDiscovery(input).catch(()=>{});
 }
 
 export function captureConsumerRouteIntent(locationId:string,options?:Parameters<typeof recordConsumerRouteIntent>[1]){
   void recordConsumerRouteIntent(locationId,options).catch(()=>{});
+}
+
+export function captureConsumerFeedbackEvent(eventName:ConsumerFeedbackEvent,input?:Parameters<typeof recordConsumerFeedbackEvent>[1]){
+  void recordConsumerFeedbackEvent(eventName,input).catch(()=>{});
 }
