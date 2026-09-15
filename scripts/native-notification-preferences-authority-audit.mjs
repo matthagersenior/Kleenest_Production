@@ -6,6 +6,8 @@ const required=[
   'supabase/migrations/20260831044500_mobile_notification_preferences_authority.sql',
   'supabase/migrations/20260831045500_notification_category_preference_enforcement.sql',
   'supabase/migrations/20260905165500_notification_preferences_v2_contract.sql',
+  'supabase/migrations/20260915195000_notification_quiet_hours_controls.sql',
+  'supabase/migrations/20260915195100_notification_quiet_hours_enforcement.sql',
 ];
 const failures=[];
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing notification preference authority file: ${file}`);
@@ -16,12 +18,15 @@ if(!failures.length){
   const base=fs.readFileSync(required[3],'utf8');
   const enforcement=fs.readFileSync(required[4],'utf8');
   const v2=fs.readFileSync(required[5],'utf8');
+  const quietControls=fs.readFileSync(required[6],'utf8');
+  const quietEnforcement=fs.readFileSync(required[7],'utf8');
 
   for(const token of [
     "rpc('get_my_notification_preferences_v2'",
     "rpc('update_my_notification_preferences_v2'",
     'p_platform_updates','p_progression','p_offers','p_sponsored','p_location_alerts','p_social',
     'p_personalized_ads','p_location_based_offers','p_quiet_hours_start','p_quiet_hours_end',
+    "rpc('set_my_notification_quiet_hours'","rpc('clear_my_notification_quiet_hours'",
   ])if(!service.includes(token))failures.push(`Mobile notification preference service missing v2 authority token: ${token}`);
   for(const token of ['ads_personalization_consent_at','location_offers_consent_at'])if(service.includes(token))failures.push(`Server-maintained consent audit field must not be exposed as a writable mobile preference: ${token}`);
 
@@ -41,7 +46,9 @@ if(!failures.length){
     'getNotificationPreferenceStatus','updateNotificationPreferences',
     'updateNotificationPreferences({push:true})',
     'registerNativePush()','unregisterNativePush()',
-    'What reaches you','SPONSORED & PERSONALIZATION',
+    'What reaches you','SPONSORED & PERSONALIZATION','QUIET HOURS',
+    'setNotificationQuietHours','clearNotificationQuietHours','Save quiet hours','Turn off',
+    'Updates still land in your inbox',
   ])if(!screen.includes(token))failures.push(`Notification center missing v2 preference UX token: ${token}`);
 
   if(!screen.includes("if(key==='sponsored'&&!value){patch.personalized_ads=false;patch.location_based_offers=false}"))failures.push('Sponsored opt-out must also disable dependent sponsored-personalization preferences.');
@@ -64,6 +71,20 @@ if(!failures.length){
     'revoke all on function public.update_my_notification_preferences_v2',
     'grant execute on function public.update_my_notification_preferences_v2',
   ])if(!v2.includes(token))failures.push(`Notification preference v2 migration missing authority token: ${token}`);
+
+  for(const token of [
+    'quiet_hours_timezone text','public.set_my_notification_quiet_hours','public.clear_my_notification_quiet_hours',
+    'pg_catalog.pg_timezone_names','quiet_hours_start=null','quiet_hours_end=null','quiet_hours_timezone=null',
+    'revoke all on function public.set_my_notification_quiet_hours','grant execute on function public.set_my_notification_quiet_hours',
+    'revoke all on function public.clear_my_notification_quiet_hours','grant execute on function public.clear_my_notification_quiet_hours',
+  ])if(!quietControls.includes(token))failures.push(`Quiet-hours control migration missing token: ${token}`);
+  for(const token of [
+    'internal.notification_native_push_allowed','np.quiet_hours_start','np.quiet_hours_end','np.quiet_hours_timezone',
+    'v_start < v_end','v_local_time >= v_start or v_local_time < v_end',
+    'drop trigger if exists notifications_native_push_delivery','when (internal.notification_native_push_allowed(new.user_id))',
+    'execute function public.enqueue_notification_native_push_delivery()',
+  ])if(!quietEnforcement.includes(token))failures.push(`Quiet-hours push enforcement missing token: ${token}`);
+  if(quietEnforcement.includes('before insert on public.notifications'))failures.push('Quiet hours must silence native push only, not suppress inbox notification creation.');
 
   for(const token of ['internal.enforce_notification_preferences','internal.notification_preference_suppressions',"set search_path = ''","'community'","'rewards'","'intelligence'",'notifications_enforce_preferences','before insert on public.notifications'])if(!enforcement.includes(token))failures.push(`Notification category enforcement missing token: ${token}`);
   for(const token of ["'new_follower'","'review_helpful'","'business_review_reply'","v_type='game_challenge'","v_type like 'badge%'","v_type like 'quest%'","'trusted_place'","'popular_place'","'operational_attention'","'demand_opportunity'","'high_activity_zone'"])if(!enforcement.includes(token))failures.push(`Notification category map missing token: ${token}`);

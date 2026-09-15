@@ -111,11 +111,11 @@ export default function BetaReportButton({route}:{route:string}){
       onPress={open}
       style={[s.fab,{backgroundColor:theme.accent,borderColor:theme.line}]}
     >
-      <Text accessible={false} style={[s.fabText,{color:theme.accentText}]}>✦</Text>
+      <Text style={[s.fabText,{color:theme.accentText}]}>✦ Tell Kleenest</Text>
     </Pressable>
-    <Modal transparent visible={visible} animationType="slide" onRequestClose={()=>setVisible(false)}>
+    <Modal transparent visible={visible} animationType="slide" accessibilityViewIsModal onRequestClose={()=>setVisible(false)}>
       <View style={s.overlay}>
-        <Pressable style={StyleSheet.absoluteFill} accessibilityLabel="Close Tell Kleenest" onPress={()=>setVisible(false)}/>
+        <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} accessibilityLabel="Close Tell Kleenest" onPress={()=>setVisible(false)}/>
         <View style={[s.sheet,{backgroundColor:theme.surface,borderColor:theme.line}]}>
           <View style={s.head}>
             <View style={{flex:1,gap:3}}>
@@ -217,8 +217,8 @@ export default function BetaReportButton({route}:{route:string}){
 }
 
 const s=StyleSheet.create({
-  fab:{position:'absolute',right:12,bottom:78,zIndex:1000,elevation:12,width:46,height:46,borderWidth:1,borderRadius:23,alignItems:'center',justifyContent:'center',shadowColor:'#000',shadowOpacity:.18,shadowRadius:10,shadowOffset:{width:0,height:5}},
-  fabText:{fontSize:19,lineHeight:22,fontWeight:'900'},
+  fab:{position:'absolute',right:14,bottom:78,zIndex:1000,elevation:12,borderWidth:1,borderRadius:999,paddingHorizontal:13,paddingVertical:10,shadowColor:'#000',shadowOpacity:.18,shadowRadius:10,shadowOffset:{width:0,height:5}},
+  fabText:{fontSize:11,fontWeight:'900',letterSpacing:.15},
   overlay:{flex:1,backgroundColor:'rgba(0,0,0,.46)',justifyContent:'flex-end'},
   sheet:{borderTopLeftRadius:26,borderTopRightRadius:26,borderWidth:1,padding:18,paddingBottom:28,gap:13,maxHeight:'86%'},
   head:{flexDirection:'row',gap:12,alignItems:'flex-start'},

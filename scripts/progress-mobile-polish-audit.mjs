@@ -12,10 +12,17 @@ for(const token of ['seasonIdentity:{flex:1,minWidth:0}',"seasonTitle:{fontSize:
 for(const token of ['const tabLabel=',"tabBarItemStyle:{minWidth:0,paddingHorizontal:0}","tabBarLabel:tabLabel('Explore')","tabBarLabel:tabLabel('Community')"]){
   if(!layout.includes(token))failures.push('Bottom navigation polish missing '+token);
 }
-for(const token of ["width:46,height:46","<Text accessible={false} style={[s.fabText,{color:theme.accentText}]}>✦</Text>"]){
-  if(!beta.includes(token))failures.push('Beta feedback mobile footprint missing '+token);
+for(const token of [
+  'accessibilityLabel="Tell Kleenest what you think"',
+  '✦ Tell Kleenest</Text>',
+  "right:14,bottom:78",
+  "borderRadius:999",
+  "paddingHorizontal:13,paddingVertical:10",
+  "fabText:{fontSize:11"
+]){
+  if(!beta.includes(token))failures.push('Beta feedback labeled-pill contract missing '+token);
 }
-if(beta.includes('✦ Tell Kleenest</Text>'))failures.push('Beta feedback button regressed to the wide label that can overlap mobile content.');
+if(beta.includes("width:46,height:46")||beta.includes('}>✦</Text>'))failures.push('Beta feedback regressed to the icon-only control; keep the labeled Tell Kleenest pill during beta.');
 
 if(failures.length){
   console.error('Progress mobile polish audit failed:');

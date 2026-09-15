@@ -73,7 +73,7 @@ export default function PriorKnowledgeScreen(){
 
   return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}>
     <ScrollView contentContainerStyle={s.page}>
-      <Pressable onPress={()=>router.back()}><Text style={[s.back,{color:theme.accent}]}>‹ Back</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={()=>router.back()}><Text style={[s.back,{color:theme.accent}]}>‹ Back</Text></Pressable>
       <View style={[s.hero,{backgroundColor:theme.surface,borderColor:theme.line}]}>
         <Text style={[s.eyebrow,{color:theme.accent}]}>I KNOW THIS PLACE</Text>
         <Text style={[s.title,{color:theme.ink}]}>I Know This Place</Text>
@@ -88,26 +88,26 @@ export default function PriorKnowledgeScreen(){
 
       <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
         <Text style={[s.sectionTitle,{color:theme.ink}]}>When were you last here?</Text>
-        <View style={s.wrap}>{RECENCY.map(choice=><Pressable key={choice.value} onPress={()=>setRecency(choice.value)} style={[s.chip,{borderColor:theme.line,backgroundColor:recency===choice.value?theme.accent:theme.surfaceRaised}]}><Text style={{color:recency===choice.value?theme.accentText:theme.ink,fontWeight:'900'}}>{choice.label}</Text></Pressable>)}</View>
+        <View style={s.wrap}>{RECENCY.map(choice=><Pressable accessibilityRole="radio" accessibilityLabel={choice.label} accessibilityState={{selected:recency===choice.value}} key={choice.value} onPress={()=>setRecency(choice.value)} style={[s.chip,{borderColor:theme.line,backgroundColor:recency===choice.value?theme.accent:theme.surfaceRaised}]}><Text style={{color:recency===choice.value?theme.accentText:theme.ink,fontWeight:'900'}}>{choice.label}</Text></Pressable>)}</View>
         <Text style={[s.help,{color:theme.muted}]}>{RECENCY.find(choice=>choice.value===recency)?.detail}</Text>
       </View>
 
       <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
         <Text style={[s.sectionTitle,{color:theme.ink}]}>What do you already know?</Text>
-        <View style={s.wrap}>{FACTS.map(fact=>{const selected=facts.includes(fact);return <Pressable key={fact} onPress={()=>toggleFact(fact)} style={[s.chip,{borderColor:selected?theme.accent:theme.line,backgroundColor:selected?theme.accentSoft:theme.surfaceRaised}]}><Text style={{color:selected?theme.accent:theme.ink,fontWeight:'800'}}>{selected?'✓ ':''}{fact}</Text></Pressable>})}</View>
+        <View style={s.wrap}>{FACTS.map(fact=>{const selected=facts.includes(fact);return <Pressable accessibilityRole="checkbox" accessibilityLabel={fact} accessibilityState={{checked:selected}} key={fact} onPress={()=>toggleFact(fact)} style={[s.chip,{borderColor:selected?theme.accent:theme.line,backgroundColor:selected?theme.accentSoft:theme.surfaceRaised}]}><Text style={{color:selected?theme.accent:theme.ink,fontWeight:'800'}}>{selected?'✓ ':''}{fact}</Text></Pressable>})}</View>
       </View>
 
       <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
         <Text style={[s.sectionTitle,{color:theme.ink}]}>Cleanliness tendency</Text>
-        <View style={s.wrap}>{CLEANLINESS.map(choice=><Pressable key={choice.value} onPress={()=>setCleanliness(choice.value)} style={[s.chip,{borderColor:theme.line,backgroundColor:cleanliness===choice.value?theme.accent:theme.surfaceRaised}]}><Text style={{color:cleanliness===choice.value?theme.accentText:theme.ink,fontWeight:'800'}}>{choice.label}</Text></Pressable>)}</View>
+        <View style={s.wrap}>{CLEANLINESS.map(choice=><Pressable accessibilityRole="radio" accessibilityLabel={choice.label} accessibilityState={{selected:cleanliness===choice.value}} key={choice.value} onPress={()=>setCleanliness(choice.value)} style={[s.chip,{borderColor:theme.line,backgroundColor:cleanliness===choice.value?theme.accent:theme.surfaceRaised}]}><Text style={{color:cleanliness===choice.value?theme.accentText:theme.ink,fontWeight:'800'}}>{choice.label}</Text></Pressable>)}</View>
         <Text style={[s.label,{color:theme.ink}]}>ACCESS / ENTRANCE TIP</Text>
-        <TextInput value={accessNotes} onChangeText={setAccessNotes} maxLength={500} placeholder="Code, key, purchase rule, entrance, hours…" placeholderTextColor={theme.muted} style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}/>
+        <TextInput accessibilityLabel="Access or entrance tip" value={accessNotes} onChangeText={setAccessNotes} maxLength={500} placeholder="Code, key, purchase rule, entrance, hours…" placeholderTextColor={theme.muted} style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}/>
         <Text style={[s.label,{color:theme.ink}]}>ANYTHING ELSE</Text>
-        <TextInput value={notes} onChangeText={setNotes} maxLength={1200} multiline placeholder="What would help the next person?" placeholderTextColor={theme.muted} style={[s.input,s.textarea,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}/>
+        <TextInput accessibilityLabel="Anything else people should know" value={notes} onChangeText={setNotes} maxLength={1200} multiline placeholder="What would help the next person?" placeholderTextColor={theme.muted} style={[s.input,s.textarea,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}/>
       </View>
 
       {message?<View style={[s.notice,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.body,{color:theme.ink}]}>{message}</Text></View>:null}
-      {submitted?<Pressable style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>router.replace(`/location/${locationId}`)}><Text style={[s.primaryText,{color:theme.accentText}]}>Back to location</Text></Pressable>:<Pressable disabled={!meaningful||submitting} style={[s.primary,{backgroundColor:theme.accent},(!meaningful||submitting)&&s.disabled]} onPress={submit}><Text style={[s.primaryText,{color:theme.accentText}]}>{submitting?'Saving knowledge…':'Add what I know'}</Text></Pressable>}
+      {submitted?<Pressable accessibilityRole="button" accessibilityLabel="Back to location" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>router.replace(`/location/${locationId}`)}><Text style={[s.primaryText,{color:theme.accentText}]}>Back to location</Text></Pressable>:<Pressable accessibilityRole="button" accessibilityLabel="Add what I know" accessibilityState={{disabled:!meaningful||submitting}} disabled={!meaningful||submitting} style={[s.primary,{backgroundColor:theme.accent},(!meaningful||submitting)&&s.disabled]} onPress={submit}><Text style={[s.primaryText,{color:theme.accentText}]}>{submitting?'Saving knowledge…':'Add what I know'}</Text></Pressable>}
     </ScrollView>
   </SafeAreaView>;
 }
