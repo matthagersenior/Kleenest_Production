@@ -57,9 +57,9 @@ const seasonalEditions:Record<'fall'|'halloween'|'thanksgiving'|'christmas',{
   accents:Record<KleenestThemeContext,string>;soft:string;accentText:string;danger:string;warning:string;success:string;statusBar:'light'|'dark';
 }>={
   fall:{
-    resolved:'light',canvas:'#f4ecdf',surface:'#fffaf1',surfaceRaised:'#efe1cc',ink:'#2b1d14',muted:'#725b49',line:'#ddc7a6',
-    accents:{consumer:'#b85d24',progress:'#c17b18',game:'#7e5b43',community:'#65743b',business:'#8b5b32',fleet:'#55734c',platform:'#8a4c2d'},
-    soft:'#f0d9bd',accentText:'#ffffff',danger:'#9d3f34',warning:'#9b6518',success:'#55734c',statusBar:'dark',
+    resolved:'light',canvas:'#e9ead8',surface:'#fbf8ea',surfaceRaised:'#ddd9b8',ink:'#21311f',muted:'#596548',line:'#c2bd92',
+    accents:{consumer:'#9d5728',progress:'#99671f',game:'#71553a',community:'#5d7040',business:'#526b3b',fleet:'#536b54',platform:'#5f7138'},
+    soft:'#dfe0be',accentText:'#ffffff',danger:'#963f36',warning:'#8b631c',success:'#4f7047',statusBar:'dark',
   },
   halloween:{
     resolved:'dark',canvas:'#050208',surface:'#1b1024',surfaceRaised:'#332040',ink:'#fff7ed',muted:'#c9b8cf',line:'#594068',
@@ -67,9 +67,9 @@ const seasonalEditions:Record<'fall'|'halloween'|'thanksgiving'|'christmas',{
     soft:'#33203f',accentText:'#140a04',danger:'#ff718b',warning:'#ffb347',success:'#6fe7d8',statusBar:'light',
   },
   thanksgiving:{
-    resolved:'light',canvas:'#f5eadb',surface:'#fffaf2',surfaceRaised:'#eedbc3',ink:'#321d17',muted:'#77594d',line:'#dec4a5',
-    accents:{consumer:'#9b3f36',progress:'#b77821',game:'#7c4a63',community:'#a05a3d',business:'#6c6a3a',fleet:'#765946',platform:'#8b4d3b'},
-    soft:'#efd4c2',accentText:'#ffffff',danger:'#943a36',warning:'#a46518',success:'#5d6e3c',statusBar:'dark',
+    resolved:'light',canvas:'#f3e6df',surface:'#fff8f3',surfaceRaised:'#e8cfc3',ink:'#321d1b',muted:'#76564f',line:'#d6b7aa',
+    accents:{consumer:'#8f3438',progress:'#8a5e20',game:'#70455b',community:'#874b3c',business:'#5f5937',fleet:'#684b40',platform:'#7f3d38'},
+    soft:'#ecd1c7',accentText:'#ffffff',danger:'#8d3138',warning:'#8b5d1d',success:'#56633b',statusBar:'dark',
   },
   christmas:{
     resolved:'dark',canvas:'#07130f',surface:'#0e211a',surfaceRaised:'#163126',ink:'#f7fbf9',muted:'#b6c9c0',line:'#315044',
