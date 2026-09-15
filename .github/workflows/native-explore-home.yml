@@ -5,6 +5,7 @@ on:
     paths:
       - 'apps/consumer-mobile/**'
       - 'scripts/native-explore-home-audit.mjs'
+      - 'scripts/map-freshness-heat-ring-audit.mjs'
       - '.github/workflows/native-explore-home.yml'
 
 jobs:
@@ -16,3 +17,4 @@ jobs:
         with:
           node-version: 20
       - run: node scripts/native-explore-home-audit.mjs
+      - run: node scripts/map-freshness-heat-ring-audit.mjs
