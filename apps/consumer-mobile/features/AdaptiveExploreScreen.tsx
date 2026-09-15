@@ -26,6 +26,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { listAmenityCatalog, type AmenityCatalogItem } from '../services/amenities';
 import { visitFreshness } from '../services/evidenceFormatting';
@@ -352,6 +353,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
 
 export default function AdaptiveExploreScreen() {
  const theme=useConsumerTheme();
+  const {height:windowHeight}=useWindowDimensions();
   const [mode, setMode] = useState<'nearby' | 'route'>('nearby');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
@@ -843,9 +845,19 @@ export default function AdaptiveExploreScreen() {
         }
         if (cache?.rows?.length) {
           setRows(cache.rows);
+          const restoredSelectedId=
+            continuity?.selectedId && cache.rows.some((row:any)=>idOf(row)===continuity.selectedId)
+              ? continuity.selectedId
+              : cache.selectedId && cache.rows.some((row:any)=>idOf(row)===cache.selectedId)
+                ? cache.selectedId
+                : '';
+          if(restoredSelectedId)setSelectedId(restoredSelectedId);
           if (cache.origin) {
             setOrigin(cache.origin);
-            setMapCenter(cache.origin);
+            const restoredRow=restoredSelectedId?cache.rows.find((row:any)=>idOf(row)===restoredSelectedId):null;
+            setMapCenter(restoredRow&&hasCoordinates(restoredRow)
+              ? [Number(restoredRow.longitude),Number(restoredRow.latitude)]
+              : cache.origin);
           }
           setCached(true);
           setMessage(
@@ -873,29 +885,7 @@ export default function AdaptiveExploreScreen() {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
         ListHeaderComponent={
-          <>
-      <View style={s.hero}>
-        <View style={s.heroTop}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.eyebrow}>DISCOVER</Text>
-            <Text style={s.title}>Find a trusted bathroom.</Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Find bathrooms near my current location"
-            style={[s.locate,{backgroundColor:theme.surface,borderColor:theme.line,borderWidth:1}]}
-            disabled={loading}
-            onPress={() => {
-              if (mode !== 'nearby') chooseMode('nearby');
-              void load({ clearQuery: true });
-            }}
-          >
-            <Text style={[s.locateIcon,{color:theme.accent}]}>⌖</Text>
-            <Text style={[s.locateText,{color:theme.accent}]}>{loading ? 'Finding…' : 'Locate'}</Text>
-          </Pressable>
-        </View>
-      </View>
-
+          <View style={s.exploreCanvas}>
       <View style={[s.searchPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
         <View style={s.searchRow}>
           <TextInput
@@ -1121,7 +1111,7 @@ export default function AdaptiveExploreScreen() {
 
       {(origin||searchAreaOrigin) ? (
         <View style={s.mapSection}>
-          <View style={s.mapFrame}>
+          <View style={[s.mapFrame,{height:Math.max(440,windowHeight-96)}]}>
             <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE}>
               <Camera
                 key={`explore-camera-${cameraNonce}-${selectedId}-${mode}`}
@@ -1270,7 +1260,7 @@ export default function AdaptiveExploreScreen() {
               </View>
               <Text style={s.listNote}>{activeFilterCount?filterSummary:(cached ? 'Cached · pull to refresh' : 'Everything · distance + actions')}</Text>
             </View>
-          </>
+          </View>
         }
         renderItem={({ item }) => (
           <View style={[s.resultItem,{backgroundColor:theme.surface,borderColor:theme.line}]}>
@@ -1324,6 +1314,7 @@ export default function AdaptiveExploreScreen() {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.canvas },
   pageScroll: { flex: 1 },
+  exploreCanvas:{position:'relative'},
   hero: {
     marginHorizontal: 12,
     marginTop: 4,
@@ -1347,7 +1338,7 @@ const s = StyleSheet.create({
   },
   locateIcon: { fontSize: 16, fontWeight: '900', color: palette.green },
   locateText: { fontSize: 8, fontWeight: '900', color: palette.green },
-  searchPanel: { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 5, gap: 5 },
+  searchPanel:{position:'absolute',top:10,left:10,right:10,zIndex:60,elevation:20,paddingHorizontal:10,paddingTop:9,paddingBottom:9,gap:6,borderRadius:16,borderWidth:1},
   searchAreaChip:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,backgroundColor:'#e8f1eb',borderRadius:11,paddingHorizontal:10,paddingVertical:7},
   searchAreaText:{flex:1,fontSize:10,fontWeight:'900',color:palette.green},searchAreaAction:{fontSize:9,fontWeight:'900',color:palette.green,textDecorationLine:'underline'},
   segment: { flexDirection: 'row', padding: 3, borderRadius: 12, backgroundColor: '#e8efea' },
@@ -1397,12 +1388,12 @@ const s = StyleSheet.create({
   message: { fontSize: 9, lineHeight: 14, color: '#66776d', fontWeight: '700' },
   provenance: { fontSize: 8, lineHeight: 12, color: '#718077', fontWeight: '700' },
   help: { fontSize: 10, lineHeight: 15, color: '#5f7468' },
-  mapSection: { paddingHorizontal: 14, gap: 5 },
+  mapSection:{paddingHorizontal:0,gap:0,position:'relative'},
   mapFrame: {
-    height: 230,
-    borderRadius: 20,
+    minHeight: 440,
+    borderRadius: 0,
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: 0,
     borderColor: '#d4e0d8',
     backgroundColor: '#dde6e0',
     position: 'relative',
@@ -1415,12 +1406,12 @@ const s = StyleSheet.create({
   markerActive: { borderWidth: 4, transform: [{ scale: 1.1 }] },
   markerPhoto:{width:34,height:34,borderRadius:17,backgroundColor:'#e7eee9'},
   markerPhotoActive:{width:42,height:42,borderRadius:21},
-  mapBadge: { position: 'absolute', top: 9, left: 9, borderRadius: 999, backgroundColor: 'rgba(23,61,43,.9)', paddingHorizontal: 9, paddingVertical: 6 },
+  mapBadge: { position: 'absolute', top: 174, left: 10, borderRadius: 999, backgroundColor: 'rgba(23,61,43,.9)', paddingHorizontal: 9, paddingVertical: 6 },
   mapBadgeText: { fontSize: 8, fontWeight: '900', color: '#fff' },
-  mapControls: { position: 'absolute', right: 9, top: 9, gap: 6 },
+  mapControls: { position: 'absolute', right: 10, top: 174, gap: 6 },
   mapControl: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cbd9d0', alignItems: 'center', justifyContent: 'center' },
   mapControlText: { fontSize: 19, fontWeight: '900', color: palette.green },
-  legendWrap: { position: 'absolute', top: 50, left: 9, right: 54 },
+  legendWrap: { position: 'absolute', top: 218, left: 10, right: 56 },
   selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, zIndex: 40, elevation: 12, borderRadius: 13, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 5 },
   selectedHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   selectedLabel: { flex: 1, fontSize: 8, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
