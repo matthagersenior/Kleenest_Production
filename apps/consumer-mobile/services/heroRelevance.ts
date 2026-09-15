@@ -6,7 +6,7 @@ import { getWeekInReview } from './weekInReview';
 
 export type OrganicHeroKind=
   |'review_ready'|'active_mission'|'fresh_kleenest'|'saved_choice'|'top_ranked'
-  |'next_objective'|'find_bathroom'|'share_knowledge'|'scan_qr';
+  |'next_objective'|'find_bathroom'|'check_in'|'share_knowledge'|'scan_qr';
 
 export type OrganicHeroItem={
   id:string;
@@ -36,8 +36,8 @@ const DEFAULT_POLICY:OrganicHeroPolicy={
   surface_code:'consumer_home',
   active:true,
   max_cards:5,
-  allowed_kinds:['review_ready','active_mission','fresh_kleenest','saved_choice','top_ranked','next_objective','find_bathroom','share_knowledge','scan_qr'],
-  weights:{review_ready:100,active_mission:95,fresh_kleenest:88,saved_choice:80,top_ranked:75,next_objective:70,find_bathroom:60,share_knowledge:45,scan_qr:40},
+  allowed_kinds:['review_ready','active_mission','fresh_kleenest','saved_choice','top_ranked','next_objective','check_in','find_bathroom','share_knowledge','scan_qr'],
+  weights:{review_ready:100,active_mission:95,fresh_kleenest:88,check_in:82,saved_choice:80,top_ranked:75,next_objective:70,find_bathroom:60,share_knowledge:45,scan_qr:40},
   swipe_enabled:true,
   dot_indicators:true,
   autoplay:false,
@@ -153,6 +153,7 @@ export async function buildConsumerHomeHeroes(signedIn:boolean){
   });
 
   candidates.push(
+    {id:'checkin',kind:'check_in',eyebrow:'CHECK IN',title:'At a restroom now?',body:'Choose the place you are actually at, then verify your visit with GPS + geofence. QR stays optional proof—not the general check-in path.',cta:'Nearby or search',route:'/explore',meta:'GPS + geofence · QR optional',score:weight('check_in')},
     {id:'find',kind:'find_bathroom',eyebrow:'FIND THE BEST BATHROOM',title:'What is useful near you right now?',body:'Search nearby or around any address, then compare freshness, Kleenest status, amenities, trust and distance.',cta:'Search the map',route:'/explore',meta:'Organic discovery',score:weight('find_bathroom')},
     {id:'knowledge',kind:'share_knowledge',eyebrow:'YOU ALREADY KNOW SOMETHING',title:'Add useful bathroom knowledge without pretending you are there.',body:'Contribute what you already know separately from verified visit evidence, so the network gets smarter without tainting trust.',cta:'Share what you know',route:'/discover',meta:'Knowledge ≠ verified visit',score:weight('share_knowledge')},
     {id:'qr',kind:'scan_qr',eyebrow:'KLEENEST QR',title:'A code can unlock the next useful action.',body:'Scan a Kleenest QR for location proof, access, a business action, a mission or another configured network workflow.',cta:'Scan QR',route:'/qr',meta:'Context-aware action',score:weight('scan_qr')},
