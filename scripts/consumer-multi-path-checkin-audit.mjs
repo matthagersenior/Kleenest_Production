@@ -19,6 +19,9 @@ for(const [token,label] of [
   ['onCheckIn','native Explore result cards must expose Check in'],
   ['Check in','native Explore selected map place must expose Check in'],
   ['OUTSIDE_GEOFENCE','native Explore must explain geofence qualification'],
+  ['Review verified visit','native Explore must turn a successful check-in into a direct verified-review action'],
+  ['verification_expires_at','native Explore must surface the timed verification window returned by check-in'],
+  ['Exact place + GPS verified','native Explore must explicitly confirm target-authoritative GPS verification'],
 ]) expect(explore,token,label);
 
 const location=read('apps/consumer-mobile/app/location/[id].tsx');
@@ -51,6 +54,16 @@ for(const [token,label] of [
   ['geofence_radius_m','mobile location data must expose the canonical check-in radius'],
   ["rpc('arrive_route_stop'",'mobile core must expose verified route arrival linkage'],
 ]) expect(core,token,label);
+
+const targetAuthority=read('supabase/migrations/20260914164721_explicit_checkin_target_authority.sql');
+for(const [token,label] of [
+  ["'explicit_target',true",'explicit check-in must mark the chosen place as the authoritative presence target'],
+  ["'presence_visit_id',v_presence.id",'check-in evidence must link to the exact presence visit'],
+  ["'review_ready',true",'new verified check-ins must explicitly open the verified-review path'],
+  ["'progression_cap_reached',v_progression_cap_reached",'check-in must report progression capping without rejecting the visit'],
+]) expect(targetAuthority,token,label);
+if(targetAuthority.includes('consumer_presence_heartbeat(p_lat,p_lng)')) failures.push('explicit check-in must never delegate target selection to the generic nearest-place heartbeat');
+if(targetAuthority.includes("raise exception 'DAILY_PROGRESSION_CAP_REACHED'")) failures.push('daily XP caps must not reject a legitimate verified check-in');
 
 const webExplore=read('src/runtime/ExplorePage.jsx');
 for(const [token,label] of [

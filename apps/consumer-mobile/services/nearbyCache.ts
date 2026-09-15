@@ -20,7 +20,7 @@ export async function readNearbyCache():Promise<NearbyCache|null>{
 
 export async function writeNearbyCache(rows:any[],options:{selectedId?:string;origin?:[number,number];radiusMeters?:number}={}){
   if(!Array.isArray(rows)||!rows.length)return;
-  const publicRows=rows.slice(0,100).map(row=>({...row}));
+  const publicRows=rows.slice(0,500).map(row=>({...row}));
   const payload:NearbyCache={savedAt:Date.now(),rows:publicRows,selectedId:options.selectedId||undefined,origin:options.origin,radiusMeters:options.radiusMeters};
   await AsyncStorage.setItem(CACHE_KEY,JSON.stringify(payload));
 }
