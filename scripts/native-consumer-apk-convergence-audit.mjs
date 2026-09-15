@@ -23,6 +23,9 @@ if(!failures.length){
   for(const token of ['kleenest.native.contribution.draft.v1:','MAX_AGE_MS=48*60*60*1000','AsyncStorage.getItem','AsyncStorage.setItem','AsyncStorage.removeItem','reviewPhotos:(input.reviewPhotos||[]).slice(0,3)'])if(!contributionDraft.includes(token))failures.push(`Contribution draft durability missing ${token}`);
   if(eas?.build?.preview?.android?.buildType!=='apk'||eas?.build?.preview?.distribution!=='internal')failures.push('Preview EAS profile must remain an internal Android APK.');
   if(eas?.build?.production?.android?.buildType!=='app-bundle'||eas?.build?.production?.autoIncrement!==true)failures.push('Production EAS profile must remain an auto-incremented Android app bundle.');
+  if(eas?.build?.development?.developmentClient!==true)failures.push('Development EAS profile must remain the explicit Expo development-client profile.');
+  for(const profile of ['preview','candidate','production'])if(eas?.build?.[profile]?.env?.KLEENEST_STANDALONE_ANDROID!=='1')failures.push(`${profile} EAS profile must force KLEENEST_STANDALONE_ANDROID=1 so release binaries cannot include the Expo development launcher.`);
+  if(eas?.build?.development?.env?.KLEENEST_STANDALONE_ANDROID==='1')failures.push('Development EAS profile must not opt into the standalone-only Android contract.');
   for(const token of ["package: 'com.kleenest.app'","bundleIdentifier: 'com.kleenest.app'","ACCESS_FINE_LOCATION","CAMERA","expo-notifications",projectId])if(!config.includes(token))failures.push(`Native app config missing ${token}`);
 
   // The canonical Android family workflow owns verified standalone APKs for all four apps.
