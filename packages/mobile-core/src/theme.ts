@@ -57,7 +57,7 @@ const seasonalEditions:Record<'fall'|'halloween'|'thanksgiving'|'christmas',{
   accents:Record<KleenestThemeContext,string>;soft:string;accentText:string;danger:string;warning:string;success:string;statusBar:'light'|'dark';
 }>={
   fall:{
-    resolved:'light',canvas:'#e9ead8',surface:'#fbf8ea',surfaceRaised:'#ddd9b8',ink:'#21311f',muted:'#596548',line:'#c2bd92',
+    resolved:'light',canvas:'#e9ead8',surface:'#fbf8ea',surfaceRaised:'#ddd9b8',ink:'#21311f',muted:'#526042',line:'#c2bd92',
     accents:{consumer:'#9d5728',progress:'#99671f',game:'#71553a',community:'#5d7040',business:'#526b3b',fleet:'#536b54',platform:'#5f7138'},
     soft:'#dfe0be',accentText:'#ffffff',danger:'#963f36',warning:'#8b631c',success:'#4f7047',statusBar:'dark',
   },
