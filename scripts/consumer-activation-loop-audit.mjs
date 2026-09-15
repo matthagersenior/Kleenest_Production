@@ -16,16 +16,18 @@ const files={
   photos:'apps/consumer-mobile/services/reviewPhotos.ts',
   discoveryProgression:'apps/consumer-mobile/services/discoveryProgression.ts',
   community:'apps/consumer-mobile/services/communityActivity.ts',
-  locationResolver:'apps/consumer-mobile/services/locationResolver.ts'
+  locationResolver:'apps/consumer-mobile/services/locationResolver.ts',
+  heroRelevance:'apps/consumer-mobile/services/heroRelevance.ts'
 };
 for(const [name,file] of Object.entries(files))if(!fs.existsSync(file))failures.push(`Missing ${name} activation file: ${file}`);
 if(!failures.length){
  const read=file=>fs.readFileSync(file,'utf8');
- const home=read(files.home),explore=read(files.explore),adaptiveExplore=read(files.adaptiveExplore),discover=read(files.discover),progress=read(files.progress),location=read(files.location),social=read(files.social),play=read(files.play),activity=read(files.activity),core=read(files.core),amenities=read(files.amenities),photos=read(files.photos),discoveryProgression=read(files.discoveryProgression),community=read(files.community),locationResolver=read(files.locationResolver);
+ const home=read(files.home),explore=read(files.explore),adaptiveExplore=read(files.adaptiveExplore),discover=read(files.discover),progress=read(files.progress),location=read(files.location),social=read(files.social),play=read(files.play),activity=read(files.activity),core=read(files.core),amenities=read(files.amenities),photos=read(files.photos),discoveryProgression=read(files.discoveryProgression),community=read(files.community),locationResolver=read(files.locationResolver),heroRelevance=read(files.heroRelevance);
  const discoverySurface=`${explore}\n${adaptiveExplore}`;
 
- for(const token of ["'/explore'",'Find a bathroom','homePrimaryCta','CHECK IN','Nearby or search','QR PROOF','THE KLEENEST LOOP','XP + levels','Add a missing place','YOUR NETWORK'])if(!home.includes(token))failures.push(`Home activation hierarchy missing ${token}.`);
- if(home.includes('Scan QR to check in or review'))failures.push('Home activation hierarchy must keep regular check-in separate from QR proof.');
+ for(const token of ['RelevanceHeroCarousel','THE KLEENEST LOOP','XP + levels','YOUR NETWORK'])if(!home.includes(token))failures.push(`Home activation hierarchy missing ${token}.`);
+ for(const token of ["kind:'find_bathroom'","kind:'check_in'","cta:'Nearby or search'","kind:'scan_qr'","route:'/discover'"])if(!heroRelevance.includes(token))failures.push(`Organic Home activation hierarchy missing ${token}.`);
+ if(home.includes('Scan QR to check in or review')||heroRelevance.includes('Scan QR to check in or review'))failures.push('Home activation hierarchy must keep regular check-in separate from QR proof.');
  for(const token of ['resolveConsumerSearchLocation','looksLikeAddressOrArea','searchAreaOrigin','searched-area-marker'])if(!adaptiveExplore.includes(token))failures.push(`Address-origin Explore activation missing ${token}.`);
  if(adaptiveExplore.includes('Location.geocodeAsync'))failures.push('Address-origin Explore must not regress to device geocoding.');
  if(!locationResolver.includes("functions.invoke('resolve-consumer-location'"))failures.push('Address-origin Explore activation must use the canonical server resolver.');
