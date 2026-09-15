@@ -171,6 +171,8 @@ jobs:
         run: node scripts/theme-family-audit.mjs
       - name: Deep theme surface convergence
         run: node scripts/deep-theme-surface-audit.mjs
+      - name: Consumer card theme contrast
+        run: node scripts/consumer-card-theme-contrast-audit.mjs
       - name: Business Home mobile card polish
         run: node scripts/business-home-mobile-card-polish-audit.mjs
       - name: Fleet ad-hoc stop and geofence intelligence
