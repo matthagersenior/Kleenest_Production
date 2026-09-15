@@ -4,13 +4,15 @@ import PhotoTrustActions from './PhotoTrustActions';
 import { evidenceCountLabel, formatVisitEvidence } from '../services/evidenceFormatting';
 import { getReviewEvidence, type ReviewEvidence } from '../services/reviewEvidence';
 import { listReviewPhotos, type ReviewPhoto } from '../services/reviewPhotos';
+import { useConsumerTheme } from '../services/theme';
 
 export default function ReviewPhotoStrip({ reviewId, refreshToken=0, initialEvidence=null, initialPhotos=null }:{ reviewId:string; refreshToken?:number; initialEvidence?:ReviewEvidence|null; initialPhotos?:ReviewPhoto[]|null }) {
+  const theme=useConsumerTheme();
   const [photos,setPhotos]=useState<ReviewPhoto[]>(initialPhotos||[]);
   const [evidence,setEvidence]=useState<ReviewEvidence|null>(initialEvidence);
   const [failed,setFailed]=useState(false);
   useEffect(()=>{let active=true;setFailed(false);const evidenceRequest=initialEvidence?Promise.resolve(initialEvidence):getReviewEvidence(reviewId);const photoRequest=initialPhotos?Promise.resolve(initialPhotos):listReviewPhotos(reviewId);Promise.all([photoRequest,evidenceRequest]).then(([rows,nextEvidence])=>{if(active){setPhotos(rows);setEvidence(nextEvidence)}}).catch(()=>{if(active)setFailed(true)});return()=>{active=false}},[reviewId,refreshToken,initialEvidence,initialPhotos]);
-  if(failed)return <Text style={s.note}>Review evidence could not be loaded.</Text>;
+  if(failed)return <Text style={[s.note,{color:theme.muted}]}>Review evidence could not be loaded.</Text>;
   const verified=Boolean(evidence?.verified_checked_in_at);
   if(!photos.length&&!verified&&!evidence?.amenity_evidence_count)return null;
   const provenance=formatVisitEvidence({
@@ -20,6 +22,6 @@ export default function ReviewPhotoStrip({ reviewId, refreshToken=0, initialEvid
   },{includeCounts:false});
   const photoCount=Number(evidence?.photo_evidence_count??photos.length),amenityCount=Number(evidence?.amenity_evidence_count??0);
   const evidenceParts=[evidenceCountLabel(photoCount,'photo','photos'),`${evidenceCountLabel(amenityCount,'amenity','amenities')} observed`];
-  return <View style={s.wrap}>{verified?<View style={s.provenance}><Text style={s.verified}>✓ VERIFIED VISIT</Text>{provenance?<Text style={s.provenanceText}>{provenance}</Text>:null}<Text style={s.evidenceText}>{evidenceParts.join(' · ')}</Text></View>:null}{photos.length?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>{photos.map(photo=><View key={photo.storage_path} style={s.photoCard}><Image source={{uri:photo.public_url}} style={s.photo}/>{photo.review_photo_id?<PhotoTrustActions photoId={photo.review_photo_id} helpfulVotes={photo.helpful_votes} notHelpfulVotes={photo.not_helpful_votes}/>:null}</View>)}</ScrollView>:null}</View>;
+  return <View style={s.wrap}>{verified?<View style={[s.provenance,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.verified,{color:theme.accent}]}>✓ VERIFIED VISIT</Text>{provenance?<Text style={[s.provenanceText,{color:theme.ink}]}>{provenance}</Text>:null}<Text style={[s.evidenceText,{color:theme.muted}]}>{evidenceParts.join(' · ')}</Text></View>:null}{photos.length?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>{photos.map(photo=><View key={photo.storage_path} style={s.photoCard}><Image source={{uri:photo.public_url}} style={[s.photo,{backgroundColor:theme.surfaceRaised}]}/>{photo.review_photo_id?<PhotoTrustActions photoId={photo.review_photo_id} helpfulVotes={photo.helpful_votes} notHelpfulVotes={photo.not_helpful_votes}/>:null}</View>)}</ScrollView>:null}</View>;
 }
 const s=StyleSheet.create({wrap:{marginTop:8,gap:8},provenance:{backgroundColor:'#f1f7f3',borderWidth:1,borderColor:'#d7e6dc',borderRadius:12,padding:10,gap:3},verified:{fontSize:11,fontWeight:'900',letterSpacing:1,color:'#173d2b'},provenanceText:{fontSize:12,fontWeight:'700',color:'#40584a'},evidenceText:{fontSize:12,color:'#607268'},row:{gap:8},photoCard:{width:172,gap:6},photo:{width:172,height:142,borderRadius:14,backgroundColor:'#e7eee9'},note:{fontSize:12,color:'#718078',fontWeight:'700'}});
