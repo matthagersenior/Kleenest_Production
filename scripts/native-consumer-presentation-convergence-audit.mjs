@@ -5,8 +5,10 @@ const requireAll=(path,tokens)=>{const source=read(path);for(const token of toke
 
 const ui=requireAll('apps/consumer-mobile/components/ConsumerUI.tsx',['HeroCard','FeatureCard','SectionHeader','TrustStrip','MetricTile','palette']);
 const layout=requireAll('apps/consumer-mobile/app/_layout.tsx',["title:'Home'","title:'Explore'","title:'Progress'","title:'Community'","title:'Profile'","name=\"play\"","name=\"discover\"","name=\"preferences\"",'tabBarActiveTintColor']);
-const home=requireAll('apps/consumer-mobile/app/index.tsx',['RelevanceHeroCarousel','buildConsumerHomeHeroes','SponsoredSlot','QUICK ACTIONS','GAME CENTER','THE KLEENEST LOOP','YOUR PROGRESS','KLEENEST AI','TRUST GUIDE','ROUTE GUIDE','REVIEW DRAFT','COMMUNITY','OPEN COMMUNITY','Membership','Support']);
+const home=requireAll('apps/consumer-mobile/app/index.tsx',['RelevanceHeroCarousel','buildConsumerHomeHeroes','SponsoredSlot','SIGNED IN · YOUR KLEENEST','QUICK ACTIONS','GAME CENTER','THE KLEENEST LOOP','YOUR PROGRESS','KLEENEST AI','TRUST GUIDE','ROUTE GUIDE','REVIEW DRAFT','COMMUNITY','OPEN COMMUNITY','Membership','Support']);
 const heroRelevance=requireAll('apps/consumer-mobile/services/heroRelevance.ts',['review_ready','active_mission','fresh_kleenest','saved_choice','top_ranked','next_objective','find_bathroom','share_knowledge','scan_qr',"route:'/explore'","route:'/discover'","route:'/progress'","route:'/qr'"]);
+const webExperience=requireAll('apps/consumer-mobile/services/webExperience.ts',['onAuthStateChange','setSignedIn(Boolean(session))','setInstalled(true)','setReady(true)']);
+if(webExperience.includes('if(native)return;'))throw new Error('Consumer auth state must not stop subscribing on native; Home must react after sign-in and sign-out.');
 const explorePath='apps/consumer-mobile/app/explore.tsx';
 const adaptiveExplorePath='apps/consumer-mobile/features/AdaptiveExploreScreen.tsx';
 const explore=`${read(explorePath)}\n${read(adaptiveExplorePath)}`;
@@ -26,7 +28,7 @@ const notifications=requireAll('apps/consumer-mobile/app/notifications.tsx',['Wh
 const membership=requireAll('apps/consumer-mobile/app/membership.tsx',['Choose the membership that fits you.','Every Consumer capability included','Authoritative entitlement','Kleenest AI','offline trips','native store purchase boundary','Find a bathroom','getMobileAccountSummary','listMobilePricingCatalog']);
 const qr=requireAll('apps/consumer-mobile/app/qr.tsx',['QR is optional proof, not the only check-in.','Choose the proof path that is actually available.','Check in with GPS + geofence','MANUAL FALLBACK','GPS check-in works without QR','CameraView','resolveQrAction','executeQrAction']);
 
-for(const [name,source] of Object.entries({layout,home,heroRelevance,explore,discover,progress,profile,prefs,play,social,location,saved,route,activity:activitySource,notifications,membership,qr,ui})){
+for(const [name,source] of Object.entries({layout,home,heroRelevance,webExperience,explore,discover,progress,profile,prefs,play,social,location,saved,route,activity:activitySource,notifications,membership,qr,ui})){
   if(/\.rpc\(['"](?:business|fleet|enterprise|admin)_/i.test(source)||/from ['"][^'"]*(?:Business|Fleet|Enterprise|Admin)/.test(source))throw new Error(`${name} presentation surface leaked Operations authority into consumer UI`);
 }
 if(!heroRelevance.includes("route:'/explore'")||!heroRelevance.includes("route:'/discover'")||!heroRelevance.includes("route:'/progress'"))throw new Error('Organic Home relevance must keep Explore, Discover and Progress available as primary consumer actions');
