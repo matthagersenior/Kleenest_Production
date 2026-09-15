@@ -1,6 +1,6 @@
 import * as Linking from 'expo-linking';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { palette } from '../components/ConsumerUI';
@@ -18,7 +18,8 @@ function authRedirect(){
 
 export default function SignupScreen(){
  const theme=useConsumerTheme();
- const[mode,setMode]=useState<AccessMode>('signin');
+ const params=useLocalSearchParams<{mode?:string}>();
+ const[mode,setMode]=useState<AccessMode>(params.mode==='signup'?'signup':'signin');
  const[intent,setIntent]=useState<SignupIntent>('individual');
  const[email,setEmail]=useState('');
  const[password,setPassword]=useState('');
