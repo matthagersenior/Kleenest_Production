@@ -18,5 +18,9 @@ assert.match(explore, /height:\s*Math\.max\(440,\s*windowHeight\s*-\s*96\)/);
 assert.match(explore, /searchPanel:\s*\{[^}]*position:\s*'absolute'/s);
 assert.match(explore, /mapSection:\s*\{[^}]*paddingHorizontal:\s*0/s);
 assert.match(explore, /void load\(\{ preserveCacheOnEmpty: true \}\)/);
+assert.match(explore, /getLastKnownPositionAsync/);
+assert.match(explore, /onRegionDidChange/);
+assert.match(explore, /Search this area/);
+assert.match(explore, /Swipe up for results/);
 
 console.log('native explore-home contract: PASS');
