@@ -13,6 +13,7 @@ import { useConsumerWebExperience } from '../services/webExperience';
 import BetaReportButton from '../components/BetaReportButton';
 import { flushQueuedBetaReports,recordBetaBreadcrumb } from '../services/betaReporting';
 import { captureConsumerCoreLoopEvent } from '../services/consumerTelemetry';
+import { getProgressionRewards } from '../services/discoveryProgression';
 
 const operatorOAuthRelaying=relayOperatorOAuthCallback();
 
