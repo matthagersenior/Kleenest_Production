@@ -35,6 +35,7 @@ async function openNotificationResponse(response: Notifications.NotificationResp
 }
 
 const tabIcon=(glyph:string)=>(props:{color:ColorValue;focused:boolean;size:number})=><Text accessible={false} style={{fontSize:props.focused?20:18,color:props.color,fontWeight:'900'}}>{glyph}</Text>;
+const tabLabel=(label:string)=>(props:{color:ColorValue})=><Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} maxFontSizeMultiplier={1.2} style={{width:'100%',fontSize:10,fontWeight:'900',textAlign:'center',color:props.color}}>{label}</Text>;
 
 export default function RootLayout() {
   const pathname=usePathname();
@@ -71,13 +72,13 @@ export default function RootLayout() {
   if(operatorOAuthRelaying)return null;
   const tabs=<Tabs initialRouteName={Platform.OS==='web'?'index':'explore'} screenOptions={{
     headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{fontWeight:'900',color:theme.ink},
-    tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarStyle:publicWeb?({display:'none'} as any):{height:68,paddingTop:6,paddingBottom:8,backgroundColor:theme.surface,borderTopColor:theme.line},tabBarLabelStyle:{fontWeight:'900',fontSize:10},
+    tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarStyle:publicWeb?({display:'none'} as any):{height:68,paddingTop:6,paddingBottom:8,backgroundColor:theme.surface,borderTopColor:theme.line},tabBarItemStyle:{minWidth:0,paddingHorizontal:0},tabBarLabelStyle:{fontWeight:'900',fontSize:10},
   }}>
     <Tabs.Screen name="index" options={{ href:null,title:'Home',headerShown:false }}/>
-    <Tabs.Screen name="explore" options={{ title:'Explore',headerShown:false,tabBarIcon:tabIcon('⌖') }}/>
-    <Tabs.Screen name="progress" options={{ title:'Progress',headerShown:false,tabBarIcon:tabIcon('★') }}/>
-    <Tabs.Screen name="social" options={{ title:'Community',headerShown:false,tabBarIcon:tabIcon('●') }}/>
-    <Tabs.Screen name="profile" options={{ title:'Profile',headerShown:false,tabBarIcon:tabIcon('◉') }}/>
+    <Tabs.Screen name="explore" options={{ title:'Explore',headerShown:false,tabBarIcon:tabIcon('⌖'),tabBarLabel:tabLabel('Explore') }}/>
+    <Tabs.Screen name="progress" options={{ title:'Progress',headerShown:false,tabBarIcon:tabIcon('★'),tabBarLabel:tabLabel('Progress') }}/>
+    <Tabs.Screen name="social" options={{ title:'Community',headerShown:false,tabBarIcon:tabIcon('●'),tabBarLabel:tabLabel('Community') }}/>
+    <Tabs.Screen name="profile" options={{ title:'Profile',headerShown:false,tabBarIcon:tabIcon('◉'),tabBarLabel:tabLabel('Profile') }}/>
     <Tabs.Screen name="signup" options={{ href:null,title:'Join Kleenest' }}/>
     <Tabs.Screen name="install" options={{ href:null,title:'Install Kleenest' }}/>
     <Tabs.Screen name="for-you" options={{ href:null,title:'Kleenest for You' }}/>
