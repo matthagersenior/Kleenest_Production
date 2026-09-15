@@ -74,7 +74,7 @@ export default function RootLayout() {
     headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{fontWeight:'900',color:theme.ink},
     tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarStyle:publicWeb?({display:'none'} as any):{height:68,paddingTop:6,paddingBottom:8,backgroundColor:theme.surface,borderTopColor:theme.line},tabBarItemStyle:{minWidth:0,paddingHorizontal:0},tabBarLabelStyle:{fontWeight:'900',fontSize:10},
   }}>
-    <Tabs.Screen name="index" options={{ href:null,title:'Home',headerShown:false,tabBarLabel:tabLabel('Home') }}/>
+    <Tabs.Screen name="index" options={{ title:'Home',headerShown:false,tabBarIcon:tabIcon('⌂'),tabBarLabel:tabLabel('Home') }}/>
     <Tabs.Screen name="explore" options={{ title:'Explore',headerShown:false,tabBarIcon:tabIcon('⌖'),tabBarLabel:tabLabel('Explore') }}/>
     <Tabs.Screen name="progress" options={{ title:'Progress',headerShown:false,tabBarIcon:tabIcon('★'),tabBarLabel:tabLabel('Progress') }}/>
     <Tabs.Screen name="social" options={{ title:'Community',headerShown:false,tabBarIcon:tabIcon('●'),tabBarLabel:tabLabel('Community') }}/>
