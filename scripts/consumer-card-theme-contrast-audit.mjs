@@ -57,8 +57,15 @@ need('Shared Consumer cards','apps/consumer-mobile/components/ConsumerUI.tsx',[
   'backgroundColor:theme.surfaceRaised,borderColor:theme.line',
   'TrustStrip',
 ]);
-need('Home nested cards','apps/consumer-mobile/app/index.tsx',[
-  'style={[s.heroQuick,{backgroundColor:theme.surface,borderColor:theme.line,borderWidth:1}]}',
+need('Home relevance carousel','apps/consumer-mobile/components/RelevanceHeroCarousel.tsx',[
+  'style={[s.cta,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'backgroundColor:i===index?theme.accent:theme.line',
+  'useConsumerTheme()',
+]);
+need('Sponsored cards','apps/consumer-mobile/components/SponsoredSlot.tsx',[
+  'style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.cta,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}',
+  'style={[s.note,{color:theme.muted}]}',
 ]);
 need('Profile nested cards','apps/consumer-mobile/app/profile.tsx',[
   'style={[s.accountControl,{backgroundColor:theme.surface,borderColor:theme.line}]}',
