@@ -13,6 +13,7 @@ import {
   type AmenityMatchRule,
 } from '@kleenest/mobile-core';
 import { useEffect, useMemo, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   FlatList,
   Image,
@@ -378,6 +379,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
 
 export default function AdaptiveExploreScreen() {
  const theme=useConsumerTheme();
+  const insets=useSafeAreaInsets();
   const {height:windowHeight}=useWindowDimensions();
   const [mode, setMode] = useState<'nearby' | 'route'>('nearby');
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -410,6 +412,9 @@ export default function AdaptiveExploreScreen() {
   const [checkInFeedback,setCheckInFeedback]=useState<Record<string,CheckInActionFeedback>>({});
   const [cached, setCached] = useState(false);
   const [mapInteracting,setMapInteracting]=useState(false);
+  const [searchPanelHeight,setSearchPanelHeight]=useState(0);
+  const searchPanelTop=Math.max(8,insets.top+4);
+  const mapChromeTop=searchPanelTop+searchPanelHeight+10;
 
   const visibleRows=useMemo(()=>rows.filter((row)=>{
     if(kleenestOnly&&!isKleenestPlace(row))return false;
@@ -938,11 +943,12 @@ export default function AdaptiveExploreScreen() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
         ListHeaderComponent={
           <View style={s.exploreCanvas}>
-      <View style={[s.searchPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+      <View onLayout={event=>setSearchPanelHeight(Math.ceil(event.nativeEvent.layout.height))} style={[s.searchPanel,{top:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
         <View style={s.searchRow}>
           <TextInput
             accessibilityLabel="Search bathrooms"
             style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}
+            maxFontSizeMultiplier={1.2}
             value={search}
             onChangeText={setSearch}
             onSubmitEditing={() => void load()}
@@ -956,7 +962,7 @@ export default function AdaptiveExploreScreen() {
             disabled={loading}
             onPress={() => void load()}
           >
-            <Text style={[s.searchButtonText,{color:theme.accentText}]}>{loading ? 'WORKING…' : 'SEARCH'}</Text>
+            <Text maxFontSizeMultiplier={1.15} style={[s.searchButtonText,{color:theme.accentText}]}>{loading ? 'WORKING…' : 'SEARCH'}</Text>
           </Pressable>
         </View>
 
@@ -970,7 +976,7 @@ export default function AdaptiveExploreScreen() {
             onPress={() => chooseMode('nearby')}
             style={[s.segmentButton,mode==='nearby'&&{backgroundColor:theme.accent}]}
           >
-            <Text style={[s.segmentText,{color:mode==='nearby'?theme.accentText:theme.ink}]}>Nearby</Text>
+            <Text maxFontSizeMultiplier={1.15} style={[s.segmentText,{color:mode==='nearby'?theme.accentText:theme.ink}]}>Nearby</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -979,7 +985,7 @@ export default function AdaptiveExploreScreen() {
             onPress={() => chooseMode('route')}
             style={[s.segmentButton,mode==='route'&&{backgroundColor:theme.accent}]}
           >
-            <Text style={[s.segmentText,{color:mode==='route'?theme.accentText:theme.ink}]}>Along route</Text>
+            <Text maxFontSizeMultiplier={1.15} style={[s.segmentText,{color:mode==='route'?theme.accentText:theme.ink}]}>Along route</Text>
           </Pressable>
         </View>
 
@@ -990,11 +996,11 @@ export default function AdaptiveExploreScreen() {
           onPress={() => setShowAdvanced(true)}
           style={[s.filterLauncher,{backgroundColor:theme.surface,borderColor:theme.line}]}
         >
-          <View style={{flex:1}}>
-            <Text style={[s.filterLauncherKicker,{color:theme.muted}]}>FILTER PLACES</Text>
-            <Text style={[s.filterLauncherTitle,{color:theme.ink}]}>{filterSummary}</Text>
+          <View style={s.filterLauncherMain}>
+            <Text maxFontSizeMultiplier={1.1} style={[s.filterLauncherKicker,{color:theme.muted}]}>FILTER</Text>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[s.filterLauncherTitle,{color:theme.ink}]}>{filterSummary}</Text>
           </View>
-          <View style={[s.filterLauncherBadge,{backgroundColor:theme.accentSoft}]}><Text style={[s.filterLauncherBadgeText,{color:theme.accent}]}>{activeFilterCount?`${activeFilterCount} active`:'Everything'} ▾</Text></View>
+          <View style={[s.filterLauncherBadge,{backgroundColor:theme.accentSoft}]}><Text numberOfLines={1} maxFontSizeMultiplier={1.1} style={[s.filterLauncherBadgeText,{color:theme.accent}]}>{activeFilterCount?`${activeFilterCount} active`:'Everything'} ▾</Text></View>
         </Pressable>
         <Modal
           transparent
@@ -1160,7 +1166,8 @@ export default function AdaptiveExploreScreen() {
             <View
               style={s.mapGestureSurface}
               onTouchStart={()=>setMapInteracting(true)}
-              onTouchEnd={()=>setMapInteracting(false)}
+              onTouchMove={()=>{if(!mapInteracting)setMapInteracting(true)}}
+              onTouchEnd={()=>setTimeout(()=>setMapInteracting(false),80)}
               onTouchCancel={()=>setMapInteracting(false)}
             >
             <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE} onRegionDidChange={handleMapRegionDidChange}>
@@ -1216,10 +1223,10 @@ export default function AdaptiveExploreScreen() {
               })}
             </Map>
             </View>
-            <View pointerEvents="none" style={s.mapBadge}>
+            <View pointerEvents="none" style={[s.mapBadge,{top:mapChromeTop}]}>
               <Text style={s.mapBadgeText}>{cached ? 'Cached · ' : ''}{visibleRows.length}{activeFilterCount?` of ${rows.length}`:''} results</Text>
             </View>
-            <View style={s.mapControls}>
+            <View style={[s.mapControls,{top:mapChromeTop}]}>
               <Pressable accessibilityRole="button" accessibilityLabel="Zoom map in" style={[s.mapControl,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={() => changeMapZoom(1)}>
                 <Text style={[s.mapControlText,{color:theme.accent}]}>＋</Text>
               </Pressable>
@@ -1234,14 +1241,14 @@ export default function AdaptiveExploreScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Search this map area"
-                style={[s.searchThisArea,{backgroundColor:theme.surface,borderColor:theme.line}]}
+                style={[s.searchThisArea,{top:mapChromeTop,backgroundColor:theme.surface,borderColor:theme.line}]}
                 disabled={loading}
                 onPress={()=>void load({mapOrigin:pendingMapOrigin})}
               >
                 <Text style={[s.searchThisAreaText,{color:theme.accent}]}>{loading?'Searching…':'Search this area'}</Text>
               </Pressable>
             ):null}
-            <View pointerEvents="box-none" style={s.legendWrap}>
+            <View pointerEvents="box-none" style={[s.legendWrap,{top:mapChromeTop+46}]}>
               <MapLegend />
             </View>
             {!selected?(
@@ -1424,18 +1431,18 @@ const s = StyleSheet.create({
   },
   locateIcon: { fontSize: 16, fontWeight: '900', color: palette.green },
   locateText: { fontSize: 8, fontWeight: '900', color: palette.green },
-  searchPanel:{position:'absolute',top:10,left:10,right:10,zIndex:60,elevation:20,paddingHorizontal:10,paddingTop:9,paddingBottom:9,gap:6,borderRadius:16,borderWidth:1},
+  searchPanel:{position:'absolute',left:10,right:10,zIndex:60,elevation:20,paddingHorizontal:9,paddingTop:7,paddingBottom:7,gap:5,borderRadius:15,borderWidth:1},
   searchAreaChip:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,backgroundColor:'#e8f1eb',borderRadius:11,paddingHorizontal:10,paddingVertical:7},
   searchAreaText:{flex:1,fontSize:10,fontWeight:'900',color:palette.green},searchAreaAction:{fontSize:9,fontWeight:'900',color:palette.green,textDecorationLine:'underline'},
   segment: { flexDirection: 'row', padding: 3, borderRadius: 12, backgroundColor: '#e8efea' },
-  segmentButton: { flex: 1, minHeight: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  segmentButton: { flex: 1, minHeight: 30, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   segmentActive: { backgroundColor: palette.green },
   segmentText: { fontSize: 10, fontWeight: '900', color: palette.green },
   segmentTextActive: { color: '#fff' },
   searchRow: { flexDirection: 'row', gap: 7 },
   input: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 40,
     borderWidth: 1,
     borderColor: '#d6e2da',
     borderRadius: 12,
@@ -1444,7 +1451,7 @@ const s = StyleSheet.create({
     fontSize: 13,
     color: palette.ink,
   },
-  searchButton: { minHeight: 40, borderRadius: 12, backgroundColor: palette.green, paddingHorizontal: 12, justifyContent: 'center' },
+  searchButton: { minHeight: 40, borderRadius: 12, backgroundColor: palette.green, paddingHorizontal: 11, justifyContent: 'center' },
   searchButtonText: { fontSize: 9, fontWeight: '900', color: '#fff' },
   rowHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   autoRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -1494,15 +1501,15 @@ const s = StyleSheet.create({
   markerActive: { transform: [{ scale: 1.08 }] },
   markerPhoto:{width:34,height:34,borderRadius:17,backgroundColor:'#e7eee9'},
   markerPhotoActive:{width:42,height:42,borderRadius:21},
-  mapBadge: { position: 'absolute', top: 174, left: 10, borderRadius: 999, backgroundColor: 'rgba(23,61,43,.9)', paddingHorizontal: 9, paddingVertical: 6 },
+  mapBadge: { position: 'absolute', left: 10, zIndex:50, elevation:14, borderRadius: 999, backgroundColor: 'rgba(23,61,43,.9)', paddingHorizontal: 9, paddingVertical: 6 },
   mapBadgeText: { fontSize: 8, fontWeight: '900', color: '#fff' },
-  mapControls: { position: 'absolute', right: 10, top: 174, gap: 6 },
+  mapControls: { position: 'absolute', right: 10, zIndex:54, elevation:18, gap: 6 },
   mapControl: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cbd9d0', alignItems: 'center', justifyContent: 'center' },
   mapControlText: { fontSize: 19, fontWeight: '900', color: palette.green },
-  searchThisArea:{position:'absolute',top:174,left:92,right:72,zIndex:52,elevation:16,minHeight:38,borderRadius:999,borderWidth:1,alignItems:'center',justifyContent:'center',paddingHorizontal:12},
+  searchThisArea:{position:'absolute',left:92,right:58,zIndex:52,elevation:16,minHeight:38,borderRadius:999,borderWidth:1,alignItems:'center',justifyContent:'center',paddingHorizontal:12},
   searchThisAreaText:{fontSize:10,fontWeight:'900'},
-  legendWrap: { position: 'absolute', top: 218, left: 10, right: 56 },
-  nearbySummary:{position:'absolute',left:10,right:56,bottom:10,zIndex:34,elevation:10,borderRadius:14,borderWidth:1,paddingHorizontal:12,paddingVertical:9},
+  legendWrap: { position: 'absolute', left: 10, right: 56, zIndex:48 },
+  nearbySummary:{position:'absolute',left:10,right:10,bottom:82,zIndex:34,elevation:10,borderRadius:14,borderWidth:1,paddingHorizontal:12,paddingVertical:8},
   nearbySummaryTitle:{fontSize:11,fontWeight:'900'},
   nearbySummaryHint:{fontSize:9,fontWeight:'800',marginTop:2},
   selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 252, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
@@ -1526,10 +1533,11 @@ const s = StyleSheet.create({
   secondarySmall: { minHeight: 30, borderRadius: 9, backgroundColor: '#e8efea', paddingHorizontal: 9, paddingVertical: 6, justifyContent: 'center' },
   primaryText: { fontSize: 9, fontWeight: '900', color: '#fff' },
   secondaryText: { fontSize: 9, fontWeight: '900', color: palette.green },
-  filterLauncher:{minHeight:48,borderRadius:14,borderWidth:1,borderColor:'#cbd9d0',backgroundColor:'#fff',paddingHorizontal:12,paddingVertical:9,flexDirection:'row',alignItems:'center',gap:10},
-  filterLauncherKicker:{fontSize:8,fontWeight:'900',letterSpacing:1,color:palette.green},
-  filterLauncherTitle:{fontSize:13,fontWeight:'900',color:palette.ink,marginTop:1},
-  filterLauncherBadge:{backgroundColor:'#e8f1eb',borderRadius:999,paddingHorizontal:9,paddingVertical:6},
+  filterLauncher:{minHeight:40,borderRadius:12,borderWidth:1,borderColor:'#cbd9d0',backgroundColor:'#fff',paddingHorizontal:10,paddingVertical:6,flexDirection:'row',alignItems:'center',gap:8},
+  filterLauncherMain:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:7},
+  filterLauncherKicker:{fontSize:7,fontWeight:'900',letterSpacing:.8,color:palette.green},
+  filterLauncherTitle:{flex:1,fontSize:11,fontWeight:'900',color:palette.ink},
+  filterLauncherBadge:{maxWidth:'38%',backgroundColor:'#e8f1eb',borderRadius:999,paddingHorizontal:9,paddingVertical:6},
   filterLauncherBadgeText:{fontSize:8,fontWeight:'900',color:palette.green},
   filterSection:{gap:8,paddingBottom:12,borderBottomWidth:1,borderBottomColor:'#edf1ee'},
   filterSectionTitle:{fontSize:12,fontWeight:'900',color:palette.ink},
