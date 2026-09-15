@@ -46,6 +46,7 @@ import { attachLocationPresentations } from '../services/locationPresentation';
 import { recordConsumerPresenceAt, refreshConsumerPresence, type ConsumerPresence } from '../services/presence';
 import {
   CompactRestroomSignals,
+  DecisionRestroomSignals,
   MapLegend,
   PlaceIcon,
   FreshnessHeatRing,
@@ -1268,15 +1269,13 @@ export default function AdaptiveExploreScreen() {
                         <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{selected.name || 'Restroom location'}</Text>
                         {selected.discovery_recommended?<View style={[s.recommendedBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.recommendedBadgeText,{color:theme.accent}]}>RECOMMENDED</Text></View>:null}
                       </View>
-                      {selected.discovery_recommended?<Text style={[s.recommendedReason,{color:theme.muted}]}>{recommendationReason(selected,selectedAmenityNames)}</Text>:null}
-                      <Text numberOfLines={2} style={[s.meta,{color:theme.muted}]}>
-                        {selectedRoutePosition || distanceLabel(selected.distance_meters)}
-                        {' · '}{[selected.address, selected.city].filter(Boolean).join(', ') || 'Address unavailable'}
+                      <Text numberOfLines={1} style={[s.selectedDecisionMeta,{color:theme.muted}]}>
+                        {[selected.discovery_recommended?recommendationReason(selected,selectedAmenityNames):null,selectedRoutePosition || distanceLabel(selected.distance_meters)].filter(Boolean).join(' · ')}
                       </Text>
+                      <Text numberOfLines={1} style={[s.meta,{color:theme.muted}]}>{[selected.address, selected.city].filter(Boolean).join(', ') || 'Address unavailable'}</Text>
                     </View>
                   </View>
-                  <CompactRestroomSignals item={selected} />
-                  {selected.network?.network_verified&&!selected.network?.business_claimed?<Text style={[s.networkSelectedLine,{color:theme.accent}]}>K✓ Verified by the Kleenest Network · {networkEvidenceSummary(selected.network)}</Text>:null}
+                  <DecisionRestroomSignals item={selected} />
                   <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
                   <View style={s.actionRow}>
                     <Pressable
@@ -1295,11 +1294,13 @@ export default function AdaptiveExploreScreen() {
                     <Pressable style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => addToRoute(selected)}>
                       <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
                     </Pressable>
-                    <Pressable style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => contributeKnowledge(selected)}>
-                      <Text style={[s.secondaryText,{color:theme.accent}]}>I know this place</Text>
+                  </View>
+                  <View style={s.selectedMoreRow}>
+                    <Pressable style={[s.selectedMoreAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => contributeKnowledge(selected)}>
+                      <Text style={[s.selectedMoreText,{color:theme.accent}]}>I know this place</Text>
                     </Pressable>
-                    <Pressable style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => router.push(`/location/${idOf(selected)}`)}>
-                      <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
+                    <Pressable style={[s.selectedMoreAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => router.push(`/location/${idOf(selected)}`)}>
+                      <Text style={[s.selectedMoreText,{color:theme.accent}]}>Full details →</Text>
                     </Pressable>
                   </View>
                   <CheckInStatus feedback={checkInFeedback[idOf(selected)]} onReview={() => router.push({pathname:'/location/[id]',params:{id:idOf(selected),review:'1'}})} />
@@ -1487,7 +1488,7 @@ const s = StyleSheet.create({
   nearbySummary:{position:'absolute',left:10,right:56,bottom:10,zIndex:34,elevation:10,borderRadius:14,borderWidth:1,paddingHorizontal:12,paddingVertical:9},
   nearbySummaryTitle:{fontSize:11,fontWeight:'900'},
   nearbySummaryHint:{fontSize:9,fontWeight:'800',marginTop:2},
-  selectedPanel: { position: 'absolute', left: 9, right: 54, top: 9, bottom: 9, zIndex: 40, elevation: 12, borderRadius: 13, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 5, overflow:'hidden' },
+  selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 252, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
   selectedBodyScroll:{flex:1},
   selectedBodyContent:{gap:4,paddingBottom:0},
   selectedHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
@@ -1498,8 +1499,12 @@ const s = StyleSheet.create({
   selectedRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   selectedPhoto:{width:48,height:48,borderRadius:12,backgroundColor:'#e7eee9'},
   selectedTitle: { fontSize: 14, fontWeight: '900', color: palette.ink },
-  actionRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  selectedAction: { flexGrow: 1, alignItems: 'center' },
+  selectedDecisionMeta:{fontSize:8,lineHeight:12,fontWeight:'900'},
+  actionRow: { flexDirection: 'row', gap: 6 },
+  selectedAction: { flex: 1, alignItems: 'center' },
+  selectedMoreRow:{flexDirection:'row',gap:6},
+  selectedMoreAction:{flex:1,minHeight:27,borderWidth:1,borderRadius:9,alignItems:'center',justifyContent:'center',paddingHorizontal:8},
+  selectedMoreText:{fontSize:8,fontWeight:'900'},
   primarySmall: { minHeight: 30, borderRadius: 9, backgroundColor: palette.green, paddingHorizontal: 9, paddingVertical: 6, justifyContent: 'center' },
   secondarySmall: { minHeight: 30, borderRadius: 9, backgroundColor: '#e8efea', paddingHorizontal: 9, paddingVertical: 6, justifyContent: 'center' },
   primaryText: { fontSize: 9, fontWeight: '900', color: '#fff' },
