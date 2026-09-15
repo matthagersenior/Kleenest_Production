@@ -5,6 +5,8 @@ const read=file=>fs.readFileSync(file,'utf8');
 const required=[
   'supabase/migrations/20260915060126_relevance_sponsorship_control_plane.sql',
   'supabase/migrations/20260915060229_relevance_sponsorship_public_policy_and_fallbacks.sql',
+  'supabase/migrations/20260915061012_harden_relevance_public_rpc_boundary.sql',
+  'supabase/migrations/20260915061134_harden_sponsored_event_integrity.sql',
   'apps/consumer-mobile/services/heroRelevance.ts',
   'apps/consumer-mobile/components/RelevanceHeroCarousel.tsx',
   'apps/consumer-mobile/services/sponsorship.ts',
@@ -19,6 +21,8 @@ for(const file of required)if(!fs.existsSync(file))failures.push(`Missing releva
 if(!failures.length){
   const migration=read(required[0]);
   const hardening=read(required[1]);
+  const publicBoundary=read(required[2]);
+  const eventHardening=read(required[3]);
   const hero=read('apps/consumer-mobile/services/heroRelevance.ts');
   const carousel=read('apps/consumer-mobile/components/RelevanceHeroCarousel.tsx');
   const sponsored=read('apps/consumer-mobile/components/SponsoredSlot.tsx');
@@ -30,6 +34,8 @@ if(!failures.length){
   for(const token of ['organic_hero_no_paid_kinds','ad_placements_not_hero_check','consumer_ads_enabled','not public.has_kleenest_premium()','consumer_sponsored_cards','sensitive or unsupported targeting key','owner_relevance_sponsorship_snapshot','relevance_sponsorship'])
     if(!migration.includes(token))failures.push(`Control-plane migration missing invariant: ${token}`);
   if(!hardening.includes("owner_enabled=true"))failures.push('Public sponsored placement visibility must honor the owner kill switch.');
+  for(const token of ['security invoker','revoke execute on function public.consumer_sponsored_cards','organic_hero_policy_public_read'])if(!publicBoundary.toLowerCase().includes(token))failures.push(`Public relevance boundary missing hardening: ${token}`);
+  for(const token of ['sponsored_campaign_destination_https_check','revoke insert on public.sponsored_events','60 seconds','security definer'])if(!eventHardening.toLowerCase().includes(token))failures.push(`Sponsored event integrity missing hardening: ${token}`);
 
   for(const kind of ['review_ready','active_mission','fresh_kleenest','saved_choice','top_ranked','next_objective','find_bathroom','share_knowledge','scan_qr'])
     if(!hero.includes(kind))failures.push(`Organic hero ranking missing candidate: ${kind}`);
