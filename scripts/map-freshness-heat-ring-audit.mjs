@@ -40,7 +40,7 @@ if(!failures.length){
   for(const token of [
     '<ScrollView style={s.selectedBodyScroll}',
     'showsVerticalScrollIndicator={false}',
-    "selectedPanel: { position: 'absolute', left: 9, right: 54, top: 9, bottom: 9",
+    "selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 252",
     'selectedBodyScroll:{flex:1}',
     'selectedBodyContent:{gap:4,paddingBottom:0}',
   ])if(!explore.includes(token))failures.push('Native selected map card containment missing '+token);

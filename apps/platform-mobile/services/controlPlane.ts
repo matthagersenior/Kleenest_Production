@@ -19,7 +19,7 @@ export type IngestionControlSnapshot={status:any;sources:any[];markets:any[];sto
 export const getNotificationControlSnapshot=(limit=100)=>rpc<NotificationControlSnapshot>('owner_notification_control_snapshot',{p_limit:limit});
 export const saveNotificationRule=(rule:Partial<NotificationRule>&Record<string,unknown>,reason='KleenestOS notification studio update')=>rpc<NotificationRule>('owner_upsert_platform_notification_rule',{p_rule:rule,p_reason:reason});
 export const deleteNotificationRule=(ruleId:string,reason='KleenestOS notification studio delete')=>rpc<boolean>('owner_delete_platform_notification_rule',{p_rule_id:ruleId,p_reason:reason});
-export const publishNotificationRule=(ruleId:string,locationId:string|null=null,payload:Record<string,unknown>={},forceDryRun:boolean|null=null)=>rpc('owner_publish_platform_notification_rule',{p_rule_id:ruleId,p_location_id:locationId,p_payload:payload,p_force_dry_run:forceDryRun});
+export const publishNotificationRule=(ruleId:string,locationId:string|null=null,payload:Record<string,unknown>={},forceDryRun:boolean|null=null,bypassFrequencyCap=false)=>rpc('owner_publish_platform_notification_rule',{p_rule_id:ruleId,p_location_id:locationId,p_payload:payload,p_force_dry_run:forceDryRun,p_bypass_frequency_cap:bypassFrequencyCap});
 
 export const getIngestionControlSnapshot=(limit=100)=>rpc<IngestionControlSnapshot>('owner_ingestion_control_snapshot',{p_limit:limit});
 export const updateIngestionSourcePolicy=(sourceKey:string,patch:Record<string,unknown>,reason='KleenestOS ingestion source update')=>rpc('owner_update_ingestion_source_policy',{p_source_key:sourceKey,p_patch:patch,p_reason:reason});

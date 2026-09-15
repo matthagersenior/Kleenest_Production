@@ -17,6 +17,9 @@ if(!failures.length){
  if(!exploreCompact.includes('height:Math.max(440,windowHeight-96)')||!exploreCompact.includes('mapFrame:{minHeight:440'))failures.push('Explore functional home must devote the first viewport to a device-sized map with a safe minimum height.');
  if(/<Map[^>]*onPress=\{\(\)=>setSelectedId\(["']{2}\)\}/.test(exploreCompact))failures.push('Map background press must not swallow or immediately clear marker selection.');
  if(!explore.includes('pointerEvents="none"')||!explore.includes('pointerEvents="box-none"'))failures.push('Explore overlays must preserve map-pin touch access.');
+ if(!adaptiveExplore.includes('scrollEnabled={!mapInteracting}')||!adaptiveExplore.includes('onTouchStart={()=>setMapInteracting(true)}')||!adaptiveExplore.includes('onTouchEnd={()=>setMapInteracting(false)}')||!adaptiveExplore.includes('onTouchCancel={()=>setMapInteracting(false)}'))failures.push('Explore map must temporarily own drag gestures instead of letting the parent result list steal map panning.');
+ const searchPanelStart=adaptiveExplore.indexOf('<View style={[s.searchPanel'),mapStart=adaptiveExplore.indexOf('{(origin||searchAreaOrigin)'),statusStart=adaptiveExplore.indexOf('style={s.discoveryStatus}');
+ if(searchPanelStart<0||mapStart<0||statusStart<mapStart)failures.push('Explore discovery status must render after the map instead of enlarging the search overlay and covering map controls.');
  if(!explore.includes('Close selected location')||!explore.includes('Full details'))failures.push('Selected map details must be dismissible and link to full location details.');
  if(!adaptiveExplore.includes('>Close</Text>'))failures.push('Selected map details must expose a plainly visible Close label next to the X control.');
  if(adaptiveExplore.includes('Nearby when you need one now. Along your route when you are planning ahead.'))failures.push('Explore hero must stay compact and not consume result viewport with explanatory copy.');

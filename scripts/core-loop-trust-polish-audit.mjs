@@ -20,6 +20,8 @@ for(const token of [
   'trustEvidenceLine(item)',
   '<FreshnessHeatRing item={row} size={22} />',
   '<FreshnessHeatRing item={selected} size={34} />',
+  '<DecisionRestroomSignals item={selected} />',
+  "selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 252",
   "card: { borderRadius: 16, padding: 10",
   "cardMain: { gap: 4 }",
   "cardActionRow: { flexDirection: 'row', gap: 5",
@@ -30,6 +32,13 @@ for(const token of [
 if(explore.includes('<RestroomSignals item={item} compact />'))failures.push('Explore result cards still use the taller labeled restroom signals.');
 if(explore.includes("{selected ? 'Selected on map' : 'Tap this card to focus its map pin'}"))failures.push('Explore still spends card height on the redundant map-selection hint.');
 if(explore.includes('size={active ? 28 : 22}')||explore.includes('active={active}'))failures.push('Map marker selection still changes freshness-ring geometry.');
+
+const location=read('apps/consumer-mobile/app/location/[id].tsx');
+for(const token of [
+  '<FreshnessHeatRing item={place} size={50}/>',
+  'freshnessHeatSignal(place)',
+  'confidenceEvidenceCount',
+])requireToken(location,token,'Location details freshness and evidence consistency');
 
 const discover=read('apps/consumer-mobile/app/discover.tsx');
 for(const token of [
