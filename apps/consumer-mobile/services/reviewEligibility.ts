@@ -4,6 +4,7 @@ export type EligibleReviewCheckIn = {
   id: string;
   checked_in_at: string;
   verification_method: string | null;
+  restroom_facility_id: string | null;
 };
 
 export type ActiveLocationVisit = EligibleReviewCheckIn & {
@@ -19,7 +20,7 @@ export async function findLatestEligibleReviewCheckIn(locationId: string): Promi
 
   const { data: checkIns, error: checkInError } = await client
     .from('check_ins')
-    .select('id,checked_in_at,verification_method,metadata')
+    .select('id,checked_in_at,verification_method,restroom_facility_id,metadata')
     .eq('user_id', user.id)
     .eq('location_id', locationId)
     .order('checked_in_at', { ascending: false })
@@ -45,6 +46,7 @@ export async function findLatestEligibleReviewCheckIn(locationId: string): Promi
     id: String(next.id),
     checked_in_at: String(next.checked_in_at),
     verification_method: next.verification_method ? String(next.verification_method) : null,
+    restroom_facility_id: next.restroom_facility_id ? String(next.restroom_facility_id) : null,
   };
 }
 
@@ -58,7 +60,7 @@ export async function findActiveLocationVisit(locationId: string): Promise<Activ
 
   const { data: latest, error: checkInError } = await client
     .from('check_ins')
-    .select('id,checked_in_at,verification_method,distance_meters')
+    .select('id,checked_in_at,verification_method,restroom_facility_id,distance_meters')
     .eq('user_id', user.id)
     .eq('location_id', locationId)
     .order('checked_in_at', { ascending: false })
@@ -83,6 +85,7 @@ export async function findActiveLocationVisit(locationId: string): Promise<Activ
     id: String(latest.id),
     checked_in_at: String(latest.checked_in_at),
     verification_method: latest.verification_method ? String(latest.verification_method) : null,
+    restroom_facility_id: latest.restroom_facility_id ? String(latest.restroom_facility_id) : null,
     distance_meters: latest.distance_meters == null ? null : Number(latest.distance_meters),
   };
 }
