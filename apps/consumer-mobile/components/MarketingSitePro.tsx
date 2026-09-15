@@ -179,23 +179,23 @@ function LiveAppPreview() {
       name: 'Riverfront Market',
       meta: '0.3 mi · Open now',
       score: '4.8',
-      evidence: 'Verified 9 min ago',
-      details: 'Accessible · changing table · stocked',
+      evidence: 'Fresh · verified 9 min ago · 4 confirmations',
+      details: 'Accessible · family restroom · changing table · stocked',
       best: true,
     },
     {
       name: 'Central Library',
       meta: '0.6 mi · Free access',
       score: '4.7',
-      evidence: 'Verified 24 min ago',
-      details: 'Family restroom · low traffic',
+      evidence: 'Fresh · verified 24 min ago · 3 confirmations',
+      details: 'Family restroom · accessible · low traffic',
       best: false,
     },
     {
       name: 'Coffee House',
       meta: '0.8 mi · Customer access',
       score: '4.5',
-      evidence: 'Verified 1 hr ago',
+      evidence: 'Recent · verified 1 hr ago · 2 confirmations',
       details: 'Clean · stocked · accessible stall',
       best: false,
     },
@@ -394,9 +394,7 @@ export function MarketingHome() {
         </View>
         <View style={s.heroPreviewWrap}>
           <View style={s.heroGlow} />
-          <View style={s.heroImageFrame}>
-            <MarketingImage file="home-discovery.svg" label="Kleenest discovery, trust, QR and quest experience" />
-          </View>
+          <LiveAppPreview />
         </View>
       </View>
 
