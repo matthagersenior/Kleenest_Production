@@ -5,12 +5,12 @@ const requireAll=(path,tokens)=>{const source=read(path);for(const token of toke
 
 const ui=requireAll('apps/consumer-mobile/components/ConsumerUI.tsx',['HeroCard','FeatureCard','SectionHeader','TrustStrip','MetricTile','palette']);
 const layout=requireAll('apps/consumer-mobile/app/_layout.tsx',["title:'Home'","title:'Explore'","title:'Progress'","title:'Community'","title:'Profile'","name=\"play\"","name=\"discover\"","name=\"preferences\"",'tabBarActiveTintColor']);
-const home=requireAll('apps/consumer-mobile/app/index.tsx',['RelevanceHeroCarousel','buildConsumerHomeHeroes','SponsoredSlot','QUICK ACTIONS','GAME CENTER','THE KLEENEST LOOP','YOUR PROGRESS','KLEENEST AI','TRUST GUIDE','ROUTE GUIDE','REVIEW DRAFT','COMMUNITY','OPEN COMMUNITY','Membership','Support']);
+const home=requireAll('apps/consumer-mobile/app/index.tsx',['Redirect','/explore','MarketingHome','useConsumerWebExperience']);
 const heroRelevance=requireAll('apps/consumer-mobile/services/heroRelevance.ts',['review_ready','active_mission','fresh_kleenest','saved_choice','top_ranked','next_objective','find_bathroom','share_knowledge','scan_qr',"route:'/explore'","route:'/discover'","route:'/progress'","route:'/qr'"]);
 const explorePath='apps/consumer-mobile/app/explore.tsx';
 const adaptiveExplorePath='apps/consumer-mobile/features/AdaptiveExploreScreen.tsx';
 const explore=`${read(explorePath)}\n${read(adaptiveExplorePath)}`;
-for(const token of ['Find a trusted bathroom.','BEST NEXT DECISION','What matters on this stop?','Start navigation','resolveConsumerSearchLocation','searchAreaOrigin','Searching near','Address, school, workplace, city or brand','listLocationTrustSummaries','listNearbyRestrooms',"router.push('/discover')"])if(!explore.includes(token))throw new Error(`Canonical Explore presentation missing contract: ${token}`);
+for(const token of ['Search this area','Swipe up for results','BEST NEXT DECISION','What matters on this stop?','Start navigation','resolveConsumerSearchLocation','searchAreaOrigin','Searching near','Address, school, workplace, city or brand','listLocationTrustSummaries','listNearbyRestrooms',"router.push('/discover')"])if(!explore.includes(token))throw new Error(`Canonical Explore presentation missing contract: ${token}`);
 const discover=requireAll('apps/consumer-mobile/app/discover.tsx',['matchOrCreateDiscovery','recordDiscoveryEvidence','uploadDiscoveryPhoto','onsite_live']);
 const progress=requireAll('apps/consumer-mobile/app/progress.tsx',['SPECIALTY LEVELS','Quests','Missions','Challenges','Journeys','Campaigns','Contests','BADGES','RANKINGS']);
 const profile=requireAll('apps/consumer-mobile/app/profile.tsx',['Your restroom network','Your progress and people','Control your Kleenest','Privacy & preferences','Scan a Kleenest code','Contribution-backed standing','update_my_public_profile']);
@@ -30,23 +30,7 @@ for(const [name,source] of Object.entries({layout,home,heroRelevance,explore,dis
   if(/\.rpc\(['"](?:business|fleet|enterprise|admin)_/i.test(source)||/from ['"][^'"]*(?:Business|Fleet|Enterprise|Admin)/.test(source))throw new Error(`${name} presentation surface leaked Operations authority into consumer UI`);
 }
 if(!heroRelevance.includes("route:'/explore'")||!heroRelevance.includes("route:'/discover'")||!heroRelevance.includes("route:'/progress'"))throw new Error('Organic Home relevance must keep Explore, Discover and Progress available as primary consumer actions');
-const quickStart=home.indexOf('eyebrow="QUICK ACTIONS"');
-const loopStart=home.indexOf('eyebrow="THE KLEENEST LOOP"');
-const progressStart=home.indexOf('eyebrow="YOUR PROGRESS"');
-const aiStart=home.indexOf('eyebrow="KLEENEST AI"');
-const communityStart=home.indexOf('eyebrow="COMMUNITY"');
-const moreStart=home.indexOf('eyebrow="MORE"');
-if([quickStart,loopStart,progressStart,aiStart,communityStart,moreStart].some(index=>index<0))throw new Error('Home hierarchy must expose Quick Actions, Kleenest Loop, Progress, AI, Community and More as distinct sections');
-const quickSection=home.slice(quickStart,loopStart);
-for(const duplicated of ["'/explore'","'/qr'","'/discover'","XP + levels"])if(quickSection.includes(duplicated))throw new Error(`Quick Actions must not duplicate hero/progress action: ${duplicated}`);
-if(!quickSection.includes("'/games'")||!quickSection.includes('GAME CENTER'))throw new Error('Game Center must be promoted into Quick Actions');
-const loopSection=home.slice(loopStart,progressStart);
-for(const token of ['FIND + DISCOVER','VERIFY + DOCUMENT','STRENGTHEN + REWARD'])if(!loopSection.includes(token))throw new Error(`Kleenest Loop must clearly organize the trust cycle around ${token}`);
-const aiSection=home.slice(aiStart,communityStart);
-for(const token of ['TRUST GUIDE','ROUTE GUIDE','REVIEW DRAFT'])if(!aiSection.includes(token))throw new Error(`Kleenest AI homepage feature must showcase ${token}`);
-const communitySection=home.slice(communityStart,moreStart);
-if(!communitySection.includes("'/social'")||!communitySection.includes('OPEN COMMUNITY'))throw new Error('Community section must provide one clear entry into the Community page');
-for(const duplicateRoute of ["'/messages'","'/access'","'/profile'","'/notifications'"])if(communitySection.includes(duplicateRoute))throw new Error(`Community section must not split into duplicate action cards: ${duplicateRoute}`);
+if(!explore.includes('organizeDiscoveryRows')||!explore.includes('SponsoredSlot surface="maps"'))throw new Error('Explore functional home must preserve relevance ordering and separate sponsored inventory');
 if(!profile.includes("router.push('/preferences')")&&!profile.includes('route="/preferences"'))throw new Error('Profile must expose privacy/preferences from the consumer hub');
 if(!explore.includes('captureConsumerDiscovery')||!explore.includes('captureConsumerRouteIntent'))throw new Error('Rich discovery must preserve lightweight backend data production');
 if(!discover.includes('matchOrCreateDiscovery')||!discover.includes('recordDiscoveryEvidence'))throw new Error('Discover must remain backed by canonical discovery/evidence authority');
@@ -58,7 +42,7 @@ if(!location.includes("import ReviewReportAction from '../../components/ReviewRe
 if(!saved.includes('applyTrustDiscoveryControls')||!route.includes('function move(index:number,delta:number)'))throw new Error('Rich personal navigation surfaces must preserve explicit user-controlled trust ordering');
 if(!notifications.includes('updateNotificationPreferences')||!(membership.includes('native store purchase boundary')||membership.includes('App Store / Google Play billing')))throw new Error('Rich account surfaces must preserve notification and native commerce boundaries');
 
-const visibleTabs=new Set(['index','explore','progress','social','profile']);
+const visibleTabs=new Set(['explore','progress','social','profile']);
 const topLevelRoutes=fs.readdirSync('apps/consumer-mobile/app',{withFileTypes:true})
   .filter(entry=>entry.isFile()&&entry.name.endsWith('.tsx')&&entry.name!=='_layout.tsx')
   .map(entry=>entry.name.replace(/\.tsx$/,''));
@@ -72,6 +56,6 @@ for(const routeName of topLevelRoutes){
     if(!declaration.includes('href:null'))throw new Error(`Consumer route ${routeName} must remain hidden from the primary bottom tab bar`);
   }
 }
-if(topLevelRoutes.filter(routeName=>visibleTabs.has(routeName)).length!==visibleTabs.size)throw new Error('Consumer bottom navigation must expose exactly Home, Explore, Progress, Community and Profile');
+if(topLevelRoutes.filter(routeName=>visibleTabs.has(routeName)).length!==visibleTabs.size)throw new Error('Consumer bottom navigation must expose exactly Explore, Progress, Community and Profile; the root route remains hidden and redirects to Explore');
 
 console.log('Native consumer presentation convergence audit passed.');
