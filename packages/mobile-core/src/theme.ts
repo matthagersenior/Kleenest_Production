@@ -101,21 +101,21 @@ export function resolveKleenestTheme(mode:KleenestThemeMode,systemDark=false,con
     const edition=earlyAccessAccents[context]||earlyAccessAccents.consumer;
     return{
       mode,resolved,context,
-      canvas:'#070b17',surface:'#0f172a',surfaceRaised:'#162238',ink:'#f7faff',muted:'#aab8d1',line:'#2b3b59',
+      canvas:'#040814',surface:'#0d1628',surfaceRaised:'#192844',ink:'#ffffff',muted:'#c2cee2',line:'#41577c',
       accent:edition.accent,accentSoft:edition.soft,accentText:'#06100d',danger:'#ff8fa3',warning:'#ffd166',success:'#66e3c4',statusBar:'light',
     };
   }
   if(resolved==='dark'){
     return{
       mode,resolved,context,
-      canvas:'#0b1410',surface:'#132019',surfaceRaised:'#192920',ink:'#f2f7f4',muted:'#a6b6ad',line:'#2a3b31',
+      canvas:'#07100b',surface:'#111c15',surfaceRaised:'#1c2d22',ink:'#ffffff',muted:'#bcc9c1',line:'#405448',
       accent:accent.dark,accentSoft:accent.softDark,accentText:'#07110c',danger:'#ef8d8d',warning:'#e8bb68',success:'#75c99b',statusBar:'light',
     };
   }
   const branded=mode==='default';
   return{
     mode,resolved,context,
-    canvas:branded?'#f3f6f4':'#ffffff',surface:'#ffffff',surfaceRaised:branded?'#f9fbfa':'#f7f9f8',ink:'#102218',muted:'#617068',line:'#d7e2da',
+    canvas:branded?'#f1f5f2':'#ffffff',surface:'#ffffff',surfaceRaised:branded?'#eaf1ed':'#f1f4f2',ink:'#0b1b12',muted:'#4f5f56',line:'#c2d0c7',
     accent:accent.light,accentSoft:accent.soft,accentText:'#ffffff',danger:'#8a3434',warning:'#9b6518',success:'#2f7a53',statusBar:'dark',
   };
 }
