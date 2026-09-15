@@ -36,6 +36,18 @@ function lockedVersions(lock,names){
   const packages=lock.packages||{};
   return Object.fromEntries(names.map(name=>[name,packages[`node_modules/${name}`]?.version??null]));
 }
+function dependencyMap(pkg){return {...(pkg.dependencies||{}),...(pkg.devDependencies||{}),...(pkg.optionalDependencies||{})}}
+function packageName(specifier){
+  if(!specifier||specifier.startsWith('.')||specifier.startsWith('/'))return '';
+  const parts=specifier.split('/');
+  return specifier.startsWith('@')?parts.slice(0,2).join('/'):parts[0];
+}
+function sourceNativeImports(source){
+  const found=new Set();
+  const patterns=[/from\\s+['\"]([^'\"]+)['\"]/g,/import\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*\\)/g,/require\\(\\s*['\"]([^'\"]+)['\"]\\s*\\)/g];
+  for(const pattern of patterns){for(const match of source.matchAll(pattern)){const name=packageName(match[1]);if(name&&(name==='expo'||name.startsWith('expo-')||name==='react-native'||name.startsWith('react-native-')||name.startsWith('@react-native/')||name==='@maplibre/maplibre-react-native'))found.add(name)}}
+  return [...found];
+}
 
 if(!baseline){console.error('Family native baseline SHA is required.');process.exit(2)}
 const current=runGit(['rev-parse','HEAD']);
@@ -64,7 +76,14 @@ const results=apps.map(app=>{
 
   const currentPkg=parseJson(fs.readFileSync(packagePath,'utf8'),`current ${packagePath}`);
   const basePkg=parseJson(gitShow(baseline,packagePath),`baseline ${packagePath}`);
+  const currentDeps=dependencyMap(currentPkg);
   const nativeNames=[...new Set([...nativeDependencyNames(currentPkg),...nativeDependencyNames(basePkg)])].sort();
+  for(const file of changed){
+    if(!file.startsWith(`${app.dir}/`)||!/\\.[cm]?[jt]sx?$/.test(file)||!fs.existsSync(file))continue;
+    for(const dependency of sourceNativeImports(fs.readFileSync(file,'utf8'))){
+      if(!(dependency in currentDeps))reasons.push(`undeclared native dependency referenced: ${dependency} in ${file}`);
+    }
+  }
   if(changed.includes(packagePath)){
     const before=nativeDependencySpecs(basePkg,nativeNames),after=nativeDependencySpecs(currentPkg,nativeNames);
     if(!same(before,after))reasons.push('native dependency specifications changed');
