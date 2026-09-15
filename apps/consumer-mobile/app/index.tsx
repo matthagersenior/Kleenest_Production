@@ -45,6 +45,7 @@ export default function HomeScreen(){
       <FeatureCard kicker="ROUTE" title="Plan smarter" body="Build a bathroom-first route around the stops that matter." onPress={action('/route')}/>
       <FeatureCard kicker="OFFLINE" title="Take routes with you" body="Prepare canonical route discovery and restroom packs before coverage gets weak." onPress={action('/offline')}/>
       <FeatureCard kicker="ACTIVITY" title="Your impact" body="See visits, discoveries, reviews, evidence, rewards and network contributions." onPress={action('/activity')}/>
+      <FeatureCard kicker="WEEKLY" title="Week in review" body="See your last 7 days, finish verified reviews while they are fresh, and keep detected presence separate from verified evidence." onPress={action('/week-in-review')}/>
     </View>
 
     <SectionHeader eyebrow="THE KLEENEST LOOP" title="One useful action strengthens the whole network." body="This is the core Kleenest cycle: discover what is missing, verify what is real, then turn fresh evidence into stronger trust for everyone."/>
