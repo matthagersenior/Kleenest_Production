@@ -17,8 +17,8 @@ export async function findNearbyRestrooms({ latitude, longitude, radiusMeters = 
   if (!locationIds.length) return rows;
 
   const [trustResult, networkResult] = await Promise.all([
-    supabase.rpc('mobile_location_trust_summaries', { p_location_ids: locationIds }).catch(() => ({ data: null, error: true })),
-    supabase.rpc('mobile_location_network_statuses', { p_location_ids: locationIds }).catch(() => ({ data: null, error: true })),
+    supabase.rpc('mobile_location_trust_summaries', { p_location_ids: locationIds }),
+    supabase.rpc('mobile_location_network_statuses', { p_location_ids: locationIds }),
   ]);
   const trustById = new Map((Array.isArray(trustResult?.data) ? trustResult.data : []).map((row) => [String(row.location_id), row]));
   const networkById = new Map((Array.isArray(networkResult?.data) ? networkResult.data : []).map((row) => [String(row.location_id), row]));
