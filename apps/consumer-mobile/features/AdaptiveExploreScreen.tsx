@@ -1257,6 +1257,7 @@ export default function AdaptiveExploreScreen() {
                     style={[s.close,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
                   >
                     <Text style={[s.closeText,{color:theme.accent}]}>×</Text>
+                    <Text style={[s.closeLabel,{color:theme.muted}]}>Close</Text>
                   </Pressable>
                 </View>
                 <ScrollView style={s.selectedBodyScroll} contentContainerStyle={s.selectedBodyContent} showsVerticalScrollIndicator={false}>
@@ -1491,8 +1492,9 @@ const s = StyleSheet.create({
   selectedBodyContent:{gap:4,paddingBottom:0},
   selectedHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   selectedLabel: { flex: 1, fontSize: 8, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
-  close: { minWidth: 38, minHeight: 38, zIndex: 41, elevation: 13, borderRadius: 19, backgroundColor: palette.green, alignItems: 'center', justifyContent: 'center' },
+  close: { minWidth: 38, minHeight: 38, zIndex: 41, elevation: 13, borderRadius: 19, backgroundColor: palette.green, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 8 },
   closeText: { color: '#fff', fontSize: 20, lineHeight: 22, fontWeight: '900' },
+  closeLabel: { color: '#fff', fontSize: 9, fontWeight: '900' },
   selectedRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   selectedPhoto:{width:48,height:48,borderRadius:12,backgroundColor:'#e7eee9'},
   selectedTitle: { fontSize: 14, fontWeight: '900', color: palette.ink },
