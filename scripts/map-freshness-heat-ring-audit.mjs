@@ -28,6 +28,10 @@ if(!failures.length){
 
   for(const token of ['FreshnessHeatRing','<FreshnessHeatRing','active={active}',"backgroundColor: 'transparent'"])
     if(!explore.includes(token))failures.push('Native Explore heat-ring wiring missing '+token);
+  if(!explore.includes('<FreshnessHeatRing item={item} size={34} />'))
+    failures.push('Native Explore search-result cards must render their place icon inside the freshness heat ring.');
+  if(!explore.includes('<FreshnessHeatRing item={selected} size={34} active />'))
+    failures.push('Native Explore selected map-pin card must render its place icon inside the freshness heat ring.');
   if(explore.includes("style={[s.marker,{backgroundColor:theme.surface,borderColor:theme.line}"))
     failures.push('Native map marker wrapper must not replace the freshness ring with a generic border.');
 
