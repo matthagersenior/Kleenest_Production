@@ -15,7 +15,6 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
-  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -46,7 +45,6 @@ import { recordConsumerPresenceAt, refreshConsumerPresence, type ConsumerPresenc
 import {
   CompactRestroomSignals,
   MapLegend,
-  PlaceIcon,
   FreshnessHeatRing,
   RestroomSignals,
   restroomMarkerLabel,
