@@ -10,7 +10,9 @@ const DEFAULT_CENTER = [38.627, -90.199];
 const OSM_RASTER = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const RADII = [1609, 3219, 8047, 16093, 40234];
 const miles = place => place.distance_meters == null ? null : `${(Number(place.distance_meters) / 1609.344).toFixed(1)} mi`;
-const signals = place => [miles(place), place.cleanliness_pct != null ? `${Math.round(Number(place.cleanliness_pct))}% clean` : null, place.rating != null ? `${Number(place.rating).toFixed(1)} ★${place.review_count ? ` · ${place.review_count} reviews` : ''}` : null, place.is_verified ? 'Verified' : null, place.brand || null].filter(Boolean);
+const facilityLabels={men:"Men's",women:"Women's",family:'Family',all_gender:'All-gender',single_occupancy:'Single-occupancy',other:'Additional restroom'};
+const facilitySignals=place=>(Array.isArray(place?.restroom_facility_summary?.facility_types)?place.restroom_facility_summary.facility_types:[]).map(type=>facilityLabels[type]||null).filter(Boolean);
+const signals = place => [miles(place), ...facilitySignals(place), place.cleanliness_pct != null ? `${Math.round(Number(place.cleanliness_pct))}% clean` : null, place.rating != null ? `${Number(place.rating).toFixed(1)} ★${place.review_count ? ` · ${place.review_count} reviews` : ''}` : null, place.is_verified ? 'Verified' : null, place.brand || null].filter(Boolean);
 
 const HEAT_STOPS = [
   { day: 0, color: '#ef4444' },
