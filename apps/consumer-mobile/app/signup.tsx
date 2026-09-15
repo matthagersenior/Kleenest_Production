@@ -128,32 +128,32 @@ export default function SignupScreen(){
 
   <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
    <View style={[s.modeRow,{backgroundColor:theme.surfaceRaised}]}>
-    <Pressable onPress={()=>{setMode('signin');setMessage('');setNeedsConfirmation(false)}} style={[s.mode,mode==='signin'&&{backgroundColor:theme.surface}]}><Text style={[s.modeText,{color:mode==='signin'?theme.accent:theme.muted}]}>SIGN IN</Text></Pressable>
-    <Pressable onPress={()=>{setMode('signup');setMessage('');setNeedsConfirmation(false)}} style={[s.mode,mode==='signup'&&{backgroundColor:theme.surface}]}><Text style={[s.modeText,{color:mode==='signup'?theme.accent:theme.muted}]}>CREATE ACCOUNT</Text></Pressable>
+    <Pressable accessibilityRole="tab" accessibilityState={{selected:mode==='signin'}} accessibilityLabel="Sign in" onPress={()=>{setMode('signin');setMessage('');setNeedsConfirmation(false)}} style={[s.mode,mode==='signin'&&{backgroundColor:theme.surface}]}><Text style={[s.modeText,{color:mode==='signin'?theme.accent:theme.muted}]}>SIGN IN</Text></Pressable>
+    <Pressable accessibilityRole="tab" accessibilityState={{selected:mode==='signup'}} accessibilityLabel="Create account" onPress={()=>{setMode('signup');setMessage('');setNeedsConfirmation(false)}} style={[s.mode,mode==='signup'&&{backgroundColor:theme.surface}]}><Text style={[s.modeText,{color:mode==='signup'?theme.accent:theme.muted}]}>CREATE ACCOUNT</Text></Pressable>
    </View>
 
    {mode==='signup'?<>
     <View style={s.intentRow}>
-     <Pressable onPress={()=>setIntent('individual')} style={[s.intent,{borderColor:intent==='individual'?theme.accent:theme.line,backgroundColor:intent==='individual'?theme.accentSoft:theme.surfaceRaised}]}><Text style={[s.intentTitle,{color:theme.ink}]}>Just me</Text><Text style={[s.intentBody,{color:theme.muted}]}>Free consumer account</Text></Pressable>
-     <Pressable onPress={()=>setIntent('family')} style={[s.intent,{borderColor:intent==='family'?theme.accent:theme.line,backgroundColor:intent==='family'?theme.accentSoft:theme.surfaceRaised}]}><Text style={[s.intentTitle,{color:theme.ink}]}>Family</Text><Text style={[s.intentBody,{color:theme.muted}]}>Set up Family after joining</Text></Pressable>
+     <Pressable accessibilityRole="radio" accessibilityState={{selected:intent==='individual'}} accessibilityLabel="Just me, free consumer account" onPress={()=>setIntent('individual')} style={[s.intent,{borderColor:intent==='individual'?theme.accent:theme.line,backgroundColor:intent==='individual'?theme.accentSoft:theme.surfaceRaised}]}><Text style={[s.intentTitle,{color:theme.ink}]}>Just me</Text><Text style={[s.intentBody,{color:theme.muted}]}>Free consumer account</Text></Pressable>
+     <Pressable accessibilityRole="radio" accessibilityState={{selected:intent==='family'}} accessibilityLabel="Family, set up Family after joining" onPress={()=>setIntent('family')} style={[s.intent,{borderColor:intent==='family'?theme.accent:theme.line,backgroundColor:intent==='family'?theme.accentSoft:theme.surfaceRaised}]}><Text style={[s.intentTitle,{color:theme.ink}]}>Family</Text><Text style={[s.intentBody,{color:theme.muted}]}>Set up Family after joining</Text></Pressable>
     </View>
     {intent==='family'?<Text style={[s.intentDisclosure,{color:theme.muted}]}>Choosing Family here does not charge you and does not change your subscription tier. Family benefits activate only through the approved membership purchase path.</Text>:null}
    </>:null}
 
-   <TextInput value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" placeholder="Email" placeholderTextColor={theme.muted} style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}/>
+   <TextInput accessibilityLabel="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" placeholder="Email" placeholderTextColor={theme.muted} style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}/>
    <View style={[s.passwordRow,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
-    <TextInput value={password} onChangeText={setPassword} autoCapitalize="none" autoCorrect={false} autoComplete={mode==='signin'?'password':'new-password'} secureTextEntry={!showPassword} placeholder={mode==='signin'?'Password':'Password · 8+ characters'} placeholderTextColor={theme.muted} style={[s.passwordInput,{color:theme.ink}]}/>
+    <TextInput accessibilityLabel="Password" value={password} onChangeText={setPassword} autoCapitalize="none" autoCorrect={false} autoComplete={mode==='signin'?'password':'new-password'} secureTextEntry={!showPassword} placeholder={mode==='signin'?'Password':'Password · 8+ characters'} placeholderTextColor={theme.muted} style={[s.passwordInput,{color:theme.ink}]}/>
     <Pressable accessibilityRole="button" accessibilityLabel={showPassword?'Hide password':'Show password'} onPress={()=>setShowPassword(v=>!v)} style={[s.show,{backgroundColor:theme.accentSoft}]}><Text style={[s.showText,{color:theme.accent}]}>{showPassword?'HIDE':'SHOW'}</Text></Pressable>
    </View>
 
-   <Pressable disabled={busy} onPress={mode==='signin'?signIn:signUp} style={[s.primary,{backgroundColor:theme.accent},busy&&s.disabled]}><Text style={[s.primaryText,{color:theme.accentText}]}>{busy?'PLEASE WAIT…':mode==='signin'?'SIGN IN':'CREATE ACCOUNT'}</Text></Pressable>
+   <Pressable accessibilityRole="button" accessibilityLabel={mode==='signin'?'Sign in':'Create account'} accessibilityState={{disabled:busy}} disabled={busy} onPress={mode==='signin'?signIn:signUp} style={[s.primary,{backgroundColor:theme.accent},busy&&s.disabled]}><Text style={[s.primaryText,{color:theme.accentText}]}>{busy?'PLEASE WAIT…':mode==='signin'?'SIGN IN':'CREATE ACCOUNT'}</Text></Pressable>
 
-   {needsConfirmation?<Pressable disabled={busy} onPress={resendConfirmation} style={[s.resend,{backgroundColor:theme.accentSoft,borderColor:theme.line},busy&&s.disabled]}><Text style={[s.resendText,{color:theme.accent}]}>RESEND CONFIRMATION EMAIL</Text></Pressable>:null}
+   {needsConfirmation?<Pressable accessibilityRole="button" accessibilityLabel="Resend confirmation email" accessibilityState={{disabled:busy}} disabled={busy} onPress={resendConfirmation} style={[s.resend,{backgroundColor:theme.accentSoft,borderColor:theme.line},busy&&s.disabled]}><Text style={[s.resendText,{color:theme.accent}]}>RESEND CONFIRMATION EMAIL</Text></Pressable>:null}
    {message?<Text accessibilityLiveRegion="polite" style={[s.message,{color:theme.muted}]}>{message}</Text>:null}
   </View>
 
   <Text style={[s.guestNote,{color:theme.muted}]}>Guest access stays useful: discovery, map browsing and restroom details remain available. Kleenest asks you to join only when an action needs an identity, sync, trust attribution or rewards.</Text>
-  <Pressable onPress={()=>router.push('/legal')}><Text style={[s.legal,{color:theme.accent}]}>Terms · Privacy · Community Guidelines</Text></Pressable>
+  <Pressable accessibilityRole="link" accessibilityLabel="Terms, privacy and community guidelines" onPress={()=>router.push('/legal')}><Text style={[s.legal,{color:theme.accent}]}>Terms · Privacy · Community Guidelines</Text></Pressable>
  </ScrollView></SafeAreaView>
 }
 
