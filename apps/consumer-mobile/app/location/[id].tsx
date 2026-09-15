@@ -128,11 +128,14 @@ export default function LocationDetailScreen(){
         : await chooseReviewPhotos(remaining);
       const photos=selected.filter(Boolean).slice(0,remaining) as ReviewPhotoDraft[];
       if(!photos.length)return;
+      const beforeWorld=await getProgressionWorld().catch(()=>null);
       const uploaded=await uploadReviewPhotos(reviewId,photos);
-      captureConsumerCoreLoopEvent('review_photo_added',locationId,{count:uploaded.length,source:'post_submit'});
+      const afterWorld=await getProgressionWorld().catch(()=>null);
+      const xpGain=Math.max(0,Number(afterWorld?.lifetime_xp||0)-Number(beforeWorld?.lifetime_xp||0));
+      captureConsumerCoreLoopEvent('review_photo_added',locationId,{count:uploaded.length,source:'post_submit',progressionXp:xpGain});
       setPhotoRefresh(value=>value+1);
       await refresh();
-      setMessage(`${uploaded.length} photo${uploaded.length===1?'':'s'} added to your review.`);
+      setMessage(`${uploaded.length} photo${uploaded.length===1?'':'s'} added to your verified visit${xpGain?` · +${xpGain} XP`:''}. You can add photo evidence after leaving without losing progression credit.`);
     }catch(error:any){setMessage(friendlyActionError(error,'Photos could not be added to your review.'))}
     finally{setPhotoBusy('')}
   }
