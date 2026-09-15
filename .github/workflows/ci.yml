@@ -71,6 +71,8 @@ jobs:
         run: node scripts/public-marketing-imagery-audit.mjs
       - name: Consumer multi-path check-in
         run: node scripts/consumer-multi-path-checkin-audit.mjs
+      - name: Consumer week in review
+        run: node scripts/consumer-week-in-review-audit.mjs
       - name: Consumer activation loop
         run: node scripts/consumer-activation-loop-audit.mjs
       - name: Consumer bulk migration convergence
