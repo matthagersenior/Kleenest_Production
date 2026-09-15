@@ -13,7 +13,7 @@ set search_path = ''
 as $$
 declare
   v_uid uuid := auth.uid();
-  v_timezone text := pg_catalog.nullif(pg_catalog.btrim(p_timezone),'');
+  v_timezone text := nullif(pg_catalog.btrim(p_timezone),'');
   v_row public.notification_preferences%rowtype;
 begin
   if v_uid is null then raise exception 'Authentication required'; end if;
