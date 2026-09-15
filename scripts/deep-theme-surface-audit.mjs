@@ -149,7 +149,7 @@ requireTokens('Consumer app entry dark handoff','apps/consumer-mobile/app/index.
   '/explore',
 ]);
 requireTokens('Consumer Explore functional-home dark surfaces','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',[
-  'style={[s.searchPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.searchPanel,{top:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.nearbySummary,{backgroundColor:theme.surface,borderColor:theme.line}]}',
 ]);
 requireTokens('Consumer Explore dark controls','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',[
