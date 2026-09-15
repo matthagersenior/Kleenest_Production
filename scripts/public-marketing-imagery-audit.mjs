@@ -15,7 +15,8 @@ for(const file of [
 }
 
 expect(source,/Find clean bathrooms you can actually trust\./,'consumer homepage must lead with clean-bathroom discovery and trust');
-expect(source,/home-discovery\.svg/,'consumer homepage hero must render Kleenest discovery imagery');
+expect(source,/<LiveAppPreview \/>/,'consumer homepage hero must render the live Kleenest product preview');
+expect(source,/Fresh · verified 9 min ago · 4 confirmations/,'consumer homepage hero must show concrete freshness and independent-confirmation evidence');
 expect(source,/home-progress\.svg/,'consumer homepage must render progress and gamification imagery');
 expect(source,/Quests, missions, journeys, challenges and contests/,'consumer homepage must explain usefulness-driven gamification');
 expect(source,/Cleaner restrooms\. Stronger businesses\./,'For Business must lead with the customer/business value proposition');

@@ -94,8 +94,23 @@ if(!filterModal.includes('filterAmenities.map'))throw new Error('Amenity chips m
 if(!filterModal.includes('radiusChoices.map'))throw new Error('Radius controls must move into the filter modal so the map rises on the page.');
 if(!screen.includes('<View pointerEvents="auto" style={[s.selectedPanel'))throw new Error('Selected map-pin panel must own touch events so its close control works above the native map.');
 if(!screen.includes("selectedPanel: { position: 'absolute', left: 9, right: 54, top: 9, bottom: 9, zIndex: 40, elevation: 12"))throw new Error('Selected map-pin panel must stay bounded above the native map interaction surface.');
-if(!screen.includes("close: { minWidth: 72, minHeight: 44, zIndex: 41, elevation: 13"))throw new Error('Selected map-pin close control must preserve an Android-safe touch target and stacking order.');
+if(!screen.includes("close: { minWidth: 38, minHeight: 38, zIndex: 41, elevation: 13"))throw new Error('Selected map-pin close control must stay compact while preserving stacking order; hitSlop supplies the forgiving touch target.');
 if(!screen.includes('hitSlop={12}'))throw new Error('Selected map-pin close control must preserve forgiving hit slop.');
+if(screen.includes('<RestroomSignals item={item} compact />'))throw new Error('Result cards must use compact icon/value signals instead of tall labeled signal pills.');
+for(const token of [
+  '<CompactRestroomSignals item={item} />',
+  "card: { borderRadius: 16, padding: 10",
+  "cardMain: { gap: 4 }",
+  "cardActionRow: { flexDirection: 'row', gap: 5",
+  "primarySmall: { minHeight: 30",
+  "secondarySmall: { minHeight: 30",
+  "close: { minWidth: 38, minHeight: 38",
+  "selectedPanel: { position: 'absolute', left: 9, right: 54, top: 9, bottom: 9",
+  "selectedBodyContent:{gap:4,paddingBottom:0}",
+  "Why trusted?",
+  "trustEvidenceLine(item)",
+])requireToken(screen,token,'Consumer compact Explore card density and trust transparency');
+if(screen.includes("{selected ? 'Selected on map' : 'Tap this card to focus its map pin'}"))throw new Error('Result cards must not spend vertical space on redundant map-selection hint copy.');
 if(screen.includes('Road trip / advanced')||screen.includes('showAdvanced ? ('))throw new Error('Detailed controls must stay in the dismissible filter modal.');
 
 console.log('Consumer adaptive nearby and route-aware restroom discovery authority audit passed.');

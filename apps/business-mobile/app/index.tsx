@@ -144,6 +144,16 @@ export default function BusinessHome(){
    <Link href="/onboarding" style={StyleSheet.flatten([s.panelLink,{color:theme.accent}])}>{onboardingComplete?'Review':'Continue'} →</Link>
   </View>
 
+  <View style={[s.selfServePanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+   <View style={s.selfServeHead}><View style={{flex:1}}><Text style={[s.sectionEyebrow,{color:theme.accent}]}>SELF-SERVE START</Text><Text style={[s.selfServeTitle,{color:theme.ink}]}>From claim to better customer trust.</Text><Text style={[s.panelBody,{color:theme.muted}]}>The fastest setup path uses the same live Business workspace you will operate every day—no separate onboarding dashboard or duplicate data.</Text></View><Text style={[s.selfServeProgress,{color:theme.accent}]}>4 STEPS</Text></View>
+   <View style={s.selfServeSteps}>
+    <Link href="/locations" asChild><Pressable style={StyleSheet.flatten([s.selfServeStep,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}])}><Text style={[s.selfServeNum,{color:theme.accent}]}>1</Text><View style={{flex:1}}><Text style={[s.selfServeStepTitle,{color:theme.ink}]}>Find + claim the location</Text><Text style={[s.selfServeStepBody,{color:theme.muted}]}>Search Kleenest first, preserve canonical community evidence, and request authority.</Text></View><Text style={[s.selfServeArrow,{color:theme.accent}]}>→</Text></Pressable></Link>
+    <Link href="/verification-center" asChild><Pressable style={StyleSheet.flatten([s.selfServeStep,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}])}><Text style={[s.selfServeNum,{color:theme.accent}]}>2</Text><View style={{flex:1}}><Text style={[s.selfServeStepTitle,{color:theme.ink}]}>Verify business authority</Text><Text style={[s.selfServeStepBody,{color:theme.muted}]}>Complete the simple ownership/manager verification path without rewriting community truth.</Text></View><Text style={[s.selfServeArrow,{color:theme.accent}]}>→</Text></Pressable></Link>
+    {caps?.qr?<Link href="/qr-studio" asChild><Pressable style={StyleSheet.flatten([s.selfServeStep,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}])}><Text style={[s.selfServeNum,{color:theme.accent}]}>3</Text><View style={{flex:1}}><Text style={[s.selfServeStepTitle,{color:theme.ink}]}>Launch QR engagement</Text><Text style={[s.selfServeStepBody,{color:theme.muted}]}>Turn visits into fresh verification, feedback and attributable engagement.</Text></View><Text style={[s.selfServeArrow,{color:theme.accent}]}>→</Text></Pressable></Link>:<Link href="/tools" asChild><Pressable style={StyleSheet.flatten([s.selfServeStep,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}])}><Text style={[s.selfServeNum,{color:theme.accent}]}>3</Text><View style={{flex:1}}><Text style={[s.selfServeStepTitle,{color:theme.ink}]}>Open the Action Center</Text><Text style={[s.selfServeStepBody,{color:theme.muted}]}>Use the actions available to this plan and role from one searchable surface.</Text></View><Text style={[s.selfServeArrow,{color:theme.accent}]}>→</Text></Pressable></Link>}
+    <Link href={caps?.trustOperations?"/trust-operations":"/reviews"} asChild><Pressable style={StyleSheet.flatten([s.selfServeStep,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}])}><Text style={[s.selfServeNum,{color:theme.accent}]}>4</Text><View style={{flex:1}}><Text style={[s.selfServeStepTitle,{color:theme.ink}]}>Monitor + recover trust</Text><Text style={[s.selfServeStepBody,{color:theme.muted}]}>See what customers are reporting, respond, resolve issues and trigger reverification.</Text></View><Text style={[s.selfServeArrow,{color:theme.accent}]}>→</Text></Pressable></Link>
+   </View>
+  </View>
+
   <View style={[s.portfolioPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
    <View style={s.portfolioHeader}>
     <View style={{flex:1}}>
@@ -262,6 +272,16 @@ const s=StyleSheet.create({
  panelTitle:{fontSize:15,lineHeight:19,fontWeight:'900',color:'#173528'},
  panelBody:{fontSize:12,lineHeight:18,color:'#65756b'},
  panelLink:{fontSize:11,fontWeight:'900',color:'#123a2a',paddingLeft:4},
+ selfServePanel:{borderRadius:20,borderWidth:1,padding:14,gap:11},
+ selfServeHead:{flexDirection:'row',alignItems:'flex-start',gap:10},
+ selfServeTitle:{fontSize:20,lineHeight:24,fontWeight:'900',marginTop:3},
+ selfServeProgress:{fontSize:9,fontWeight:'900',letterSpacing:1},
+ selfServeSteps:{gap:7},
+ selfServeStep:{minHeight:72,borderWidth:1,borderRadius:14,padding:11,flexDirection:'row',alignItems:'center',gap:10},
+ selfServeNum:{fontSize:16,fontWeight:'900',width:20,textAlign:'center'},
+ selfServeStepTitle:{fontSize:13,fontWeight:'900'},
+ selfServeStepBody:{fontSize:10,lineHeight:15,marginTop:2},
+ selfServeArrow:{fontSize:17,fontWeight:'900'},
  portfolioPanel:{backgroundColor:'#182c23',borderRadius:22,padding:16,gap:8},
  portfolioHeader:{flexDirection:'row',alignItems:'center',gap:10},
  portfolioEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.2,color:'#adc9ba'},

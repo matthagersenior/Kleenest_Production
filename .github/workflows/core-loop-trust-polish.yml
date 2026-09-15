@@ -1,0 +1,27 @@
+name: Core loop trust polish
+
+on:
+  pull_request:
+    paths:
+      - 'apps/consumer-mobile/components/MarketingSitePro.tsx'
+      - 'apps/consumer-mobile/components/RestroomSignals.tsx'
+      - 'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx'
+      - 'apps/consumer-mobile/app/discover.tsx'
+      - 'apps/business-mobile/app/index.tsx'
+      - 'scripts/core-loop-trust-polish-audit.mjs'
+      - 'scripts/map-freshness-heat-ring-audit.mjs'
+      - 'scripts/consumer-adaptive-route-search-audit.mjs'
+      - '.github/workflows/core-loop-trust-polish.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/core-loop-trust-polish-audit.mjs
+      - run: node scripts/map-freshness-heat-ring-audit.mjs
+      - run: node scripts/consumer-adaptive-route-search-audit.mjs
