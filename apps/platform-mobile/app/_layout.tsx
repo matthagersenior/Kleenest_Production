@@ -1,7 +1,7 @@
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, AppState, useColorScheme, View } from 'react-native';
 import { getKleenestSupabaseClient, loadKleenestThemeMode, resolveKleenestTheme, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
 
 export default function Layout(){
@@ -33,6 +33,25 @@ export default function Layout(){
     if(!ready)return;
     if(!signedIn&&!onAuthRoute)router.replace('/auth');
   },[ready,signedIn,onAuthRoute,router]);
+
+  useEffect(()=>{
+    if(!ready||!signedIn)return;
+    let active=true;
+    let syncing=false;
+    const sync=async()=>{
+      if(!active||syncing)return;
+      syncing=true;
+      try{
+        const{syncRolePushRegistration}=await import('../services/push');
+        await syncRolePushRegistration();
+      }catch{
+        // Registration is self-healing and non-blocking; Messaging shows repair state when needed.
+      }finally{syncing=false}
+    };
+    void sync();
+    const subscription=AppState.addEventListener('change',state=>{if(state==='active')void sync()});
+    return()=>{active=false;subscription.remove()};
+  },[ready,signedIn]);
 
   if(!ready)return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:theme.canvas}}><ActivityIndicator size="large"/></View>;
 
