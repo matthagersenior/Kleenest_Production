@@ -26,7 +26,7 @@ test('Installation Center click-through and release assets',async({page,request}
   await expect(page.locator('body')).toContainText(/Install link copied|Share this install link|Install link shared/i);
 
   await page.goto(BASE+'?app=1',{waitUntil:'domcontentloaded'});
-  await expect(page.locator('body')).toContainText(/YOUR KLEENEST|Address, school, workplace, city or brand|Search this area/i,{timeout:30000});
+  await expect(page.locator('body')).toContainText(/Nearby businesses & bathrooms|Address, school, workplace, city or brand|Search this area/i,{timeout:30000});
 
   for(const route of ['install/','for-you/','for-business/','trust/']){
     const direct=await request.get(BASE+route,{failOnStatusCode:false});
