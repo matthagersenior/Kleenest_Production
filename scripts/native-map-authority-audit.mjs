@@ -10,11 +10,11 @@ if(!failures.length){
  if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Explore entry must resolve to the canonical adaptive Explore screen.');
  if(!pkg.includes('@maplibre/maplibre-react-native'))failures.push('Native consumer app must depend on MapLibre React Native.');
  if(!config.includes("'@maplibre/maplibre-react-native'"))failures.push('Expo config must register the MapLibre native config plugin.');
- for(const token of ['Find a trusted bathroom.','Locate','Address, school, workplace, city or brand','What matters on this stop?','Start directions','Add to route','BEST NEXT DECISION'])if(!explore.includes(token))failures.push(`Bathroom-first rich Explore missing ${token}.`);
+ for(const token of ['Search this area','Swipe up for results','Address, school, workplace, city or brand','What matters on this stop?','Start directions','Add to route','BEST NEXT DECISION'])if(!explore.includes(token))failures.push(`Bathroom-first map-first Explore missing ${token}.`);
  if(!explore.includes("import { Camera, Map, Marker }")||!explore.includes('<Map ')||!explore.includes('<Camera'))failures.push('Explore must render MapLibre.');
  if(!explore.includes('tile.openstreetmap.org')||!exploreCompact.includes("type:'raster'")&&!exploreCompact.includes('type:"raster"'))failures.push('Explore must use canonical OpenStreetMap raster tiles.');
  if(!explore.includes('<Marker')||/\bcluster\s*=/.test(explore))failures.push('Nearby restroom markers must stay directly actionable and unclustered.');
- const mapHeight=exploreCompact.match(/mapFrame:\{height:(\d+)/);if(!mapHeight||Number(mapHeight[1])<220||Number(mapHeight[1])>250)failures.push('Explore map must remain substantial while reserving a meaningful result viewport (220-250px).');
+ if(!exploreCompact.includes('height:Math.max(440,windowHeight-96)')||!exploreCompact.includes('mapFrame:{minHeight:440'))failures.push('Explore functional home must devote the first viewport to a device-sized map with a safe minimum height.');
  if(/<Map[^>]*onPress=\{\(\)=>setSelectedId\(["']{2}\)\}/.test(exploreCompact))failures.push('Map background press must not swallow or immediately clear marker selection.');
  if(!explore.includes('pointerEvents="none"')||!explore.includes('pointerEvents="box-none"'))failures.push('Explore overlays must preserve map-pin touch access.');
  if(!explore.includes('Close selected location')||!explore.includes('Full details'))failures.push('Selected map details must be dismissible and link to full location details.');
