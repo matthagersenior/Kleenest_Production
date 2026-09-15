@@ -321,9 +321,6 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         </Text>
       </Pressable>
       <View style={s.cardActionRow}>
-        <Pressable accessibilityRole="button" accessibilityLabel={item.active_check_in?'Already checked in at this location':checkInBusy?'Checking your location':item.visit_verification_available?'Verify your detected visit at this location':'Check in at this location'} accessibilityState={{disabled:Boolean(item.active_check_in)||checkInBusy,busy:checkInBusy}} disabled={Boolean(item.active_check_in)||checkInBusy} style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},(item.active_check_in||checkInBusy)&&s.disabled]} onPress={onCheckIn}>
-          <Text style={[s.secondaryText,{color:theme.accent}]}>{item.active_check_in?'Checked in ✓':checkInBusy?'Checking location…':item.visit_verification_available?'Verify visit':'Check in'}</Text>
-        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Start directions to this location"
@@ -331,7 +328,10 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
           style={[s.primarySmall, s.cardAction, !hasCoordinates(item) && s.disabled]}
           onPress={onDirections}
         >
-          <Text style={[s.primaryText,{color:theme.accentText}]}>Start navigation</Text>
+          <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={item.active_check_in?'Already checked in at this location':checkInBusy?'Checking your location':item.visit_verification_available?'Verify your detected visit at this location':'Verify that I am at this location'} accessibilityState={{disabled:Boolean(item.active_check_in)||checkInBusy,busy:checkInBusy}} disabled={Boolean(item.active_check_in)||checkInBusy} style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},(item.active_check_in||checkInBusy)&&s.disabled]} onPress={onCheckIn}>
+          <Text style={[s.secondaryText,{color:theme.accent}]}>{item.active_check_in?'Checked in ✓':checkInBusy?'Checking location…':item.visit_verification_available?'Verify visit':"I'm here"}</Text>
         </Pressable>
         <Pressable accessibilityRole="button" style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={onAddToRoute}>
           <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
@@ -1216,9 +1216,6 @@ export default function AdaptiveExploreScreen() {
                 {selected.network?.network_verified&&!selected.network?.business_claimed?<Text style={[s.networkSelectedLine,{color:theme.accent}]}>K✓ Verified by the Kleenest Network · {networkEvidenceSummary(selected.network)}</Text>:null}
                 <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
                 <View style={s.actionRow}>
-                  <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking your location':selected.visit_verification_available?'Verify your detected visit at selected location':'Check in at selected location'} accessibilityState={{disabled:Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking',busy:checkInFeedback[idOf(selected)]?.status==='checking'}} disabled={Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking'} style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},(selected.active_check_in||checkInFeedback[idOf(selected)]?.status==='checking')&&s.disabled]} onPress={() => void checkIn(selected)}>
-                    <Text style={[s.secondaryText,{color:theme.accent}]}>{selected.active_check_in?'Checked in ✓':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking location…':selected.visit_verification_available?'Verify visit':'Check in'}</Text>
-                  </Pressable>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Start directions to this location"
@@ -1226,7 +1223,10 @@ export default function AdaptiveExploreScreen() {
                     disabled={!hasCoordinates(selected)}
                     onPress={() => void directions(selected)}
                   >
-                    <Text style={[s.primaryText,{color:theme.accentText}]}>Start navigation</Text>
+                    <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
+                  </Pressable>
+                  <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking your location':selected.visit_verification_available?'Verify your detected visit at selected location':'Verify that I am at selected location'} accessibilityState={{disabled:Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking',busy:checkInFeedback[idOf(selected)]?.status==='checking'}} disabled={Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking'} style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},(selected.active_check_in||checkInFeedback[idOf(selected)]?.status==='checking')&&s.disabled]} onPress={() => void checkIn(selected)}>
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>{selected.active_check_in?'Checked in ✓':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking location…':selected.visit_verification_available?'Verify visit':"I'm here"}</Text>
                   </Pressable>
                   <Pressable style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => addToRoute(selected)}>
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
@@ -1238,7 +1238,7 @@ export default function AdaptiveExploreScreen() {
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
                   </Pressable>
                 </View>
-                <CheckInStatus feedback={checkInFeedback[idOf(selected)]} onReview={() => router.push(`/location/${idOf(selected)}`)} />
+                <CheckInStatus feedback={checkInFeedback[idOf(selected)]} onReview={() => router.push({pathname:'/location/[id]',params:{id:idOf(selected),review:'1'}})} />
               </View>
             ) : null}
           </View>
@@ -1272,7 +1272,7 @@ export default function AdaptiveExploreScreen() {
               onAddToRoute={() => addToRoute(item)}
               onKnow={() => contributeKnowledge(item)}
               onDetails={() => router.push(`/location/${idOf(item)}`)}
-              onReview={() => router.push(`/location/${idOf(item)}`)}
+              onReview={() => router.push({pathname:'/location/[id]',params:{id:idOf(item),review:'1'}})}
               route={mode === 'route' ? route : null}
               requestedAmenities={selectedAmenityNames}
               checkInFeedback={checkInFeedback[idOf(item)]}
