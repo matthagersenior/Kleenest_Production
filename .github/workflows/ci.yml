@@ -20,6 +20,22 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require PR branch current with main
+        if: github.event_name == 'pull_request'
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          git fetch --no-tags origin "$PR_HEAD_SHA"
+          MAIN_SHA="$(git rev-parse origin/main)"
+          if ! git merge-base --is-ancestor "$MAIN_SHA" "$PR_HEAD_SHA"; then
+            echo "::error title=PR branch behind main::Update this PR branch onto current main before merge. main=$MAIN_SHA head=$PR_HEAD_SHA"
+            exit 1
+          fi
+          echo "PR head contains current main: $MAIN_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
