@@ -26,7 +26,7 @@ if(!failures.length){
  const discoverySurface=`${explore}\n${adaptiveExplore}`;
 
  for(const token of ['Redirect','/explore','MarketingHome','useConsumerWebExperience'])if(!home.includes(token))failures.push(`App entry activation hierarchy missing ${token}.`);
- for(const token of ['organizeDiscoveryRows','Search this area','Swipe up for results','SponsoredSlot surface="maps"'])if(!adaptiveExplore.includes(token))failures.push(`Explore functional-home activation missing ${token}.`);
+ for(const token of ['organizeDiscoveryRows','Search this area','Results are below','resultsPeek','SponsoredSlot surface="maps"'])if(!adaptiveExplore.includes(token))failures.push(`Explore functional-home activation missing ${token}.`);
  for(const token of ["kind:'find_bathroom'","kind:'check_in'","cta:'Nearby or search'","kind:'scan_qr'","route:'/discover'"])if(!heroRelevance.includes(token))failures.push(`Organic relevance policy missing ${token}.`);
  if(home.includes('Scan QR to check in or review')||heroRelevance.includes('Scan QR to check in or review'))failures.push('Consumer activation hierarchy must keep regular check-in separate from QR proof.');
  for(const token of ['resolveConsumerSearchLocation','looksLikeAddressOrArea','searchAreaOrigin','searched-area-marker'])if(!adaptiveExplore.includes(token))failures.push(`Address-origin Explore activation missing ${token}.`);
