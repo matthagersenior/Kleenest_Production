@@ -91,6 +91,8 @@ jobs:
         run: node scripts/native-consumer-recovery-audit.mjs
       - name: Consumer Google authentication
         run: node scripts/native-google-auth-audit.mjs
+      - name: Consumer native Home auth reactivity
+        run: node scripts/consumer-native-home-auth-reactivity-audit.mjs
       - name: Consumer APK convergence
         run: node scripts/native-consumer-apk-convergence-audit.mjs
       - name: Native device readiness
