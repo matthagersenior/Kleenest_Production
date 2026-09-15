@@ -1,1 +1,2 @@
 consumer-native-startup-fix-2026-09-13
+2026-09-15 synchronized native-family rebuild after consumer dependency drift
