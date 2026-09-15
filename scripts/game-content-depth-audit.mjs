@@ -5,7 +5,7 @@ const modesPath='apps/consumer-mobile/services/gameModes.ts';
 const source=fs.readFileSync(modesPath,'utf8');
 const migrations=fs.readdirSync('supabase/migrations').sort().map(name=>fs.readFileSync('supabase/migrations/'+name,'utf8')).join('\n');
 const latestGameAuthority=fs.readFileSync('supabase/migrations/20260913192500_game_center_score_records.sql','utf8');
-const challengeStatusFix=fs.readFileSync('supabase/migrations/20260915162500_fix_game_challenge_status_ambiguity.sql','utf8');
+const challengeStatusFix=fs.readFileSync('supabase/migrations/20260915162557_fix_game_challenge_status_ambiguity.sql','utf8');
 
 const choiceModes=['evidence_tap','trust_quiz','rapid_fire','relay','strategy','amenity_sprint','route_puzzle','ranking','detective','multiplayer_trust'];
 const gameDefs=[...source.matchAll(/\{code:'([^']+)',name:'([^']+)'[^\n]*?mode:'([^']+)'[^\n]*?rounds:(\d+)/g)]
