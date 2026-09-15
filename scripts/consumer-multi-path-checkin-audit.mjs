@@ -5,13 +5,15 @@ const read=(path)=>fs.readFileSync(path,'utf8');
 const expect=(source,token,label)=>{if(!source.includes(token))failures.push(label);};
 
 const home=read('apps/consumer-mobile/app/index.tsx');
+const heroRelevance=read('apps/consumer-mobile/services/heroRelevance.ts');
 for(const [token,label] of [
-  ['accessibilityLabel="Check in at a restroom"','consumer Home must expose a first-class check-in action'],
-  ['>CHECK IN</Text>','consumer Home must label check-in independently of QR'],
-  ['>Nearby or search</Text>','consumer Home check-in must lead users toward GPS/search location selection'],
-  ['accessibilityLabel="Scan a Kleenest QR code"','consumer Home must keep QR as a separate optional verification path'],
-]) expect(home,token,label);
-if(home.includes('Scan QR to check in or review')) failures.push('consumer Home must not teach users that QR is the general check-in entry point');
+  ["kind:'check_in'",'consumer Home must expose a first-class organic check-in action'],
+  ["eyebrow:'CHECK IN'",'consumer Home must label check-in independently of QR'],
+  ["cta:'Nearby or search'",'consumer Home check-in must lead users toward GPS/search location selection'],
+  ["kind:'scan_qr'",'consumer Home must keep QR as a separate optional verification path'],
+  ["QR stays optional proof—not the general check-in path.",'consumer Home must explain QR as optional proof rather than general check-in'],
+]) expect(heroRelevance,token,label);
+if(home.includes('Scan QR to check in or review')||heroRelevance.includes('Scan QR to check in or review')) failures.push('consumer Home must not teach users that QR is the general check-in entry point');
 
 const explore=read('apps/consumer-mobile/features/AdaptiveExploreScreen.tsx');
 for(const [token,label] of [
