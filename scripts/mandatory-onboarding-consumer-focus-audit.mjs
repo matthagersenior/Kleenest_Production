@@ -16,7 +16,9 @@ const required=[
   'apps/fleet-mobile/services/onboarding.ts',
   'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
   'apps/consumer-mobile/services/locationResolver.ts',
-  'apps/consumer-mobile/app/index.tsx'
+  'apps/consumer-mobile/app/index.tsx',
+  'apps/consumer-mobile/services/heroRelevance.ts',
+  'apps/consumer-mobile/components/RelevanceHeroCarousel.tsx'
 ];
 for(const file of required) if(!fs.existsSync(path.join(root,file))) failures.push('missing '+file);
 
@@ -59,7 +61,9 @@ for(const token of ['resolveConsumerSearchLocation','looksLikeAddressOrArea','se
 if(explore.includes('Location.geocodeAsync')) failures.push('Explore address-origin search must not regress to device geocoding.');
 
 const consumerHome=read('apps/consumer-mobile/app/index.tsx');
-for(const token of ['FIND A BATHROOM','CHECK IN','Nearby or search','QR PROOF','homePrimaryCta']) if(!consumerHome.includes(token)) failures.push('Consumer Home focal hierarchy missing '+token);
+for(const token of ['RelevanceHeroCarousel','buildConsumerHomeHeroes','SponsoredSlot surface="home"']) if(!consumerHome.includes(token)) failures.push('Consumer Home focal hierarchy missing '+token);
+const heroRelevance=read('apps/consumer-mobile/services/heroRelevance.ts');
+for(const token of ['find_bathroom','review_ready','fresh_kleenest','saved_choice','top_ranked','next_objective','scan_qr']) if(!heroRelevance.includes(token)) failures.push('Consumer Home organic relevance missing '+token);
 if(consumerHome.includes('Scan QR to check in or review')) failures.push('Consumer Home focal hierarchy must keep regular check-in separate from QR proof.');
 
 if(failures.length){
