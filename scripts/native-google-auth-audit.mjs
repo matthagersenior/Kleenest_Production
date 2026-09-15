@@ -24,7 +24,7 @@ if(consumer.includes("Linking.createURL('/profile'")||consumer.includes('Linking
 if(!consumer.includes("Linking.createURL('profile'")&&!consumer.includes('Linking.createURL("profile"'))failures.push("Consumer native OAuth callback must use Linking.createURL('profile', ...).");
 if(!consumer.includes('isTripleSlashed:false')&&!consumerCompact.includes('isTripleSlashed:false'))failures.push('Consumer native OAuth callback must preserve the non-triple-slashed callback contract.');
 if(!consumer.includes('/Kleenest_Production/profile/'))failures.push('Consumer web OAuth must return to the materialized GitHub Pages profile callback.');
-if(!consumer.includes("router.replace('/')")&&!consumer.includes('router.replace("/")'))failures.push('Consumer successful authentication must return to Home instead of leaving the user on Profile.');
+if(!consumer.includes("router.replace('/home")&&!consumer.includes('router.replace("/home'))failures.push('Consumer successful authentication must return to the signed-in Home surface instead of leaving the user on Profile.');
 
 const operatorAuth=[
   ['Owner','apps/platform-mobile/app/auth.tsx','kleenest-owner'],
