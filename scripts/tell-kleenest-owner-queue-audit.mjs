@@ -23,6 +23,8 @@ requireText(migration,"owner_queue='incident'",'incident queue separation');
 
 requireText('apps/consumer-mobile/services/betaReporting.ts',"feedback_kind",'feedback fingerprint input');
 requireText('apps/consumer-mobile/services/betaReporting.ts',"sentiment",'sentiment fingerprint input');
+requireText('apps/consumer-mobile/components/BetaReportButton.tsx',"feedback_kind:'pulse'",'one-tap positive feedback routing');
+requireText('apps/consumer-mobile/components/BetaReportButton.tsx',"pulse_only:true",'one-tap positive feedback provenance');
 
 requireText('packages/mobile-core/src/betaReporting.ts',"FeedbackOwnerQueue",'mobile-core queue type');
 requireText('packages/mobile-core/src/betaReporting.ts',"listOwnerFeedbackQueue",'mobile-core queue reader');
