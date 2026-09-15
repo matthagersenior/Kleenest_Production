@@ -20,7 +20,7 @@ if(!TaskManager.isTaskDefined(CONSUMER_LIVE_NETWORK_TASK)){
     if(!auth.user)return;
     const current=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Balanced}).catch(()=>null);
     if(current){
-      await client.rpc('consumer_presence_heartbeat',{p_lat:current.coords.latitude,p_lng:current.coords.longitude}).catch(()=>null);
+      try{await client.rpc('consumer_presence_heartbeat',{p_lat:current.coords.latitude,p_lng:current.coords.longitude})}catch{}
     }
     if(eventType===Location.GeofencingEventType.Exit)return;
     await client.rpc('create_gps_geofence_notification',{
