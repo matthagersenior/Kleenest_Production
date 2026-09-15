@@ -12,6 +12,7 @@ import { relayOperatorOAuthCallback } from '../services/operatorOAuthRelay';
 import { useConsumerWebExperience } from '../services/webExperience';
 import BetaReportButton from '../components/BetaReportButton';
 import { flushQueuedBetaReports,recordBetaBreadcrumb } from '../services/betaReporting';
+import { captureConsumerCoreLoopEvent } from '../services/consumerTelemetry';
 
 const operatorOAuthRelaying=relayOperatorOAuthCallback();
 
@@ -47,6 +48,7 @@ export default function RootLayout() {
     const unsubscribe=subscribeKleenestTheme(mode=>{if(active)setThemeMode(mode)});
     return()=>{active=false;unsubscribe()};
   },[]);
+  useEffect(()=>{captureConsumerCoreLoopEvent('app_open',null,{surface:Platform.OS==='web'?'web':'native'})},[]);
   useEffect(()=>{if(!publicWeb)recordBetaBreadcrumb('route',pathname)},[pathname,publicWeb]);
   useEffect(() => {
     if(operatorOAuthRelaying)return;
@@ -59,7 +61,7 @@ export default function RootLayout() {
     return () => {active=false;subscription.remove();appState.remove()};
   }, []);
   if(operatorOAuthRelaying)return null;
-  const tabs=<Tabs screenOptions={{
+  const tabs=<Tabs initialRouteName={Platform.OS==='web'?'index':'explore'} screenOptions={{
     headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{fontWeight:'900',color:theme.ink},
     tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarStyle:publicWeb?({display:'none'} as any):{height:68,paddingTop:6,paddingBottom:8,backgroundColor:theme.surface,borderTopColor:theme.line},tabBarLabelStyle:{fontWeight:'900',fontSize:10},
   }}>
