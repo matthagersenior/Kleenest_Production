@@ -161,7 +161,7 @@ requireTokens('Consumer Early Access theme selector','apps/consumer-mobile/app/p
 requireTokens('Seasonal progression theme core','packages/mobile-core/src/theme.ts',[
   "'fall'","'halloween'","'thanksgiving'","'christmas'",
   'KLEENEST_SEASONAL_THEME_MODES','seasonalEditions',
-  "canvas:'#0b0710'","canvas:'#07130f'",
+  "canvas:'#050208'","canvas:'#07130f'",
 ]);
 requireTokens('Consumer seasonal entitlement selector','apps/consumer-mobile/app/preferences.tsx',[
   'getProgressionRewards','allowedSeasonal','visibleThemeOptions','isKleenestSeasonalThemeMode','UNLOCKED ·',
