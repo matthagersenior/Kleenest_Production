@@ -13,6 +13,8 @@ const ARENA_LABEL:Record<string,string>={
  restroom_relay:'RELAY RUN',stall_strategy:'EVIDENCE BUDGET',sink_sprint:'SPEED RUN',route_to_relief:'ROUTE BOARD',
  review_rater:'RANKING ROOM',evidence_detective:'CASE FILE',amenity_architect:'BUILD LAB',cleanliness_clash:'TRUST BATTLE',
 };
+function friendlyGameCenterError(error:any,fallback:string){const detail=String(error?.message||'').trim();if(!detail)return fallback;const internal=/column reference|ambiguous|SQLSTATE|PGRST|schema cache|relation .* does not exist|function .* does not exist|operator does not exist|violates .*constraint|invalid input syntax|permission denied|syntax error/i.test(detail);return internal||detail.length>160?fallback:detail;}
+
 const MODE_PROMISE:Record<string,string>={
  evidence_tap:'Protect a 3-strike run and build a sweep combo.',
  memory:'Beat your move count by matching conditions to proof.',
@@ -37,11 +39,11 @@ export default function GamesHub(){
   try{
    const[d,o,cg,{data:{user}}]=await Promise.all([getMobileProgressionDashboard(),getProgressionOverviewV2().catch(()=>({})),listGameChallenges(null,30),getKleenestSupabaseClient().auth.getUser()]);
    setDashboard(d);setOverview(o);setChallenges(cg);setUserId(user?.id||'');
-  }catch(error:any){setMessage(error?.message||'Arcade data could not be loaded.')}
+  }catch(error:any){setMessage(friendlyGameCenterError(error,'Community matches could not load right now. Your Game Center is still available.'))}
  }
  useEffect(()=>{let active=true;void loadKleenestThemeMode().then(mode=>{if(active)setThemeMode(mode)});const unsubscribe=subscribeKleenestTheme(mode=>{if(active)setThemeMode(mode)});return()=>{active=false;unsubscribe()}},[]);
  useEffect(()=>{void load()},[]);
- async function respond(id:string,accept:boolean){try{await respondGameChallenge(id,accept);setMessage(accept?'Challenge accepted.':'Challenge declined.');await load()}catch(error:any){setMessage(error?.message||'Challenge could not be updated.')}}
+ async function respond(id:string,accept:boolean){try{await respondGameChallenge(id,accept);setMessage(accept?'Challenge accepted.':'Challenge declined.');await load()}catch(error:any){setMessage(friendlyGameCenterError(error,'Challenge could not be updated.'))}}
  const xp=Number(overview?.lifetime_xp??dashboard?.points??0),division=divisionForXp(xp),next=nextDivisionForXp(xp),pct=divisionProgress(xp);
  const groups=useMemo(()=>[
   {title:'FAST + REPLAYABLE',items:GAME_DEFINITIONS.filter(g=>['rapid_fire','amenity_sprint','evidence_tap'].includes(g.mode))},
