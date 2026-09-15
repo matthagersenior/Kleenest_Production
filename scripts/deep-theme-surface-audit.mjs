@@ -147,7 +147,7 @@ requireTokens('Consumer Preferences dark forms','apps/consumer-mobile/app/prefer
 
 requireTokens('Early Access theme core','packages/mobile-core/src/theme.ts',[
   "'early-access'",
-  "canvas:'#070b17'",
+  "canvas:'#030712'",
   "accent:'#5de2c2'",
   "earlyAccessAccents",
 ]);
