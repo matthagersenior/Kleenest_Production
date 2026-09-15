@@ -14,6 +14,7 @@ const required=[
   'apps/consumer-mobile/services/sponsorship.ts',
   'apps/consumer-mobile/components/SponsoredSlot.tsx',
   'apps/consumer-mobile/app/index.tsx',
+  'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
   'apps/platform-mobile/app/relevance.tsx',
   'apps/platform-mobile/services/ownerAdmin.ts',
   'apps/platform-mobile/app/_layout.tsx',
@@ -30,6 +31,7 @@ if(!failures.length){
   const carousel=read('apps/consumer-mobile/components/RelevanceHeroCarousel.tsx');
   const sponsored=read('apps/consumer-mobile/components/SponsoredSlot.tsx');
   const home=read('apps/consumer-mobile/app/index.tsx');
+  const explore=read('apps/consumer-mobile/features/AdaptiveExploreScreen.tsx');
   const owner=read('apps/platform-mobile/app/relevance.tsx');
   const ownerService=read('apps/platform-mobile/services/ownerAdmin.ts');
   const ownerLayout=read('apps/platform-mobile/app/_layout.tsx');
@@ -47,7 +49,8 @@ if(!failures.length){
   if(!carousel.includes('pagingEnabled')||!carousel.includes('dotIndicators')||!carousel.includes('onMomentumScrollEnd'))failures.push('Organic hero carousel must support swipe paging and moving dot indicators.');
   if(carousel.includes('SponsoredSlot'))failures.push('Sponsored content must not render inside the organic hero carousel.');
 
-  for(const token of ['RelevanceHeroCarousel','buildConsumerHomeHeroes','SponsoredSlot surface="home"'])if(!home.includes(token))failures.push(`Consumer Home missing relevance/sponsorship separation: ${token}`);
+  for(const token of ['Redirect','/explore','MarketingHome'])if(!home.includes(token))failures.push(`Consumer app entry missing Explore-first boundary: ${token}`);
+  if(!explore.includes('SponsoredSlot surface="maps"'))failures.push('Explore functional home must keep paid placement outside organic discovery ranking.');
   for(const token of ['Paid placement','does not change Kleenest trust','Sponsored'])if(!sponsored.includes(token))failures.push(`Sponsored card disclosure missing: ${token}`);
 
   for(const token of ['Organic hero policies','Sponsored inventory','Create sponsored campaign','Hard product boundaries'])if(!owner.includes(token))failures.push(`KleenestOS relevance surface missing control: ${token}`);
