@@ -113,9 +113,9 @@ export default function BetaReportButton({route}:{route:string}){
     >
       <Text style={[s.fabText,{color:theme.accentText}]}>✦ Tell Kleenest</Text>
     </Pressable>
-    <Modal transparent visible={visible} animationType="slide" onRequestClose={()=>setVisible(false)}>
+    <Modal transparent visible={visible} animationType="slide" accessibilityViewIsModal onRequestClose={()=>setVisible(false)}>
       <View style={s.overlay}>
-        <Pressable style={StyleSheet.absoluteFill} accessibilityLabel="Close Tell Kleenest" onPress={()=>setVisible(false)}/>
+        <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} accessibilityLabel="Close Tell Kleenest" onPress={()=>setVisible(false)}/>
         <View style={[s.sheet,{backgroundColor:theme.surface,borderColor:theme.line}]}>
           <View style={s.head}>
             <View style={{flex:1,gap:3}}>
