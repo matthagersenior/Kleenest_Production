@@ -61,10 +61,11 @@ for(const token of ['resolveConsumerSearchLocation','looksLikeAddressOrArea','se
 if(explore.includes('Location.geocodeAsync')) failures.push('Explore address-origin search must not regress to device geocoding.');
 
 const consumerHome=read('apps/consumer-mobile/app/index.tsx');
-for(const token of ['RelevanceHeroCarousel','buildConsumerHomeHeroes','SponsoredSlot surface="home"']) if(!consumerHome.includes(token)) failures.push('Consumer Home focal hierarchy missing '+token);
+for(const token of ['Redirect','/explore','MarketingHome','useConsumerWebExperience']) if(!consumerHome.includes(token)) failures.push('Consumer app entry missing Explore-first behavior '+token);
+for(const token of ['SponsoredSlot surface="maps"','Search this area','Swipe up for results','organizeDiscoveryRows']) if(!explore.includes(token)) failures.push('Explore functional home focal hierarchy missing '+token);
 const heroRelevance=read('apps/consumer-mobile/services/heroRelevance.ts');
 for(const token of ['find_bathroom','check_in','review_ready','fresh_kleenest','saved_choice','top_ranked','next_objective','scan_qr']) if(!heroRelevance.includes(token)) failures.push('Consumer Home organic relevance missing '+token);
-if(consumerHome.includes('Scan QR to check in or review')) failures.push('Consumer Home focal hierarchy must keep regular check-in separate from QR proof.');
+if(consumerHome.includes('Scan QR to check in or review')) failures.push('Consumer app entry must keep regular check-in separate from QR proof.');
 
 if(failures.length){
   console.error('Mandatory onboarding / Consumer focus gate failed:');
