@@ -6,8 +6,8 @@ const required=[
   'supabase/migrations/20260831044500_mobile_notification_preferences_authority.sql',
   'supabase/migrations/20260831045500_notification_category_preference_enforcement.sql',
   'supabase/migrations/20260905165500_notification_preferences_v2_contract.sql',
-  'supabase/migrations/20260915171800_notification_quiet_hours_controls.sql',
-  'supabase/migrations/20260915171900_notification_quiet_hours_enforcement.sql',
+  'supabase/migrations/20260915195000_notification_quiet_hours_controls.sql',
+  'supabase/migrations/20260915195100_notification_quiet_hours_enforcement.sql',
 ];
 const failures=[];
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing notification preference authority file: ${file}`);
