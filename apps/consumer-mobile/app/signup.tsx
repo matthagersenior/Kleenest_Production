@@ -132,10 +132,13 @@ export default function SignupScreen(){
     <Pressable onPress={()=>{setMode('signup');setMessage('');setNeedsConfirmation(false)}} style={[s.mode,mode==='signup'&&{backgroundColor:theme.surface}]}><Text style={[s.modeText,{color:mode==='signup'?theme.accent:theme.muted}]}>CREATE ACCOUNT</Text></Pressable>
    </View>
 
-   {mode==='signup'?<View style={s.intentRow}>
-    <Pressable onPress={()=>setIntent('individual')} style={[s.intent,{borderColor:intent==='individual'?theme.accent:theme.line,backgroundColor:intent==='individual'?theme.accentSoft:theme.surfaceRaised}]}><Text style={[s.intentTitle,{color:theme.ink}]}>Just me</Text><Text style={[s.intentBody,{color:theme.muted}]}>Free consumer account</Text></Pressable>
-    <Pressable onPress={()=>setIntent('family')} style={[s.intent,{borderColor:intent==='family'?theme.accent:theme.line,backgroundColor:intent==='family'?theme.accentSoft:theme.surfaceRaised}]}><Text style={[s.intentTitle,{color:theme.ink}]}>Family</Text><Text style={[s.intentBody,{color:theme.muted}]}>Set up Family after joining</Text></Pressable>
-   </View>:null}
+   {mode==='signup'?<>
+    <View style={s.intentRow}>
+     <Pressable onPress={()=>setIntent('individual')} style={[s.intent,{borderColor:intent==='individual'?theme.accent:theme.line,backgroundColor:intent==='individual'?theme.accentSoft:theme.surfaceRaised}]}><Text style={[s.intentTitle,{color:theme.ink}]}>Just me</Text><Text style={[s.intentBody,{color:theme.muted}]}>Free consumer account</Text></Pressable>
+     <Pressable onPress={()=>setIntent('family')} style={[s.intent,{borderColor:intent==='family'?theme.accent:theme.line,backgroundColor:intent==='family'?theme.accentSoft:theme.surfaceRaised}]}><Text style={[s.intentTitle,{color:theme.ink}]}>Family</Text><Text style={[s.intentBody,{color:theme.muted}]}>Set up Family after joining</Text></Pressable>
+    </View>
+    {intent==='family'?<Text style={[s.intentDisclosure,{color:theme.muted}]}>Choosing Family here does not charge you and does not change your subscription tier. Family benefits activate only through the approved membership purchase path.</Text>:null}
+   </>:null}
 
    <TextInput value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" placeholder="Email" placeholderTextColor={theme.muted} style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}/>
    <View style={[s.passwordRow,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
@@ -177,6 +180,7 @@ const s=StyleSheet.create({
  intent:{flex:1,borderWidth:1,borderRadius:13,padding:11},
  intentTitle:{fontSize:14,fontWeight:'900'},
  intentBody:{fontSize:10,lineHeight:14,marginTop:2},
+ intentDisclosure:{fontSize:10,lineHeight:15,fontWeight:'700'},
  input:{borderWidth:1,borderRadius:13,paddingHorizontal:12,paddingVertical:13,fontSize:16},
  passwordRow:{flexDirection:'row',alignItems:'center',borderWidth:1,borderRadius:13,overflow:'hidden'},
  passwordInput:{flex:1,paddingHorizontal:12,paddingVertical:13,fontSize:16},
