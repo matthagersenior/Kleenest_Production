@@ -6,6 +6,8 @@ on:
       - 'apps/consumer-mobile/app/location/[id].tsx'
       - 'apps/consumer-mobile/app/week-in-review.tsx'
       - 'apps/consumer-mobile/app/activity.tsx'
+      - 'apps/consumer-mobile/services/priorKnowledge.ts'
+      - 'supabase/migrations/20260915215300_consumer_prior_visit_photo_evidence.sql'
       - 'scripts/consumer-week-in-review-audit.mjs'
       - 'scripts/review-photo-friction-audit.mjs'
       - '.github/workflows/review-photo-friction.yml'

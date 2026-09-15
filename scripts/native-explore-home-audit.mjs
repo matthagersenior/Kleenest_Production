@@ -19,6 +19,11 @@ assert.match(home, /RelevanceHeroCarousel/);
 assert.match(home, /QUICK ACTIONS/);
 assert.match(home, /OPEN KLEENEST AI/);
 assert.match(home, /OPEN COMMUNITY/);
+assert.match(home, /YOUR KLEENEST/);
+assert.doesNotMatch(home, /THE KLEENEST LOOP/);
+assert.doesNotMatch(home, /XP \+ levels are only the beginning/);
+assert.doesNotMatch(home, /A copilot grounded in your Kleenest context/);
+assert.doesNotMatch(home, /People helping people find better bathrooms/);
 
 assert.doesNotMatch(explore, /Find a trusted bathroom\./);
 assert.match(explore, /useWindowDimensions/);
