@@ -2,7 +2,7 @@ import fs from 'node:fs';
 
 const failures=[];
 const files={
-  migration:'supabase/migrations/20260915162500_restroom_facility_identity.sql',
+  migration:'supabase/migrations/20260915193500_restroom_facility_identity.sql',
   mobileService:'apps/consumer-mobile/services/restroomFacilities.ts',
   mobileCore:'packages/mobile-core/src/index.ts',
   mobileLocation:'apps/consumer-mobile/app/location/[id].tsx',
