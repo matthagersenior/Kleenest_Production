@@ -22,14 +22,14 @@ export default function HomeScreen(){
   const[heroPolicy,setHeroPolicy]=useState<OrganicHeroPolicy>(initialPolicy);
   useEffect(()=>{let active=true;if(!signedIn){setPolicyRequired(false);return()=>{active=false}}void hasCurrentPolicyAcceptance().then(accepted=>{if(active)setPolicyRequired(!accepted)}).catch(()=>{if(active)setPolicyRequired(false)});return()=>{active=false}},[signedIn]);
   useEffect(()=>{let active=true;void buildConsumerHomeHeroes(signedIn).then(result=>{if(!active)return;setHeroPolicy(result.policy);setHeroItems(result.items.length?result.items:[initialHero])});return()=>{active=false}},[signedIn]);
-  if(Platform.OS==='web'&&!webGateReady)return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}/>;
+  if(!webGateReady)return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}/>;
   if(Platform.OS==='web'&&!appActive)return <MarketingHome/>;
   const showInstall=Platform.OS==='web'&&!signedIn&&!installed;
   return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-    <View style={s.brandRow}><View><Text style={[s.brand,{color:theme.ink}]}>KLEENEST</Text><Text style={[s.brandSub,{color:theme.muted}]}>Trusted restroom discovery network</Text></View><Pressable style={[s.profileChip,{backgroundColor:theme.accentSoft}]} onPress={action(signedIn?'/profile':'/signup')}><Text style={[s.profileChipText,{color:theme.accent}]}>{signedIn?'PROFILE':'GET STARTED'}</Text></Pressable></View>
+    <View style={s.brandRow}><View><Text style={[s.brand,{color:theme.ink}]}>KLEENEST</Text><Text style={[s.brandSub,{color:theme.muted}]}>{signedIn?'Your restroom network is synced':'Trusted restroom discovery network'}</Text></View><Pressable style={[s.profileChip,{backgroundColor:theme.accentSoft}]} onPress={action(signedIn?'/profile':'/signup')}><Text style={[s.profileChipText,{color:theme.accent}]}>{signedIn?'PROFILE':'GET STARTED'}</Text></Pressable></View>
 
     {policyRequired?<Pressable accessibilityRole="button" style={[s.policyBanner,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#fff8e8',borderColor:theme.resolved==='dark'?theme.warning:'#e7cd8e'}]} onPress={action('/legal')}><View style={{flex:1}}><Text style={[s.policyKicker,{color:theme.warning}]}>ACTION REQUIRED</Text><Text style={[s.policyTitle,{color:theme.ink}]}>Review community terms</Text><Text style={[s.policyBody,{color:theme.muted}]}>Accept the current Terms and Community Guidelines before posting reviews, community content or messages.</Text></View><Text style={[s.policyArrow,{color:theme.warning}]}>›</Text></Pressable>:null}
-    {!signedIn?<Pressable accessibilityRole="button" style={[s.joinBanner,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/signup')}><View style={{flex:1}}><Text style={[s.joinKicker,{color:theme.accent}]}>GUEST · SIGN IN · JOIN</Text><Text style={[s.joinTitle,{color:theme.ink}]}>Use Kleenest your way</Text><Text style={[s.joinBody,{color:theme.muted}]}>Keep browsing as a guest, sign in to an existing account, or create one when you want sync, trust history, rewards and community.</Text></View><Text style={[s.joinArrow,{color:theme.accent}]}>›</Text></Pressable>:null}
+    {signedIn?<View style={[s.memberBanner,{backgroundColor:theme.surface,borderColor:theme.line}]}><View style={{flex:1}}><Text style={[s.joinKicker,{color:theme.accent}]}>SIGNED IN · YOUR KLEENEST</Text><Text style={[s.joinTitle,{color:theme.ink}]}>Your account context is active</Text><Text style={[s.joinBody,{color:theme.muted}]}>Home can now use your unfinished reviews, active missions, saved choices, progression and other account-backed relevance instead of treating you like a guest.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Open my profile" style={[s.memberAction,{backgroundColor:theme.accentSoft}]} onPress={action('/profile')}><Text style={[s.memberActionText,{color:theme.accent}]}>PROFILE</Text></Pressable></View>:<Pressable accessibilityRole="button" style={[s.joinBanner,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/signup')}><View style={{flex:1}}><Text style={[s.joinKicker,{color:theme.accent}]}>GUEST · SIGN IN · JOIN</Text><Text style={[s.joinTitle,{color:theme.ink}]}>Use Kleenest your way</Text><Text style={[s.joinBody,{color:theme.muted}]}>Keep browsing as a guest, sign in to an existing account, or create one when you want sync, trust history, rewards and community.</Text></View><Text style={[s.joinArrow,{color:theme.accent}]}>›</Text></Pressable>}
 
     <RelevanceHeroCarousel
       items={heroItems}
@@ -118,6 +118,9 @@ const s=StyleSheet.create({
   policyBody:{fontSize:12,lineHeight:17,color:'#6c5a2d',marginTop:3},
   policyArrow:{fontSize:28,color:'#7a5a15'},
   joinBanner:{backgroundColor:'#e9f3ed',borderWidth:1,borderColor:'#c9ded0',borderRadius:18,padding:15,flexDirection:'row',alignItems:'center',gap:10},
+  memberBanner:{borderWidth:1,borderRadius:18,padding:15,flexDirection:'row',alignItems:'center',gap:12},
+  memberAction:{minWidth:70,minHeight:44,borderRadius:12,alignItems:'center',justifyContent:'center',paddingHorizontal:10},
+  memberActionText:{fontSize:9,fontWeight:'900',letterSpacing:.8},
   joinKicker:{fontSize:9,fontWeight:'900',letterSpacing:1,color:palette.green},
   joinTitle:{fontSize:17,fontWeight:'900',color:palette.ink,marginTop:2},
   joinBody:{fontSize:12,lineHeight:17,color:palette.muted,marginTop:3},
