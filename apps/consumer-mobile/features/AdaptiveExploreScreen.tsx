@@ -1320,6 +1320,12 @@ export default function AdaptiveExploreScreen() {
               </View>
             ) : null}
           </View>
+          {visibleRows.length?(
+            <View pointerEvents="none" style={[s.resultsPeek,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+              <Text style={[s.resultsPeekTitle,{color:theme.ink}]}>{visibleRows.length} result{visibleRows.length===1?'':'s'} below</Text>
+              <Text style={[s.resultsPeekHint,{color:theme.accent}]}>Scroll ↓</Text>
+            </View>
+          ):null}
           {mode === 'route' && routeGap != null ? (
             <View style={[s.routeCoverage,{backgroundColor:theme.surface,borderColor:theme.line}]}>
               <Text style={[s.routeCoverageTitle,{color:theme.ink}]}>Largest qualifying-restroom gap: ~{routeGap.toFixed(routeGap < 10 ? 1 : 0)} mi</Text>
@@ -1513,6 +1519,9 @@ const s = StyleSheet.create({
   nearbySummary:{position:'absolute',left:10,right:10,bottom:12,zIndex:34,elevation:10,borderRadius:14,borderWidth:1,paddingHorizontal:12,paddingVertical:8},
   nearbySummaryTitle:{fontSize:11,fontWeight:'900'},
   nearbySummaryHint:{fontSize:9,fontWeight:'800',marginTop:2},
+  resultsPeek:{minHeight:42,borderTopWidth:1,borderBottomWidth:1,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
+  resultsPeekTitle:{fontSize:11,fontWeight:'900'},
+  resultsPeekHint:{fontSize:10,fontWeight:'900'},
   selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
   selectedBodyScroll:{flex:1},
   selectedBodyContent:{gap:4,paddingBottom:0},
