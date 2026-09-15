@@ -409,6 +409,7 @@ export default function AdaptiveExploreScreen() {
   const [message, setMessage] = useState('');
   const [checkInFeedback,setCheckInFeedback]=useState<Record<string,CheckInActionFeedback>>({});
   const [cached, setCached] = useState(false);
+  const [mapInteracting,setMapInteracting]=useState(false);
 
   const visibleRows=useMemo(()=>rows.filter((row)=>{
     if(kleenestOnly&&!isKleenestPlace(row))return false;
@@ -541,6 +542,7 @@ export default function AdaptiveExploreScreen() {
   }
 
   function handleMapRegionDidChange(event:any){
+    setMapInteracting(false);
     const viewState=event?.nativeEvent;
     if(mode!=='nearby'||!viewState?.userInteraction||!Array.isArray(viewState.center))return;
     const next:[number,number]=[Number(viewState.center[0]),Number(viewState.center[1])];
@@ -928,6 +930,8 @@ export default function AdaptiveExploreScreen() {
       <FlatList
         style={s.pageScroll}
         data={visibleRows}
+        scrollEnabled={!mapInteracting}
+        nestedScrollEnabled
         keyExtractor={idOf}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -1148,18 +1152,17 @@ export default function AdaptiveExploreScreen() {
           </View>
         </Modal>
 
-        {message ? <Text accessibilityLiveRegion="polite" style={[s.message,{color:theme.muted}]}>{message}</Text> : null}
-        {mode === 'nearby' && attemptedRadiiMeters.length > 1 ? (
-          <Text style={[s.provenance,{color:theme.muted}]}>
-            Requested {radiusLabel(radius)} · effective {radiusLabel(effectiveRadiusMeters)} · searched {attemptedRadiiMeters.map(radiusLabel).join(' → ')}
-          </Text>
-        ) : null}
-        {cached ? <Text style={[s.provenance,{color:theme.muted}]}>Offline continuity result — refresh for live qualification.</Text> : null}
       </View>
 
       {(origin||searchAreaOrigin) ? (
         <View style={s.mapSection}>
           <View style={[s.mapFrame,{height:Math.max(440,windowHeight-96)}]}>
+            <View
+              style={s.mapGestureSurface}
+              onTouchStart={()=>setMapInteracting(true)}
+              onTouchEnd={()=>setMapInteracting(false)}
+              onTouchCancel={()=>setMapInteracting(false)}
+            >
             <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE} onRegionDidChange={handleMapRegionDidChange}>
               <Camera
                 key={`explore-camera-${cameraNonce}-${selectedId}-${mode}`}
@@ -1212,6 +1215,7 @@ export default function AdaptiveExploreScreen() {
                 );
               })}
             </Map>
+            </View>
             <View pointerEvents="none" style={s.mapBadge}>
               <Text style={s.mapBadgeText}>{cached ? 'Cached · ' : ''}{visibleRows.length}{activeFilterCount?` of ${rows.length}`:''} results</Text>
             </View>
@@ -1317,6 +1321,17 @@ export default function AdaptiveExploreScreen() {
         </View>
       ) : null}
 
+            {(message || (mode === 'nearby' && attemptedRadiiMeters.length > 1) || cached) ? (
+              <View style={s.discoveryStatus}>
+                {message ? <Text numberOfLines={3} accessibilityLiveRegion="polite" style={[s.message,{color:theme.muted}]}>{message}</Text> : null}
+                {mode === 'nearby' && attemptedRadiiMeters.length > 1 ? (
+                  <Text style={[s.provenance,{color:theme.muted}]}>
+                    Requested {radiusLabel(radius)} · effective {radiusLabel(effectiveRadiusMeters)} · searched {attemptedRadiiMeters.map(radiusLabel).join(' → ')}
+                  </Text>
+                ) : null}
+                {cached ? <Text style={[s.provenance,{color:theme.muted}]}>Offline continuity result — refresh for live qualification.</Text> : null}
+              </View>
+            ) : null}
 
             <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results"/>
 
@@ -1458,6 +1473,7 @@ const s = StyleSheet.create({
   disabled: { opacity: 0.45 },
   message: { fontSize: 9, lineHeight: 14, color: '#66776d', fontWeight: '700' },
   provenance: { fontSize: 8, lineHeight: 12, color: '#718077', fontWeight: '700' },
+  discoveryStatus:{paddingHorizontal:12,paddingVertical:8,gap:4},
   help: { fontSize: 10, lineHeight: 15, color: '#5f7468' },
   mapSection:{paddingHorizontal:0,gap:0,position:'relative'},
   mapFrame: {
@@ -1469,6 +1485,7 @@ const s = StyleSheet.create({
     backgroundColor: '#dde6e0',
     position: 'relative',
   },
+  mapGestureSurface:{flex:1},
   map: { flex: 1 },
   userLocationRing: { width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(32,106,69,.2)', alignItems: 'center', justifyContent: 'center' },
   userLocationDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: palette.green, borderWidth: 2, borderColor: '#fff' },
