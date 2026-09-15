@@ -27,11 +27,14 @@ if(!failures.length){
 
   for(const token of [
     'useConsumerWebExperience()',
-    'buildConsumerHomeHeroes(signedIn)',
-    "signedIn?'PROFILE':'GET STARTED'",
-    '!signedIn?<Pressable',
+    'appActive',
+    'Redirect',
+    '/explore',
   ]){
-    if(!home.includes(token))failures.push(`Consumer Home auth reactivity missing ${token}.`);
+    if(!home.includes(token))failures.push(`Consumer app-entry auth handoff missing ${token}.`);
+  }
+  if(home.includes('buildConsumerHomeHeroes(signedIn)')||home.includes("signedIn?'PROFILE':'GET STARTED'")){
+    failures.push('Consumer app entry must not retain a stale sign-in-dependent Home surface before Explore.');
   }
 }
 

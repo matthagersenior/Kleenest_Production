@@ -110,13 +110,13 @@ requireTokens('Consumer web experience gate',webExperience,[
 if(webExperience.includes('if(explicit||standalone)markConsumerAppPresence()')||webExperience.includes('if(explicitLaunch||standalone)markConsumerAppPresence()'))failures.push('Guest web launch is still persisted as installed app presence.');
 if(webExperience.includes('const present=explicit||')||webExperience.includes('const present=explicitLaunch||'))failures.push('Explicit guest launch is still counted as an installed app.');
 if(webExperience.includes('setInstalled(explicit||')||webExperience.includes('setInstalled(explicitLaunch||'))failures.push('Explicit guest launch still contaminates installed state.');
-requireTokens('Consumer home install gate',consumerHome,[
+requireTokens('Consumer app entry install suppression',consumerHome,[
   'useConsumerWebExperience',
-  'showInstall',
-  "!signedIn&&!installed",
-  'showInstall?<Pressable'
+  'appActive',
+  'Redirect',
+  '/explore'
 ]);
-if(consumerHome.includes("{Platform.OS==='web'?<Pressable accessibilityRole=\"button\" accessibilityLabel=\"Install Kleenest\""))failures.push('Consumer Home still shows Install Kleenest to every web user.');
+if(consumerHome.includes("'/install'")||consumerHome.includes('Install Kleenest'))failures.push('Installed/signed-in Consumer app entry must not render an install CTA before Explore.');
 requireTokens('Install presence persistence',install,[
   'markConsumerAppPresence',
   'appinstalled',

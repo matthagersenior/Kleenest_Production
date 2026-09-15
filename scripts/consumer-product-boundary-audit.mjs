@@ -51,8 +51,9 @@ if(!failures.length){
  const layout=fs.readFileSync('apps/consumer-mobile/app/_layout.tsx','utf8');
  const location=fs.readFileSync('apps/consumer-mobile/app/location/[id].tsx','utf8');
  const core=fs.readFileSync('packages/mobile-core/src/index.ts','utf8');
- for(const token of ["'/explore'",'RelevanceHeroCarousel','buildConsumerHomeHeroes','SponsoredSlot','THE KLEENEST LOOP','XP + levels','YOUR NETWORK'])if(!home.includes(token))failures.push(`Consumer Home missing discovery/progression behavior: ${token}`);
- if(home.includes('Scan QR to check in or review'))failures.push('Consumer Home must not collapse regular check-in into QR proof.');
+ for(const token of ['Redirect','/explore','MarketingHome','useConsumerWebExperience'])if(!home.includes(token))failures.push(`Consumer app entry missing Explore-first/public-marketing behavior: ${token}`);
+ for(const token of ['SponsoredSlot','organizeDiscoveryRows','kleenestDiscoveryRank','freshestEvidenceAt','listNearbyProgressionOpportunities'])if(!explore.includes(token))failures.push(`Explore functional home missing relevance/discovery behavior: ${token}`);
+ if(home.includes('Scan QR to check in or review'))failures.push('Consumer app entry must not collapse regular check-in into QR proof.');
  for(const token of ['resolveConsumerSearchLocation','looksLikeAddressOrArea','searchAreaOrigin','searched-area-marker'])if(!explore.includes(token))failures.push(`Consumer Explore missing address-origin discovery behavior: ${token}`);
  if(explore.includes('Location.geocodeAsync'))failures.push('Consumer Explore must not require device geocoding for a typed destination.');
  if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Consumer Explore route must delegate to the canonical adaptive discovery screen.');
