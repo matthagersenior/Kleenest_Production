@@ -41,3 +41,70 @@ export async function getCapabilityGovernanceHistory(limit=50){await requirePlat
 export async function getOwnerAuditBundle(){const end=new Date(),start=new Date(end.getTime()-86400000);const[run,raw,domains,activity]=await Promise.all([client().rpc('run_capability_audit',{p_source:'kleenestos_mobile'}),client().rpc('admin_raw_schema_capability_audit'),client().rpc('check_single_capability_per_domain'),client().rpc('admin_list_activity_events',{p_limit:100,p_from:start.toISOString(),p_to:end.toISOString()})]);for(const result of[run,raw,domains,activity])if(result.error)throw result.error;return{run:run.data,raw:raw.data,domains:domains.data,activity:activity.data};}
 export async function ownerCrudList(resource:string,limit=50){if(!/^[-_a-z0-9]+$/.test(resource))throw new Error('Choose a valid canonical resource.');return rpc('admin_crud_gateway',{p_resource:resource,p_action:'list',p_id:null,p_payload:{limit:Math.min(Math.max(limit,1),100),order:'desc'}});}
 export async function getOwnerOperationsBundle(){const end=new Date(),start=new Date(end.getTime()-86400000);const[overview,integrity,activity,reports,reviewReports,ingestion,push,nativePush,resources]=await Promise.all([client().rpc('admin_get_overview'),client().rpc('admin_data_integrity_summary'),client().rpc('admin_list_activity_events',{p_limit:100}),client().rpc('admin_list_reports'),client().rpc('admin_list_review_reports',{p_status:null}),client().rpc('admin_national_ingestion_status'),client().rpc('admin_notification_push_delivery_summary',{p_from:start.toISOString(),p_to:end.toISOString()}),client().rpc('admin_notification_native_push_delivery_health',{p_from:start.toISOString(),p_to:end.toISOString()}),client().rpc('admin_backend_resource_catalog')]);for(const result of[overview,integrity,activity,reports,reviewReports,ingestion,push,nativePush,resources])if(result.error)throw result.error;return{overview:overview.data,integrity:integrity.data,activity:activity.data,reports:reports.data,reviewReports:reviewReports.data,ingestion:ingestion.data,push:push.data,nativePush:nativePush.data,resources:resources.data};}
+
+
+export async function getOwnerRelevanceSponsorshipSnapshot(){
+  await requirePlatformOwner();
+  return (await rpc('owner_relevance_sponsorship_snapshot'))||{hero_policies:[],placements:[],campaigns:[],rules:{}};
+}
+
+export async function updateOwnerHeroPolicy(row:Record<string,any>,patch:Record<string,unknown>={},reason='KleenestOS organic relevance update'){
+  await requirePlatformOwner();
+  const next={...row,...patch};
+  return rpc('owner_upsert_hero_policy',{
+    p_surface_code:String(next.surface_code),
+    p_active:next.active!==false,
+    p_max_cards:Number(next.max_cards||5),
+    p_allowed_kinds:Array.isArray(next.allowed_kinds)?next.allowed_kinds:[],
+    p_weights:next.weights&&typeof next.weights==='object'?next.weights:{},
+    p_swipe_enabled:next.swipe_enabled!==false,
+    p_dot_indicators:next.dot_indicators!==false,
+    p_autoplay:next.autoplay===true,
+    p_owner_notes:next.owner_notes??null,
+    p_reason:reason,
+  });
+}
+
+export async function updateOwnerSponsoredPlacement(row:Record<string,any>,patch:Record<string,unknown>={},reason='KleenestOS sponsored placement update'){
+  await requirePlatformOwner();
+  const next={...row,...patch};
+  return rpc('owner_upsert_ad_placement',{
+    p_placement_code:String(next.placement_code),
+    p_surface:String(next.surface),
+    p_slot:String(next.slot),
+    p_active:next.active!==false,
+    p_priority:Number(next.priority||0),
+    p_frequency_cap_daily:Number(next.frequency_cap_daily||3),
+    p_format:String(next.format||'native_card'),
+    p_context_rules:next.context_rules&&typeof next.context_rules==='object'?next.context_rules:{},
+    p_owner_enabled:next.owner_enabled!==false,
+    p_reason:reason,
+  });
+}
+
+export async function upsertOwnerSponsoredCampaign(input:{
+  id?:string|null;name:string;sponsorName:string;headline:string;body?:string;ctaLabel?:string;destinationUrl:string;
+  targetLocationId?:string|null;status:'draft'|'active'|'paused'|'ended';startsAt?:string|null;endsAt?:string|null;
+  targeting?:Record<string,unknown>;frequencyCapDaily?:number;impressionCapTotal?:number|null;ownerPriority?:number;placementCodes:string[];reason?:string;
+}){
+  await requirePlatformOwner();
+  return rpc('owner_upsert_sponsored_campaign',{
+    p_campaign_id:input.id||null,
+    p_name:input.name,
+    p_sponsor_name:input.sponsorName,
+    p_headline:input.headline,
+    p_body:input.body||null,
+    p_cta_label:input.ctaLabel||'Learn more',
+    p_destination_url:input.destinationUrl,
+    p_target_location_id:input.targetLocationId||null,
+    p_status:input.status,
+    p_starts_at:input.startsAt||null,
+    p_ends_at:input.endsAt||null,
+    p_targeting:input.targeting||{},
+    p_frequency_cap_daily:input.frequencyCapDaily||2,
+    p_impression_cap_total:input.impressionCapTotal??null,
+    p_owner_priority:input.ownerPriority||0,
+    p_placement_codes:input.placementCodes,
+    p_reason:input.reason||'KleenestOS sponsored campaign update',
+  });
+}
