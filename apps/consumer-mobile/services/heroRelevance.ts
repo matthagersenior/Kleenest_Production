@@ -51,12 +51,12 @@ const miles=(meters:any)=>Number.isFinite(Number(meters))?Number(meters)/1609.34
 const distanceLabel=(meters:any)=>{const value=miles(meters);return value==null?'':`${value.toFixed(value<10?1:0)} mi`;};
 const rating=(row:any)=>number(row?.rating??row?.average_rating??row?.star_rating,0);
 const latestEvidence=(row:any)=>{
-  const values=[row?.network?.latest_evidence_at,row?.trust?.latest_verified_at,row?.trust?.latest_amenity_observed_at,row?.consumer_photo_created_at,row?.updated_at]
+  const values=[row?.network?.latest_evidence_at,row?.trust?.latest_verified_at,row?.trust?.latest_amenity_observed_at,row?.consumer_photo_created_at]
     .map((value:any)=>value?new Date(value).getTime():NaN).filter((value:number)=>Number.isFinite(value));
   return values.length?Math.max(...values):null;
 };
 const isFresh=(row:any,days=30)=>{const time=latestEvidence(row);return time!=null&&Date.now()-time<=days*86400000;};
-const isKleenest=(row:any)=>Boolean(row?.kleenest_business||row?.business_tier||row?.network?.network_verified);
+const isKleenest=(row:any)=>Boolean(row?.kleenest_business||row?.business_tier);
 const locationMeta=(row:any)=>{
   const parts=[distanceLabel(row?.distance_meters),rating(row)>0?`${rating(row).toFixed(1)}★`:null,isFresh(row)?'fresh':null,isKleenest(row)?'Kleenest':null].filter(Boolean);
   return parts.join(' · ');
