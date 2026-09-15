@@ -125,11 +125,15 @@ async function buildPayload(input:{
 }):Promise<BetaReportInput>{
   const info=runtimeInfo();
   const rawError=errorText(input.error);
+  const feedbackKind=text(input.metadata?.feedback_kind||'',80).toLowerCase();
+  const sentiment=text(input.metadata?.sentiment||'',40).toLowerCase();
   const fingerprintSeed=[
     'consumer',
     input.category,
     routeShape(input.route||'unknown'),
-    input.reportKind==='automatic'?errorShape(rawError):errorShape(rawError)||'manual',
+    feedbackKind||'no_feedback_kind',
+    sentiment||'no_sentiment',
+    input.reportKind==='automatic'?errorShape(rawError):errorShape(input.message)||'manual',
   ].join('|');
   return{
     fingerprint:`consumer:${input.category}:${fnv1a(fingerprintSeed)}`,
