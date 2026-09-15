@@ -32,6 +32,7 @@ export default function BetaReportButton({route}:{route:string}){
   const[result,setResult]=useState('');
   const[showDiagnostics,setShowDiagnostics]=useState(false);
   const[diagnostics,setDiagnostics]=useState<Record<string,unknown>>({});
+  const[greatPulseSent,setGreatPulseSent]=useState(false);
 
   const selectedKind=KINDS.find(item=>item.key===kind)||KINDS[0];
 
@@ -41,6 +42,7 @@ export default function BetaReportButton({route}:{route:string}){
     setResult('');
     setVisible(true);
     setShowDiagnostics(false);
+    setGreatPulseSent(false);
     recordBetaBreadcrumb('tell_kleenest_open',route);
     captureConsumerFeedbackEvent('tell_kleenest_open',{route,metadata:{surface:'global_fab'}});
   }
@@ -50,6 +52,22 @@ export default function BetaReportButton({route}:{route:string}){
     setResult('Thanks — that is enough by itself. Add a note only if you want to tell us more.');
     recordBetaBreadcrumb('pulse_response',route,next);
     captureConsumerFeedbackEvent('pulse_response',{route,metadata:{sentiment:next}});
+    if(next==='great'&&!greatPulseSent){
+      setGreatPulseSent(true);
+      recordBetaBreadcrumb('voice_of_customer_pulse',route,'great');
+      void sendManualBetaReport({
+        category:'feedback',
+        route,
+        message:`Great feedback from ${route||'unknown screen'}.`,
+        metadata:{
+          manual:true,
+          feedback_surface:'tell_kleenest',
+          feedback_kind:'pulse',
+          sentiment:'great',
+          pulse_only:true,
+        },
+      });
+    }
   }
 
   function chooseKind(next:FeedbackKind){
