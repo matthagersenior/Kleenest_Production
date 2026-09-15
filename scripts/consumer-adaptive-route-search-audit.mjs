@@ -105,7 +105,7 @@ for(const token of [
   "primarySmall: { minHeight: 30",
   "secondarySmall: { minHeight: 30",
   "close: { minWidth: 38, minHeight: 38",
-  "selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 252",
+  "selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228",
   "selectedBodyContent:{gap:4,paddingBottom:0}",
   "Why trusted?",
   "trustEvidenceLine(item)",
