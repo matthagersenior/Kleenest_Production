@@ -56,11 +56,15 @@ need('Shared Consumer cards','apps/consumer-mobile/components/ConsumerUI.tsx',[
   'backgroundColor:theme.surface,borderColor:theme.line',
   'backgroundColor:theme.surfaceRaised,borderColor:theme.line',
   'TrustStrip',
+  'heroBackground=dark?theme.surfaceRaised:theme.accent',
+  'heroPrimary=dark?theme.ink:theme.accentText',
+  'heroSecondary=dark?theme.muted:theme.accentText',
 ]);
 need('Home relevance carousel','apps/consumer-mobile/components/RelevanceHeroCarousel.tsx',[
   'style={[s.cta,{backgroundColor:theme.surface,borderColor:theme.line}]}',
   'backgroundColor:i===index?theme.accent:theme.line',
   'useConsumerTheme()',
+  "theme.resolved==='dark'?theme.muted:theme.accentText",
 ]);
 need('Sponsored cards','apps/consumer-mobile/components/SponsoredSlot.tsx',[
   'style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}',
@@ -91,7 +95,10 @@ need('Explore nested cards','apps/consumer-mobile/features/AdaptiveExploreScreen
   'style={[s.amenityMatchPill,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}',
   'style={[s.searchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.searchThisArea,{top:mapChromeTop,backgroundColor:theme.surface,borderColor:theme.line}]}',
-  'style={[s.nearbySummary,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.resultsHandoff,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.listEyebrow,{color:theme.accent}]}',
+  'style={[s.listTitle,{color:theme.ink}]}',
+  'style={[s.listNote,{color:theme.muted}]}',
   'style={[s.primarySmall,s.cardAction,{backgroundColor:theme.accent}',
   'style={[s.primarySmall,s.selectedAction,{backgroundColor:theme.accent}',
 ]);

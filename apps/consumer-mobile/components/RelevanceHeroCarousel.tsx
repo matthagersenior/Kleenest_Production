@@ -24,7 +24,7 @@ export function RelevanceHeroCarousel({items,onOpen,dotIndicators=true,swipeEnab
     >
       {items.map(item=><View key={item.id} style={{width:width||1,paddingRight:width?0:undefined}}>
         <HeroCard eyebrow={item.eyebrow} title={item.title} body={item.body}>
-          {item.meta?<Text style={[s.meta,{color:theme.resolved==='dark'?theme.muted:'#d5e7dc'}]}>{item.meta}</Text>:null}
+          {item.meta?<Text style={[s.meta,{color:theme.resolved==='dark'?theme.muted:theme.accentText}]}>{item.meta}</Text>:null}
           <Pressable accessibilityRole="button" accessibilityLabel={item.cta} style={[s.cta,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>onOpen(item.route)}>
             <Text style={[s.ctaText,{color:theme.accent}]}>{item.cta} →</Text>
           </Pressable>

@@ -16,7 +16,7 @@ if(!failures.length){
   for(const hidden of ['index','play','discover','games','route','qr','saved','activity','notifications','membership','preferences','support','account-deletion'])if(!new RegExp(`name=["']${hidden}["'][^>]*href:\\s*null`).test(layout))failures.push(`secondary consumer route must remain reachable but hidden from primary tabs: ${hidden}`);
   for(const forbidden of ['Business','Fleet','Enterprise','Admin','Owner Control'])if(new RegExp(`title:\\s*['"]${forbidden}`).test(layout))failures.push(`consumer tab shell must not expose operations workspace: ${forbidden}`);
   for(const token of ['Redirect','/explore','MarketingHome','useConsumerWebExperience'])if(!home.includes(token))failures.push(`Consumer app entry missing Explore-first activation capability: ${token}`);
-  for(const token of ['organizeDiscoveryRows','Search this area','Results are below','SponsoredSlot surface="maps"'])if(!adaptiveExplore.includes(token))failures.push(`Explore functional home missing rich activation capability: ${token}`);
+  for(const token of ['organizeDiscoveryRows','Search this area','Results ↓','SponsoredSlot surface="maps"'])if(!adaptiveExplore.includes(token))failures.push(`Explore functional home missing rich activation capability: ${token}`);
   for(const token of ["route:'/qr'","route:'/discover'","route:'/explore'","route:'/progress'"])if(!heroRelevance.includes(token))failures.push(`Organic relevance policy missing rich activation capability: ${token}`);
 
   const matureDiscoveryCapabilities=[
