@@ -15,7 +15,19 @@ export async function equipProgressionReward(rewardCode:string){await requireUse
 export async function unequipProgressionReward(slot:string){await requireUser();const{data,error}=await getKleenestSupabaseClient().rpc('consumer_unequip_progression_reward',{p_slot:slot});if(error)throw error;return data||{};}
 export async function getRewardCapabilities(){await requireUser();const{data,error}=await getKleenestSupabaseClient().rpc('consumer_reward_capabilities');if(error)throw error;return data||{};}
 export async function listActiveObjectivesV2(){await requireUser();const{data,error}=await getKleenestSupabaseClient().rpc('consumer_active_objectives');if(error)throw error;return Array.isArray(data)?data:[];}
-export async function listProgressionRankingsV2(scope='global',metric='xp',context:Record<string,unknown>={}){await requireUser();const{data,error}=await getKleenestSupabaseClient().rpc('consumer_progression_rankings',{p_scope:scope,p_metric:metric,p_context:context});if(error)throw error;return Array.isArray(data)?data:[];}
+export async function listProgressionRankingsV2(scope='global',metric='xp',context:Record<string,unknown>={}){
+ await requireUser();
+ const client=getKleenestSupabaseClient();
+ const{data,error}=await client.rpc('consumer_progression_rankings',{p_scope:scope,p_metric:metric,p_context:context});
+ if(error)throw error;
+ const rows=Array.isArray(data)?data:[];
+ const userIds=[...new Set(rows.map((row:any)=>String(row.user_id||'')).filter(Boolean))];
+ if(!userIds.length)return rows;
+ const{data:contributors,error:contributorsError}=await client.rpc('community_contributor_summaries',{p_user_ids:userIds});
+ if(contributorsError)throw contributorsError;
+ const byId=new Map((Array.isArray(contributors)?contributors:[]).map((profile:any)=>[String(profile.id),profile]));
+ return rows.map((row:any)=>{const profile=byId.get(String(row.user_id)) as any;return{...row,display_name:profile?.display_name||null,username:profile?.username||null,avatar_url:profile?.avatar_url||null};});
+}
 export async function listNearbyProgressionOpportunities(latitude:number,longitude:number,radiusMeters=5000){await requireUser();const{data,error}=await getKleenestSupabaseClient().rpc('consumer_nearby_progression_opportunities',{p_lat:latitude,p_lon:longitude,p_radius_m:radiusMeters});if(error)throw error;return Array.isArray(data)?data:[];}
 
 function extensionFor(photo:DiscoveryPhotoDraft){const ext=photo.fileName?.split('.').pop()?.toLowerCase();if(ext&&/^[a-z0-9]{2,5}$/.test(ext))return ext;if(photo.mimeType==='image/png')return'png';if(photo.mimeType==='image/webp')return'webp';return'jpg';}
