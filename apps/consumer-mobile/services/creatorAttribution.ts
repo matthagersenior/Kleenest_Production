@@ -18,6 +18,51 @@ async function creatorMissionSessionKey(){
   return created;
 }
 
+
+export type LiveCreatorMission={
+  assignmentId:string;
+  objectiveId:string;
+  creatorName:string;
+  creatorHandle:string;
+  creatorSlug:string;
+  trackingSlug:string;
+  campaignCode:string;
+  title:string;
+  summary:string;
+  steps:string[];
+  cta:string;
+  primaryAction:string;
+  target:number;
+  xpReward:number;
+  audience:string;
+};
+
+export async function loadCreatorMissionLanding(trackingSlug:string):Promise<LiveCreatorMission|null>{
+  const slug=String(trackingSlug||'').trim().toLowerCase();
+  if(!slug)return null;
+  const {data,error}=await getKleenestSupabaseClient().rpc('get_creator_mission_landing',{p_tracking_slug:slug});
+  if(error)throw error;
+  if(!data||typeof data!=='object')return null;
+  const row=data as any;
+  return {
+    assignmentId:String(row.assignment_id||''),
+    objectiveId:String(row.objective_id||''),
+    creatorName:String(row.creator_name||''),
+    creatorHandle:String(row.creator_handle||''),
+    creatorSlug:String(row.creator_slug||''),
+    trackingSlug:String(row.tracking_slug||slug),
+    campaignCode:String(row.campaign_code||''),
+    title:String(row.title||'Creator mission'),
+    summary:String(row.summary||''),
+    steps:Array.isArray(row.steps)?row.steps.map(String):[],
+    cta:String(row.cta||'Open Kleenest'),
+    primaryAction:String(row.primary_action||''),
+    target:Number(row.target||1),
+    xpReward:Number(row.xp_reward||0),
+    audience:String(row.audience||'consumer')
+  };
+}
+
 export type CreatorMissionAttribution={
   trackingSlug:string;
   channel:string;
