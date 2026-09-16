@@ -1,13 +1,13 @@
 import { Link } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
-import { Linking,Pressable,RefreshControl,ScrollView,Switch,Text,View } from 'react-native';
+import { Linking,Pressable,RefreshControl,ScrollView,Text,View } from 'react-native';
 import {
   getOfferReadiness,getPilotCapabilityDomains,runOfferLaunchCheck,
   updateOfferGovernance,updatePilotCapabilityDomain,
   type OfferReadiness,type PilotCapabilityDomain
 } from '../services/capabilityPilot';
 import { runCapabilityAudit } from '../services/ownerAdmin';
-import { OSHero,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
+import { OSHero,OSSwitch,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
 
 const commercialStates=['sample','pilot','offered','production','gated'] as const;
@@ -58,7 +58,7 @@ function Choice({label,selected,onPress,disabled=false}:{label:string;selected:b
 function ToggleRow({label,value,onValueChange,disabled=false}:{label:string;value:boolean;onValueChange:(next:boolean)=>void;disabled?:boolean}){const theme=usePlatformTheme();
   return <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12}}>
     <Text style={{fontWeight:'800',color:theme.ink,flex:1}}>{label}</Text>
-    <Switch value={value} disabled={disabled} onValueChange={onValueChange} trackColor={{false:theme.line,true:theme.accentSoft}} thumbColor={value?theme.accent:theme.muted} ios_backgroundColor={theme.surfaceRaised}/>
+    <OSSwitch value={value} disabled={disabled} onValueChange={onValueChange}/>
   </View>;
 }
 
