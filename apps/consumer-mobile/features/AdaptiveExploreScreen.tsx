@@ -424,11 +424,18 @@ export default function AdaptiveExploreScreen() {
   const searchPanelTop=Platform.OS==='android'?Math.max(8,insets.top+4):8;
   const mapChromeTop=10;
 
-  const equippedMapFilter=String(rewardCapabilities?.equipped?.map_filter?.reward_key||'');
+  const unlockedMapFilters=Array.isArray(rewardCapabilities?.unlocked_map_filters)?rewardCapabilities.unlocked_map_filters:[];
   const equippedMapFlair=String(rewardCapabilities?.equipped?.map_flair?.reward_key||'');
-  const precisionFilterEquipped=equippedMapFilter==='precision';
-  const progressionFilterEquipped=equippedMapFilter==='progression-opportunities';
+  const precisionFilterUnlocked=unlockedMapFilters.some((reward:any)=>String(reward?.reward_key||'')==='precision');
+  const progressionFilterUnlocked=unlockedMapFilters.some((reward:any)=>String(reward?.reward_key||'')==='progression-opportunities');
   const evidenceGapRadar=Boolean(rewardCapabilities?.beta_features?.evidence_gap_radar);
+  useEffect(()=>{
+    if(!precisionFilterUnlocked){
+      setVerifiedEvidenceOnly(false);
+      if(!evidenceGapRadar)setEvidenceGapOnly(false);
+    }
+    if(!progressionFilterUnlocked)setProgressionPriority(false);
+  },[precisionFilterUnlocked,progressionFilterUnlocked,evidenceGapRadar]);
   const visibleRows=useMemo(()=>{
     const filtered=rows.filter((row)=>{
       if(kleenestOnly&&!isKleenestPlace(row))return false;
@@ -439,9 +446,9 @@ export default function AdaptiveExploreScreen() {
       if(evidenceGapOnly&&!hasEvidenceGap(row))return false;
       return true;
     });
-    if(progressionPriority&&progressionFilterEquipped)return [...filtered].sort((a,b)=>Number(Boolean(b?.progression_opportunity))-Number(Boolean(a?.progression_opportunity)));
+    if(progressionPriority&&progressionFilterUnlocked)return [...filtered].sort((a,b)=>Number(Boolean(b?.progression_opportunity))-Number(Boolean(a?.progression_opportunity)));
     return filtered;
-  },[rows,kleenestOnly,progressionOnly,minimumStars,freshnessDays,verifiedEvidenceOnly,evidenceGapOnly,progressionPriority,progressionFilterEquipped]);
+  },[rows,kleenestOnly,progressionOnly,minimumStars,freshnessDays,verifiedEvidenceOnly,evidenceGapOnly,progressionPriority,progressionFilterUnlocked]);
   const freshNearbyCount=useMemo(()=>visibleRows.filter((row)=>isFreshWithinDays(row,7)).length,[visibleRows]);
   const kleenestNearbyCount=useMemo(()=>visibleRows.filter(isKleenestPlace).length,[visibleRows]);
   const activeFilterCount=(kleenestOnly?1:0)+(progressionOnly?1:0)+(minimumStars>0?1:0)+(freshnessDays?1:0)+(selectedAmenityNames.length?1:0)+(verifiedEvidenceOnly?1:0)+(evidenceGapOnly?1:0)+(progressionPriority?1:0);
@@ -1078,17 +1085,17 @@ export default function AdaptiveExploreScreen() {
                       <Text style={[s.quickFilterTitle,{color:progressionOnly?theme.accentText:theme.ink}]}>Progression</Text>
                       <Text style={[s.quickFilterBody,{color:progressionOnly?theme.accentText:theme.muted}]}>Places with XP / evidence opportunities</Text>
                     </Pressable>
-                    {precisionFilterEquipped?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:verifiedEvidenceOnly}} style={[s.quickFilterCard,{backgroundColor:verifiedEvidenceOnly?theme.accent:theme.surfaceRaised,borderColor:verifiedEvidenceOnly?theme.accent:theme.line}]} onPress={()=>setVerifiedEvidenceOnly(value=>!value)}>
+                    {precisionFilterUnlocked?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:verifiedEvidenceOnly}} style={[s.quickFilterCard,{backgroundColor:verifiedEvidenceOnly?theme.accent:theme.surfaceRaised,borderColor:verifiedEvidenceOnly?theme.accent:theme.line}]} onPress={()=>setVerifiedEvidenceOnly(value=>!value)}>
                       <Text style={[s.quickFilterTitle,{color:verifiedEvidenceOnly?theme.accentText:theme.ink}]}>Verified evidence</Text>
-                      <Text style={[s.quickFilterBody,{color:verifiedEvidenceOnly?theme.accentText:theme.muted}]}>Precision reward · current evidence-backed places only</Text>
+                      <Text style={[s.quickFilterBody,{color:verifiedEvidenceOnly?theme.accentText:theme.muted}]}>Permanent Precision reward · current evidence-backed places only</Text>
                     </Pressable>:null}
-                    {(precisionFilterEquipped||evidenceGapRadar)?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:evidenceGapOnly}} style={[s.quickFilterCard,{backgroundColor:evidenceGapOnly?theme.accent:theme.surfaceRaised,borderColor:evidenceGapOnly?theme.accent:theme.line}]} onPress={()=>setEvidenceGapOnly(value=>!value)}>
+                    {(precisionFilterUnlocked||evidenceGapRadar)?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:evidenceGapOnly}} style={[s.quickFilterCard,{backgroundColor:evidenceGapOnly?theme.accent:theme.surfaceRaised,borderColor:evidenceGapOnly?theme.accent:theme.line}]} onPress={()=>setEvidenceGapOnly(value=>!value)}>
                       <Text style={[s.quickFilterTitle,{color:evidenceGapOnly?theme.accentText:theme.ink}]}>Evidence gaps</Text>
-                      <Text style={[s.quickFilterBody,{color:evidenceGapOnly?theme.accentText:theme.muted}]}>{evidenceGapRadar?'Labs Radar · weak or stale evidence':'Precision reward · weak or stale evidence'}</Text>
+                      <Text style={[s.quickFilterBody,{color:evidenceGapOnly?theme.accentText:theme.muted}]}>{evidenceGapRadar?'Labs Radar · weak or stale evidence':'Permanent Precision reward · weak or stale evidence'}</Text>
                     </Pressable>:null}
-                    {progressionFilterEquipped?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:progressionPriority}} style={[s.quickFilterCard,{backgroundColor:progressionPriority?theme.accent:theme.surfaceRaised,borderColor:progressionPriority?theme.accent:theme.line}]} onPress={()=>setProgressionPriority(value=>!value)}>
+                    {progressionFilterUnlocked?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:progressionPriority}} style={[s.quickFilterCard,{backgroundColor:progressionPriority?theme.accent:theme.surfaceRaised,borderColor:progressionPriority?theme.accent:theme.line}]} onPress={()=>setProgressionPriority(value=>!value)}>
                       <Text style={[s.quickFilterTitle,{color:progressionPriority?theme.accentText:theme.ink}]}>Progression first</Text>
-                      <Text style={[s.quickFilterBody,{color:progressionPriority?theme.accentText:theme.muted}]}>Reward filter · move nearby progression opportunities to the top</Text>
+                      <Text style={[s.quickFilterBody,{color:progressionPriority?theme.accentText:theme.muted}]}>Permanent Progression reward · move nearby progression opportunities to the top</Text>
                     </Pressable>:null}
                   </View>
                 </View>
