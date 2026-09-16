@@ -12,7 +12,7 @@ import {
   mobileCheckIn,
   type AmenityMatchRule,
 } from '@kleenest/mobile-core';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   FlatList,
@@ -381,7 +381,8 @@ export default function AdaptiveExploreScreen() {
  const theme=useConsumerTheme();
   const insets=useSafeAreaInsets();
   const {height:windowHeight}=useWindowDimensions();
-  const exploreMapHeight=Math.max(320,Math.min(430,Math.round(windowHeight*0.38)));
+  const exploreMapHeight=Math.max(360,Math.min(480,Math.round(windowHeight*0.44)));
+  const listRef=useRef<FlatList<any>|null>(null);
   const [mode, setMode] = useState<'nearby' | 'route'>('nearby');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
@@ -718,17 +719,10 @@ export default function AdaptiveExploreScreen() {
     } else if (relaxedAmenityFallback) {
       setMessage(`No exact amenity match was found through your expanded search, so Kleenest kept the page useful with ${enriched.length} nearby place${enriched.length===1?'':'s'}. Results are organized by freshness, Kleenest status, amenities, then distance.`);
     } else if (!query && !selectedAmenityNames.length) {
-      const densityNote=result.densityClass==='dense'
-        ? 'Dense area · kept discovery to the tight local radius'
-        : result.densityClass==='moderate'
-          ? 'Moderate density · kept discovery within the local 1–2 mile area'
-          : result.expanded
-            ? `Sparse area · expanded automatically through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')}`
-            : 'Local discovery';
       setMessage(enriched.length
-        ? `${enriched.length} nearby place${enriched.length===1?'':'s'} within ${radiusLabel(result.effectiveRadiusMeters)} · ${densityNote} · ${restroomEvidence} with restroom evidence · ${verificationCandidates} need bathroom verification. Ordered by freshness → Kleenest → amenities.`
+        ? (result.expanded?`Expanded nearby search through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')}.`:'')
         : 'Live discovery returned no local data, so Kleenest will keep the last useful nearby set when one is available.');
-    } else if (result.expanded) {
+    } else if (result.expanded) {    } else if (result.expanded) {
       setMessage(enriched.length?`Expanded through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')} and found ${enriched.length} qualifying location${enriched.length===1?'':'s'}.`:`No qualifying locations found after expanding through ${radiusLabel(result.effectiveRadiusMeters)}.`);
     } else {
       setMessage(enriched.length?`${enriched.length} qualifying bathroom${enriched.length===1?'':'s'} within ${radiusLabel(result.effectiveRadiusMeters)}.`:`No qualifying bathrooms found within ${radiusLabel(result.effectiveRadiusMeters)}.`);
@@ -933,6 +927,7 @@ export default function AdaptiveExploreScreen() {
   return (
     <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}>
       <FlatList
+        ref={listRef}
         style={s.pageScroll}
         data={visibleRows}
         scrollEnabled={!mapInteracting}
@@ -1223,10 +1218,7 @@ export default function AdaptiveExploreScreen() {
               })}
             </Map>
             </View>
-            <View pointerEvents="none" style={[s.mapBadge,{top:mapChromeTop}]}>
-              <Text style={s.mapBadgeText}>{cached ? 'Cached · ' : ''}{visibleRows.length}{activeFilterCount?` of ${rows.length}`:''} results</Text>
-            </View>
-            <View style={[s.mapControls,{top:mapChromeTop}]}>
+            <View style={[s.mapControls,{top:mapChromeTop}]}>            <View style={[s.mapControls,{top:mapChromeTop}]}>
               <Pressable accessibilityRole="button" accessibilityLabel="Zoom map in" style={[s.mapControl,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={() => changeMapZoom(1)}>
                 <Text style={[s.mapControlText,{color:theme.accent}]}>＋</Text>
               </Pressable>
@@ -1251,13 +1243,7 @@ export default function AdaptiveExploreScreen() {
             <View pointerEvents="box-none" style={[s.legendWrap,{top:mapChromeTop+46}]}>
               <MapLegend />
             </View>
-            {!selected?(
-              <View pointerEvents="none" style={[s.nearbySummary,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-                <Text style={[s.nearbySummaryTitle,{color:theme.ink}]}>{visibleRows.length} nearby · {freshNearbyCount} fresh · {kleenestNearbyCount} Kleenest</Text>
-                <Text style={[s.nearbySummaryHint,{color:theme.muted}]}>Results are below · scroll to browse</Text>
-              </View>
-            ):null}
-            {selected ? (
+            {selected ? (            {selected ? (
               <View pointerEvents="auto" style={[s.selectedPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
                 <View style={s.selectedHead}>
                   <Text style={[s.selectedLabel,{color:theme.accent}]}>BEST NEXT DECISION</Text>
@@ -1320,12 +1306,20 @@ export default function AdaptiveExploreScreen() {
             ) : null}
           </View>
           {visibleRows.length?(
-            <View pointerEvents="none" style={[s.resultsPeek,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-              <Text style={[s.resultsPeekTitle,{color:theme.ink}]}>{visibleRows.length} result{visibleRows.length===1?'':'s'} below</Text>
-              <Text style={[s.resultsPeekHint,{color:theme.accent}]}>Scroll ↓</Text>
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Show ${visibleRows.length} nearby result${visibleRows.length===1?'':'s'}`}
+              accessibilityHint="Jump to the first search result"
+              onPress={()=>listRef.current?.scrollToIndex({index:0,animated:true,viewPosition:0})}
+              style={[s.resultsHandoff,{backgroundColor:theme.surface,borderColor:theme.line}]}
+            >
+              <Text numberOfLines={1} style={[s.resultsHandoffText,{color:theme.ink}]}>
+                {visibleRows.length} nearby · {radiusLabel(effectiveRadiusMeters)}{freshNearbyCount?` · ${freshNearbyCount} fresh`:''}{kleenestNearbyCount?` · ${kleenestNearbyCount} Kleenest`:''}
+              </Text>
+              <Text style={[s.resultsHandoffAction,{color:theme.accent}]}>Results ↓</Text>
+            </Pressable>
           ):null}
-          {mode === 'route' && routeGap != null ? (
+          {mode === 'route' && routeGap != null ? (          {mode === 'route' && routeGap != null ? (
             <View style={[s.routeCoverage,{backgroundColor:theme.surface,borderColor:theme.line}]}>
               <Text style={[s.routeCoverageTitle,{color:theme.ink}]}>Largest qualifying-restroom gap: ~{routeGap.toFixed(routeGap < 10 ? 1 : 0)} mi</Text>
               <Text style={[s.help,{color:theme.muted}]}>Based on current qualifying candidates along the route; opening hours and availability can change.</Text>
@@ -1350,10 +1344,10 @@ export default function AdaptiveExploreScreen() {
 
             <View style={s.listHeading}>
               <View>
-                <Text style={s.listEyebrow}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
-                <Text style={s.listTitle}>{mode === 'route' ? 'Bathrooms ahead' : 'Nearby businesses & bathrooms'}</Text>
+                <Text style={[s.listEyebrow,{color:theme.accent}]}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
+                <Text style={[s.listTitle,{color:theme.ink}]}>{mode === 'route' ? 'Bathrooms ahead' : 'Nearby businesses & bathrooms'}</Text>
               </View>
-              <Text style={s.listNote}>{activeFilterCount?filterSummary:(cached ? 'Cached · pull to refresh' : 'Everything · distance + actions')}</Text>
+              <Text style={[s.listNote,{color:theme.muted}]}>{activeFilterCount?filterSummary:(cached ? 'Cached · pull to refresh' : 'Everything · distance + actions')}</Text>
             </View>
           </View>
         }
@@ -1490,7 +1484,7 @@ const s = StyleSheet.create({
   help: { fontSize: 10, lineHeight: 15, color: '#5f7468' },
   mapSection:{paddingHorizontal:0,gap:0,position:'relative',marginTop:8},
   mapFrame: {
-    minHeight: 380,
+    minHeight: 360,
     borderRadius: 0,
     overflow: 'hidden',
     borderWidth: 0,
@@ -1507,21 +1501,16 @@ const s = StyleSheet.create({
   markerActive: { transform: [{ scale: 1.08 }] },
   markerPhoto:{width:34,height:34,borderRadius:17,backgroundColor:'#e7eee9'},
   markerPhotoActive:{width:42,height:42,borderRadius:21},
-  mapBadge: { position: 'absolute', left: 10, zIndex:50, elevation:14, borderRadius: 999, backgroundColor: 'rgba(23,61,43,.9)', paddingHorizontal: 9, paddingVertical: 6 },
-  mapBadgeText: { fontSize: 8, fontWeight: '900', color: '#fff' },
-  mapControls: { position: 'absolute', right: 10, zIndex:54, elevation:18, gap: 6 },
+  mapControls: { position: 'absolute'  mapControls: { position: 'absolute', right: 10, zIndex:54, elevation:18, gap: 6 },
   mapControl: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cbd9d0', alignItems: 'center', justifyContent: 'center' },
   mapControlText: { fontSize: 19, fontWeight: '900', color: palette.green },
   searchThisArea:{position:'absolute',left:92,right:58,zIndex:52,elevation:16,minHeight:38,borderRadius:999,borderWidth:1,alignItems:'center',justifyContent:'center',paddingHorizontal:12},
   searchThisAreaText:{fontSize:10,fontWeight:'900'},
   legendWrap: { position: 'absolute', left: 10, right: 56, zIndex:48 },
-  nearbySummary:{position:'absolute',left:10,right:10,bottom:12,zIndex:34,elevation:10,borderRadius:14,borderWidth:1,paddingHorizontal:12,paddingVertical:8},
-  nearbySummaryTitle:{fontSize:11,fontWeight:'900'},
-  nearbySummaryHint:{fontSize:9,fontWeight:'800',marginTop:2},
-  resultsPeek:{minHeight:42,borderTopWidth:1,borderBottomWidth:1,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
-  resultsPeekTitle:{fontSize:11,fontWeight:'900'},
-  resultsPeekHint:{fontSize:10,fontWeight:'900'},
-  selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
+  resultsHandoff:{minHeight:38,borderTopWidth:1,borderBottomWidth:1,paddingHorizontal:14,paddingVertical:7,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
+  resultsHandoffText:{flex:1,fontSize:10,fontWeight:'900'},
+  resultsHandoffAction:{fontSize:10,fontWeight:'900'},
+  selectedPanel: { position: 'absolute'  selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
   selectedBodyScroll:{flex:1},
   selectedBodyContent:{gap:4,paddingBottom:0},
   selectedHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
