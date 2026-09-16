@@ -67,7 +67,8 @@ requireTokens('Consumer Explore modal','apps/consumer-mobile/features/AdaptiveEx
 requireTokens('Consumer review cards','apps/consumer-mobile/app/location/[id].tsx',['reviewCard','theme.surface','theme.muted']);
 requireTokens('Business operational cards','apps/business-mobile/app/operations.tsx',['theme.surface','theme.warning']);
 requireTokens('Fleet low-light field surfaces','apps/fleet-mobile/app/member.tsx',['theme.surface','theme.accentSoft']);
-requireTokens('KleenestOS control cards','apps/platform-mobile/app/control.tsx',['useOSCardStyle','theme.surface']);
+requireTokens('KleenestOS control cards','apps/platform-mobile/app/control.tsx',['useOSCardStyle','theme.surface','style={card}','OSSwitch']);
+requireTokens('KleenestOS shared themed hero','apps/platform-mobile/components/KleenestOS.tsx',['backgroundColor:theme.accent','color:theme.accentText','theme.surfaceRaised','theme.success','OSSwitch','trackColor={{false:theme.line,true:theme.accentSoft}}']);
 
 const platformThemeRoutes=[
   'access','accounts','audit','auth','beta-incidents','businesses','capabilities','control','data','developers','feedback-inbox','history','index','intelligence','moderation','notifications','operations','pilots','privacy','progression','relevance','reports','support','terms'
@@ -75,10 +76,25 @@ const platformThemeRoutes=[
 for(const route of platformThemeRoutes){
   const path=`apps/platform-mobile/app/${route}.tsx`;
   requireTokens(`KleenestOS ${route} theme coverage`,path,['usePlatformTheme','theme.canvas','theme.ink','theme.muted']);
+  const source=read(path);
+  if(source.includes('<Switch '))failures.push(`KleenestOS ${route} must use OSSwitch so seasonal themes reach toggle controls.`);
+  if(source.includes("theme.resolved==='dark'?theme.surfaceRaised"))failures.push(`KleenestOS ${route} must not collapse seasonal heroes into the generic dark raised surface.`);
 }
 requireTokens('KleenestOS account theme coverage','apps/platform-mobile/app/account.tsx',['resolveKleenestTheme','theme.canvas','theme.surface','theme.ink','theme.muted']);
-requireTokens('KleenestOS Developer deep theme','apps/platform-mobile/app/developers.tsx',['theme.surface','theme.surfaceRaised','theme.accentText','theme.line']);
-requireTokens('KleenestOS Pilots deep theme','apps/platform-mobile/app/pilots.tsx',['theme.surface','theme.surfaceRaised','theme.accentText','theme.line']);
+requireTokens('KleenestOS Developer deep theme','apps/platform-mobile/app/developers.tsx',['theme.surface','theme.surfaceRaised','theme.accentText','theme.line','backgroundColor:theme.accent,borderColor:theme.accent']);
+requireTokens('KleenestOS Pilots deep theme','apps/platform-mobile/app/pilots.tsx',['theme.surface','theme.surfaceRaised','theme.accentText','theme.line','backgroundColor:theme.accent,borderColor:theme.accent','OSSwitch']);
+requireTokens('KleenestOS Operations deep theme','apps/platform-mobile/app/operations.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','color:theme.accentText','OSSwitch']);
+requireTokens('KleenestOS command pulse theme','apps/platform-mobile/app/index.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','color:theme.accentText','backgroundColor:theme.surface','color:theme.ink']);
+
+const controlThemeSource=read('apps/platform-mobile/app/control.tsx');
+if(controlThemeSource.includes('style={osCard}'))failures.push('KleenestOS Control must not render hard-coded osCard surfaces inside themed capability cards.');
+const developerThemeSource=read('apps/platform-mobile/app/developers.tsx');
+if(developerThemeSource.includes("theme.resolved==='dark'?theme.surfaceRaised:theme.accent"))failures.push('KleenestOS Developer hero must use the edition accent pair instead of a generic dark fallback.');
+requireTokens('KleenestOS Business governance deep theme','apps/platform-mobile/app/businesses.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','color:theme.accentText','OSSwitch','placeholderTextColor={theme.muted}']);
+requireTokens('KleenestOS Capability deep theme','apps/platform-mobile/app/capabilities.tsx',['OSSwitch','backgroundColor:filter===v?theme.accent:theme.surfaceRaised','backgroundColor:c.release_state===v?theme.accent:theme.surfaceRaised','backgroundColor:theme.surface,borderColor:theme.warning']);
+requireTokens('KleenestOS Messaging deep theme','apps/platform-mobile/app/notifications.tsx',['OSSwitch','backgroundColor:active?theme.accent:theme.surfaceRaised','backgroundColor:theme.accent,borderColor:theme.accent','contentContainerStyle={[s.modalPage,{backgroundColor:theme.canvas}]}']);
+requireTokens('KleenestOS Progression deep theme','apps/platform-mobile/app/progression.tsx',['OSSwitch','backgroundColor:active?theme.accent:theme.surfaceRaised','placeholderTextColor={theme.muted}']);
+requireTokens('KleenestOS Relevance deep theme','apps/platform-mobile/app/relevance.tsx',['OSSwitch','useOSCardStyle','theme.accentText']);
 requireTokens('KleenestOS Devices deep theme','apps/platform-mobile/app/devices.tsx',['usePlatformTheme','useOSCardStyle','theme.canvas','theme.ink','theme.muted','theme.accent']);
 
 
@@ -150,15 +166,7 @@ requireTokens('Consumer app entry dark handoff','apps/consumer-mobile/app/index.
 ]);
 requireTokens('Consumer Explore functional-home dark surfaces','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',[
   'style={[s.searchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}',
-  'style={[s.resultsHandoff,{backgroundColor:theme.surface,borderColor:theme.line}]}',
-  'style={[s.listEyebrow,{color:theme.accent}]}',
-  'style={[s.listTitle,{color:theme.ink}]}',
-  'style={[s.listNote,{color:theme.muted}]}',
-]);
-requireTokens('Consumer shared hero contrast','apps/consumer-mobile/components/ConsumerUI.tsx',[
-  'heroBackground=dark?theme.surfaceRaised:theme.accent',
-  'heroPrimary=dark?theme.ink:theme.accentText',
-  'heroSecondary=dark?theme.muted:theme.accentText',
+  'style={[s.nearbySummary,{backgroundColor:theme.surface,borderColor:theme.line}]}',
 ]);
 requireTokens('Consumer Explore dark controls','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',[
   'style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}',
