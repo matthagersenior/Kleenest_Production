@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
-import { Pressable,RefreshControl,SafeAreaView,ScrollView,StyleSheet,Text,useColorScheme,View } from 'react-native';
+import { Alert,Pressable,RefreshControl,SafeAreaView,ScrollView,StyleSheet,Text,useColorScheme,View } from 'react-native';
 import { getMobileProgressionDashboard,loadKleenestThemeMode,resolveKleenestTheme,setKleenestThemeMode,subscribeKleenestTheme,type KleenestThemeMode } from '@kleenest/mobile-core';
 import { equipProgressionReward,getProgressionOverviewV2,getProgressionRewards,getProgressionWorld,listActiveObjectivesV2,listNearbyProgressionOpportunities,listProgressionRankingsV2 } from '../services/discoveryProgression';
 import { clearTrustMission,readTrustMission,type TrustMission } from '../services/trustMissions';
@@ -57,6 +57,16 @@ function rewardRequirementText(reward:any){
  if(req?.secret)return'Secret requirement';
  return `Level ${Number(req.level||1)} · Trust ${Number(req.trust_score||0)} · ${Number(req.lifetime_xp||0).toLocaleString()} XP · ${Number(req.badges||0)} badges`;
 }
+const EQUIPABLE_REWARD_KINDS=['theme','title','profile_frame','profile_background','map_flair','checkin_animation','reaction_pack','map_filter'] as const;
+const REWARD_SLOT_LABELS:Record<string,string>={
+ theme:'THEME',title:'TITLE',profile_frame:'PROFILE FRAME',profile_background:'PROFILE BACKGROUND',
+ map_flair:'MAP FLAIR',checkin_animation:'CHECK-IN EFFECT',reaction_pack:'REACTION PACK',map_filter:'MAP FILTER'
+};
+function rewardSlot(reward:any){
+ const kind=String(reward?.reward_kind||'');
+ return (EQUIPABLE_REWARD_KINDS as readonly string[]).includes(kind)?kind:'';
+}
+function rewardSlotLabel(reward:any){return REWARD_SLOT_LABELS[rewardSlot(reward)]||'REWARD';}
 
 export default function ProgressScreen(){
  const systemScheme=useColorScheme();
@@ -82,8 +92,7 @@ export default function ProgressScreen(){
  useEffect(()=>{void load()},[]);
  async function changeScope(scope:string){setRankScope(scope);await load(scope)}
  async function clearActiveMission(){try{await clearTrustMission();setActiveMission(null);setMessage('Trust mission cleared.')}catch(error:any){setMessage(error?.message||'Trust mission could not be cleared.')}}
- async function equipReward(reward:any){
-  if(!reward?.unlocked||reward?.equipped)return;
+ async function commitEquipReward(reward:any){
   try{
    await equipProgressionReward(String(reward.code));
    if(reward.reward_kind==='theme'){
@@ -93,6 +102,23 @@ export default function ProgressScreen(){
    setMessage(`${reward.name} equipped.`);
    await load();
   }catch(error:any){setMessage(error?.message||'Reward could not be equipped.')}
+ }
+ function equipReward(reward:any){
+  if(!reward?.unlocked||reward?.equipped)return;
+  const slot=rewardSlot(reward);
+  const current=slot?rewards.find((item:any)=>item?.equipped&&rewardSlot(item)===slot):null;
+  if(current&&String(current.code)!==String(reward.code)){
+   Alert.alert(
+    `Replace current ${rewardSlotLabel(reward).toLowerCase()}?`,
+    `${current.name} is active in this slot. Equipping ${reward.name} will replace it. The unlock stays in your Reward Locker and rewards in other slots stay equipped.`,
+    [
+     {text:'Cancel',style:'cancel'},
+     {text:'Replace',onPress:()=>{void commitEquipReward(reward)}}
+    ]
+   );
+   return;
+  }
+  void commitEquipReward(reward);
  }
 
  const level=overview?.global_level||{},totalXp=Number(overview?.lifetime_xp||0),currentThreshold=Number(level?.xp_threshold||0),nextThreshold=Number(level?.next_threshold||currentThreshold),span=Math.max(1,nextThreshold-currentThreshold),within=Math.max(0,totalXp-currentThreshold),pct=nextThreshold>currentThreshold?Math.min(1,within/span):1;
@@ -135,16 +161,21 @@ export default function ProgressScreen(){
   {rewards.length?<View>
    <Header kicker="REWARD LOCKER" title="Your earned Kleenest identity" body="Themes are only one layer. Earn and equip identity pieces, public titles, map flair and visual effects; unlock practical progression capabilities; and discover hidden achievements. Platform owners have access to the complete catalog, while Owner grants can unlock individual rewards early."/>
    <View style={[s.worldPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+    <View style={[s.slotNotice,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}>
+     <Text style={[s.slotNoticeTitle,{color:theme.ink}]}>One active reward per slot</Text>
+     <Text style={[s.body,{color:theme.muted}]}>Equipping another item in the same slot replaces the active choice. It does not consume the unlock, and rewards in other slots stay equipped.</Text>
+    </View>
     {rewardGroups.map(group=><View key={group.label} style={{gap:8}}>
      <Text style={[s.worldKicker,{color:theme.accent}]}>{group.label}</Text>
-     {group.items.map((reward:any)=>{const equipable=['theme','title','profile_frame','profile_background','map_flair','checkin_animation','reaction_pack','map_filter'].includes(String(reward.reward_kind));const source=String(reward.unlock_source||'locked');return <View key={reward.code} style={[s.vaultReward,{borderColor:reward.unlocked?theme.accent:theme.line,backgroundColor:theme.surfaceRaised}]}>
-      <Text style={s.vaultIcon}>{rewardGlyph(reward)}</Text>
+     {group.items.map((reward:any)=>{const slot=rewardSlot(reward);const equipable=Boolean(slot);const activeInSlot=slot?rewards.find((item:any)=>item?.equipped&&rewardSlot(item)===slot):null;const willReplace=Boolean(activeInSlot&&!reward.equipped&&String(activeInSlot.code)!==String(reward.code));const source=String(reward.unlock_source||'locked');return <View key={reward.code} style={[s.vaultReward,{borderColor:reward.unlocked?theme.accent:theme.line,backgroundColor:theme.surfaceRaised}]}>
+      <View style={[s.vaultIconWrap,{backgroundColor:reward.unlocked?theme.accent:theme.surface,borderColor:reward.unlocked?theme.accent:theme.line}]}><Text style={[s.vaultIcon,{color:reward.unlocked?theme.accentText:theme.ink}]}>{rewardGlyph(reward)}</Text></View>
       <View style={{flex:1,gap:3}}>
        <View style={s.row}><Text style={[s.cardTitle,{color:theme.ink,flex:1}]}>{reward.name}</Text><Text style={[s.vaultState,{color:reward.unlocked?theme.accent:theme.muted}]}>{reward.equipped?'EQUIPPED':reward.unlocked?'UNLOCKED':'LOCKED'}</Text></View>
+       {equipable?<Text style={[s.vaultSlot,{color:theme.muted}]}>{rewardSlotLabel(reward)} SLOT · ONE ACTIVE</Text>:null}
        <Text style={[s.body,{color:theme.muted}]}>{reward.description}</Text>
        <Text style={[s.meta,{color:theme.muted}]}>{rewardRequirementText(reward)}</Text>
        {reward.unlocked?<Text style={[s.unlockSource,{color:theme.accent}]}>{source==='platform_owner'?'PLATFORM OWNER ACCESS':source==='owner_grant'?'OWNER GRANT':source==='progression_earned'?'EARNED VIA PROGRESSION':source.replaceAll('_',' ').toUpperCase()}</Text>:null}
-       {equipable&&reward.unlocked&&!reward.equipped?<Pressable accessibilityRole="button" accessibilityLabel={`Equip ${reward.name}`} style={[s.secondary,{alignSelf:'flex-start',backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>void equipReward(reward)}><Text style={[s.secondaryText,{color:theme.accent}]}>EQUIP</Text></Pressable>:null}
+       {equipable&&reward.unlocked&&!reward.equipped?<Pressable accessibilityRole="button" accessibilityLabel={`${willReplace?'Replace current':'Equip'} ${rewardSlotLabel(reward).toLowerCase()} with ${reward.name}`} style={[s.secondary,{alignSelf:'flex-start',backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>void equipReward(reward)}><Text style={[s.secondaryText,{color:theme.accent}]}>{willReplace?'REPLACE':'EQUIP'}</Text></Pressable>:null}
       </View>
      </View>})}
     </View>)}
@@ -230,7 +261,7 @@ const s=StyleSheet.create({
  trustCard:{backgroundColor:'#112d21',borderRadius:22,padding:17,gap:10,borderWidth:1},trustTitle:{fontSize:29,fontWeight:'900',color:'#fff',marginTop:2},trustBody:{fontSize:12,lineHeight:18,color:'#d7e7dd',marginTop:4},trustDial:{width:70,height:70,borderRadius:35,backgroundColor:'#fff',alignItems:'center',justifyContent:'center',borderWidth:1},trustScore:{fontSize:23,fontWeight:'900',color:'#173d2b'},trustScoreLabel:{fontSize:7,fontWeight:'900',color:'#6a766f'},darkTrack:{height:8,borderRadius:999,backgroundColor:'#315141',overflow:'hidden'},goldFill:{height:'100%',backgroundColor:'#f0d17d'},trustStats:{flexDirection:'row',gap:7},miniDark:{flex:1,backgroundColor:'#1d4030',borderRadius:12,padding:9},miniDarkValue:{fontSize:16,fontWeight:'900',color:'#fff'},miniDarkLabel:{fontSize:7,fontWeight:'800',color:'#bad0c2',marginTop:2},trustFoot:{fontSize:10,lineHeight:15,color:'#bad0c2'},
  seasonHero:{backgroundColor:'#143925',borderRadius:26,padding:19,gap:11,borderWidth:1,borderColor:'#2c5c42'},seasonTop:{flexDirection:'row',justifyContent:'space-between',gap:10,alignItems:'flex-start'},seasonIdentity:{flex:1,minWidth:0},seasonLabel:{fontSize:9,fontWeight:'900',letterSpacing:1.8,color:'#f0d17d'},seasonTitle:{fontSize:28,lineHeight:31,fontWeight:'900',color:'#fff',marginTop:3,flexShrink:1},seasonBody:{fontSize:13,lineHeight:20,color:'#d7e7dd'},daysPill:{backgroundColor:'#fff',borderRadius:16,paddingHorizontal:12,paddingVertical:9,alignItems:'center',borderWidth:1},daysValue:{fontSize:20,fontWeight:'900',color:'#173d2b'},daysLabel:{fontSize:7,fontWeight:'900',color:'#65756b'},seasonScore:{flexDirection:'row',gap:8,alignItems:'baseline'},seasonScoreValue:{fontSize:32,fontWeight:'900',color:'#f0d17d'},seasonScoreLabel:{fontSize:9,fontWeight:'900',color:'#c8d8ce'},chapterNow:{backgroundColor:'#1d4934',borderRadius:17,padding:13,gap:3,borderWidth:1},chapterTitle:{fontSize:19,fontWeight:'900',color:'#fff'},chapterBody:{fontSize:11,lineHeight:16,color:'#d4e4da'},reveal:{backgroundColor:'#fff',borderRadius:17,padding:13,gap:3,borderWidth:1},revealKicker:{fontSize:8,fontWeight:'900',letterSpacing:1.4,color:'#8a6414'},revealTitle:{fontSize:17,fontWeight:'900',color:palette.ink},revealBody:{fontSize:11,lineHeight:16,color:palette.muted},
  chapterRail:{gap:9,paddingVertical:2},chapterCard:{width:205,minHeight:150,backgroundColor:'#fff',borderRadius:17,padding:13,borderWidth:1,borderColor:'#dbe5de',gap:4},chapterActive:{borderWidth:2,borderColor:palette.green},chapterLocked:{opacity:.62},chapterNumber:{fontSize:8,fontWeight:'900',letterSpacing:1.2,color:'#8a6414'},chapterCardTitle:{fontSize:17,fontWeight:'900',color:palette.ink},chapterCardBody:{fontSize:11,lineHeight:16,color:palette.muted},chapterMechanic:{fontSize:8,fontWeight:'900',color:palette.green,marginTop:5,textTransform:'uppercase'},
- worldPanel:{backgroundColor:'#fff',borderRadius:20,padding:16,borderWidth:1,borderColor:'#d9e4dc',gap:9},worldKicker:{fontSize:9,fontWeight:'900',letterSpacing:1.4,color:'#557060'},worldTitle:{fontSize:22,lineHeight:26,fontWeight:'900',color:palette.ink},vaultReward:{flexDirection:'row',gap:11,padding:12,borderRadius:15,borderWidth:1},vaultIcon:{fontSize:29},vaultState:{fontSize:8,fontWeight:'900',letterSpacing:1},unlockSource:{fontSize:9,fontWeight:'900',letterSpacing:.8,marginTop:3},meterLine:{flexDirection:'row',justifyContent:'space-between',gap:8},meterValue:{fontSize:10,fontWeight:'900',color:palette.green},prizeRow:{flexDirection:'row',gap:7,flexWrap:'wrap'},prize:{flexGrow:1,flexBasis:95,backgroundColor:'#faf5e3',borderRadius:13,padding:10},prizePlace:{fontSize:8,fontWeight:'900',color:'#765b15'},prizeReward:{fontSize:10,lineHeight:14,fontWeight:'800',color:palette.ink,marginTop:3},rivalRow:{flexDirection:'row',alignItems:'center',gap:10,borderTopWidth:1,borderTopColor:'#edf1ee',paddingTop:9},rivalRank:{width:34,fontSize:16,fontWeight:'900',color:palette.green},rivalName:{fontSize:13,fontWeight:'900',color:palette.ink},youPill:{fontSize:8,fontWeight:'900',color:'#fff',backgroundColor:palette.green,paddingHorizontal:8,paddingVertical:5,borderRadius:999},
+ worldPanel:{backgroundColor:'#fff',borderRadius:20,padding:16,borderWidth:1,borderColor:'#d9e4dc',gap:9},worldKicker:{fontSize:9,fontWeight:'900',letterSpacing:1.4,color:'#557060'},worldTitle:{fontSize:22,lineHeight:26,fontWeight:'900',color:palette.ink},slotNotice:{borderRadius:14,borderWidth:1,padding:11,gap:3,marginBottom:2},slotNoticeTitle:{fontSize:12,fontWeight:'900'},vaultReward:{flexDirection:'row',gap:11,padding:12,borderRadius:15,borderWidth:1},vaultIconWrap:{width:44,height:44,borderRadius:22,borderWidth:1.5,alignItems:'center',justifyContent:'center',flexShrink:0},vaultIcon:{fontSize:25,fontWeight:'900',textAlign:'center'},vaultState:{fontSize:8,fontWeight:'900',letterSpacing:1,textAlign:'right'},vaultSlot:{fontSize:8,fontWeight:'900',letterSpacing:.8},unlockSource:{fontSize:9,fontWeight:'900',letterSpacing:.8,marginTop:3},meterLine:{flexDirection:'row',justifyContent:'space-between',gap:8},meterValue:{fontSize:10,fontWeight:'900',color:palette.green},prizeRow:{flexDirection:'row',gap:7,flexWrap:'wrap'},prize:{flexGrow:1,flexBasis:95,backgroundColor:'#faf5e3',borderRadius:13,padding:10},prizePlace:{fontSize:8,fontWeight:'900',color:'#765b15'},prizeReward:{fontSize:10,lineHeight:14,fontWeight:'800',color:palette.ink,marginTop:3},rivalRow:{flexDirection:'row',alignItems:'center',gap:10,borderTopWidth:1,borderTopColor:'#edf1ee',paddingTop:9},rivalRank:{width:34,fontSize:16,fontWeight:'900',color:palette.green},rivalName:{fontSize:13,fontWeight:'900',color:palette.ink},youPill:{fontSize:8,fontWeight:'900',color:'#fff',backgroundColor:palette.green,paddingHorizontal:8,paddingVertical:5,borderRadius:999},
  grid:{flexDirection:'row',flexWrap:'wrap',gap:8},specialty:{width:'48%',backgroundColor:'#fff',borderRadius:16,padding:13,borderWidth:1,borderColor:'#dbe5de',gap:3},specialtyLevel:{fontSize:10,fontWeight:'900',color:palette.green},card:{backgroundColor:'#fff',borderRadius:17,padding:14,borderWidth:1,borderColor:'#dbe5de',gap:8},cardTitle:{fontSize:15,fontWeight:'900',color:palette.ink},meta:{fontSize:10.5,fontWeight:'700',color:palette.muted},row:{flexDirection:'row',alignItems:'flex-start',gap:10},distance:{fontSize:11,fontWeight:'900',color:palette.green},reward:{fontSize:12,fontWeight:'900'},
  trackSmall:{height:7,borderRadius:999,backgroundColor:'#e3ebe6',overflow:'hidden'},fillSmall:{height:'100%',backgroundColor:palette.green},empty:{backgroundColor:'#fff',borderRadius:15,padding:13,borderWidth:1,borderColor:'#e1e8e3'},
  objective:{borderRadius:19,padding:15,borderWidth:1.5,gap:8},objectiveIcon:{width:42,height:42,borderRadius:21,backgroundColor:'#fff',alignItems:'center',justifyContent:'center',borderWidth:1},objectiveIconText:{fontSize:21},objectiveKicker:{fontSize:8,fontWeight:'900',letterSpacing:1.1},objectiveTitle:{fontSize:18,lineHeight:22,fontWeight:'900',color:palette.ink,marginTop:2},objectiveRule:{fontSize:10,lineHeight:15,fontWeight:'800',color:'#53665a'},milestones:{flexDirection:'row',justifyContent:'space-between',gap:6},milestone:{width:28,height:28,borderRadius:14,backgroundColor:'#fff',borderWidth:1,borderColor:'#d7e2da',alignItems:'center',justifyContent:'center'},milestoneText:{fontSize:8,fontWeight:'900',color:palette.green},

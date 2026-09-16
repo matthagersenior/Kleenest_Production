@@ -36,6 +36,9 @@ for(const mode of ['flow_builder','stack_sort','tower_defense','route_rush']){
 }
 
 if(!files.progress.includes('REWARD LOCKER')) throw new Error('Progress screen missing Reward Locker');
+for(const token of ['vaultIconWrap','One active reward per slot','rewardSlotLabel','Alert.alert(','REPLACE']){
+ if(!files.progress.includes(token)) throw new Error(`Reward Locker persistence/contrast contract missing ${token}`);
+}
 if(!files.ownerMigration.includes('owner_grant_progression_reward')) throw new Error('Owner grant authority missing');
 if(!files.ownerMigration.includes('owner_revoke_progression_reward')) throw new Error('Owner revoke authority missing');
 
