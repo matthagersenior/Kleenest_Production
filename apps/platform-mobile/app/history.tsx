@@ -20,7 +20,7 @@ export default function History(){
  async function load(){setBusy(true);try{setData(await getPlatformDashboard());setMessage('')}catch(e:any){setMessage(e?.message||'Control history unavailable.')}finally{setBusy(false)}}
  useEffect(()=>{void load()},[]);
  return <ScrollView contentInsetAdjustmentBehavior="automatic" refreshControl={<RefreshControl refreshing={busy} onRefresh={load}/>} contentContainerStyle={[s.page,{backgroundColor:theme.canvas},{backgroundColor:theme.canvas}]}>
-  <View style={[s.hero,{backgroundColor:theme.accent,borderColor:theme.line},{backgroundColor:theme.accent,borderColor:theme.line}]}><Text style={[s.eyebrow,{color:theme.accentText},{color:theme.accentText}]}>AUDITED CONTROL PLANE</Text><Text style={[s.heroTitle,{color:theme.accentText},{color:theme.accentText}]}>Platform history</Text><Text style={[s.heroCopy,{color:theme.accentText},{color:theme.accentText}]}>Review administrative mutations and recent platform activity as readable operator events instead of raw backend payloads.</Text></View>
+  <View style={[s.hero,{backgroundColor:theme.accent,borderColor:theme.accent}]}><Text style={[s.eyebrow,{color:theme.accentText},{color:theme.accentText}]}>AUDITED CONTROL PLANE</Text><Text style={[s.heroTitle,{color:theme.accentText},{color:theme.accentText}]}>Platform history</Text><Text style={[s.heroCopy,{color:theme.accentText},{color:theme.accentText}]}>Review administrative mutations and recent platform activity as readable operator events instead of raw backend payloads.</Text></View>
   {message?<Text style={[s.message,{color:theme.muted},{color:theme.muted}]}>{message}</Text>:null}
   <Section title="Control history" value={data?.history} emptyText="No control history recorded."/>
   <Section title="Platform activity" value={data?.activity} emptyText="No platform activity recorded."/>
@@ -30,7 +30,7 @@ export default function History(){
 function Section({title,value,emptyText}:{title:string;value:unknown;emptyText:string}){
   const theme=usePlatformTheme();
  const rows=listRows(value);
- return <View style={[s.section,{backgroundColor:theme.surface,borderColor:theme.line},{backgroundColor:theme.surface,borderColor:theme.line}]}><View style={s.sectionHead}><Text style={[s.sectionTitle,{color:theme.ink},{color:theme.ink}]}>{title}</Text><Text style={[s.count,{color:theme.ink},{color:theme.ink}]}>{rows.length} events</Text></View>{rows.length?rows.slice(0,100).map((row,index)=><HistoryCard key={field(row,['id','event_id','created_at'])||`${title}:${index}`} row={row}/>):<View style={[s.empty,{backgroundColor:theme.surface,borderColor:theme.line},{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={s.emptyText}>{emptyText}</Text></View>}</View>;
+ return <View style={[s.section,{backgroundColor:theme.surface,borderColor:theme.line},{backgroundColor:theme.surface,borderColor:theme.line}]}><View style={s.sectionHead}><Text style={[s.sectionTitle,{color:theme.ink},{color:theme.ink}]}>{title}</Text><Text style={[s.count,{color:theme.ink},{color:theme.ink}]}>{rows.length} events</Text></View>{rows.length?rows.slice(0,100).map((row,index)=><HistoryCard key={field(row,['id','event_id','created_at'])||`${title}:${index}`} row={row}/>):<View style={[s.empty,{backgroundColor:theme.surface,borderColor:theme.line},{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.emptyText,{color:theme.muted}]}>{emptyText}</Text></View>}</View>;
 }
 
 function HistoryCard({row}:{row:Row}){
@@ -42,7 +42,7 @@ function HistoryCard({row}:{row:Row}){
  const detail=field(row,['reason','message','description','issue','note']);
  const timestamp=formatTimestamp(row.created_at??row.occurred_at??row.recorded_at??row.updated_at);
  return <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line},{backgroundColor:theme.surface,borderColor:theme.line}]}>
-  <View style={s.cardHead}><Text style={[s.cardTitle,{color:theme.ink},{color:theme.ink}]}>{label(action)}</Text>{status?<View style={s.status}><Text style={s.statusText}>{label(status)}</Text></View>:null}</View>
+  <View style={s.cardHead}><Text style={[s.cardTitle,{color:theme.ink},{color:theme.ink}]}>{label(action)}</Text>{status?<View style={[s.status,{backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}]}><Text style={[s.statusText,{color:theme.ink}]}>{label(status)}</Text></View>:null}</View>
   {subject?<Text style={[s.subject,{color:theme.ink},{color:theme.ink}]}>{label(subject)}</Text>:null}
   {detail?<Text style={[s.detail,{color:theme.muted},{color:theme.muted}]}>{detail}</Text>:null}
   <View style={s.metaRow}>{actor?<Text style={[s.meta,{color:theme.muted},{color:theme.muted}]}>Actor · {actor}</Text>:null}{timestamp?<Text style={[s.meta,{color:theme.muted},{color:theme.muted}]}>{timestamp}</Text>:null}</View>
