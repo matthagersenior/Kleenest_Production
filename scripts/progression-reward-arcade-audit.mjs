@@ -6,7 +6,7 @@ const files={
  progress:fs.readFileSync('apps/consumer-mobile/app/progress.tsx','utf8'),
  modes:fs.readFileSync('apps/consumer-mobile/services/gameModes.ts','utf8'),
  arena:fs.readFileSync('apps/consumer-mobile/app/game/[code].tsx','utf8'),
- ownerMigration:fs.readFileSync('supabase/migrations/20260915154500_enable_seasonal_theme_progression.sql','utf8'),
+ ownerMigration:fs.readFileSync('supabase/migrations/20260915154500_enable_seasonal_theme_progression.sql','utf8')+fs.readFileSync('supabase/migrations/20260916013000_progression_reward_inventory_arcade_expansion.sql','utf8'),
 };
 
 const requiredThemes=[
