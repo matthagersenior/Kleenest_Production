@@ -1,6 +1,8 @@
 name: Progression Reward Arcade Contract
 
 on:
+  push:
+    branches: [feature/progression-rewards-arcade]
   pull_request:
     branches: [main]
 
