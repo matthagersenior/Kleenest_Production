@@ -1,6 +1,12 @@
 name: Publish Emergency Consumer OTA
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/consumer-mobile/**'
+      - 'packages/mobile-core/**'
+      - '.github/workflows/ota-consumer.yml'
   workflow_dispatch:
 
 permissions:
