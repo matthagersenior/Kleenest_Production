@@ -20,3 +20,5 @@ jobs:
           node-version: 22
       - name: Progression reward and arcade contract
         run: node scripts/progression-reward-arcade-audit.mjs
+      - name: Progression reward runtime contract
+        run: node scripts/progression-reward-runtime-audit.mjs
