@@ -6,8 +6,8 @@ import { getKleenestSupabaseClient, loadKleenestThemeMode, resolveKleenestTheme,
 import { currentFleetBusinessId,getFleetWorkspaceAccess,subscribeFleetWorkspaceChange,type FleetWorkspaceRole } from '../services/control';
 import { getFleetOnboardingGate } from '../services/onboarding';
 
-const ONBOARDING_BYPASS=new Set(['onboarding','workspaces','support','terms','privacy','account']);
-const MEMBER_ALLOWED=new Set(['member','nearby','notifications','workspaces','support','terms','privacy','account','auth']);
+const ONBOARDING_BYPASS=new Set(['onboarding','workspaces','support','terms','privacy','account','search']);
+const MEMBER_ALLOWED=new Set(['member','nearby','notifications','workspaces','support','terms','privacy','account','auth','search']);
 
 export default function Layout(){
   const systemScheme=useColorScheme();
