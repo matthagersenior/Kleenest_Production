@@ -1,6 +1,6 @@
 import { useEffect,useMemo,useState } from 'react';
-import { Pressable,RefreshControl,ScrollView,StyleSheet,Switch,Text,TextInput,View } from 'react-native';
-import { OSHero,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
+import { Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
+import { OSHero,OSSwitch,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
 import { getOwnerRelevanceSponsorshipSnapshot,updateOwnerHeroPolicy,updateOwnerSponsoredPlacement,upsertOwnerSponsoredCampaign } from '../services/ownerAdmin';
 
@@ -56,7 +56,7 @@ export default function RelevanceControl(){
   <View style={{gap:10}}>
    <SectionHeader title="Organic hero policies" body="Swipeable hero panels can highlight review opportunities, missions, fresh Kleenest places, saved choices, top organic results and progression. No paid kind can be added here."/>
    {policies.map((row:any)=><View key={String(row.surface_code)} style={card}>
-    <View style={s.row}><View style={{flex:1}}><Text style={[s.title,{color:theme.ink}]}>{human(String(row.surface_code))}</Text><Text style={[s.meta,{color:theme.muted}]}>{Array.isArray(row.allowed_kinds)?row.allowed_kinds.map(human).join(' · '):''}</Text></View><Switch value={row.active!==false} onValueChange={value=>tuneHero(row,{active:value})}/></View>
+    <View style={s.row}><View style={{flex:1}}><Text style={[s.title,{color:theme.ink}]}>{human(String(row.surface_code))}</Text><Text style={[s.meta,{color:theme.muted}]}>{Array.isArray(row.allowed_kinds)?row.allowed_kinds.map(human).join(' · '):''}</Text></View><OSSwitch value={row.active!==false} onValueChange={value=>tuneHero(row,{active:value})}/></View>
     <View style={s.controlRow}>
       <Control label="Cards −" onPress={()=>tuneHero(row,{max_cards:Math.max(1,number(row.max_cards,5)-1)})}/>
       <Text style={[s.value,{color:theme.ink}]}>{row.max_cards} panels</Text>
@@ -76,7 +76,7 @@ export default function RelevanceControl(){
   <View style={{gap:10}}>
    <SectionHeader title="Sponsored inventory" body="Paid placements are separate cards below or among content. Hero-named slots are rejected by the database."/>
    {placements.map((row:any)=><View key={String(row.placement_code)} style={card}>
-    <View style={s.row}><View style={{flex:1}}><Text style={[s.title,{color:theme.ink}]}>{human(String(row.placement_code))}</Text><Text style={[s.meta,{color:theme.muted}]}>{row.surface} · {row.slot} · {row.format}</Text></View><Switch value={row.owner_enabled!==false&&row.active!==false} onValueChange={value=>tunePlacement(row,{owner_enabled:value,active:value})}/></View>
+    <View style={s.row}><View style={{flex:1}}><Text style={[s.title,{color:theme.ink}]}>{human(String(row.placement_code))}</Text><Text style={[s.meta,{color:theme.muted}]}>{row.surface} · {row.slot} · {row.format}</Text></View><OSSwitch value={row.owner_enabled!==false&&row.active!==false} onValueChange={value=>tunePlacement(row,{owner_enabled:value,active:value})}/></View>
     <View style={s.controlRow}><Control label="Cap −" onPress={()=>tunePlacement(row,{frequency_cap_daily:Math.max(1,number(row.frequency_cap_daily,3)-1)})}/><Text style={[s.value,{color:theme.ink}]}>{row.frequency_cap_daily}/day</Text><Control label="Cap +" onPress={()=>tunePlacement(row,{frequency_cap_daily:Math.min(20,number(row.frequency_cap_daily,3)+1)})}/></View>
    </View>)}
   </View>
@@ -106,7 +106,7 @@ export default function RelevanceControl(){
 
 function Rule({ok,text}:{ok:boolean;text:string}){const theme=usePlatformTheme();return <View style={s.rule}><Text style={{fontWeight:'900',color:ok?theme.success:theme.danger}}>{ok?'✓':'!'}</Text><Text style={{flex:1,color:theme.ink,fontWeight:'700'}}>{text}</Text></View>}
 function Control({label,onPress}:{label:string;onPress:()=>void}){const theme=usePlatformTheme();return <Pressable onPress={onPress} style={[s.control,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={{fontWeight:'900',fontSize:10,color:theme.accent}}>{label}</Text></Pressable>}
-function ToggleRow({label,value,onChange}:{label:string;value:boolean;onChange:(value:boolean)=>void}){const theme=usePlatformTheme();return <View style={s.row}><Text style={{flex:1,fontWeight:'800',color:theme.ink}}>{label}</Text><Switch value={value} onValueChange={onChange}/></View>}
+function ToggleRow({label,value,onChange}:{label:string;value:boolean;onChange:(value:boolean)=>void}){const theme=usePlatformTheme();return <View style={s.row}><Text style={{flex:1,fontWeight:'800',color:theme.ink}}>{label}</Text><OSSwitch value={value} onValueChange={onChange}/></View>}
 function Field({label,value,onChange,placeholder}:{label:string;value:string;onChange:(value:string)=>void;placeholder:string}){const theme=usePlatformTheme();return <View style={{gap:4}}><Text style={[s.meta,{color:theme.muted}]}>{label}</Text><TextInput value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={theme.muted} style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}/></View>}
 
 const s=StyleSheet.create({

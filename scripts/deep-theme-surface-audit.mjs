@@ -264,6 +264,28 @@ requireTokens('Fleet Nearby dark surfaces','apps/fleet-mobile/app/nearby.tsx',[
   'style={[s.result,{backgroundColor:theme.surface,borderColor:theme.line}',
 ]);
 
+
+requireTokens('KleenestOS control cards seasonal coverage','apps/platform-mobile/app/control.tsx',['useOSCardStyle','theme.surface','style={card}','OSSwitch']);
+requireTokens('KleenestOS shared themed hero','apps/platform-mobile/components/KleenestOS.tsx',['backgroundColor:theme.accent','color:theme.accentText','theme.surfaceRaised','theme.success','OSSwitch','trackColor={{false:theme.line,true:theme.accentSoft}}']);
+for(const route of platformThemeRoutes){
+  const source=read(`apps/platform-mobile/app/${route}.tsx`);
+  if(source.includes('<Switch '))failures.push(`KleenestOS ${route} must use OSSwitch so seasonal themes reach toggle controls.`);
+  if(source.includes("theme.resolved==='dark'?theme.surfaceRaised"))failures.push(`KleenestOS ${route} must not collapse seasonal heroes into the generic dark raised surface.`);
+}
+requireTokens('KleenestOS Developer seasonal hero','apps/platform-mobile/app/developers.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','theme.surface','theme.surfaceRaised','theme.accentText','theme.line']);
+requireTokens('KleenestOS Pilots seasonal hero','apps/platform-mobile/app/pilots.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','theme.surface','theme.surfaceRaised','theme.accentText','theme.line','OSSwitch']);
+requireTokens('KleenestOS Operations seasonal coverage','apps/platform-mobile/app/operations.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','color:theme.accentText','OSSwitch']);
+requireTokens('KleenestOS command pulse theme','apps/platform-mobile/app/index.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','color:theme.accentText','backgroundColor:theme.surface','color:theme.ink']);
+const controlThemeSource=read('apps/platform-mobile/app/control.tsx');
+if(controlThemeSource.includes('style={osCard}'))failures.push('KleenestOS Control must not render hard-coded osCard surfaces inside themed capability cards.');
+const developerThemeSource=read('apps/platform-mobile/app/developers.tsx');
+if(developerThemeSource.includes("theme.resolved==='dark'?theme.surfaceRaised:theme.accent"))failures.push('KleenestOS Developer hero must use the edition accent pair instead of a generic dark fallback.');
+requireTokens('KleenestOS Business governance deep theme','apps/platform-mobile/app/businesses.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','color:theme.accentText','OSSwitch','placeholderTextColor={theme.muted}']);
+requireTokens('KleenestOS Capability deep theme','apps/platform-mobile/app/capabilities.tsx',['OSSwitch','backgroundColor:filter===v?theme.accent:theme.surfaceRaised','backgroundColor:c.release_state===v?theme.accent:theme.surfaceRaised','backgroundColor:theme.surface,borderColor:theme.warning']);
+requireTokens('KleenestOS Messaging deep theme','apps/platform-mobile/app/notifications.tsx',['OSSwitch','backgroundColor:active?theme.accent:theme.surfaceRaised','backgroundColor:theme.accent,borderColor:theme.accent','contentContainerStyle={[s.modalPage,{backgroundColor:theme.canvas}]}']);
+requireTokens('KleenestOS Progression deep theme','apps/platform-mobile/app/progression.tsx',['OSSwitch','backgroundColor:active?theme.accent:theme.surfaceRaised','placeholderTextColor={theme.muted}']);
+requireTokens('KleenestOS Relevance deep theme','apps/platform-mobile/app/relevance.tsx',['OSSwitch','useOSCardStyle','theme.accentText']);
+
 if(failures.length){
   console.error('Deep theme surface audit failed:');
   for(const failure of failures)console.error('- '+failure);
