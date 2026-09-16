@@ -46,6 +46,8 @@ export default function RewardToolsScreen(){
  const modernObjectives=useMemo(()=>objectives.filter((o:any)=>o?.source==='progression_v2').slice(0,12),[objectives]);
  const selected=collections.find((c:any)=>String(c.id)===selectedCollection)||null;
  const equipped=cap?.equipped||{};
+ const unlockedMapFilters=Array.isArray(cap?.unlocked_map_filters)?cap.unlocked_map_filters:[];
+ const unlockedMapFilterNames=unlockedMapFilters.map((reward:any)=>String(reward?.name||reward?.reward_key||'')).filter(Boolean).join(' · ');
  async function act(work:()=>Promise<any>,success:string){try{setMessage('');await work();setMessage(success);await load()}catch(error:any){setMessage(error?.message||'That reward action could not be completed.')}}
  const focusSlots=1+Number(cap?.quest_slots||0);
  const collectionLimit=3+Number(cap?.saved_collection_bonus||0);
@@ -90,7 +92,8 @@ export default function RewardToolsScreen(){
    {cap?.verification_privilege?(queue.length?queue.slice(0,12).map((q:any)=><View key={String(q.id)} style={[s.proposal,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.rowTitle,{color:theme.ink}]}>{q.location_name}</Text><Text style={[s.meta,{color:theme.muted}]}>{[q.address,q.city,q.state].filter(Boolean).join(', ')} · {q.reason}</Text><View style={s.actions}><Pill label="Current evidence" active={q.my_signal==='supports_current_evidence'} onPress={()=>void act(()=>submitRewardDisputeAdvisory(String(q.id),'supports_current_evidence'),'Verification advisory submitted.')}/><Pill label="Business dispute" active={q.my_signal==='supports_business_dispute'} onPress={()=>void act(()=>submitRewardDisputeAdvisory(String(q.id),'supports_business_dispute'),'Verification advisory submitted.')}/><Pill label="Need more" active={q.my_signal==='needs_more_evidence'} onPress={()=>void act(()=>submitRewardDisputeAdvisory(String(q.id),'needs_more_evidence'),'Verification advisory submitted.')}/></View></View>):<Text style={[s.meta,{color:theme.muted}]}>No open photo disputes need an advisory right now.</Text>):<Text style={[s.meta,{color:theme.muted}]}>Reach the verification privilege gate to help with disputed-data missions.</Text>}
   </Section>
 
-  <Section kicker="EQUIPPED REWARDS" title="Cosmetics are live elsewhere" body={'Map flair: '+(equipped?.map_flair?.name||'none')+' · Check-in animation: '+(equipped?.checkin_animation?.name||'none')+' · Reaction pack: '+(equipped?.reaction_pack?.name||'none')+' · Map filter: '+(equipped?.map_filter?.name||'none')+'. Those apply directly on Explore, check-in and Community.'}/>
+  <Section kicker="PERMANENT MAP FILTERS" title="Unlocked filters stay yours" body={unlockedMapFilterNames?unlockedMapFilterNames+'. Every unlocked filter remains available in Explore and can be combined with the others.':'Earn map-filter rewards to permanently add new Explore filters.'}/>
+  <Section kicker="EQUIPPED REWARDS" title="Cosmetics are live elsewhere" body={'Map flair: '+(equipped?.map_flair?.name||'none')+' · Check-in animation: '+(equipped?.checkin_animation?.name||'none')+' · Reaction pack: '+(equipped?.reaction_pack?.name||'none')+'. These cosmetic choices still use one active item per slot.'}/>
  </ScrollView></SafeAreaView>;
 }
 
