@@ -15,6 +15,7 @@ import BetaReportButton from '../components/BetaReportButton';
 import { flushQueuedBetaReports,recordBetaBreadcrumb } from '../services/betaReporting';
 import { captureConsumerCoreLoopEvent } from '../services/consumerTelemetry';
 import { getProgressionRewards } from '../services/discoveryProgression';
+import { runConsumerPermissionPreflight } from '../services/permissionPreflight';
 
 const operatorOAuthRelaying=relayOperatorOAuthCallback();
 
@@ -82,10 +83,15 @@ export default function RootLayout() {
   },[]);
   useEffect(()=>{captureConsumerCoreLoopEvent('app_open',null,{surface:Platform.OS==='web'?'web':'native'})},[]);
   useEffect(()=>{
-    if(Platform.OS==='web'||__DEV__||!Updates.isEnabled)return;
-    void applyPendingConsumerOta();
-    const otaAppState=AppState.addEventListener('change',state=>{if(state==='active')void applyPendingConsumerOta()});
-    return()=>otaAppState.remove();
+    if(Platform.OS==='web')return;
+    let active=true;
+    const syncNativeLaunchState=async()=>{
+      if(!__DEV__&&Updates.isEnabled)await applyPendingConsumerOta();
+      if(active)await runConsumerPermissionPreflight();
+    };
+    void syncNativeLaunchState();
+    const otaAppState=AppState.addEventListener('change',state=>{if(state==='active')void syncNativeLaunchState()});
+    return()=>{active=false;otaAppState.remove()};
   },[]);
   useEffect(()=>{if(!publicWeb)recordBetaBreadcrumb('route',pathname)},[pathname,publicWeb]);
   useEffect(() => {
