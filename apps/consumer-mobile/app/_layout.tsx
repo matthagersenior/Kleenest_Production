@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+import * as Updates from 'expo-updates';
 import { isKleenestSeasonalThemeMode, loadKleenestThemeMode, markMobileNotificationRead, resolveKleenestTheme, setKleenestThemeMode, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
 import { router, Tabs, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -16,6 +17,28 @@ import { captureConsumerCoreLoopEvent } from '../services/consumerTelemetry';
 import { getProgressionRewards } from '../services/discoveryProgression';
 
 const operatorOAuthRelaying=relayOperatorOAuthCallback();
+
+let otaCheckInFlight=false;
+let lastOtaCheckAt=0;
+const OTA_CHECK_THROTTLE_MS=5*60*1000;
+
+async function applyPendingConsumerOta(){
+  if(Platform.OS==='web'||__DEV__||!Updates.isEnabled||otaCheckInFlight)return;
+  const now=Date.now();
+  if(now-lastOtaCheckAt<OTA_CHECK_THROTTLE_MS)return;
+  lastOtaCheckAt=now;
+  otaCheckInFlight=true;
+  try{
+    const check=await Updates.checkForUpdateAsync();
+    if(!check.isAvailable)return;
+    const fetched=await Updates.fetchUpdateAsync();
+    if(fetched.isNew)await Updates.reloadAsync();
+  }catch{
+    // Never block launch or foreground recovery if Expo Update checks are unavailable.
+  }finally{
+    otaCheckInFlight=false;
+  }
+}
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }),
@@ -58,6 +81,12 @@ export default function RootLayout() {
     return()=>{active=false;unsubscribe()};
   },[]);
   useEffect(()=>{captureConsumerCoreLoopEvent('app_open',null,{surface:Platform.OS==='web'?'web':'native'})},[]);
+  useEffect(()=>{
+    if(Platform.OS==='web'||__DEV__||!Updates.isEnabled)return;
+    void applyPendingConsumerOta();
+    const otaAppState=AppState.addEventListener('change',state=>{if(state==='active')void applyPendingConsumerOta()});
+    return()=>otaAppState.remove();
+  },[]);
   useEffect(()=>{if(!publicWeb)recordBetaBreadcrumb('route',pathname)},[pathname,publicWeb]);
   useEffect(() => {
     if(operatorOAuthRelaying)return;
