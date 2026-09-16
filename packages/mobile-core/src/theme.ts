@@ -85,7 +85,7 @@ const sameAccents=(value:string):Record<KleenestThemeContext,string>=>({
  consumer:value,progress:value,game:value,community:value,business:value,fleet:value,platform:value,
 });
 const specialEditions:Partial<Record<KleenestThemeMode,ThemeEdition>>={
-  'clean-slate':{resolved:'light',canvas:'#f4f8f7',surface:'#ffffff',surfaceRaised:'#e8f0ee',ink:'#10211d',muted:'#52645f',line:'#bccdc8',accents:sameAccents('#247466'),soft:'#dcece7',accentText:'#ffffff',danger:'#9a3838',warning:'#90631d',success:'#247466',statusBar:'dark'},
+  'clean-slate':{resolved:'light',canvas:'#e9f1ee',surface:'#ffffff',surfaceRaised:'#e8f0ee',ink:'#10211d',muted:'#52645f',line:'#bccdc8',accents:sameAccents('#247466'),soft:'#dcece7',accentText:'#ffffff',danger:'#9a3838',warning:'#90631d',success:'#247466',statusBar:'dark'},
   'midnight-transit':{resolved:'dark',canvas:'#070d18',surface:'#101b2d',surfaceRaised:'#182943',ink:'#f5f8ff',muted:'#b4c3d8',line:'#334a69',accents:sameAccents('#72b8ff'),soft:'#173653',accentText:'#06101a',danger:'#ff7f8c',warning:'#ffc86a',success:'#72d4b4',statusBar:'light'},
   'neon-city':{resolved:'dark',canvas:'#05070b',surface:'#11151d',surfaceRaised:'#1b2230',ink:'#f9fbff',muted:'#bbc4d1',line:'#3a4658',accents:{consumer:'#44f1dd',progress:'#ffd65c',game:'#d684ff',community:'#5edcff',business:'#74f2a7',fleet:'#73aaff',platform:'#ff7ad9'},soft:'#172d34',accentText:'#041311',danger:'#ff6281',warning:'#ffd65c',success:'#44f1a6',statusBar:'light'},
   trailblazer:{resolved:'light',canvas:'#eee8d8',surface:'#fffaf0',surfaceRaised:'#e0d7bf',ink:'#263326',muted:'#5e6650',line:'#c6b994',accents:sameAccents('#4d7044'),soft:'#dce5cf',accentText:'#ffffff',danger:'#8b4338',warning:'#8a651c',success:'#4d7044',statusBar:'dark'},
