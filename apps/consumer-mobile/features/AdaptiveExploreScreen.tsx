@@ -1243,7 +1243,7 @@ export default function AdaptiveExploreScreen() {
             <View pointerEvents="box-none" style={[s.legendWrap,{top:mapChromeTop+46}]}>
               <MapLegend />
             </View>
-            {selected ? (            {selected ? (
+            {selected ? (
               <View pointerEvents="auto" style={[s.selectedPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
                 <View style={s.selectedHead}>
                   <Text style={[s.selectedLabel,{color:theme.accent}]}>BEST NEXT DECISION</Text>
