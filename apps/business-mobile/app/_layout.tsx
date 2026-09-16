@@ -7,7 +7,7 @@ import { currentBusinessId,subscribeBusinessWorkspaceChange } from '../services/
 import { getBusinessOnboardingGate } from '../services/onboarding';
 
 const ONBOARDING_BYPASS=new Set(['onboarding','workspaces','support','terms','privacy','account','get-started']);
-const PROVISIONING_ALLOWED=new Set(['get-started','onboarding','support','terms','privacy','account']);
+const PROVISIONING_ALLOWED=new Set(['get-started','onboarding','support','terms','privacy','account','search']);
 
 export default function Layout() {
   const systemScheme=useColorScheme();
