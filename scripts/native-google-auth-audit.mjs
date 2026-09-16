@@ -12,13 +12,25 @@ if(!consumerLayout.includes('relayOperatorOAuthCallback()')||!consumerLayout.inc
 if(!relay.includes('kleenest.operator.oauth.return')||!relay.includes('createdAt')||!relay.includes('OPERATOR_OAUTH_MAX_AGE_MS')||!relay.includes("'/Kleenest_Production/'+portal+'/auth/'"))failures.push('Consumer-root OAuth relay must restore a fresh Business, Fleet, or Owner callback target.');
 if(!relay.includes('getBrowserLocation')||!relay.includes("typeof location.search!=='string'")||!relay.includes('!location||!callbackPresent(location)'))failures.push('Consumer-root OAuth relay must exit safely on native runtimes where window exists without browser location APIs.');
 
+const oauthPackages=[
+  ['Consumer','apps/consumer-mobile/package.json'],
+  ['Business','apps/business-mobile/package.json'],
+  ['Fleet','apps/fleet-mobile/package.json'],
+  ['Owner','apps/platform-mobile/package.json'],
+];
+for(const [label,path] of oauthPackages){
+  const pkg=JSON.parse(read(path));
+  if(!pkg?.dependencies?.['expo-web-browser'])failures.push(`${label} must declare expo-web-browser for managed native OAuth sessions.`);
+}
+
 const consumer=read('apps/consumer-mobile/app/profile.tsx');
 const consumerCompact=compact(consumer);
 if(!consumer.includes('Continue with Google'))failures.push('Consumer must expose a visible Continue with Google action.');
 if(!consumerCompact.includes("provider:'google'")&&!consumerCompact.includes('provider:"google"'))failures.push('Consumer must authenticate with the canonical Supabase Google provider.');
 if(!consumer.includes('signInWithOAuth'))failures.push('Consumer must initiate Google authentication through Supabase OAuth.');
 if(!consumerCompact.includes("skipBrowserRedirect:Platform.OS!=='web'")&&!consumerCompact.includes('skipBrowserRedirect:Platform.OS!=="web"'))failures.push('Consumer OAuth must use browser-native redirect behavior on web and app-controlled browser navigation on native.');
-if(!consumer.includes('mobileAuthRedirect')||!consumer.includes('Linking.openURL'))failures.push('Consumer Google OAuth must return through the Kleenest mobile deep link.');
+if(!consumer.includes('mobileAuthRedirect')||!consumer.includes('WebBrowser.openAuthSessionAsync(data.url,mobileAuthRedirect)'))failures.push('Consumer Google OAuth must use an Expo auth session bound to the Kleenest mobile deep link so the browser closes on callback.');
+if(consumer.includes('else await Linking.openURL(data.url)'))failures.push('Consumer native Google OAuth must not launch as a plain external browser URL.');
 if(!consumer.includes('exchangeCodeForSession'))failures.push('Consumer must exchange the OAuth callback code for a Supabase session.');
 if(consumer.includes("Linking.createURL('/profile'")||consumer.includes('Linking.createURL("/profile"'))failures.push('Consumer OAuth callback must not use the broken triple-slashed profile deep link.');
 if(!consumer.includes("Linking.createURL('profile'")&&!consumer.includes('Linking.createURL("profile"'))failures.push("Consumer native OAuth callback must use Linking.createURL('profile', ...).");
@@ -27,17 +39,18 @@ if(!consumer.includes('/Kleenest_Production/profile/'))failures.push('Consumer w
 if(!consumer.includes("router.replace('/home')")&&!consumer.includes('router.replace("/home")'))failures.push('Consumer successful authentication must return to the signed-in Home surface instead of leaving the user on Profile.');
 
 const operatorAuth=[
-  ['Owner','apps/platform-mobile/app/auth.tsx','kleenest-owner'],
-  ['Business','apps/business-mobile/app/auth.tsx','kleenest-business'],
-  ['Fleet','apps/fleet-mobile/app/auth.tsx','kleenest-fleet'],
+  ['Owner','apps/platform-mobile/app/auth.tsx','kleenest-owner','ownerRedirect'],
+  ['Business','apps/business-mobile/app/auth.tsx','kleenest-business','authRedirect'],
+  ['Fleet','apps/fleet-mobile/app/auth.tsx','kleenest-fleet','authRedirect'],
 ];
-for(const [label,path,scheme] of operatorAuth){
+for(const [label,path,scheme,redirectName] of operatorAuth){
   const source=read(path);
   const sourceCompact=compact(source);
   if(!source.includes('Continue with Google'))failures.push(`${label} must expose a visible Continue with Google action.`);
   if(!sourceCompact.includes("provider:'google'")&&!sourceCompact.includes('provider:"google"'))failures.push(`${label} must authenticate with the canonical Supabase Google provider.`);
   if(!source.includes('signInWithOAuth')||!source.includes('skipBrowserRedirect'))failures.push(`${label} native OAuth must use Supabase OAuth with app-controlled browser navigation.`);
-  if(!source.includes('exchangeCodeForSession')||!source.includes('Linking.openURL'))failures.push(`${label} must exchange the OAuth callback and return through its native deep link.`);
+  if(!source.includes('exchangeCodeForSession')||!source.includes(`WebBrowser.openAuthSessionAsync(data.url,${redirectName})`))failures.push(`${label} must exchange the OAuth callback through a managed auth session tied to its native deep link.`);
+  if(source.includes('else await Linking.openURL(data.url)'))failures.push(`${label} native Google OAuth must not launch as a plain external browser URL.`);
   if(!source.includes('access_token')||!source.includes('refresh_token')||!source.includes('setSession'))failures.push(`${label} must accept token callbacks as a compatibility fallback while PKCE rollout converges.`);
   if(!source.includes('kleenest.operator.oauth.return'))failures.push(`${label} web OAuth must remember which operator portal initiated Google sign-in.`);
   if(!source.includes('createdAt: Date.now()'))failures.push(`${label} operator OAuth return marker must expire instead of persisting indefinitely.`);
