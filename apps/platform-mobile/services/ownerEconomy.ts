@@ -21,3 +21,32 @@ export async function listOwnerProgressionRewards():Promise<OwnerProgressionRewa
 export async function grantOwnerProgressionReward(userId:string,rewardCode:string,reason:string){await requirePlatformOwner();const{data,error}=await getKleenestSupabaseClient().rpc('owner_grant_progression_reward',{p_target_user_id:userId,p_reward_code:rewardCode,p_reason:reason.trim()});if(error)throw new Error(error.message);return data;}
 export async function revokeOwnerProgressionReward(userId:string,rewardCode:string,reason:string){await requirePlatformOwner();const{data,error}=await getKleenestSupabaseClient().rpc('owner_revoke_progression_reward',{p_target_user_id:userId,p_reward_code:rewardCode,p_reason:reason.trim()});if(error)throw new Error(error.message);return data;}
 export async function updateOwnerProgressionRewardPolicy(input:{rewardCode:string;ownerOnly:boolean;progressionUnlockEnabled:boolean;minGlobalLevel:number;minTrustScore:number;minLifetimeXp:number;minBadges:number;reason:string}){await requirePlatformOwner();const{data,error}=await getKleenestSupabaseClient().rpc('owner_update_progression_reward_policy',{p_reward_code:input.rewardCode,p_owner_only:input.ownerOnly,p_progression_unlock_enabled:input.progressionUnlockEnabled,p_min_global_level:input.minGlobalLevel,p_min_trust_score:input.minTrustScore,p_min_lifetime_xp:input.minLifetimeXp,p_min_badges:input.minBadges,p_reason:input.reason.trim()});if(error)throw new Error(error.message);return data;}
+
+
+export type OwnerCreatorMissionAttributionSummary={
+  days:number;
+  missions:Array<{
+    mission_code:string;
+    title:string;
+    status:string;
+    creator_name:string;
+    creator_handle:string;
+    creator_slug:string;
+    tracking_slug:string;
+    landing_views:number;
+    open_app:number;
+    install_intents:number;
+    unique_sessions:number;
+  }>;
+};
+
+export async function getOwnerCreatorMissionAttributionSummary(days=90):Promise<OwnerCreatorMissionAttributionSummary>{
+  await requirePlatformOwner();
+  const {data,error}=await getKleenestSupabaseClient().rpc('owner_creator_mission_attribution_summary',{p_days:Math.min(Math.max(Math.round(days),1),366)});
+  if(error)throw new Error(error.message);
+  const value=(data&&typeof data==='object'&&!Array.isArray(data)?data:{}) as Record<string,unknown>;
+  return {
+    days:Number(value.days??days),
+    missions:Array.isArray(value.missions)?value.missions as OwnerCreatorMissionAttributionSummary['missions']:[]
+  };
+}
