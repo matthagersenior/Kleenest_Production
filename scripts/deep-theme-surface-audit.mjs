@@ -67,7 +67,8 @@ requireTokens('Consumer Explore modal','apps/consumer-mobile/features/AdaptiveEx
 requireTokens('Consumer review cards','apps/consumer-mobile/app/location/[id].tsx',['reviewCard','theme.surface','theme.muted']);
 requireTokens('Business operational cards','apps/business-mobile/app/operations.tsx',['theme.surface','theme.warning']);
 requireTokens('Fleet low-light field surfaces','apps/fleet-mobile/app/member.tsx',['theme.surface','theme.accentSoft']);
-requireTokens('KleenestOS control cards','apps/platform-mobile/app/control.tsx',['useOSCardStyle','theme.surface']);
+requireTokens('KleenestOS control cards','apps/platform-mobile/app/control.tsx',['useOSCardStyle','theme.surface','style={card}','trackColor={{false:theme.line,true:theme.accentSoft}}']);
+requireTokens('KleenestOS shared themed hero','apps/platform-mobile/components/KleenestOS.tsx',['backgroundColor:theme.accent','color:theme.accentText','theme.surfaceRaised','theme.success']);
 
 const platformThemeRoutes=[
   'access','accounts','audit','auth','beta-incidents','businesses','capabilities','control','data','developers','feedback-inbox','history','index','intelligence','moderation','notifications','operations','pilots','privacy','progression','relevance','reports','support','terms'
@@ -77,8 +78,15 @@ for(const route of platformThemeRoutes){
   requireTokens(`KleenestOS ${route} theme coverage`,path,['usePlatformTheme','theme.canvas','theme.ink','theme.muted']);
 }
 requireTokens('KleenestOS account theme coverage','apps/platform-mobile/app/account.tsx',['resolveKleenestTheme','theme.canvas','theme.surface','theme.ink','theme.muted']);
-requireTokens('KleenestOS Developer deep theme','apps/platform-mobile/app/developers.tsx',['theme.surface','theme.surfaceRaised','theme.accentText','theme.line']);
-requireTokens('KleenestOS Pilots deep theme','apps/platform-mobile/app/pilots.tsx',['theme.surface','theme.surfaceRaised','theme.accentText','theme.line']);
+requireTokens('KleenestOS Developer deep theme','apps/platform-mobile/app/developers.tsx',['theme.surface','theme.surfaceRaised','theme.accentText','theme.line','backgroundColor:theme.accent,borderColor:theme.accent']);
+requireTokens('KleenestOS Pilots deep theme','apps/platform-mobile/app/pilots.tsx',['theme.surface','theme.surfaceRaised','theme.accentText','theme.line','backgroundColor:theme.accent,borderColor:theme.accent','ThemedSwitch','trackColor={{false:theme.line,true:theme.accentSoft}}']);
+requireTokens('KleenestOS Operations deep theme','apps/platform-mobile/app/operations.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','color:theme.accentText','ThemedSwitch','trackColor={{false:theme.line,true:theme.accentSoft}}']);
+requireTokens('KleenestOS command pulse theme','apps/platform-mobile/app/index.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','color:theme.accentText','backgroundColor:theme.surface','color:theme.ink']);
+
+const controlThemeSource=read('apps/platform-mobile/app/control.tsx');
+if(controlThemeSource.includes('style={osCard}'))failures.push('KleenestOS Control must not render hard-coded osCard surfaces inside themed capability cards.');
+const developerThemeSource=read('apps/platform-mobile/app/developers.tsx');
+if(developerThemeSource.includes("theme.resolved==='dark'?theme.surfaceRaised:theme.accent"))failures.push('KleenestOS Developer hero must use the edition accent pair instead of a generic dark fallback.');
 requireTokens('KleenestOS Devices deep theme','apps/platform-mobile/app/devices.tsx',['usePlatformTheme','useOSCardStyle','theme.canvas','theme.ink','theme.muted','theme.accent']);
 
 
