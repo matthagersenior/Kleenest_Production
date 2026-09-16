@@ -12,6 +12,7 @@ const ARENA_LABEL:Record<string,string>={
  clean_sweep:'CLEAN SWEEP',bathroom_memory:'MEMORY GRID',trust_or_bust:'TRUST TRIAL',flush_the_facts:'SPEED RUN',
  restroom_relay:'RELAY RUN',stall_strategy:'EVIDENCE BUDGET',sink_sprint:'SPEED RUN',route_to_relief:'ROUTE BOARD',
  review_rater:'RANKING ROOM',evidence_detective:'CASE FILE',amenity_architect:'BUILD LAB',cleanliness_clash:'TRUST BATTLE',
+ freshness_flow:'FLOW GRID',signal_stack:'SIGNAL STACK',trust_tower:'TRUST TOWER',route_rush:'ROUTE RUSH',
 };
 function friendlyGameCenterError(error:any,fallback:string){const detail=String(error?.message||'').trim();if(!detail)return fallback;const internal=/column reference|ambiguous|SQLSTATE|PGRST|schema cache|relation .* does not exist|function .* does not exist|operator does not exist|violates .*constraint|invalid input syntax|permission denied|syntax error/i.test(detail);return internal||detail.length>160?fallback:detail;}
 
@@ -28,6 +29,10 @@ const MODE_PROMISE:Record<string,string>={
  detective:'Solve trust failures before you burn through your lives.',
  builder:'Build only the profile the visit actually proves.',
  multiplayer_trust:'Win evidence-set battles and protect your streak.',
+ flow_builder:'Build a visible evidence chain node by node and keep flow integrity alive.',
+ stack_sort:'Construct a rising trust stack as each new signal changes the board.',
+ tower_defense:'Protect tower integrity across escalating waves of bad evidence.',
+ route_rush:'Read a route dashboard under pressure and commit before the clock expires.',
 };
 
 export default function GamesHub(){
@@ -46,6 +51,7 @@ export default function GamesHub(){
  async function respond(id:string,accept:boolean){try{await respondGameChallenge(id,accept);setMessage(accept?'Challenge accepted.':'Challenge declined.');await load()}catch(error:any){setMessage(friendlyGameCenterError(error,'Challenge could not be updated.'))}}
  const xp=Number(overview?.lifetime_xp??dashboard?.points??0),division=divisionForXp(xp),next=nextDivisionForXp(xp),pct=divisionProgress(xp);
  const groups=useMemo(()=>[
+  {title:'ADVANCED ARENAS',items:GAME_DEFINITIONS.filter(g=>['flow_builder','stack_sort','tower_defense','route_rush'].includes(g.mode))},
   {title:'FAST + REPLAYABLE',items:GAME_DEFINITIONS.filter(g=>['rapid_fire','amenity_sprint','evidence_tap'].includes(g.mode))},
   {title:'THINK + SOLVE',items:GAME_DEFINITIONS.filter(g=>['trust_quiz','strategy','route_puzzle','ranking','detective','builder'].includes(g.mode))},
   {title:'MATCH + COMPETE',items:GAME_DEFINITIONS.filter(g=>['memory','relay','multiplayer_trust'].includes(g.mode))},

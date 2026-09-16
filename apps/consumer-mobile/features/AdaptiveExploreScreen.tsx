@@ -43,6 +43,7 @@ import {
 } from '../services/nearbyCache';
 import { captureConsumerCoreLoopEvent, captureConsumerDiscovery, captureConsumerRouteIntent } from '../services/consumerTelemetry';
 import { listNearbyProgressionOpportunities } from '../services/discoveryProgression';
+import { getRewardCapabilities } from '../services/rewardRuntime';
 import { attachLocationPresentations } from '../services/locationPresentation';
 import { recordConsumerPresenceAt, refreshConsumerPresence, type ConsumerPresence } from '../services/presence';
 import {
@@ -174,6 +175,8 @@ function recommendationReason(row:any,requested:string[]){
   return parts.length?parts.join(' · '):'best nearby fit';
 }
 const isFreshWithinDays=(row:any,days:number|null)=>{if(!days)return true;const time=freshestEvidenceAt(row);return time!=null&&Date.now()-time<=days*86400000;};
+const hasVerifiedEvidence=(row:any)=>Boolean(row?.network?.network_verified)||Number(row?.trust?.verified_visit_count||0)>0;
+const hasEvidenceGap=(row:any)=>{const fresh=freshestEvidenceAt(row);const stale=!fresh||Date.now()-fresh>30*86400000;const visits=Math.max(Number(row?.trust?.verified_visit_count||0),Number(row?.network?.verified_visits||0));return stale||visits<2||Boolean(row?.needs_restroom_verification);};
 
 function trustSummaryLine(item: any) {
   const trust = item?.trust;
@@ -408,6 +411,10 @@ export default function AdaptiveExploreScreen() {
   const [progressionOnly,setProgressionOnly]=useState(false);
   const [minimumStars,setMinimumStars]=useState(0);
   const [freshnessDays,setFreshnessDays]=useState<number|null>(null);
+  const [verifiedEvidenceOnly,setVerifiedEvidenceOnly]=useState(false);
+  const [evidenceGapOnly,setEvidenceGapOnly]=useState(false);
+  const [progressionPriority,setProgressionPriority]=useState(false);
+  const [rewardCapabilities,setRewardCapabilities]=useState<any>({});
   const [route, setRoute] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -417,25 +424,39 @@ export default function AdaptiveExploreScreen() {
   const searchPanelTop=Platform.OS==='android'?Math.max(8,insets.top+4):8;
   const mapChromeTop=10;
 
-  const visibleRows=useMemo(()=>rows.filter((row)=>{
-    if(kleenestOnly&&!isKleenestPlace(row))return false;
-    if(progressionOnly&&!row?.progression_opportunity)return false;
-    if(minimumStars>0&&ratingOf(row)<minimumStars)return false;
-    if(!isFreshWithinDays(row,freshnessDays))return false;
-    return true;
-  }),[rows,kleenestOnly,progressionOnly,minimumStars,freshnessDays]);
+  const equippedMapFilter=String(rewardCapabilities?.equipped?.map_filter?.reward_key||'');
+  const equippedMapFlair=String(rewardCapabilities?.equipped?.map_flair?.reward_key||'');
+  const precisionFilterEquipped=equippedMapFilter==='precision';
+  const progressionFilterEquipped=equippedMapFilter==='progression-opportunities';
+  const evidenceGapRadar=Boolean(rewardCapabilities?.beta_features?.evidence_gap_radar);
+  const visibleRows=useMemo(()=>{
+    const filtered=rows.filter((row)=>{
+      if(kleenestOnly&&!isKleenestPlace(row))return false;
+      if(progressionOnly&&!row?.progression_opportunity)return false;
+      if(minimumStars>0&&ratingOf(row)<minimumStars)return false;
+      if(!isFreshWithinDays(row,freshnessDays))return false;
+      if(verifiedEvidenceOnly&&!hasVerifiedEvidence(row))return false;
+      if(evidenceGapOnly&&!hasEvidenceGap(row))return false;
+      return true;
+    });
+    if(progressionPriority&&progressionFilterEquipped)return [...filtered].sort((a,b)=>Number(Boolean(b?.progression_opportunity))-Number(Boolean(a?.progression_opportunity)));
+    return filtered;
+  },[rows,kleenestOnly,progressionOnly,minimumStars,freshnessDays,verifiedEvidenceOnly,evidenceGapOnly,progressionPriority,progressionFilterEquipped]);
   const freshNearbyCount=useMemo(()=>visibleRows.filter((row)=>isFreshWithinDays(row,7)).length,[visibleRows]);
   const kleenestNearbyCount=useMemo(()=>visibleRows.filter(isKleenestPlace).length,[visibleRows]);
-  const activeFilterCount=(kleenestOnly?1:0)+(progressionOnly?1:0)+(minimumStars>0?1:0)+(freshnessDays?1:0)+(selectedAmenityNames.length?1:0);
+  const activeFilterCount=(kleenestOnly?1:0)+(progressionOnly?1:0)+(minimumStars>0?1:0)+(freshnessDays?1:0)+(selectedAmenityNames.length?1:0)+(verifiedEvidenceOnly?1:0)+(evidenceGapOnly?1:0)+(progressionPriority?1:0);
   const filterSummary=useMemo(()=>{
     const parts:string[]=[];
     if(kleenestOnly)parts.push('Kleenest');
     if(progressionOnly)parts.push('Progression');
     if(minimumStars>0)parts.push(`${minimumStars}★+`);
     if(freshnessDays)parts.push(freshnessDays===1?'Fresh 24h':`Fresh ${freshnessDays}d`);
+    if(verifiedEvidenceOnly)parts.push('Verified evidence');
+    if(evidenceGapOnly)parts.push('Evidence gaps');
+    if(progressionPriority)parts.push('Progression first');
     if(selectedAmenityNames.length)parts.push(`${selectedAmenityNames.length} amenity${selectedAmenityNames.length===1?'':'ies'}`);
     return parts.length?parts.join(' · '):'Everything';
-  },[kleenestOnly,progressionOnly,minimumStars,freshnessDays,selectedAmenityNames.length]);
+  },[kleenestOnly,progressionOnly,minimumStars,freshnessDays,verifiedEvidenceOnly,evidenceGapOnly,progressionPriority,selectedAmenityNames.length]);
 
   const selected = useMemo(
     () => visibleRows.find((row) => idOf(row) === selectedId) || null,
@@ -494,6 +515,9 @@ export default function AdaptiveExploreScreen() {
     setProgressionOnly(false);
     setMinimumStars(0);
     setFreshnessDays(null);
+    setVerifiedEvidenceOnly(false);
+    setEvidenceGapOnly(false);
+    setProgressionPriority(false);
     setSelectedAmenityNames([]);
     setMatchRule('all');
     setAutoExpand(true);
@@ -881,6 +905,7 @@ export default function AdaptiveExploreScreen() {
 
   useEffect(() => {
     listAmenityCatalog().then(setAmenities).catch(() => {});
+    getRewardCapabilities().then(setRewardCapabilities).catch(()=>setRewardCapabilities({}));
     let active = true;
     Promise.all([readNearbyCache(), readNearbyContinuity()])
       .then(([cache, continuity]) => {
@@ -1044,6 +1069,18 @@ export default function AdaptiveExploreScreen() {
                       <Text style={[s.quickFilterTitle,{color:progressionOnly?theme.accentText:theme.ink}]}>Progression</Text>
                       <Text style={[s.quickFilterBody,{color:progressionOnly?theme.accentText:theme.muted}]}>Places with XP / evidence opportunities</Text>
                     </Pressable>
+                    {precisionFilterEquipped?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:verifiedEvidenceOnly}} style={[s.quickFilterCard,{backgroundColor:verifiedEvidenceOnly?theme.accent:theme.surfaceRaised,borderColor:verifiedEvidenceOnly?theme.accent:theme.line}]} onPress={()=>setVerifiedEvidenceOnly(value=>!value)}>
+                      <Text style={[s.quickFilterTitle,{color:verifiedEvidenceOnly?theme.accentText:theme.ink}]}>Verified evidence</Text>
+                      <Text style={[s.quickFilterBody,{color:verifiedEvidenceOnly?theme.accentText:theme.muted}]}>Precision reward · current evidence-backed places only</Text>
+                    </Pressable>:null}
+                    {(precisionFilterEquipped||evidenceGapRadar)?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:evidenceGapOnly}} style={[s.quickFilterCard,{backgroundColor:evidenceGapOnly?theme.accent:theme.surfaceRaised,borderColor:evidenceGapOnly?theme.accent:theme.line}]} onPress={()=>setEvidenceGapOnly(value=>!value)}>
+                      <Text style={[s.quickFilterTitle,{color:evidenceGapOnly?theme.accentText:theme.ink}]}>Evidence gaps</Text>
+                      <Text style={[s.quickFilterBody,{color:evidenceGapOnly?theme.accentText:theme.muted}]}>{evidenceGapRadar?'Labs Radar · weak or stale evidence':'Precision reward · weak or stale evidence'}</Text>
+                    </Pressable>:null}
+                    {progressionFilterEquipped?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:progressionPriority}} style={[s.quickFilterCard,{backgroundColor:progressionPriority?theme.accent:theme.surfaceRaised,borderColor:progressionPriority?theme.accent:theme.line}]} onPress={()=>setProgressionPriority(value=>!value)}>
+                      <Text style={[s.quickFilterTitle,{color:progressionPriority?theme.accentText:theme.ink}]}>Progression first</Text>
+                      <Text style={[s.quickFilterBody,{color:progressionPriority?theme.accentText:theme.muted}]}>Reward filter · move nearby progression opportunities to the top</Text>
+                    </Pressable>:null}
                   </View>
                 </View>
 
@@ -1209,7 +1246,7 @@ export default function AdaptiveExploreScreen() {
                         event.stopPropagation();
                         selectRow(row);
                       }}
-                      style={[s.marker,active&&s.markerActive]}
+                      style={[s.marker,active&&s.markerActive,equippedMapFlair==='freshness-halo'&&{borderWidth:3,borderColor:theme.accent,backgroundColor:theme.accentSoft},equippedMapFlair==='gold-ring'&&{borderWidth:3,borderColor:'#e7c45d',backgroundColor:'#3b3216'}]}
                     >
                       <FreshnessHeatRing item={row} size={22} />
                     </Pressable>

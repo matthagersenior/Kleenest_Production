@@ -187,17 +187,17 @@ requireTokens('Consumer Early Access theme selector','apps/consumer-mobile/app/p
 
 requireTokens('Seasonal progression theme core','packages/mobile-core/src/theme.ts',[
   "'fall'","'halloween'","'thanksgiving'","'christmas'",
-  'KLEENEST_SEASONAL_THEME_MODES','seasonalEditions',
+  'KLEENEST_SEASONAL_THEME_MODES','specialEditions',
   "canvas:'#050208'","canvas:'#07130f'",
 ]);
 requireTokens('Consumer seasonal entitlement selector','apps/consumer-mobile/app/preferences.tsx',[
-  'getProgressionRewards','allowedSeasonal','visibleThemeOptions','isKleenestSeasonalThemeMode','UNLOCKED ·',
+  'getProgressionRewards','allowedRewardThemes','visibleThemeOptions','isKleenestRewardThemeMode','UNLOCKED ·',
 ]);
 requireTokens('Consumer seasonal runtime enforcement','apps/consumer-mobile/app/_layout.tsx',[
-  'isKleenestSeasonalThemeMode','getProgressionRewards',"setKleenestThemeMode('default')",'enforceRewardTheme',
+  'isKleenestRewardThemeMode','getProgressionRewards',"setKleenestThemeMode('default')",'enforceRewardTheme',
 ]);
 requireTokens('Consumer seasonal reward vault','apps/consumer-mobile/app/progress.tsx',[
-  'SEASONAL REWARD VAULT','TRUST DISCOVERY','PUBLIC SHOWCASE','showcaseSlots',
+  'REWARD LOCKER','TRUST DISCOVERY','PUBLIC SHOWCASE','showcaseSlots',
 ]);
 requireTokens('Community public trust identity','apps/consumer-mobile/app/social.tsx',[
   'listProgressionIdentities','TRUST ·','progressionIdentity',

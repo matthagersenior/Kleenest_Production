@@ -1,0 +1,24 @@
+name: Progression Reward Arcade Contract
+
+on:
+  push:
+    branches: [feature/progression-rewards-arcade]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Progression reward and arcade contract
+        run: node scripts/progression-reward-arcade-audit.mjs
+      - name: Progression reward runtime contract
+        run: node scripts/progression-reward-runtime-audit.mjs

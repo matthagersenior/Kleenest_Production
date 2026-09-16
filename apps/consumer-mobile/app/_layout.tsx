@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Updates from 'expo-updates';
-import { isKleenestSeasonalThemeMode, loadKleenestThemeMode, markMobileNotificationRead, resolveKleenestTheme, setKleenestThemeMode, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
+import { isKleenestRewardThemeMode, loadKleenestThemeMode, markMobileNotificationRead, resolveKleenestTheme, setKleenestThemeMode, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
 import { router, Tabs, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -71,7 +71,7 @@ export default function RootLayout() {
   useEffect(()=>{
     let active=true;
     async function enforceRewardTheme(mode:KleenestThemeMode){
-      if(!isKleenestSeasonalThemeMode(mode)){if(active)setThemeMode(mode);return}
+      if(!isKleenestRewardThemeMode(mode)){if(active)setThemeMode(mode);return}
       const rewards=await getProgressionRewards().catch(()=>[]);
       const allowed=Array.isArray(rewards)&&rewards.some((reward:any)=>reward?.reward_kind==='theme'&&reward?.reward_key===mode&&reward?.unlocked);
       if(!allowed){await setKleenestThemeMode('default');if(active)setThemeMode('default');return}
@@ -99,7 +99,7 @@ export default function RootLayout() {
     let active=true;
     Notifications.getLastNotificationResponseAsync().then(async response=>{if(!active)return;await openNotificationResponse(response);if(response)await Notifications.clearLastNotificationResponseAsync().catch(()=>{})}).catch(() => {});
     const subscription = Notifications.addNotificationResponseReceivedListener(response => { void openNotificationResponse(response); });
-    const refreshLocationState=()=>{void refreshConsumerPresence().catch(()=>{});void refreshConsumerLiveNetworkRegions().catch(()=>{});void flushQueuedBetaReports().catch(()=>{});void loadKleenestThemeMode().then(async mode=>{if(!isKleenestSeasonalThemeMode(mode))return;const rewards=await getProgressionRewards().catch(()=>[]);if(!Array.isArray(rewards)||!rewards.some((reward:any)=>reward?.reward_key===mode&&reward?.unlocked))await setKleenestThemeMode('default')}).catch(()=>{})};
+    const refreshLocationState=()=>{void refreshConsumerPresence().catch(()=>{});void refreshConsumerLiveNetworkRegions().catch(()=>{});void flushQueuedBetaReports().catch(()=>{});void loadKleenestThemeMode().then(async mode=>{if(!isKleenestRewardThemeMode(mode))return;const rewards=await getProgressionRewards().catch(()=>[]);if(!Array.isArray(rewards)||!rewards.some((reward:any)=>reward?.reward_key===mode&&reward?.unlocked))await setKleenestThemeMode('default')}).catch(()=>{})};
     const appState=AppState.addEventListener('change',state=>{if(state==='active')refreshLocationState()});
     refreshLocationState();
     return () => {active=false;subscription.remove();appState.remove()};
@@ -129,6 +129,7 @@ export default function RootLayout() {
     <Tabs.Screen name="offline" options={{ href:null,title:'Offline Trips' }}/>
     <Tabs.Screen name="games" options={{ href:null,title:'Game Center' }}/>
     <Tabs.Screen name="game/[code]" options={{ href:null,title:'Game Arena',headerShown:false }}/>
+    <Tabs.Screen name="reward-tools" options={{ href:null,title:'Reward Toolkit',headerShown:false }}/>
     <Tabs.Screen name="route" options={{ href:null,title:'Routes' }}/>
     <Tabs.Screen name="qr" options={{ href:null,title:'Scan QR' }}/>
     <Tabs.Screen name="location-qr" options={{ href:null,title:'Location QR' }}/>

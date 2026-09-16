@@ -2,8 +2,8 @@ import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
 import { Pressable,RefreshControl,SafeAreaView,ScrollView,StyleSheet,Text,useColorScheme,View } from 'react-native';
-import { getMobileProgressionDashboard,loadKleenestThemeMode,resolveKleenestTheme,subscribeKleenestTheme,type KleenestThemeMode } from '@kleenest/mobile-core';
-import { getProgressionOverviewV2,getProgressionRewards,getProgressionWorld,listActiveObjectivesV2,listNearbyProgressionOpportunities,listProgressionRankingsV2 } from '../services/discoveryProgression';
+import { getMobileProgressionDashboard,loadKleenestThemeMode,resolveKleenestTheme,setKleenestThemeMode,subscribeKleenestTheme,type KleenestThemeMode } from '@kleenest/mobile-core';
+import { equipProgressionReward,getProgressionOverviewV2,getProgressionRewards,getProgressionWorld,listActiveObjectivesV2,listNearbyProgressionOpportunities,listProgressionRankingsV2 } from '../services/discoveryProgression';
 import { clearTrustMission,readTrustMission,type TrustMission } from '../services/trustMissions';
 import { palette } from '../components/ConsumerUI';
 import { SponsoredSlot } from '../components/SponsoredSlot';
@@ -34,6 +34,30 @@ function chapterState(chapters:any[],seasonXp:number){
  return{rows,current,next};
 }
 
+function rewardGlyph(reward:any){
+ const kind=String(reward?.reward_kind||'reward'),key=String(reward?.reward_key||'');
+ if(kind==='theme'){
+  if(key==='fall')return'🍁';if(key==='halloween')return'🎃';if(key==='thanksgiving')return'🌾';if(key==='christmas')return'❄️';
+  if(key==='spring-renewal')return'🌱';if(key==='summer-roadtrip')return'☀️';if(key==='stl-edition')return'⚜';if(key==='chicago-edition')return'✶';
+  if(key==='trailblazer')return'🧭';if(key==='road-warrior')return'🛣';if(key==='civic-atlas')return'🗺';if(key==='verified-gold')return'✪';
+  if(key==='data-guardian')return'⌁';if(key==='community-builder')return'◉';if(key==='founders')return'◆';return'✦';
+ }
+ const glyphs:Record<string,string>={profile_frame:'◎',profile_background:'▧',map_flair:'◌',checkin_animation:'◍',reaction_pack:'☺',title:'◇',collection_slot:'▦',mission_reroll:'↻',quest_slot:'＋',streak_shield:'🛡️',map_filter:'⌖',community_challenge:'🏁',community_vote:'✓',beta_access:'⚗',stats_pack:'▥',verification_privilege:'⚡',badge_showcase:'🏅'};
+ return glyphs[kind]||'◆';
+}
+function rewardGroup(reward:any){
+ const kind=String(reward?.reward_kind||'');
+ if(kind==='theme')return'THEMES';
+ if(['profile_frame','profile_background','map_flair','checkin_animation','reaction_pack','title'].includes(kind))return'IDENTITY + COSMETICS';
+ if(kind==='badge_showcase')return'SECRET ACHIEVEMENTS';
+ return'CAPABILITIES';
+}
+function rewardRequirementText(reward:any){
+ const req=reward?.requirements||{};
+ if(req?.secret)return'Secret requirement';
+ return `Level ${Number(req.level||1)} · Trust ${Number(req.trust_score||0)} · ${Number(req.lifetime_xp||0).toLocaleString()} XP · ${Number(req.badges||0)} badges`;
+}
+
 export default function ProgressScreen(){
  const systemScheme=useColorScheme();
  const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
@@ -58,6 +82,18 @@ export default function ProgressScreen(){
  useEffect(()=>{void load()},[]);
  async function changeScope(scope:string){setRankScope(scope);await load(scope)}
  async function clearActiveMission(){try{await clearTrustMission();setActiveMission(null);setMessage('Trust mission cleared.')}catch(error:any){setMessage(error?.message||'Trust mission could not be cleared.')}}
+ async function equipReward(reward:any){
+  if(!reward?.unlocked||reward?.equipped)return;
+  try{
+   await equipProgressionReward(String(reward.code));
+   if(reward.reward_kind==='theme'){
+    await setKleenestThemeMode(String(reward.reward_key) as KleenestThemeMode);
+    setThemeMode(String(reward.reward_key) as KleenestThemeMode);
+   }
+   setMessage(`${reward.name} equipped.`);
+   await load();
+  }catch(error:any){setMessage(error?.message||'Reward could not be equipped.')}
+ }
 
  const level=overview?.global_level||{},totalXp=Number(overview?.lifetime_xp||0),currentThreshold=Number(level?.xp_threshold||0),nextThreshold=Number(level?.next_threshold||currentThreshold),span=Math.max(1,nextThreshold-currentThreshold),within=Math.max(0,totalXp-currentThreshold),pct=nextThreshold>currentThreshold?Math.min(1,within/span):1;
  const specialties=safeArray(overview?.specialties),allBadges=safeArray(overview?.badges),recent=safeArray(overview?.recent_xp);
@@ -69,10 +105,11 @@ export default function ProgressScreen(){
  const rewardTrack=safeArray(season?.reward_track),nextReward=rewardTrack.find((row:any)=>Number(row.xp||0)>seasonXp)||null;
  const trust=world?.contributor_trust||{},trustScore=Number(trust?.score||0),trustNext=Number(trust?.next_rank_score||100),trustPct=trustNext?Math.min(1,trustScore/trustNext):1;
  const collections=safeArray(world?.badge_collections),campaign=world?.community_campaign||null,contest=world?.featured_contest||null,rivals=safeArray(world?.rivals);
- const seasonalRewards=rewards.filter((reward:any)=>reward?.reward_kind==='theme');
+ const themeRewards=rewards.filter((reward:any)=>reward?.reward_kind==='theme');
+ const rewardGroups=['THEMES','IDENTITY + COSMETICS','CAPABILITIES','SECRET ACHIEVEMENTS'].map(label=>({label,items:rewards.filter((reward:any)=>rewardGroup(reward)===label)})).filter(group=>group.items.length);
  const trustDiscoveries=recent.filter((event:any)=>Boolean(event?.subject?.trust_discovery));
- const publicIdentity=seasonalRewards[0]?.identity||{};
- const showcaseSlots=Math.max(1,Math.min(6,Number(publicIdentity.showcase_slots||1))),publicCrests=earnedBadges.filter((badge:any)=>badge?.criteria?.public_showcase===true).slice(0,showcaseSlots);
+ const publicIdentity=rewards[0]?.identity||{};
+ const showcaseSlots=Math.max(1,Math.min(10,Number(publicIdentity.showcase_slots||1))),publicCrests=earnedBadges.filter((badge:any)=>badge?.criteria?.public_showcase===true).slice(0,showcaseSlots);
 
  return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView refreshControl={<RefreshControl refreshing={loading} onRefresh={()=>load()}/>} contentContainerStyle={s.content}>
   <View style={[s.hero,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#594016',borderWidth:1,borderColor:theme.accent}]}>
@@ -84,7 +121,7 @@ export default function ProgressScreen(){
 
   <SponsoredSlot surface="progress" contextClass="progress_between_sections"/>
 
-  <View style={s.actions}><Pressable accessibilityRole="button" accessibilityLabel="Find useful work nearby" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>router.push('/discover')}><Text style={[s.primaryText,{color:theme.accentText}]}>Find useful work nearby</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open Game Center" style={[s.secondary,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/games')}><Text style={[s.secondaryText,{color:theme.accent}]}>Game Center</Text></Pressable></View>
+  <View style={s.actions}><Pressable accessibilityRole="button" accessibilityLabel="Find useful work nearby" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>router.push('/discover')}><Text style={[s.primaryText,{color:theme.accentText}]}>Find useful work nearby</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open Game Center" style={[s.secondary,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/games')}><Text style={[s.secondaryText,{color:theme.accent}]}>Game Center</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open progression reward toolkit" style={[s.secondary,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/reward-tools')}><Text style={[s.secondaryText,{color:theme.accent}]}>Reward Toolkit</Text></Pressable></View>
 
   <View style={[s.leagueCard,{backgroundColor:theme.surface,borderColor:theme.accent}]}><View style={s.leagueHead}><View style={[s.leagueIcon,{backgroundColor:theme.accent}]}><Text style={[s.leagueIconText,{color:theme.accentText}]}>{leagueDivision.icon}</Text></View><View style={{flex:1}}><Text style={[s.kicker,{color:theme.muted}]}>KLEENEST LEAGUE</Text><Text style={[s.leagueTitle,{color:theme.ink}]}>{leagueDivision.name} Division</Text><Text style={[s.body,{color:theme.muted}]}>{leagueDivision.description}</Text></View></View><View style={[s.trackSmall,{backgroundColor:theme.surfaceRaised}]}><View style={[s.fillSmall,{backgroundColor:theme.accent,width:(String(Math.round(leaguePct*100))+'%') as any}]} /></View><Text style={[s.meta,{color:theme.muted}]}>{nextLeagueDivision?Math.max(0,nextLeagueDivision.minXp-totalXp).toLocaleString()+' XP to '+nextLeagueDivision.name:'Top current division'} · {collectionTier}</Text></View>
 
@@ -95,10 +132,22 @@ export default function ProgressScreen(){
    <Text style={[s.trustFoot,{color:theme.muted}]}>{trust?.explanation||'Verified evidence grows trust. Games improve mastery but cannot manufacture contributor authority.'}</Text>
   </View>
 
-  {seasonalRewards.length?<View>
-   <Header kicker="SEASONAL REWARD VAULT" title="Themes you grow into" body="Seasonal themes unlock automatically when your Level, Trust, lifetime XP and earned-badge gates all qualify. Once earned, the reward is persisted to your collection; an owner grant can still unlock one early."/>
+  {rewards.length?<View>
+   <Header kicker="REWARD LOCKER" title="Your earned Kleenest identity" body="Themes are only one layer. Earn and equip identity pieces, public titles, map flair and visual effects; unlock practical progression capabilities; and discover hidden achievements. Platform owners have access to the complete catalog, while Owner grants can unlock individual rewards early."/>
    <View style={[s.worldPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-    {seasonalRewards.map((reward:any)=>{const req=reward.requirements||{},key=String(reward.reward_key||''),icon=key==='fall'?'🍁':key==='halloween'?'🎃':key==='thanksgiving'?'🌾':'❄️';return <View key={reward.code} style={[s.vaultReward,{borderColor:reward.unlocked?theme.accent:theme.line,backgroundColor:theme.surfaceRaised}]}><Text style={s.vaultIcon}>{icon}</Text><View style={{flex:1}}><View style={s.row}><Text style={[s.cardTitle,{color:theme.ink,flex:1}]}>{reward.name}</Text><Text style={[s.vaultState,{color:reward.unlocked?theme.accent:theme.muted}]}>{reward.unlocked?'UNLOCKED':'LOCKED'}</Text></View><Text style={[s.body,{color:theme.muted}]}>{reward.description}</Text><Text style={[s.meta,{color:theme.muted}]}>Gate · Level {Number(req.level||1)} · Trust {Number(req.trust_score||0)} · {Number(req.lifetime_xp||0).toLocaleString()} XP · {Number(req.badges||0)} badges</Text><Text style={[s.meta,{color:theme.muted}]}>Your progress · Level {Number(reward.identity?.level||1)} · Trust {Number(reward.identity?.trust_score||0)} · {Number(reward.identity?.lifetime_xp||0).toLocaleString()} XP · {Number(reward.identity?.badge_count||0)} badges</Text>{reward.unlocked?<Text style={[s.unlockSource,{color:theme.accent}]}>{reward.unlock_source==='progression_earned'?'EARNED VIA PROGRESSION':reward.unlock_source==='progression_eligible'?'PROGRESSION GATE COMPLETE':String(reward.unlock_source||'reward').replaceAll('_',' ').toUpperCase()}</Text>:null}</View></View>})}
+    {rewardGroups.map(group=><View key={group.label} style={{gap:8}}>
+     <Text style={[s.worldKicker,{color:theme.accent}]}>{group.label}</Text>
+     {group.items.map((reward:any)=>{const equipable=['theme','title','profile_frame','profile_background','map_flair','checkin_animation','reaction_pack','map_filter'].includes(String(reward.reward_kind));const source=String(reward.unlock_source||'locked');return <View key={reward.code} style={[s.vaultReward,{borderColor:reward.unlocked?theme.accent:theme.line,backgroundColor:theme.surfaceRaised}]}>
+      <Text style={s.vaultIcon}>{rewardGlyph(reward)}</Text>
+      <View style={{flex:1,gap:3}}>
+       <View style={s.row}><Text style={[s.cardTitle,{color:theme.ink,flex:1}]}>{reward.name}</Text><Text style={[s.vaultState,{color:reward.unlocked?theme.accent:theme.muted}]}>{reward.equipped?'EQUIPPED':reward.unlocked?'UNLOCKED':'LOCKED'}</Text></View>
+       <Text style={[s.body,{color:theme.muted}]}>{reward.description}</Text>
+       <Text style={[s.meta,{color:theme.muted}]}>{rewardRequirementText(reward)}</Text>
+       {reward.unlocked?<Text style={[s.unlockSource,{color:theme.accent}]}>{source==='platform_owner'?'PLATFORM OWNER ACCESS':source==='owner_grant'?'OWNER GRANT':source==='progression_earned'?'EARNED VIA PROGRESSION':source.replaceAll('_',' ').toUpperCase()}</Text>:null}
+       {equipable&&reward.unlocked&&!reward.equipped?<Pressable accessibilityRole="button" accessibilityLabel={`Equip ${reward.name}`} style={[s.secondary,{alignSelf:'flex-start',backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>void equipReward(reward)}><Text style={[s.secondaryText,{color:theme.accent}]}>EQUIP</Text></Pressable>:null}
+      </View>
+     </View>})}
+    </View>)}
    </View>
   </View>:null}
 
