@@ -1,7 +1,7 @@
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, useColorScheme, View } from 'react-native';
 import { getKleenestSupabaseClient, loadKleenestThemeMode, resolveKleenestTheme, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
 import { currentFleetBusinessId,getFleetWorkspaceAccess,subscribeFleetWorkspaceChange,type FleetWorkspaceRole } from '../services/control';
 import { getFleetOnboardingGate } from '../services/onboarding';
@@ -101,7 +101,7 @@ export default function Layout(){
 
   if(!ready||(signedIn&&!gateReady))return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:theme.canvas}}><ActivityIndicator size="large"/></View>;
 
-  return <><StatusBar style={theme.statusBar}/><Tabs key={'fleet-workspace-'+workspaceRevision+'-'+String(workspaceRole)} screenOptions={{headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{color:theme.ink},tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired||needsBusinessSetup?{display:'none'}:{backgroundColor:theme.surface,borderTopColor:theme.line}}}>
+  return <><StatusBar style={theme.statusBar}/><Tabs key={'fleet-workspace-'+workspaceRevision+'-'+String(workspaceRole)} screenOptions={{headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{color:theme.ink},tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarLabelStyle:{fontWeight:'800'},headerRight:activeRoute==='search'?undefined:()=> <Pressable accessibilityRole="button" accessibilityLabel="Search Fleet" onPress={()=>router.push('/search')} style={{paddingHorizontal:11,paddingVertical:7,borderRadius:999,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.accent}}>⌕ Search</Text></Pressable>,tabBarStyle:onAuthRoute||onboardingRequired||needsBusinessSetup?{display:'none'}:{backgroundColor:theme.surface,borderTopColor:theme.line}}}>
     <Tabs.Screen name="index" options={{title:'Home',href:operator?undefined:null}}/>
     <Tabs.Screen name="planner" options={{title:'Planner',href:operator?undefined:null}}/>
     <Tabs.Screen name="dispatch" options={{title:'Dispatch',href:operator?undefined:null}}/>
@@ -111,6 +111,7 @@ export default function Layout(){
     <Tabs.Screen name="nearby" options={{title:'Nearby',href:operator?null:undefined}}/>
     <Tabs.Screen name="notifications" options={{title:'Alerts'}}/>
     <Tabs.Screen name="account" options={{title:'Account'}}/>
+    <Tabs.Screen name="search" options={{href:null,title:'Search'}}/>
     <Tabs.Screen name="auth" options={{href:null,title:'Sign in',headerShown:false}}/>
     <Tabs.Screen name="execution" options={{href:null,title:'Execution'}}/>
     <Tabs.Screen name="signals" options={{href:null,title:'Live Network'}}/>
