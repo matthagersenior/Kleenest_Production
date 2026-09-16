@@ -8,3 +8,5 @@ export * from './theme';
 
 export * from './betaReporting';
 export * from './creatorMissions';
+
+export * from './appSearch';

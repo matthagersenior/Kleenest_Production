@@ -1,13 +1,13 @@
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, Text, useColorScheme, View } from 'react-native';
 import { getKleenestSupabaseClient, loadKleenestThemeMode, resolveKleenestTheme, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
 import { currentBusinessId,subscribeBusinessWorkspaceChange } from '../services/capabilityWorkflows';
 import { getBusinessOnboardingGate } from '../services/onboarding';
 
 const ONBOARDING_BYPASS=new Set(['onboarding','workspaces','support','terms','privacy','account','get-started']);
-const PROVISIONING_ALLOWED=new Set(['get-started','onboarding','support','terms','privacy','account']);
+const PROVISIONING_ALLOWED=new Set(['get-started','onboarding','support','terms','privacy','account','search']);
 
 export default function Layout() {
   const systemScheme=useColorScheme();
@@ -113,7 +113,7 @@ export default function Layout() {
 
   if (!ready || (signedIn&&!gateReady)) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.canvas }}><ActivityIndicator size="large" /></View>;
 
-  return <><StatusBar style={theme.statusBar}/><Tabs key={`business-workspace-${workspaceRevision}`} screenOptions={{headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{color:theme.ink},tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute||onboardingRequired||activeRoute==='get-started'?{display:'none'}:{backgroundColor:theme.surface,borderTopColor:theme.line}}}>
+  return <><StatusBar style={theme.statusBar}/><Tabs key={`business-workspace-${workspaceRevision}`} screenOptions={{headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{color:theme.ink},tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarLabelStyle:{fontWeight:'800'},headerRight:activeRoute==='search'?undefined:()=> <Pressable accessibilityRole="button" accessibilityLabel="Search Business" onPress={()=>router.push('/search')} style={{paddingHorizontal:11,paddingVertical:7,borderRadius:999,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.accent}}>⌕ Search</Text></Pressable>,tabBarStyle:onAuthRoute||onboardingRequired||activeRoute==='get-started'?{display:'none'}:{backgroundColor:theme.surface,borderTopColor:theme.line}}}>
     <Tabs.Screen name="index" options={{title:'Home'}}/>
     <Tabs.Screen name="tools" options={{title:'Actions'}}/>
     <Tabs.Screen name="locations" options={{title:'Locations'}}/>
@@ -122,6 +122,7 @@ export default function Layout() {
     <Tabs.Screen name="operations" options={{title:'Operations'}}/>
     <Tabs.Screen name="fleet" options={{href:null,title:'Fleet Suite'}}/>
     <Tabs.Screen name="analytics" options={{title:'Analytics'}}/>
+    <Tabs.Screen name="search" options={{href:null,title:'Search'}}/>
     <Tabs.Screen name="auth" options={{href:null,title:'Sign in',headerShown:false}}/>
     <Tabs.Screen name="get-started" options={{href:null,title:'Get Started',headerShown:false}}/>
     <Tabs.Screen name="workspaces" options={{href:null,title:'Workspaces'}}/>
