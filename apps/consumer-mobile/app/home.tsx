@@ -16,13 +16,22 @@ const initialPolicy:OrganicHeroPolicy={surface_code:'consumer_home',active:true,
 
 export default function HomeScreen(){
   const theme=useConsumerTheme();
-  const{ready:webGateReady,signedIn,installed,appActive}=useConsumerWebExperience();
+  const{ready:experienceReady,signedIn,installed,appActive}=useConsumerWebExperience();
   const[policyRequired,setPolicyRequired]=useState(false);
-  const[heroItems,setHeroItems]=useState<OrganicHeroItem[]>([initialHero]);
+  const[heroItems,setHeroItems]=useState<OrganicHeroItem[]>([]);
   const[heroPolicy,setHeroPolicy]=useState<OrganicHeroPolicy>(initialPolicy);
+  const[heroReady,setHeroReady]=useState(false);
   useEffect(()=>{let active=true;if(!signedIn){setPolicyRequired(false);return()=>{active=false}}void hasCurrentPolicyAcceptance().then(accepted=>{if(active)setPolicyRequired(!accepted)}).catch(()=>{if(active)setPolicyRequired(false)});return()=>{active=false}},[signedIn]);
-  useEffect(()=>{let active=true;void buildConsumerHomeHeroes(signedIn).then(result=>{if(!active)return;setHeroPolicy(result.policy);setHeroItems(result.items.length?result.items:[initialHero])});return()=>{active=false}},[signedIn]);
-  if(Platform.OS==='web'&&!webGateReady)return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}/>;
+  useEffect(()=>{
+    if(!experienceReady){setHeroReady(false);return;}
+    let active=true;
+    setHeroReady(false);
+    void buildConsumerHomeHeroes(signedIn)
+      .then(result=>{if(!active)return;setHeroPolicy(result.policy);setHeroItems(result.items.length?result.items:[initialHero]);setHeroReady(true)})
+      .catch(()=>{if(!active)return;setHeroPolicy(initialPolicy);setHeroItems([initialHero]);setHeroReady(true)});
+    return()=>{active=false};
+  },[experienceReady,signedIn]);
+  if(!experienceReady||!heroReady)return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}/>;
   if(Platform.OS==='web'&&!appActive)return <MarketingHome/>;
   const showInstall=Platform.OS==='web'&&!signedIn&&!installed;
   return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
