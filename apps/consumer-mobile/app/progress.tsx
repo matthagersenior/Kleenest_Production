@@ -57,10 +57,10 @@ function rewardRequirementText(reward:any){
  if(req?.secret)return'Secret requirement';
  return `Level ${Number(req.level||1)} · Trust ${Number(req.trust_score||0)} · ${Number(req.lifetime_xp||0).toLocaleString()} XP · ${Number(req.badges||0)} badges`;
 }
-const EQUIPABLE_REWARD_KINDS=['theme','title','profile_frame','profile_background','map_flair','checkin_animation','reaction_pack','map_filter'] as const;
+const EQUIPABLE_REWARD_KINDS=['theme','title','profile_frame','profile_background','map_flair','checkin_animation','reaction_pack'] as const;
 const REWARD_SLOT_LABELS:Record<string,string>={
  theme:'THEME',title:'TITLE',profile_frame:'PROFILE FRAME',profile_background:'PROFILE BACKGROUND',
- map_flair:'MAP FLAIR',checkin_animation:'CHECK-IN EFFECT',reaction_pack:'REACTION PACK',map_filter:'MAP FILTER'
+ map_flair:'MAP FLAIR',checkin_animation:'CHECK-IN EFFECT',reaction_pack:'REACTION PACK'
 };
 function rewardSlot(reward:any){
  const kind=String(reward?.reward_kind||'');
@@ -165,8 +165,8 @@ export default function ProgressScreen(){
    <Header kicker="REWARD LOCKER" title="Your earned Kleenest identity" body="Themes are only one layer. Earn and equip identity pieces, public titles, map flair and visual effects; unlock practical progression capabilities; and discover hidden achievements. Platform owners have access to the complete catalog, while Owner grants can unlock individual rewards early."/>
    <View style={[s.worldPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
     <View style={[s.slotNotice,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}>
-     <Text style={[s.slotNoticeTitle,{color:theme.ink}]}>One active reward per slot</Text>
-     <Text style={[s.body,{color:theme.muted}]}>Equipping another item in the same slot replaces the active choice. It does not consume the unlock, and rewards in other slots stay equipped.</Text>
+     <Text style={[s.slotNoticeTitle,{color:theme.ink}]}>Cosmetic slots keep one active item</Text>
+     <Text style={[s.body,{color:theme.muted}]}>Themes, titles, frames, backgrounds, map flair, check-in effects and reaction packs use one active choice per slot. Map filters and capability rewards stay permanently available once unlocked.</Text>
     </View>
     {rewardGroups.map(group=><View key={group.label} style={{gap:8}}>
      <Text style={[s.worldKicker,{color:theme.accent}]}>{group.label}</Text>
@@ -174,7 +174,7 @@ export default function ProgressScreen(){
       <View style={[s.vaultIconWrap,{backgroundColor:reward.unlocked?theme.accent:theme.surface,borderColor:reward.unlocked?theme.accent:theme.line}]}><Text style={[s.vaultIcon,{color:reward.unlocked?theme.accentText:theme.ink}]}>{rewardGlyph(reward)}</Text></View>
       <View style={{flex:1,gap:3}}>
        <View style={s.row}><Text style={[s.cardTitle,{color:theme.ink,flex:1}]}>{reward.name}</Text><Text style={[s.vaultState,{color:reward.unlocked?theme.accent:theme.muted}]}>{reward.equipped?'EQUIPPED':reward.unlocked?'UNLOCKED':'LOCKED'}</Text></View>
-       {equipable?<Text style={[s.vaultSlot,{color:theme.muted}]}>{rewardSlotLabel(reward)} SLOT · ONE ACTIVE</Text>:null}
+       {equipable?<Text style={[s.vaultSlot,{color:theme.muted}]}>{rewardSlotLabel(reward)} SLOT · ONE ACTIVE</Text>:reward?.reward_kind==='map_filter'&&reward.unlocked?<Text style={[s.vaultSlot,{color:theme.accent}]}>PERMANENT FILTER · STACKS WITH OTHER UNLOCKED FILTERS</Text>:null}
        <Text style={[s.body,{color:theme.muted}]}>{reward.description}</Text>
        <Text style={[s.meta,{color:theme.muted}]}>{rewardRequirementText(reward)}</Text>
        {reward.unlocked?<Text style={[s.unlockSource,{color:theme.accent}]}>{source==='platform_owner'?'PLATFORM OWNER ACCESS':source==='owner_grant'?'OWNER GRANT':source==='progression_earned'?'EARNED VIA PROGRESSION':source.replaceAll('_',' ').toUpperCase()}</Text>:null}

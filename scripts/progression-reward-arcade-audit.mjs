@@ -36,7 +36,7 @@ for(const mode of ['flow_builder','stack_sort','tower_defense','route_rush']){
 }
 
 if(!files.progress.includes('REWARD LOCKER')) throw new Error('Progress screen missing Reward Locker');
-for(const token of ['vaultIconWrap','One active reward per slot','rewardSlotLabel','Alert.alert(','REPLACE']){
+for(const token of ['vaultIconWrap','Cosmetic slots keep one active item','rewardSlotLabel','Alert.alert(','REPLACE','PERMANENT FILTER · STACKS WITH OTHER UNLOCKED FILTERS']){
  if(!files.progress.includes(token)) throw new Error(`Reward Locker persistence/contrast contract missing ${token}`);
 }
 if(!files.ownerMigration.includes('owner_grant_progression_reward')) throw new Error('Owner grant authority missing');
