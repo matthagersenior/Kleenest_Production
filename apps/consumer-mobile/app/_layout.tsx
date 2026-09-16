@@ -129,6 +129,7 @@ export default function RootLayout() {
     <Tabs.Screen name="offline" options={{ href:null,title:'Offline Trips' }}/>
     <Tabs.Screen name="games" options={{ href:null,title:'Game Center' }}/>
     <Tabs.Screen name="game/[code]" options={{ href:null,title:'Game Arena',headerShown:false }}/>
+    <Tabs.Screen name="reward-tools" options={{ href:null,title:'Reward Toolkit',headerShown:false }}/>
     <Tabs.Screen name="route" options={{ href:null,title:'Routes' }}/>
     <Tabs.Screen name="qr" options={{ href:null,title:'Scan QR' }}/>
     <Tabs.Screen name="location-qr" options={{ href:null,title:'Location QR' }}/>
