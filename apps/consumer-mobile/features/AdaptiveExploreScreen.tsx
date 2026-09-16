@@ -382,7 +382,7 @@ export default function AdaptiveExploreScreen() {
   const insets=useSafeAreaInsets();
   const {height:windowHeight}=useWindowDimensions();
   const exploreMapHeight=Math.max(360,Math.min(480,Math.round(windowHeight*0.44)));
-  const listRef=useRef<FlatList<any>|null>(null);
+  const listRef=useRef<any>(null);
   const [mode, setMode] = useState<'nearby' | 'route'>('nearby');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
