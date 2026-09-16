@@ -1,5 +1,5 @@
-import { useState,type ReactNode } from 'react';
-import { Pressable,Text,View } from 'react-native';
+import { useState,type ComponentProps,type ReactNode } from 'react';
+import { Pressable,Switch,Text,View } from 'react-native';
 import { usePlatformTheme } from '../services/theme';
 
 export const osColors={ink:'#10261d',green:'#173f2d',mint:'#dcebe2',paper:'#f4f7f5',white:'#ffffff',muted:'#5e7066',border:'#d5e0d9',danger:'#8f2f2f',warning:'#8a5a18',good:'#1d6b43'};
@@ -8,7 +8,9 @@ export function useOSCardStyle(){const theme=usePlatformTheme();return {...osCar
 
 export function OSHero({eyebrow,title,body,children}:{eyebrow:string;title:string;body:string;children?:ReactNode}){const theme=usePlatformTheme();return <View style={{backgroundColor:theme.accent,borderWidth:1,borderColor:theme.accent,borderRadius:16,padding:12,gap:4}}><Text style={{color:theme.accentText,fontWeight:'900',letterSpacing:1.2,fontSize:9}}>{eyebrow}</Text><Text style={{color:theme.accentText,fontSize:21,lineHeight:25,fontWeight:'900'}}>{title}</Text><Text style={{color:theme.accentText,fontSize:12,lineHeight:18}}>{body}</Text>{children}</View>}
 
-export function StatusPill({label,tone='neutral'}:{label:string;tone?:'good'|'warning'|'danger'|'neutral'}){const theme=usePlatformTheme();const background=tone==='good'?theme.success+'24':tone==='warning'?theme.warning+'24':tone==='danger'?theme.danger+'24':theme.surfaceRaised;const color=tone==='good'?theme.success:tone==='warning'?theme.warning:tone==='danger'?theme.danger:theme.muted;return <View style={{alignSelf:'flex-start',borderRadius:999,paddingHorizontal:9,paddingVertical:5,backgroundColor:background,borderWidth:1,borderColor:tone==='neutral'?theme.line:color+'55'}}><Text style={{color,fontWeight:'900',fontSize:11}}>{label}</Text></View>}
+export function StatusPill({label,tone='neutral'}:{label:string;tone?:'good'|'warning'|'danger'|'neutral'}){const theme=usePlatformTheme();const color=tone==='good'?theme.success:tone==='warning'?theme.warning:tone==='danger'?theme.danger:theme.muted;return <View style={{alignSelf:'flex-start',borderRadius:999,paddingHorizontal:9,paddingVertical:5,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:tone==='neutral'?theme.line:color}}><Text style={{color,fontWeight:'900',fontSize:11}}>{label}</Text></View>}
+
+export function OSSwitch(props:ComponentProps<typeof Switch>){const theme=usePlatformTheme();const value=Boolean(props.value);return <Switch {...props} trackColor={{false:theme.line,true:theme.accentSoft}} thumbColor={value?theme.accent:theme.muted} ios_backgroundColor={theme.surfaceRaised}/>} 
 
 export function HealthCard({label,value,detail,tone='neutral',onPress}:{label:string;value:string|number;detail?:string;tone?:'good'|'warning'|'danger'|'neutral';onPress?:()=>void}){const theme=usePlatformTheme();const card=useOSCardStyle();const body=<View style={{...card,minWidth:145,flexGrow:1}}><StatusPill label={label} tone={tone}/><Text style={{fontSize:25,fontWeight:'900',color:theme.ink}}>{String(value)}</Text>{detail?<Text style={{color:theme.muted,lineHeight:18}}>{detail}</Text>:null}</View>;return onPress?<Pressable onPress={onPress} style={{flexGrow:1,flexBasis:145}}>{body}</Pressable>:body}
 
