@@ -109,3 +109,8 @@ export async function upsertOwnerSponsoredCampaign(input:{
     p_reason:input.reason||'KleenestOS sponsored campaign update',
   });
 }
+
+export async function getOwnerPassportSnapshot(){await requirePlatformOwner();return (await rpc('owner_passport_snapshot'))||{};}
+export async function listOwnerPassportStamps(){await requirePlatformOwner();return asRows(await rpc('owner_passport_stamp_catalog'));}
+export async function upsertOwnerPassportStamp(code:string,patch:Record<string,unknown>,reason='KleenestOS Passport catalog update'){await requirePlatformOwner();return rpc('owner_passport_stamp_upsert',{p_code:code,p_patch:patch,p_reason:reason});}
+export async function deleteOwnerPassportStamp(code:string,reason='KleenestOS Passport catalog delete'){await requirePlatformOwner();return rpc('owner_passport_stamp_delete',{p_code:code,p_reason:reason});}
