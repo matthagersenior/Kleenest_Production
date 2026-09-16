@@ -31,8 +31,9 @@ export default function HomeScreen(){
       .catch(()=>{if(!active)return;setHeroPolicy(initialPolicy);setHeroItems([initialHero]);setHeroReady(true)});
     return()=>{active=false};
   },[experienceReady,signedIn]);
-  if(!experienceReady||!heroReady)return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}/>;
+  if(!experienceReady)return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}/>;
   if(Platform.OS==='web'&&!appActive)return <MarketingHome/>;
+  if(!heroReady)return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}/>;
   const showInstall=Platform.OS==='web'&&!signedIn&&!installed;
   return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
     <View style={s.brandRow}><View><Text style={[s.brand,{color:theme.ink}]}>KLEENEST</Text><Text style={[s.brandSub,{color:theme.muted}]}>Trusted restroom discovery network</Text></View><Pressable style={[s.profileChip,{backgroundColor:theme.accentSoft}]} onPress={action(signedIn?'/profile':'/signup')}><Text style={[s.profileChipText,{color:theme.accent}]}>{signedIn?'PROFILE':'GET STARTED'}</Text></Pressable></View>
