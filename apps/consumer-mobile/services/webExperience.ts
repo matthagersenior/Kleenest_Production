@@ -78,7 +78,7 @@ async function relatedInstalledApp(){
 export function useConsumerWebExperience(){
   const native=Platform.OS!=='web';
   const explicitLaunch=!native&&isExplicitConsumerAppLaunch();
-  const[ready,setReady]=useState(native);
+  const[ready,setReady]=useState(false);
   const[signedIn,setSignedIn]=useState(false);
   const[installed,setInstalled]=useState(native);
   const[appSession,setAppSession]=useState(native||explicitLaunch||storedConsumerAppSession());
