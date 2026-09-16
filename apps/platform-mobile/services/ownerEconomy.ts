@@ -50,3 +50,15 @@ export async function getOwnerCreatorMissionAttributionSummary(days=90):Promise<
     missions:Array.isArray(value.missions)?value.missions as OwnerCreatorMissionAttributionSummary['missions']:[]
   };
 }
+
+
+export async function setOwnerCreatorMissionStatus(assignmentId:string,status:'draft'|'scheduled'|'active'|'paused'|'ended'|'archived',reason:string){
+  await requirePlatformOwner();
+  const {data,error}=await getKleenestSupabaseClient().rpc('owner_creator_mission_set_status',{
+    p_assignment_id:assignmentId,
+    p_status:status,
+    p_reason:reason.trim()
+  });
+  if(error)throw new Error(error.message);
+  return data;
+}
