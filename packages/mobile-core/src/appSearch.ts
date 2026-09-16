@@ -5,7 +5,8 @@ export type AppSearchEntry={
   id:string;
   title:string;
   subtitle:string;
-  category:'Page'|'Action'|'Settings'|'Community'|'Progression'|'Operations'|'Data';
+  category:'Page'|'Action'|'Settings'|'Community'|'Progression'|'Operations'|'Data'|'Knowledge';
+  detail?:string;
   route:string;
   keywords:string[];
 };
@@ -36,6 +37,12 @@ const INDEX:Record<AppSearchScope,AppSearchEntry[]>={
     {id:'live-network',title:'Live Network',subtitle:'Nearby Kleenest network activity',category:'Page',route:'/live-network',keywords:['live','network','nearby','push']},
     {id:'assistant',title:'Kleenest AI',subtitle:'Ask Kleenest for help inside the app',category:'Action',route:'/assistant',keywords:['ai','assistant','help','ask']},
     {id:'support',title:'Help & support',subtitle:'Support and troubleshooting',category:'Settings',route:'/support',keywords:['help','support','bug','problem']},
+    {id:'knowledge-freshness',title:'Freshness',subtitle:'How recently a restroom has trustworthy evidence',detail:'Freshness favors recent verified observations. Heat rings and freshness signals help you judge how current a place record is before you go.',category:'Knowledge',route:'/explore',keywords:['freshness','fresh','heat ring','ring','recent','trust']},
+    {id:'knowledge-trust',title:'Trust & verification',subtitle:'Why one contribution can carry more trust than another',detail:'Kleenest separates XP from evidence confidence. GPS, on-site observations, independent confirmations and business evidence can strengthen trust without blocking normal reviews.',category:'Knowledge',route:'/trust',keywords:['trust','verification','verified','evidence','confidence','gps','dwell']},
+    {id:'knowledge-restroom-types',title:'Restroom types',subtitle:'Men’s, women’s, family and other facility-specific records',detail:'A location can contain multiple restroom facilities. Facility type and amenities are stored separately so family, accessibility and other details stay accurate.',category:'Knowledge',route:'/explore',keywords:['mens','men','women','womens','family restroom','bathroom type','facility type']},
+    {id:'knowledge-photos-later',title:'Add photos later',subtitle:'Photos can be contributed after the visit',detail:'You can add useful photos from a previous visit without pretending you are still on-site. Live check-in evidence and later knowledge contributions remain distinct.',category:'Knowledge',route:'/knowledge',keywords:['photo','photos','upload later','previous visit','add later']},
+    {id:'knowledge-progression',title:'How progression works',subtitle:'XP, trust, badges, missions, levels and permanent rewards',detail:'Progression rewards useful contributions. XP and trust are related but distinct signals; themes, badges and other rewards can unlock as your real contribution history grows.',category:'Knowledge',route:'/progress',keywords:['how xp works','levels','badges','rewards','themes','missions','progression']},
+    {id:'knowledge-family',title:'Kleenest Family',subtitle:'One-time family access for linked household users',detail:'Family is the shared household option for up to five users. Search Membership or Family to manage access and linked users.',category:'Knowledge',route:'/family',keywords:['family plan','five users','5 users','household']},
   ],
   business:[
     {id:'home',title:'Business Home',subtitle:'Business workspace overview',category:'Page',route:'/',keywords:['dashboard','home','overview']},
@@ -64,6 +71,11 @@ const INDEX:Record<AppSearchScope,AppSearchEntry[]>={
     {id:'workspaces',title:'Workspaces',subtitle:'Choose a Business workspace',category:'Settings',route:'/workspaces',keywords:['workspace','switch business']},
     {id:'support',title:'Support',subtitle:'Business help and support',category:'Settings',route:'/support',keywords:['help','support']},
     {id:'account',title:'Account',subtitle:'Business account settings',category:'Settings',route:'/account',keywords:['account','settings']},
+    {id:'knowledge-claims',title:'How business claims work',subtitle:'Paid access does not automatically prove location ownership',detail:'Claims connect a canonical Kleenest location to the operator after verification. Existing operator authority and community evidence are protected during the claim process.',category:'Knowledge',route:'/verification-center',keywords:['claim','claims','ownership','verification','paid ownership']},
+    {id:'knowledge-user-photos',title:'User photos vs business photos',subtitle:'Community photos remain independent evidence',detail:'Businesses can add official media and can flag or dispute community content, but they do not choose which user photos become community evidence.',category:'Knowledge',route:'/reviews',keywords:['user photos','business photos','photo dispute','flag photo']},
+    {id:'knowledge-growth-tier',title:'Business Growth',subtitle:'Growth supports up to five locations',detail:'The Growth tier is intended for organizations managing up to five locations before Enterprise-scale controls become the better fit.',category:'Knowledge',route:'/capabilities',keywords:['growth','5 locations','five locations','tier','plan']},
+    {id:'knowledge-restroom-signal',title:'Restroom quality as a business signal',subtitle:'Restroom evidence can inform customer experience and operations',detail:'Kleenest treats restroom quality as operational and customer-experience data, not merely an amenity checkbox.',category:'Knowledge',route:'/analytics',keywords:['restroom quality','customer experience','cx','operations signal']},
+    {id:'knowledge-qr',title:'Business QR programs',subtitle:'QR can support check-ins, evidence, engagement and access',detail:'QR Studio manages branded QR assets and programs while preserving the canonical location and trust model underneath them.',category:'Knowledge',route:'/qr-studio',keywords:['qr program','qr code','check in qr','branded qr']},
   ],
   fleet:[
     {id:'home',title:'Fleet Home',subtitle:'Fleet workspace overview',category:'Page',route:'/',keywords:['home','dashboard','overview']},
@@ -86,6 +98,10 @@ const INDEX:Record<AppSearchScope,AppSearchEntry[]>={
     {id:'workspaces',title:'Workspaces',subtitle:'Choose a Fleet workspace',category:'Settings',route:'/workspaces',keywords:['workspace','switch fleet']},
     {id:'account',title:'Account',subtitle:'Fleet account settings',category:'Settings',route:'/account',keywords:['account','settings']},
     {id:'support',title:'Support',subtitle:'Fleet help and support',category:'Settings',route:'/support',keywords:['help','support']},
+    {id:'knowledge-premium-seats',title:'Fleet Premium seats',subtitle:'Premium supports 75 seats',detail:'Fleet Premium is configured around 75 premium seats. Premium access is managed separately from ordinary workspace membership.',category:'Knowledge',route:'/premium',keywords:['75 seats','premium seats','seat limit','members']},
+    {id:'knowledge-geofencing',title:'Fleet geofencing',subtitle:'Location-aware arrival, nearby and operational signals',detail:'Geofencing helps Fleet understand proximity and arrival context. It can support dispatch and trust signals without making dwell a hard gate for legitimate activity.',category:'Knowledge',route:'/signals',keywords:['geofence','geofencing','arrival','dwell','nearby']},
+    {id:'knowledge-dispatch',title:'Dispatch model',subtitle:'Routes, drivers, vehicles and restroom-aware stops work together',detail:'Fleet links routes, assigned drivers and vehicles with canonical Kleenest locations so dispatch can use restroom quality and freshness as an operating input.',category:'Knowledge',route:'/dispatch',keywords:['dispatch model','route assignment','driver assignment','vehicle assignment']},
+    {id:'knowledge-offline',title:'Offline & sync',subtitle:'Fleet work can recover after poor connectivity',detail:'Offline and synchronization controls are designed to keep field workflows usable when connectivity is intermittent and reconcile state when the app reconnects.',category:'Knowledge',route:'/sync',keywords:['offline','sync','no signal','reconnect']},
   ],
   owner:[
     {id:'home',title:'KleenestOS Home',subtitle:'Owner command center',category:'Page',route:'/',keywords:['home','dashboard','command center']},
@@ -110,19 +126,26 @@ const INDEX:Record<AppSearchScope,AppSearchEntry[]>={
     {id:'relevance',title:'Relevance + Sponsorship',subtitle:'Organic relevance and sponsored placements',category:'Data',route:'/relevance',keywords:['relevance','sponsorship','ads','advertising','hero']},
     {id:'account',title:'Account',subtitle:'Owner account settings',category:'Settings',route:'/account',keywords:['account','settings']},
     {id:'support',title:'Support',subtitle:'Owner support',category:'Settings',route:'/support',keywords:['help','support']},
+    {id:'knowledge-owner-authority',title:'Owner authority',subtitle:'Platform-wide controls should have an Owner surface',detail:'KleenestOS is the audited control plane for platform-wide policy, access, progression, trust, campaigns and operational features.',category:'Knowledge',route:'/control',keywords:['owner authority','platform wide','global control','control plane']},
+    {id:'knowledge-creator-missions',title:'Creator mission lifecycle',subtitle:'Creator missions stay draft until the Owner activates them',detail:'Each creator mission has an Owner-controlled assignment, tracking slug, branded link/QR attribution and lifecycle. Draft links do not become live until activation.',category:'Knowledge',route:'/progression',keywords:['creator mission','creator missions','tracking link','creator qr','activate mission','draft mission']},
+    {id:'knowledge-progression-authority',title:'Progression authority',subtitle:'Objectives, XP policy and reward supply are server-authoritative',detail:'KleenestOS controls quests, missions, campaigns, XP issuance, cooldowns, daily caps and progression reward policy through audited backend authority.',category:'Knowledge',route:'/progression',keywords:['xp policy','objective','objectives','reward policy','mission supply']},
+    {id:'knowledge-moderation',title:'Trust & moderation',subtitle:'Review reports, photo reports, user safety and AI reports',detail:'Moderation queues preserve evidence and audit history while giving Owner tools to resolve reports, disputes and safety cases.',category:'Knowledge',route:'/moderation',keywords:['trust','moderation','photo report','review report','user report','ai report']},
+    {id:'knowledge-sponsorship',title:'Relevance vs sponsorship',subtitle:'Organic relevance and paid placement are separate controls',detail:'Organic hero/relevance policy is independent from sponsored campaign placements so paid promotion does not silently redefine Kleenest relevance.',category:'Knowledge',route:'/relevance',keywords:['ads','sponsored','sponsorship','organic','hero','relevance']},
+    {id:'knowledge-developer',title:'Developer platform',subtitle:'API, SDK, widget, map, routes, webhooks and AI integrations',detail:'The developer surface covers external integration capabilities and their platform enablement rather than exposing internal database primitives directly.',category:'Knowledge',route:'/developers',keywords:['api','sdk','widget','map layer','route sdk','deep link','webhook','mcp']},
   ],
 };
 
 function normalize(value:string){return value.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
 function score(entry:AppSearchEntry,raw:string){
   const query=normalize(raw);if(!query)return 0;
-  const title=normalize(entry.title),subtitle=normalize(entry.subtitle),category=normalize(entry.category);
+  const title=normalize(entry.title),subtitle=normalize(entry.subtitle),detail=normalize(entry.detail||''),category=normalize(entry.category);
   const keywords=entry.keywords.map(normalize);
   if(title===query)return 1000;
   let total=0;
   if(title.startsWith(query))total+=600;
   else if(title.includes(query))total+=400;
   if(subtitle.includes(query))total+=180;
+  if(detail.includes(query))total+=220;
   if(category.includes(query))total+=120;
   for(const keyword of keywords){
     if(keyword===query)total+=500;
@@ -133,6 +156,7 @@ function score(entry:AppSearchEntry,raw:string){
   for(const part of parts){
     if(title.split(' ').some(word=>word.startsWith(part)))total+=90;
     if(keywords.some(keyword=>keyword.split(' ').some(word=>word.startsWith(part))))total+=50;
+    if(detail.split(' ').some(word=>word.startsWith(part)))total+=35;
   }
   return total;
 }
