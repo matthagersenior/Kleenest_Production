@@ -588,6 +588,44 @@ begin
 end
 $$;
 
+create or replace function public.owner_user_progression_rewards(p_target_user_id uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path=''
+as $
+begin
+  if not public.is_platform_owner_session() then raise exception 'platform owner authorization required'; end if;
+  if not exists(select 1 from public.profiles where id=p_target_user_id) then raise exception 'profile not found'; end if;
+
+  return (
+    select coalesce(jsonb_agg(
+      to_jsonb(c) || jsonb_build_object(
+        'active_grant',exists(
+          select 1 from public.user_progression_reward_grants g
+          where g.user_id=p_target_user_id and g.reward_code=c.code and g.revoked_at is null
+        ),
+        'grant_source',(
+          select g.source from public.user_progression_reward_grants g
+          where g.user_id=p_target_user_id and g.reward_code=c.code and g.revoked_at is null
+          order by g.granted_at desc limit 1
+        ),
+        'granted_at',(
+          select g.granted_at from public.user_progression_reward_grants g
+          where g.user_id=p_target_user_id and g.reward_code=c.code and g.revoked_at is null
+          order by g.granted_at desc limit 1
+        ),
+        'progression_eligible',internal.progression_reward_eligible(p_target_user_id,c.code)
+      )
+      order by c.sort_order,c.name
+    ),'[]'::jsonb)
+    from public.progression_reward_catalog c
+    where c.active
+  );
+end
+$;
+
 revoke all on function public.consumer_progression_rewards() from public,anon;
 grant execute on function public.consumer_progression_rewards() to authenticated;
 revoke all on function public.consumer_equip_progression_reward(text) from public,anon;
@@ -596,6 +634,8 @@ revoke all on function public.consumer_unequip_progression_reward(text) from pub
 grant execute on function public.consumer_unequip_progression_reward(text) to authenticated;
 revoke all on function public.consumer_reward_capabilities() from public,anon;
 grant execute on function public.consumer_reward_capabilities() to authenticated;
+revoke all on function public.owner_user_progression_rewards(uuid) from public,anon;
+grant execute on function public.owner_user_progression_rewards(uuid) to authenticated;
 
 insert into public.progression_games(code,name,description,game_type,reward_points,difficulty,rules,enabled,metrics_config)
 values
