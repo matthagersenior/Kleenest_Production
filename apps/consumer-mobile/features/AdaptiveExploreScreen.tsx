@@ -1218,7 +1218,7 @@ export default function AdaptiveExploreScreen() {
               })}
             </Map>
             </View>
-            <View style={[s.mapControls,{top:mapChromeTop}]}>            <View style={[s.mapControls,{top:mapChromeTop}]}>
+            <View style={[s.mapControls,{top:mapChromeTop}]}>
               <Pressable accessibilityRole="button" accessibilityLabel="Zoom map in" style={[s.mapControl,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={() => changeMapZoom(1)}>
                 <Text style={[s.mapControlText,{color:theme.accent}]}>＋</Text>
               </Pressable>
