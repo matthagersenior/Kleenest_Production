@@ -57,10 +57,10 @@ function rewardRequirementText(reward:any){
  if(req?.secret)return'Secret requirement';
  return `Level ${Number(req.level||1)} · Trust ${Number(req.trust_score||0)} · ${Number(req.lifetime_xp||0).toLocaleString()} XP · ${Number(req.badges||0)} badges`;
 }
-const EQUIPABLE_REWARD_KINDS=['theme','title','profile_frame','profile_background','map_flair','checkin_animation','reaction_pack','map_filter'] as const;
+const EQUIPABLE_REWARD_KINDS=['theme','title','profile_frame','profile_background','map_flair','checkin_animation','reaction_pack'] as const;
 const REWARD_SLOT_LABELS:Record<string,string>={
  theme:'THEME',title:'TITLE',profile_frame:'PROFILE FRAME',profile_background:'PROFILE BACKGROUND',
- map_flair:'MAP FLAIR',checkin_animation:'CHECK-IN EFFECT',reaction_pack:'REACTION PACK',map_filter:'MAP FILTER'
+ map_flair:'MAP FLAIR',checkin_animation:'CHECK-IN EFFECT',reaction_pack:'REACTION PACK'
 };
 function rewardSlot(reward:any){
  const kind=String(reward?.reward_kind||'');
@@ -174,7 +174,7 @@ export default function ProgressScreen(){
       <View style={[s.vaultIconWrap,{backgroundColor:reward.unlocked?theme.accent:theme.surface,borderColor:reward.unlocked?theme.accent:theme.line}]}><Text style={[s.vaultIcon,{color:reward.unlocked?theme.accentText:theme.ink}]}>{rewardGlyph(reward)}</Text></View>
       <View style={{flex:1,gap:3}}>
        <View style={s.row}><Text style={[s.cardTitle,{color:theme.ink,flex:1}]}>{reward.name}</Text><Text style={[s.vaultState,{color:reward.unlocked?theme.accent:theme.muted}]}>{reward.equipped?'EQUIPPED':reward.unlocked?'UNLOCKED':'LOCKED'}</Text></View>
-       {equipable?<Text style={[s.vaultSlot,{color:theme.muted}]}>{rewardSlotLabel(reward)} SLOT · ONE ACTIVE</Text>:null}
+       {equipable?<Text style={[s.vaultSlot,{color:theme.muted}]}>{rewardSlotLabel(reward)} SLOT · ONE ACTIVE</Text>:reward?.reward_kind==='map_filter'&&reward.unlocked?<Text style={[s.vaultSlot,{color:theme.accent}]}>PERMANENT FILTER · STACKS WITH OTHER UNLOCKED FILTERS</Text>:null}
        <Text style={[s.body,{color:theme.muted}]}>{reward.description}</Text>
        <Text style={[s.meta,{color:theme.muted}]}>{rewardRequirementText(reward)}</Text>
        {reward.unlocked?<Text style={[s.unlockSource,{color:theme.accent}]}>{source==='platform_owner'?'PLATFORM OWNER ACCESS':source==='owner_grant'?'OWNER GRANT':source==='progression_earned'?'EARNED VIA PROGRESSION':source.replaceAll('_',' ').toUpperCase()}</Text>:null}
