@@ -76,6 +76,9 @@ const platformThemeRoutes=[
 for(const route of platformThemeRoutes){
   const path=`apps/platform-mobile/app/${route}.tsx`;
   requireTokens(`KleenestOS ${route} theme coverage`,path,['usePlatformTheme','theme.canvas','theme.ink','theme.muted']);
+  const source=read(path);
+  if(source.includes('<Switch '))failures.push(`KleenestOS ${route} must use OSSwitch so seasonal themes reach toggle controls.`);
+  if(source.includes("theme.resolved==='dark'?theme.surfaceRaised"))failures.push(`KleenestOS ${route} must not collapse seasonal heroes into the generic dark raised surface.`);
 }
 requireTokens('KleenestOS account theme coverage','apps/platform-mobile/app/account.tsx',['resolveKleenestTheme','theme.canvas','theme.surface','theme.ink','theme.muted']);
 requireTokens('KleenestOS Developer deep theme','apps/platform-mobile/app/developers.tsx',['theme.surface','theme.surfaceRaised','theme.accentText','theme.line','backgroundColor:theme.accent,borderColor:theme.accent']);
