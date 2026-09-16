@@ -1,12 +1,14 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable,SafeAreaView,ScrollView,Share,StyleSheet,Text,View } from 'react-native';
-import { useEffect,useMemo } from 'react';
-import { creatorMissionByTrackingSlug,creatorMissionTrackingUrl } from '@kleenest/mobile-core';
+import { ActivityIndicator,Pressable,SafeAreaView,ScrollView,Share,StyleSheet,Text,View } from 'react-native';
+import { useEffect,useState } from 'react';
 import { useConsumerTheme } from '../services/theme';
-import { captureCreatorMissionAttribution,recordCreatorMissionAttribution } from '../services/creatorAttribution';
+import { captureCreatorMissionAttribution,loadCreatorMissionLanding,recordCreatorMissionAttribution,type LiveCreatorMission } from '../services/creatorAttribution';
 
 function scalar(value:string|string[]|undefined){
   return Array.isArray(value)?String(value[0]||''):String(value||'');
+}
+function trackingUrl(mission:LiveCreatorMission,channel='social'){
+  return `https://kleenest.app/creator?m=${encodeURIComponent(mission.trackingSlug)}&channel=${encodeURIComponent(channel)}`;
 }
 
 export default function CreatorMissionLanding(){
@@ -15,45 +17,56 @@ export default function CreatorMissionLanding(){
   const params=useLocalSearchParams<{m?:string|string[];channel?:string|string[]}>();
   const trackingSlug=scalar(params.m).trim().toLowerCase();
   const channel=scalar(params.channel).trim().toLowerCase()||'social';
-  const mission=useMemo(()=>creatorMissionByTrackingSlug(trackingSlug),[trackingSlug]);
+  const[mission,setMission]=useState<LiveCreatorMission|null>(null);
+  const[loading,setLoading]=useState(true);
 
   useEffect(()=>{
-    if(!mission)return;
-    captureCreatorMissionAttribution(mission.trackingSlug,'landing_view',channel,{creator_handle:mission.creatorHandle,mission_code:mission.missionCode});
-  },[channel,mission]);
+    let active=true;
+    setLoading(true);
+    loadCreatorMissionLanding(trackingSlug).then(value=>{
+      if(!active)return;
+      setMission(value);
+      if(value)captureCreatorMissionAttribution(value.trackingSlug,'landing_view',channel,{creator_handle:value.creatorHandle,objective_id:value.objectiveId,campaign_code:value.campaignCode});
+    }).catch(()=>{if(active)setMission(null)}).finally(()=>{if(active)setLoading(false)});
+    return()=>{active=false};
+  },[channel,trackingSlug]);
 
   async function openApp(){
-    if(mission)await recordCreatorMissionAttribution(mission.trackingSlug,'open_app',channel,{creator_handle:mission.creatorHandle,mission_code:mission.missionCode}).catch(()=>{});
+    if(mission)await recordCreatorMissionAttribution(mission.trackingSlug,'open_app',channel,{creator_handle:mission.creatorHandle,objective_id:mission.objectiveId,campaign_code:mission.campaignCode}).catch(()=>{});
     router.replace('/?app=1' as any);
   }
 
   async function install(){
-    if(mission)await recordCreatorMissionAttribution(mission.trackingSlug,'install_intent',channel,{creator_handle:mission.creatorHandle,mission_code:mission.missionCode}).catch(()=>{});
+    if(mission)await recordCreatorMissionAttribution(mission.trackingSlug,'install_intent',channel,{creator_handle:mission.creatorHandle,objective_id:mission.objectiveId,campaign_code:mission.campaignCode}).catch(()=>{});
     router.push('/install' as any);
   }
 
   async function shareMission(){
     if(!mission)return;
-    await recordCreatorMissionAttribution(mission.trackingSlug,'share',channel,{creator_handle:mission.creatorHandle,mission_code:mission.missionCode}).catch(()=>{});
-    await Share.share({title:`${mission.creatorName} × Kleenest`,message:`${mission.title}\n${creatorMissionTrackingUrl(mission,'shared')}`}).catch(()=>{});
+    await recordCreatorMissionAttribution(mission.trackingSlug,'share',channel,{creator_handle:mission.creatorHandle,objective_id:mission.objectiveId,campaign_code:mission.campaignCode}).catch(()=>{});
+    await Share.share({title:`${mission.creatorName} × Kleenest`,message:`${mission.title}\n${trackingUrl(mission,'shared')}`}).catch(()=>{});
+  }
+
+  if(loading){
+    return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><View style={s.center}><ActivityIndicator size="large"/><Text style={[s.body,{color:theme.muted}]}>Loading creator mission…</Text></View></SafeAreaView>;
   }
 
   if(!mission){
-    return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><View style={s.center}><Text style={[s.brand,{color:theme.accent}]}>Kleenest</Text><Text style={[s.title,{color:theme.ink}]}>Creator mission not found.</Text><Text style={[s.body,{color:theme.muted}]}>This campaign link may be incomplete or no longer available.</Text><Pressable style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>router.replace('/' as any)}><Text style={[s.primaryText,{color:theme.accentText}]}>OPEN KLEENEST</Text></Pressable></View></SafeAreaView>;
+    return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><View style={s.center}><Text style={[s.brand,{color:theme.accent}]}>Kleenest</Text><Text style={[s.title,{color:theme.ink}]}>Creator mission not active.</Text><Text style={[s.body,{color:theme.muted}]}>This link is not live yet, has ended, or is no longer available.</Text><Pressable style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>router.replace('/' as any)}><Text style={[s.primaryText,{color:theme.accentText}]}>OPEN KLEENEST</Text></Pressable></View></SafeAreaView>;
   }
 
   return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.page}>
     <View style={[s.hero,{backgroundColor:theme.accent,borderColor:theme.accent}]}>
       <Text style={[s.eyebrow,{color:theme.accentText}]}>KLEENEST · CREATOR MISSION</Text>
       <Text style={[s.brand,{color:theme.accentText}]}>Kleenest</Text>
-      <Text style={[s.creator,{color:theme.accentText}]}>{mission.creatorName} · {mission.creatorHandle}</Text>
+      <Text style={[s.creator,{color:theme.accentText}]}>{mission.creatorName}{mission.creatorHandle?` · ${mission.creatorHandle}`:''}</Text>
       <Text style={[s.title,{color:theme.accentText}]}>{mission.title}</Text>
       <Text style={[s.body,{color:theme.accentText}]}>{mission.summary}</Text>
     </View>
 
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
       <Text style={[s.kicker,{color:theme.accent}]}>THE MISSION</Text>
-      {mission.steps.map((step,index)=><View key={step} style={s.step}><View style={[s.stepNumber,{backgroundColor:theme.accentSoft}]}><Text style={{color:theme.accent,fontWeight:'900'}}>{index+1}</Text></View><Text style={[s.stepText,{color:theme.ink}]}>{step}</Text></View>)}
+      {mission.steps.map((step,index)=><View key={`${index}:${step}`} style={s.step}><View style={[s.stepNumber,{backgroundColor:theme.accentSoft}]}><Text style={{color:theme.accent,fontWeight:'900'}}>{index+1}</Text></View><Text style={[s.stepText,{color:theme.ink}]}>{step}</Text></View>)}
     </View>
 
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
