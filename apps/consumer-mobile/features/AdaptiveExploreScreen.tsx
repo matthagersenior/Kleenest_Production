@@ -839,7 +839,16 @@ export default function AdaptiveExploreScreen() {
     const id = idOf(row);
     if (!id) return;
     captureConsumerRouteIntent(id);
-    router.push({ pathname: '/route', params: { add: id } });
+    router.push({
+      pathname: '/route',
+      params: {
+        add: id,
+        addName: String(row?.name || ''),
+        addAddress: String(row?.address || ''),
+        addCity: String(row?.city || ''),
+        addState: String(row?.state || ''),
+      },
+    });
   }
 
   function contributeKnowledge(row: any) {
