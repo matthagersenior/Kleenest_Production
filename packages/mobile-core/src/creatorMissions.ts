@@ -108,6 +108,6 @@ export function creatorMissionByTrackingSlug(slug:string){
 }
 
 export function creatorMissionTrackingUrl(mission:CreatorMission,channel='social'){
-  const base=`${KLEENEST_WEB_ORIGIN}/r/${encodeURIComponent(mission.trackingSlug)}`;
-  return `${base}?channel=${encodeURIComponent(channel)}`;
+  const params=new URLSearchParams({m:mission.trackingSlug,channel});
+  return `${KLEENEST_WEB_ORIGIN}/creator?${params.toString()}`;
 }
