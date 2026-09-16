@@ -37,9 +37,9 @@ if(!screen.includes('useState(1609)'))throw new Error('Nearby discovery must sta
 if(!screen.includes('selectedAmenityNames.length ? autoExpand : true'))throw new Error('Default discovery must keep expanding when local supply is sparse.');
 if(!screen.includes('hardRadius: selectedAmenityNames.length > 0 && !autoExpand'))throw new Error('Zero-result hard radius behavior must be reserved for explicit amenity-constrained searches.');
 if(!screen.includes('useState(402336)'))throw new Error('Adaptive discovery must retain the supported 250 mile fallback ceiling.');
-if(!screen.includes('organizeDiscoveryRows')||!screen.includes('freshness → Kleenest → amenities'))throw new Error('Nearby results must be organized Freshness → Kleenest → Amenities before distance.');
+for(const token of ['organizeDiscoveryRows','const freshness=','const kleenest=','const amenities=','distance_meters'])requireToken(screen,token,'Freshness → Kleenest → Amenities → distance ranking');
 if(!screen.includes('RECOMMENDED'))throw new Error('Discovery must visually identify its recommended nearby result.');
-if(!screen.includes('effectiveRadiusMeters')||!screen.includes('attemptedRadiiMeters')||!screen.includes('densityClass'))throw new Error('Adaptive expansion and density provenance is not surfaced to the UI.');
+if(!screen.includes('effectiveRadiusMeters')||!screen.includes('attemptedRadiiMeters'))throw new Error('Adaptive expansion provenance must remain available to the UI without requiring verbose density explainer copy.');
 if(!screen.includes('route.distanceMiles')||!screen.includes('route.durationMinutes'))throw new Error('Along-route distance/ETA must derive from actual built-route totals.');
 
 // Explore is one continuous consumer page: compact search controls → map → results.
