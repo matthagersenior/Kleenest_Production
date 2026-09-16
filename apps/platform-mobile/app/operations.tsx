@@ -1,5 +1,5 @@
 import { useEffect,useMemo,useState } from 'react';
-import type React from 'react';
+import type { ComponentProps } from 'react';
 import { Alert,Pressable,RefreshControl,ScrollView,StyleSheet,Switch,Text,TextInput,View } from 'react-native';
 import { authorizeIngestionResume,getIngestionControlSnapshot,repairIngestionCells,runIngestionCycle,updateIngestionMarket,updateIngestionSourcePolicy,updateIngestionStorageGuard } from '../services/controlPlane';
 import { usePlatformTheme } from '../services/theme';
@@ -8,7 +8,7 @@ function num(v:any,fallback=0){const n=Number(v);return Number.isFinite(n)?n:fal
 function Button({label,onPress,danger=false,disabled=false}:{label:string;onPress:()=>void;danger?:boolean;disabled?:boolean}){const theme=usePlatformTheme();return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[s.button,{backgroundColor:danger?theme.surface:theme.accentSoft,borderColor:danger?theme.danger:theme.line},danger&&s.dangerButton,disabled&&s.disabled]}><Text style={[s.buttonText,{color:danger?theme.danger:theme.accent},danger&&s.dangerText]}>{label}</Text></Pressable>}
 function Input({label,value,onChange}:{label:string;value:any;onChange:(v:string)=>void}){const theme=usePlatformTheme();return <View style={s.field}><Text style={[s.label,{color:theme.muted}]}>{label}</Text><TextInput accessibilityLabel={label} keyboardType="numeric" value={String(value??'')} onChangeText={onChange} style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}/></View>}
 
-function ThemedSwitch(props:React.ComponentProps<typeof Switch>){const theme=usePlatformTheme();const value=Boolean(props.value);return <Switch {...props} trackColor={{false:theme.line,true:theme.accentSoft}} thumbColor={value?theme.accent:theme.muted} ios_backgroundColor={theme.surfaceRaised}/>}
+function ThemedSwitch(props:ComponentProps<typeof Switch>){const theme=usePlatformTheme();const value=Boolean(props.value);return <Switch {...props} trackColor={{false:theme.line,true:theme.accentSoft}} thumbColor={value?theme.accent:theme.muted} ios_backgroundColor={theme.surfaceRaised}/>}
 
 export default function Operations(){
  const theme=usePlatformTheme();
