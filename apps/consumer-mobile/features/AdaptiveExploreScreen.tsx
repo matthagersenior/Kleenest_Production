@@ -722,7 +722,7 @@ export default function AdaptiveExploreScreen() {
       setMessage(enriched.length
         ? (result.expanded?`Expanded nearby search through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')}.`:'')
         : 'Live discovery returned no local data, so Kleenest will keep the last useful nearby set when one is available.');
-    } else if (result.expanded) {    } else if (result.expanded) {
+    } else if (result.expanded) {
       setMessage(enriched.length?`Expanded through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')} and found ${enriched.length} qualifying location${enriched.length===1?'':'s'}.`:`No qualifying locations found after expanding through ${radiusLabel(result.effectiveRadiusMeters)}.`);
     } else {
       setMessage(enriched.length?`${enriched.length} qualifying bathroom${enriched.length===1?'':'s'} within ${radiusLabel(result.effectiveRadiusMeters)}.`:`No qualifying bathrooms found within ${radiusLabel(result.effectiveRadiusMeters)}.`);
@@ -1319,7 +1319,7 @@ export default function AdaptiveExploreScreen() {
               <Text style={[s.resultsHandoffAction,{color:theme.accent}]}>Results ↓</Text>
             </Pressable>
           ):null}
-          {mode === 'route' && routeGap != null ? (          {mode === 'route' && routeGap != null ? (
+          {mode === 'route' && routeGap != null ? (
             <View style={[s.routeCoverage,{backgroundColor:theme.surface,borderColor:theme.line}]}>
               <Text style={[s.routeCoverageTitle,{color:theme.ink}]}>Largest qualifying-restroom gap: ~{routeGap.toFixed(routeGap < 10 ? 1 : 0)} mi</Text>
               <Text style={[s.help,{color:theme.muted}]}>Based on current qualifying candidates along the route; opening hours and availability can change.</Text>
@@ -1501,7 +1501,7 @@ const s = StyleSheet.create({
   markerActive: { transform: [{ scale: 1.08 }] },
   markerPhoto:{width:34,height:34,borderRadius:17,backgroundColor:'#e7eee9'},
   markerPhotoActive:{width:42,height:42,borderRadius:21},
-  mapControls: { position: 'absolute'  mapControls: { position: 'absolute', right: 10, zIndex:54, elevation:18, gap: 6 },
+  mapControls: { position: 'absolute', right: 10, zIndex:54, elevation:18, gap: 6 },
   mapControl: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cbd9d0', alignItems: 'center', justifyContent: 'center' },
   mapControlText: { fontSize: 19, fontWeight: '900', color: palette.green },
   searchThisArea:{position:'absolute',left:92,right:58,zIndex:52,elevation:16,minHeight:38,borderRadius:999,borderWidth:1,alignItems:'center',justifyContent:'center',paddingHorizontal:12},
@@ -1510,7 +1510,7 @@ const s = StyleSheet.create({
   resultsHandoff:{minHeight:38,borderTopWidth:1,borderBottomWidth:1,paddingHorizontal:14,paddingVertical:7,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
   resultsHandoffText:{flex:1,fontSize:10,fontWeight:'900'},
   resultsHandoffAction:{fontSize:10,fontWeight:'900'},
-  selectedPanel: { position: 'absolute'  selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
+  selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
   selectedBodyScroll:{flex:1},
   selectedBodyContent:{gap:4,paddingBottom:0},
   selectedHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
