@@ -8,7 +8,7 @@ export function scoreRound({game,correct,timeLeft=0,strategyRemaining=0,combo=0,
   const speed=game.timeLimitSec?Math.max(0,Math.min(game.speedBonus||0,Math.round((timeLeft/game.timeLimitSec)*(game.speedBonus||0)))):0;
   const strategy=game.mode==='strategy'?Math.max(0,strategyRemaining):0;
   const comboBonus=Math.min(20,Math.max(0,combo))*Math.max(1,Math.round(base*.12));
-  const survivalBonus=['evidence_tap','detective','multiplayer_trust'].includes(game.mode)?Math.max(0,lives-1):0;
+  const survivalBonus=['evidence_tap','detective','multiplayer_trust','tower_defense'].includes(game.mode)?Math.max(0,lives-1):0;
   return base+speed+strategy+comboBonus+survivalBonus;
 }
 
@@ -21,5 +21,6 @@ export function masteryRating(input:{score:number;bestScore:number;correct:numbe
 }
 
 export function gameResultMetadata(game:GameDefinition,rounds:number,extra:Record<string,unknown>={}){
-  return {mode:game.mode,rounds,difficulty:game.difficulty,time_limit_sec:game.timeLimitSec||null,score_model:'arena_v3',...extra};
+  const advanced=['flow_builder','stack_sort','tower_defense','route_rush'].includes(game.mode);
+  return {mode:game.mode,rounds,difficulty:game.difficulty,time_limit_sec:game.timeLimitSec||null,score_model:advanced?'arena_v4':'arena_v3',...extra};
 }
