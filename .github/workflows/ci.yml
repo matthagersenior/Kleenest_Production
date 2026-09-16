@@ -172,6 +172,8 @@ jobs:
         run: node scripts/progression-reward-arcade-audit.mjs
       - name: Progression reward runtime
         run: node scripts/progression-reward-runtime-audit.mjs
+      - name: Arcade back route
+        run: node scripts/arcade-back-route-audit.mjs
       - name: Business canonical authority
         run: node scripts/business-canonical-rpc-authority-audit.mjs
       - name: Consumer location photo authority
