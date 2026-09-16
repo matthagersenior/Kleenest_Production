@@ -168,6 +168,8 @@ jobs:
         run: node scripts/game-content-depth-audit.mjs
       - name: Progression World engagement
         run: node scripts/progression-world-engagement-audit.mjs
+      - name: Progression rewards and advanced arcade
+        run: node scripts/progression-reward-arcade-audit.mjs
       - name: Business canonical authority
         run: node scripts/business-canonical-rpc-authority-audit.mjs
       - name: Consumer location photo authority
