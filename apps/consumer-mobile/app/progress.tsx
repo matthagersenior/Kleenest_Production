@@ -165,8 +165,8 @@ export default function ProgressScreen(){
    <Header kicker="REWARD LOCKER" title="Your earned Kleenest identity" body="Themes are only one layer. Earn and equip identity pieces, public titles, map flair and visual effects; unlock practical progression capabilities; and discover hidden achievements. Platform owners have access to the complete catalog, while Owner grants can unlock individual rewards early."/>
    <View style={[s.worldPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
     <View style={[s.slotNotice,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}>
-     <Text style={[s.slotNoticeTitle,{color:theme.ink}]}>One active reward per slot</Text>
-     <Text style={[s.body,{color:theme.muted}]}>Equipping another item in the same slot replaces the active choice. It does not consume the unlock, and rewards in other slots stay equipped.</Text>
+     <Text style={[s.slotNoticeTitle,{color:theme.ink}]}>Cosmetic slots keep one active item</Text>
+     <Text style={[s.body,{color:theme.muted}]}>Themes, titles, frames, backgrounds, map flair, check-in effects and reaction packs use one active choice per slot. Map filters and capability rewards stay permanently available once unlocked.</Text>
     </View>
     {rewardGroups.map(group=><View key={group.label} style={{gap:8}}>
      <Text style={[s.worldKicker,{color:theme.accent}]}>{group.label}</Text>
