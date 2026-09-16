@@ -145,19 +145,21 @@ grant execute on function public.record_creator_mission_attribution(text,text,te
 
 create or replace function public.owner_creator_mission_attribution_summary(p_days integer default 90)
 returns jsonb
-language sql
+language plpgsql
 stable
 security definer
 set search_path=''
 as $$
-  with authorized as(
-    select case when public.is_platform_owner_session() then true else
-      (select pg_catalog.set_config('kleenest.denied','1',true) is null) end ok
-  ),
-  bounds as(
-    select now()-make_interval(days=>greatest(1,least(coalesce(p_days,90),366))) since
-  ),
-  mission_rows as(
+declare
+  v_days integer:=greatest(1,least(coalesce(p_days,90),366));
+  v_since timestamptz:=now()-make_interval(days=>greatest(1,least(coalesce(p_days,90),366)));
+  v_result jsonb;
+begin
+  if not public.is_platform_owner_session() then
+    raise exception 'Platform owner access required' using errcode='42501';
+  end if;
+
+  with mission_rows as(
     select
       o.code mission_code,
       o.title,
@@ -176,12 +178,13 @@ as $$
       count(*) filter(where e.event_name='open_app') open_app,
       count(*) filter(where e.event_name='install_intent') install_intents,
       count(distinct e.session_key) filter(where e.session_key is not null) unique_sessions
-    from public.creator_mission_attribution_events e,bounds b
-    where e.created_at>=b.since
+    from public.creator_mission_attribution_events e
+    where e.created_at>=v_since
     group by e.mission_code
   )
   select jsonb_build_object(
-    'days',greatest(1,least(coalesce(p_days,90),366)),
+    'days',v_days,
+    'since',v_since,
     'missions',coalesce(jsonb_agg(jsonb_build_object(
       'mission_code',m.mission_code,
       'title',m.title,
@@ -196,9 +199,12 @@ as $$
       'unique_sessions',coalesce(c.unique_sessions,0)
     ) order by m.creator_name),'[]'::jsonb)
   )
+  into v_result
   from mission_rows m
-  left join counts c on c.mission_code=m.mission_code
-  where exists(select 1 from authorized where ok);
+  left join counts c on c.mission_code=m.mission_code;
+
+  return coalesce(v_result,jsonb_build_object('days',v_days,'since',v_since,'missions','[]'::jsonb));
+end;
 $$;
 
 revoke all on function public.owner_creator_mission_attribution_summary(integer) from public,anon;
