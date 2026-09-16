@@ -594,7 +594,7 @@ language plpgsql
 stable
 security definer
 set search_path=''
-as $
+as $owner_rewards$
 begin
   if not public.is_platform_owner_session() then raise exception 'platform owner authorization required'; end if;
   if not exists(select 1 from public.profiles where id=p_target_user_id) then raise exception 'profile not found'; end if;
@@ -624,7 +624,7 @@ begin
     where c.active
   );
 end
-$;
+$owner_rewards$;
 
 revoke all on function public.consumer_progression_rewards() from public,anon;
 grant execute on function public.consumer_progression_rewards() to authenticated;
