@@ -7,7 +7,7 @@ import {
   type OfferReadiness,type PilotCapabilityDomain
 } from '../services/capabilityPilot';
 import { runCapabilityAudit } from '../services/ownerAdmin';
-import { OSHero,SectionHeader,StatusPill,osCard,osColors,useOSCardStyle } from '../components/KleenestOS';
+import { OSHero,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
 
 const commercialStates=['sample','pilot','offered','production','gated'] as const;
@@ -58,7 +58,7 @@ function Choice({label,selected,onPress,disabled=false}:{label:string;selected:b
 function ToggleRow({label,value,onValueChange,disabled=false}:{label:string;value:boolean;onValueChange:(next:boolean)=>void;disabled?:boolean}){const theme=usePlatformTheme();
   return <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12}}>
     <Text style={{fontWeight:'800',color:theme.ink,flex:1}}>{label}</Text>
-    <Switch value={value} disabled={disabled} onValueChange={onValueChange}/>
+    <Switch value={value} disabled={disabled} onValueChange={onValueChange} trackColor={{false:theme.line,true:theme.accentSoft}} thumbColor={value?theme.accent:theme.muted} ios_backgroundColor={theme.surfaceRaised}/>
   </View>;
 }
 
@@ -229,7 +229,7 @@ export default function ControlCenter(){
       </View>
       {filteredDomains.map(domain=>{
         const key=`domain:${domain.domain}`,disabled=Boolean(busyKey&&busyKey!==key);
-        return <View key={domain.domain} style={osCard}>
+        return <View key={domain.domain} style={card}>
           <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',gap:9}}>
             <View style={{flex:1,gap:2}}>
               <Text style={{fontWeight:'900',color:theme.ink}}>{domain.canonical_capability}</Text>
