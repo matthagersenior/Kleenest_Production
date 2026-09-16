@@ -1,7 +1,7 @@
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, AppState, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, Text, useColorScheme, View } from 'react-native';
 import { getKleenestSupabaseClient, loadKleenestThemeMode, resolveKleenestTheme, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
 
 export default function Layout(){
@@ -55,7 +55,7 @@ export default function Layout(){
 
   if(!ready)return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:theme.canvas}}><ActivityIndicator size="large"/></View>;
 
-  return <><StatusBar style={theme.statusBar}/><Tabs screenOptions={{headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{color:theme.ink},tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarLabelStyle:{fontWeight:'800'},tabBarStyle:onAuthRoute?{display:'none'}:{backgroundColor:theme.surface,borderTopColor:theme.line}}}>
+  return <><StatusBar style={theme.statusBar}/><Tabs screenOptions={{headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{color:theme.ink},tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarLabelStyle:{fontWeight:'800'},headerRight:segments[0]==='search'?undefined:()=> <Pressable accessibilityRole="button" accessibilityLabel="Search KleenestOS" onPress={()=>router.push('/search')} style={{paddingHorizontal:11,paddingVertical:7,borderRadius:999,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.accent}}>⌕ Search</Text></Pressable>,tabBarStyle:onAuthRoute?{display:'none'}:{backgroundColor:theme.surface,borderTopColor:theme.line}}}>
     <Tabs.Screen name="index" options={{title:'Home'}}/>
     <Tabs.Screen name="control" options={{title:'Control'}}/>
     <Tabs.Screen name="pilots" options={{title:'Pilots'}}/>
@@ -65,6 +65,7 @@ export default function Layout(){
     <Tabs.Screen name="businesses" options={{href:null,title:'Businesses'}}/>
     <Tabs.Screen name="moderation" options={{href:null,title:'Moderation'}}/>
     <Tabs.Screen name="access" options={{href:null,title:'Access'}}/>
+    <Tabs.Screen name="search" options={{href:null,title:'Search'}}/>
     <Tabs.Screen name="auth" options={{href:null,title:'Sign in',headerShown:false}}/>
     <Tabs.Screen name="accounts" options={{href:null,title:'Accounts'}}/>
     <Tabs.Screen name="history" options={{href:null,title:'History'}}/>
