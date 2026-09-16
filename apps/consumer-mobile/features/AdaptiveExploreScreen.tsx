@@ -1183,7 +1183,7 @@ export default function AdaptiveExploreScreen() {
                 </GeoJSONSource>
               ) : null}
               {origin?<Marker id="kleenest-user-location" lngLat={origin} anchor="center">
-                <View accessibilityLabel="Your current location" style={s.userLocationRing}>
+                <View pointerEvents="none" accessibilityLabel="Your current location" style={s.userLocationRing}>
                   <View style={s.userLocationDot} />
                 </View>
               </Marker>:null}
