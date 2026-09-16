@@ -163,6 +163,7 @@ export default function ControlCenter(){
       <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
         <WorkspaceLink href="/notifications" title="Messaging" body="Rules, audiences, consent, dry-runs and delivery."/>
         <WorkspaceLink href="/progression" title="Economy" body="XP, objectives, progression supply and rewards."/>
+        <WorkspaceLink href="/passport" title="Passport" body="Stamp catalog, collections, public defaults and adoption."/>
         <WorkspaceLink href="/businesses" title="Businesses" body="Verification, tiers, Fleet/Enterprise access and members."/>
         <WorkspaceLink href="/access" title="People & Access" body="Roles, subscriptions and administrative authority."/>
         <WorkspaceLink href="/moderation" title="Trust & Moderation" body="Review, safety and AI report decisions."/>

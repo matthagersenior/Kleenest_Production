@@ -148,7 +148,7 @@ export default function ProgressScreen(){
   
 
   <View style={s.actions}><Pressable accessibilityRole="button" accessibilityLabel="Find useful work nearby" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>router.push('/discover')}><Text style={[s.primaryText,{color:theme.accentText}]}>Find useful work nearby</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open Game Center" style={[s.secondary,s.topActionSecondary,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/games')}><Text style={[s.secondaryText,{color:theme.accent}]}>Game Center</Text></Pressable></View>
-  <View style={s.rewardToolsRow}><Pressable accessibilityRole="button" accessibilityLabel="Open progression reward toolkit" style={[s.secondary,s.rewardToolsButton,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/reward-tools')}><Text style={[s.secondaryText,{color:theme.accent}]}>Reward Toolkit</Text></Pressable></View>
+  <View style={s.rewardToolsRow}><Pressable accessibilityRole="button" accessibilityLabel="Open progression reward toolkit" style={[s.secondary,s.rewardToolsButton,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/reward-tools')}><Text style={[s.secondaryText,{color:theme.accent}]}>Reward Toolkit</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open Kleenest Passport" style={[s.secondary,s.rewardToolsButton,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/passport')}><Text style={[s.secondaryText,{color:theme.accent}]}>Kleenest Passport</Text></Pressable></View>
 
   <SponsoredSlot surface="progress" contextClass="progress_between_sections"/>
 
