@@ -168,7 +168,7 @@ export default function ProgressScreen(){
     {rewardGroups.map(group=><View key={group.label} style={{gap:8}}>
      <Text style={[s.worldKicker,{color:theme.accent}]}>{group.label}</Text>
      {group.items.map((reward:any)=>{const slot=rewardSlot(reward);const equipable=Boolean(slot);const activeInSlot=slot?rewards.find((item:any)=>item?.equipped&&rewardSlot(item)===slot):null;const willReplace=Boolean(activeInSlot&&!reward.equipped&&String(activeInSlot.code)!==String(reward.code));const source=String(reward.unlock_source||'locked');return <View key={reward.code} style={[s.vaultReward,{borderColor:reward.unlocked?theme.accent:theme.line,backgroundColor:theme.surfaceRaised}]}>
-      <View style={[s.vaultIconWrap,{backgroundColor:theme.surface,borderColor:reward.unlocked?theme.accent:theme.line}]}><Text style={[s.vaultIcon,{color:reward.unlocked?theme.accent:theme.muted}]}>{rewardGlyph(reward)}</Text></View>
+      <View style={[s.vaultIconWrap,{backgroundColor:reward.unlocked?theme.accent:theme.surface,borderColor:reward.unlocked?theme.accent:theme.line}]}><Text style={[s.vaultIcon,{color:reward.unlocked?theme.accentText:theme.ink}]}>{rewardGlyph(reward)}</Text></View>
       <View style={{flex:1,gap:3}}>
        <View style={s.row}><Text style={[s.cardTitle,{color:theme.ink,flex:1}]}>{reward.name}</Text><Text style={[s.vaultState,{color:reward.unlocked?theme.accent:theme.muted}]}>{reward.equipped?'EQUIPPED':reward.unlocked?'UNLOCKED':'LOCKED'}</Text></View>
        {equipable?<Text style={[s.vaultSlot,{color:theme.muted}]}>{rewardSlotLabel(reward)} SLOT · ONE ACTIVE</Text>:null}
