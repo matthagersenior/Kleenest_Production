@@ -1,4 +1,5 @@
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -150,7 +151,7 @@ export default function FleetAuth() {
       const { data, error: authError } = await getKleenestSupabaseClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: Platform.OS==='web'?webSiteOAuthRedirect:authRedirect, skipBrowserRedirect: Platform.OS!=='web' } });
       if (authError) throw authError;
       if (!data.url) throw new Error('Google sign-in did not return an authorization URL.');
-      if(Platform.OS==='web'&&typeof window!=='undefined')window.location.assign(data.url);else await Linking.openURL(data.url);
+      if(Platform.OS==='web'&&typeof window!=='undefined')window.location.assign(data.url);else { const authResult=await WebBrowser.openAuthSessionAsync(data.url,authRedirect); if(authResult.type==='cancel'||authResult.type==='dismiss')setNotice('Google sign-in was cancelled.'); };
     } catch (cause) { clearOperatorOAuthReturn(); setError(messageOf(cause)); }
     finally { setBusy(false); }
   }
