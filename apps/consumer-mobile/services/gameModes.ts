@@ -180,6 +180,9 @@ export const MODE_ROUNDS:Record<Exclude<GameMode,'memory'|'builder'>,ChoiceRound
   {id:'rush-repair',stage:'LEG 7 · REPAIR',prompt:'A previously broken stall lock was repaired. Which stop is safest?',choices:['A','B','C'],correct:0,detail:'A has independent post-repair verification.',routeMetrics:[{label:'A',distance:'0.6 mi',freshness:'8m',verified:true,accessible:true},{label:'B',distance:'0.4 mi',freshness:'1h',verified:false,accessible:true},{label:'C',distance:'0.2 mi',freshness:'6d',verified:true,accessible:true}]},
   {id:'rush-crowd',stage:'LEG 8 · CROWD',prompt:'A fresh report shows a long restroom line at the nearest stop.',choices:['A','B','C'],correct:2,detail:'C avoids the current queue with fresh verification.',routeMetrics:[{label:'A',distance:'0.2 mi',freshness:'3m',verified:true,accessible:true},{label:'B',distance:'0.4 mi',freshness:'4d',verified:true,accessible:true},{label:'C',distance:'0.7 mi',freshness:'10m',verified:true,accessible:true}]},
   {id:'rush-final',stage:'FINAL LEG · BALANCE',prompt:'Best overall route under time pressure?',choices:['A','B','C'],correct:1,detail:'B has the best balance of distance, freshness, access and current verification.',routeMetrics:[{label:'A',distance:'0.2 mi',freshness:'2d',verified:true,accessible:false},{label:'B',distance:'0.5 mi',freshness:'6m',verified:true,accessible:true},{label:'C',distance:'0.9 mi',freshness:'1m',verified:true,accessible:true}]},
+ ],
+};
+
 export const MEMORY_PAIRS=[
  ['Verified check-in','Presence at the location'],
  ['Soap available','Stocked dispenser observed'],
