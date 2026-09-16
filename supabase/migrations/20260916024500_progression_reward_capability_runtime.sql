@@ -641,27 +641,6 @@ begin
 end
 $$;
 
-for function public.consumer_reroll_progression_objective(uuid),
-             public.consumer_pin_progression_objective(uuid),
-             public.consumer_unpin_progression_objective(uuid),
-             public.consumer_reward_collections(),
-             public.consumer_create_reward_collection(text),
-             public.consumer_add_favorite_to_collection(uuid,uuid),
-             public.consumer_remove_favorite_from_collection(uuid,uuid),
-             public.consumer_reward_community_challenges(),
-             public.consumer_create_reward_community_challenge(text,text,integer),
-             public.consumer_join_reward_community_challenge(uuid),
-             public.consumer_reward_proposals(),
-             public.consumer_vote_reward_proposal(text,text),
-             public.consumer_set_beta_feature(text,boolean),
-             public.consumer_reward_impact_stats(),
-             public.consumer_reward_verification_queue(),
-             public.consumer_submit_dispute_advisory(uuid,text,text),
-             public.consumer_toggle_reward_reaction(uuid,text),
-             public.consumer_review_reward_reactions(uuid[])
-loop
-end loop;
-
 revoke all on function public.consumer_reroll_progression_objective(uuid) from public,anon;
 revoke all on function public.consumer_pin_progression_objective(uuid) from public,anon;
 revoke all on function public.consumer_unpin_progression_objective(uuid) from public,anon;
