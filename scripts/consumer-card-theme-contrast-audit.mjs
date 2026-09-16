@@ -91,7 +91,7 @@ need('Explore nested cards','apps/consumer-mobile/features/AdaptiveExploreScreen
   'style={[s.amenityMatchPill,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}',
   'style={[s.searchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.searchThisArea,{top:mapChromeTop,backgroundColor:theme.surface,borderColor:theme.line}]}',
-  'style={[s.nearbySummary,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.resultsHandoff,{backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.primarySmall,s.cardAction,{backgroundColor:theme.accent}',
   'style={[s.primarySmall,s.selectedAction,{backgroundColor:theme.accent}',
 ]);
