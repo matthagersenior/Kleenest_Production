@@ -67,7 +67,7 @@ export default function RootLayout() {
   const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
   const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','consumer');
   const {ready:webGateReady,appActive}=useConsumerWebExperience();
-  const publicWeb=Platform.OS==='web'&&!appActive&&webGateReady&&['/','/for-you','/for-business','/trust','/install'].includes(pathname);
+  const publicWeb=Platform.OS==='web'&&!appActive&&webGateReady&&['/','/for-you','/for-business','/trust','/install','/creator'].includes(pathname);
   useEffect(()=>{
     let active=true;
     async function enforceRewardTheme(mode:KleenestThemeMode){
@@ -117,6 +117,7 @@ export default function RootLayout() {
     <Tabs.Screen name="profile" options={{ title:'Profile',headerShown:false,tabBarIcon:tabIcon('◉'),tabBarLabel:tabLabel('Profile') }}/>
     <Tabs.Screen name="signup" options={{ href:null,title:'Join Kleenest' }}/>
     <Tabs.Screen name="install" options={{ href:null,title:'Install Kleenest' }}/>
+    <Tabs.Screen name="creator" options={{ href:null,title:'Creator mission',headerShown:false }}/>
     <Tabs.Screen name="for-you" options={{ href:null,title:'Kleenest for You' }}/>
     <Tabs.Screen name="for-business" options={{ href:null,title:'Kleenest for Business' }}/>
     <Tabs.Screen name="trust" options={{ href:null,title:'Trust + Freshness' }}/>
