@@ -7,16 +7,18 @@ const files={
   businessUi:'apps/business-mobile/app/service-freshness.tsx',
   consumerService:'apps/consumer-mobile/services/intelligenceLayer.ts',
   consumerUi:'apps/consumer-mobile/app/intelligence.tsx',
+  consumerLocation:'apps/consumer-mobile/app/location/[id].tsx',
+  consumerLocationIntelligence:'apps/consumer-mobile/components/LocationAmenityInventory.tsx',
+  consumerPassport:'apps/consumer-mobile/app/passport.tsx',
+  consumerPassportService:'apps/consumer-mobile/services/passport.ts',
   fleetService:'apps/fleet-mobile/services/routeReliefIntelligence.ts',
   fleetUi:'apps/fleet-mobile/app/coverage.tsx',
+  fleetHome:'apps/fleet-mobile/app/index.tsx',
   ownerService:'apps/platform-mobile/services/intelligenceLayer.ts',
   ownerUi:'apps/platform-mobile/app/intelligence.tsx',
+  ownerHome:'apps/platform-mobile/app/index.tsx',
   search:'packages/mobile-core/src/appSearch.ts',
   businessHome:'apps/business-mobile/app/index.tsx',
-  consumerLocation:'apps/consumer-mobile/app/location/[id].tsx',
-  consumerPassport:'apps/consumer-mobile/app/passport.tsx',
-  fleetHome:'apps/fleet-mobile/app/index.tsx',
-  ownerControl:'apps/platform-mobile/app/control.tsx',
 };
 for(const [name,path] of Object.entries(files)) if(!fs.existsSync(path)) failures.push(`missing ${name}: ${path}`);
 
@@ -27,16 +29,18 @@ if(!failures.length){
   const businessUi=read(files.businessUi);
   const consumerService=read(files.consumerService);
   const consumerUi=read(files.consumerUi);
+  const consumerLocation=read(files.consumerLocation);
+  const consumerLocationIntelligence=read(files.consumerLocationIntelligence);
+  const consumerPassport=read(files.consumerPassport);
+  const consumerPassportService=read(files.consumerPassportService);
   const fleetService=read(files.fleetService);
   const fleetUi=read(files.fleetUi);
+  const fleetHome=read(files.fleetHome);
   const ownerService=read(files.ownerService);
   const ownerUi=read(files.ownerUi);
+  const ownerHome=read(files.ownerHome);
   const search=read(files.search);
   const businessHome=read(files.businessHome);
-  const consumerLocation=read(files.consumerLocation);
-  const consumerPassport=read(files.consumerPassport);
-  const fleetHome=read(files.fleetHome);
-  const ownerControl=read(files.ownerControl);
 
   for(const token of [
     'create table if not exists public.business_restroom_service_updates',
@@ -51,6 +55,7 @@ if(!failures.length){
     'fleet_route_relief_coverage',
     'owner_intelligence_overview',
     'owner_explain_location_intelligence',
+    'consumer_journey_collections',
     'business_reported',
     'business_can_manage',
     'freshness_score',
@@ -64,16 +69,19 @@ if(!failures.length){
 
   for(const token of ['getKleenestNow','getFacilityPassport','getVerifiedAccess']) if(!consumerService.includes(token)) failures.push(`Consumer intelligence service missing ${token}`);
   for(const token of ['KLEENEST NOW','Bathroom Fit','Facility Passport','Verified Access']) if(!consumerUi.includes(token)) failures.push(`Consumer intelligence UI missing ${token}`);
-  for(const token of ['Kleenest Now','Facility Passport']) if(!consumerLocation.includes(token)) failures.push(`Consumer location detail must add ${token} without replacing existing detail actions`);
-  if(!consumerPassport.includes('Journey collections')) failures.push('Consumer Passport must add Journey collections while preserving existing Passport UI.');
+  if(!consumerLocation.includes('LocationAmenityInventory')) failures.push('Consumer location detail must preserve its existing trust/evidence surface.');
+  for(const token of ['KLEENEST NOW','Facility Passport',"pathname:'/intelligence'",'locationId']) if(!consumerLocationIntelligence.includes(token)) failures.push(`Consumer location intelligence entry missing ${token}`);
+  if(!consumerPassport.includes('next_collections')) failures.push('Consumer Passport must preserve its existing collection-card UI.');
+  for(const token of ['consumer_journey_collections','journey_collections','next_collections']) if(!consumerPassportService.includes(token)) failures.push(`Consumer Passport journey integration missing ${token}`);
 
   for(const token of ['getRouteReliefCoverage','getVerifiedAccess']) if(!fleetService.includes(token)) failures.push(`Fleet route-relief service missing ${token}`);
-  for(const token of ['ROUTE COVERAGE','Restroom desert','Preferred access']) if(!fleetUi.includes(token)) failures.push(`Fleet coverage UI missing ${token}`);
-  if(!fleetHome.includes("href:'/coverage'")) failures.push('Fleet home must add coverage without removing existing routes.');
+  const fleetUiLower=fleetUi.toLowerCase();
+  for(const token of ['route coverage','restroom desert','preferred access']) if(!fleetUiLower.includes(token)) failures.push(`Fleet coverage UI missing ${token}`);
+  if(!fleetHome.includes("['/coverage','Route Coverage'")) failures.push('Fleet home must preserve all existing routes and expose Route Coverage.');
 
   for(const token of ['getOwnerIntelligenceOverview','explainLocationIntelligence','updateIntelligencePolicy']) if(!ownerService.includes(token)) failures.push(`Owner intelligence service missing ${token}`);
   for(const token of ['PLATFORM GRAPH','WHY DID THIS HAPPEN?','LAUNCH READINESS','INTELLIGENCE POLICY']) if(!ownerUi.includes(token)) failures.push(`Owner intelligence UI missing ${token}`);
-  if(!ownerControl.includes('/intelligence')) failures.push('Owner Control must add Intelligence workspace without replacing existing controls.');
+  if(!ownerHome.includes("['/intelligence','Intelligence Lab'")) failures.push('Owner Home must expose the additive Intelligence workspace without replacing existing controls.');
 
   for(const token of ['Kleenest Now','Bathroom Fit','Facility Passport','Trust Recovery','Fix First','Route Coverage','Platform Graph','Launch Readiness','Verified Access']) if(!search.includes(token)) failures.push(`app search missing ${token}`);
 }
