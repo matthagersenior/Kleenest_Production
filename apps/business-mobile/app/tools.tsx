@@ -3,8 +3,10 @@ import { useMemo,useState } from 'react';
 import { Pressable,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { BUSINESS_ACTIONS,BUSINESS_ACTION_GROUPS } from '../services/actionRegistry';
 import { BusinessCard,BusinessHero,SectionHeader,businessColors } from '../components/BusinessOS';
+import { useBusinessTheme } from '../services/theme';
 
 export default function BusinessTools(){
+ const theme=useBusinessTheme();
  const[query,setQuery]=useState('');
  const filtered=useMemo(()=>{
   const q=query.trim().toLowerCase();
@@ -13,12 +15,12 @@ export default function BusinessTools(){
     item.title,item.description,item.group,item.route,...item.serviceActions,...(item.keywords||[])
   ].join(' ').toLowerCase().includes(q));
  },[query]);
- return <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={s.page}>
+ return <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={[s.page,{backgroundColor:theme.canvas}]}>
   <BusinessHero eyebrow="BUSINESS ACTION CENTER" title="Every Business action, one place." body="Find the job you need to do, then jump directly to the screen that owns the action. This registry is audited against Business service mutations so backend capability cannot silently outgrow the UI."/>
   <BusinessCard>
-   <Text style={s.label}>FIND A TOOL OR ACTION</Text>
-   <TextInput accessibilityLabel="Search Business actions" value={query} onChangeText={setQuery} placeholder="Try: review reply, QR, staff, report, location, campaign…" placeholderTextColor="#829188" style={s.input}/>
-   <Text style={s.meta}>{filtered.length} action group{filtered.length===1?'':'s'} matched</Text>
+   <Text style={[s.label,{color:theme.accent}]}>FIND A TOOL OR ACTION</Text>
+   <TextInput accessibilityLabel="Search Business actions" value={query} onChangeText={setQuery} placeholder="Try: review reply, QR, staff, report, location, campaign…" placeholderTextColor={theme.muted} style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}/>
+   <Text style={[s.meta,{color:theme.muted}]}>{filtered.length} action group{filtered.length===1?'':'s'} matched</Text>
   </BusinessCard>
   {BUSINESS_ACTION_GROUPS.map(group=>{
    const rows=filtered.filter(item=>item.group===group);
@@ -28,9 +30,9 @@ export default function BusinessTools(){
     <View style={s.grid}>{rows.map(item=><Link key={item.id} href={item.route as any} asChild>
      <Pressable accessibilityRole="button" accessibilityLabel={item.title} accessibilityHint={`Open ${item.title}`} style={s.actionPressable}>
       <BusinessCard style={s.actionCard}>
-       <Text style={s.actionTitle}>{item.title}</Text>
-       <Text style={s.meta}>{item.description}</Text>
-       <View style={s.footer}><Text style={s.route}>{item.route.replace('/','').replaceAll('-',' ')}</Text><Text style={s.open}>OPEN →</Text></View>
+       <Text style={[s.actionTitle,{color:theme.ink}]}>{item.title}</Text>
+       <Text style={[s.meta,{color:theme.muted}]}>{item.description}</Text>
+       <View style={s.footer}><Text style={[s.route,{color:theme.muted}]}>{item.route.replace('/','').replaceAll('-',' ')}</Text><Text style={[s.open,{color:theme.accent}]}>OPEN →</Text></View>
       </BusinessCard>
      </Pressable>
     </Link>)}</View>

@@ -82,18 +82,18 @@ export default function Account(){
   async function deletion(){const{error}=await client.rpc('request_account_deletion',{p_reason:reason.trim()||null});setMessage(error?error.message:'Account deletion request submitted.')}
 
   return <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={[s.page,{backgroundColor:theme.canvas}]}>
-    <Text style={s.title}>Account control</Text>
-    <Text style={s.body}>{signedIn?`Signed in as ${signedIn}`:'Sign in with the Kleenest account authorized for this Business workspace.'}</Text>
+    <Text style={[s.title,{color:theme.ink}]}>Account control</Text>
+    <Text style={[s.body,{color:theme.muted}]}>{signedIn?`Signed in as ${signedIn}`:'Sign in with the Kleenest account authorized for this Business workspace.'}</Text>
     <View style={[s.themeCard,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.themeHeading,{color:theme.ink}]}>Appearance</Text><Text style={[s.themeCopy,{color:theme.muted}]}>Choose Default, Light, Dark, or follow the device. Business keeps its own workspace accent.</Text><View accessibilityRole="radiogroup" style={s.themeRow}>{KLEENEST_THEME_OPTIONS.map(option=>{const selected=themeMode===option.value;return <Pressable key={option.value} accessibilityRole="radio" accessibilityState={{selected}} onPress={()=>void chooseTheme(option.value)} style={[s.themeButton,{backgroundColor:selected?theme.accent:theme.surfaceRaised,borderColor:selected?theme.accent:theme.line}]}><Text style={[s.themeButtonText,{color:selected?theme.accentText:theme.ink}]}>{option.label}</Text></Pressable>})}</View></View>
-    {!signedIn?<View style={s.card}>
-      <TextInput autoCapitalize="none" keyboardType="email-address" style={s.input} placeholder="Email" value={email} onChangeText={setEmail}/>
-      <View style={s.passwordRow}><TextInput secureTextEntry={!showPassword} autoCapitalize="none" style={[s.input,{flex:1,borderWidth:0}]} placeholder="Password" value={password} onChangeText={setPassword}/><Pressable accessibilityRole="button" accessibilityLabel={showPassword?'Hide password':'Show password'} onPress={()=>setShowPassword(v=>!v)} style={s.eye}><Text style={s.eyeText}>{showPassword?'Hide':'Show'}</Text></Pressable></View>
-      <Pressable style={[s.primary,busy&&s.disabled]} disabled={busy} onPress={signIn}><Text style={s.primaryText}>{busy?'Working…':'Sign in'}</Text></Pressable>
-      <Text style={s.or}>or</Text>
-      <Pressable style={[s.secondary,busy&&s.disabled]} disabled={busy} onPress={googleSignIn}><Text style={s.secondaryText}>Continue with Google</Text></Pressable>
-    </View>:<Pressable style={s.secondary} onPress={signOut}><Text style={s.secondaryText}>Sign out</Text></Pressable>}
-    <View style={s.card}><Text style={s.body}>Request deletion of your Kleenest identity and associated eligible data.</Text><TextInput style={s.input} placeholder="Optional reason" value={reason} onChangeText={setReason}/><Pressable style={s.danger} onPress={deletion}><Text style={s.dangerText}>Request account deletion</Text></Pressable></View>
-    {message?<Text accessibilityLiveRegion="polite" style={s.body}>{message}</Text>:null}
+    {!signedIn?<View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line,borderWidth:1}]}>
+      <TextInput autoCapitalize="none" keyboardType="email-address" style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} placeholderTextColor={theme.muted} placeholder="Email" value={email} onChangeText={setEmail}/>
+      <View style={[s.passwordRow,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><TextInput secureTextEntry={!showPassword} autoCapitalize="none" style={[s.input,{flex:1,borderWidth:0,backgroundColor:theme.surfaceRaised,color:theme.ink}]} placeholderTextColor={theme.muted} placeholder="Password" value={password} onChangeText={setPassword}/><Pressable accessibilityRole="button" accessibilityLabel={showPassword?'Hide password':'Show password'} onPress={()=>setShowPassword(v=>!v)} style={s.eye}><Text style={[s.eyeText,{color:theme.accent}]}>{showPassword?'Hide':'Show'}</Text></Pressable></View>
+      <Pressable style={[s.primary,{backgroundColor:theme.accent},busy&&s.disabled]} disabled={busy} onPress={signIn}><Text style={[s.primaryText,{color:theme.accentText}]}>{busy?'Working…':'Sign in'}</Text></Pressable>
+      <Text style={[s.or,{color:theme.muted}]}>or</Text>
+      <Pressable style={[s.secondary,{backgroundColor:theme.accentSoft,borderColor:theme.line,borderWidth:1},busy&&s.disabled]} disabled={busy} onPress={googleSignIn}><Text style={[s.secondaryText,{color:theme.accent}]}>Continue with Google</Text></Pressable>
+    </View>:<Pressable style={[s.secondary,{backgroundColor:theme.accentSoft,borderColor:theme.line,borderWidth:1}]} onPress={signOut}><Text style={[s.secondaryText,{color:theme.accent}]}>Sign out</Text></Pressable>}
+    <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line,borderWidth:1}]}><Text style={[s.body,{color:theme.muted}]}>Request deletion of your Kleenest identity and associated eligible data.</Text><TextInput style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} placeholderTextColor={theme.muted} placeholder="Optional reason" value={reason} onChangeText={setReason}/><Pressable style={[s.danger,{backgroundColor:theme.danger}]} onPress={deletion}><Text style={s.dangerText}>Request account deletion</Text></Pressable></View>
+    {message?<Text accessibilityLiveRegion="polite" style={[s.body,{color:theme.muted}]}>{message}</Text>:null}
   </ScrollView>
 }
 

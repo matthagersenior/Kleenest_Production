@@ -14,7 +14,7 @@ const shadow=Platform.OS==='web'?({boxShadow:'0 12px 30px rgba(15,48,32,.08)'} a
 export function BusinessCard({children,style}:{children:ReactNode;style?:any}){const theme=useBusinessTheme();return <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line},shadow,style]}>{children}</View>}
 
 export function BusinessHero({eyebrow,title,body,children}:{eyebrow:string;title:string;body:string;children?:ReactNode}){const theme=useBusinessTheme();
- return <View style={[s.hero,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:businessColors.ink,borderWidth:1,borderColor:theme.resolved==='dark'?theme.line:businessColors.ink}]}><Text style={s.eyebrow}>{eyebrow}</Text><Text style={s.heroTitle}>{title}</Text><Text style={s.heroBody}>{body}</Text>{children}</View>
+ return <View style={[s.hero,{backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}]}><Text style={[s.eyebrow,{color:theme.accent}]}>{eyebrow}</Text><Text style={[s.heroTitle,{color:theme.ink}]}>{title}</Text><Text style={[s.heroBody,{color:theme.muted}]}>{body}</Text>{children}</View>
 }
 
 export function SectionHeader({title,body,actionLabel,onAction}:{title:string;body?:string;actionLabel?:string;onAction?:()=>void}){const theme=useBusinessTheme();
