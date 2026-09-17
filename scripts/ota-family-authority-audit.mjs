@@ -15,8 +15,11 @@ for(const [name,dir,candidate,production] of apps){
 }
 const consumerLayout=read('apps/consumer-mobile/app/_layout.tsx');
 for(const token of ["import * as Updates from 'expo-updates'","Updates.checkForUpdateAsync()","Updates.fetchUpdateAsync()","Updates.reloadAsync()","AppState.addEventListener('change'","OTA_CHECK_THROTTLE_MS"])if(!consumerLayout.includes(token))failures.push('consumer OTA self-apply missing '+token);
+const databaseDeploy=read('.github/workflows/supabase-production-migrations.yml');
+for(const token of ['workflow_run:','workflows: ["Production CI"]','SUPABASE_PROJECT_ID: ssgesjzdvdsqacdtasje','supabase db push --dry-run','supabase db push'])if(!databaseDeploy.includes(token))failures.push('production database workflow missing '+token);
 const family=read('.github/workflows/ota-family.yml');
-for(const token of ['workflow_run:','workflows: ["Production CI"]','push:','releases/family-ota.txt','--environment production','consumer-production','business-production','fleet-production','owner-production','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_publish','native_rebuild_required'])if(!family.includes(token))failures.push('family OTA workflow missing '+token);
+for(const token of ['workflow_run:','workflows: ["Deploy Supabase Migrations to Production"]','ref: ${{ github.event.workflow_run.head_sha }}','--environment production','consumer-production','business-production','fleet-production','owner-production','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_publish','native_rebuild_required'])if(!family.includes(token))failures.push('family OTA workflow missing '+token);
+if(family.includes('workflows: ["Production CI"]'))failures.push('family OTA workflow must not bypass production database deployment');
 const nativeFamily=read('.github/workflows/android-family.yml');
 for(const token of ['schedule:','0 9 * * *','releases/family-native.txt','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_build'])if(!nativeFamily.includes(token))failures.push('family native workflow missing '+token);
 if(nativeFamily.includes('workflow_run:'))failures.push('family native workflow must not rebuild after every Production CI');
