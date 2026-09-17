@@ -11,6 +11,14 @@ const apps={
   owner:'apps/platform-mobile/app/_layout.tsx',
 };
 
+// Business keeps /team as the visible Team tab while /members remains the
+// canonical people/access workflow surfaced by universal search. Both screens
+// use the same membership, role and ownership authority; searching "team"
+// intentionally lands on /members instead of duplicating the search result.
+const routeAliases={
+  business:{team:'members'},
+};
+
 const failures=[];
 for(const [scope,layoutPath] of Object.entries(apps)){
   const layout=read(layoutPath);
@@ -27,7 +35,11 @@ for(const [scope,layoutPath] of Object.entries(apps)){
   if(start<0||end<0){failures.push(`${scope}: search index block missing`);continue;}
   const block=index.slice(start,end);
   const routes=[...block.matchAll(/route:'([^']+)'/g)].map(match=>match[1].replace(/^\//,''));
-  for(const name of names)if(!routes.includes(name))failures.push(`${scope}: route ${name} is not searchable`);
+  for(const name of names){
+    const alias=routeAliases[scope]?.[name];
+    if(!routes.includes(name)&&!(alias&&routes.includes(alias)))failures.push(`${scope}: route ${name} is not searchable`);
+    if(alias&&!block.includes(`keywords:['${name}'`)&&!block.includes(`'${name}'`))failures.push(`${scope}: route ${name} alias ${alias} is missing a matching search keyword`);
+  }
 }
 
 for(const token of ['Freshness','How business claims work','Fleet Premium seats','Creator mission lifecycle']){
