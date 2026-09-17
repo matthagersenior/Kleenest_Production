@@ -63,9 +63,9 @@ export default function FleetDemo(){
   contentInsetAdjustmentBehavior="automatic"
  >
   <View style={s.hero}>
-   <Text style={s.kicker}>REAL-WORLD FLEET DEMO</Text>
-   <Text style={s.title}>{data?.loop_title||'Follow the dispatch loop from mission to measurable recovery.'}</Text>
-   <Text style={s.body}>{data?.loop_summary||'Start the mission, advance through dispatch and field execution, work the exception, then close the loop with route intelligence.'}</Text>
+   <Text style={s.kicker}>HUMAN-INFRASTRUCTURE FLEET DEMO</Text>
+   <Text style={s.title}>{data?.loop_title||'See how Kleenest adds trusted-stop intelligence to a mobile-workforce route.'}</Text>
+   <Text style={s.body}>{data?.loop_summary||'Follow a route through worker utility, geofenced execution, an operational exception and the Kleenest evidence that helps the organization respond.'}</Text>
   </View>
 
   {message?<Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text>:null}

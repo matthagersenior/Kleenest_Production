@@ -36,9 +36,9 @@ mutationSurface({label:'Fleet field execution',service:fleetService,ui:fleetExec
 mutationSurface({label:'Fleet monitoring and Live Network',service:fleetService+fleetSignals,ui:fleetSignals,authority:['fleet_list_monitored_locations','fleet_set_monitored_location','fleet_remove_monitored_location'],controls:['Live Network','Enable Live Network','Stop Live Network','Monitor location','Stop monitoring']});
 mutationSurface({label:'Fleet metric configuration',service:fleetService+fleetMetrics,ui:fleetMetrics,authority:['get_fleet_metric_capabilities','create_fleet_metric_definition','update_fleet_metric_definition','assign_fleet_metric'],controls:['Create metric','Edit metric','Assign metric']});
 requireAll('Fleet offline/sync UI',fleetSync,['Device offline queue','Replay queued field events']);
-mutationSurface({label:'Fleet premium membership',service:fleetService,ui:fleetPremium,authority:['fleet_list_premium_members','fleet_grant_premium_member_by_email','fleet_revoke_premium_member'],controls:['Grant Fleet Premium','Revoke access']});
+mutationSurface({label:'Fleet workforce access membership',service:fleetService,ui:fleetPremium,authority:['fleet_list_premium_members','fleet_grant_premium_member_by_email','fleet_revoke_premium_member'],controls:['Grant Kleenest Premium','Revoke access']});
 requireAll('Fleet Enterprise allocation authority',fleetEnterprise+fleetEnterpriseService,['createPartnerAllocation','Partner allocation','budget']);
-requireAll('Fleet policy controls',fleetCapabilities,['Save dispatch policy','Save exception policy']);
+requireAll('Fleet policy controls',fleetCapabilities,['Save signal policy','Save exception policy']);
 for(const [name,source] of Object.entries({fleetAssets,fleetMaintenance,fleetPlanner,fleetDispatch,fleetOperations,fleetExecution,fleetSignals,fleetMetrics,fleetSync,fleetPremium,fleetEnterprise,fleetCapabilities}))noRawDump(name,source);
 
 // BUSINESS — consolidated canonical screens are valid when they preserve the richer service/mutation behavior.
