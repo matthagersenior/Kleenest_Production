@@ -1,0 +1,29 @@
+name: Quality Pass Intelligence Fast
+
+# Fast PR guard for the converged intelligence + progression contracts.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - apps/consumer-mobile/**
+      - apps/business-mobile/**
+      - apps/fleet-mobile/**
+      - apps/platform-mobile/**
+      - packages/mobile-core/**
+      - supabase/migrations/**
+      - scripts/quality-pass-intelligence-progression-audit.mjs
+      - .github/workflows/quality-pass-intelligence-fast.yml
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify quality-pass intelligence progression contract
+        run: node scripts/quality-pass-intelligence-progression-audit.mjs

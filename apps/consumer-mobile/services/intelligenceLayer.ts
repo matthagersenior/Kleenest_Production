@@ -13,6 +13,11 @@ export function getKleenestNow(locationId:string){return rpc('location_kleenest_
 export function getFacilityPassport(locationId:string){return rpc('location_facility_passport',{p_location_id:locationId});}
 export function getVerifiedAccess(locationId:string){return rpc('kleenest_verified_access',{p_location_id:locationId});}
 export function getBathroomFit(locationId:string){return rpc('location_bathroom_fit',{p_location_id:locationId});}
+export function getLocationExplanation(locationId:string){return rpc('location_intelligence_explanation',{p_location_id:locationId});}
+export function getLocationProofCard(locationId:string){return rpc('location_proof_card',{p_location_id:locationId});}
+export function setLocationTrustWatch(locationId:string,enabled=true){return rpc('consumer_location_trust_watch',{p_location_id:locationId,p_enabled:enabled});}
+export function getLocationTrustChanges(limit=20){return rpc<any[]>('consumer_location_trust_changes',{p_limit:limit});}
+export function getConsumerRouteConfidence(routeId:string){return rpc('consumer_route_confidence',{p_route_id:routeId});}
 export async function getBathroomFitPreferences(){return await rpc<Partial<BathroomFitPreferences>>('consumer_get_bathroom_fit_preferences')||{};}
 export function updateBathroomFitPreferences(preferences:Partial<BathroomFitPreferences>){return rpc<BathroomFitPreferences>('consumer_update_bathroom_fit_preferences',{p_preferences:preferences});}
 export async function getConsumerIntelligence(locationId:string){
