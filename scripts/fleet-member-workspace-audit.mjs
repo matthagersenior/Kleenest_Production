@@ -16,6 +16,7 @@ const map=read('apps/fleet-mobile/components/FleetMap.tsx');
 const premium=read('apps/fleet-mobile/app/premium.tsx');
 const product=read('apps/fleet-mobile/services/product.ts');
 const geofence=read('apps/fleet-mobile/services/geofence.ts');
+const positioning=read('apps/fleet-mobile/services/positioning.ts');
 
 requireTokens('Fleet member authority',authority,[
  'fleet_product_enabled',
@@ -64,7 +65,8 @@ requireTokens('Fleet role gate',layout,[
  "title:'Nearby'"
 ]);
 requireTokens('Fleet For Me',member,[
- 'MY KLEENEST · FLEET',
+ 'MY KLEENEST · MOBILE WORKFORCE',
+ 'ROUTE RELIEF + WORKFORCE ACCESS',
  'route_execution',
  'Enable geofencing',
  'STALL RISK',
@@ -72,17 +74,27 @@ requireTokens('Fleet For Me',member,[
  'recordRouteStopTiming',
  'registerFleetPush',
  'Open full Kleenest',
- 'Find nearby bathrooms',
+ 'Open Route Relief',
+ 'FLEET_POSITIONING.member',
  'setInterval(()=>setClock'
 ]);
 requireTokens('Fleet nearby Consumer experience',nearby,[
- 'KLEENEST FOR ME · FLEET CONNECTED',
- 'SEARCH ANY AREA',
+ 'ROUTE RELIEF · KLEENEST FLEET',
+ 'SEARCH HERE OR AHEAD',
  'Home, work, school, address, city',
  'consumer_photo_url',
  'Start navigation',
  'Open full Kleenest',
+ 'FLEET_POSITIONING.routeRelief',
  'mode="nearby"'
+]);
+requireTokens('Fleet positioning contract',positioning,[
+ 'Human-infrastructure intelligence for mobile workforces',
+ 'complements existing dispatch, telematics and field-service systems',
+ 'ROUTE RELIEF',
+ 'WORKFORCE ACCESS',
+ 'OPERATIONS INTELLIGENCE',
+ 'ECOSYSTEM LAYER'
 ]);
 requireTokens('Fleet consumer photos',locations,[
  'mobile_location_presentation_v1',
@@ -101,4 +113,4 @@ if(failures.length){
  for(const failure of failures)console.error('- '+failure);
  process.exit(1);
 }
-console.log('Fleet member workspace audit passed: operator, driver and member gates converge Consumer discovery, Premium, assigned-route execution, geofencing, notifications, dwell/stall awareness and selected location photos.');
+console.log('Fleet member workspace audit passed: operator, driver and member gates converge Route Relief, workforce access, Consumer discovery, assigned-route execution, geofencing, notifications, dwell/stall awareness and selected location photos.');
