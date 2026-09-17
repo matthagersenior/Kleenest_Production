@@ -11,6 +11,7 @@ type FleetRoute=readonly[string,string,string];
 const routes:FleetRoute[]=[
  ['/member','For Me','Worker-facing Kleenest utility: trusted restroom discovery, Premium access, assigned-route context, geofencing and alerts.'],
  ['/nearby','Route Relief','Find trusted restroom options around you or in an area ahead using Kleenest freshness, access and location evidence.'],
+ ['/coverage','Route Coverage','See trusted-stop continuity, Preferred access and restroom-desert gaps across existing Fleet routes.'],
  ['/demo','Guided Demo','See how Kleenest adds human-infrastructure intelligence to mobile-workforce routes, stops, access and operational signals.'],
  ['/onboarding','Onboarding','Update the operating profile that targets this Fleet experience.'],
  ['/planner','Map Planner','Build routes visually from the canonical Kleenest location network and assign drivers/vehicles.'],
@@ -37,16 +38,16 @@ function buildPriorityRoutes(onboarding:any){
  const team:string[]=Array.isArray(onboarding?.answers?.team_focus)?onboarding.answers.team_focus.map(String):[];
  const wanted:string[]=[];
  const add=(...items:string[])=>items.forEach(item=>{if(!wanted.includes(item))wanted.push(item)});
- if(goals.some(x=>['route_efficiency'].includes(x)))add('/planner','/dispatch','/execution','/signals');
- if(goals.some(x=>['workforce_wellbeing'].includes(x)))add('/nearby','/premium','/signals','/insights');
+ if(goals.some(x=>['route_efficiency'].includes(x)))add('/planner','/dispatch','/execution','/signals','/coverage');
+ if(goals.some(x=>['workforce_wellbeing'].includes(x)))add('/nearby','/coverage','/premium','/signals','/insights');
  if(goals.some(x=>['service_verification'].includes(x)))add('/execution','/sync','/metrics');
  if(goals.some(x=>['reduce_downtime'].includes(x)))add('/operations','/maintenance','/insights');
  if(goals.some(x=>['multi_location_consistency'].includes(x)))add('/metrics','/insights');
- if(goals.some(x=>['partner_network','multi_market_roi'].includes(x)))add('/enterprise','/insights');
- if(pains.some(x=>['route_delays','workforce_stop_access'].includes(x)))add('/nearby','/operations','/planner','/signals');
- if(team.includes('dispatch'))add('/dispatch','/planner','/execution');
- if(team.includes('operations'))add('/operations','/insights');
- if(team.includes('analytics')||team.includes('executive'))add('/metrics','/insights');
+ if(goals.some(x=>['partner_network','multi_market_roi'].includes(x)))add('/enterprise','/insights','/coverage');
+ if(pains.some(x=>['route_delays','workforce_stop_access'].includes(x)))add('/nearby','/coverage','/operations','/planner','/signals');
+ if(team.includes('dispatch'))add('/dispatch','/planner','/execution','/coverage');
+ if(team.includes('operations'))add('/operations','/insights','/coverage');
+ if(team.includes('analytics')||team.includes('executive'))add('/metrics','/insights','/coverage');
  return wanted;
 }
 
