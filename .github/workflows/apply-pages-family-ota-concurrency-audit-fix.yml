@@ -1,0 +1,38 @@
+name: Apply Pages Family OTA Concurrency Audit Fix
+
+on:
+  push:
+    branches: [fix/supabase-release-order-20260917]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/supabase-release-order-20260917
+          fetch-depth: 0
+      - name: Fix exact family OTA concurrency assertion
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/pages-deployment-convergence-audit.mjs')
+          text=p.read_text()
+          old="for(const token of ['group: kleenest-family-ota',\"cancel-in-progress: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}\"])requireToken(familyOta,token,'Coordinated family OTA concurrency policy');"
+          new="for(const token of ['group: kleenest-family-ota',\"cancel-in-progress: ${{ github.event.workflow_run.conclusion == 'success' }}\"])requireToken(familyOta,token,'Coordinated family OTA concurrency policy');"
+          if old not in text:
+              raise SystemExit('exact stale family OTA concurrency assertion not found')
+          p.write_text(text.replace(old,new,1))
+          PY
+          rm .github/workflows/apply-pages-family-ota-concurrency-audit-fix.yml
+          git add -A
+          git commit -m "Fix Pages family OTA concurrency assertion"
+          git push origin HEAD:fix/supabase-release-order-20260917
