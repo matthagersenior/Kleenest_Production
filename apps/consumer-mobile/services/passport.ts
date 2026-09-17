@@ -12,9 +12,19 @@ async function requireUser(){
 
 export async function getPassportSnapshot(){
   await requireUser();
-  const{data,error}=await getKleenestSupabaseClient().rpc('consumer_passport_snapshot');
-  if(error)throw error;
-  return data||{summary:{places:0,visits:0,cities:0,states:0,achievement_stamps:0},recent_visits:[],achievement_stamps:[],cities:[],states:[],place_types:[],next_collections:[]};
+  const client=getKleenestSupabaseClient();
+  const[snapshotResult,journeyResult]=await Promise.all([
+    client.rpc('consumer_passport_snapshot'),
+    client.rpc('consumer_journey_collections')
+  ]);
+  if(snapshotResult.error)throw snapshotResult.error;
+  if(journeyResult.error)throw journeyResult.error;
+  const base:any=snapshotResult.data||{summary:{places:0,visits:0,cities:0,states:0,achievement_stamps:0},recent_visits:[],achievement_stamps:[],cities:[],states:[],place_types:[],next_collections:[]};
+  const journeys=Array.isArray(journeyResult.data)?journeyResult.data:[];
+  const existing=Array.isArray(base?.next_collections)?base.next_collections:[];
+  const seen=new Set<string>();
+  const nextCollections=[...journeys,...existing].filter((item:any)=>{const code=String(item?.code||item?.name||'');if(!code||seen.has(code))return false;seen.add(code);return true;});
+  return{...base,journey_collections:journeys,next_collections:nextCollections};
 }
 
 export async function setPassportVisibility(itemType:PassportItemVisibility,itemId:string,visible:boolean){

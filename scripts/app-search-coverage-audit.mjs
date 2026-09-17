@@ -42,3 +42,4 @@ if(failures.length){
   process.exit(1);
 }
 console.log('Universal app search audit passed across Consumer, Business, Fleet and Owner.');
+await import('./intelligence-layer-convergence-audit.mjs');

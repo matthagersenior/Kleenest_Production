@@ -113,6 +113,7 @@ export default function Layout(){
     <Tabs.Screen name="account" options={{title:'Account'}}/>
     <Tabs.Screen name="search" options={{href:null,title:'Search'}}/>
     <Tabs.Screen name="auth" options={{href:null,title:'Sign in',headerShown:false}}/>
+    <Tabs.Screen name="coverage" options={{href:null,title:'Route Coverage'}}/>
     <Tabs.Screen name="execution" options={{href:null,title:'Execution'}}/>
     <Tabs.Screen name="signals" options={{href:null,title:'Live Network'}}/>
     <Tabs.Screen name="metrics" options={{href:null,title:'Metrics'}}/>

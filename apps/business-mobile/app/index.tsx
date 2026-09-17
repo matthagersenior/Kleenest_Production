@@ -20,6 +20,7 @@ type Domain={href:string;title:string;body:string;gate:Gate;glyph:string;group:'
 const domainSpecs:Domain[]=[
  {href:'/tools',title:'Action Center',body:'Search every Business action and jump directly to the owning workflow.',gate:'always',glyph:'⌘',group:'Admin'},
  {href:'/locations',title:'Locations',body:'Manage direct locations and see Enterprise portfolio locations.',gate:'coreManagement',glyph:'⌖',group:'Operate'},
+ {href:'/service-freshness',title:'Service freshness',body:'Record claimed-business cleaning and service freshness, then review Trust Recovery, Fix First and local benchmark context.',gate:'coreManagement',glyph:'↺',group:'Operate'},
  {href:'/operations',title:'Operations command',body:'Resolve remediation, reverification and preventive work from one queue.',gate:'trustOperations',glyph:'✓',group:'Operate'},
  {href:'/fleet',title:'Fleet Suite',body:'Routing, dispatch, assets, operations, alerts and role-gated Fleet client workspaces tied to this Business.',gate:'always',glyph:'↝',group:'Operate'},
  {href:'/trust-operations',title:'Trust operations',body:'Work evidence, SLA, proof and reverification cases.',gate:'trustOperations',glyph:'◎',group:'Operate'},
@@ -293,57 +294,42 @@ const s=StyleSheet.create({
  darkLink:{backgroundColor:'#d7ad5b',color:'#182c23',fontWeight:'900',paddingHorizontal:11,paddingVertical:9,borderRadius:999},
  lightLink:{backgroundColor:'#f3f7f4',color:'#173528',fontWeight:'900',paddingHorizontal:11,paddingVertical:9,borderRadius:999},
  metricStrip:{flexDirection:'row',flexWrap:'wrap',gap:8},
-
  metric:{flexGrow:1,flexBasis:150,minWidth:0,backgroundColor:'#fff',borderRadius:18,padding:14,borderWidth:1,borderColor:'#dde5df'},
-
  metricValue:{fontSize:21,fontWeight:'900',color:'#123a2a'},
  metricLabel:{fontSize:11,fontWeight:'900',color:'#284d3a',marginTop:2},
  metricDetail:{fontSize:9,lineHeight:13,color:'#7a8980',marginTop:2},
  prioritySection:{backgroundColor:'#edf5ef',borderRadius:22,padding:14,gap:10,borderWidth:1,borderColor:'#cfe0d4'},
  sectionHeader:{gap:5,alignItems:'stretch'},
-
  sectionEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.2,color:'#66786e'},
  sectionTitle:{fontSize:22,lineHeight:27,fontWeight:'900',color:'#102218'},
  sectionMeta:{alignSelf:'flex-start',fontSize:9,fontWeight:'900',textTransform:'uppercase',letterSpacing:.6,color:'#355846',backgroundColor:'#dbe9df',paddingHorizontal:8,paddingVertical:5,borderRadius:999},
-
  sectionCopy:{fontSize:12,lineHeight:18,color:'#69786f'},
  actionGrid:{gap:8},
  actionTile:{backgroundColor:'#fff',borderRadius:20,padding:15,borderWidth:1,borderColor:'#dce5df',gap:10,alignItems:'stretch',minWidth:0,overflow:'hidden',shadowColor:'#173528',shadowOpacity:.05,shadowRadius:7,shadowOffset:{width:0,height:3},elevation:1},
-
  actionTilePriority:{borderColor:'#afccb9',backgroundColor:'#fbfdfb'},
  actionHeader:{flexDirection:'row',alignItems:'flex-start',gap:11,minWidth:0},
  actionGlyph:{width:42,height:42,borderRadius:13,backgroundColor:'#edf3ef',alignItems:'center',justifyContent:'center',flexShrink:0},
-
  actionGlyphPriority:{backgroundColor:'#123a2a'},
  actionGlyphText:{fontSize:18,fontWeight:'900',color:'#315641'},
  actionGlyphTextPriority:{color:'#d7ad5b'},
  actionHeading:{flex:1,minWidth:0,gap:3},
-
  actionTitleRow:{flexDirection:'row',alignItems:'flex-start',gap:7,flexWrap:'wrap',minWidth:0},
-
  actionTitle:{fontSize:17,lineHeight:22,fontWeight:'900',color:'#132d20',flexShrink:1,minWidth:0},
-
  priorityTag:{fontSize:8,fontWeight:'900',letterSpacing:.8,color:'#725a25',backgroundColor:'#f8e9bd',paddingHorizontal:6,paddingVertical:3,borderRadius:999},
  actionBody:{fontSize:13,lineHeight:19,color:'#617168',minWidth:0},
-
  actionFooter:{marginTop:2,paddingTop:10,borderTopWidth:1,borderTopColor:'#edf1ee',flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10,minWidth:0},
  actionGroupLabel:{fontSize:9,fontWeight:'900',letterSpacing:1,color:'#708078',flexShrink:1},
  actionCta:{flexDirection:'row',alignItems:'center',gap:6,backgroundColor:'#173f2d',paddingHorizontal:11,paddingVertical:8,borderRadius:999,flexShrink:0},
  actionCtaText:{fontSize:11,fontWeight:'900',color:'#fff'},
  actionCtaArrow:{fontSize:14,fontWeight:'900',color:'#d7ad5b'},
-
  notice:{backgroundColor:'#e9f2ec',borderRadius:17,padding:14,gap:4,borderWidth:1,borderColor:'#cddfd3'},
  noticeTitle:{fontSize:16,fontWeight:'900',color:'#173f2d'},
  workspaceHeader:{gap:3,marginTop:3},
  toolGroup:{gap:9,backgroundColor:'#f8faf8',borderRadius:20,padding:10,borderWidth:1,borderColor:'#e1e8e3'},
-
  groupHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:4,paddingTop:2},
-
  groupTitle:{fontSize:17,lineHeight:22,fontWeight:'900',color:'#1a3528'},
-
  groupCount:{fontSize:10,fontWeight:'900',color:'#65766c',backgroundColor:'#e7ede9',paddingHorizontal:8,paddingVertical:4,borderRadius:999},
  toolList:{gap:9},
-
  footer:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:4},
  footerLink:{backgroundColor:'#e8eeea',color:'#173f2d',fontWeight:'900',paddingHorizontal:11,paddingVertical:9,borderRadius:999},
 });

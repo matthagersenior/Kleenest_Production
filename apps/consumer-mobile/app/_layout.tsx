@@ -114,6 +114,7 @@ export default function RootLayout() {
     <Tabs.Screen name="explore" options={{ title:'Explore',headerShown:false,tabBarIcon:tabIcon('⌖'),tabBarLabel:tabLabel('Explore') }}/>
     <Tabs.Screen name="progress" options={{ title:'Progress',headerShown:false,tabBarIcon:tabIcon('★'),tabBarLabel:tabLabel('Progress') }}/>
     <Tabs.Screen name="passport" options={{ href:null,title:'Kleenest Passport' }}/>
+    <Tabs.Screen name="intelligence" options={{ href:null,title:'Kleenest Intelligence' }}/>
     <Tabs.Screen name="social" options={{ title:'Community',headerShown:false,tabBarIcon:tabIcon('●'),tabBarLabel:tabLabel('Community') }}/>
     <Tabs.Screen name="search" options={{ title:'Search',headerShown:false,tabBarIcon:tabIcon('⌕'),tabBarLabel:tabLabel('Search') }}/>
     <Tabs.Screen name="profile" options={{ title:'Profile',headerShown:false,tabBarIcon:tabIcon('◉'),tabBarLabel:tabLabel('Profile') }}/>
