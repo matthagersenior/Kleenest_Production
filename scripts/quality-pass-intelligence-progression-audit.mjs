@@ -8,7 +8,7 @@ const requireFile=(file)=>{const full=path.join(root,file);if(!fs.existsSync(ful
 const expect=(file,needle,label=needle)=>{const text=requireFile(file);if(text&&!text.includes(needle))failures.push(`${file} missing ${label}`);};
 const expectAny=(file,needles,label)=>{const text=requireFile(file);if(text&&!needles.some((needle)=>text.includes(needle)))failures.push(`${file} missing ${label}`);};
 
-const migration='supabase/migrations/20260917050000_quality_pass_intelligence_progression.sql';
+const migration='supabase/migrations/20260917061009_quality_pass_intelligence_progression.sql';
 for(const fn of ['location_intelligence_explanation','location_proof_card','consumer_route_confidence','consumer_location_trust_watch','consumer_location_trust_changes','owner_product_truth'])expect(migration,fn,`RPC ${fn}`);
 for(const kind of ['coverage_verification','freshness_recheck','amenity_confirmation','route_gap_verification'])expect(migration,kind,`Coverage Mission kind ${kind}`);
 expect(migration,'location_trust_watches','trust-watch authority');
