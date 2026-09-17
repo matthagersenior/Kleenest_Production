@@ -1,0 +1,150 @@
+name: Apply Supabase Release Order Green
+
+on:
+  push:
+    branches: [fix/supabase-release-order-20260917]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/supabase-release-order-20260917
+          fetch-depth: 0
+      - name: Apply database-first release patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git mv supabase/migrations/20260917050000_quality_pass_intelligence_progression.sql supabase/migrations/20260917061009_quality_pass_intelligence_progression.sql
+
+          cat > supabase/migrations/20260917061250_quality_pass_intelligence_security_hardening.sql <<'SQL'
+          revoke all on function public.consumer_nearby_progression_opportunities(double precision,double precision,integer) from public;
+          revoke all on function public.consumer_nearby_progression_opportunities(double precision,double precision,integer) from anon;
+          grant execute on function public.consumer_nearby_progression_opportunities(double precision,double precision,integer) to authenticated;
+
+          drop policy if exists location_trust_watches_select_own on public.location_trust_watches;
+          create policy location_trust_watches_select_own on public.location_trust_watches
+          for select to authenticated
+          using (user_id = (select auth.uid()));
+
+          drop policy if exists location_trust_watches_insert_own on public.location_trust_watches;
+          create policy location_trust_watches_insert_own on public.location_trust_watches
+          for insert to authenticated
+          with check (user_id = (select auth.uid()));
+
+          drop policy if exists location_trust_watches_update_own on public.location_trust_watches;
+          create policy location_trust_watches_update_own on public.location_trust_watches
+          for update to authenticated
+          using (user_id = (select auth.uid()))
+          with check (user_id = (select auth.uid()));
+
+          drop policy if exists location_trust_watches_delete_own on public.location_trust_watches;
+          create policy location_trust_watches_delete_own on public.location_trust_watches
+          for delete to authenticated
+          using (user_id = (select auth.uid()));
+          SQL
+
+          cat > .github/workflows/supabase-production-migrations.yml <<'YAML'
+          name: Deploy Supabase Migrations to Production
+
+          on:
+            workflow_dispatch:
+            workflow_run:
+              workflows: ["Production CI"]
+              types: [completed]
+
+          permissions:
+            contents: read
+            actions: read
+
+          concurrency:
+            group: kleenest-production-database
+            cancel-in-progress: false
+
+          jobs:
+            deploy:
+              if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+              runs-on: ubuntu-latest
+              timeout-minutes: 20
+              env:
+                SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+                SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+                SUPABASE_PROJECT_ID: ssgesjzdvdsqacdtasje
+              steps:
+                - uses: actions/checkout@v4
+                  with:
+                    ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+                    fetch-depth: 0
+                - uses: supabase/setup-cli@v1
+                  with:
+                    version: latest
+                - name: Verify production database credentials
+                  run: |
+                    test -n "$SUPABASE_ACCESS_TOKEN"
+                    test -n "$SUPABASE_DB_PASSWORD"
+                    test "$SUPABASE_PROJECT_ID" = "ssgesjzdvdsqacdtasje"
+                - name: Link exact production project
+                  run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+                - name: Inspect migration history before deploy
+                  run: supabase migration list
+                - name: Preview pending production migrations
+                  run: supabase db push --dry-run
+                - name: Apply pending production migrations
+                  run: supabase db push
+                - name: Verify production migration history after deploy
+                  run: |
+                    supabase migration list
+                    supabase db push --dry-run
+          YAML
+
+          python - <<'PY'
+          from pathlib import Path
+
+          ota=Path('.github/workflows/ota-family.yml')
+          text=ota.read_text()
+          text=text.replace('  workflow_dispatch:\n','',1)
+          text=text.replace('  push:\n    branches: [main]\n    paths:\n      - releases/family-ota.txt\n','',1)
+          text=text.replace('workflows: ["Production CI"]','workflows: ["Deploy Supabase Migrations to Production"]',1)
+          text=text.replace("cancel-in-progress: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}","cancel-in-progress: ${{ github.event.workflow_run.conclusion == 'success' }}",1)
+          text=text.replace("if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')","if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'",1)
+          text=text.replace('ref: ${{ github.event.workflow_run.head_sha || github.sha }}','ref: ${{ github.event.workflow_run.head_sha }}')
+          text=text.replace('if [ "${{ github.event_name }}" = "workflow_run" ]; then','if [ "${{ github.event.workflow_run.event }}" != "workflow_dispatch" ]; then',1)
+          text=text.replace('if [ "${{ github.event_name }}" = "workflow_run" ] && [ "$RUNTIME_COUNT" = "0" ]; then','if [ "${{ github.event.workflow_run.event }}" != "workflow_dispatch" ] && [ "$RUNTIME_COUNT" = "0" ]; then',1)
+          if 'workflows: ["Deploy Supabase Migrations to Production"]' not in text:
+              raise SystemExit('OTA workflow predecessor replacement failed')
+          if 'workflows: ["Production CI"]' in text:
+              raise SystemExit('Direct Production CI OTA predecessor remains')
+          ota.write_text(text)
+
+          quality=Path('scripts/quality-pass-intelligence-progression-audit.mjs')
+          q=quality.read_text()
+          old='supabase/migrations/20260917050000_quality_pass_intelligence_progression.sql'
+          new='supabase/migrations/20260917061009_quality_pass_intelligence_progression.sql'
+          if old not in q:
+              raise SystemExit('Expected old quality-pass migration reference not found')
+          quality.write_text(q.replace(old,new))
+
+          ci=Path('.github/workflows/ci.yml')
+          c=ci.read_text()
+          needle='      - name: Production live configuration source control\n        run: node scripts/production-live-config-source-control-audit.mjs\n'
+          addition=needle+'      - name: Supabase production release order\n        run: node scripts/supabase-production-release-order-audit.mjs\n'
+          if needle not in c:
+              raise SystemExit('Production CI insertion point not found')
+          if 'node scripts/supabase-production-release-order-audit.mjs' not in c:
+              c=c.replace(needle,addition,1)
+          ci.write_text(c)
+          PY
+
+          rm .github/workflows/apply-supabase-release-order-green.yml
+          git add -A
+          git status --short
+          git commit -m "Fix production database release ordering"
+          git push origin HEAD:fix/supabase-release-order-20260917
