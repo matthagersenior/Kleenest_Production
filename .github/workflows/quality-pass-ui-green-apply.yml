@@ -1,0 +1,42 @@
+name: Quality Pass UI Green Apply
+
+on:
+  push:
+    branches:
+      - feature/quality-pass-intelligence-progression-20260917
+    paths:
+      - scripts/apply-quality-pass-ui-green.mjs
+      - .github/workflows/quality-pass-ui-green-apply.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: quality-pass-ui-green-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/quality-pass-intelligence-progression-20260917
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply green implementation
+        run: node scripts/apply-quality-pass-ui-green.mjs
+      - name: Remove temporary patch machinery
+        run: |
+          rm scripts/apply-quality-pass-ui-green.mjs
+          rm .github/workflows/quality-pass-ui-green-apply.yml
+      - name: Commit green implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Wire quality-pass intelligence across app family"
+          git push origin HEAD:feature/quality-pass-intelligence-progression-20260917
