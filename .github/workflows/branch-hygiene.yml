@@ -13,8 +13,10 @@ permissions:
   pull-requests: read
 
 concurrency:
+  # Both the merge push and the PR-close event can fire for the same merge.
+  # Queue them so the historical cleanup and exact PR-head cleanup cannot cancel each other.
   group: kleenest-branch-hygiene-main
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   cleanup:
