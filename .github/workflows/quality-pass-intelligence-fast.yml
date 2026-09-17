@@ -1,5 +1,6 @@
 name: Quality Pass Intelligence Fast
 
+# Fast PR guard for the converged intelligence + progression contracts.
 on:
   pull_request:
     branches: [main]
