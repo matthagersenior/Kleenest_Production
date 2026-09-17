@@ -86,10 +86,16 @@ if (installSmoke.includes('EXPECTED_SHA: ${{ github.event.workflow_run.head_sha 
   throw new Error('Installation Center smoke must not infer the deployed SHA from a nested workflow_run head.');
 }
 
+const databaseDeploy = read('supabase-production-migrations.yml');
+for (const token of ['workflow_run:','workflows: ["Production CI"]',"github.event.workflow_run.conclusion == 'success'","github.event.workflow_run.head_branch == 'main'",'ref: ${{ github.event.workflow_run.head_sha || github.sha }}','SUPABASE_PROJECT_ID: ssgesjzdvdsqacdtasje','supabase db push --dry-run','supabase db push']) {
+  requireText(databaseDeploy, token, 'Production database deployment authority missing '+token);
+}
+
 const familyOta = read('ota-family.yml');
-for (const token of ['workflow_run:','workflows: ["Production CI"]',"github.event.workflow_run.conclusion == 'success'","github.event.workflow_run.head_branch == 'main'",'ref: ${{ github.event.workflow_run.head_sha || github.sha }}','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_publish','native_rebuild_required','consumer-production','business-production','fleet-production','owner-production']) {
+for (const token of ['workflow_run:','workflows: ["Deploy Supabase Migrations to Production"]',"github.event.workflow_run.conclusion == 'success'","github.event.workflow_run.head_branch == 'main'",'ref: ${{ github.event.workflow_run.head_sha }}','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_publish','native_rebuild_required','consumer-production','business-production','fleet-production','owner-production']) {
   requireText(familyOta, token, 'Coordinated family OTA authority missing '+token);
 }
+if (familyOta.includes('workflows: ["Production CI"]')) throw new Error('Coordinated family OTA must not bypass production database deployment.');
 
 const consumerOta = read('ota-consumer.yml');
 requireText(consumerOta, 'workflow_dispatch:', 'Emergency Consumer OTA must remain explicitly triggered.');
