@@ -1,0 +1,25 @@
+name: Supabase Production Release Order Fast
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/supabase-production-migrations.yml
+      - .github/workflows/ota-family.yml
+      - .github/workflows/supabase-production-release-order-fast.yml
+      - scripts/supabase-production-release-order-audit.mjs
+      - supabase/migrations/**
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify database-before-OTA release order
+        run: node scripts/supabase-production-release-order-audit.mjs
