@@ -1,6 +1,15 @@
 name: Supabase Production Release Order Fast
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/supabase-production-migrations.yml
+      - .github/workflows/ota-family.yml
+      - .github/workflows/supabase-production-release-order-fast.yml
+      - scripts/supabase-production-release-order-audit.mjs
+      - scripts/quality-pass-intelligence-progression-audit.mjs
+      - supabase/migrations/**
   pull_request:
     branches: [main]
     paths:
@@ -8,6 +17,7 @@ on:
       - .github/workflows/ota-family.yml
       - .github/workflows/supabase-production-release-order-fast.yml
       - scripts/supabase-production-release-order-audit.mjs
+      - scripts/quality-pass-intelligence-progression-audit.mjs
       - supabase/migrations/**
 
 permissions:
@@ -23,3 +33,5 @@ jobs:
           node-version: 22
       - name: Verify database-before-OTA release order
         run: node scripts/supabase-production-release-order-audit.mjs
+      - name: Verify quality-pass migration source contract
+        run: node scripts/quality-pass-intelligence-progression-audit.mjs

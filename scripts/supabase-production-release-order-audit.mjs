@@ -27,12 +27,19 @@ expect(deploy,'supabase db push','production migration deployment');
 const ota='.github/workflows/ota-family.yml';
 expect(ota,'workflows: ["Deploy Supabase Migrations to Production"]','database deployment as automatic OTA predecessor');
 reject(ota,'workflows: ["Production CI"]','direct Production CI → OTA bypass');
+reject(ota,'workflow_dispatch:','manual OTA bypass');
+reject(ota,'releases/family-ota.txt','release-file push OTA bypass');
+
+const guard='.github/workflows/supabase-production-release-order-fast.yml';
+expect(guard,'push:\n    branches: [main]','main-branch release-order guard');
+expect(guard,'pull_request:\n    branches: [main]','PR release-order guard');
 
 const sourceMigration='supabase/migrations/20260917061009_quality_pass_intelligence_progression.sql';
-const hardeningMigration='supabase/migrations/20260917061250_quality_pass_intelligence_security_hardening.sql';
+const hardeningMigration='supabase/migrations/20260917061342_quality_pass_intelligence_security_hardening.sql';
 if(!fs.existsSync(path.join(root,sourceMigration)))failures.push(`missing production-history migration ${sourceMigration}`);
 if(!fs.existsSync(path.join(root,hardeningMigration)))failures.push(`missing production-history migration ${hardeningMigration}`);
 if(fs.existsSync(path.join(root,'supabase/migrations/20260917050000_quality_pass_intelligence_progression.sql')))failures.push('stale pre-apply migration timestamp 20260917050000 is still present');
+if(fs.existsSync(path.join(root,'supabase/migrations/20260917061250_quality_pass_intelligence_security_hardening.sql')))failures.push('stale incorrect hardening timestamp 20260917061250 is still present');
 expect(hardeningMigration,'revoke all on function public.consumer_nearby_progression_opportunities','anonymous Coverage Mission RPC revoke');
 expect(hardeningMigration,'user_id = (select auth.uid())','optimized trust-watch RLS');
 
@@ -41,4 +48,4 @@ if(failures.length){
   for(const failure of failures)console.error(` - ${failure}`);
   process.exit(1);
 }
-console.log('Supabase production release-order audit passed: production migration history is source-controlled and DB deployment gates automatic family OTA.');
+console.log('Supabase production release-order audit passed: production migration history matches source, DB deployment gates OTA, and the guard runs on PRs and main.');
