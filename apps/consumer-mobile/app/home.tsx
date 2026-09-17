@@ -41,6 +41,18 @@ export default function HomeScreen(){
     {policyRequired?<Pressable accessibilityRole="button" style={[s.policyBanner,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#fff8e8',borderColor:theme.resolved==='dark'?theme.warning:'#e7cd8e'}]} onPress={action('/legal')}><View style={{flex:1}}><Text style={[s.policyKicker,{color:theme.warning}]}>ACTION REQUIRED</Text><Text style={[s.policyTitle,{color:theme.ink}]}>Review community terms</Text><Text style={[s.policyBody,{color:theme.muted}]}>Accept the current Terms and Community Guidelines before posting reviews, community content or messages.</Text></View><Text style={[s.policyArrow,{color:theme.warning}]}>›</Text></Pressable>:null}
     {!signedIn?<Pressable accessibilityRole="button" style={[s.joinBanner,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/signup')}><View style={{flex:1}}><Text style={[s.joinKicker,{color:theme.accent}]}>GUEST · SIGN IN · JOIN</Text><Text style={[s.joinTitle,{color:theme.ink}]}>Use Kleenest your way</Text><Text style={[s.joinBody,{color:theme.muted}]}>Keep browsing as a guest, sign in to an existing account, or create one when you want sync, trust history, rewards and community.</Text></View><Text style={[s.joinArrow,{color:theme.accent}]}>›</Text></Pressable>:null}
 
+    <View style={[s.coreActions,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+      <Text style={[s.coreActionsKicker,{color:theme.muted}]}>CORE ACTIONS</Text>
+      <Text style={[s.coreActionsTitle,{color:theme.ink}]}>The things you came here to do stay one tap away.</Text>
+      <View style={s.heroQuickRow}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Find a bathroom" style={[s.heroQuick,{backgroundColor:theme.accent}]} onPress={action('/explore')}><Text style={[s.heroQuickLabel,{color:theme.accentText,opacity:.72}]}>FIND</Text><Text style={[s.heroQuickTitle,{color:theme.accentText}]}>Bathroom</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Check in" style={[s.heroQuick,{backgroundColor:theme.accent}]} onPress={action('/qr')}><Text style={[s.heroQuickLabel,{color:theme.accentText,opacity:.72}]}>ON SITE</Text><Text style={[s.heroQuickTitle,{color:theme.accentText}]}>Check In</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Add a place" style={[s.heroQuick,{backgroundColor:theme.accent}]} onPress={action('/discover')}><Text style={[s.heroQuickLabel,{color:theme.accentText,opacity:.72}]}>MISSING?</Text><Text style={[s.heroQuickTitle,{color:theme.accentText}]}>Add Place</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Scan QR" style={[s.heroQuick,{backgroundColor:theme.accent}]} onPress={action('/qr')}><Text style={[s.heroQuickLabel,{color:theme.accentText,opacity:.72}]}>PROOF</Text><Text style={[s.heroQuickTitle,{color:theme.accentText}]}>Scan QR</Text></Pressable>
+      </View>
+      <Text style={[s.coreActionsHint,{color:theme.muted}]}>Check In opens the GPS/geofence flow first; a QR is optional stronger proof when one is available.</Text>
+    </View>
+
     <RelevanceHeroCarousel
       items={heroItems}
       dotIndicators={heroPolicy.dot_indicators}
@@ -50,14 +62,13 @@ export default function HomeScreen(){
     />
     <SponsoredSlot surface="home" contextClass="home_after_relevance"/>
 
-
     {showInstall?<Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest" style={[s.installFeature,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/install')}>
       <View style={[s.installFeatureIcon,{backgroundColor:theme.accent}]}><Text style={[s.installFeatureIconText,{color:theme.accentText}]}>⇩</Text></View>
       <View style={{flex:1}}><Text style={[s.installFeatureKicker,{color:theme.accent}]}>GET KLEENEST</Text><Text style={[s.installFeatureTitle,{color:theme.ink}]}>Install on this device</Text><Text style={[s.installFeatureBody,{color:theme.muted}]}>Add the web app to your Home Screen or desktop, check install health, share the installer, or get the verified Android APK.</Text></View>
       <Text style={[s.installFeatureArrow,{color:theme.accent}]}>›</Text>
     </Pressable>:null}
 
-    <SectionHeader eyebrow="QUICK ACTIONS" title="Keep your next move one tap away." body="The hero already handles finding, scanning and adding places. Quick Actions now stays focused on the tools you come back to."/>
+    <SectionHeader eyebrow="QUICK ACTIONS" title="Keep your next move one tap away." body="Core discovery and check-in stay fixed above. These shortcuts cover the tools you return to after that."/>
     <View style={s.twoCol}>
       <FeatureCard kicker="GAME CENTER" title="Play + challenges" body="Jump into games, active quests, challenges, contests and leaderboard competition tied to Kleenest progression." onPress={action('/games')}/>
       <FeatureCard kicker="SAVED" title="Trusted shortlist" body="Return to bathrooms you trust or want to verify again." onPress={action('/saved')}/>
@@ -115,14 +126,18 @@ const s=StyleSheet.create({
   joinTitle:{fontSize:17,fontWeight:'900',color:palette.ink,marginTop:2},
   joinBody:{fontSize:12,lineHeight:17,color:palette.muted,marginTop:3},
   joinArrow:{fontSize:28,color:palette.green},
+  coreActions:{borderWidth:1,borderRadius:20,padding:14,gap:8},
+  coreActionsKicker:{fontSize:9,fontWeight:'900',letterSpacing:1.2},
+  coreActionsTitle:{fontSize:18,lineHeight:22,fontWeight:'900'},
+  coreActionsHint:{fontSize:10,lineHeight:15,fontWeight:'700'},
   homePrimaryCta:{backgroundColor:'#fff',padding:15,borderRadius:16,marginTop:5,borderWidth:2,borderColor:'#d7e8dc'},
   homePrimaryLabel:{fontSize:10,fontWeight:'900',letterSpacing:1.2,color:'#557060'},
   homePrimaryTitle:{fontSize:20,fontWeight:'900',color:palette.green,marginTop:2},
   homePrimaryBody:{fontSize:10,lineHeight:15,color:palette.muted,marginTop:3,fontWeight:'700'},
   heroQuickRow:{flexDirection:'row',flexWrap:'wrap',gap:8},
-  heroQuick:{flexGrow:1,flexBasis:'31%',minWidth:96,minHeight:58,backgroundColor:'#2b513e',paddingHorizontal:11,paddingVertical:10,borderRadius:13,justifyContent:'center'},
-  heroQuickLabel:{fontSize:8,fontWeight:'900',letterSpacing:1,color:'#bcd4c5'},
-  heroQuickTitle:{fontSize:12,fontWeight:'900',color:'#fff',marginTop:2},
+  heroQuick:{flexGrow:1,flexBasis:'47%',minWidth:132,minHeight:64,paddingHorizontal:12,paddingVertical:11,borderRadius:14,justifyContent:'center'},
+  heroQuickLabel:{fontSize:8,fontWeight:'900',letterSpacing:1},
+  heroQuickTitle:{fontSize:14,fontWeight:'900',marginTop:2},
   installFeature:{backgroundColor:'#fff',borderWidth:2,borderColor:'#bfd8c7',borderRadius:20,padding:15,flexDirection:'row',alignItems:'center',gap:12},
   installFeatureIcon:{width:42,height:42,borderRadius:14,backgroundColor:palette.green,alignItems:'center',justifyContent:'center'},
   installFeatureIconText:{fontSize:22,fontWeight:'900',color:'#fff'},
