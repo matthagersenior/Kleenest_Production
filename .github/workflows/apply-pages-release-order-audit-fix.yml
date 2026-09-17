@@ -1,0 +1,44 @@
+name: Apply Pages Release Order Audit Fix
+
+on:
+  push:
+    branches: [fix/supabase-release-order-20260917]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/supabase-release-order-20260917
+          fetch-depth: 0
+      - name: Align Pages audit with database-first OTA release order
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/pages-deployment-convergence-audit.mjs')
+          text=p.read_text()
+          old='workflows: ["Production CI"]'
+          new='workflows: ["Deploy Supabase Migrations to Production"]'
+          if old not in text:
+              raise SystemExit('stale direct Production CI OTA assertion not found')
+          text=text.replace(old,new,1)
+          old_cancel="cancel-in-progress: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}"
+          new_cancel="cancel-in-progress: ${{ github.event.workflow_run.conclusion == 'success' }}"
+          if old_cancel not in text:
+              raise SystemExit('stale family OTA concurrency assertion not found')
+          text=text.replace(old_cancel,new_cancel,1)
+          p.write_text(text)
+          PY
+          rm .github/workflows/apply-pages-release-order-audit-fix.yml
+          git add -A
+          git commit -m "Align Pages audit with database-first OTA release order"
+          git push origin HEAD:fix/supabase-release-order-20260917
