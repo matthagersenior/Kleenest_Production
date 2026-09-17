@@ -7,7 +7,8 @@ export function getOwnerIntelligenceOverview(){return rpc('owner_intelligence_ov
 export function explainLocationIntelligence(locationId:string){return rpc('owner_explain_location_intelligence',{p_location_id:locationId});}
 export function getIntelligencePolicy(){return rpc('owner_get_intelligence_policy');}
 export function updateIntelligencePolicy(patch:Record<string,unknown>){return rpc('owner_update_intelligence_policy',{p_patch:patch});}
+export async function listIntelligenceLocationCandidates(){const{data,error}=await client().from('locations').select('id,name,city,state,updated_at').order('updated_at',{ascending:false}).limit(30);if(error)throw error;return data||[];}
 export async function getOwnerIntelligenceWorkspace(){
-  const[overview,policy]=await Promise.all([getOwnerIntelligenceOverview(),getIntelligencePolicy()]);
-  return{overview,policy};
+  const[overview,policy,locations]=await Promise.all([getOwnerIntelligenceOverview(),getIntelligencePolicy(),listIntelligenceLocationCandidates()]);
+  return{overview,policy,locations};
 }
