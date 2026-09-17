@@ -337,3 +337,47 @@ grant execute on function public.consumer_location_trust_changes(integer) to aut
 grant execute on function public.consumer_route_confidence(uuid) to authenticated;
 grant execute on function public.owner_product_truth() to authenticated;
 grant execute on function public.consumer_nearby_progression_opportunities(double precision,double precision,integer) to authenticated;
+
+
+-- Coverage Missions specialize the existing Trust Mission authority. Completion still requires
+-- the canonical verified check-in/review flow; XP and League movement come from the existing
+-- evidence-backed progression_events_v2 actions, never from accepting a mission.
+create or replace function public.start_coverage_trust_mission(p_location_id uuid,p_kind text default 'coverage_verification')
+returns jsonb
+language plpgsql
+security definer
+set search_path=''
+as $$
+declare
+  v_user uuid:=auth.uid();
+  v_kind text:=lower(trim(coalesce(p_kind,'coverage_verification')));
+  v_mission jsonb;
+  v_id uuid;
+  v_goal jsonb;
+  v_action text;
+begin
+  if v_user is null then raise exception 'authentication required'; end if;
+  if v_kind not in ('coverage_verification','freshness_recheck','amenity_confirmation','route_gap_verification') then raise exception 'unsupported coverage mission'; end if;
+  v_mission:=public.start_my_trust_mission(p_location_id,'play');
+  v_id:=(v_mission->>'id')::uuid;
+  v_action:=case v_kind when 'freshness_recheck' then 'reverify_stale' when 'amenity_confirmation' then 'add_amenity' else 'verify_location' end;
+  v_goal:=coalesce(v_mission->'goal','{}'::jsonb)||jsonb_build_object(
+    'workflow','coverage_mission',
+    'coverage_mission_kind',v_kind,
+    'progression_action',v_action,
+    'league_authority','progression_events_v2',
+    'trust_authority','evidence_backed_progression_only',
+    'steps',case v_kind
+      when 'amenity_confirmation' then jsonb_build_array('Check in while physically at the restroom','Publish a verified review','Confirm the amenities you actually observe','Qualified evidence awards the existing progression action and counts toward League XP')
+      when 'freshness_recheck' then jsonb_build_array('Check in while physically at the restroom','Publish a verified review','Refresh stale restroom evidence','Qualified evidence awards the existing progression action and counts toward League XP')
+      when 'route_gap_verification' then jsonb_build_array('Visit the route-gap location','Check in and publish a verified review','Strengthen the stop evidence used by route confidence','Qualified evidence awards the existing progression action and counts toward League XP')
+      else jsonb_build_array('Check in while physically at the restroom','Publish a verified review','Confirm current restroom coverage','Qualified evidence awards the existing progression action and counts toward League XP') end
+  );
+  update public.user_trust_missions
+  set source='coverage_mission',goal=v_goal,baseline_evidence=coalesce(baseline_evidence,'{}'::jsonb)||jsonb_build_object('coverage_mission_kind',v_kind,'progression_action',v_action),updated_at=now()
+  where id=v_id and user_id=v_user and status='active';
+  return public.my_trust_mission();
+end;
+$$;
+revoke all on function public.start_coverage_trust_mission(uuid,text) from public;
+grant execute on function public.start_coverage_trust_mission(uuid,text) to authenticated;

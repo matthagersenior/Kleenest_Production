@@ -15,6 +15,7 @@ export function recordRestroomServiceUpdate(businessId:string,locationId:string,
   return rpc('business_record_restroom_service_update',{p_business_id:businessId,p_location_id:locationId,p_event_kind:eventKind,p_note:note.trim()||null,p_proof_url:proofUrl,p_restroom_facility_id:restroomFacilityId});
 }
 export function getLocationKleenestNow(locationId:string){return rpc('location_kleenest_now',{p_location_id:locationId});}
+export function getLocationIntelligenceExplanation(locationId:string){return rpc('location_intelligence_explanation',{p_location_id:locationId});}
 export function getBusinessTrustRecovery(businessId:string,limit=40){return rpc<any[]>('business_trust_recovery',{p_business_id:businessId,p_limit:limit});}
 export function getBusinessFixFirstQueue(businessId:string,limit=20){return rpc<any[]>('business_fix_first_queue',{p_business_id:businessId,p_limit:limit});}
 export function getBusinessLocalFreshnessBenchmark(businessId:string){return rpc<any[]>('business_local_freshness_benchmark',{p_business_id:businessId});}
