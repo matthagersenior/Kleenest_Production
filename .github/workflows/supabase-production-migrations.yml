@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
   actions: read
+  id-token: write
 
 concurrency:
   group: kleenest-production-database
@@ -24,7 +25,8 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_ID: ssgesjzdvdsqacdtasje
       SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
-      SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+      SUPABASE_READINESS_AUDIENCE: kleenest-supabase-production-readiness
+      RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,7 +47,7 @@ jobs:
             echo "Privileged Supabase credentials are available; pending migrations will be deployed."
           else
             echo "mode=verify" >> "$GITHUB_OUTPUT"
-            echo "Privileged Supabase credentials are not configured; requiring production migration-ledger proof before release."
+            echo "Privileged Supabase credentials are not configured; requiring GitHub OIDC-authenticated production migration-ledger proof before release."
           fi
       - uses: supabase/setup-cli@v1
         if: steps.release_mode.outputs.mode == 'deploy'
@@ -68,5 +70,6 @@ jobs:
         run: |
           supabase migration list
           supabase db push --dry-run
-      - name: Require production migration ledger readiness
+      - name: Require OIDC-authenticated production migration ledger readiness
+        if: steps.release_mode.outputs.mode == 'verify'
         run: node scripts/supabase-production-ledger-readiness.mjs
