@@ -29,3 +29,4 @@ if(failures.length){
   process.exit(1);
 }
 console.log('Business/Fleet theme coverage audit passed.');
+await import('./quality-pass-intelligence-progression-audit.mjs');
