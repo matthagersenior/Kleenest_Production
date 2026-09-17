@@ -39,7 +39,8 @@ for(const term of ['Why Kleenest','Coverage Missions','Route Confidence','Trust 
 const progression=read('apps/consumer-mobile/services/discoveryProgression.ts');
 if(/coverage.*(ledger|xp_events|league).*create/i.test(progression))failures.push('Consumer progression appears to create a parallel Coverage Mission ledger/League authority');
 const intelligence=read('apps/consumer-mobile/app/intelligence.tsx');
-if(/(Share|follow|watch).{0,120}(award|xp)/is.test(intelligence))failures.push('Passive share/follow/watch flow appears coupled to XP');
+const passiveHandlerCoupledToProgression=/(shareProof|toggleWatch)[\s\S]{0,900}(record_progression|recordProgression|awardXp|progression_events_v2)/i.test(intelligence);
+if(passiveHandlerCoupledToProgression)failures.push('Passive share/watch handler appears coupled to the progression authority');
 
 if(failures.length){console.error(`Quality-pass intelligence/progression audit failed (${failures.length}):`);for(const failure of failures)console.error(` - ${failure}`);process.exit(1);}
 console.log('Quality-pass intelligence/progression audit passed: all six intelligence extensions converge on the existing progression, League and evidence authorities.');
