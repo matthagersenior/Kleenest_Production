@@ -1,0 +1,28 @@
+revoke execute on function public.record_location_verification(uuid,boolean,double precision,double precision,text) from public, anon;
+revoke execute on function public.submit_restroom_observation(uuid,uuid,text,numeric,text) from public, anon;
+revoke execute on function public.record_location_filter_event(jsonb,integer,jsonb,double precision,double precision,integer,text) from public, anon;
+revoke execute on function public.record_qr_attribution(text,text,text,jsonb) from public, anon;
+revoke execute on function public.refresh_contributor_milestones(uuid) from public, anon;
+revoke execute on function public.refresh_contributor_reputation(uuid) from public, anon;
+revoke execute on function public.refresh_location_verification_summary(uuid) from public, anon;
+revoke execute on function public.select_location_verification_targets(integer) from public, anon;
+revoke execute on function public.resolve_custom_qr_action(text) from public, anon;
+revoke execute on function public.sync_location_to_place() from public, anon;
+revoke execute on function public.trg_refresh_location_verification_summary() from public, anon;
+revoke execute on function public.record_game_result(text,integer,integer,jsonb) from public, anon;
+revoke execute on function public.redeem_qr_code(text) from public, anon;
+revoke execute on function public.submit_location_photo_record(uuid,text,text,text,text,bigint,integer,integer) from public, anon;
+
+grant execute on function public.record_location_verification(uuid,boolean,double precision,double precision,text) to authenticated;
+grant execute on function public.submit_restroom_observation(uuid,uuid,text,numeric,text) to authenticated;
+grant execute on function public.record_location_filter_event(jsonb,integer,jsonb,double precision,double precision,integer,text) to authenticated;
+grant execute on function public.record_qr_attribution(text,text,text,jsonb) to authenticated;
+grant execute on function public.refresh_contributor_milestones(uuid) to authenticated;
+grant execute on function public.refresh_contributor_reputation(uuid) to authenticated;
+grant execute on function public.refresh_location_verification_summary(uuid) to authenticated;
+grant execute on function public.select_location_verification_targets(integer) to authenticated;
+grant execute on function public.resolve_custom_qr_action(text) to authenticated;
+grant execute on function public.sync_location_to_place() to authenticated;
+grant execute on function public.record_game_result(text,integer,integer,jsonb) to authenticated;
+grant execute on function public.redeem_qr_code(text) to authenticated;
+grant execute on function public.submit_location_photo_record(uuid,text,text,text,text,bigint,integer,integer) to authenticated;

@@ -1,0 +1,1 @@
+alter table public.social_challenge_entries add constraint social_challenge_entries_challenge_user_key unique (challenge_id,user_id);

@@ -1,0 +1,12 @@
+revoke execute on function public.record_favorite_route_event(uuid,uuid,numeric,numeric) from anon;
+revoke execute on function public.record_location_route_event(uuid,boolean) from anon;
+revoke execute on function public.record_game_result(text,integer,integer,jsonb) from anon;
+revoke execute on function public.record_game_challenge_score(uuid,integer,jsonb) from anon;
+revoke execute on function public.quest_advance_activity(uuid,text,uuid,uuid,uuid,uuid,jsonb) from anon;
+revoke execute on function public.quest_record_step(uuid,uuid,text,text,jsonb,uuid,uuid,uuid,uuid) from anon;
+grant execute on function public.record_favorite_route_event(uuid,uuid,numeric,numeric) to authenticated;
+grant execute on function public.record_location_route_event(uuid,boolean) to authenticated;
+grant execute on function public.record_game_result(text,integer,integer,jsonb) to authenticated;
+grant execute on function public.record_game_challenge_score(uuid,integer,jsonb) to authenticated;
+grant execute on function public.quest_advance_activity(uuid,text,uuid,uuid,uuid,uuid,jsonb) to authenticated;
+grant execute on function public.quest_record_step(uuid,uuid,text,text,jsonb,uuid,uuid,uuid,uuid) to authenticated;

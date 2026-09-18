@@ -1,0 +1,1 @@
+select cron.schedule('kleenest-capability-audit-hourly','0 * * * *',$$select public.run_capability_audit('scheduled');$$) where not exists (select 1 from cron.job where jobname='kleenest-capability-audit-hourly');

@@ -1,0 +1,16 @@
+alter table public.ad_placements enable row level security;
+alter table public.business_earned_perks enable row level security;
+alter table public.business_geofences enable row level security;
+alter table public.business_progression_events enable row level security;
+alter table public.business_search_boosts enable row level security;
+alter table public.family_accounts enable row level security;
+alter table public.family_invites enable row level security;
+alter table public.fleet_driver_scorecards enable row level security;
+alter table public.fleet_maintenance_records enable row level security;
+alter table public.fleet_vehicle_daily_metrics enable row level security;
+alter table public.location_claims enable row level security;
+alter table public.location_favorites enable row level security;
+alter table public.location_route_events enable row level security;
+alter table public.location_submissions enable row level security;
+alter table public.pricing_plans enable row level security;
+alter table public.qr_redemptions enable row level security;

@@ -1,0 +1,1 @@
+create policy route_events_owner_insert on public.route_events for insert to authenticated with check (user_id = auth.uid() and exists (select 1 from public.route_plans r where r.id = route_events.route_id and r.user_id = auth.uid()));

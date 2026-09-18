@@ -1,0 +1,34 @@
+create or replace function public.get_partner_network_benchmark(p_network_id uuid,p_start date default current_date - 30,p_end date default current_date) returns table(partner_business_id uuid,partner_visits bigint,partner_checkins bigint,partner_reviews bigint,partner_preferred bigint,partner_access bigint,partner_promotions bigint,checkin_rate numeric,review_rate numeric,engagement_score numeric) language sql security definer set search_path to 'public','auth','extensions','pg_temp' as $$
+with m as (
+  select o.partner_business_id,
+         sum(o.visits) visits,
+         sum(o.check_ins) checkins,
+         sum(o.reviews) reviews,
+         sum(o.preferred_uses) preferred,
+         sum(o.access_redemptions) access,
+         sum(o.promotion_redemptions) promotions
+  from public.enterprise_partner_campaign_outcomes o
+  join public.enterprise_partner_campaigns c on c.id=o.campaign_id
+  join public.enterprise_partner_networks n on n.id=c.network_id
+  where c.network_id=p_network_id
+    and o.metric_date between p_start and p_end
+    and exists (
+      select 1
+      from public.business_members bm
+      join public.businesses b on b.id=bm.business_id
+      where bm.user_id=auth.uid()
+        and bm.business_id=n.owner_business_id
+        and bm.role in ('owner','admin')
+        and lower(b.business_tier::text) in ('fleet','enterprise')
+    )
+  group by o.partner_business_id
+)
+select partner_business_id,visits,checkins,reviews,preferred,access,promotions,
+       round(case when visits>0 then checkins::numeric/visits*100 else 0 end,2),
+       round(case when checkins>0 then reviews::numeric/checkins*100 else 0 end,2),
+       round((checkins*.25+reviews*.15+preferred*.2+access*.2+promotions*.2)::numeric,2)
+from m
+order by round((checkins*.25+reviews*.15+preferred*.2+access*.2+promotions*.2)::numeric,2) desc;
+$$;
+revoke all on function public.get_partner_network_benchmark(uuid,date,date) from public,anon;
+grant execute on function public.get_partner_network_benchmark(uuid,date,date) to authenticated;

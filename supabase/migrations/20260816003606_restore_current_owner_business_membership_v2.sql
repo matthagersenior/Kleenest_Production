@@ -1,0 +1,1 @@
+insert into public.business_members(business_id,user_id,role) select b.id,u.id,'owner'::public.business_member_role from public.businesses b join auth.users u on lower(u.email)=lower(b.email) where b.email is not null and not exists(select 1 from public.business_members m where m.business_id=b.id and m.user_id=u.id);

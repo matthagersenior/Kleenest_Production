@@ -1,0 +1,11 @@
+revoke execute on function public.account_effective_business_tier(uuid) from anon;
+revoke execute on function public.claim_map_discovery_cell(numeric,numeric,integer,integer) from anon;
+revoke execute on function public.enforce_growth_location_cap() from anon;
+revoke execute on function public.get_business_product_access(uuid) from anon;
+revoke execute on function public.get_current_user_product_entitlements() from anon;
+revoke execute on function public.has_fleet_access(uuid) from anon;
+revoke execute on function public.quest_creator_authorized(text,uuid) from anon;
+revoke execute on function public.quest_list_creator(text,uuid) from anon;
+revoke execute on function public.record_feature_access(text,text,text,text,jsonb) from anon;
+revoke execute on function public.resolve_location_external_identity(text,text,double precision,double precision,text) from anon;
+revoke execute on function public.resolve_nearby_notification_recipients(uuid,integer) from anon;

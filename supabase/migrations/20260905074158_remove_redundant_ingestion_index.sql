@@ -1,0 +1,1 @@
+drop index if exists public.idx_external_location_records_source_external;

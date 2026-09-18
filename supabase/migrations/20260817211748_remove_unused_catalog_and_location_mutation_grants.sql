@@ -1,0 +1,1 @@
+revoke insert, update, delete, truncate on table public.locations from anon, authenticated; revoke insert, update, delete, truncate on table public.amenities from anon, authenticated; grant select on table public.locations to anon, authenticated; grant select on table public.amenities to anon, authenticated;

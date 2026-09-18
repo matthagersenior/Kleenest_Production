@@ -1,0 +1,10 @@
+revoke execute on function public.business_location_intelligence(uuid, timestamptz, timestamptz) from anon;
+revoke execute on function public.create_business_qr(uuid, text, text, text, boolean, integer) from anon;
+revoke execute on function public.fleet_actor_is_manager(uuid) from anon;
+revoke execute on function public.fleet_set_route_status(uuid, uuid, text) from anon;
+revoke execute on function public.ingest_external_locations(text, jsonb) from anon;
+revoke execute on function public.process_intelligence_action_jobs(integer) from anon, authenticated;
+revoke execute on function public.queue_intelligence_notification_jobs() from anon, authenticated;
+revoke execute on function public.record_data_feature_event(text, text, text, uuid, uuid, uuid, uuid, text, uuid, numeric, text, jsonb) from anon;
+revoke execute on function public.seed_location_verification_campaign(text, integer) from anon, authenticated;
+revoke execute on function public.select_location_verification_targets(integer) from anon, authenticated;

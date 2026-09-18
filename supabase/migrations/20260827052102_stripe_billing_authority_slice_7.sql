@@ -1,0 +1,14 @@
+create table if not exists public.stripe_billing_customers (user_id uuid primary key references auth.users(id) on delete cascade, stripe_customer_id text not null unique, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+create table if not exists public.stripe_billing_subscriptions (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, stripe_subscription_id text not null unique, stripe_customer_id text not null, plan_code text not null, status text not null, current_period_end timestamptz, cancel_at_period_end boolean not null default false, raw jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+create table if not exists public.stripe_webhook_events (stripe_event_id text primary key, event_type text not null, processed_at timestamptz not null default now(), payload jsonb not null default '{}'::jsonb);
+create index if not exists stripe_billing_subscriptions_user_idx on public.stripe_billing_subscriptions(user_id,updated_at desc);
+alter table public.stripe_billing_customers enable row level security;
+alter table public.stripe_billing_subscriptions enable row level security;
+alter table public.stripe_webhook_events enable row level security;
+drop policy if exists stripe_billing_customers_self on public.stripe_billing_customers;
+create policy stripe_billing_customers_self on public.stripe_billing_customers for select to authenticated using (user_id=auth.uid());
+drop policy if exists stripe_billing_subscriptions_self on public.stripe_billing_subscriptions;
+create policy stripe_billing_subscriptions_self on public.stripe_billing_subscriptions for select to authenticated using (user_id=auth.uid());
+revoke all on public.stripe_webhook_events from anon,authenticated;
+revoke insert,update,delete on public.stripe_billing_customers from anon,authenticated;
+revoke insert,update,delete on public.stripe_billing_subscriptions from anon,authenticated;

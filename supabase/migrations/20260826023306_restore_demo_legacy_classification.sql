@@ -1,0 +1,1 @@
+update public.capability_function_classifications set domain='legacy_demo', classification='legacy', rationale='Demo-only identity workflow; excluded from production capability graph.', updated_at=now() where function_signature in ('demo_complete_identity(text)','demo_link_identity(text,uuid)','demo_register_identity(text,text,text,text)');

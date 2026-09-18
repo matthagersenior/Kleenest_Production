@@ -1,0 +1,13 @@
+drop policy if exists messages_sender_insert on public.messages; create policy messages_sender_insert on public.messages for insert to authenticated with check ((select auth.uid())=from_id and (select auth.uid())<>to_id);
+drop policy if exists notification_preferences_own_all on public.notification_preferences; create policy notification_preferences_own_all on public.notification_preferences for all to authenticated using((select auth.uid())=user_id) with check((select auth.uid())=user_id);
+drop policy if exists notification_push_subscriptions_own_all on public.notification_push_subscriptions; create policy notification_push_subscriptions_own_all on public.notification_push_subscriptions for all to authenticated using((select auth.uid())=user_id) with check((select auth.uid())=user_id);
+drop policy if exists profile_preferences_own_all on public.profile_preferences; create policy profile_preferences_own_all on public.profile_preferences for all to authenticated using((select auth.uid())=user_id) with check((select auth.uid())=user_id);
+drop policy if exists social_posts_own_all on public.social_posts; create policy social_posts_own_all on public.social_posts for all to authenticated using((select auth.uid())=user_id) with check((select auth.uid())=user_id);
+drop policy if exists social_post_comments_own_all on public.social_post_comments; create policy social_post_comments_own_all on public.social_post_comments for all to authenticated using((select auth.uid())=user_id) with check((select auth.uid())=user_id);
+drop policy if exists social_post_likes_own_all on public.social_post_likes; create policy social_post_likes_own_all on public.social_post_likes for all to authenticated using((select auth.uid())=user_id) with check((select auth.uid())=user_id);
+drop policy if exists social_post_saves_own_all on public.social_post_saves; create policy social_post_saves_own_all on public.social_post_saves for all to authenticated using((select auth.uid())=user_id) with check((select auth.uid())=user_id);
+drop policy if exists support_requests_own_insert on public.support_requests; create policy support_requests_own_insert on public.support_requests for insert to authenticated with check((select auth.uid())=user_id);
+drop policy if exists user_feedback_authenticated_insert on public.user_feedback; create policy user_feedback_authenticated_insert on public.user_feedback for insert to authenticated with check((select auth.uid())=user_id);
+revoke update,delete on public.messages from authenticated;
+revoke update,delete on public.support_requests from authenticated;
+revoke update,delete on public.user_feedback from authenticated;

@@ -1,0 +1,16 @@
+revoke execute on function public.publish_fleet_route_notification(uuid,text,text,text,jsonb) from authenticated;
+revoke execute on function public.publish_intelligence_location_event(uuid,text,text,text,jsonb,integer,text) from authenticated;
+revoke execute on function public.publish_live_network_event(text,uuid,text,uuid,jsonb) from authenticated;
+revoke execute on function public.resolve_nearby_notification_recipients(uuid,integer) from authenticated;
+revoke execute on function public.create_intelligence_notification(uuid,uuid,text,text,text,text,text,jsonb,integer) from authenticated;
+revoke execute on function public.quest_trigger_geofence(uuid,uuid,text,integer,jsonb) from authenticated;
+revoke execute on function public.quest_trigger_qr(uuid,uuid,uuid,jsonb) from authenticated;
+revoke execute on function public.create_gps_geofence_notification(uuid,integer,text) from authenticated;
+revoke execute on function public.refresh_location_feature_summary(uuid) from anon;
+revoke execute on function public.record_gamification_activity(text,uuid) from authenticated;
+revoke execute on function public.record_progression_action(text,uuid) from authenticated;
+revoke execute on function public.record_game_challenge_score(uuid,integer,jsonb) from authenticated;
+revoke execute on function public.record_game_result(text,integer,integer,jsonb) from authenticated;
+revoke execute on function public.quest_add_step(uuid,integer,text,text,text,uuid,uuid,uuid,boolean,integer,jsonb,jsonb) from authenticated;
+revoke execute on function public.quest_set_status(uuid,text) from authenticated;
+revoke execute on function public.quest_start(uuid) from authenticated;

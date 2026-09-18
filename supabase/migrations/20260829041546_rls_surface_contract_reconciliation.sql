@@ -1,0 +1,21 @@
+alter table public.locations enable row level security;
+alter table public.check_ins enable row level security;
+alter table public.restroom_observations enable row level security;
+alter table public.reviews enable row level security;
+alter table public.route_stops enable row level security;
+alter table public.offline_pack_events enable row level security;
+alter table public.business_engagement_attributions enable row level security;
+alter table public.qr_attribution_events enable row level security;
+alter table public.enterprise_partner_networks enable row level security;
+alter table public.enterprise_partner_campaigns enable row level security;
+alter table public.enterprise_partner_campaign_outcomes enable row level security;
+alter table public.enterprise_partner_network_metrics enable row level security;
+alter table public.fleet_operational_events enable row level security;
+do $$ begin
+if not exists(select 1 from pg_policies where schemaname='public' and tablename='locations' and policyname='locations_public_select') then create policy locations_public_select on public.locations for select to anon,authenticated using(is_active=true); end if;
+if not exists(select 1 from pg_policies where schemaname='public' and tablename='check_ins' and policyname='checkins_own_select') then create policy checkins_own_select on public.check_ins for select to authenticated using(auth.uid()=user_id); end if;
+if not exists(select 1 from pg_policies where schemaname='public' and tablename='offline_pack_events' and policyname='offline_pack_events_owner') then create policy offline_pack_events_owner on public.offline_pack_events for all to authenticated using(auth.uid()=user_id) with check(auth.uid()=user_id); end if;
+if not exists(select 1 from pg_policies where schemaname='public' and tablename='qr_attribution_events' and policyname='qr_attribution_read_own') then create policy qr_attribution_read_own on public.qr_attribution_events for select to authenticated using(user_id=auth.uid()); end if;
+if not exists(select 1 from pg_policies where schemaname='public' and tablename='enterprise_partner_networks' and policyname='enterprise_partner_networks_admin_read') then create policy enterprise_partner_networks_admin_read on public.enterprise_partner_networks for select to authenticated using(exists(select 1 from public.profiles p where p.id=auth.uid() and coalesce(p.is_admin,false))); end if;
+if not exists(select 1 from pg_policies where schemaname='public' and tablename='fleet_operational_events' and policyname='fleet_operational_events_authorized_read') then create policy fleet_operational_events_authorized_read on public.fleet_operational_events for select to authenticated using(fleet_observe_access(business_id)); end if;
+end $$;

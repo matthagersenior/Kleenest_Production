@@ -1,0 +1,1 @@
+revoke execute on function public.admin_crud_gateway(text,text,uuid,jsonb) from authenticated; revoke execute on function public.admin_crud_schema(text) from authenticated; grant execute on function public.admin_crud_gateway(text,text,uuid,jsonb) to authenticated; grant execute on function public.admin_crud_schema(text) to authenticated;

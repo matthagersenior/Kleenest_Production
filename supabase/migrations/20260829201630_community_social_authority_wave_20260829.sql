@@ -1,0 +1,1 @@
+revoke execute on function public.create_social_post(text,text,uuid) from anon; revoke execute on function public.toggle_follow_user(uuid) from anon; grant execute on function public.create_social_post(text,text,uuid) to authenticated; grant execute on function public.toggle_follow_user(uuid) to authenticated;

@@ -1,0 +1,14 @@
+create table if not exists public.external_location_evidence (id uuid primary key default gen_random_uuid(), location_id uuid not null references public.locations(id) on delete cascade, source_id uuid not null references public.external_data_sources(id) on delete cascade, external_record_id uuid references public.external_location_records(id) on delete set null, evidence_type text not null, evidence jsonb not null default '{}'::jsonb, confidence numeric(5,4) not null default 0.5000 check (confidence >= 0 and confidence <= 1), observed_at timestamptz not null default now(), last_seen_at timestamptz not null default now(), active boolean not null default true, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique(location_id,source_id,evidence_type));
+create index if not exists external_location_evidence_location_idx on public.external_location_evidence(location_id);
+create index if not exists external_location_evidence_source_idx on public.external_location_evidence(source_id);
+alter table public.external_location_evidence enable row level security;
+drop policy if exists external_location_evidence_read_authenticated on public.external_location_evidence;
+create policy external_location_evidence_read_authenticated on public.external_location_evidence for select to authenticated using (true);
+create or replace function public.reconcile_external_location_evidence(p_location_id uuid) returns jsonb language plpgsql security definer set search_path=public,auth,extensions,pg_temp as $function$
+declare v_restroom_sources int:=0; v_source_count int:=0; v_conf numeric:=0; v_status text; begin
+ select count(distinct source_id), count(*) filter(where evidence_type='restroom') into v_source_count,v_restroom_sources from public.external_location_evidence where location_id=p_location_id and active=true;
+ select least(0.99, greatest(0.05, 0.35 + least(0.30,v_restroom_sources*0.15) + least(0.20,greatest(0,v_source_count-1)*0.10))) into v_conf;
+ v_status:=case when v_restroom_sources>0 then 'has_bathroom' else 'unverified' end;
+ update public.locations set bathroom_verification_status=v_status,bathroom_verification_source=case when v_restroom_sources>0 then 'external_evidence' else bathroom_verification_source end,source_metadata=coalesce(source_metadata,'{}'::jsonb)||jsonb_build_object('external_evidence_source_count',v_source_count,'external_restroom_evidence_count',v_restroom_sources,'external_evidence_confidence',v_conf),updated_at=now() where id=p_location_id;
+ return jsonb_build_object('location_id',p_location_id,'status',v_status,'source_count',v_source_count,'restroom_evidence_count',v_restroom_sources,'confidence',v_conf); end; $function$;
+comment on table public.external_location_evidence is 'Source-specific evidence attached to a canonical location. Evidence is additive; one source does not overwrite another.';

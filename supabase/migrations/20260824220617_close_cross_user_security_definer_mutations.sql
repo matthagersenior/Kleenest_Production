@@ -1,0 +1,16 @@
+revoke execute on function public.award_business_progression_perk(uuid,text,uuid) from authenticated;
+revoke execute on function public.business_add_program_member(uuid,uuid) from authenticated;
+revoke execute on function public.business_enroll_program_user(uuid,uuid) from authenticated;
+revoke execute on function public.business_revoke_program_member(uuid,uuid) from authenticated;
+revoke execute on function public.quest_advance_activity(uuid,text,uuid,uuid,uuid,uuid,jsonb) from authenticated;
+revoke execute on function public.quest_creator_authorized(text,uuid) from authenticated;
+revoke execute on function public.quest_list_creator(text,uuid) from authenticated;
+revoke execute on function public.prepare_universal_location_discovery(double precision,double precision,integer,uuid) from authenticated;
+revoke execute on function public.record_preferred_usage(uuid,text,jsonb) from authenticated;
+revoke execute on function public.record_preferred_usage(uuid,uuid,text) from authenticated;
+revoke execute on function public.record_progression_metric_event(text,text,uuid,numeric,integer,jsonb) from authenticated;
+revoke execute on function public.record_business_engagement_attribution(uuid,uuid,uuid,uuid,text,text,jsonb) from authenticated;
+revoke execute on function public.record_location_filter_event(jsonb,integer,jsonb,double precision,double precision,integer,text) from authenticated;
+revoke execute on function public.resolve_location_external_identity(text,text,double precision,double precision,text) from authenticated;
+revoke execute on function public.resolve_location_identity(text,text,double precision,double precision) from authenticated;
+revoke execute on function public.resolve_location_identity(text,text,numeric,numeric) from authenticated;

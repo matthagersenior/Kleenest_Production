@@ -1,0 +1,15 @@
+do $$ begin if not exists (select 1 from vault.secrets where name='kleenest_maps_scheduler') then perform vault.create_secret(encode(gen_random_bytes(32),'hex'),'kleenest_maps_scheduler','Internal scheduler credential for the maps-ingest Edge Function.'); end if; end $$;
+create or replace function public.get_internal_scheduler_secret(p_name text)
+returns text language plpgsql security definer set search_path=public,vault,pg_temp as $$ begin if p_name <> 'kleenest_maps_scheduler' then raise exception 'Unknown internal secret'; end if; if current_user not in ('service_role','postgres') then raise exception 'Internal access required'; end if; return (select decrypted_secret from vault.decrypted_secrets where name=p_name limit 1); end; $$;
+revoke all on function public.get_internal_scheduler_secret(text) from public,anon,authenticated;
+grant execute on function public.get_internal_scheduler_secret(text) to service_role;
+create or replace function public.my_notification_push_delivery_status(p_limit integer default 50)
+returns table(notification_id uuid,notification_type text,notification_title text,notification_created_at timestamptz,delivery_status text,attempts integer,last_error text,sent_at timestamptz,delivery_created_at timestamptz,delivery_updated_at timestamptz)
+language sql security definer set search_path=public,pg_temp as $$ select d.notification_id,n.type,n.title,n.created_at,d.status,d.attempts,d.last_error,d.sent_at,d.created_at,d.updated_at from public.notification_push_deliveries d join public.notifications n on n.id=d.notification_id where n.user_id=(select auth.uid()) order by d.updated_at desc nulls last,d.created_at desc limit least(greatest(coalesce(p_limit,50),1),100); $$;
+revoke all on function public.my_notification_push_delivery_status(integer) from public,anon;
+grant execute on function public.my_notification_push_delivery_status(integer) to authenticated;
+create or replace function public.admin_notification_push_delivery_summary(p_from timestamptz default now()-interval '7 days',p_to timestamptz default now())
+returns table(status text,delivery_count bigint,last_updated_at timestamptz)
+language plpgsql security definer set search_path=public,pg_temp as $$ begin if auth.uid() is null then raise exception 'Authentication required'; end if; if not exists(select 1 from public.profiles where id=auth.uid() and (is_admin=true or lower(coalesce(role::text,'')) in ('admin','owner','platform_admin','super_admin'))) then raise exception 'Admin authorization required'; end if; return query select d.status,count(*)::bigint,max(d.updated_at) from public.notification_push_deliveries d where d.created_at >= coalesce(p_from,now()-interval '7 days') and d.created_at <= coalesce(p_to,now()) group by d.status order by d.status; end; $$;
+revoke all on function public.admin_notification_push_delivery_summary(timestamptz,timestamptz) from public,anon;
+grant execute on function public.admin_notification_push_delivery_summary(timestamptz,timestamptz) to authenticated;

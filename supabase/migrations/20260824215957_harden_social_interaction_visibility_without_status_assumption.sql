@@ -1,0 +1,3 @@
+drop policy if exists social_comments_public_read on public.social_post_comments; create policy social_comments_public_read on public.social_post_comments for select to public using (auth.uid()=user_id or exists(select 1 from public.social_posts p where p.id=post_id));
+drop policy if exists social_likes_public_read on public.social_post_likes; create policy social_likes_public_read on public.social_post_likes for select to public using (exists(select 1 from public.social_posts p where p.id=post_id));
+drop policy if exists social_saves_own_read on public.social_post_saves; create policy social_saves_own_read on public.social_post_saves for select to authenticated using (auth.uid()=user_id);

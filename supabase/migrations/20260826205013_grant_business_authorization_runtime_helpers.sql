@@ -1,0 +1,1 @@
+grant execute on function public.business_can_manage(uuid) to authenticated; grant execute on function public.business_admin_guard(uuid) to authenticated; revoke execute on function public.business_can_manage(uuid) from anon; revoke execute on function public.business_admin_guard(uuid) from anon;

@@ -1,0 +1,10 @@
+grant insert on public.messages to authenticated;
+grant insert,update,delete on public.notification_preferences to authenticated;
+grant insert,update,delete on public.notification_push_subscriptions to authenticated;
+grant insert,update,delete on public.profile_preferences to authenticated;
+grant insert,update,delete on public.social_posts to authenticated;
+grant insert,update,delete on public.social_post_comments to authenticated;
+grant insert,update,delete on public.social_post_likes to authenticated;
+grant insert,update,delete on public.social_post_saves to authenticated;
+grant insert on public.support_requests to authenticated;
+grant insert on public.user_feedback to authenticated;

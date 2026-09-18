@@ -1,0 +1,1 @@
+create unique index if not exists restroom_observations_user_location_checkin_payload_uidx on public.restroom_observations (user_id, location_id, check_in_id, observation_type, (coalesce(cleanliness_pct, -1)), (coalesce(note, ''))) where check_in_id is not null;

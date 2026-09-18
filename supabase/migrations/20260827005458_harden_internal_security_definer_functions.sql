@@ -1,0 +1,17 @@
+revoke execute on function public.audit_contributor_reputation_consistency(boolean) from anon, authenticated;
+revoke execute on function public.capability_retirement_audit() from anon, authenticated;
+revoke execute on function public.compute_bathroom_intelligence(uuid) from anon, authenticated;
+revoke execute on function public.refresh_bathroom_intelligence(integer) from anon, authenticated;
+revoke execute on function public.refresh_location_bathroom_intelligence_trigger() from anon, authenticated;
+revoke execute on function public.refresh_reputation_for_evidence_user() from anon, authenticated;
+revoke execute on function public.recompute_contributor_reputation(uuid) from anon, authenticated;
+revoke execute on function public.create_gps_geofence_notification(uuid,integer,text,text,text,jsonb) from anon;
+revoke execute on function public.get_amenities_catalog() from anon;
+revoke execute on function public.get_business_growth_action_summary(uuid) from anon;
+revoke execute on function public.get_location_recommendation_summary(uuid) from anon;
+revoke execute on function public.home_active_contests(integer) from anon;
+revoke execute on function public.home_active_events(integer) from anon;
+revoke execute on function public.list_qr_engagement_programs(uuid) from anon;
+revoke execute on function public.semantic_location_search(text,double precision,double precision,integer,integer) from anon;
+revoke execute on function public.submit_location_photo_record(uuid,text,text,text,text,bigint,integer,integer,uuid) from anon;
+revoke execute on function public.business_restroom_health_score(uuid,uuid) from anon;

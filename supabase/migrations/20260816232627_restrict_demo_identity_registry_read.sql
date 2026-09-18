@@ -1,0 +1,1 @@
+drop policy if exists "demo identities visible to authenticated users" on public.demo_identity_registry; create policy "demo identities admin read" on public.demo_identity_registry for select to authenticated using (exists(select 1 from public.profiles p where p.id=auth.uid() and coalesce(p.is_admin,false)));

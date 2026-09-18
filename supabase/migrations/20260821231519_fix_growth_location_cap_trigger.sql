@@ -1,0 +1,1 @@
+drop trigger if exists trg_growth_location_cap on public.locations; create trigger trg_growth_location_cap before insert or update of business_id,is_active on public.locations for each row when (new.business_id is not null and coalesce(new.is_active,true)=true) execute function public.enforce_growth_location_cap();

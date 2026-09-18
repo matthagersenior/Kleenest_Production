@@ -1,0 +1,13 @@
+revoke all on table public.favorites from authenticated,anon;
+revoke all on table public.follows from authenticated,anon;
+revoke all on table public.review_likes from authenticated,anon;
+revoke all on table public.review_amenity_feedback from authenticated,anon;
+revoke all on table public.review_photos from authenticated,anon;
+revoke truncate on table public.notification_preferences from authenticated;
+revoke truncate on table public.notification_push_subscriptions from authenticated;
+revoke truncate on table public.profile_preferences from authenticated;
+revoke truncate on table public.messages from authenticated;
+revoke truncate on table public.social_posts from authenticated;
+revoke truncate on table public.social_post_comments from authenticated;
+revoke truncate on table public.social_post_likes from authenticated;
+revoke truncate on table public.social_post_saves from authenticated;

@@ -1,0 +1,25 @@
+delete from public.data_feature_events a using public.data_feature_events b where a.source_table=b.source_table and a.source_id=b.source_id and a.event_type=b.event_type and a.id<b.id and a.source_table is not null and a.source_id is not null;
+create unique index if not exists data_feature_events_source_event_unique on public.data_feature_events(source_table,source_id,event_type) where source_table is not null and source_id is not null;
+create or replace function public._kleenest_capture_feature_event()
+returns trigger language plpgsql security definer set search_path=public,auth,extensions,pg_temp
+as $$
+declare uid uuid; lid uuid; bid uuid; vid uuid; et text; fc text; md jsonb:='{}'::jsonb; sid uuid; occurred timestamptz:=now(); dedup text;
+begin
+ if TG_TABLE_NAME='check_ins' then uid:=NEW.user_id; lid:=NEW.location_id; et:='check_in'; fc:=case when NEW.verification_method='qr' then 'qr_check_in' else 'gps_check_in' end; sid:=NEW.id; occurred:=NEW.checked_in_at; md:=jsonb_build_object('verification_method',NEW.verification_method,'distance_meters',NEW.distance_meters,'points_awarded',NEW.points_awarded);
+ elsif TG_TABLE_NAME='reviews' then uid:=NEW.user_id; lid:=NEW.location_id; et:='review_submitted'; fc:='reviews'; sid:=NEW.id; occurred:=NEW.created_at; md:=jsonb_build_object('stars',NEW.stars,'cleanliness_pct',NEW.cleanliness_pct);
+ elsif TG_TABLE_NAME='location_photos' then uid:=NEW.user_id; lid:=NEW.location_id; et:='photo_submitted'; fc:='location_photos'; sid:=NEW.id; occurred:=NEW.created_at; md:=jsonb_build_object('media_type',NEW.media_type);
+ elsif TG_TABLE_NAME='location_amenity_observations' then uid:=NEW.user_id; lid:=NEW.location_id; et:='amenity_observed'; fc:='amenity_verification'; sid:=NEW.id; occurred:=NEW.observed_at; md:=jsonb_build_object('status',NEW.status,'verification_method',NEW.verification_method,'confidence',NEW.confidence);
+ elsif TG_TABLE_NAME='review_likes' then uid:=NEW.user_id; et:='review_voted'; fc:='review_voting'; sid:=NEW.review_id; occurred:=NEW.created_at; md:=jsonb_build_object('vote','like');
+ elsif TG_TABLE_NAME='review_amenity_feedback' then lid:=NEW.location_id; et:='review_amenity_feedback'; fc:='amenity_verification'; sid:=NEW.id; occurred:=NEW.created_at; md:=jsonb_build_object('sentiment',NEW.sentiment,'amenity_id',NEW.amenity_id);
+ elsif TG_TABLE_NAME='qr_redemptions' then uid:=NEW.user_id; et:='qr_redeemed'; fc:='qr_check_in'; sid:=NEW.qr_code_id; occurred:=NEW.redeemed_at; md:=jsonb_build_object('qr_code_id',NEW.qr_code_id);
+ elsif TG_TABLE_NAME='location_visits' then uid:=NEW.user_id; lid:=NEW.location_id; et:='arrival'; fc:='arrival'; sid:=NEW.id; occurred:=NEW.occurred_at; md:=coalesce(NEW.context,'{}'::jsonb)||jsonb_build_object('is_preferred',NEW.is_preferred);
+ elsif TG_TABLE_NAME='location_route_events' then uid:=NEW.user_id; lid:=NEW.location_id; et:='directions_requested'; fc:='directions'; sid:=NEW.id; occurred:=NEW.created_at; md:=jsonb_build_object('source',NEW.source,'from_favorite',NEW.from_favorite);
+ elsif TG_TABLE_NAME='location_filter_events' then uid:=NEW.user_id; et:='search'; fc:='location_search'; sid:=NEW.id; occurred:=NEW.created_at; md:=jsonb_build_object('amenity_keys',NEW.amenity_keys,'result_count',NEW.result_count,'radius_meters',NEW.radius_meters,'session_id',NEW.session_id);
+ elsif TG_TABLE_NAME='route_events' then uid:=NEW.user_id; et:=concat('route_',NEW.event_type); fc:='route'; sid:=NEW.id; occurred:=NEW.created_at; md:=coalesce(NEW.metadata,'{}'::jsonb)||jsonb_build_object('route_id',NEW.route_id,'route_stop_id',NEW.route_stop_id,'points_awarded',NEW.points_awarded);
+ elsif TG_TABLE_NAME='fleet_operational_events' then et:='fleet_operation'; fc:='fleet_operations'; sid:=NEW.id; vid:=NEW.vehicle_id; occurred:=NEW.occurred_at; md:=jsonb_build_object('event_type',NEW.event_type,'unit',NEW.unit);
+ end if;
+ dedup:=TG_TABLE_NAME||':'||coalesce(sid::text,'')||':'||coalesce(et,'');
+ insert into public.data_feature_events(subject_type,subject_id,actor_user_id,business_id,location_id,fleet_vehicle_id,event_type,feature_code,source_table,source_id,value_numeric,value_text,metadata,occurred_at,deduplication_key) values(case when lid is not null then 'location' when bid is not null then 'business' when vid is not null then 'fleet_vehicle' else 'user' end,coalesce(lid,bid,vid,uid),uid,bid,lid,vid,et,fc,TG_TABLE_NAME,sid,null,null,md,occurred,dedup) on conflict (source_table,source_id,event_type) where source_table is not null and source_id is not null do nothing;
+ return NEW;
+exception when others then return NEW;
+end $$;

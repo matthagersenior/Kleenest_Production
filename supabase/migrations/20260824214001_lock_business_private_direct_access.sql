@@ -1,0 +1,11 @@
+revoke all on table public.business_certifications from anon, authenticated;
+revoke all on table public.business_engagement_attributions from anon, authenticated;
+revoke all on table public.business_events from anon, authenticated;
+revoke all on table public.business_growth_signals from anon, authenticated;
+revoke all on table public.business_members from anon, authenticated;
+revoke all on table public.business_metric_leaderboards from anon, authenticated;
+revoke all on table public.business_overview from anon, authenticated;
+revoke all on table public.businesses from anon, authenticated;
+revoke all on table public.event_rsvps from anon, authenticated;
+revoke all on table public.promotion_redemptions from anon, authenticated;
+revoke all on table public.promotions from anon, authenticated;

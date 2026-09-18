@@ -1,0 +1,12 @@
+grant execute on function public.admin_assign_business_member(uuid,uuid,public.business_member_role) to authenticated;
+grant execute on function public.admin_remove_business_member(uuid,uuid) to authenticated;
+grant execute on function public.activate_partner_allocation(uuid) to authenticated;
+grant execute on function public.activate_enterprise_partner_campaign(uuid) to authenticated;
+grant execute on function public.pause_enterprise_partner_campaign(uuid) to authenticated;
+grant execute on function public.invite_enterprise_partner(uuid,uuid) to authenticated;
+grant execute on function public.create_partner_allocation(uuid,uuid,uuid,text,numeric,bigint,text) to authenticated;
+grant execute on function public.set_enterprise_partner_status(uuid,text) to authenticated;
+grant execute on function public.set_featured_location_photo(uuid,uuid) to authenticated;
+grant execute on function public.set_location_qr_customization(uuid,text,jsonb) to authenticated;
+grant execute on function public.set_location_amenities(uuid,uuid[]) to authenticated;
+grant execute on function public.set_business_qr_customization(uuid,uuid,jsonb) to authenticated;

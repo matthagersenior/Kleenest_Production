@@ -1,0 +1,13 @@
+revoke all on table public.profiles from authenticated,anon;
+revoke all on table public.app_profile from authenticated,anon;
+revoke all on table public.my_profile from authenticated,anon;
+revoke all on table public.places from anon,authenticated;
+revoke all on table public.place_categories from anon,authenticated;
+revoke all on table public.preferred_location_activations from anon,authenticated;
+revoke all on table public.reports from anon,authenticated;
+revoke all on table public.restroom_observations from anon,authenticated;
+revoke truncate on table public.subscriptions from anon,authenticated;
+revoke update,delete,truncate on table public.support_requests from anon,authenticated;
+revoke update,delete,truncate on table public.user_feedback from anon,authenticated;
+revoke update,delete,truncate on table public.account_deletion_requests from anon,authenticated;
+revoke all on table public.user_location_sessions from authenticated,anon;

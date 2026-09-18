@@ -1,0 +1,3 @@
+update public.pricing_authority_v1 set name='Premium User', price_cents=500, interval='once', price_note='One-time $5 purchase; unlocks premium features and removes ads', updated_at=now() where code='premium_user';
+update public.pricing_catalog set name='Premium User', price_cents=500, interval='once', price_note='One-time $5 purchase; unlocks premium features and removes ads', active=true, updated_at=now() where code='premium_user';
+update public.pricing_plans set description='Premium User — one-time $5 purchase; unlocks premium features and removes ads', monthly_price_cents=0, active=true where code='premium_user';

@@ -1,0 +1,1 @@
+drop policy if exists business_growth_signals_read_authenticated on public.business_growth_signals; create policy business_growth_signals_read_member on public.business_growth_signals for select to authenticated using (exists (select 1 from public.business_members bm where bm.business_id = business_growth_signals.business_id and bm.user_id = auth.uid()));

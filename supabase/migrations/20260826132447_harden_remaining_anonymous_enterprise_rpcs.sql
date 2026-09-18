@@ -1,0 +1,14 @@
+revoke execute on function public.admin_get_business_access(uuid) from anon;
+revoke execute on function public.business_intelligence_authorized(uuid) from anon;
+revoke execute on function public.business_restroom_health_score(uuid,uuid) from anon;
+revoke execute on function public.enterprise_delete_campaign(uuid) from anon;
+revoke execute on function public.enterprise_delete_network(uuid) from anon;
+revoke execute on function public.enterprise_list_network_campaigns(uuid) from anon;
+revoke execute on function public.enterprise_list_network_members(uuid) from anon;
+revoke execute on function public.enterprise_list_owned_networks(uuid) from anon;
+revoke execute on function public.enterprise_list_partner_businesses(uuid) from anon;
+revoke execute on function public.enterprise_update_campaign(uuid,text,text,text,text) from anon;
+revoke execute on function public.enterprise_update_network(uuid,text,boolean) from anon;
+revoke execute on function public.get_business_growth_action_summary(uuid) from anon;
+revoke execute on function public.get_business_service_entitlement(uuid) from anon;
+revoke execute on function public.list_qr_engagement_programs(uuid) from anon;

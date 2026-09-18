@@ -1,0 +1,14 @@
+drop policy if exists follows_own_all on public.follows;
+create policy follows_own_all on public.follows for all to authenticated using (follower_id = auth.uid()) with check (follower_id = auth.uid() and follower_id <> following_id);
+create index if not exists messages_from_created_at_idx on public.messages (from_id, created_at desc);
+create index if not exists messages_to_created_at_idx on public.messages (to_id, created_at desc);
+create index if not exists notifications_user_created_at_idx on public.notifications (user_id, created_at desc);
+create index if not exists contest_entries_user_idx on public.contest_entries (user_id, contest_id);
+create index if not exists follows_following_idx on public.follows (following_id, follower_id);
+alter table public.messages replica identity full;
+alter table public.notifications replica identity full;
+alter table public.contest_entries replica identity full;
+alter table public.route_plans replica identity full;
+alter table public.user_badges replica identity full;
+alter table public.point_transactions replica identity full;
+do $$ declare t text; begin foreach t in array array['messages','notifications','contest_entries','route_plans','user_badges','point_transactions'] loop if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename=t) then execute format('alter publication supabase_realtime add table public.%I',t); end if; end loop; end $$;

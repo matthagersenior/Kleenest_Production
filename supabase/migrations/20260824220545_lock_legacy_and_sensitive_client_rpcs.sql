@@ -1,0 +1,11 @@
+revoke execute on function public.record_favorite_route_event(uuid,uuid,numeric,numeric) from authenticated;
+revoke execute on function public.record_geofence_event(uuid,uuid,uuid,uuid,text,integer,jsonb,uuid,uuid,uuid) from authenticated;
+revoke execute on function public.record_feature_access(text,text,text,text,jsonb) from authenticated;
+revoke execute on function public.record_network_leaderboard_participation(text,uuid,text,numeric,text,uuid,date,date,jsonb) from authenticated;
+revoke execute on function public.record_enterprise_partner_campaign_outcome(uuid,uuid,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint) from authenticated;
+revoke execute on function public.record_enterprise_partner_metric(uuid,date,bigint,bigint,bigint,bigint,bigint,bigint) from authenticated;
+revoke execute on function public.record_data_feature_event(text,text,text,uuid,uuid,uuid,uuid,text,uuid,numeric,text,jsonb) from authenticated;
+revoke execute on function public.apply_external_amenity_to_location(uuid,text,text) from authenticated;
+revoke execute on function public.enrich_location_from_osm(uuid) from authenticated;
+revoke execute on function public.select_location_verification_targets(integer) from authenticated;
+revoke execute on function public.seed_location_verification_campaign(text,integer) from authenticated;

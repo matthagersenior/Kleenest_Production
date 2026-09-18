@@ -1,0 +1,7 @@
+alter table public.location_photos add column if not exists media_type text not null default 'photo', add column if not exists mime_type text, add column if not exists size_bytes bigint, add column if not exists width integer, add column if not exists height integer, add column if not exists sort_order integer not null default 0;
+alter table public.review_photos add column if not exists mime_type text, add column if not exists size_bytes bigint, add column if not exists width integer, add column if not exists height integer, add column if not exists sort_order integer not null default 0;
+alter table public.social_posts add column if not exists media_type text, add column if not exists media_storage_path text, add column if not exists media_size_bytes bigint, add column if not exists media_width integer, add column if not exists media_height integer;
+update storage.buckets set file_size_limit=5242880, allowed_mime_types=array['image/jpeg','image/png','image/webp'] where id='avatars';
+update storage.buckets set file_size_limit=8388608, allowed_mime_types=array['image/jpeg','image/png','image/webp'] where id='review-photos';
+update storage.buckets set file_size_limit=10485760, allowed_mime_types=array['image/jpeg','image/png','image/webp'] where id='social-media';
+update storage.buckets set file_size_limit=12582912, allowed_mime_types=array['image/jpeg','image/png','image/webp'] where id='location-photos';

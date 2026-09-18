@@ -1,0 +1,1 @@
+alter table public.map_discovery_cache add column if not exists restroom_count integer not null default 0; create index if not exists map_discovery_cache_restroom_coverage_idx on public.map_discovery_cache(cell_lat,cell_lng,restroom_count);
