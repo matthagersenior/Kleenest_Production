@@ -1,0 +1,56 @@
+{
+  "project_ref": "ssgesjzdvdsqacdtasje",
+  "reason": "Supabase identifies migrations by 14-digit timestamp. Ten historical source pairs shared a timestamp; the second file in each pair was assigned a unique +1 timestamp. Their SQL was already represented in production, so the new timestamps are history-repair records only and the SQL is not re-executed.",
+  "repairs": [
+    {
+      "old_version": "20260831043000",
+      "new_version": "20260831043001",
+      "name": "mobile_my_activity_feed_authority"
+    },
+    {
+      "old_version": "20260831044500",
+      "new_version": "20260831044501",
+      "name": "single_use_purchase_authority_hardening"
+    },
+    {
+      "old_version": "20260831062500",
+      "new_version": "20260831062501",
+      "name": "native_push_atomic_delivery_claims"
+    },
+    {
+      "old_version": "20260831070500",
+      "new_version": "20260831070501",
+      "name": "native_push_claim_lease_recovery"
+    },
+    {
+      "old_version": "20260831072000",
+      "new_version": "20260831072001",
+      "name": "mobile_review_photo_batch_authority"
+    },
+    {
+      "old_version": "20260831073500",
+      "new_version": "20260831073501",
+      "name": "mobile_game_score_normalization_authority"
+    },
+    {
+      "old_version": "20260831074000",
+      "new_version": "20260831074001",
+      "name": "mobile_location_trust_summary_authority"
+    },
+    {
+      "old_version": "20260831082000",
+      "new_version": "20260831082001",
+      "name": "mobile_trust_mission_platform_authority"
+    },
+    {
+      "old_version": "20260831082500",
+      "new_version": "20260831082501",
+      "name": "mobile_trust_mission_tiered_rewards"
+    },
+    {
+      "old_version": "20260831095000",
+      "new_version": "20260831095001",
+      "name": "fleet_operational_rpc_authority_hardening"
+    }
+  ]
+}
