@@ -1,0 +1,1 @@
+revoke all privileges on table public.capability_audit_runs from anon, authenticated; revoke all privileges on table public.location_bathroom_signals from anon, authenticated; revoke all privileges on table public.location_discovery_events from anon; grant select,insert on table public.location_discovery_events to authenticated;

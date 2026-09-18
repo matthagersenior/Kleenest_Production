@@ -1,0 +1,17 @@
+create table if not exists public.capability_retirement_log (id uuid primary key default gen_random_uuid(),function_signature text not null unique,canonical_replacement text,github_callers integer not null,postgres_dependents integer not null,evidence text not null,retired_at timestamptz not null default now());
+insert into public.capability_retirement_log(function_signature,canonical_replacement,github_callers,postgres_dependents,evidence) values
+('set_business_partner_program_status(uuid,uuid,boolean)','canonical partner-program status capability',0,0,'Exact production signature verified; zero PostgreSQL dependents; no application caller found.'),
+('activate_preferred_location(uuid,uuid)','activate_preferred_location(uuid)',0,0,'Legacy overload absent from current pg_proc; classification corrected rather than dropped.'),
+('record_preferred_usage(uuid,text,jsonb)','record_preferred_usage(uuid,uuid,text)',0,0,'Legacy overload absent from current pg_proc; canonical current signature verified.'),
+('business_accept_partner_agreement(uuid)','canonical partner agreement capability',0,0,'Function absent from current pg_proc; inventory corrected.'),
+('business_create_partner_program(text,uuid)','business_create_partner_program(uuid,text)',0,0,'Compatibility signature absent; canonical signature exists.'),
+('enroll_program_location(uuid,uuid)','business_add_program_location(uuid,uuid)',0,0,'Compatibility signature absent from current pg_proc.'),
+('remove_program_location(uuid,uuid)','business_remove_program_location(uuid,uuid)',0,0,'Compatibility signature absent from current pg_proc.'),
+('resolve_location_identity(text,text,double precision,double precision)','canonical external identity resolution',0,0,'Compatibility signature absent from current pg_proc.'),
+('resolve_location_identity(text,text,numeric,numeric)','canonical external identity resolution',0,0,'Compatibility signature absent from current pg_proc.'),
+('check_preferred_eligibility(uuid)','canonical preferred-location eligibility capability',0,0,'Function absent from current pg_proc; inventory corrected.')
+on conflict(function_signature) do update set canonical_replacement=excluded.canonical_replacement,github_callers=excluded.github_callers,postgres_dependents=excluded.postgres_dependents,evidence=excluded.evidence,retired_at=now();
+update public.capability_function_classifications set classification='canonical',rationale='Current production signature; previous compatibility classification was stale.' where function_signature='activate_preferred_location(uuid)' and classification='compatibility';
+update public.capability_function_classifications set classification='canonical',rationale='Current production signature; previous compatibility classification was stale.' where function_signature='record_preferred_usage(uuid,uuid,text)' and classification='compatibility';
+delete from public.capability_function_classifications where function_signature in ('business_accept_partner_agreement(uuid)','business_create_partner_program(text,uuid)','enroll_program_location(uuid,uuid)','remove_program_location(uuid,uuid)','resolve_location_identity(text,text,double precision,double precision)','resolve_location_identity(text,text,numeric,numeric)','check_preferred_eligibility(uuid)','activate_preferred_location(uuid,uuid)','record_preferred_usage(uuid,text,jsonb)');
+drop function if exists public.set_business_partner_program_status(uuid,uuid,boolean);

@@ -1,0 +1,1 @@
+alter function public.admin_authorization_v1(uuid) set search_path=public,auth,extensions,pg_catalog; alter function public.is_platform_owner(uuid) set search_path=public,auth,extensions,pg_catalog; alter function public.business_transfer_ownership(uuid,uuid) set search_path=public,auth,extensions,pg_catalog;

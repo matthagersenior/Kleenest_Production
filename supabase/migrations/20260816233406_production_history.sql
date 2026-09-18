@@ -1,0 +1,13 @@
+revoke execute on function public.demo_register_identity(text,text,text,text) from anon,authenticated;
+revoke execute on function public.ensure_demo_partner_network() from anon,authenticated;
+revoke execute on function public.demo_link_identity(text,uuid) from anon,authenticated;
+revoke execute on function public.demo_provision_business(text,uuid) from anon,authenticated;
+revoke execute on function public.create_demo_partner_program(uuid,text,text,boolean) from anon,authenticated;
+revoke execute on function public.create_demo_partnership(uuid,uuid,text) from anon,authenticated;
+revoke execute on function public.demo_create_business(text,text) from anon,authenticated;
+revoke execute on function public.demo_create_partnership(uuid,uuid) from anon,authenticated;
+revoke execute on function public.demo_create_program(uuid,text,boolean) from anon,authenticated;
+revoke execute on function public.demo_add_test_membership(uuid,uuid) from anon,authenticated;
+revoke execute on function public.demo_assign_program_location(uuid,uuid) from anon,authenticated;
+revoke execute on function public.ensure_current_user_demo_membership() from anon;
+revoke execute on function public.record_bathroom_verification(uuid,boolean,double precision,double precision) from anon,authenticated;

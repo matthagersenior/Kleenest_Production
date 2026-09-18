@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-const migrationPath='supabase/migrations/20260831074000_mobile_location_trust_summary_authority.sql';
+const migrationPath='supabase/migrations/20260831074001_mobile_location_trust_summary_authority.sql';
 const servicePath='apps/consumer-mobile/services/locationTrust.ts';
 const explorePath='apps/consumer-mobile/app/explore.tsx';
 const adaptiveExplorePath='apps/consumer-mobile/features/AdaptiveExploreScreen.tsx';

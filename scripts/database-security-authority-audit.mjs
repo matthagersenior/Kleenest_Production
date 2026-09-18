@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 const internalMigration='supabase/migrations/20260831040000_internal_trigger_authority_hardening.sql';
 const fleetMigration='supabase/migrations/20260831043000_fleet_operational_rpc_authority_hardening.sql';
-const purchaseMigration='supabase/migrations/20260831044500_single_use_purchase_authority_hardening.sql';
+const purchaseMigration='supabase/migrations/20260831044501_single_use_purchase_authority_hardening.sql';
 const viewMigration='supabase/migrations/20260831084000_mobile_live_view_security_invoker_hardening.sql';
 const fkMigration='supabase/migrations/20260831084500_mobile_live_foreign_key_index_convergence.sql';
 const externalObservationMigration='supabase/migrations/20260912052000_external_observation_live_summary_rls_hardening.sql';

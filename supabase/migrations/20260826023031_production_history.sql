@@ -1,0 +1,20 @@
+insert into public.capability_function_classifications(function_signature,domain,classification,rationale) values
+('business_amenity_feedback_analytics(uuid,uuid,timestamp with time zone,timestamp with time zone)','business_analytics','supporting','Amenity feedback analytics.'),
+('business_benchmark_analytics(uuid,timestamp with time zone,timestamp with time zone)','business_analytics','supporting','Business benchmark analytics.'),
+('business_event_analytics(uuid,timestamp with time zone,timestamp with time zone)','business_analytics','supporting','Business event analytics.'),
+('business_growth_analytics(uuid,timestamp with time zone,timestamp with time zone)','business_analytics','supporting','Business growth analytics.'),
+('business_location_metrics(uuid,uuid,text,timestamp with time zone,timestamp with time zone)','business_analytics','supporting','Business location metrics.'),
+('business_location_scoped_analytics(uuid,uuid,text,timestamp with time zone,timestamp with time zone)','business_analytics','supporting','Location-scoped business analytics.'),
+('business_media_analytics(uuid,timestamp with time zone,timestamp with time zone)','business_analytics','supporting','Business media analytics.'),
+('business_occupancy_analytics(uuid,timestamp with time zone,timestamp with time zone)','business_analytics','supporting','Business occupancy analytics.'),
+('business_review_analytics(uuid,timestamp with time zone,timestamp with time zone)','business_analytics','supporting','Business review analytics.'),
+('business_roi_analytics(uuid,timestamp with time zone,timestamp with time zone)','business_analytics','supporting','Business ROI analytics.'),
+('business_visitors_analytics(uuid,timestamp with time zone,timestamp with time zone)','business_analytics','supporting','Business visitor analytics.'),
+('consumer_evidence_loop_health(uuid)','consumer_evidence','canonical','Canonical P0 evidence-loop health diagnostic.'),
+('get_business_metric_detail(uuid,uuid,text)','business_analytics','supporting','Business metric detail.'),
+('location_engagement_metrics(uuid)','location_analytics','supporting','Location engagement metrics.'),
+('location_favorite_route_metrics(uuid)','location_analytics','supporting','Favorite-route location metrics.'),
+('run_capability_audit(text)','architecture_governance','canonical','Canonical capability governance audit.'),
+('sync_business_service_entitlement(uuid)','business_management','supporting','Business service entitlement synchronization.'),
+('sync_location_to_place()','location_identity','supporting','Canonical-location to external-place synchronization.')
+on conflict(function_signature) do update set domain=excluded.domain,classification=excluded.classification,rationale=excluded.rationale,updated_at=now();

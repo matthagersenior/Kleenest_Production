@@ -1,0 +1,11 @@
+REVOKE EXECUTE ON FUNCTION public.audit_contributor_reputation_consistency(boolean) FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.capability_classification_summary() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.capability_retirement_audit() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.check_single_capability_per_domain() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.refresh_bathroom_intelligence(integer) FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.refresh_location_bathroom_intelligence_trigger() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.refresh_reputation_for_evidence_user() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.recompute_contributor_reputation(uuid) FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public._collect_raw_schema_capability_audit() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.admin_raw_schema_capability_audit() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.admin_data_integrity_summary() FROM authenticated;

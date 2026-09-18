@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-const path = 'supabase/migrations/20260831095000_fleet_operational_rpc_authority_hardening.sql';
+const path = 'supabase/migrations/20260831095001_fleet_operational_rpc_authority_hardening.sql';
 const sql = fs.readFileSync(path, 'utf8');
 const signatures = [
   'fleet_complete_maintenance(uuid,uuid,text)',

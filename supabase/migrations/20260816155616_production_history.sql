@@ -1,0 +1,14 @@
+create index if not exists social_post_comments_user_created_at_idx on public.social_post_comments (user_id, created_at desc);
+create index if not exists social_post_likes_user_idx on public.social_post_likes (user_id, post_id);
+create index if not exists social_post_saves_user_idx on public.social_post_saves (user_id, post_id);
+create index if not exists social_post_reports_reporter_created_at_idx on public.social_post_reports (reporter_id, created_at desc);
+create index if not exists social_challenge_entries_user_idx on public.social_challenge_entries (user_id, created_at desc);
+create index if not exists social_activity_type_created_at_idx on public.social_activity (activity_type, created_at desc);
+create index if not exists follows_follower_created_at_idx on public.follows (follower_id, created_at desc);
+alter table public.social_posts replica identity full;
+alter table public.social_post_comments replica identity full;
+alter table public.social_post_likes replica identity full;
+alter table public.social_post_saves replica identity full;
+alter table public.social_activity replica identity full;
+alter table public.follows replica identity full;
+do $$ begin if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='social_post_comments') then alter publication supabase_realtime add table public.social_post_comments; end if; if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='social_post_likes') then alter publication supabase_realtime add table public.social_post_likes; end if; if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='social_post_saves') then alter publication supabase_realtime add table public.social_post_saves; end if; if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='social_activity') then alter publication supabase_realtime add table public.social_activity; end if; if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='follows') then alter publication supabase_realtime add table public.follows; end if; end $$;

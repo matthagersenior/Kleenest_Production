@@ -1,0 +1,11 @@
+grant execute on function public.admin_crud_gateway(text,text,uuid,jsonb) to authenticated;
+grant execute on function public.admin_crud_schema(text) to authenticated;
+grant execute on function public.admin_crud_capability_catalog() to authenticated;
+grant execute on function public.admin_operational_capability_catalog() to authenticated;
+grant execute on function public.admin_get_overview() to authenticated;
+grant execute on function public.admin_data_integrity_summary() to authenticated;
+grant execute on function public.admin_user_search(text) to authenticated;
+grant execute on function public.admin_set_account_capabilities(uuid,text,text,boolean,boolean,boolean,text) to authenticated;
+grant execute on function public.admin_set_user_access(uuid,boolean,text,text,boolean,text) to authenticated;
+grant execute on function public.admin_set_business_tier(uuid,public.business_tier) to authenticated;
+grant execute on function public.admin_set_business_verification(uuid,public.verification_status) to authenticated;

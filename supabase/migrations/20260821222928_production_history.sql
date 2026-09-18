@@ -1,0 +1,1 @@
+create unique index if not exists uq_locations_source_external_id on public.locations(source_dataset,source_external_id) where source_dataset is not null and source_external_id is not null; create index if not exists idx_locations_geo_lookup on public.locations(latitude,longitude) where is_active=true;

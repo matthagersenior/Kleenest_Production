@@ -1,0 +1,103 @@
+create or replace function public.purchase_single_use_access(p_offer_id uuid)
+returns public.single_use_access_purchases
+language plpgsql
+security definer
+set search_path to 'public','auth','extensions','pg_temp'
+as $$
+declare
+  o public.single_use_access_offers;
+  p public.single_use_access_purchases;
+begin
+  if auth.uid() is null then raise exception 'authentication required'; end if;
+  select * into o
+  from public.single_use_access_offers
+  where id=p_offer_id
+    and enabled=true
+    and (expires_at is null or expires_at>now());
+  if not found then raise exception 'offer unavailable'; end if;
+  if exists(
+    select 1 from public.single_use_access_purchases
+    where offer_id=p_offer_id and user_id=auth.uid() and status='purchased'
+  ) then raise exception 'already purchased'; end if;
+
+  insert into public.single_use_access_purchases(offer_id,user_id)
+  values(p_offer_id,auth.uid())
+  returning * into p;
+
+  perform public.record_data_feature_event(
+    'access_offer_purchased',
+    'access_offers',
+    'user',
+    auth.uid(),
+    null,
+    o.business_id,
+    null,
+    'single_use_access_purchases',
+    p.id,
+    o.price_cents,
+    o.name,
+    jsonb_build_object('offer_id',o.id,'partner_program_id',o.partner_program_id)
+  );
+
+  return p;
+end
+$$;
+
+create or replace function public.redeem_single_use_access(p_purchase_id uuid)
+returns public.single_use_access_purchases
+language plpgsql
+security definer
+set search_path to 'public','auth','extensions','pg_temp'
+as $$
+declare
+  p public.single_use_access_purchases;
+  o public.single_use_access_offers;
+begin
+  if auth.uid() is null then raise exception 'authentication required'; end if;
+
+  select p.* into p
+  from public.single_use_access_purchases p
+  where p.id=p_purchase_id
+    and p.user_id=auth.uid()
+    and p.status='purchased'
+  for update;
+  if not found then raise exception 'access unavailable'; end if;
+
+  select * into o
+  from public.single_use_access_offers
+  where id=p.offer_id;
+  if not found then raise exception 'offer unavailable'; end if;
+
+  update public.single_use_access_purchases
+  set status='redeemed', redeemed_at=now()
+  where id=p_purchase_id
+  returning * into p;
+
+  perform public.record_data_feature_event(
+    'access_offer_redeemed',
+    'access_offers',
+    'user',
+    auth.uid(),
+    null,
+    o.business_id,
+    null,
+    'single_use_access_purchases',
+    p.id,
+    o.price_cents,
+    o.name,
+    jsonb_build_object('offer_id',o.id,'partner_program_id',o.partner_program_id,'redeemed_at',p.redeemed_at)
+  );
+
+  perform public.record_business_engagement_attribution(
+    o.business_id,
+    null,
+    null,
+    null,
+    'access_offer_redeemed',
+    'access_offer',
+    jsonb_build_object('purchase_id',p.id,'offer_id',o.id,'partner_program_id',o.partner_program_id)
+  );
+
+  return p;
+end
+$$;

@@ -1,0 +1,32 @@
+alter function public.get_location_amenity_inventory(uuid) set search_path = '';
+alter function public.get_location_occupancy_summary(uuid) set search_path = '';
+alter function public.get_location_occupancy_trend(uuid,integer,integer) set search_path = '';
+alter function public.get_location_trust_conflicts(uuid) set search_path = '';
+alter function public.get_public_qr_landing(text) set search_path = '';
+alter function public.map_network_nearby_v1(double precision,double precision,integer,integer,text,text,text[]) set search_path = '';
+alter function public.mobile_location_review_evidence(uuid,integer) set search_path = '';
+alter function public.mobile_location_trust_summaries(uuid[]) set search_path = '';
+alter function public.mobile_review_evidence(uuid) set search_path = '';
+alter function public.mobile_review_photos_for_reviews(uuid[]) set search_path = '';
+
+revoke all on function public.get_location_amenity_inventory(uuid) from public;
+revoke all on function public.get_location_occupancy_summary(uuid) from public;
+revoke all on function public.get_location_occupancy_trend(uuid,integer,integer) from public;
+revoke all on function public.get_location_trust_conflicts(uuid) from public;
+revoke all on function public.get_public_qr_landing(text) from public;
+revoke all on function public.map_network_nearby_v1(double precision,double precision,integer,integer,text,text,text[]) from public;
+revoke all on function public.mobile_location_review_evidence(uuid,integer) from public;
+revoke all on function public.mobile_location_trust_summaries(uuid[]) from public;
+revoke all on function public.mobile_review_evidence(uuid) from public;
+revoke all on function public.mobile_review_photos_for_reviews(uuid[]) from public;
+
+grant execute on function public.get_location_amenity_inventory(uuid) to anon, authenticated, service_role;
+grant execute on function public.get_location_occupancy_summary(uuid) to anon, authenticated, service_role;
+grant execute on function public.get_location_occupancy_trend(uuid,integer,integer) to anon, authenticated, service_role;
+grant execute on function public.get_location_trust_conflicts(uuid) to anon, authenticated, service_role;
+grant execute on function public.get_public_qr_landing(text) to anon, authenticated, service_role;
+grant execute on function public.map_network_nearby_v1(double precision,double precision,integer,integer,text,text,text[]) to anon, authenticated, service_role;
+grant execute on function public.mobile_location_review_evidence(uuid,integer) to anon, authenticated, service_role;
+grant execute on function public.mobile_location_trust_summaries(uuid[]) to anon, authenticated, service_role;
+grant execute on function public.mobile_review_evidence(uuid) to anon, authenticated, service_role;
+grant execute on function public.mobile_review_photos_for_reviews(uuid[]) to anon, authenticated, service_role;

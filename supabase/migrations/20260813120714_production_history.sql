@@ -1,0 +1,16 @@
+revoke execute on function public.admin_get_overview() from anon, public;
+revoke execute on function public.admin_list_pending_businesses() from anon, public;
+revoke execute on function public.admin_list_reports() from anon, public;
+revoke execute on function public.admin_set_business_tier(uuid,business_tier) from anon, public;
+revoke execute on function public.admin_set_business_verification(uuid,verification_status) from anon, public;
+revoke execute on function public.complete_route(uuid) from anon, public;
+revoke execute on function public.create_route_plan(text,double precision,double precision,double precision,double precision,numeric,integer) from anon, public;
+revoke execute on function public.get_business_dashboard() from anon, public;
+grant execute on function public.admin_get_overview() to authenticated;
+grant execute on function public.admin_list_pending_businesses() to authenticated;
+grant execute on function public.admin_list_reports() to authenticated;
+grant execute on function public.admin_set_business_tier(uuid,business_tier) to authenticated;
+grant execute on function public.admin_set_business_verification(uuid,verification_status) to authenticated;
+grant execute on function public.complete_route(uuid) to authenticated;
+grant execute on function public.create_route_plan(text,double precision,double precision,double precision,double precision,numeric,integer) to authenticated;
+grant execute on function public.get_business_dashboard() to authenticated;

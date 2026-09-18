@@ -1,0 +1,17 @@
+drop policy if exists notification_preferences_insert_own on public.notification_preferences;
+drop policy if exists notification_preferences_select_own on public.notification_preferences;
+drop policy if exists notification_preferences_update_own on public.notification_preferences;
+drop policy if exists notification_preferences_own on public.notification_preferences;
+drop policy if exists notification_push_subscriptions_delete_own on public.notification_push_subscriptions;
+drop policy if exists notification_push_subscriptions_insert_own on public.notification_push_subscriptions;
+drop policy if exists notification_push_subscriptions_select_own on public.notification_push_subscriptions;
+drop policy if exists notification_push_subscriptions_update_own on public.notification_push_subscriptions;
+drop policy if exists profile_preferences_owner_all on public.profile_preferences;
+drop policy if exists social_comments_own_delete on public.social_post_comments;
+drop policy if exists social_comments_own_insert on public.social_post_comments;
+drop policy if exists social_comments_own_update on public.social_post_comments;
+drop policy if exists social_likes_own_delete on public.social_post_likes;
+drop policy if exists social_likes_own_insert on public.social_post_likes;
+drop policy if exists social_saves_own_delete on public.social_post_saves;
+drop policy if exists social_saves_own_insert on public.social_post_saves;
+drop policy if exists social_saves_own_read on public.social_post_saves;

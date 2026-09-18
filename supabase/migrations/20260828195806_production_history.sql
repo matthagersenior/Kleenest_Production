@@ -1,0 +1,2 @@
+create or replace function public.is_qualifying_return_visit(p_user_id uuid,p_location_id uuid,p_check_in_at timestamptz default now()) returns boolean language sql security definer set search_path='public','auth','extensions','pg_temp' as $function$ select public.is_qualifying_return_visit(p_user_id,p_location_id,p_check_in_at,null::uuid); $function$;
+comment on function public.is_qualifying_return_visit(uuid,uuid,timestamptz) is 'Compatibility overload delegating to the canonical return-visit progression guard.';

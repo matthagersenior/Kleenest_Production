@@ -1,0 +1,16 @@
+create index if not exists external_location_evidence_external_record_id_idx on public.external_location_evidence(external_record_id);
+create index if not exists fleet_dispatch_signal_policies_updated_by_idx on public.fleet_dispatch_signal_policies(updated_by);
+create index if not exists fleet_drivers_user_id_idx on public.fleet_drivers(user_id);
+create index if not exists fleet_route_stops_location_id_idx on public.fleet_route_stops(location_id);
+create index if not exists fleet_route_stops_source_route_stop_id_idx on public.fleet_route_stops(source_route_stop_id);
+create index if not exists game_challenges_winner_id_idx on public.game_challenges(winner_id);
+create index if not exists location_departures_location_id_idx on public.location_departures(location_id);
+create index if not exists location_occupancy_observations_check_in_id_idx on public.location_occupancy_observations(check_in_id);
+create index if not exists national_ingestion_runs_market_id_idx on public.national_ingestion_runs(market_id);
+create index if not exists national_ingestion_storage_guard_resume_authorized_by_idx on public.national_ingestion_storage_guard(resume_authorized_by);
+create index if not exists qr_attribution_events_campaign_id_idx on public.qr_attribution_events(campaign_id);
+create index if not exists qr_attribution_events_engagement_program_id_idx on public.qr_attribution_events(engagement_program_id);
+create index if not exists qr_attribution_events_promotion_id_idx on public.qr_attribution_events(promotion_id);
+create index if not exists review_reports_resolved_by_idx on public.review_reports(resolved_by);
+create index if not exists review_reports_review_id_idx on public.review_reports(review_id);
+create index if not exists verification_streaks_last_location_id_idx on public.verification_streaks(last_location_id);

@@ -1,0 +1,1103 @@
+{
+  "project_ref": "ssgesjzdvdsqacdtasje",
+  "generated_at": "2026-09-17",
+  "repair_action": "mark_applied_without_reexecuting_sql",
+  "rationale": "These source-controlled migrations were verified as already represented in the production schema/history under other applied timestamps. Marking them applied reconciles migration tracking only; it does not execute their SQL.",
+  "preserved_pending_versions": [
+    "20260912084000",
+    "20260913173000",
+    "20260915040500",
+    "20260915193500",
+    "20260915195000",
+    "20260915195100",
+    "20260918030000"
+  ],
+  "repaired": [
+    {
+      "version": "20260830221000",
+      "name": "native_notification_push_transport",
+      "file": "20260830221000_native_notification_push_transport.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260830224000",
+      "name": "canonical_community_contributor_profiles",
+      "file": "20260830224000_canonical_community_contributor_profiles.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831000500",
+      "name": "mobile_review_amenity_progression",
+      "file": "20260831000500_mobile_review_amenity_progression.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831014000",
+      "name": "mobile_review_photo_attachment",
+      "file": "20260831014000_mobile_review_photo_attachment.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831014600",
+      "name": "mobile_review_helpful_notifications",
+      "file": "20260831014600_mobile_review_helpful_notifications.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831014900",
+      "name": "mobile_follow_notifications",
+      "file": "20260831014900_mobile_follow_notifications.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831015300",
+      "name": "mobile_business_reply_notifications",
+      "file": "20260831015300_mobile_business_reply_notifications.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831020500",
+      "name": "mobile_account_deletion_execution_boundary",
+      "file": "20260831020500_mobile_account_deletion_execution_boundary.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831022000",
+      "name": "mobile_support_request_authority",
+      "file": "20260831022000_mobile_support_request_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831024200",
+      "name": "mobile_support_status_notifications",
+      "file": "20260831024200_mobile_support_status_notifications.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831024900",
+      "name": "mobile_contributor_verified_evidence",
+      "file": "20260831024900_mobile_contributor_verified_evidence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831025900",
+      "name": "mobile_follow_network_authority_hardening",
+      "file": "20260831025900_mobile_follow_network_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831030700",
+      "name": "mobile_community_trust_network_authority",
+      "file": "20260831030700_mobile_community_trust_network_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831032000",
+      "name": "mobile_support_request_authority_hardening",
+      "file": "20260831032000_mobile_support_request_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831040000",
+      "name": "internal_trigger_authority_hardening",
+      "file": "20260831040000_internal_trigger_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831043000",
+      "name": "fleet_operational_rpc_authority_hardening",
+      "file": "20260831043000_fleet_operational_rpc_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831043000",
+      "name": "mobile_my_activity_feed_authority",
+      "file": "20260831043000_mobile_my_activity_feed_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831043500",
+      "name": "mobile_account_scoped_social_activity",
+      "file": "20260831043500_mobile_account_scoped_social_activity.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831044500",
+      "name": "mobile_notification_preferences_authority",
+      "file": "20260831044500_mobile_notification_preferences_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831044500",
+      "name": "single_use_purchase_authority_hardening",
+      "file": "20260831044500_single_use_purchase_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831045500",
+      "name": "notification_category_preference_enforcement",
+      "file": "20260831045500_notification_category_preference_enforcement.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831050000",
+      "name": "mobile_review_evidence_provenance",
+      "file": "20260831050000_mobile_review_evidence_provenance.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831055000",
+      "name": "community_review_evidence_provenance",
+      "file": "20260831055000_community_review_evidence_provenance.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831060500",
+      "name": "mobile_public_contributor_projection_authority",
+      "file": "20260831060500_mobile_public_contributor_projection_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831061000",
+      "name": "contributor_review_evidence_provenance",
+      "file": "20260831061000_contributor_review_evidence_provenance.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831062000",
+      "name": "mobile_public_profile_mutation_authority",
+      "file": "20260831062000_mobile_public_profile_mutation_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831062500",
+      "name": "mobile_profile_bootstrap_authority_hardening",
+      "file": "20260831062500_mobile_profile_bootstrap_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831062500",
+      "name": "native_push_atomic_delivery_claims",
+      "file": "20260831062500_native_push_atomic_delivery_claims.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831065000",
+      "name": "native_push_lifecycle_and_activity_authority_hardening",
+      "file": "20260831065000_native_push_lifecycle_and_activity_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831065500",
+      "name": "mobile_notification_inbox_preference_authority_hardening",
+      "file": "20260831065500_mobile_notification_inbox_preference_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831070000",
+      "name": "mobile_internal_function_execution_authority",
+      "file": "20260831070000_mobile_internal_function_execution_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831070500",
+      "name": "mobile_shared_intelligence_execution_authority",
+      "file": "20260831070500_mobile_shared_intelligence_execution_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831070500",
+      "name": "native_push_claim_lease_recovery",
+      "file": "20260831070500_native_push_claim_lease_recovery.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831071000",
+      "name": "mobile_progression_event_primitive_authority",
+      "file": "20260831071000_mobile_progression_event_primitive_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831071500",
+      "name": "mobile_consumer_identity_rpc_search_path_hardening",
+      "file": "20260831071500_mobile_consumer_identity_rpc_search_path_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831072000",
+      "name": "mobile_legacy_follow_progression_convergence",
+      "file": "20260831072000_mobile_legacy_follow_progression_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831072000",
+      "name": "mobile_review_photo_batch_authority",
+      "file": "20260831072000_mobile_review_photo_batch_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831073000",
+      "name": "mobile_notification_support_rls_initplan_hardening",
+      "file": "20260831073000_mobile_notification_support_rls_initplan_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831073500",
+      "name": "mobile_core_hotpath_rls_convergence",
+      "file": "20260831073500_mobile_core_hotpath_rls_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831073500",
+      "name": "mobile_game_score_normalization_authority",
+      "file": "20260831073500_mobile_game_score_normalization_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831074000",
+      "name": "mobile_hotpath_duplicate_index_cleanup",
+      "file": "20260831074000_mobile_hotpath_duplicate_index_cleanup.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831074000",
+      "name": "mobile_location_trust_summary_authority",
+      "file": "20260831074000_mobile_location_trust_summary_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831074500",
+      "name": "mobile_contributor_relationship_status_authority",
+      "file": "20260831074500_mobile_contributor_relationship_status_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831075000",
+      "name": "mobile_secondary_hotpath_rls_and_streak_authority_hardening",
+      "file": "20260831075000_mobile_secondary_hotpath_rls_and_streak_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831075500",
+      "name": "mobile_user_badges_duplicate_index_cleanup",
+      "file": "20260831075500_mobile_user_badges_duplicate_index_cleanup.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831080500",
+      "name": "mobile_discovery_deletion_verification_authority_hardening",
+      "file": "20260831080500_mobile_discovery_deletion_verification_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831081000",
+      "name": "mobile_location_observation_duplicate_index_cleanup",
+      "file": "20260831081000_mobile_location_observation_duplicate_index_cleanup.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831081500",
+      "name": "mobile_telemetry_social_evidence_rls_convergence",
+      "file": "20260831081500_mobile_telemetry_social_evidence_rls_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831082000",
+      "name": "mobile_social_feed_rls_and_index_convergence",
+      "file": "20260831082000_mobile_social_feed_rls_and_index_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831082000",
+      "name": "mobile_trust_mission_platform_authority",
+      "file": "20260831082000_mobile_trust_mission_platform_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831082500",
+      "name": "mobile_location_contribution_rls_convergence",
+      "file": "20260831082500_mobile_location_contribution_rls_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831082500",
+      "name": "mobile_trust_mission_tiered_rewards",
+      "file": "20260831082500_mobile_trust_mission_tiered_rewards.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831083000",
+      "name": "mobile_trust_mission_completion_fk_indexes",
+      "file": "20260831083000_mobile_trust_mission_completion_fk_indexes.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831083500",
+      "name": "mobile_trust_mission_start_preserves_active_authority",
+      "file": "20260831083500_mobile_trust_mission_start_preserves_active_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831084000",
+      "name": "mobile_live_view_security_invoker_hardening",
+      "file": "20260831084000_mobile_live_view_security_invoker_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831084500",
+      "name": "mobile_live_foreign_key_index_convergence",
+      "file": "20260831084500_mobile_live_foreign_key_index_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831090000",
+      "name": "mobile_duplicate_index_convergence",
+      "file": "20260831090000_mobile_duplicate_index_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831090500",
+      "name": "mobile_authenticated_rls_initplan_convergence",
+      "file": "20260831090500_mobile_authenticated_rls_initplan_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831091000",
+      "name": "mobile_secondary_rls_initplan_convergence",
+      "file": "20260831091000_mobile_secondary_rls_initplan_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831091500",
+      "name": "mobile_reporting_billing_rls_initplan_convergence",
+      "file": "20260831091500_mobile_reporting_billing_rls_initplan_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831092000",
+      "name": "mobile_final_business_enterprise_rls_initplan_convergence",
+      "file": "20260831092000_mobile_final_business_enterprise_rls_initplan_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831092500",
+      "name": "mobile_select_policy_convergence",
+      "file": "20260831092500_mobile_select_policy_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831093000",
+      "name": "mobile_all_policy_read_write_convergence",
+      "file": "20260831093000_mobile_all_policy_read_write_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831093500",
+      "name": "mobile_public_security_definer_rpc_authority",
+      "file": "20260831093500_mobile_public_security_definer_rpc_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831094000",
+      "name": "admin_control_plane_empty_search_path_authority",
+      "file": "20260831094000_admin_control_plane_empty_search_path_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831094500",
+      "name": "mobile_consumer_contribution_rpc_search_path_authority",
+      "file": "20260831094500_mobile_consumer_contribution_rpc_search_path_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831095000",
+      "name": "business_canonical_rpc_search_path_authority",
+      "file": "20260831095000_business_canonical_rpc_search_path_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831095000",
+      "name": "fleet_operational_rpc_authority_hardening",
+      "file": "20260831095000_fleet_operational_rpc_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831095500",
+      "name": "fleet_intelligence_rpc_authority_hardening",
+      "file": "20260831095500_fleet_intelligence_rpc_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831100000",
+      "name": "fleet_configuration_telemetry_rpc_authority_hardening",
+      "file": "20260831100000_fleet_configuration_telemetry_rpc_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831100500",
+      "name": "business_analytics_core_rpc_authority_hardening",
+      "file": "20260831100500_business_analytics_core_rpc_authority_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831101000",
+      "name": "business_legacy_analytics_authority_convergence",
+      "file": "20260831101000_business_legacy_analytics_authority_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831163401",
+      "name": "business_profile_control_plane",
+      "file": "20260831163401_business_profile_control_plane.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831163402",
+      "name": "business_profile_read_control_plane",
+      "file": "20260831163402_business_profile_read_control_plane.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831164500",
+      "name": "review_amenity_evidence_convergence",
+      "file": "20260831164500_review_amenity_evidence_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831164600",
+      "name": "business_restroom_health_amenity_evidence",
+      "file": "20260831164600_business_restroom_health_amenity_evidence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831165800",
+      "name": "mobile_amenity_trust_quality_convergence",
+      "file": "20260831165800_mobile_amenity_trust_quality_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831165900",
+      "name": "business_restroom_trust_quality_control_plane",
+      "file": "20260831165900_business_restroom_trust_quality_control_plane.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831171000",
+      "name": "reverification_workflow_convergence",
+      "file": "20260831171000_reverification_workflow_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831171100",
+      "name": "reverification_mission_execution",
+      "file": "20260831171100_reverification_mission_execution.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831173800",
+      "name": "business_operations_inventory_convergence",
+      "file": "20260831173800_business_operations_inventory_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831180000",
+      "name": "business_restroom_remediation_operations",
+      "file": "20260831180000_business_restroom_remediation_operations.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831180500",
+      "name": "business_restroom_remediation_notifications",
+      "file": "20260831180500_business_restroom_remediation_notifications.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831181500",
+      "name": "business_restroom_remediation_sla_proof_event_convergence",
+      "file": "20260831181500_business_restroom_remediation_sla_proof_event_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831181550",
+      "name": "business_restroom_remediation_sla_operations_projection",
+      "file": "20260831181550_business_restroom_remediation_sla_operations_projection.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831181600",
+      "name": "consumer_amenity_business_recovery_projection",
+      "file": "20260831181600_consumer_amenity_business_recovery_projection.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831184000",
+      "name": "recovery_history_and_remediation_performance",
+      "file": "20260831184000_recovery_history_and_remediation_performance.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831184100",
+      "name": "remediation_notification_routing_metadata",
+      "file": "20260831184100_remediation_notification_routing_metadata.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831190000",
+      "name": "community_fix_confirmation_and_reliability",
+      "file": "20260831190000_community_fix_confirmation_and_reliability.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831192500",
+      "name": "remediation_prevention_and_recovery_confidence",
+      "file": "20260831192500_remediation_prevention_and_recovery_confidence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260831194500",
+      "name": "restroom_preventive_work_orders",
+      "file": "20260831194500_restroom_preventive_work_orders.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260901160000",
+      "name": "play_review_ugc_blocking_and_user_reports",
+      "file": "20260901160000_play_review_ugc_blocking_and_user_reports.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260901161500",
+      "name": "play_review_versioned_policy_acceptance",
+      "file": "20260901161500_play_review_versioned_policy_acceptance.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260903063622",
+      "name": "consumer_rich_map_business_identity",
+      "file": "20260903063622_consumer_rich_map_business_identity.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260904020500",
+      "name": "qr_studio_foundation_v1",
+      "file": "20260904020500_qr_studio_foundation_v1.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260904020600",
+      "name": "qr_program_type_aliases_v1",
+      "file": "20260904020600_qr_program_type_aliases_v1.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260904020700",
+      "name": "repair_owner_push_health_authority",
+      "file": "20260904020700_repair_owner_push_health_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260904164200",
+      "name": "repair_consumer_quest_progress_authority",
+      "file": "20260904164200_repair_consumer_quest_progress_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260905020000",
+      "name": "play_review_safety_rpc_privileges",
+      "file": "20260905020000_play_review_safety_rpc_privileges.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260905165500",
+      "name": "notification_preferences_v2_contract",
+      "file": "20260905165500_notification_preferences_v2_contract.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260905172000",
+      "name": "harden_business_owner_rpc_execution",
+      "file": "20260905172000_harden_business_owner_rpc_execution.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260905172800",
+      "name": "harden_active_privileged_rpc_execution",
+      "file": "20260905172800_harden_active_privileged_rpc_execution.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260905200500",
+      "name": "source_control_fleet_offline_replay",
+      "file": "20260905200500_source_control_fleet_offline_replay.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260905221500",
+      "name": "repair_owner_runtime_observability_and_audit_contracts",
+      "file": "20260905221500_repair_owner_runtime_observability_and_audit_contracts.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260905222500",
+      "name": "align_owner_mobile_runtime_compatibility",
+      "file": "20260905222500_align_owner_mobile_runtime_compatibility.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260905223500",
+      "name": "restore_signup_profile_authenticated_execute",
+      "file": "20260905223500_restore_signup_profile_authenticated_execute.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260906052000",
+      "name": "consumer_adaptive_route_search",
+      "file": "20260906052000_consumer_adaptive_route_search.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260906194000",
+      "name": "repair_expo_push_token_validation",
+      "file": "20260906194000_repair_expo_push_token_validation.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260907071500",
+      "name": "harden_location_intelligence_view",
+      "file": "20260907071500_harden_location_intelligence_view.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260907072000",
+      "name": "restrict_internal_maintenance_rpcs",
+      "file": "20260907072000_restrict_internal_maintenance_rpcs.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260907113600",
+      "name": "reconcile_geo_catalog_sync_runtime",
+      "file": "20260907113600_reconcile_geo_catalog_sync_runtime.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260910180500",
+      "name": "enterprise_truth_demo_seed",
+      "file": "20260910180500_enterprise_truth_demo_seed.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260910181500",
+      "name": "business_enterprise_truth_authority",
+      "file": "20260910181500_business_enterprise_truth_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260910182500",
+      "name": "enterprise_portfolio_capability_convergence",
+      "file": "20260910182500_enterprise_portfolio_capability_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911012000",
+      "name": "real_world_demo_onboarding",
+      "file": "20260911012000_real_world_demo_onboarding.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911014000",
+      "name": "real_world_demo_route_refinement",
+      "file": "20260911014000_real_world_demo_route_refinement.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911021000",
+      "name": "mandatory_targeted_business_onboarding",
+      "file": "20260911021000_mandatory_targeted_business_onboarding.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911021500",
+      "name": "onboarding_policy_rls",
+      "file": "20260911021500_onboarding_policy_rls.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911022000",
+      "name": "onboarding_helper_privileges",
+      "file": "20260911022000_onboarding_helper_privileges.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911030000",
+      "name": "business_onboarding_tier_authority",
+      "file": "20260911030000_business_onboarding_tier_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911033000",
+      "name": "four_tier_commercial_authority",
+      "file": "20260911033000_four_tier_commercial_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911080500",
+      "name": "business_fleet_onboarding_portfolio_home",
+      "file": "20260911080500_business_fleet_onboarding_portfolio_home.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911093000",
+      "name": "fleet_adhoc_stops_geofence_intelligence",
+      "file": "20260911093000_fleet_adhoc_stops_geofence_intelligence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911094500",
+      "name": "fleet_operational_intelligence_dedupe_repair",
+      "file": "20260911094500_fleet_operational_intelligence_dedupe_repair.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911095500",
+      "name": "route_stop_geofence_actor_guard",
+      "file": "20260911095500_route_stop_geofence_actor_guard.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911102500",
+      "name": "stateful_real_world_demo_loops",
+      "file": "20260911102500_stateful_real_world_demo_loops.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911104000",
+      "name": "real_world_demo_loop_surface_convergence",
+      "file": "20260911104000_real_world_demo_loop_surface_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911193000",
+      "name": "platform_partner_authority",
+      "file": "20260911193000_platform_partner_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911200000",
+      "name": "platform_partner_vault_hardening",
+      "file": "20260911200000_platform_partner_vault_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911203000",
+      "name": "platform_internal_sandbox_diagnostics",
+      "file": "20260911203000_platform_internal_sandbox_diagnostics.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911204500",
+      "name": "platform_integration_smoke_trigger",
+      "file": "20260911204500_platform_integration_smoke_trigger.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911210500",
+      "name": "platform_external_beta_onboarding",
+      "file": "20260911210500_platform_external_beta_onboarding.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260911213000",
+      "name": "platform_developer_portal_publish_trigger",
+      "file": "20260911213000_platform_developer_portal_publish_trigger.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912012000",
+      "name": "platform_publishable_client_tokens",
+      "file": "20260912012000_platform_publishable_client_tokens.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912052000",
+      "name": "external_observation_live_summary_rls_hardening",
+      "file": "20260912052000_external_observation_live_summary_rls_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912054500",
+      "name": "anon_security_definer_batch1",
+      "file": "20260912054500_anon_security_definer_batch1.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912060000",
+      "name": "anon_security_definer_batch2_helpers",
+      "file": "20260912060000_anon_security_definer_batch2_helpers.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912061500",
+      "name": "public_security_invoker_batch3",
+      "file": "20260912061500_public_security_invoker_batch3.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912063000",
+      "name": "business_location_cap_auth_only",
+      "file": "20260912063000_business_location_cap_auth_only.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912065000",
+      "name": "public_security_invoker_batch5",
+      "file": "20260912065000_public_security_invoker_batch5.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912070500",
+      "name": "verification_opportunities_auth_only",
+      "file": "20260912070500_verification_opportunities_auth_only.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912072000",
+      "name": "public_function_default_privileges",
+      "file": "20260912072000_public_function_default_privileges.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912073500",
+      "name": "reviewed_public_security_definer_allowlist",
+      "file": "20260912073500_reviewed_public_security_definer_allowlist.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912081500",
+      "name": "internal_tables_explicit_deny_policies",
+      "file": "20260912081500_internal_tables_explicit_deny_policies.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912090000",
+      "name": "offer_pilot_capability_control_plane",
+      "file": "20260912090000_offer_pilot_capability_control_plane.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912094000",
+      "name": "capability_pilot_sessions",
+      "file": "20260912094000_capability_pilot_sessions.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912103000",
+      "name": "platform_place_match_authority",
+      "file": "20260912103000_platform_place_match_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912120000",
+      "name": "owner_developer_partner_control_plane",
+      "file": "20260912120000_owner_developer_partner_control_plane.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912124500",
+      "name": "offer_launch_assurance_control_plane",
+      "file": "20260912124500_offer_launch_assurance_control_plane.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260912133000",
+      "name": "platform_place_match_capability_catalog",
+      "file": "20260912133000_platform_place_match_capability_catalog.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260913111500",
+      "name": "fleet_member_workspace_consumer_tie",
+      "file": "20260913111500_fleet_member_workspace_consumer_tie.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260913112000",
+      "name": "fleet_member_workspace_security_hardening",
+      "file": "20260913112000_fleet_member_workspace_security_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260913112500",
+      "name": "fleet_dispatcher_web_portal_authority",
+      "file": "20260913112500_fleet_dispatcher_web_portal_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260913130000",
+      "name": "business_community_photo_trust_authority",
+      "file": "20260913130000_business_community_photo_trust_authority.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260913133000",
+      "name": "review_photo_moderation_fleet_operator_convergence",
+      "file": "20260913133000_review_photo_moderation_fleet_operator_convergence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260913134600",
+      "name": "review_photo_report_category_alignment",
+      "file": "20260913134600_review_photo_report_category_alignment.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260913143000",
+      "name": "smart_device_control_plane",
+      "file": "20260913143000_smart_device_control_plane.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260913162500",
+      "name": "fleet_premium_75_canonical",
+      "file": "20260913162500_fleet_premium_75_canonical.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260913185930",
+      "name": "developer_sandbox_product_access",
+      "file": "20260913185930_developer_sandbox_product_access.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260913192500",
+      "name": "game_center_score_records",
+      "file": "20260913192500_game_center_score_records.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260913205500",
+      "name": "progression_world_season_one",
+      "file": "20260913205500_progression_world_season_one.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260914151500",
+      "name": "consumer_prior_knowledge_contributions",
+      "file": "20260914151500_consumer_prior_knowledge_contributions.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260914170000",
+      "name": "beta_incident_reporting",
+      "file": "20260914170000_beta_incident_reporting.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260914171000",
+      "name": "beta_reporting_security_hardening",
+      "file": "20260914171000_beta_reporting_security_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260914202500",
+      "name": "consumer_week_in_review_and_review_prompts",
+      "file": "20260914202500_consumer_week_in_review_and_review_prompts.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260915073000",
+      "name": "deferred_review_photo_progression",
+      "file": "20260915073000_deferred_review_photo_progression.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260915101500",
+      "name": "tell_kleenest_owner_queue_routing",
+      "file": "20260915101500_tell_kleenest_owner_queue_routing.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260915154500",
+      "name": "enable_seasonal_theme_progression",
+      "file": "20260915154500_enable_seasonal_theme_progression.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260915173000",
+      "name": "live_network_push_and_frequency_hardening",
+      "file": "20260915173000_live_network_push_and_frequency_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260915174500",
+      "name": "harden_owner_manual_notification_skip",
+      "file": "20260915174500_harden_owner_manual_notification_skip.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260915180500",
+      "name": "unclaimed_location_qr_identity",
+      "file": "20260915180500_unclaimed_location_qr_identity.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260915181200",
+      "name": "qr_placement_fk_indexes",
+      "file": "20260915181200_qr_placement_fk_indexes.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260915215300",
+      "name": "consumer_prior_visit_photo_evidence",
+      "file": "20260915215300_consumer_prior_visit_photo_evidence.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260916013000",
+      "name": "progression_reward_inventory_arcade_expansion",
+      "file": "20260916013000_progression_reward_inventory_arcade_expansion.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260916024500",
+      "name": "progression_reward_capability_runtime",
+      "file": "20260916024500_progression_reward_capability_runtime.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260916025500",
+      "name": "progression_reward_runtime_hardening",
+      "file": "20260916025500_progression_reward_runtime_hardening.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260916050000",
+      "name": "creator_mission_campaign_attribution",
+      "file": "20260916050000_creator_mission_campaign_attribution.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260916055500",
+      "name": "permanent_stackable_map_filter_rewards",
+      "file": "20260916055500_permanent_stackable_map_filter_rewards.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260916062500",
+      "name": "creator_mission_attribution_compat",
+      "file": "20260916062500_creator_mission_attribution_compat.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260916214500",
+      "name": "kleenest_intelligence_layer",
+      "file": "20260916214500_kleenest_intelligence_layer.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    },
+    {
+      "version": "20260916215000",
+      "name": "kleenest_intelligence_runtime_repairs",
+      "file": "20260916215000_kleenest_intelligence_runtime_repairs.sql",
+      "reason": "schema already present in production; reconcile source timestamp with migration ledger"
+    }
+  ]
+}

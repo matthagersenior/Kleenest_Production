@@ -1,0 +1,1 @@
+create policy live_network_events_select_public_safe_delayed on public.live_network_events for select to authenticated using (event_type in ('location.verified','location.stale','location.conflict','business.offer_started','business.offer_redeemed','business.campaign_converted') and created_at <= now()-interval '1 hour');

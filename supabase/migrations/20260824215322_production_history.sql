@@ -1,0 +1,3 @@
+create or replace function public.mark_message_read(p_message_id uuid) returns boolean language plpgsql security definer set search_path=public,auth,extensions,pg_temp as $$ begin if auth.uid() is null then raise exception 'Authentication required'; end if; update public.messages set read_at=coalesce(read_at,now()),status='read' where id=p_message_id and to_id=auth.uid(); if not found then raise exception 'Message not found or not recipient'; end if; return true; end $$;
+revoke update on public.messages from authenticated;
+grant execute on function public.mark_message_read(uuid) to authenticated;

@@ -1,0 +1,10 @@
+revoke insert,update,delete on public.messages from authenticated;
+revoke insert,update,delete on public.notification_preferences from authenticated;
+revoke insert,update,delete on public.notification_push_subscriptions from authenticated;
+revoke insert,update,delete on public.profile_preferences from authenticated;
+revoke insert,update,delete on public.social_posts from authenticated;
+revoke insert,update,delete on public.social_post_comments from authenticated;
+revoke insert,update,delete on public.social_post_likes from authenticated;
+revoke insert,update,delete on public.social_post_saves from authenticated;
+revoke insert on public.support_requests from authenticated;
+revoke insert on public.user_feedback from authenticated;

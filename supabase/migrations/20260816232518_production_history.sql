@@ -1,0 +1,10 @@
+create policy "enterprise_partner_networks_admin_read" on public.enterprise_partner_networks for select to authenticated using (exists(select 1 from public.profiles p where p.id=auth.uid() and coalesce(p.is_admin,false)));
+create policy "enterprise_partner_network_members_admin_read" on public.enterprise_partner_network_members for select to authenticated using (exists(select 1 from public.profiles p where p.id=auth.uid() and coalesce(p.is_admin,false)));
+create policy "enterprise_partner_network_metrics_admin_read" on public.enterprise_partner_network_metrics for select to authenticated using (exists(select 1 from public.profiles p where p.id=auth.uid() and coalesce(p.is_admin,false)));
+create policy "enterprise_partner_campaigns_admin_read" on public.enterprise_partner_campaigns for select to authenticated using (exists(select 1 from public.profiles p where p.id=auth.uid() and coalesce(p.is_admin,false)));
+create policy "enterprise_partner_campaign_outcomes_admin_read" on public.enterprise_partner_campaign_outcomes for select to authenticated using (exists(select 1 from public.profiles p where p.id=auth.uid() and coalesce(p.is_admin,false)));
+create policy "enterprise_partner_allocations_admin_read" on public.enterprise_partner_allocations for select to authenticated using (exists(select 1 from public.profiles p where p.id=auth.uid() and coalesce(p.is_admin,false)));
+create policy "business_engagement_attributions_admin_read" on public.business_engagement_attributions for select to authenticated using (exists(select 1 from public.profiles p where p.id=auth.uid() and coalesce(p.is_admin,false)));
+create policy "review_amenity_feedback_authenticated_read" on public.review_amenity_feedback for select to authenticated using (auth.uid() is not null);
+create policy "single_use_access_offers_authenticated_read" on public.single_use_access_offers for select to authenticated using (auth.uid() is not null);
+create policy "single_use_access_purchases_owner_read" on public.single_use_access_purchases for select to authenticated using (user_id = auth.uid());

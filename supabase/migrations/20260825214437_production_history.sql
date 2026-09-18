@@ -1,0 +1,1 @@
+grant execute on function public.publish_live_network_event(text,uuid,text,uuid,jsonb) to authenticated; revoke execute on function public.publish_live_network_event(text,uuid,text,uuid,jsonb) from anon;

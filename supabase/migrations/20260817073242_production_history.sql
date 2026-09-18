@@ -1,0 +1,14 @@
+create table if not exists public.pricing_plans (id uuid primary key default gen_random_uuid(), code text unique not null, name text not null, monthly_price_cents integer not null default 0, description text, features jsonb not null default '[]'::jsonb, active boolean not null default true, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+create table if not exists public.family_accounts (id uuid primary key default gen_random_uuid(), owner_user_id uuid not null references auth.users(id) on delete cascade, plan_code text not null default 'family', max_members integer not null default 5 check(max_members between 1 and 5), created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+create table if not exists public.family_members (family_id uuid not null references public.family_accounts(id) on delete cascade, user_id uuid not null references auth.users(id) on delete cascade, member_role text not null default 'member' check(member_role in ('owner','member')), created_at timestamptz not null default now(), primary key(family_id,user_id));
+insert into public.pricing_plans(code,name,monthly_price_cents,description,features) values
+('free','Free',0,'Core restroom discovery with basic search and sponsored placements','["basic_map_search","basic_filters","favorites","basic_route","community","ads"]'::jsonb),
+('premium','Premium',500,'Full consumer restroom intelligence','["advanced_amenity_search","advanced_filters","favorites","favorite_routes","progression","no_ads"]'::jsonb),
+('family','Family Premium',2000,'Premium for an owner plus up to four additional people','["up_to_5_people","all_premium_features","no_ads"]'::jsonb),
+('standard','Business Standard',0,'Essential business presence and basic metrics','["location_management","basic_stats","reviews","qr_scans"]'::jsonb),
+('growth','Business Growth',0,'Growth marketing, campaigns and earned promotion tools','["advanced_stats","promotions","campaigns","contests","qr_studio","earned_perks"]'::jsonb),
+('enterprise','Business Enterprise',0,'Advanced business intelligence and enterprise capabilities','["advanced_analytics","partnerships","advanced_campaigns","earned_perks","enterprise_tools"]'::jsonb),
+('fleet','Business Fleet',0,'Fleet restroom intelligence, routing and operations','["fleet_command","route_intelligence","restroom_coverage","fleet_analytics","earned_perks"]'::jsonb)
+on conflict(code) do update set name=excluded.name,monthly_price_cents=excluded.monthly_price_cents,description=excluded.description,features=excluded.features,active=true,updated_at=now();
+create index if not exists idx_family_members_user_id on public.family_members(user_id);
+create index if not exists idx_family_accounts_owner on public.family_accounts(owner_user_id);

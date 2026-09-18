@@ -1,0 +1,10 @@
+revoke execute on function public.checkin_rewards_summary(uuid) from anon;
+revoke execute on function public.create_review(uuid,uuid,smallint,numeric,text) from anon;
+revoke execute on function public.promotion_redemption_summary(uuid) from anon;
+revoke execute on function public.business_dashboard_secure_summary(uuid,timestamptz,timestamptz) from anon;
+revoke execute on function public.business_create_location(uuid,text,text,text,text,text,numeric,numeric,text,text) from anon;
+revoke execute on function public.business_update_location(uuid,text,text,text,text,boolean) from anon;
+revoke execute on function public.business_create_promotion(uuid,uuid,text,text,text,timestamptz,timestamptz) from anon;
+revoke execute on function public.business_set_promotion_active(uuid,boolean) from anon;
+revoke execute on function public.user_notifications(integer) from anon;
+revoke execute on function public.user_subscription_summary() from anon;

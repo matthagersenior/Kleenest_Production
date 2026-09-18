@@ -1,0 +1,10 @@
+drop policy if exists social_comments_own_delete on public.social_post_comments;
+create policy social_comments_own_delete on public.social_post_comments for delete to authenticated using (auth.uid()=user_id);
+drop policy if exists social_comments_own_update on public.social_post_comments;
+create policy social_comments_own_update on public.social_post_comments for update to authenticated using (auth.uid()=user_id) with check (auth.uid()=user_id and exists(select 1 from public.social_posts p where p.id=post_id));
+drop policy if exists social_likes_own_delete on public.social_post_likes;
+create policy social_likes_own_delete on public.social_post_likes for delete to authenticated using (auth.uid()=user_id);
+drop policy if exists social_saves_own_delete on public.social_post_saves;
+create policy social_saves_own_delete on public.social_post_saves for delete to authenticated using (auth.uid()=user_id);
+revoke insert on public.user_feedback from anon;
+revoke insert on public.support_requests from anon;

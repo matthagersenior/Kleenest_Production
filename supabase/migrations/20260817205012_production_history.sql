@@ -1,0 +1,1 @@
+alter function public.get_location_details(uuid) set search_path = ''; alter function public.get_location_bathroom_verification(uuid) set search_path = ''; alter function public.enrich_location_from_osm(uuid) set search_path = ''; alter function public.kleenest_map_view(uuid) set search_path = '';

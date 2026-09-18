@@ -1,0 +1,1 @@
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid WHERE t.typname='business_tier' AND e.enumlabel='fleet') THEN ALTER TYPE public.business_tier ADD VALUE 'fleet'; END IF; END $$;

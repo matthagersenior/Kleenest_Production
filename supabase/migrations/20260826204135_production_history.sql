@@ -1,0 +1,1 @@
+grant execute on function public.fleet_actor_is_manager(uuid) to authenticated; grant execute on function public.fleet_metric_source_allowed(text,text) to authenticated; revoke execute on function public.fleet_actor_is_manager(uuid) from anon; revoke execute on function public.fleet_metric_source_allowed(text,text) from anon;

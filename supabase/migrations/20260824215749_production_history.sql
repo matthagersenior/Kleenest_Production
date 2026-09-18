@@ -1,0 +1,3 @@
+drop policy if exists feedback_insert on public.user_feedback; create policy feedback_insert_authenticated on public.user_feedback for insert to authenticated with check (user_id=auth.uid());
+drop policy if exists social_comments_own_insert on public.social_post_comments; create policy social_comments_own_insert on public.social_post_comments for insert to authenticated with check (auth.uid()=user_id and exists(select 1 from public.social_posts p where p.id=post_id));
+drop policy if exists social_comments_own_update on public.social_post_comments; create policy social_comments_own_update on public.social_post_comments for update to authenticated using(auth.uid()=user_id) with check(auth.uid()=user_id and exists(select 1 from public.social_posts p where p.id=post_id));

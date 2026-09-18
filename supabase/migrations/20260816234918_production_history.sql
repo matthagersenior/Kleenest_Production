@@ -1,0 +1,1 @@
+drop policy if exists "club_memberships_own_insert" on public.club_memberships; create policy "club_memberships_own_insert" on public.club_memberships for insert to authenticated with check ((select auth.uid()) = user_id and exists(select 1 from public.membership_clubs c where c.id=club_memberships.club_id and c.active=true));

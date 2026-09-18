@@ -1,0 +1,1 @@
+drop policy if exists "social_challenge_entries_own_insert" on public.social_challenge_entries; create policy "social_challenge_entries_own_insert" on public.social_challenge_entries for insert to authenticated with check ((select auth.uid()) = user_id and exists(select 1 from public.progression_challenges c where c.id=social_challenge_entries.challenge_id and c.enabled=true));

@@ -1,0 +1,12 @@
+revoke execute on function public.can_activate_preferred_location(uuid) from authenticated;
+revoke execute on function public.can_activate_preferred_location_identity(text,text,double precision,double precision) from authenticated;
+revoke execute on function public.can_participate_community_activity(text) from authenticated;
+revoke execute on function public.check_preferred_eligibility(uuid) from authenticated;
+revoke execute on function public.business_can_manage(uuid) from authenticated;
+revoke execute on function public.business_management_context(uuid) from authenticated;
+revoke execute on function public.ensure_location_qr(uuid) from authenticated;
+revoke execute on function public.ensure_signup_profile(text,text,text,text,boolean) from authenticated;
+revoke execute on function public.get_business_product_access(uuid) from authenticated;
+revoke execute on function public.get_current_user_product_entitlements() from authenticated;
+revoke execute on function public.has_kleenest_premium() from authenticated;
+revoke execute on function public.get_effective_consumer_tier(uuid) from authenticated;

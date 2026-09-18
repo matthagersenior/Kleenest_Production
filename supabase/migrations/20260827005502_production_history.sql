@@ -1,0 +1,12 @@
+revoke execute on function public.admin_assign_business_member(uuid,uuid,public.business_member_role) from authenticated;
+revoke execute on function public.admin_remove_business_member(uuid,uuid) from authenticated;
+revoke execute on function public.activate_partner_allocation(uuid) from authenticated;
+revoke execute on function public.activate_enterprise_partner_campaign(uuid) from authenticated;
+revoke execute on function public.pause_enterprise_partner_campaign(uuid) from authenticated;
+revoke execute on function public.invite_enterprise_partner(uuid,uuid) from authenticated;
+revoke execute on function public.create_partner_allocation(uuid,uuid,uuid,text,numeric,bigint,text) from authenticated;
+revoke execute on function public.set_enterprise_partner_status(uuid,text) from authenticated;
+revoke execute on function public.set_featured_location_photo(uuid,uuid) from authenticated;
+revoke execute on function public.set_location_qr_customization(uuid,text,jsonb) from authenticated;
+revoke execute on function public.set_location_amenities(uuid,uuid[]) from authenticated;
+revoke execute on function public.set_business_qr_customization(uuid,uuid,jsonb) from authenticated;

@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-const required=['apps/consumer-mobile/services/activity.ts','apps/consumer-mobile/services/communityActivity.ts','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/social.tsx','packages/mobile-core/src/privateActivity.ts','packages/mobile-core/src/publicEntry.ts','supabase/migrations/20260831043000_mobile_my_activity_feed_authority.sql','supabase/migrations/20260831043500_mobile_account_scoped_social_activity.sql','supabase/migrations/20260831065000_native_push_lifecycle_and_activity_authority_hardening.sql'];
+const required=['apps/consumer-mobile/services/activity.ts','apps/consumer-mobile/services/communityActivity.ts','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/social.tsx','packages/mobile-core/src/privateActivity.ts','packages/mobile-core/src/publicEntry.ts','supabase/migrations/20260831043001_mobile_my_activity_feed_authority.sql','supabase/migrations/20260831043500_mobile_account_scoped_social_activity.sql','supabase/migrations/20260831065000_native_push_lifecycle_and_activity_authority_hardening.sql'];
 const failures=[];for(const file of required)if(!fs.existsSync(file))failures.push(`missing activity authority file: ${file}`);
 if(!failures.length){
   const service=fs.readFileSync(required[0],'utf8');

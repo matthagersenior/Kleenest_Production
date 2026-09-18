@@ -1,0 +1,11 @@
+alter policy "events_member_advanced_all" on public.business_events to authenticated;
+alter policy "contests_member_advanced_all" on public.contests to authenticated;
+alter policy "social_challenge_entries_own_delete" on public.social_challenge_entries to authenticated;
+alter policy "social_challenge_entries_own_insert" on public.social_challenge_entries to authenticated;
+alter policy "social_challenge_entries_own_read" on public.social_challenge_entries to authenticated;
+alter policy "social_challenge_entries_own_update" on public.social_challenge_entries to authenticated;
+alter policy "social_posts_own_delete" on public.social_posts to authenticated;
+alter policy "social_posts_own_insert" on public.social_posts to authenticated;
+alter policy "social_posts_own_update" on public.social_posts to authenticated;
+drop policy if exists "family_groups_owner" on public.family_groups;
+drop policy if exists "family_members_owner" on public.family_members;

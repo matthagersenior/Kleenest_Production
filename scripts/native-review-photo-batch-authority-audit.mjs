@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-const required=['apps/consumer-mobile/services/reviewPhotos.ts','apps/consumer-mobile/services/contributors.ts','apps/consumer-mobile/services/communityActivity.ts','apps/consumer-mobile/components/ReviewPhotoStrip.tsx','apps/consumer-mobile/components/PhotoEvidencePreview.tsx','apps/consumer-mobile/app/contributor/[id].tsx','apps/consumer-mobile/app/social.tsx','apps/consumer-mobile/app/activity.tsx','supabase/migrations/20260831072000_mobile_review_photo_batch_authority.sql'];
+const required=['apps/consumer-mobile/services/reviewPhotos.ts','apps/consumer-mobile/services/contributors.ts','apps/consumer-mobile/services/communityActivity.ts','apps/consumer-mobile/components/ReviewPhotoStrip.tsx','apps/consumer-mobile/components/PhotoEvidencePreview.tsx','apps/consumer-mobile/app/contributor/[id].tsx','apps/consumer-mobile/app/social.tsx','apps/consumer-mobile/app/activity.tsx','supabase/migrations/20260831072001_mobile_review_photo_batch_authority.sql'];
 const failures=[];for(const file of required)if(!fs.existsSync(file))failures.push(`missing batched review-photo authority file: ${file}`);
 if(!failures.length){
  const read=file=>fs.readFileSync(file,'utf8');

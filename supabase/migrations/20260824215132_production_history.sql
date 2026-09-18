@@ -1,0 +1,16 @@
+revoke insert,update,delete,truncate on table public.profiles from anon;
+revoke insert,update,delete,truncate on table public.app_profile from anon;
+revoke insert,update,delete,truncate on table public.profile_preferences from anon;
+revoke insert,update,delete,truncate on table public.notification_preferences from anon;
+revoke insert,update,delete,truncate on table public.notification_push_subscriptions from anon;
+revoke insert,update,delete,truncate on table public.favorites from anon;
+revoke insert,update,delete,truncate on table public.follows from anon;
+revoke insert,update,delete,truncate on table public.review_likes from anon;
+revoke insert,update,delete,truncate on table public.review_amenity_feedback from anon;
+revoke insert,update,delete,truncate on table public.review_photos from anon;
+revoke insert,update,delete,truncate on table public.social_posts from anon;
+revoke insert,update,delete,truncate on table public.social_post_comments from anon;
+revoke insert,update,delete,truncate on table public.social_post_likes from anon;
+revoke insert,update,delete,truncate on table public.social_post_saves from anon;
+revoke insert,update,delete,truncate on table public.messages from anon;
+revoke insert,update,delete,truncate on table public.user_location_sessions from anon;

@@ -1,0 +1,13 @@
+revoke all on table public.fleet_performance_events from anon, authenticated;
+revoke all on table public.fleet_route_updates from anon, authenticated;
+revoke all on table public.fleet_routes from anon, authenticated;
+revoke all on table public.fleet_vehicle_daily_metrics from anon, authenticated;
+revoke all on table public.fleet_vehicles from anon, authenticated;
+revoke all on table public.fleet_drivers from anon, authenticated;
+revoke all on table public.fleet_driver_scorecards from anon, authenticated;
+revoke all on table public.fleet_maintenance_records from anon, authenticated;
+revoke all on table public.fleet_alerts from anon, authenticated;
+revoke all on table public.fleet_operational_events from anon, authenticated;
+revoke all on table public.fleet_metric_snapshots from anon, authenticated;
+revoke all on table public.fleet_metric_assignments from anon, authenticated;
+revoke all on table public.fleet_metric_definitions from anon, authenticated;
