@@ -15,22 +15,15 @@ const deploy='.github/workflows/supabase-production-migrations.yml';
 expect(deploy,'name: Deploy Supabase Migrations to Production','production migration workflow name');
 expect(deploy,'workflows: ["Production CI"]','Production CI workflow_run gate');
 expect(deploy,'github.event.workflow_run.head_sha','exact triggering main SHA checkout');
-expect(deploy,'SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}','Supabase access-token secret');
-expect(deploy,'SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}','Supabase DB-password secret');
 expect(deploy,'SUPABASE_PROJECT_ID: ssgesjzdvdsqacdtasje','production project ref');
 expect(deploy,'id-token: write','GitHub OIDC permission');
 expect(deploy,'SUPABASE_READINESS_AUDIENCE: kleenest-supabase-production-readiness','OIDC readiness audience');
 expect(deploy,'RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}','OIDC release SHA binding');
-expect(deploy,"echo \"mode=deploy\" >> \"$GITHUB_OUTPUT\"",'privileged deploy mode');
-expect(deploy,"echo \"mode=verify\" >> \"$GITHUB_OUTPUT\"",'credentialless verification mode');
-expect(deploy,"if: steps.release_mode.outputs.mode == 'deploy'",'privileged CLI actions restricted to deploy mode');
-expect(deploy,'supabase/setup-cli@v1','Supabase CLI setup');
-expect(deploy,'supabase link --project-ref "$SUPABASE_PROJECT_ID"','linked production project');
-expect(deploy,'supabase migration list','migration-history verification');
-expect(deploy,'supabase db push --dry-run','pre-deploy migration preview');
-expect(deploy,'supabase db push','production migration deployment');
-expect(deploy,"if: steps.release_mode.outputs.mode == 'verify'",'OIDC readiness restricted to credentialless mode');
+expect(deploy,'Supabase GitHub Integration owns production migration deployment','native Supabase deployment ownership');
 expect(deploy,'node scripts/supabase-production-ledger-readiness.mjs','fail-closed production ledger verification');
+reject(deploy,'SUPABASE_ACCESS_TOKEN','legacy CLI access-token deployment path');
+reject(deploy,'SUPABASE_DB_PASSWORD','database-password deployment path');
+reject(deploy,'supabase db push','duplicate GitHub CLI migration deployment');
 reject(deploy,'SUPABASE_PUBLISHABLE_KEY','publishable-key readiness bypass');
 
 const readiness='scripts/supabase-production-ledger-readiness.mjs';
@@ -41,7 +34,10 @@ expect(readiness,'kleenest-supabase-production-readiness','OIDC audience');
 expect(readiness,'/functions/v1/production-migration-readiness','OIDC-protected Supabase Edge Function');
 expect(readiness,'expected_sha:releaseSha','OIDC SHA binding');
 expect(readiness,'response.status===409','missing migration fail-closed guard');
-expect(readiness,'Configure deploy credentials or apply those migrations before OTA.','unapplied migration block message');
+expect(readiness,'Waiting for native Supabase GitHub deployment','bounded native deployment convergence wait');
+expect(readiness,'Native Supabase GitHub deployment did not converge; OTA remains blocked.','native deployment fail-closed message');
+expect(readiness,'const maxAttempts=36','bounded retry count');
+expect(readiness,'const retryDelayMs=5000','bounded retry delay');
 reject(readiness,'/rest/v1/rpc/production_migration_applied','direct public RPC readiness access');
 reject(readiness,'SUPABASE_PUBLISHABLE_KEY','publishable key in readiness verifier');
 
@@ -59,7 +55,7 @@ expect(edge,'production_migration_applied','internal migration-ledger probe');
 expect(edge,'body.expected_sha !== claims.sha','release SHA enforcement');
 
 const ota='.github/workflows/ota-family.yml';
-expect(ota,'workflows: ["Deploy Supabase Migrations to Production"]','database deployment as automatic OTA predecessor');
+expect(ota,'workflows: ["Deploy Supabase Migrations to Production"]','database readiness as automatic OTA predecessor');
 reject(ota,'workflows: ["Production CI"]','direct Production CI → OTA bypass');
 reject(ota,'workflow_dispatch:','manual OTA bypass');
 reject(ota,'releases/family-ota.txt','release-file push OTA bypass');
@@ -91,4 +87,4 @@ if(failures.length){
   for(const failure of failures)console.error(` - ${failure}`);
   process.exit(1);
 }
-console.log('Supabase production release-order audit passed: source matches the production ledger, privileged deployment remains supported, credentialless verification uses GitHub OIDC instead of public RPC access, DB readiness gates OTA, and the guard runs on PRs and main.');
+console.log('Supabase production release-order audit passed: Supabase GitHub Integration owns migration deployment, GitHub OIDC verifies the exact production ledger with bounded convergence retries, DB readiness gates OTA, and no database password is required in GitHub.');
