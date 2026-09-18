@@ -87,9 +87,11 @@ if (installSmoke.includes('EXPECTED_SHA: ${{ github.event.workflow_run.head_sha 
 }
 
 const databaseDeploy = read('supabase-production-migrations.yml');
-for (const token of ['workflow_run:','workflows: ["Production CI"]',"github.event.workflow_run.conclusion == 'success'","github.event.workflow_run.head_branch == 'main'",'ref: ${{ github.event.workflow_run.head_sha || github.sha }}','SUPABASE_PROJECT_ID: ssgesjzdvdsqacdtasje','supabase db push --dry-run','supabase db push']) {
-  requireText(databaseDeploy, token, 'Production database deployment authority missing '+token);
+for (const token of ['workflow_run:','workflows: ["Production CI"]',"github.event.workflow_run.conclusion == 'success'","github.event.workflow_run.head_branch == 'main'",'ref: ${{ github.event.workflow_run.head_sha || github.sha }}','SUPABASE_PROJECT_ID: ssgesjzdvdsqacdtasje','Supabase GitHub Integration owns production migration deployment','node scripts/supabase-production-ledger-readiness.mjs']) {
+  requireText(databaseDeploy, token, 'Production database readiness authority missing '+token);
 }
+if (databaseDeploy.includes('SUPABASE_DB_PASSWORD')) throw new Error('Production database readiness must not require the database password in GitHub.');
+if (databaseDeploy.includes('supabase db push')) throw new Error('Native Supabase GitHub Integration owns migration deployment; GitHub must not duplicate db push.');
 
 const familyOta = read('ota-family.yml');
 for (const token of ['workflow_run:','workflows: ["Deploy Supabase Migrations to Production"]',"github.event.workflow_run.conclusion == 'success'","github.event.workflow_run.head_branch == 'main'",'ref: ${{ github.event.workflow_run.head_sha }}','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_publish','native_rebuild_required','consumer-production','business-production','fleet-production','owner-production']) {
