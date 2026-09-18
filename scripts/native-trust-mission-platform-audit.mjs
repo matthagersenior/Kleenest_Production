@@ -10,8 +10,8 @@ const required=[
   'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
   'apps/consumer-mobile/app/saved.tsx',
   'apps/consumer-mobile/app/location/[id].tsx',
-  'supabase/migrations/20260831082000_mobile_trust_mission_platform_authority.sql',
-  'supabase/migrations/20260831082500_mobile_trust_mission_tiered_rewards.sql',
+  'supabase/migrations/20260831082001_mobile_trust_mission_platform_authority.sql',
+  'supabase/migrations/20260831082501_mobile_trust_mission_tiered_rewards.sql',
   'supabase/migrations/20260831083500_mobile_trust_mission_start_preserves_active_authority.sql'
 ];
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing trust mission platform file: ${file}`);
