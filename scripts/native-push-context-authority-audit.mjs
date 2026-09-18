@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-const required=['supabase/migrations/20260831062500_native_push_atomic_delivery_claims.sql','supabase/functions/deliver-native-push-notification/index.ts','apps/consumer-mobile/services/notificationRouting.ts','apps/consumer-mobile/app/notifications.tsx'];
+const required=['supabase/migrations/20260831062501_native_push_atomic_delivery_claims.sql','supabase/functions/deliver-native-push-notification/index.ts','apps/consumer-mobile/services/notificationRouting.ts','apps/consumer-mobile/app/notifications.tsx'];
 const failures=[];for(const file of required)if(!fs.existsSync(file))failures.push(`missing push context authority file: ${file}`);
 if(!failures.length){
   const migration=fs.readFileSync(required[0],'utf8');
