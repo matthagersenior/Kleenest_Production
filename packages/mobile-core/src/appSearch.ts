@@ -1,6 +1,9 @@
 import * as SecureStore from 'expo-secure-store';
+import { getKleenestSupabaseClient } from './index';
 
 export type AppSearchScope='consumer'|'business'|'fleet'|'owner';
+export type CapabilitySearchEntry={feature_code:string;name:string;category:string;minimum_tier?:string|null;updated_at?:string|null};
+
 export type AppSearchEntry={
   id:string;
   title:string;
@@ -221,11 +224,55 @@ function score(entry:AppSearchEntry,raw:string){
   return total;
 }
 
+function capabilityRoute(scope:AppSearchScope,capability:CapabilitySearchEntry){
+  if(scope==='owner'||scope==='business'||scope==='fleet')return '/capabilities';
+  const category=normalize(capability.category);
+  if(category==='gamification')return '/progress';
+  if(category==='maps')return '/route';
+  if(category==='community')return '/social';
+  return '/explore';
+}
+
+// The static INDEX remains the static fallback for offline/unauthorized search.
 export function appSearchIndex(scope:AppSearchScope){return INDEX[scope].slice();}
-export function searchAppIndex(scope:AppSearchScope,query:string,limit=30){
-  const q=query.trim();
-  if(!q)return INDEX[scope].slice(0,8);
-  return INDEX[scope].map(entry=>({entry,score:score(entry,q)})).filter(row=>row.score>0).sort((a,b)=>b.score-a.score||a.entry.title.localeCompare(b.entry.title)).slice(0,limit).map(row=>row.entry);
+
+export async function loadCapabilitySearchEntries(scope:AppSearchScope):Promise<CapabilitySearchEntry[]>{
+  try{
+    const{data,error}=await getKleenestSupabaseClient().rpc('app_search_capabilities',{p_scope:scope});
+    if(error)throw error;
+    return Array.isArray(data)?data.filter(Boolean) as CapabilitySearchEntry[]:[];
+  }catch{return[];}
+}
+
+export function mergeCapabilitySearchEntries(scope:AppSearchScope,capabilities:CapabilitySearchEntry[],base=INDEX[scope]){
+  const merged=base.map(entry=>({...entry,keywords:[...entry.keywords]}));
+  for(const capability of capabilities||[]){
+    const code=normalize(capability.feature_code),name=normalize(capability.name);
+    const existing=merged.find(entry=>{
+      const hay=[entry.id,entry.title,...entry.keywords].map(normalize);
+      return hay.some(value=>value===code||value===name||value.includes(code)||code.includes(value)||value.includes(name));
+    });
+    if(existing){
+      existing.keywords=[...new Set([...existing.keywords,capability.feature_code,capability.name,capability.category,capability.minimum_tier||''].filter(Boolean))];
+      continue;
+    }
+    merged.push({
+      id:`capability:${capability.feature_code}`,
+      title:capability.name,
+      subtitle:`Live ${capability.category} capability`,
+      detail:capability.minimum_tier?`Available from ${capability.minimum_tier} tier where access permits.`:'Enabled in the canonical capability catalog.',
+      category:'Data',
+      route:capabilityRoute(scope,capability),
+      keywords:[capability.feature_code,capability.name,capability.category,capability.minimum_tier||''].filter(Boolean),
+    });
+  }
+  return merged;
+}
+
+export function searchAppIndex(scope:AppSearchScope,query:string,limit=30,capabilities:CapabilitySearchEntry[]=[]){
+  const q=query.trim(),index=mergeCapabilitySearchEntries(scope,capabilities);
+  if(!q)return index.slice(0,8);
+  return index.map(entry=>({entry,score:score(entry,q)})).filter(row=>row.score>0).sort((a,b)=>b.score-a.score||a.entry.title.localeCompare(b.entry.title)).slice(0,limit).map(row=>row.entry);
 }
 
 function recentKey(scope:AppSearchScope){return `kleenest.app-search.recents.${scope}.v1`;}
