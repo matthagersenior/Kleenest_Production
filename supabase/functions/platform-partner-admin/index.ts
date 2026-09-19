@@ -94,14 +94,14 @@ async function internalDiagnostics() {
   if (keyError || !apiKey) throw keyError ?? new Error('Internal development API key is unavailable.');
 
   const baseUrl = `${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/platform-api`;
-  const callApi = async (path: string, body: unknown) => {
+  const callApi = async (path:string,body:unknown=undefined,method:'GET'|'POST'='POST') => {
     const response = await fetch(`${baseUrl}${path}`, {
-      method: 'POST',
+      method,
       headers: {
         'content-type': 'application/json',
         'x-kleenest-api-key': String(apiKey),
       },
-      body: JSON.stringify(body),
+      body: method==='GET'?undefined:JSON.stringify(body),
       signal: AbortSignal.timeout(20000),
     });
     const payload = await response.json().catch(() => ({}));
