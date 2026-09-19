@@ -23,8 +23,9 @@ expect(source,/Cleaner restrooms\. Stronger businesses\./,'For Business must lea
 expect(source,/business-growth\.svg/,'For Business must render QR, customer engagement and analytics imagery');
 expect(source,/business-live-ops\.svg/,'For Business must render Live Ops and smart-device imagery');
 expect(source,/LIVE OPS \+ SMART DEVICES/,'For Business must explicitly sell Live Ops and connected-device value');
-expect(source,/Onboarding begins only after you choose to start/,'For Business must remain a sales page before onboarding');
-expect(source,/openBusinessPortal\('signup'\)/,'Business Start CTA must enter the explicit account/setup flow');
+expect(source,/Claiming is free\. Standard business verification is required\./,'For Business must explain free claim plus unchanged verification');
+expect(source,/CLAIM YOUR LOCATION FREE/,'For Business must make free claiming the primary action');
+expect(source,/openBusinessPortal\('signup','claim'\)/,'Business primary CTA must enter the claim-first account flow');
 expect(source,/openBusinessPortal\('signin'\)/,'Business page must preserve existing-customer sign in');
 
 if(failures.length){
