@@ -52,10 +52,12 @@ const qr=read('apps/consumer-mobile/services/qrActions.ts');
 expect(qr,"rpc('verify_checkin'",'QR check-in must use the existing server-authoritative QR + geofence RPC');
 
 const core=read('packages/mobile-core/src/index.ts');
-for(const [token,label] of [
-  ['geofence_radius_m','mobile location data must expose the canonical check-in radius'],
-  ["rpc('arrive_route_stop'",'mobile core must expose verified route arrival linkage'],
-]) expect(core,token,label);
+const locationCore=read('packages/mobile-core/src/locations.ts');
+const routeCore=read('packages/mobile-core/src/routes.ts');
+expect(core,"export * from './locations'",'mobile core must publicly re-export the canonical location domain');
+expect(core,"export * from './routes'",'mobile core must publicly re-export the canonical route domain');
+expect(locationCore,'geofence_radius_m','mobile location data must expose the canonical check-in radius');
+expect(routeCore,"rpc('arrive_route_stop'",'mobile route domain must expose verified route arrival linkage');
 
 const targetAuthority=read('supabase/migrations/20260914164721_explicit_checkin_target_authority.sql');
 for(const [token,label] of [
