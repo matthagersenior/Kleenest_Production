@@ -1,3 +1,6 @@
+import type { IntelligenceChangedWebhookData } from '@kleenest/platform-core';
+export type { IntelligenceChangedWebhookData } from '@kleenest/platform-core';
+
 export type KleenestWebhookEventType =
   | 'place.updated'
   | 'place.verification_changed'
@@ -5,11 +8,14 @@ export type KleenestWebhookEventType =
   | 'place.amenities_changed'
   | 'place.confidence_changed'
   | 'recommendation.coverage_changed'
+  | 'intelligence.changed'
   | 'device.status_changed'
   | 'device.alert'
   | 'device.telemetry_threshold'
   | 'device.command_requested'
   | 'device.command_completed';
+
+export type KleenestIntelligenceChangedEvent=KleenestWebhookEnvelope<IntelligenceChangedWebhookData>;
 
 export type KleenestWebhookEnvelope<T = Record<string, unknown>> = {
   id: string;
