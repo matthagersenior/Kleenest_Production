@@ -36,4 +36,4 @@ expect(policyConvergence,/verification_status='verified'/,'converged Business SE
 expect(policyConvergence,/is_platform_owner_session\(\)/,'converged Business SELECT must retain platform-owner visibility');
 expect(policyConvergence,/bm\.user_id=\(select auth\.uid\(\)\)/,'converged Business SELECT must retain own-member visibility');
 
-console.log('Self-service Business/Fleet/Enterprise onboarding convergence: OK');
+console.log('Self-service Business claim-first / Fleet / Enterprise onboarding convergence: OK');
