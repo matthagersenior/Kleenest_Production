@@ -33,7 +33,7 @@ export default function GlobalSearch(){
   <View style={[s.hero,{backgroundColor:theme.surface,borderColor:theme.line}]}>
    <Text style={[s.eyebrow,{color:theme.accent}]}>SEARCH KLEENEST</Text><Text style={[s.title,{color:theme.ink}]}>Find anything in Kleenest.</Text>
    <Text style={[s.body,{color:theme.muted}]}>Search places, people, features, settings, actions, missions, rewards or ask what something in the app means.</Text>
-   <TextInput autoFocus value={query} onChangeText={setQuery} onSubmitEditing={()=>void search()} placeholder="Try “freshness”, “add photos later”, or a place…" placeholderTextColor={theme.muted} style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}/>
+   <TextInput accessibilityLabel="Search Kleenest" autoFocus value={query} onChangeText={setQuery} onSubmitEditing={()=>void search()} placeholder="Try “freshness”, “add photos later”, or a place…" placeholderTextColor={theme.muted} style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}/>
   </View>
   {message?<Text style={[s.message,{color:theme.muted}]}>{message}</Text>:null}
   {!query.trim()&&recents.length?<Section title="Recent searches"><View style={s.chips}>{recents.map(v=><Chip key={v} label={v} onPress={()=>{setQuery(v);void search(v)}} theme={theme}/>)}</View><Pressable accessibilityRole="button" accessibilityLabel="Clear recent searches" onPress={async()=>{await clearAppSearchRecents('consumer');setRecents([])}}><Text style={{color:theme.muted,fontWeight:'800'}}>Clear recent searches</Text></Pressable></Section>:null}
