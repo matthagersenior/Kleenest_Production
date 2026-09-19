@@ -1,4 +1,5 @@
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -15,6 +16,7 @@ function authRedirect(){
  const base=window.location.pathname.startsWith('/Kleenest_Production')?'/Kleenest_Production':'';
  return `${window.location.origin}${base}/profile/`;
 }
+function authUrlValue(url:string,key:string){const match=url.match(new RegExp(`[?#&]${key}=([^&#]+)`));return match?.[1]?decodeURIComponent(match[1].replace(/\+/g,' ')):''}
 
 export default function SignupScreen(){
  const theme=useConsumerTheme();
@@ -30,6 +32,20 @@ export default function SignupScreen(){
  const client=getKleenestSupabaseClient();
  const redirectTo=authRedirect();
 
+ async function handleAuthUrl(url:string|null){
+  if(!url)return false;
+  const parsed=Linking.parse(url);
+  const code=typeof parsed.queryParams?.code==='string'?parsed.queryParams.code:authUrlValue(url,'code');
+  const accessToken=authUrlValue(url,'access_token');
+  const refreshToken=authUrlValue(url,'refresh_token');
+  if(code){const{error}=await client.auth.exchangeCodeForSession(code);if(error)throw error}
+  else if(accessToken&&refreshToken){const{error}=await client.auth.setSession({access_token:accessToken,refresh_token:refreshToken});if(error)throw error}
+  else return false;
+  markConsumerAppSession();
+  router.replace('/home');
+  return true;
+ }
+
  function continueGuest(){
   markConsumerAppSession();
   router.replace('/explore' as any);
@@ -43,7 +59,13 @@ export default function SignupScreen(){
    if(error)throw error;
    if(!data.url)throw new Error('Google sign-in could not be started.');
    if(Platform.OS==='web'&&typeof window!=='undefined')window.location.assign(data.url);
-   else await Linking.openURL(data.url);
+   else {
+    const authResult=await WebBrowser.openAuthSessionAsync(data.url,redirectTo);
+    if(authResult.type==='success'){
+     const accepted=await handleAuthUrl(authResult.url);
+     if(!accepted)throw new Error('Google sign-in returned without a usable Kleenest session.');
+    }else if(authResult.type==='cancel'||authResult.type==='dismiss')setMessage('Google sign-in was cancelled.');
+   }
   }catch(error:any){setMessage(error?.message||'Google sign-in could not be started.')}finally{setBusy(false)}
  }
 
@@ -57,7 +79,7 @@ export default function SignupScreen(){
    const{error}=await client.auth.signInWithPassword({email:normalized,password});
    if(error)throw error;
    markConsumerAppSession();
-   router.replace('/' as any);
+   router.replace('/home');
   }catch(error:any){
    const text=String(error?.message||'Sign in failed.');
    if(/email.*not.*confirm|not.*confirm.*email/i.test(text)){
@@ -81,7 +103,7 @@ export default function SignupScreen(){
    if(error)throw error;
    if(data.session){
     markConsumerAppSession();
-    router.replace((intent==='family'?'/family':'/') as any);
+    router.replace((intent==='family'?'/family':'/home') as any);
     return;
    }
    setNeedsConfirmation(true);

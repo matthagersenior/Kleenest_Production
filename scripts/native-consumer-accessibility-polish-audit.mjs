@@ -30,6 +30,8 @@ const interactionFiles=[
   'apps/consumer-mobile/app/saved.tsx',
   'apps/consumer-mobile/app/legal.tsx',
   'apps/consumer-mobile/app/week-in-review.tsx',
+  'apps/consumer-mobile/app/search.tsx',
+  'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
   'apps/consumer-mobile/components/BetaReportButton.tsx',
   'apps/consumer-mobile/components/SponsoredSlot.tsx',
 ];

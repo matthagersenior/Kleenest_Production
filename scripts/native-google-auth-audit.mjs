@@ -32,11 +32,20 @@ if(!consumerCompact.includes("skipBrowserRedirect:Platform.OS!=='web'")&&!consum
 if(!consumer.includes('mobileAuthRedirect')||!consumer.includes('WebBrowser.openAuthSessionAsync(data.url,mobileAuthRedirect)'))failures.push('Consumer Google OAuth must use an Expo auth session bound to the Kleenest mobile deep link so the browser closes on callback.');
 if(consumer.includes('else await Linking.openURL(data.url)'))failures.push('Consumer native Google OAuth must not launch as a plain external browser URL.');
 if(!consumer.includes('exchangeCodeForSession'))failures.push('Consumer must exchange the OAuth callback code for a Supabase session.');
+if(!consumer.includes("authResult.type==='success'")||!consumer.includes('handleAuthUrl(authResult.url)'))failures.push('Consumer Profile Google OAuth must immediately consume the successful managed auth-session callback instead of waiting for a later link event or refresh.');
 if(consumer.includes("Linking.createURL('/profile'")||consumer.includes('Linking.createURL("/profile"'))failures.push('Consumer OAuth callback must not use the broken triple-slashed profile deep link.');
 if(!consumer.includes("Linking.createURL('profile'")&&!consumer.includes('Linking.createURL("profile"'))failures.push("Consumer native OAuth callback must use Linking.createURL('profile', ...).");
 if(!consumer.includes('isTripleSlashed:false')&&!consumerCompact.includes('isTripleSlashed:false'))failures.push('Consumer native OAuth callback must preserve the non-triple-slashed callback contract.');
 if(!consumer.includes('/Kleenest_Production/profile/'))failures.push('Consumer web OAuth must return to the materialized GitHub Pages profile callback.');
 if(!consumer.includes("router.replace('/home')")&&!consumer.includes('router.replace("/home")'))failures.push('Consumer successful authentication must return to the signed-in Home surface instead of leaving the user on Profile.');
+
+const consumerSignup=read('apps/consumer-mobile/app/signup.tsx');
+if(!consumerSignup.includes("import * as WebBrowser from 'expo-web-browser'"))failures.push('Consumer Get Started must use Expo WebBrowser for a managed native Google auth session.');
+if(!consumerSignup.includes('WebBrowser.openAuthSessionAsync(data.url,redirectTo)'))failures.push('Consumer Get Started Google OAuth must bind the browser session to the Kleenest native callback so the browser closes on return.');
+if(consumerSignup.includes('else await Linking.openURL(data.url)'))failures.push('Consumer Get Started must not launch Google OAuth as a plain external browser URL.');
+if(!consumerSignup.includes('exchangeCodeForSession'))failures.push('Consumer Get Started must exchange PKCE callback codes into the Supabase session.');
+if(!consumerSignup.includes("authResult.type==='success'")||!consumerSignup.includes('handleAuthUrl(authResult.url)'))failures.push('Consumer Get Started must consume the successful auth-session callback immediately so signed-in state updates without a hard refresh.');
+if(!consumerSignup.includes("router.replace('/home')")&&!consumerSignup.includes('router.replace("/home")'))failures.push('Consumer Get Started successful authentication must land on Home.');
 
 const operatorAuth=[
   ['Owner','apps/platform-mobile/app/auth.tsx','kleenest-owner','ownerRedirect'],

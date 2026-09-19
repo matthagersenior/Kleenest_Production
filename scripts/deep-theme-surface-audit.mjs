@@ -108,6 +108,7 @@ const consumerThemeCompleteness=[
   ['Consumer Support','apps/consumer-mobile/app/support.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised']],
   ['Consumer Week review','apps/consumer-mobile/app/week-in-review.tsx',['useConsumerTheme','theme.canvas','theme.surface']],
   ['Consumer Game arena','apps/consumer-mobile/app/game/[code].tsx',['useConsumerTheme','ui.canvas','ui.surface','ui.surfaceRaised']],
+  ['Consumer Search','apps/consumer-mobile/app/search.tsx',['useConsumerTheme','theme.canvas','theme.surface','theme.surfaceRaised','theme.ink','theme.muted']],
 ];
 for(const [label,path,tokens] of consumerThemeCompleteness)requireTokens(label,path,tokens);
 
@@ -164,7 +165,13 @@ requireTokens('Consumer Explore dark controls','apps/consumer-mobile/features/Ad
   'style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}',
   'style={[s.filterLauncher,{backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.advancedModalCard,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.autoLabel,{color:theme.muted}]}',
+  'style={[s.filterTitle,{color:theme.ink}]}',
   'placeholderTextColor={theme.muted}',
+]);
+requireTokens('Consumer Search dark contrast','apps/consumer-mobile/app/search.tsx',[
+  'style={[s.sectionTitle,{color:theme.ink}]}',
+  '<ActivityIndicator color={theme.accent}/>',
 ]);
 requireTokens('Consumer Preferences dark forms','apps/consumer-mobile/app/preferences.tsx',[
   'style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}',
