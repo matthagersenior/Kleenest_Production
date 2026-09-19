@@ -296,7 +296,7 @@ begin
   select last_location_id into v_cursor
   from public.brand_identity_backfill_state where singleton=true for update;
 
-  select max(id),count(*) into v_batch_max,v_batch_count
+  select count(*),(array_agg(id order by id desc))[1] into v_batch_count,v_batch_max
   from (
     select l.id
     from public.locations l
