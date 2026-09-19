@@ -70,13 +70,7 @@ if(result===null){
       const item=chunk[i],vulns=Array.isArray(results[i]?.vulns)?results[i].vulns:[];
       for(const vuln of vulns){
         const rawSeverity=String(vuln?.database_specific?.severity||'').toLowerCase();
-        let severity=['low','moderate','high','critical'].includes(rawSeverity)?rawSeverity:'moderate';
-        if(!rawSeverity&&Array.isArray(vuln?.severity)){
-          const scores=vuln.severity.map(entry=>String(entry?.score||''));
-          const numeric=scores.map(score=>Number(score.match(/(?:CVSS:[^/]+\/)?([0-9]+(?:\.[0-9]+)?)/)?.[1])).filter(Number.isFinite);
-          const max=numeric.length?Math.max(...numeric):NaN;
-          if(Number.isFinite(max))severity=max>=9?'critical':max>=7?'high':max>=4?'moderate':'low';
-        }
+        const severity=['low','moderate','high','critical'].includes(rawSeverity)?rawSeverity:'moderate';
         osvFindings.push({
           name:item.name,
           version:item.version,
