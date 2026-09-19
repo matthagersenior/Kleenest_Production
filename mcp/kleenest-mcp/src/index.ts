@@ -107,6 +107,52 @@ serveStdio(() => {
   );
 
   server.registerTool(
+    'explain_place_intelligence',
+    {
+      description: 'Return deterministic Kleenest freshness, confidence, provenance and rationale for a canonical place. This explains stored evidence; it does not invent a score.',
+      inputSchema: z.object({ placeId:z.string().uuid() }),
+    },
+    async input => textResult(await call('/v1/places/'+input.placeId+'/intelligence',undefined,'GET')),
+  );
+
+  server.registerTool(
+    'get_place_proof',
+    {
+      description: 'Return the compact evidence proof card for a Kleenest place, including freshness, confidence, conflicts and amenities.',
+      inputSchema: z.object({ placeId:z.string().uuid() }),
+    },
+    async input => textResult(await call('/v1/places/'+input.placeId+'/proof',undefined,'GET')),
+  );
+
+  server.registerTool(
+    'check_verified_access',
+    {
+      description: 'Check the public/partner-safe Kleenest access projection for a canonical place.',
+      inputSchema: z.object({ placeId:z.string().uuid() }),
+    },
+    async input => textResult(await call('/v1/places/'+input.placeId+'/access',undefined,'GET')),
+  );
+
+  server.registerTool(
+    'explain_route_intelligence',
+    {
+      description: 'Return deterministic Kleenest route restroom intelligence and evidence-backed recommendations for a route corridor.',
+      inputSchema: z.object({
+        coordinates:z.array(z.tuple([z.number(),z.number()])).min(2).max(5000),
+        corridorMeters:z.number().min(100).max(40234).default(8047),
+        limit:z.number().int().min(1).max(25).default(10),
+        amenityNames:z.array(z.string()).max(24).optional(),
+      }),
+    },
+    async input => textResult(await call('/v1/intelligence/route',{
+      route:{type:'LineString',coordinates:input.coordinates},
+      corridorMeters:input.corridorMeters,
+      limit:input.limit,
+      requirements:{amenityNames:input.amenityNames??[],amenityMatch:'all'},
+    })),
+  );
+
+  server.registerTool(
     'list_amenities',
     {
       description: 'List the canonical Kleenest amenity catalog, including Connected / Smart Restroom.',
