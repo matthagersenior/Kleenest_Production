@@ -37,7 +37,9 @@ export default function BusinessGetStarted(){
  useEffect(()=>{
   if(seeded.current)return;
   seeded.current=true;
-  if(intent==='fleet'){
+  if(intent==='claim'){
+    setBusinessType('other');setGoals(['restroom_trust','verified_feedback']);
+  }else if(intent==='fleet'){
     setBusinessType('logistics_delivery');setGoals(['route_efficiency','workforce_wellbeing','service_verification']);setWorkers('25');
   }else if(intent==='enterprise'){
     setBusinessType('multi_location_chain');setGoals(['multi_location_consistency','partner_network','multi_market_roi']);setLocations('6');setMarkets('2');
@@ -57,23 +59,25 @@ export default function BusinessGetStarted(){
  }),[intent]);
 
  function toggleGoal(id:string){setGoals(current=>current.includes(id)?current.filter(x=>x!==id):[...current,id]);}
- async function search(){
-  if(query.trim().length<2)return setResults([]);
+ async function search(override?:string){
+  const value=String(override??query).trim();
+  if(value.length<2)return setResults([]);
   setBusy(true);setMessage('');
-  try{setResults(await searchSelfServiceLocations(query));}
+  try{setResults(await searchSelfServiceLocations(value));}
   catch(e:any){setMessage(e?.message||'Location search is unavailable.');}
   finally{setBusy(false);}
  }
  async function continueExisting(row:any){
   setBusy(true);setMessage('');
-  try{await selectBusinessWorkspace(String(row.business_id));router.replace('/onboarding');}
+  try{await selectBusinessWorkspace(String(row.business_id));router.replace((intent==='claim'?'/locations':'/onboarding') as any);}
   catch(e:any){setMessage(e?.message||'Business workspace could not be opened.');}
   finally{setBusy(false);}
  }
  async function create(){
   if(!businessName.trim())return setMessage('Enter the organization or business name.');
-  if(!goals.length)return setMessage('Choose at least one result you want Kleenest to produce.');
-  if(locationMode==='new'&&!newName.trim()&&!businessName.trim())return setMessage('Enter a location name.');
+  if(intent==='claim'&&!selectedLocationId)return setMessage('Select the existing Kleenest location you want to claim.');
+  if(intent!=='claim'&&!goals.length)return setMessage('Choose at least one result you want Kleenest to produce.');
+  if(intent!=='claim'&&locationMode==='new'&&!newName.trim()&&!businessName.trim())return setMessage('Enter a location name.');
   setBusy(true);setMessage('');
   try{
    const provisioned=await provisionBusinessWorkspace({
@@ -81,12 +85,22 @@ export default function BusinessGetStarted(){
     existingLocationId:locationMode==='search'&&selectedLocationId?selectedLocationId:null,
     newLocation:locationMode==='new'?{name:newName.trim()||businessName.trim(),address:address.trim(),city:city.trim(),state:state.trim(),postalCode:postalCode.trim(),country:'US'}:null,
    });
-   await previewBusinessOnboarding(provisioned.businessId,businessType,goals,scale,answers);
+   await previewBusinessOnboarding(provisioned.businessId,businessType,goals,scale,answers).catch(()=>undefined);
    await selectBusinessWorkspace(provisioned.businessId);
-   router.replace('/onboarding');
+   if(intent==='claim'){router.replace('/verification-center');return;}
+   router.replace('/');
   }catch(e:any){setMessage(e?.message||'Business workspace could not be created.');}
   finally{setBusy(false);}
  }
+
+ if(intent==='claim')return <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.page}>
+  <View style={s.hero}><Text style={s.kicker}>FREE BUSINESS LOCATION CLAIM</Text><Text style={s.title}>Claim the Kleenest location your customers already see.</Text><Text style={s.body}>Claiming is free. Standard business verification is unchanged. No plan, payment, workforce survey or operating questionnaire is required before you submit the claim.</Text></View>
+  {message?<Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text>:null}
+  {existing.length?<View style={s.card}><Text style={s.sectionTitle}>Already have a Business workspace?</Text><Text style={s.meta}>Open it and go straight to Locations. Do not create another workspace.</Text>{existing.filter(row=>!row.is_demo_test).map(row=><Pressable key={String(row.business_id)} disabled={busy} onPress={()=>continueExisting(row)} style={s.existing}><View style={{flex:1}}><Text style={s.rowTitle}>{String(row.business_name||row.name||'Business')}</Text><Text style={s.meta}>{String(row.role||'member')} · existing workspace</Text></View><Text style={s.arrow}>OPEN LOCATIONS →</Text></Pressable>)}</View>:null}
+  <View style={s.card}><Text style={s.step}>1 · FIND YOUR LOCATION</Text><Text style={s.sectionTitle}>Business or location name</Text><Text style={s.meta}>Enter it once. Kleenest uses the same name to create the pending Business workspace and search the canonical location network.</Text><View style={s.searchRow}><TextInput autoFocus value={businessName} onChangeText={value=>{setBusinessName(value);setQuery(value)}} onSubmitEditing={()=>search(businessName)} placeholder="Business or location name" placeholderTextColor="#7d8a82" style={[s.input,{flex:1}]}/><Pressable disabled={busy||businessName.trim().length<2} onPress={()=>search(businessName)} style={[s.smallAction,(busy||businessName.trim().length<2)&&s.disabled]}><Text style={s.smallActionText}>{busy?'SEARCHING…':'SEARCH'}</Text></Pressable></View></View>
+  {results.length?<View style={s.card}><Text style={s.step}>2 · SELECT</Text><Text style={s.sectionTitle}>Which location is yours?</Text>{results.map(row=>{const active=selectedLocationId===row.id;return <Pressable key={row.id} onPress={()=>setSelectedLocationId(row.id)} style={[s.location,active&&s.locationOn]}><View style={{flex:1}}><Text style={s.rowTitle}>{row.name}</Text><Text style={s.meta}>{[row.address,row.city,row.state].filter(Boolean).join(', ')||'Address unavailable'}</Text>{row.rating!=null?<Text style={s.meta}>★ {Number(row.rating).toFixed(1)} · {row.review_count??0} reviews</Text>:null}</View><Text style={s.selectText}>{active?'SELECTED':'SELECT'}</Text></Pressable>)}</View>:null}
+  <View style={s.final}><Text style={s.sectionTitle}>Verification stays the same</Text><Text style={s.meta}>Submitting creates only the minimum pending Business workspace and the location claim. It does not grant location authority. The existing company-email, DNS, operator-consent or Kleenest-review verification rules still decide approval.</Text><Pressable disabled={busy||!businessName.trim()||!selectedLocationId} onPress={create} style={[s.primary,(busy||!businessName.trim()||!selectedLocationId)&&s.disabled]}><Text style={s.primaryText}>{busy?'SUBMITTING…':'Claim this location for free'}</Text></Pressable><Pressable disabled={busy} onPress={()=>router.replace('/get-started' as any)} style={s.existing}><Text style={s.meta}>Can’t find your location? Open full setup to add a genuinely new place.</Text><Text style={s.arrow}>FULL SETUP →</Text></Pressable></View>
+ </ScrollView>;
 
  return <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.page}>
   <View style={s.hero}><Text style={s.kicker}>KLEENEST FOR BUSINESS</Text><Text style={s.title}>Set up the organization first. Kleenest will recommend the right operating package.</Text><Text style={s.body}>Create or claim your Business workspace, tell us the scale and outcomes that matter, then continue into the detailed guided setup. Paid access and trust verification stay separate.</Text></View>
