@@ -10,3 +10,5 @@ export * from './betaReporting';
 export * from './creatorMissions';
 
 export * from './appSearch';
+
+export * from './intelligence';
