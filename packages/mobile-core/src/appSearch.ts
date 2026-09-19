@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import { getKleenestSupabaseClient } from './index';
+import { getKleenestSupabaseClient } from './client';
 
 export type AppSearchScope='consumer'|'business'|'fleet'|'owner';
 export type CapabilitySearchEntry={feature_code:string;name:string;category:string;minimum_tier?:string|null;updated_at?:string|null};
