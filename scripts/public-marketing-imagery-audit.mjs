@@ -32,4 +32,4 @@ if(failures.length){
   failures.forEach(f=>console.error('- '+f));
   process.exit(1);
 }
-console.log('Public marketing imagery audit passed: Home and For Business are visual, consumer-first/business-value-first, and preserve explicit onboarding entry.');
+console.log('Public marketing imagery audit passed: Home and For Business are visual, consumer-first/business-value-first, and preserve claim-first Business entry.');
