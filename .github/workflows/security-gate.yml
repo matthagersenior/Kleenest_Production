@@ -24,10 +24,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Resolve the exact workspace dependency graph without running install scripts
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-      - name: Fail on any published npm security advisory
-        run: npm audit --audit-level=low
+      - name: Check the locked dependency graph against npm bulk advisories
+        run: node scripts/npm-security-advisory-audit.mjs low
 
   repository-secret-hygiene:
     name: Repository secret hygiene
