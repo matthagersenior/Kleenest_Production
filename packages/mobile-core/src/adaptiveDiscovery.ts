@@ -7,6 +7,27 @@ export const ADAPTIVE_RADIUS_METERS=[1609,3219,8047,16093,40234,80467,160934,402
 export const DENSE_LOCAL_RESULT_COUNT=12;
 export const MODERATE_LOCAL_RESULT_COUNT=8;
 export const MAX_NEARBY_RADIUS_METERS=402336;
+export const LIVE_DISCOVERY_RADIUS_METERS=40234;
+const liveDiscoveryRequests=new Map<string,Promise<any>>();
+
+export async function harvestNearbyMapCandidates(input:{latitude:number;longitude:number;radiusMeters:number;amenityNames?:string[]}){
+  const latitude=Number(input.latitude),longitude=Number(input.longitude);
+  boundedCoordinate(latitude,longitude);
+  const radiusMeters=Math.min(boundedRadius(input.radiusMeters),LIVE_DISCOVERY_RADIUS_METERS);
+  const amenityNames=normalizedAmenities(input.amenityNames||[]);
+  const key=[latitude.toFixed(3),longitude.toFixed(3),radiusMeters,[...amenityNames].sort().join(',')].join(':');
+  const existing=liveDiscoveryRequests.get(key);
+  if(existing)return existing;
+  const request=(async()=>{
+    const {data,error}=await getKleenestSupabaseClient().functions.invoke('ingest-map-candidates-v3',{
+      body:{latitude,longitude,radius_km:radiusMeters/1000,amenity_names:amenityNames,collect:true},
+    });
+    if(error)throw error;
+    return data||null;
+  })().finally(()=>{setTimeout(()=>liveDiscoveryRequests.delete(key),60_000)});
+  liveDiscoveryRequests.set(key,request);
+  return request;
+}
 export type AdaptiveNearbyResult={
   rows:any[];
   requestedRadiusMeters:number;
@@ -123,20 +144,38 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
   for(const radiusMeters of [...new Set(radii)]){
     attemptedRadiiMeters.push(radiusMeters);
     effectiveRadiusMeters=radiusMeters;
-    const verifiedPromise=listNearbyRestroomsV3({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,amenityNames,amenityMatch,limit});
-    if(amenityNames.length){
+    const harvestPromise=radiusMeters<=LIVE_DISCOVERY_RADIUS_METERS
+      ? harvestNearbyMapCandidates({latitude:input.latitude,longitude:input.longitude,radiusMeters,amenityNames})
+      : null;
+    const loadCanonical=async()=>{
+      const verifiedPromise=listNearbyRestroomsV3({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,amenityNames,amenityMatch,limit});
+      if(amenityNames.length){
+        const [restroomRows,candidateRows]=await Promise.all([
+          verifiedPromise,
+          listNearbyMapCandidates({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,limit}),
+        ]);
+        const metadataById=new Map(candidateRows.map((row:any)=>[rowId(row),row]));
+        return restroomRows.map((row:any)=>evidenceRow({...metadataById.get(rowId(row)),...row}));
+      }
       const [restroomRows,candidateRows]=await Promise.all([
         verifiedPromise,
         listNearbyMapCandidates({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,limit}),
       ]);
-      const metadataById=new Map(candidateRows.map((row:any)=>[rowId(row),row]));
-      rows=restroomRows.map((row:any)=>evidenceRow({...metadataById.get(rowId(row)),...row}));
-    }else{
-      const [restroomRows,candidateRows]=await Promise.all([
-        verifiedPromise,
-        listNearbyMapCandidates({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,limit}),
-      ]);
-      rows=mergeNearbyDiscoveryRows(restroomRows,candidateRows,limit);
+      return mergeNearbyDiscoveryRows(restroomRows,candidateRows,limit);
+    };
+    rows=await loadCanonical();
+
+    const locallyEnough=(radiusMeters<=1609&&rows.length>=DENSE_LOCAL_RESULT_COUNT)
+      ||(radiusMeters<=3219&&rows.length>=MODERATE_LOCAL_RESULT_COUNT)
+      ||(radiusMeters>=8047&&rows.length>0);
+    if(harvestPromise){
+      if(locallyEnough){
+        void harvestPromise.catch(()=>{});
+      }else{
+        const harvest=await harvestPromise.catch(()=>null);
+        const changed=Number(harvest?.persistence?.imported_locations||0)+Number(harvest?.persistence?.updated_locations||0);
+        if(changed>0||(!rows.length&&Number(harvest?.canonical_candidates_discovered||0)>0))rows=await loadCanonical();
+      }
     }
 
     // Count controls how far discovery widens, never how many local results survive.
