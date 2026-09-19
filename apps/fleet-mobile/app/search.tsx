@@ -15,7 +15,7 @@ export default function GlobalSearch(){
  useEffect(()=>{void loadCapabilitySearchEntries('fleet').then(setCapabilities)},[]);
  useEffect(()=>{void (async()=>{setRecents(await loadAppSearchRecents('fleet'));try{const id=await currentFleetBusinessId();const[a,b]=await Promise.all([getFleetWorkspaceAccess(id),getFleetInventory(id)]);setRole(String(a.workspace_role||'member'));setInventory(b)}finally{setBusy(false)}})()},[]);
  const operator=role==='operator';
- const indexed=useMemo(()=>searchAppIndex('fleet',query,34).filter(entry=>operator||MEMBER_ALLOWED.has(entry.route)),[query,operator,capabilities]);
+ const indexed=useMemo(()=>searchAppIndex('fleet',query,34,capabilities).filter(entry=>operator||MEMBER_ALLOWED.has(entry.route)),[query,operator,capabilities]);
  const q=query.trim().toLowerCase();
  const match=(rows:any[])=>q.length<2?[]:(Array.isArray(rows)?rows:[]).filter((row:Row)=>rowText(row).includes(q)).slice(0,12);
  const vehicles=match(inventory?.vehicles),drivers=match(inventory?.drivers),routes=match(inventory?.routes),alerts=match(inventory?.alerts);
