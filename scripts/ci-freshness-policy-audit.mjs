@@ -42,7 +42,7 @@ for (const name of [
 ]) requireManualOnly(name);
 
 const ci = read('ci.yml');
-requireText(ci, 'npm audit --audit-level=moderate', 'Production CI must reject every published moderate-or-higher dependency advisory.');
+requireText(ci, 'node scripts/npm-security-advisory-audit.mjs moderate', 'Production CI must reject every published moderate-or-higher dependency advisory through the fail-closed npm/OSV advisory check.');
 requireText(ci, 'node scripts/ci-freshness-policy-audit.mjs', 'Production CI must enforce its own freshness policy.');
 requireText(ci, 'fetch-depth: 0', 'Production CI must fetch enough history to prove PR ancestry.');
 requireText(ci, 'Require PR branch current with main', 'Production CI must reject PR branches that drift behind main.');
