@@ -1,4 +1,5 @@
 import { currentMobileUser,getKleenestSupabaseClient,hydrateMobileProfiles,profileColumns } from './client';
+import { getMobileLocations } from './locations';
 export { getKleenestSupabaseClient } from './client';
 export * from './locations';
 export * from './progression';
