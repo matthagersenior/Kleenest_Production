@@ -32,6 +32,20 @@ export default function SignupScreen(){
  const client=getKleenestSupabaseClient();
  const redirectTo=authRedirect();
 
+ async function handleAuthUrl(url:string|null){
+  if(!url)return false;
+  const parsed=Linking.parse(url);
+  const code=typeof parsed.queryParams?.code==='string'?parsed.queryParams.code:authUrlValue(url,'code');
+  const accessToken=authUrlValue(url,'access_token');
+  const refreshToken=authUrlValue(url,'refresh_token');
+  if(code){const{error}=await client.auth.exchangeCodeForSession(code);if(error)throw error}
+  else if(accessToken&&refreshToken){const{error}=await client.auth.setSession({access_token:accessToken,refresh_token:refreshToken});if(error)throw error}
+  else return false;
+  markConsumerAppSession();
+  router.replace('/home' as any);
+  return true;
+ }
+
  function continueGuest(){
   markConsumerAppSession();
   router.replace('/explore' as any);
