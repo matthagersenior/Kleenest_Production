@@ -14,7 +14,7 @@ export default function GlobalSearch(){
  const[capabilities,setCapabilities]=useState<CapabilitySearchEntry[]>([]);
  useEffect(()=>{void loadCapabilitySearchEntries('owner').then(setCapabilities)},[]);
  useEffect(()=>{void loadAppSearchRecents('owner').then(setRecents);void getOwnerCreatorMissionAttributionSummary(366).then(v=>setAllMissions(Array.isArray(v.missions)?v.missions:[])).catch(()=>{})},[]);
- const indexed=useMemo(()=>searchAppIndex('owner',query,38),[query,capabilities]);
+ const indexed=useMemo(()=>searchAppIndex('owner',query,38,capabilities),[query,capabilities]);
  async function search(value=query){
   const q=value.trim();setQuery(q);if(q.length<2){setPeople([]);setBusinesses([]);setMissions([]);return}
   setBusy(true);
