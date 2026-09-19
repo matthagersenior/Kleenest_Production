@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
 import { ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
-import { clearAppSearchRecents,listNearbyRestrooms,loadAppSearchRecents,rememberAppSearchQuery,searchAppIndex,searchMobilePeople,type AppSearchEntry } from '@kleenest/mobile-core';
+import { clearAppSearchRecents,listNearbyRestrooms,loadAppSearchRecents,loadCapabilitySearchEntries,rememberAppSearchQuery,searchAppIndex,searchMobilePeople,type AppSearchEntry,type CapabilitySearchEntry } from '@kleenest/mobile-core';
 import { useConsumerTheme } from '../services/theme';
 
 type Row=Record<string,any>;
