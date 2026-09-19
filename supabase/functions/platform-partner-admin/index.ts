@@ -113,19 +113,25 @@ async function internalDiagnostics() {
     radiusMeters: 16093,
     limit: 3,
   });
-  const route = await callApi('/v1/recommendations/route', {
+  const routeInput = {
     route: {
       type: 'LineString',
       coordinates: [[-90.1994, 38.627], [-89.6501, 39.7817]],
     },
     corridorMeters: 8047,
     limit: 3,
-  });
+  };
+  const route = await callApi('/v1/recommendations/route', routeInput);
 
   const recommendations = Array.isArray((nearby.payload as any)?.recommendations)
     ? (nearby.payload as any).recommendations : [];
   const routeRecommendations = Array.isArray((route.payload as any)?.recommendations)
     ? (route.payload as any).recommendations : [];
+  const samplePlaceId=String(recommendations[0]?.place?.kleenestPlaceId??'');
+  const placeIntelligence=samplePlaceId?await callApi('/v1/places/'+samplePlaceId+'/intelligence',undefined,'GET'):{ok:false,status:404,payload:{}};
+  const placeProof=samplePlaceId?await callApi('/v1/places/'+samplePlaceId+'/proof',undefined,'GET'):{ok:false,status:404,payload:{}};
+  const verifiedAccess=samplePlaceId?await callApi('/v1/places/'+samplePlaceId+'/access',undefined,'GET'):{ok:false,status:404,payload:{}};
+  const routeIntelligence=await callApi('/v1/intelligence/route',routeInput);
   const mapFeatureCount = recommendations.filter((item: any) =>
     Number.isFinite(Number(item?.place?.latitude)) &&
     Number.isFinite(Number(item?.place?.longitude))
@@ -145,10 +151,14 @@ async function internalDiagnostics() {
       widget: { ok: nearby.ok && widgetRenderable, renderableRecommendations: recommendations.length },
       mapLayer: { ok: nearby.ok, geoJsonFeatureCount: mapFeatureCount },
       restRoute: { ok: route.ok, status: route.status, resultCount: routeRecommendations.length },
-      routeSdk: { ok: route.ok, nextStopAvailable: Boolean(routeRecommendations[0]) },
+      routeSdk: { ok: route.ok && routeIntelligence.ok, nextStopAvailable: Boolean(routeRecommendations[0]), intelligence:routeIntelligence.ok },
+      placeIntelligence: { ok:placeIntelligence.ok, status:placeIntelligence.status, contractVersion:(placeIntelligence.payload as any)?.contractVersion??null },
+      placeProof: { ok:placeProof.ok, status:placeProof.status },
+      verifiedAccess: { ok:verifiedAccess.ok, status:verifiedAccess.status },
+      routeIntelligence: { ok:routeIntelligence.ok, status:routeIntelligence.status, recommendationCount:Array.isArray((routeIntelligence.payload as any)?.recommendations)?(routeIntelligence.payload as any).recommendations.length:0 },
       mcp: {
-        ok: nearby.ok && route.ok,
-        delegation: 'find_nearby_restrooms + find_restrooms_along_route -> REST v1',
+        ok: nearby.ok && route.ok && placeIntelligence.ok && placeProof.ok && verifiedAccess.ok && routeIntelligence.ok,
+        delegation: 'nearby + route + place intelligence/proof/access + route intelligence -> REST v1',
       },
     },
     sample: {
