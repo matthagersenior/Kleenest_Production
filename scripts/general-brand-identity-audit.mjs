@@ -28,6 +28,9 @@ if(!migration.includes("nullif(trim(l.source_metadata->>'brand'),'')") ||
 if(!migration.includes("count(distinct coalesce(l.city,''))>=3")){
   failures.push('Learned name aliases must require geographic repetition.');
 }
+if((migration.match(/source<>'frequency' or confidence>=\.930/g)||[]).length<2){
+  failures.push('Frequency-learned aliases must remain candidates until confidence is high enough for automatic application.');
+}
 if(!migration.includes("public.brand_display_base")){
   failures.push('Brand learning must normalize store-number suffixes without damaging numeric brand names.');
 }
