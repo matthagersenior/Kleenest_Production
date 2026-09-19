@@ -14,6 +14,15 @@ for(const file of files){
   const name=match[1]||match[2];
   allExported.push({file,name});
  }
+ for(const block of text.matchAll(/export\s*\{([\s\S]*?)\}\s*from\s*['"][^'"]+['"]/g)){
+  for(const raw of block[1].split(',')){
+   const specifier=raw.trim();
+   if(!specifier||specifier.startsWith('type '))continue;
+   const alias=specifier.match(/\bas\s+([A-Za-z0-9_]+)$/)?.[1];
+   const name=alias||specifier.match(/^([A-Za-z0-9_]+)/)?.[1];
+   if(name)allExported.push({file,name});
+  }
+ }
 }
 const exported=allExported.filter(({name})=>actionVerb.test(name)&&!ignored.has(name));
 const missing=exported.filter(({name})=>!registry.includes(`'${name}'`));
