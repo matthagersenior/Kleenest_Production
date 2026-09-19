@@ -53,8 +53,8 @@ tokens('canonical recommendation authority',recommendations,['normalizeRecommend
 
 const api=needFile('supabase/functions/platform-api/index.ts');
 tokens('platform API intelligence distribution',api,[
-  '../../../packages/platform-core/src/recommendations.ts',
-  'rankRecommendations',
+  '../../../packages/platform-core/src/recommendationAuthority.ts',
+  'rankRecommendationAuthority',
   'placeIntelligence',
   'placeProof',
   'verifiedAccess',
@@ -66,6 +66,8 @@ tokens('platform API intelligence distribution',api,[
 ]);
 if(api.includes('function normalizeRow(')) failures.push('platform API still carries a duplicate recommendation normalizer');
 if(api.includes('function ranked(')) failures.push('platform API still carries a duplicate recommendation scorer');
+const authority=needFile('packages/platform-core/src/recommendationAuthority.ts');
+tokens('recommendation authority',authority,['normalizeRecommendationAuthority','rankRecommendationAuthority']);
 
 const migration=needFile('supabase/migrations/20260919050000_intelligence_platform_quality_pass.sql');
 tokens('intelligence quality migration',migration,[
@@ -101,6 +103,11 @@ tokens('webhook contract',webhookTypes,[
   "'intelligence.changed'",
   'IntelligenceChangedWebhookData',
 ]);
+
+const mcp=needFile('mcp/kleenest-mcp/src/index.ts');
+tokens('MCP intelligence tools',mcp,['explain_place_intelligence','get_place_proof','check_verified_access','explain_route_intelligence']);
+const openapi=needFile('docs/platform/openapi-v1.json');
+tokens('OpenAPI intelligence contract',openapi,['/v1/places/{placeId}/intelligence','/v1/places/{placeId}/proof','/v1/places/{placeId}/access','/v1/intelligence/route']);
 
 const diagnostics=needFile('supabase/functions/platform-partner-admin/index.ts');
 tokens('platform diagnostics',diagnostics,[
