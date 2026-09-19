@@ -55,7 +55,7 @@ begin
   if not exists(select 1 from public.locations l where l.id=p_location_id) then
     return 0;
   end if;
-  select coalesce(array_agg(distinct lower(trim(x))) filter(where nullif(trim(x),'') is not null),'{}'::text[])
+  select coalesce(array_agg(distinct lower(trim(x))) filter (where nullif(trim(x),'') is not null),'{}'::text[])
   into v_dimensions
   from unnest(coalesce(p_dimensions,'{}'::text[])) x;
   if cardinality(v_dimensions)=0 then v_dimensions:=array['evidence']::text[]; end if;
@@ -110,6 +110,7 @@ declare
   p record;
   v_events integer:=0;
   v_rows integer:=0;
+  v_failed boolean:=false;
 begin
   for r in
     select *
@@ -120,6 +121,7 @@ begin
     limit greatest(1,least(coalesce(p_limit,100),500))
   loop
     v_rows:=v_rows+1;
+    v_failed:=false;
     for p in
       select pp.id
       from public.platform_partners pp
@@ -149,12 +151,14 @@ begin
         v_events:=v_events+1;
       exception when others then
         -- Keep the row pending for the next bounded flush instead of blocking source evidence writes.
-        null;
+        v_failed:=true;
       end;
     end loop;
-    update public.intelligence_change_outbox
-    set processed_at=now()
-    where id=r.id;
+    if not v_failed then
+      update public.intelligence_change_outbox
+      set processed_at=now()
+      where id=r.id;
+    end if;
   end loop;
   return jsonb_build_object('processed',v_rows,'webhook_events',v_events,'processed_at',now());
 end;
