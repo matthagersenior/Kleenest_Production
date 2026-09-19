@@ -1039,6 +1039,7 @@ export default function AdaptiveExploreScreen() {
           <View style={[s.filterLauncherBadge,{backgroundColor:theme.accentSoft}]}><Text numberOfLines={1} maxFontSizeMultiplier={1.1} style={[s.filterLauncherBadgeText,{color:theme.accent}]}>{activeFilterCount?`${activeFilterCount} active`:'Everything'} ▾</Text></View>
         </Pressable>
         <Modal
+          accessibilityViewIsModal
           transparent
           animationType="fade"
           visible={showAdvanced}
