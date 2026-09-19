@@ -61,7 +61,7 @@ export default function BusinessOnboarding(){
    if(saved.reporting_cadence)setReportingCadence(String(saved.reporting_cadence));
    if(Array.isArray(saved.team_focus))setTeamFocus(saved.team_focus.map(String));
    if(state.preview&&Object.keys(state.preview).length)setPreview(state.preview);
-   setMessage(g?.required?'This new Business workspace must finish onboarding before normal operating screens unlock.':'');
+   setMessage(g?.required?'Your Business workspace is usable now. Complete this optional profile whenever you want more targeted recommendations.':'');
   }catch(e:any){setMessage(e?.message||'Guided setup is unavailable.')}finally{setBusy(false)}
  }
  useEffect(()=>{void load()},[]);
@@ -73,8 +73,8 @@ export default function BusinessOnboarding(){
  const goalRows=(catalog?.goals?.length?catalog.goals:GOALS.map(([id,label])=>({id,label,detail:'',product:'standard'})));
 
  return <ScrollView refreshControl={<RefreshControl refreshing={busy} onRefresh={load}/>} contentContainerStyle={s.page}>
-  <View style={s.hero}><Text style={s.kicker}>{gate?.required?'REQUIRED BUSINESS ONBOARDING':'GUIDED BUSINESS SETUP'}</Text><Text style={s.title}>Build Kleenest around how your business actually operates.</Text><Text style={s.body}>We use your customers, access model, traffic, pain points, goals, QR strategy, success metrics and team structure to create a targeted operating experience—not a generic dashboard.</Text></View>
-  {gate?.required?<View style={s.required}><Text style={s.requiredTitle}>Complete this setup to unlock the Business workspace</Text><Text style={s.meta}>New businesses must finish the current onboarding version. Existing businesses can update these answers whenever their operation changes.</Text></View>:null}
+  <View style={s.hero}><Text style={s.kicker}>OPTIONAL BUSINESS SETUP</Text><Text style={s.title}>Personalize Kleenest when it helps you.</Text><Text style={s.body}>Your workspace and claim flow work without this survey. Add customers, access model, traffic, goals, QR strategy, success metrics and team structure later to make recommendations more targeted.</Text></View>
+  {gate?.required?<View style={s.required}><Text style={s.requiredTitle}>Optional personalization is still available</Text><Text style={s.meta}>You can use the Business workspace now. Complete this profile later if you want Kleenest to prioritize specific workflows, reporting and recommendations.</Text></View>:null}
   {message?<Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text>:null}
 
   <Section title="1 · Business model" body="Choose the closest operating model. This shapes the language, workflow emphasis and starter configuration."><View style={s.chips}>{typeRows.map((row:any)=><Chip key={row.id} label={row.label} active={businessType===row.id} onPress={()=>{setBusinessType(row.id);setPreview(null)}}/>)}</View></Section>
