@@ -421,7 +421,35 @@ async function placeDetails(routePath: string) {
 }
 
 function nestedPlaceId(routePath:string,suffix:'intelligence'|'proof'|'access'){
-  const match=routePath.match(new RegExp('^/v1/places/([^/]+)/'+suffix+'
+  const parts=routePath.split('/').filter(Boolean);
+  if(parts.length!==4||parts[0]!=='v1'||parts[1]!=='places'||parts[3]!==suffix){
+    throw new ApiInputError('Place id is required');
+  }
+  const decoded=decodeURIComponent(parts[2]).trim();
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(decoded)){
+    throw new ApiInputError('Place id is invalid');
+  }
+  return decoded;
+}
+
+async function placeIntelligence(routePath:string){
+  const {data,error}=await db.rpc('platform_place_intelligence',{p_location_id:nestedPlaceId(routePath,'intelligence')});
+  if(error)throw error;
+  return data;
+}
+
+async function placeProof(routePath:string){
+  const {data,error}=await db.rpc('platform_place_proof',{p_location_id:nestedPlaceId(routePath,'proof')});
+  if(error)throw error;
+  return data;
+}
+
+async function verifiedAccess(routePath:string){
+  const {data,error}=await db.rpc('platform_verified_access',{p_location_id:nestedPlaceId(routePath,'access')});
+  if(error)throw error;
+  return data;
+}
+
 async function matchPlaces(body: any) {
   const external = recordOrNull(body?.external);
   const externalSource = optionalText(external?.source, 'external.source', 160);
