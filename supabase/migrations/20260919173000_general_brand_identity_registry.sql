@@ -102,7 +102,10 @@ begin
   -- Operator names are only treated as brands when already recognized by the registry.
   if nullif(trim(coalesce(p_operator,'')),'') is not null then
     v_key:=public.normalize_brand_key(p_operator);
-    select * into v_row from public.brand_identity_aliases where alias_key=v_key and active;
+    select * into v_row
+    from public.brand_identity_aliases
+    where alias_key=v_key and active
+      and (source<>'frequency' or confidence>=.930);
     if found then
       return jsonb_build_object(
         'canonical_brand',v_row.canonical_brand,
@@ -116,7 +119,10 @@ begin
   -- Name recognition uses the learned registry. normalize_brand_key removes common store-number suffixes.
   if nullif(trim(coalesce(p_name,'')),'') is not null then
     v_key:=public.normalize_brand_key(p_name);
-    select * into v_row from public.brand_identity_aliases where alias_key=v_key and active;
+    select * into v_row
+    from public.brand_identity_aliases
+    where alias_key=v_key and active
+      and (source<>'frequency' or confidence>=.930);
     if found then
       return jsonb_build_object(
         'canonical_brand',v_row.canonical_brand,
