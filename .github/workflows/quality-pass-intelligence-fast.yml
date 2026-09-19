@@ -14,6 +14,8 @@ on:
       - packages/sdk-js/**
       - packages/route-sdk/**
       - packages/webhook-types/**
+      - mcp/kleenest-mcp/**
+      - docs/platform/openapi-v1.json
       - supabase/functions/platform-api/**
       - supabase/functions/platform-partner-admin/**
       - supabase/migrations/**
