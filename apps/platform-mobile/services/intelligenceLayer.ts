@@ -6,8 +6,12 @@ export {
   updateIntelligencePolicy,
   listIntelligenceLocationCandidates,
   getOwnerIntelligenceWorkspace,
+  getOwnerIntelligenceHealth,
+  getOwnerIntelligenceBundle,
   type OwnerIntelligenceOverview,
   type OwnerProductTruth,
   type IntelligencePolicy,
+  type OwnerIntelligenceHealth,
+  type OwnerIntelligenceBundle,
   type LocationIntelligenceExplanation,
 } from '@kleenest/mobile-core';

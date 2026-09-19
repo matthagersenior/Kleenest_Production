@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
 import { ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
-import { clearAppSearchRecents,loadAppSearchRecents,rememberAppSearchQuery,searchAppIndex,type AppSearchEntry } from '@kleenest/mobile-core';
+import { clearAppSearchRecents,loadAppSearchRecents,loadCapabilitySearchEntries,rememberAppSearchQuery,searchAppIndex,type AppSearchEntry,type CapabilitySearchEntry } from '@kleenest/mobile-core';
 import { currentBusinessId,searchClaimableLocations,searchContributors } from '../services/capabilityWorkflows';
 import { useBusinessTheme } from '../services/theme';
 
@@ -9,8 +9,10 @@ type Row=Record<string,any>;
 export default function GlobalSearch(){
  const theme=useBusinessTheme(),router=useRouter();
  const[query,setQuery]=useState(''),[locations,setLocations]=useState<Row[]>([]),[people,setPeople]=useState<Row[]>([]),[recents,setRecents]=useState<string[]>([]),[busy,setBusy]=useState(false);
+ const[capabilities,setCapabilities]=useState<CapabilitySearchEntry[]>([]);
+ useEffect(()=>{void loadCapabilitySearchEntries('business').then(setCapabilities)},[]);
  useEffect(()=>{void loadAppSearchRecents('business').then(setRecents)},[]);
- const indexed=useMemo(()=>searchAppIndex('business',query,34),[query]);
+ const indexed=useMemo(()=>searchAppIndex('business',query,34,capabilities),[query,capabilities]);
  async function search(value=query){
   const q=value.trim();setQuery(q);if(q.length<2){setLocations([]);setPeople([]);return}
   setBusy(true);

@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
 import { ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
-import { clearAppSearchRecents,loadAppSearchRecents,rememberAppSearchQuery,searchAppIndex,type AppSearchEntry } from '@kleenest/mobile-core';
+import { clearAppSearchRecents,loadAppSearchRecents,loadCapabilitySearchEntries,rememberAppSearchQuery,searchAppIndex,type AppSearchEntry,type CapabilitySearchEntry } from '@kleenest/mobile-core';
 import { currentFleetBusinessId,getFleetInventory,getFleetWorkspaceAccess } from '../services/control';
 import { useFleetTheme } from '../services/theme';
 
@@ -11,9 +11,11 @@ function rowText(row:Row){return [row.name,row.unit_code,row.email,row.phone,row
 export default function GlobalSearch(){
  const theme=useFleetTheme(),router=useRouter();
  const[query,setQuery]=useState(''),[inventory,setInventory]=useState<any>(null),[role,setRole]=useState('member'),[recents,setRecents]=useState<string[]>([]),[busy,setBusy]=useState(true);
+ const[capabilities,setCapabilities]=useState<CapabilitySearchEntry[]>([]);
+ useEffect(()=>{void loadCapabilitySearchEntries('fleet').then(setCapabilities)},[]);
  useEffect(()=>{void (async()=>{setRecents(await loadAppSearchRecents('fleet'));try{const id=await currentFleetBusinessId();const[a,b]=await Promise.all([getFleetWorkspaceAccess(id),getFleetInventory(id)]);setRole(String(a.workspace_role||'member'));setInventory(b)}finally{setBusy(false)}})()},[]);
  const operator=role==='operator';
- const indexed=useMemo(()=>searchAppIndex('fleet',query,34).filter(entry=>operator||MEMBER_ALLOWED.has(entry.route)),[query,operator]);
+ const indexed=useMemo(()=>searchAppIndex('fleet',query,34,capabilities).filter(entry=>operator||MEMBER_ALLOWED.has(entry.route)),[query,operator,capabilities]);
  const q=query.trim().toLowerCase();
  const match=(rows:any[])=>q.length<2?[]:(Array.isArray(rows)?rows:[]).filter((row:Row)=>rowText(row).includes(q)).slice(0,12);
  const vehicles=match(inventory?.vehicles),drivers=match(inventory?.drivers),routes=match(inventory?.routes),alerts=match(inventory?.alerts);

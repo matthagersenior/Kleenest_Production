@@ -2,12 +2,12 @@ import fs from 'node:fs';
 
 const failures=[];
 const required=[
-  'apps/consumer-mobile/app/_layout.tsx','apps/consumer-mobile/app/index.tsx','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','apps/consumer-mobile/app/discover.tsx','apps/consumer-mobile/app/progress.tsx','apps/consumer-mobile/app/location/[id].tsx','apps/consumer-mobile/app/profile.tsx','apps/consumer-mobile/app/preferences.tsx','apps/consumer-mobile/app/play.tsx','apps/consumer-mobile/app/social.tsx','apps/consumer-mobile/app/saved.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/app/qr.tsx','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/notifications.tsx','apps/consumer-mobile/app/membership.tsx','apps/consumer-mobile/app/support.tsx','apps/consumer-mobile/app/account-deletion.tsx','apps/consumer-mobile/services/heroRelevance.ts','packages/mobile-core/src/adaptiveDiscovery.ts','packages/mobile-core/src/index.ts','apps/consumer-mobile/package.json','apps/consumer-mobile/app.config.ts'
+  'apps/consumer-mobile/app/_layout.tsx','apps/consumer-mobile/app/index.tsx','apps/consumer-mobile/app/explore.tsx','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','apps/consumer-mobile/app/discover.tsx','apps/consumer-mobile/app/progress.tsx','apps/consumer-mobile/app/location/[id].tsx','apps/consumer-mobile/app/profile.tsx','apps/consumer-mobile/app/preferences.tsx','apps/consumer-mobile/app/play.tsx','apps/consumer-mobile/app/social.tsx','apps/consumer-mobile/app/saved.tsx','apps/consumer-mobile/app/route.tsx','apps/consumer-mobile/app/qr.tsx','apps/consumer-mobile/app/activity.tsx','apps/consumer-mobile/app/notifications.tsx','apps/consumer-mobile/app/membership.tsx','apps/consumer-mobile/app/support.tsx','apps/consumer-mobile/app/account-deletion.tsx','apps/consumer-mobile/services/heroRelevance.ts','packages/mobile-core/src/adaptiveDiscovery.ts','packages/mobile-core/src/index.ts','packages/mobile-core/src/progression.ts','packages/mobile-core/src/routes.ts','apps/consumer-mobile/package.json','apps/consumer-mobile/app.config.ts'
 ];
 for(const file of required)if(!fs.existsSync(file))failures.push(`missing consumer migration file: ${file}`);
 if(!failures.length){
   const read=file=>fs.readFileSync(file,'utf8');
-  const [layout,home,exploreEntry,adaptiveExplore,discover,progress,location,profile,preferences,play,social,saved,route,qr,activity,notifications,membership,support,deletion,heroRelevance,adaptiveCore,core,mobilePackage,appConfig]=required.map(read);
+  const [layout,home,exploreEntry,adaptiveExplore,discover,progress,location,profile,preferences,play,social,saved,route,qr,activity,notifications,membership,support,deletion,heroRelevance,adaptiveCore,core,progressionCore,routesCore,mobilePackage,appConfig]=required.map(read);
   const explore=`${exploreEntry}\n${adaptiveExplore}`;
   if(!exploreEntry.includes('AdaptiveExploreScreen'))failures.push('Explore entry must resolve to the canonical adaptive Explore implementation.');
   for(const [name,title] of [['explore','Explore'],['progress','Progress'],['social','Community'],['profile','Profile']]){
@@ -54,7 +54,10 @@ if(!failures.length){
   if(!/pricing|Membership/.test(membership))failures.push('Membership consumer surface missing.');
   if(!support.includes('submitSupportRequest')||!support.includes('listMySupportRequests'))failures.push('Canonical account-linked support surface missing.');
   if(!deletion.includes('deletion'))failures.push('Protected account-deletion surface missing.');
-  for(const token of ['getMobileAccountSummary','getMobileProgressionDashboard','listMobileActivity','listMobileCommunityActivity','buildMobileRoute','persistMobileRoute'])if(!core.includes(token))failures.push(`Mobile core missing canonical consumer authority: ${token}`);
+  for(const token of ['getMobileAccountSummary','listMobileActivity','listMobileCommunityActivity'])if(!core.includes(token))failures.push(`Mobile core index missing canonical consumer authority: ${token}`);
+  if(!core.includes("export * from './progression'")||!core.includes("export * from './routes'"))failures.push('Mobile core index must publicly re-export progression and route domains.');
+  for(const token of ['getMobileProgressionDashboard'])if(!progressionCore.includes(token))failures.push(`Mobile progression domain missing canonical consumer authority: ${token}`);
+  for(const token of ['buildMobileRoute','persistMobileRoute'])if(!routesCore.includes(token))failures.push(`Mobile route domain missing canonical consumer authority: ${token}`);
   if(/\.rpc\(['"](?:business|fleet|enterprise|admin)_/i.test(profile))failures.push('Profile must not call operations-plane RPC authority.');
 }
 if(failures.length){console.error('Consumer bulk migration convergence audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}

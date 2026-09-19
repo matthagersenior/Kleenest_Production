@@ -12,6 +12,8 @@ const files={
   play:'apps/consumer-mobile/app/play.tsx',
   activity:'apps/consumer-mobile/app/activity.tsx',
   core:'packages/mobile-core/src/index.ts',
+  locationCore:'packages/mobile-core/src/locations.ts',
+  progressionCore:'packages/mobile-core/src/progression.ts',
   amenities:'apps/consumer-mobile/services/amenities.ts',
   photos:'apps/consumer-mobile/services/reviewPhotos.ts',
   discoveryProgression:'apps/consumer-mobile/services/discoveryProgression.ts',
@@ -22,7 +24,7 @@ const files={
 for(const [name,file] of Object.entries(files))if(!fs.existsSync(file))failures.push(`Missing ${name} activation file: ${file}`);
 if(!failures.length){
  const read=file=>fs.readFileSync(file,'utf8');
- const home=read(files.home),explore=read(files.explore),adaptiveExplore=read(files.adaptiveExplore),discover=read(files.discover),progress=read(files.progress),location=read(files.location),social=read(files.social),play=read(files.play),activity=read(files.activity),core=read(files.core),amenities=read(files.amenities),photos=read(files.photos),discoveryProgression=read(files.discoveryProgression),community=read(files.community),locationResolver=read(files.locationResolver),heroRelevance=read(files.heroRelevance);
+ const home=read(files.home),explore=read(files.explore),adaptiveExplore=read(files.adaptiveExplore),discover=read(files.discover),progress=read(files.progress),location=read(files.location),social=read(files.social),play=read(files.play),activity=read(files.activity),core=read(files.core),locationCore=read(files.locationCore),progressionCore=read(files.progressionCore),amenities=read(files.amenities),photos=read(files.photos),discoveryProgression=read(files.discoveryProgression),community=read(files.community),locationResolver=read(files.locationResolver),heroRelevance=read(files.heroRelevance);
  const discoverySurface=`${explore}\n${adaptiveExplore}`;
 
  for(const token of ['Redirect','/explore','MarketingHome','useConsumerWebExperience'])if(!home.includes(token))failures.push(`App entry activation hierarchy missing ${token}.`);
@@ -47,7 +49,10 @@ if(!failures.length){
  if(!location.includes('await refresh()')||!location.includes('setAmenityRefresh')||!location.includes('setPhotoRefresh'))failures.push('Successful contribution must refresh authoritative read models.');
  if(!location.includes('before=await progressionSnapshot()')||!location.includes('after=await progressionSnapshot()'))failures.push('Consumer contributions must surface server-derived progression changes rather than client-fabricated rewards.');
 
- for(const token of ["rpc('kleenest_map_check_in'","rpc('create_review'",'getMobileProgressionDashboard','listMobileActiveQuests','listMobileCommunityActivity'])if(!core.includes(token)&&!community.includes(token))failures.push(`Canonical mobile activation authority missing ${token}.`);
+ if(!core.includes("export * from './locations'")||!core.includes("export * from './progression'"))failures.push('Mobile core must publicly re-export canonical location and progression domains.');
+ for(const token of ["rpc('kleenest_map_check_in'","rpc('create_review'"])if(!locationCore.includes(token))failures.push(`Canonical mobile location authority missing ${token}.`);
+ for(const token of ['getMobileProgressionDashboard','listMobileActiveQuests'])if(!progressionCore.includes(token))failures.push(`Canonical mobile progression authority missing ${token}.`);
+ if(!community.includes('listMobileCommunityActivity'))failures.push('Canonical mobile community activation authority missing listMobileCommunityActivity.');
  if(!amenities.includes("rpc('record_review_amenity_inventory'")||!amenities.includes('progression'))failures.push('Amenity evidence must use the server authority that also returns progression context.');
  if(!photos.includes('review-photos'))failures.push('Review photo evidence must use the canonical review-photo storage boundary.');
 

@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { rankRecommendationAuthority } from "../../../packages/platform-core/src/recommendationAuthority.ts";
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const secretKeys = (() => {
@@ -322,86 +323,6 @@ function publicPlaceDetails(row: Record<string, unknown>) {
   };
 }
 
-function normalizeRow(row: Record<string, unknown>) {
-  const id = String(row.location_id ?? row.place_id ?? row.id ?? '').trim();
-  const confidence = normalizeConfidence(row.confidence ?? row.confidence_score ?? row.trust_score);
-  const verified = row.needs_restroom_verification !== true;
-  const distanceMeters = finite(row.distance_meters);
-  const detourMinutes = finite(row.detour_minutes);
-  const publicAccess = boolOrNull(row.public_access ?? row.restroom_public_access);
-  const wheelchairAccessible = boolOrNull(row.wheelchair_accessible ?? row.accessible);
-  const reasonCodes: string[] = [];
-  if (verified) reasonCodes.push('VERIFIED');
-  if ((confidence ?? 0) >= 0.8) reasonCodes.push('HIGH_CONFIDENCE');
-  if (distanceMeters !== null && distanceMeters <= 8047) reasonCodes.push('LOW_DISTANCE');
-  if (detourMinutes !== null && detourMinutes <= 5) reasonCodes.push('LOW_DETOUR');
-  if (publicAccess === true) reasonCodes.push('PUBLIC_ACCESS');
-  if (wheelchairAccessible === true) reasonCodes.push('ACCESSIBILITY_MATCH');
-
-  let score = 35;
-  if (verified) score += 25;
-  if (confidence !== null) score += Math.round(confidence * 20);
-  if (publicAccess === true) score += 8;
-  if (wheelchairAccessible === true) score += 4;
-  if (distanceMeters !== null) score += Math.max(0, 8 - Math.round(distanceMeters / 3218));
-  if (detourMinutes !== null) score += Math.max(0, 10 - Math.round(detourMinutes));
-
-  const explanation = [
-    verified ? 'verified restroom evidence' : null,
-    (confidence ?? 0) >= 0.8 ? 'high-confidence Kleenest data' : null,
-    publicAccess === true ? 'public access' : null,
-    wheelchairAccessible === true ? 'accessibility information' : null,
-    detourMinutes !== null && detourMinutes <= 5 ? 'low route detour' : null,
-    distanceMeters !== null && distanceMeters <= 8047 ? 'close to the requested location' : null,
-  ].filter(Boolean).join(', ') || 'Kleenest restroom candidate';
-
-  return {
-    place: {
-      kleenestPlaceId: id,
-      name: String(row.name ?? row.place_name ?? row.location_name ?? 'Kleenest place'),
-      latitude: finite(row.latitude ?? row.lat),
-      longitude: finite(row.longitude ?? row.lng ?? row.lon),
-    },
-    score: Math.max(0, Math.min(100, score)),
-    trust: {
-      confidence,
-      verificationStatus: verified ? 'verified' : 'needs_verification',
-      lastVerifiedAt: row.last_verified_at ?? row.verified_at ?? null,
-      observationCount: finite(row.observation_count ?? row.observations),
-      freshnessAt: row.freshness_at ?? row.updated_at ?? null,
-    },
-    restroom: {
-      publicAccess,
-      wheelchairAccessible,
-      changingTable: boolOrNull(row.changing_table),
-      familyRestroom: boolOrNull(row.family_restroom),
-      open24Hours: boolOrNull(row.open_24_hours ?? row.open24_hours),
-      amenityNames: Array.isArray(row.amenity_names) ? row.amenity_names.map(String) : [],
-      smartRestroom: boolOrNull(row.smart_bathroom) ?? (Array.isArray(row.amenity_names)&&row.amenity_names.some((name:unknown)=>/^(connected \/ smart restroom|smart restroom)$/i.test(String(name)))?true:null),
-    },
-    distanceMeters,
-    distanceAheadMeters: finite(row.distance_ahead_meters),
-    detourMinutes,
-    reasonCodes,
-    explanation,
-    deepLink: `https://kleenest.app/place/${encodeURIComponent(id)}`,
-    source: 'kleenest',
-  };
-}
-
-function ranked(rows: unknown[], limit: number) {
-  return rows
-    .filter(row => row && typeof row === 'object')
-    .map(row => normalizeRow(row as Record<string, unknown>))
-    .filter(item => item.place.kleenestPlaceId)
-    .sort((a, b) =>
-      b.score - a.score ||
-      (a.detourMinutes ?? Number.POSITIVE_INFINITY) - (b.detourMinutes ?? Number.POSITIVE_INFINITY) ||
-      (a.distanceMeters ?? Number.POSITIVE_INFINITY) - (b.distanceMeters ?? Number.POSITIVE_INFINITY)
-    )
-    .slice(0, limit);
-}
-
 function canonicalPlatformRoute(pathname: string): string {
   const marker = '/v1/';
   const index = pathname.indexOf(marker);
@@ -497,6 +418,36 @@ async function placeDetails(routePath: string) {
   if (error) throw error;
   if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
   return publicPlaceDetails(data as Record<string, unknown>);
+}
+
+function nestedPlaceId(routePath:string,suffix:'intelligence'|'proof'|'access'){
+  const parts=routePath.split('/').filter(Boolean);
+  if(parts.length!==4||parts[0]!=='v1'||parts[1]!=='places'||parts[3]!==suffix){
+    throw new ApiInputError('Place id is required');
+  }
+  const decoded=decodeURIComponent(parts[2]).trim();
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(decoded)){
+    throw new ApiInputError('Place id is invalid');
+  }
+  return decoded;
+}
+
+async function placeIntelligence(routePath:string){
+  const {data,error}=await db.rpc('platform_place_intelligence',{p_location_id:nestedPlaceId(routePath,'intelligence')});
+  if(error)throw error;
+  return data;
+}
+
+async function placeProof(routePath:string){
+  const {data,error}=await db.rpc('platform_place_proof',{p_location_id:nestedPlaceId(routePath,'proof')});
+  if(error)throw error;
+  return data;
+}
+
+async function verifiedAccess(routePath:string){
+  const {data,error}=await db.rpc('platform_verified_access',{p_location_id:nestedPlaceId(routePath,'access')});
+  if(error)throw error;
+  return data;
 }
 
 async function matchPlaces(body: any) {
@@ -595,7 +546,7 @@ async function nearby(body: any) {
     p_amenity_match: amenityMatch,
   });
   if (error) throw error;
-  const recommendations = ranked(Array.isArray(data) ? data : [], limit);
+  const recommendations = rankRecommendationAuthority((Array.isArray(data)?data:[]) as Record<string,unknown>[],limit);
   return {
     recommendations,
     metadata: {
@@ -630,13 +581,37 @@ async function route(body: any) {
     p_amenity_match: amenityMatch,
   });
   if (error) throw error;
-  const recommendations = ranked(Array.isArray(data) ? data : [], limit);
+  const recommendations = rankRecommendationAuthority((Array.isArray(data)?data:[]) as Record<string,unknown>[],limit);
   return {
     recommendations,
     metadata: {
       requestedAt: new Date().toISOString(),
       resultCount: recommendations.length,
     },
+  };
+}
+
+async function routeIntelligence(body:any){
+  const result=await route(body);
+  const recommendations=Array.isArray(result.recommendations)?result.recommendations:[];
+  const trusted=recommendations.filter((item:any)=>
+    item?.trust?.verificationStatus==='verified' && Number(item?.trust?.confidence??0)>=0.4
+  ).length;
+  const coveragePct=recommendations.length?Math.round((trusted/recommendations.length)*1000)/10:0;
+  return{
+    contractVersion:1,
+    route:body.route,
+    coverage:{
+      recommendationCount:recommendations.length,
+      trustedCount:trusted,
+      coveragePct,
+      longestGapMeters:null,
+    },
+    recommendations,
+    explanation:recommendations.length
+      ? 'Kleenest route intelligence ranks restroom options from the same deterministic verification, confidence, access, amenity and detour authority used by REST recommendations.'
+      : 'No Kleenest restroom candidates matched this route corridor and requirements.',
+    generatedAt:new Date().toISOString(),
   };
 }
 
@@ -749,27 +724,35 @@ Deno.serve(async req => {
   const isPlaceMatch = routePath === '/v1/places/match';
   const isAmenities = routePath === '/v1/amenities';
   const isPlaceDetails = /^\/v1\/places\/[^/]+$/.test(routePath) && !isPlaceMatch;
+  const isPlaceIntelligence = /^\/v1\/places\/[^/]+\/intelligence$/.test(routePath);
+  const isPlaceProof = /^\/v1\/places\/[^/]+\/proof$/.test(routePath);
+  const isVerifiedAccess = /^\/v1\/places\/[^/]+\/access$/.test(routePath);
+  const isRouteIntelligence = routePath === '/v1/intelligence/route';
   const isDevices = routePath === '/v1/devices';
   const isDeviceEvents = routePath === '/v1/devices/events';
   const isDeviceCommand = /^\/v1\/devices\/[0-9a-f-]+\/commands$/i.test(routePath);
   const isDeviceCommandComplete = /^\/v1\/devices\/[0-9a-f-]+\/commands\/[0-9a-f-]+\/complete$/i.test(routePath);
 
-  if (!isNearby && !isRoute && !isPlaceMatch && !isAmenities && !isPlaceDetails && !isDevices && !isDeviceEvents && !isDeviceCommand && !isDeviceCommandComplete) {
+  if (!isNearby && !isRoute && !isPlaceMatch && !isAmenities && !isPlaceDetails && !isPlaceIntelligence && !isPlaceProof && !isVerifiedAccess && !isRouteIntelligence && !isDevices && !isDeviceEvents && !isDeviceCommand && !isDeviceCommandComplete) {
     return json({ error: 'Not found' }, 404, corsHeaders(req));
   }
-  if ((isNearby || isRoute || isPlaceMatch || isDeviceEvents || isDeviceCommand || isDeviceCommandComplete) && req.method !== 'POST') {
+  if ((isNearby || isRoute || isRouteIntelligence || isPlaceMatch || isDeviceEvents || isDeviceCommand || isDeviceCommandComplete) && req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
   }
   if (isDevices && req.method !== 'GET' && req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
   }
-  if ((isPlaceDetails || isAmenities) && req.method !== 'GET') {
+  if ((isPlaceDetails || isPlaceIntelligence || isPlaceProof || isVerifiedAccess || isAmenities) && req.method !== 'GET') {
     return json({ error: 'Method not allowed' }, 405, corsHeaders(req));
   }
 
   let auth: Authorization;
   try {
-    auth = await authorize(req, isAmenities?'/v1/places/amenities':routePath);
+    const authRoute=isAmenities?'/v1/places/amenities'
+      :isRouteIntelligence?'/v1/recommendations/route'
+      :(isPlaceIntelligence||isPlaceProof||isVerifiedAccess)?routePath.replace(/\/(intelligence|proof|access)$/,'')
+      :routePath;
+    auth = await authorize(req, authRoute);
   } catch (error) {
     console.error('Kleenest Platform authorization failed', error instanceof Error ? error.name : 'unknown_error');
     return json({ error: 'Service unavailable' }, 503, corsHeaders(req));
@@ -783,6 +766,12 @@ Deno.serve(async req => {
       const {data,error}=await db.from('amenities').select('id,name,category').order('category').order('name');
       if(error)throw error;
       payload={amenities:Array.isArray(data)?data:[],metadata:{requestedAt:new Date().toISOString(),smartRestroomAmenity:'Connected / Smart Restroom'}};
+    } else if (isPlaceIntelligence) {
+      payload=await placeIntelligence(routePath);
+    } else if (isPlaceProof) {
+      payload=await placeProof(routePath);
+    } else if (isVerifiedAccess) {
+      payload=await verifiedAccess(routePath);
     } else if (isPlaceDetails) {
       payload = await placeDetails(routePath);
       if (!payload) {
@@ -806,6 +795,8 @@ Deno.serve(async req => {
         payload = await matchPlaces(body);
       } else if (isNearby) {
         payload = await nearby(body);
+      } else if (isRouteIntelligence) {
+        payload = await routeIntelligence(body);
       } else {
         payload = await route(body);
       }

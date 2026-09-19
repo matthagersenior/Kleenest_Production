@@ -28,6 +28,7 @@ const required=[
   'apps/consumer-mobile/components/RelevanceHeroCarousel.tsx',
   'apps/consumer-mobile/components/SponsoredSlot.tsx',
   'packages/mobile-core/src/adaptiveDiscovery.ts',
+  'packages/mobile-core/src/locations.ts',
   'packages/mobile-core/src/index.ts'
 ];
 for(const file of required)if(!fs.existsSync(file))failures.push(`Missing consumer parity surface: ${file}`);
@@ -51,6 +52,7 @@ if(!failures.length){
  const layout=fs.readFileSync('apps/consumer-mobile/app/_layout.tsx','utf8');
  const location=fs.readFileSync('apps/consumer-mobile/app/location/[id].tsx','utf8');
  const core=fs.readFileSync('packages/mobile-core/src/index.ts','utf8');
+ const locationCore=fs.readFileSync('packages/mobile-core/src/locations.ts','utf8');
  for(const token of ['Redirect','/explore','MarketingHome','useConsumerWebExperience'])if(!home.includes(token))failures.push(`Consumer app entry missing Explore-first/public-marketing behavior: ${token}`);
  for(const token of ['SponsoredSlot','organizeDiscoveryRows','kleenestDiscoveryRank','freshestEvidenceAt','listNearbyProgressionOpportunities'])if(!explore.includes(token))failures.push(`Explore functional home missing relevance/discovery behavior: ${token}`);
  if(home.includes('Scan QR to check in or review'))failures.push('Consumer app entry must not collapse regular check-in into QR proof.');
@@ -65,7 +67,8 @@ if(!failures.length){
  for(const token of ['consumer_match_or_create_discovery','consumer_record_discovery_evidence','consumer_progression_overview','consumer_active_objectives','consumer_progression_rankings','consumer_nearby_progression_opportunities','attach_discovery_photo'])if(!progressionService.includes(token))failures.push(`Consumer discovery/progression service missing canonical RPC: ${token}`);
  for(const token of ['explore','progress','social','profile'])if(!layout.includes(`name="${token}"`))failures.push(`Consumer primary navigation missing ${token}.`);
  if(!layout.includes('name="discover"')||!layout.includes('href:null'))failures.push('Consumer Discover route must exist without creating a sixth primary tab.');
- for(const token of ['mobileCheckIn','createMobileReview'])if(!core.includes(token))failures.push(`Mobile core missing canonical consumer production authority: ${token}`);
+ if(!core.includes("export * from './locations'"))failures.push('Mobile core index must re-export the canonical location domain.');
+ for(const token of ['mobileCheckIn','createMobileReview'])if(!locationCore.includes(token))failures.push(`Mobile core location domain missing canonical consumer production authority: ${token}`);
  if(!location.includes('mobileCheckIn'))failures.push('Location details must expose canonical check-in behavior.');
 }
 

@@ -2,15 +2,17 @@ import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
 import { ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
-import { clearAppSearchRecents,listNearbyRestrooms,loadAppSearchRecents,rememberAppSearchQuery,searchAppIndex,searchMobilePeople,type AppSearchEntry } from '@kleenest/mobile-core';
+import { clearAppSearchRecents,listNearbyRestrooms,loadAppSearchRecents,loadCapabilitySearchEntries,rememberAppSearchQuery,searchAppIndex,searchMobilePeople,type AppSearchEntry,type CapabilitySearchEntry } from '@kleenest/mobile-core';
 import { useConsumerTheme } from '../services/theme';
 
 type Row=Record<string,any>;
 export default function GlobalSearch(){
  const theme=useConsumerTheme(),router=useRouter();
  const[query,setQuery]=useState(''),[places,setPlaces]=useState<Row[]>([]),[people,setPeople]=useState<Row[]>([]),[recents,setRecents]=useState<string[]>([]),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ const[capabilities,setCapabilities]=useState<CapabilitySearchEntry[]>([]);
+ useEffect(()=>{void loadCapabilitySearchEntries('consumer').then(setCapabilities)},[]);
  useEffect(()=>{void loadAppSearchRecents('consumer').then(setRecents)},[]);
- const indexed=useMemo(()=>searchAppIndex('consumer',query,32),[query]);
+ const indexed=useMemo(()=>searchAppIndex('consumer',query,32,capabilities),[query,capabilities]);
  async function search(value=query){
   const q=value.trim();setQuery(q);if(q.length<2){setPlaces([]);setPeople([]);return}
   setBusy(true);setMessage('');

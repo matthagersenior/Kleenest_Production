@@ -5,6 +5,7 @@ const files={
   migration:'supabase/migrations/20260915193500_restroom_facility_identity.sql',
   mobileService:'apps/consumer-mobile/services/restroomFacilities.ts',
   mobileCore:'packages/mobile-core/src/index.ts',
+  mobileLocations:'packages/mobile-core/src/locations.ts',
   mobileLocation:'apps/consumer-mobile/app/location/[id].tsx',
   webService:'src/services/restroomFacilities.js',
   webLocation:'src/runtime/LocationPage.jsx',
@@ -20,6 +21,7 @@ if(!failures.length){
   const migration=read(files.migration).toLowerCase();
   const mobileService=read(files.mobileService);
   const mobileCore=read(files.mobileCore);
+  const mobileLocations=read(files.mobileLocations);
   const mobileLocation=read(files.mobileLocation);
   const webService=read(files.webService);
   const webLocation=read(files.webLocation);
@@ -54,7 +56,8 @@ if(!failures.length){
   ]) if(!migration.includes(token)) failures.push(`facility migration missing token: ${token}`);
 
   if(!mobileService.includes("rpc('list_location_restroom_facilities'")||!mobileService.includes("rpc('assign_check_in_restroom_facility'")) failures.push('native facility service must read facilities and attach the selected facility to the verified check-in.');
-  if(!mobileCore.includes('restroomFacilityId?:string|null')||!mobileCore.includes('assign_check_in_restroom_facility')) failures.push('mobileCheckIn must carry optional restroom facility identity into canonical check-in evidence.');
+  if(!mobileCore.includes("export * from './locations'")) failures.push('mobile core must publicly re-export the canonical location domain.');
+  if(!mobileLocations.includes('restroomFacilityId?:string|null')||!mobileLocations.includes('assign_check_in_restroom_facility')) failures.push('mobileCheckIn must carry optional restroom facility identity into canonical check-in evidence.');
   if(!mobileLocation.includes('Which restroom did you use?')||!mobileLocation.includes('selectedFacilityId')||!mobileLocation.includes('listRestroomFacilities')) failures.push('native location review flow must select a restroom facility before verified evidence is submitted when multiple facilities are known.');
   if(!webService.includes("rpc('list_location_restroom_facilities'")||!webService.includes("rpc('assign_check_in_restroom_facility'")) failures.push('web facility service must use canonical facility RPCs.');
   if(!webLocation.includes('Which restroom did you use?')||!webLocation.includes('selectedFacilityId')) failures.push('web location review flow must expose facility selection.');

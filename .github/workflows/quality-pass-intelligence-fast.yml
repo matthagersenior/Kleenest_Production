@@ -1,6 +1,6 @@
 name: Quality Pass Intelligence Fast
 
-# Fast PR guard for the converged intelligence + progression contracts.
+# Fast PR guard for the converged intelligence + progression + platform contracts.
 on:
   pull_request:
     branches: [main]
@@ -10,8 +10,17 @@ on:
       - apps/fleet-mobile/**
       - apps/platform-mobile/**
       - packages/mobile-core/**
+      - packages/platform-core/**
+      - packages/sdk-js/**
+      - packages/route-sdk/**
+      - packages/webhook-types/**
+      - mcp/kleenest-mcp/**
+      - docs/platform/openapi-v1.json
+      - supabase/functions/platform-api/**
+      - supabase/functions/platform-partner-admin/**
       - supabase/migrations/**
       - scripts/quality-pass-intelligence-progression-audit.mjs
+      - scripts/intelligence-platform-quality-audit.mjs
       - .github/workflows/quality-pass-intelligence-fast.yml
 
 permissions:
@@ -27,3 +36,5 @@ jobs:
           node-version: 22
       - name: Verify quality-pass intelligence progression contract
         run: node scripts/quality-pass-intelligence-progression-audit.mjs
+      - name: Verify intelligence platform architecture contract
+        run: node scripts/intelligence-platform-quality-audit.mjs

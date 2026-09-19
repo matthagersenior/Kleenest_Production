@@ -5,7 +5,8 @@ const expoEnvPath = 'apps/consumer-mobile/.env';
 const expoEnv = fs.existsSync(expoEnvPath) ? fs.readFileSync(expoEnvPath, 'utf8') : null;
 const appConfig = fs.readFileSync('apps/consumer-mobile/app.config.ts', 'utf8');
 const androidWorkflow = fs.readFileSync('.github/workflows/eas-android-build.yml', 'utf8');
-const mobileCore = fs.readFileSync('packages/mobile-core/src/index.ts', 'utf8');
+const mobileCoreIndex = fs.readFileSync('packages/mobile-core/src/index.ts', 'utf8');
+const mobileCoreClient = fs.readFileSync('packages/mobile-core/src/client.ts', 'utf8');
 
 const required = [
   ['Expo project id', contract.expo.projectId],
@@ -45,8 +46,11 @@ for (const expected of [
   if (!appConfig.includes(expected)) throw new Error(`Expo config drift: missing ${expected}.`);
 }
 
-if (!mobileCore.includes('EXPO_PUBLIC_SUPABASE_URL') || !mobileCore.includes('EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY')) {
-  throw new Error('Mobile core is not wired to Expo public Supabase variables.');
+if (!mobileCoreClient.includes('EXPO_PUBLIC_SUPABASE_URL') || !mobileCoreClient.includes('EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY')) {
+  throw new Error('Mobile core canonical client is not wired to Expo public Supabase variables.');
+}
+if (!mobileCoreIndex.includes("export { getKleenestSupabaseClient } from './client'")) {
+  throw new Error('Mobile core public entry no longer re-exports the canonical Supabase client.');
 }
 
 for (const expected of [contract.expo.projectId, contract.supabase.url, contract.supabase.publishableKey]) {

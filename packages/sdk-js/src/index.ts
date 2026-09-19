@@ -5,6 +5,10 @@ import type {
   PlaceMatchResponse,
   RecommendationResponse,
   RouteRecommendationRequest,
+  PublicPlaceIntelligence,
+  PublicPlaceProof,
+  PublicVerifiedAccess,
+  PublicRouteIntelligence,
 } from '@kleenest/platform-core';
 
 export type KleenestClientOptions = {
@@ -80,6 +84,31 @@ export class KleenestClient {
       body: JSON.stringify(input),
     });
   }
+
+  getPlaceIntelligence(kleenestPlaceId:string):Promise<PublicPlaceIntelligence>{
+    const id=String(kleenestPlaceId||'').trim();
+    if(!id)throw new Error('kleenestPlaceId is required');
+    return this.request(`/v1/places/${encodeURIComponent(id)}/intelligence`);
+  }
+
+  getPlaceProof(kleenestPlaceId:string):Promise<PublicPlaceProof>{
+    const id=String(kleenestPlaceId||'').trim();
+    if(!id)throw new Error('kleenestPlaceId is required');
+    return this.request(`/v1/places/${encodeURIComponent(id)}/proof`);
+  }
+
+  getVerifiedAccess(kleenestPlaceId:string):Promise<PublicVerifiedAccess>{
+    const id=String(kleenestPlaceId||'').trim();
+    if(!id)throw new Error('kleenestPlaceId is required');
+    return this.request(`/v1/places/${encodeURIComponent(id)}/access`);
+  }
+
+  getRouteIntelligence(input:RouteRecommendationRequest):Promise<PublicRouteIntelligence>{
+    return this.request('/v1/intelligence/route',{
+      method:'POST',
+      body:JSON.stringify(input),
+    });
+  }
 }
 
 export type {
@@ -89,4 +118,8 @@ export type {
   PlaceMatchResponse,
   RecommendationResponse,
   RouteRecommendationRequest,
+  PublicPlaceIntelligence,
+  PublicPlaceProof,
+  PublicVerifiedAccess,
+  PublicRouteIntelligence,
 } from '@kleenest/platform-core';
