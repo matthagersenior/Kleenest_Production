@@ -1,4 +1,4 @@
-import { getKleenestSupabaseClient } from './index';
+import { getKleenestSupabaseClient } from './client';
 
 export const INTELLIGENCE_CONTRACT_VERSION=1 as const;
 export const INTELLIGENCE_CACHE_TTL_MS=15_000;
