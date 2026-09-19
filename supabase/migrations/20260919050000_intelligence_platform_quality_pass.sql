@@ -490,6 +490,44 @@ $function$;
 revoke all on function public.platform_verified_access(uuid) from public,anon,authenticated;
 grant execute on function public.platform_verified_access(uuid) to service_role;
 
+
+-- Search can enrich its static offline fallback from the canonical enabled capability catalog.
+-- Only scope-safe catalog metadata is returned; configuration and hidden/disabled capabilities stay private.
+create or replace function public.app_search_capabilities(p_scope text)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path=''
+as $function$
+declare v_scope text:=lower(trim(coalesce(p_scope,'')));
+begin
+  if v_scope not in ('consumer','business','fleet','owner') then raise exception 'Unsupported app search scope'; end if;
+  if v_scope='owner' and not public.is_platform_owner_session() then raise exception 'Platform owner access required'; end if;
+  if v_scope in ('business','fleet') and auth.uid() is null then raise exception 'Authentication required'; end if;
+
+  return coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'feature_code',f.feature_code,
+      'name',f.name,
+      'category',f.category,
+      'minimum_tier',f.minimum_tier,
+      'updated_at',f.updated_at
+    ) order by f.name)
+    from public.feature_catalog f
+    where f.enabled
+      and case
+        when v_scope='owner' then true
+        when v_scope='business' then f.category='business'
+        when v_scope='fleet' then f.category='fleet'
+        else f.category in ('engagement','community','maps','gamification')
+      end
+  ),'[]'::jsonb);
+end;
+$function$;
+revoke all on function public.app_search_capabilities(text) from public;
+grant execute on function public.app_search_capabilities(text) to anon,authenticated;
+
 -- Keep the intelligence outbox decoupled from source writes. Best-effort scheduling uses the
 -- same pg_cron authority already used by platform webhook/device workers.
 do $schedule$
