@@ -73,11 +73,11 @@ export default function VerificationCenter(){
  return <ScrollView refreshControl={<RefreshControl refreshing={busy==='load'} onRefresh={load}/>} contentContainerStyle={s.page}>
   <View style={s.hero}>
    <Text style={s.eyebrow}>BUSINESS CLAIM & VERIFICATION CENTER</Text>
-   <Text style={s.title}>Payment buys the workspace. Evidence earns authority.</Text>
-   <Text style={s.body}>A Kleenest subscription never proves ownership. Existing-location control requires verified evidence, current-operator consent, or Kleenest review. High-risk transfer requests cannot silently take over a location.</Text>
+   <Text style={s.title}>Claiming is free. Evidence earns authority.</Text>
+   <Text style={s.body}>A paid Kleenest plan never proves ownership. Free and paid claims use the same verification standard. Existing-location control requires verified evidence, current-operator consent, or Kleenest review. High-risk transfer requests cannot silently take over a location.</Text>
   </View>
   <View style={s.ruleCard}>
-   <Rule n="1" title="Workspace customer" body="Account and paid product access only. No claim authority implied."/>
+   <Rule n="1" title="Workspace customer" body="Account and workspace access only. No claim authority implied."/>
    <Rule n="2" title="Business identity verified" body="Kleenest has strong evidence tying the account to the canonical company domain."/>
    <Rule n="3" title="Location operator verified" body="The location is approved by dual evidence, the current operator, or Kleenest review."/>
   </View>

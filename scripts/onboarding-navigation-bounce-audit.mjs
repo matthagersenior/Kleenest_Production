@@ -11,10 +11,12 @@ for(const path of ['apps/business-mobile/app/_layout.tsx','apps/fleet-mobile/app
     : "},[ready,gateReady,signedIn,needsProvisioning,onboardingRequired,onAuthRoute,activeRoute,router]);";
   if(!src.includes(routingDeps))failures.push(path+' must enforce routing in a separate effect');
   if(src.includes("setGateReady(false);\n    void (async()=>")&&src.includes("activeRoute,workspaceRevision"))failures.push(path+' still tears down navigator on route changes');
-  if(!src.includes("if(onboardingRequired&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');"))failures.push(path+' must retain mandatory onboarding enforcement');
   if(path.includes('fleet-mobile')){
+    if(!src.includes("if(onboardingRequired&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');"))failures.push(path+' must retain mandatory Fleet onboarding enforcement');
     if(!src.includes("if(needsBusinessSetup){"))failures.push(path+' must keep no-workspace Fleet users on the setup path');
   }else{
+    if(src.includes("if(onboardingRequired&&!ONBOARDING_BYPASS.has(activeRoute))router.replace('/onboarding');"))failures.push(path+' must not globally lock Business behind the optional profile survey');
+    if(!src.includes("if(activeRoute==='get-started'){router.replace('/');return;}"))failures.push(path+' must leave provisioning for usable Business home rather than mandatory survey');
     if(!src.includes("if(needsProvisioning){"))failures.push(path+' must route signed-in users without a Business workspace into provisioning');
   }
   if(!src.includes("if(onAuthRoute)return;"))failures.push(path+' must yield to the auth screen while OAuth/session handoff is being completed');
@@ -32,4 +34,4 @@ if(failures.length){
  failures.forEach(f=>console.error('- '+f));
  process.exit(1);
 }
-console.log('Onboarding navigation bounce audit passed.');
+console.log('Onboarding navigation bounce audit passed with claim-first Business and mandatory Fleet setup boundaries.');

@@ -40,7 +40,7 @@ expect(edge,/if\(ctx\.claim\.existing_operator_business_id\|\|!evidence\.include
 expect(edge,/\.is\('business_id',null\)\.is\('claimed_business_id',null\)/,'auto-approval must atomically require an unclaimed location');
 expect(edge,/auto_approval_blocked_existing_operator/,'authority races must fall back to operator review');
 
-expect(business,/Payment buys the workspace\. Evidence earns authority\./,'Business UI must separate payment from authority');
+expect(business,/Claiming is free\. Evidence earns authority\./,'Business UI must separate free claiming from authority verification');
 expect(business,/CURRENT OPERATOR PROTECTED/,'Business UI must clearly show protected operator conflicts');
 expect(business,/Verify company email/,'Business UI must expose company-email evidence');
 expect(business,/DNS TXT CHALLENGE/,'Business UI must expose DNS proof');
@@ -60,4 +60,4 @@ if(failures.length){
   failures.forEach(f=>console.error('- '+f));
   process.exit(1);
 }
-console.log('Business claim verification authority audit passed: workspace payment, identity evidence, operator protection, dispute review and platform authority are converged.');
+console.log('Business claim verification authority audit passed: free claiming, identity evidence, operator protection, dispute review and platform authority are converged.');

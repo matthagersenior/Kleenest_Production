@@ -52,9 +52,10 @@ const openFleetPortal=()=>{
   }
   router.push('/for-business' as any);
 };
-const openBusinessPortal=(mode:'signin'|'signup'='signin')=>()=>{
+const openBusinessPortal=(mode:'signin'|'signup'='signin',intent='')=>()=>{
   if(Platform.OS==='web'&&typeof window!=='undefined'){
-    window.location.assign(`/Kleenest_Production/business/auth/${mode==='signup'?'?mode=signup':''}`);
+    const query=[mode==='signup'?'mode=signup':'',intent?`intent=${encodeURIComponent(intent)}`:''].filter(Boolean).join('&');
+    window.location.assign(`/Kleenest_Production/business/auth/${query?`?${query}`:''}`);
     return;
   }
   router.push('/for-business' as any);
@@ -697,10 +698,10 @@ export function ForBusinessMarketingPage() {
           <Text style={[s.businessHeroTitle,!wide&&s.businessHeroTitleCompact]}>Cleaner restrooms. Stronger businesses.</Text>
           <Text style={s.businessHeroBody}>Turn a hidden part of the customer experience into visible trust, measurable engagement and smarter operations. Kleenest connects discovery, QR interactions, reviews, customer notifications, analytics and Live Ops.</Text>
           <View style={s.heroButtonRow}>
-            <Pressable style={s.heroPrimary} onPress={openBusinessPortal('signup')}><Text style={s.heroPrimaryText}>START BUSINESS / FLEET / ENTERPRISE</Text></Pressable>
+            <Pressable style={s.heroPrimary} onPress={openBusinessPortal('signup','claim')}><Text style={s.heroPrimaryText}>CLAIM YOUR LOCATION FREE</Text></Pressable>
             <Pressable style={s.heroSecondary} onPress={openBusinessPortal('signin')}><Text style={s.heroSecondaryText}>BUSINESS SIGN IN</Text></Pressable>
           </View>
-          <Text style={s.businessHeroNote}>Explore the value first. Onboarding begins only after you choose to start and create or sign in to your Business account.</Text>
+          <Text style={s.businessHeroNote}>Claiming is free. Standard business verification is required. Paid Business, Fleet and Enterprise tools are optional after your authority is verified.</Text>
         </View>
         <View style={s.businessHeroImage}>
           <MarketingImage file="business-growth.svg" label="Kleenest Business analytics, QR engagement and customer notification experience" />
@@ -748,10 +749,10 @@ export function ForBusinessMarketingPage() {
         <Text style={s.businessLoopBody}>The public experience remains simple, while Business turns the same activity into measurable customer engagement, operational visibility and evidence that conditions actually improved.</Text>
       </View>
       <View style={s.pageCta}>
-        <Text style={s.pageCtaTitle}>See the value. Then start the right Kleenest workspace.</Text>
-        <Text style={s.pageCtaBody}>When you choose Start, create or sign in to one Business account. Kleenest then learns your organization, locations, workforce, markets and goals and recommends Business, Fleet, Enterprise or Enterprise + Fleet.</Text>
+        <Text style={s.pageCtaTitle}>Already in Kleenest? Claim it first.</Text>
+        <Text style={s.pageCtaBody}>Start by claiming your existing Kleenest location for free. Verification confirms business authority. Once approved, use the available Business basics and add paid Business, Fleet or Enterprise tools only when they are useful.</Text>
         <View style={s.finalCtaActions}>
-          <Pressable style={s.finalCtaPrimary} onPress={openBusinessPortal('signup')}><Text style={s.finalCtaPrimaryText}>START BUSINESS / FLEET / ENTERPRISE</Text></Pressable>
+          <Pressable style={s.finalCtaPrimary} onPress={openBusinessPortal('signup','claim')}><Text style={s.finalCtaPrimaryText}>CLAIM YOUR LOCATION FREE</Text></Pressable>
           <Pressable style={s.finalCtaSecondary} onPress={openBusinessPortal('signin')}><Text style={s.finalCtaSecondaryText}>BUSINESS SIGN IN</Text></Pressable>
           <Pressable style={s.finalCtaSecondary} onPress={openFleetPortal}><Text style={s.finalCtaSecondaryText}>OPEN FLEET PORTAL</Text></Pressable>
         </View>

@@ -63,7 +63,9 @@ export default function BusinessAuth() {
   const getStartedRoute=()=>intent?`/get-started?intent=${encodeURIComponent(intent)}`:'/get-started';
   const authRedirectForIntent=Platform.OS==='web'&&intent?`${authRedirect}?intent=${encodeURIComponent(intent)}`:authRedirect;
   async function finishAuthenticated(){
-    router.replace((await hasBusinessAccess()?'/':getStartedRoute()) as any);
+    const hasAccess=await hasBusinessAccess();
+    if(!hasAccess){router.replace(getStartedRoute() as any);return;}
+    router.replace((intent==='claim'?'/locations':'/') as any);
   }
 
   useEffect(()=>{if(params.mode==='signup')setMode('signup');},[params.mode]);
@@ -167,18 +169,19 @@ export default function BusinessAuth() {
   }
 
   const creating = mode === 'signup';
+  const claimFirst=intent==='claim';
   const submitDisabled = busy || !email.trim() || !password || (creating && !confirmPassword);
   return <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.page}>
-    <View style={s.hero}><Text style={s.eyebrow}>KLEENEST BUSINESS</Text><Text style={s.heroTitle}>{creating ? 'Create your account' : 'Welcome back'}</Text><Text style={s.heroBody}>Sign in before entering the Business control center. Workspace roles and capabilities are verified by the server.</Text></View>
+    <View style={s.hero}><Text style={s.eyebrow}>KLEENEST BUSINESS</Text><Text style={s.heroTitle}>{claimFirst?'Claim your Kleenest location for free':creating ? 'Create your account' : 'Welcome back'}</Text><Text style={s.heroBody}>{claimFirst?'Create or sign in to one account. Claiming is free, and the standard business verification process stays exactly the same before location authority is approved.':'Sign in before entering the Business control center. Workspace roles and capabilities are verified by the server.'}</Text></View>
     <View style={s.modeRow}><ModeButton label="Sign in" active={!creating} onPress={() => { setMode('signin'); setError(null); setNotice(null); }} /><ModeButton label="Create account" active={creating} onPress={() => { setMode('signup'); setError(null); setNotice(null); }} /></View>
     {error ? <Text accessibilityLiveRegion="polite" style={s.error}>{error}</Text> : null}
     {notice ? <View style={s.notice}><Text style={s.noticeText}>{notice}</Text></View> : null}
-    <Pressable disabled={busy} onPress={google} style={s.google}><Text style={s.googleText}>Continue with Google</Text></Pressable>
+    <Pressable disabled={busy} onPress={google} style={s.google}><Text style={s.googleText}>{claimFirst?'Continue with Google · fastest':'Continue with Google'}</Text></Pressable>
     <View style={s.divider}><View style={s.line}/><Text style={s.or}>OR</Text><View style={s.line}/></View>
     <View style={s.field}><Text style={s.label}>Email</Text><TextInput accessibilityLabel="Business email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" placeholderTextColor="#78877f" selectionColor="#173f2d" cursorColor="#173f2d" style={s.input}/></View>
     <View style={s.field}><Text style={s.label}>Password</Text><View style={s.passwordRow}><TextInput accessibilityLabel="Business password" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoCapitalize="none" autoCorrect={false} autoComplete={creating ? 'new-password' : 'current-password'} textContentType={creating ? 'newPassword' : 'password'} placeholder={creating ? 'Create a password' : 'Enter your password'} placeholderTextColor="#78877f" selectionColor="#173f2d" cursorColor="#173f2d" style={s.passwordInput}/><Pressable accessibilityRole="button" accessibilityLabel={showPassword ? 'Hide business password' : 'Show business password'} onPress={() => setShowPassword(v => !v)} style={s.visibility}><Text style={s.visibilityText}>{showPassword ? 'Hide' : 'Show'}</Text></Pressable></View></View>
     {creating ? <View style={s.field}><Text style={s.label}>Confirm password</Text><TextInput accessibilityLabel="Confirm business password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={!showPassword} autoCapitalize="none" autoCorrect={false} autoComplete="new-password" textContentType="newPassword" placeholder="Re-enter password" placeholderTextColor="#78877f" selectionColor="#173f2d" cursorColor="#173f2d" style={s.input}/></View> : null}
-    <Pressable disabled={submitDisabled} onPress={creating ? signUp : signIn} style={[s.primary, submitDisabled && s.disabled]}><Text style={s.primaryText}>{busy ? 'Working…' : creating ? 'Create Business account' : 'Sign in to Business'}</Text></Pressable>
+    <Pressable disabled={submitDisabled} onPress={creating ? signUp : signIn} style={[s.primary, submitDisabled && s.disabled]}><Text style={s.primaryText}>{busy ? 'Working…' : claimFirst&&creating ? 'Create account & continue to free claim' : claimFirst ? 'Sign in & continue to free claim' : creating ? 'Create Business account' : 'Sign in to Business'}</Text></Pressable>
   </ScrollView>;
 }
 
