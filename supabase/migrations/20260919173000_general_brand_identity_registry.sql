@@ -1,6 +1,6 @@
 -- General brand identity authority for automatic discovery.
--- Explicit provider brand metadata always wins; repeated commercial names teach the registry
--- so recognizable chains do not require a code release to become first-class brand data.
+-- Lock-light by design: provider brands are preserved by canonical ingestion, while a sidecar
+-- registry learns aliases and incrementally backfills recognized commercial identities.
 
 create table if not exists public.brand_identity_aliases (
   alias_key text primary key,
@@ -16,20 +16,37 @@ create table if not exists public.brand_identity_aliases (
   last_seen_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
 create index if not exists idx_brand_identity_aliases_canonical
-  on public.brand_identity_aliases ((lower(canonical_brand)))
-  where active;
-
+  on public.brand_identity_aliases ((lower(canonical_brand))) where active;
 alter table public.brand_identity_aliases enable row level security;
 revoke all on table public.brand_identity_aliases from public,anon,authenticated;
 grant select,insert,update,delete on table public.brand_identity_aliases to service_role;
 
-alter table public.locations add column if not exists brand_identity_source text;
-alter table public.locations add column if not exists brand_confidence numeric(4,3);
-create index if not exists idx_locations_brand_identity_source
-  on public.locations (brand_identity_source)
-  where brand_identity_source is not null;
+create table if not exists public.location_brand_identities (
+  location_id uuid primary key references public.locations(id) on delete cascade,
+  canonical_brand text not null,
+  source text not null,
+  confidence numeric(4,3) not null check (confidence >= 0 and confidence <= 1),
+  alias_key text,
+  detected_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists idx_location_brand_identities_brand
+  on public.location_brand_identities ((lower(canonical_brand)));
+alter table public.location_brand_identities enable row level security;
+revoke all on table public.location_brand_identities from public,anon,authenticated;
+grant select,insert,update,delete on table public.location_brand_identities to service_role;
+
+create table if not exists public.brand_identity_backfill_state (
+  singleton boolean primary key default true check (singleton),
+  last_location_id uuid,
+  updated_at timestamptz not null default now()
+);
+insert into public.brand_identity_backfill_state(singleton,last_location_id)
+values(true,null) on conflict(singleton) do nothing;
+alter table public.brand_identity_backfill_state enable row level security;
+revoke all on table public.brand_identity_backfill_state from public,anon,authenticated;
+grant select,insert,update,delete on table public.brand_identity_backfill_state to service_role;
 
 create or replace function public.normalize_brand_key(p_value text)
 returns text
@@ -37,8 +54,7 @@ language plpgsql
 immutable
 set search_path=''
 as $function$
-declare
-  v text:=lower(trim(coalesce(p_value,'')));
+declare v text:=lower(trim(coalesce(p_value,'')));
 begin
   if v='' then return null; end if;
   v:=regexp_replace(v,'[[:space:]]*(#|store[[:space:]]*#?|location[[:space:]]*#?)[[:space:]]*[0-9]+[[:space:]]*$','','i');
@@ -54,8 +70,7 @@ language plpgsql
 immutable
 set search_path=''
 as $function$
-declare
-  v text:=trim(coalesce(p_value,''));
+declare v text:=trim(coalesce(p_value,''));
 begin
   if v='' then return null; end if;
   v:=regexp_replace(v,'[[:space:]]*(#|store[[:space:]]*#?|location[[:space:]]*#?)[[:space:]]*[0-9]+[[:space:]]*$','','i');
@@ -79,7 +94,7 @@ declare
   v_row public.brand_identity_aliases;
   v_known text;
 begin
-  -- Provider-supplied brand identity is authoritative even if Kleenest has never seen it before.
+  -- Explicit source/provider brand metadata wins, including brands Kleenest has never seen.
   if nullif(trim(coalesce(p_brand,'')),'') is not null then
     v_key:=public.normalize_brand_key(p_brand);
     select * into v_row from public.brand_identity_aliases where alias_key=v_key and active;
@@ -92,54 +107,43 @@ begin
       );
     end if;
     return jsonb_build_object(
-      'canonical_brand',trim(p_brand),
-      'source','provider_brand',
-      'confidence',.990,
-      'alias_key',v_key
+      'canonical_brand',trim(p_brand),'source','provider_brand','confidence',.990,'alias_key',v_key
     );
   end if;
 
-  -- Operator names are only treated as brands when already recognized by the registry.
+  -- Operator/name inference only auto-applies high-confidence learned aliases.
   if nullif(trim(coalesce(p_operator,'')),'') is not null then
     v_key:=public.normalize_brand_key(p_operator);
     select * into v_row
     from public.brand_identity_aliases
-    where alias_key=v_key and active
-      and (source<>'frequency' or confidence>=.930);
+    where alias_key=v_key and active and (source<>'frequency' or confidence>=.930);
     if found then
       return jsonb_build_object(
-        'canonical_brand',v_row.canonical_brand,
-        'source','operator_alias',
-        'confidence',least(v_row.confidence,.950),
-        'alias_key',v_key
+        'canonical_brand',v_row.canonical_brand,'source','operator_alias',
+        'confidence',least(v_row.confidence,.950),'alias_key',v_key
       );
     end if;
   end if;
 
-  -- Name recognition uses the learned registry. normalize_brand_key removes common store-number suffixes.
   if nullif(trim(coalesce(p_name,'')),'') is not null then
     v_key:=public.normalize_brand_key(p_name);
     select * into v_row
     from public.brand_identity_aliases
-    where alias_key=v_key and active
-      and (source<>'frequency' or confidence>=.930);
+    where alias_key=v_key and active and (source<>'frequency' or confidence>=.930);
     if found then
       return jsonb_build_object(
         'canonical_brand',v_row.canonical_brand,
         'source',case when v_row.source='frequency' then 'learned_name_alias' else 'name_alias' end,
-        'confidence',v_row.confidence,
-        'alias_key',v_key
+        'confidence',v_row.confidence,'alias_key',v_key
       );
     end if;
   end if;
 
-  -- Preserve the small deterministic legacy recognizer as a final compatibility fallback.
+  -- Compatibility fallback for the already-shipped deterministic recognizer.
   v_known:=public.normalize_ingestion_brand(null,p_name,p_operator);
   if v_known is not null then
     return jsonb_build_object(
-      'canonical_brand',v_known,
-      'source','known_pattern',
-      'confidence',.960,
+      'canonical_brand',v_known,'source','known_pattern','confidence',.960,
       'alias_key',public.normalize_brand_key(v_known)
     );
   end if;
@@ -155,27 +159,18 @@ security definer
 set search_path=''
 as $function$
 declare
-  v_provider bigint:=0;
   v_existing bigint:=0;
+  v_provider bigint:=0;
   v_frequency bigint:=0;
-  v_backfilled bigint:=0;
 begin
-  -- Existing canonical brand data is strong evidence and seeds exact aliases.
+  -- First-class brands already preserved by canonical ingestion seed the registry.
   insert into public.brand_identity_aliases(
     alias_key,alias_text,canonical_brand,source,confidence,evidence_count,city_count,state_count,first_seen_at,last_seen_at,updated_at
   )
   select
-    public.normalize_brand_key(l.brand_name),
-    min(l.brand_name),
-    min(l.brand_name),
-    'existing',
-    .980,
-    count(*),
-    count(distinct coalesce(l.city,'')),
-    count(distinct coalesce(l.state,'')),
-    min(coalesce(l.created_at,now())),
-    max(coalesce(l.updated_at,l.created_at,now())),
-    now()
+    public.normalize_brand_key(l.brand_name),min(l.brand_name),min(l.brand_name),'existing',.980,
+    count(*),count(distinct coalesce(l.city,'')),count(distinct coalesce(l.state,'')),
+    min(coalesce(l.created_at,now())),max(coalesce(l.updated_at,l.created_at,now())),now()
   from public.locations l
   where nullif(trim(l.brand_name),'') is not null
     and public.normalize_brand_key(l.brand_name) is not null
@@ -192,33 +187,21 @@ begin
     updated_at=now();
   get diagnostics v_existing=row_count;
 
-  -- Any explicit provider brand is accepted generically; no hard-coded chain list is required.
+  -- Generic source/provider metadata: no brand-specific code release is required.
   insert into public.brand_identity_aliases(
     alias_key,alias_text,canonical_brand,source,confidence,evidence_count,city_count,state_count,first_seen_at,last_seen_at,updated_at
   )
   select
-    public.normalize_brand_key(x.brand),
-    min(x.brand),
-    min(x.brand),
-    'provider',
-    .990,
-    count(*),
-    count(distinct coalesce(x.city,'')),
-    count(distinct coalesce(x.state,'')),
-    min(coalesce(x.created_at,now())),
-    max(coalesce(x.updated_at,x.created_at,now())),
-    now()
+    public.normalize_brand_key(x.brand),min(x.brand),min(x.brand),'provider',.990,
+    count(*),count(distinct coalesce(x.city,'')),count(distinct coalesce(x.state,'')),
+    min(coalesce(x.created_at,now())),max(coalesce(x.updated_at,x.created_at,now())),now()
   from (
     select
-      coalesce(
-        nullif(trim(l.source_metadata->>'brand'),''),
-        nullif(trim(l.source_metadata->'tags'->>'brand'),'')
-      ) brand,
+      coalesce(nullif(trim(l.source_metadata->>'brand'),''),nullif(trim(l.source_metadata->'tags'->>'brand'),'')) brand,
       l.city,l.state,l.created_at,l.updated_at
     from public.locations l
   ) x
-  where x.brand is not null
-    and public.normalize_brand_key(x.brand) is not null
+  where x.brand is not null and public.normalize_brand_key(x.brand) is not null
   group by public.normalize_brand_key(x.brand)
   on conflict(alias_key) do update set
     alias_text=case when excluded.confidence>=public.brand_identity_aliases.confidence then excluded.alias_text else public.brand_identity_aliases.alias_text end,
@@ -232,22 +215,16 @@ begin
     updated_at=now();
   get diagnostics v_provider=row_count;
 
-  -- Learn recognizable chains from repeated commercial names across multiple places.
-  -- Generic civic/place labels are explicitly excluded to avoid inventing brands.
+  -- Repeated commercial identities become learned candidates. Only confidence >= .930
+  -- is auto-applied, preventing generic names from being incorrectly merged as brands.
   insert into public.brand_identity_aliases(
     alias_key,alias_text,canonical_brand,source,confidence,evidence_count,city_count,state_count,first_seen_at,last_seen_at,updated_at
   )
   select
-    g.alias_key,
-    g.display_name,
+    g.alias_key,g.display_name,
     coalesce(public.normalize_ingestion_brand(null,g.display_name,null),g.display_name),
     'frequency',
-    case
-      when g.evidence_count>=200 then .950
-      when g.evidence_count>=50 then .930
-      when g.state_count>=2 then .910
-      else .880
-    end,
+    case when g.evidence_count>=200 then .950 when g.evidence_count>=50 then .930 when g.state_count>=2 then .910 else .880 end,
     g.evidence_count,g.city_count,g.state_count,g.first_seen_at,g.last_seen_at,now()
   from (
     select
@@ -279,7 +256,7 @@ begin
     updated_at=now();
   get diagnostics v_frequency=row_count;
 
-  -- Canonicalize a few common family/product variants; the registry remains extensible and data-driven.
+  -- Canonical family/product variants; aliases remain data, not application code.
   insert into public.brand_identity_aliases(alias_key,alias_text,canonical_brand,source,confidence,evidence_count,updated_at)
   values
     (public.normalize_brand_key('Casey''s General Store'),'Casey''s General Store','Casey''s','manual',.999,0,now()),
@@ -292,170 +269,125 @@ begin
     (public.normalize_brand_key('The Home Depot'),'The Home Depot','Home Depot','manual',.999,0,now()),
     (public.normalize_brand_key('Tesla Supercharger'),'Tesla Supercharger','Tesla','manual',.999,0,now())
   on conflict(alias_key) do update set
-    alias_text=excluded.alias_text,
-    canonical_brand=excluded.canonical_brand,
-    source='manual',
-    confidence=.999,
-    active=true,
-    updated_at=now();
-
-  -- Backfill any location that can now be resolved by explicit metadata/operator/name aliases.
-  with resolved as (
-    select l.id,
-           public.resolve_location_brand_identity(
-             coalesce(
-               nullif(trim(l.source_metadata->>'brand'),''),
-               nullif(trim(l.source_metadata->'tags'->>'brand'),''),
-               nullif(trim(l.brand_name),'')
-             ),
-             l.name,
-             coalesce(
-               nullif(trim(l.source_metadata->>'operator'),''),
-               nullif(trim(l.source_metadata->'tags'->>'operator'),''),
-               nullif(trim(l.operator_name),'')
-             )
-           ) identity
-    from public.locations l
-    where l.is_active is distinct from false
-  )
-  update public.locations l
-  set
-    brand_name=nullif(r.identity->>'canonical_brand',''),
-    brand_identity_source=nullif(r.identity->>'source',''),
-    brand_confidence=nullif(r.identity->>'confidence','')::numeric,
-    updated_at=case
-      when l.brand_name is distinct from nullif(r.identity->>'canonical_brand','')
-        or l.brand_identity_source is distinct from nullif(r.identity->>'source','')
-        or l.brand_confidence is distinct from nullif(r.identity->>'confidence','')::numeric
-      then now() else l.updated_at end
-  from resolved r
-  where l.id=r.id
-    and nullif(r.identity->>'canonical_brand','') is not null
-    and (
-      l.brand_name is distinct from nullif(r.identity->>'canonical_brand','')
-      or l.brand_identity_source is distinct from nullif(r.identity->>'source','')
-      or l.brand_confidence is distinct from nullif(r.identity->>'confidence','')::numeric
-    );
-  get diagnostics v_backfilled=row_count;
+    alias_text=excluded.alias_text,canonical_brand=excluded.canonical_brand,source='manual',
+    confidence=.999,active=true,updated_at=now();
 
   return jsonb_build_object(
-    'provider_alias_rows',v_provider,
-    'existing_alias_rows',v_existing,
-    'frequency_alias_rows',v_frequency,
-    'locations_backfilled',v_backfilled,
-    'registry_size',(select count(*) from public.brand_identity_aliases where active),
-    'refreshed_at',now()
+    'existing_alias_rows',v_existing,'provider_alias_rows',v_provider,'frequency_alias_rows',v_frequency,
+    'registry_size',(select count(*) from public.brand_identity_aliases where active),'refreshed_at',now()
   );
 end;
 $function$;
 
-create or replace function public._resolve_location_brand_trigger()
-returns trigger
+create or replace function public.backfill_location_brand_identities(p_limit integer default 5000)
+returns jsonb
 language plpgsql
 security definer
 set search_path=''
 as $function$
 declare
-  v_identity jsonb;
-  v_explicit_brand text;
-  v_operator text;
+  v_limit integer:=greatest(100,least(coalesce(p_limit,5000),10000));
+  v_cursor uuid;
+  v_batch_max uuid;
+  v_batch_count integer:=0;
+  v_identity_rows integer:=0;
+  v_location_updates integer:=0;
 begin
-  v_explicit_brand:=coalesce(
-    nullif(trim(new.source_metadata->>'brand'),''),
-    nullif(trim(new.source_metadata->'tags'->>'brand'),''),
-    nullif(trim(new.brand_name),'')
-  );
-  v_operator:=coalesce(
-    nullif(trim(new.source_metadata->>'operator'),''),
-    nullif(trim(new.source_metadata->'tags'->>'operator'),''),
-    nullif(trim(new.operator_name),'')
-  );
+  select last_location_id into v_cursor
+  from public.brand_identity_backfill_state where singleton=true for update;
 
-  v_identity:=public.resolve_location_brand_identity(v_explicit_brand,new.name,v_operator);
-  if nullif(v_identity->>'canonical_brand','') is not null then
-    new.brand_name:=v_identity->>'canonical_brand';
-    new.brand_identity_source:=v_identity->>'source';
-    new.brand_confidence:=(v_identity->>'confidence')::numeric;
+  select max(id),count(*) into v_batch_max,v_batch_count
+  from (
+    select l.id
+    from public.locations l
+    where v_cursor is null or l.id>v_cursor
+    order by l.id
+    limit v_limit
+  ) batch;
+
+  if v_batch_count=0 then
+    update public.brand_identity_backfill_state set last_location_id=null,updated_at=now() where singleton=true;
+    return jsonb_build_object('scanned',0,'identified',0,'locations_updated',0,'cycle_complete',true,'processed_at',now());
   end if;
-  return new;
-end;
-$function$;
 
-drop trigger if exists trg_locations_resolve_brand_identity on public.locations;
-create trigger trg_locations_resolve_brand_identity
-before insert or update of name,brand_name,operator_name,source_metadata
-on public.locations
-for each row execute function public._resolve_location_brand_trigger();
-
-create or replace function public._learn_provider_brand_alias_trigger()
-returns trigger
-language plpgsql
-security definer
-set search_path=''
-as $function$
-declare
-  v_brand text;
-  v_key text;
-begin
-  v_brand:=coalesce(
-    nullif(trim(new.source_metadata->>'brand'),''),
-    nullif(trim(new.source_metadata->'tags'->>'brand'),'')
-  );
-  if v_brand is null then return new; end if;
-  v_key:=public.normalize_brand_key(v_brand);
-  if v_key is null then return new; end if;
-
-  insert into public.brand_identity_aliases(
-    alias_key,alias_text,canonical_brand,source,confidence,evidence_count,city_count,state_count,first_seen_at,last_seen_at,updated_at
-  ) values(
-    v_key,v_brand,coalesce(nullif(trim(new.brand_name),''),v_brand),'provider',.990,1,
-    case when nullif(trim(new.city),'') is null then 0 else 1 end,
-    case when nullif(trim(new.state),'') is null then 0 else 1 end,
-    coalesce(new.created_at,now()),coalesce(new.updated_at,new.created_at,now()),now()
-  )
-  on conflict(alias_key) do update set
-    alias_text=case when public.brand_identity_aliases.confidence<=excluded.confidence then excluded.alias_text else public.brand_identity_aliases.alias_text end,
-    canonical_brand=case when public.brand_identity_aliases.confidence<=excluded.confidence then excluded.canonical_brand else public.brand_identity_aliases.canonical_brand end,
-    source=case when public.brand_identity_aliases.confidence<=excluded.confidence then 'provider' else public.brand_identity_aliases.source end,
-    confidence=greatest(public.brand_identity_aliases.confidence,.990),
-    evidence_count=public.brand_identity_aliases.evidence_count+1,
-    last_seen_at=greatest(public.brand_identity_aliases.last_seen_at,excluded.last_seen_at),
+  insert into public.location_brand_identities(location_id,canonical_brand,source,confidence,alias_key,detected_at,updated_at)
+  select
+    l.id,
+    identity->>'canonical_brand',
+    identity->>'source',
+    (identity->>'confidence')::numeric,
+    nullif(identity->>'alias_key',''),
+    now(),now()
+  from public.locations l
+  cross join lateral public.resolve_location_brand_identity(
+    coalesce(
+      nullif(trim(l.source_metadata->>'brand'),''),
+      nullif(trim(l.source_metadata->'tags'->>'brand'),''),
+      nullif(trim(l.brand_name),'')
+    ),
+    l.name,
+    coalesce(
+      nullif(trim(l.source_metadata->>'operator'),''),
+      nullif(trim(l.source_metadata->'tags'->>'operator'),''),
+      nullif(trim(l.operator_name),'')
+    )
+  ) identity
+  where (v_cursor is null or l.id>v_cursor) and l.id<=v_batch_max
+    and nullif(identity->>'canonical_brand','') is not null
+  on conflict(location_id) do update set
+    canonical_brand=excluded.canonical_brand,
+    source=excluded.source,
+    confidence=excluded.confidence,
+    alias_key=excluded.alias_key,
     updated_at=now();
-  return new;
+  get diagnostics v_identity_rows=row_count;
+
+  update public.locations l
+  set brand_name=i.canonical_brand,updated_at=now()
+  from public.location_brand_identities i
+  where i.location_id=l.id
+    and (v_cursor is null or l.id>v_cursor) and l.id<=v_batch_max
+    and l.brand_name is distinct from i.canonical_brand;
+  get diagnostics v_location_updates=row_count;
+
+  update public.brand_identity_backfill_state
+  set last_location_id=case when v_batch_count<v_limit then null else v_batch_max end,updated_at=now()
+  where singleton=true;
+
+  return jsonb_build_object(
+    'scanned',v_batch_count,'identified',v_identity_rows,'locations_updated',v_location_updates,
+    'cycle_complete',v_batch_count<v_limit,'last_location_id',case when v_batch_count<v_limit then null else v_batch_max end,
+    'processed_at',now()
+  );
 end;
 $function$;
-
-drop trigger if exists trg_locations_learn_provider_brand on public.locations;
-create trigger trg_locations_learn_provider_brand
-after insert or update of source_metadata,brand_name
-on public.locations
-for each row execute function public._learn_provider_brand_alias_trigger();
 
 revoke all on function public.normalize_brand_key(text) from public;
 revoke all on function public.brand_display_base(text) from public;
 revoke all on function public.resolve_location_brand_identity(text,text,text) from public;
 revoke all on function public.refresh_brand_identity_registry() from public;
+revoke all on function public.backfill_location_brand_identities(integer) from public;
 grant execute on function public.normalize_brand_key(text) to service_role;
 grant execute on function public.brand_display_base(text) to service_role;
 grant execute on function public.resolve_location_brand_identity(text,text,text) to service_role;
 grant execute on function public.refresh_brand_identity_registry() to service_role;
+grant execute on function public.backfill_location_brand_identities(integer) to service_role;
 
--- Seed and backfill now; future ingestion is handled synchronously by triggers.
+-- Seed the learned registry from current canonical data; location backfill is intentionally
+-- incremental so active ingestion is never blocked by a large table rewrite.
 select public.refresh_brand_identity_registry();
 
--- Refresh learned repeat-name aliases daily so a newly encountered regional/national chain
--- becomes recognizable automatically once enough independent locations establish the pattern.
 do $schedule$
 begin
   begin
     if exists(select 1 from cron.job where jobname='kleenest-brand-registry-refresh') then
       perform cron.unschedule('kleenest-brand-registry-refresh');
     end if;
-    perform cron.schedule(
-      'kleenest-brand-registry-refresh',
-      '17 3 * * *',
-      'select public.refresh_brand_identity_registry();'
-    );
+    if exists(select 1 from cron.job where jobname='kleenest-brand-identity-backfill') then
+      perform cron.unschedule('kleenest-brand-identity-backfill');
+    end if;
+    perform cron.schedule('kleenest-brand-registry-refresh','17 3 * * *','select public.refresh_brand_identity_registry();');
+    perform cron.schedule('kleenest-brand-identity-backfill','*/5 * * * *','select public.backfill_location_brand_identities(5000);');
   exception when others then
     null;
   end;
