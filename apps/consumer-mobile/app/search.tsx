@@ -12,7 +12,7 @@ export default function GlobalSearch(){
  const[capabilities,setCapabilities]=useState<CapabilitySearchEntry[]>([]);
  useEffect(()=>{void loadCapabilitySearchEntries('consumer').then(setCapabilities)},[]);
  useEffect(()=>{void loadAppSearchRecents('consumer').then(setRecents)},[]);
- const indexed=useMemo(()=>searchAppIndex('consumer',query,32),[query,capabilities]);
+ const indexed=useMemo(()=>searchAppIndex('consumer',query,32,capabilities),[query,capabilities]);
  async function search(value=query){
   const q=value.trim();setQuery(q);if(q.length<2){setPlaces([]);setPeople([]);return}
   setBusy(true);setMessage('');
