@@ -26,13 +26,14 @@ import { getProgressionOverviewV2, getProgressionWorld } from '../../services/di
 import { submitPriorKnowledgePhotos, type PriorKnowledgeRecency } from '../../services/priorKnowledge';
 import { getRewardCapabilities } from '../../services/rewardRuntime';
 import { listProgressionIdentities } from '../../services/progressionIdentity';
+import { isPreciseLocationPermission, selectBestLocationFix } from '../../services/checkInLocationQuality.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Image, Platform, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 function questDelta(before:any[],after:any[]){const beforeById=new Map((before||[]).map(q=>[String(q.quest_id),q]));let xp=0,steps=0;for(const q of after||[]){const previous=beforeById.get(String(q.quest_id));if(!previous)continue;xp+=Math.max(0,Number(q.xp_earned||0)-Number(previous.xp_earned||0));const prevDone=(previous.steps||[]).filter((s:any)=>s.completed).length,nextDone=(q.steps||[]).filter((s:any)=>s.completed).length;steps+=Math.max(0,nextDone-prevDone)}const completed=Math.max(0,(before||[]).length-(after||[]).length);return{xp,steps,completed};}
 function rewardMessage(before:any,after:any,beforeQuests:any[],afterQuests:any[],base:string){const pointGain=Math.max(0,Number(after?.points||0)-Number(before?.points||0)),levelBefore=Number(before?.level||1),levelAfter=Number(after?.level||1),badgeGain=Math.max(0,(after?.badges?.length||0)-(before?.badges?.length||0)),quest=questDelta(beforeQuests,afterQuests);const rewards=[pointGain?`+${pointGain} points`:null,levelAfter>levelBefore?`Level ${levelAfter} unlocked`:null,badgeGain?`${badgeGain} new badge${badgeGain===1?'':'s'}`:null,quest.xp?`+${quest.xp} quest XP`:null,quest.steps?`${quest.steps} quest step${quest.steps===1?'':'s'} complete`:null,quest.completed?`${quest.completed} quest completed`:null].filter(Boolean);return rewards.length?`${base} ${rewards.join(' · ')}`:base;}
 function friendlyActionError(error:any,fallback:string){const network=friendlyConsumerError(error,'');if(network)return network;const detail=String(error?.message||'').trim();const internal=/function\s+public\.|not unique|schema cache|PGRST|SQLSTATE|operator does not exist|violates .*constraint|duplicate key|invalid input syntax|null value in column|relation .* does not exist|column .* does not exist|permission denied for|syntax error at|fetch failed|network request failed|connectexception|java\.net|failed to connect|unknownhostexception|unable to resolve host/i.test(detail);return detail&&!internal&&detail.length<=180?detail:fallback;}
-function checkInErrorMessage(error:any){const detail=String(error?.message||'');if(detail.includes('OUTSIDE_GEOFENCE'))return 'Get closer to this restroom to check in. Kleenest only verifies GPS check-ins inside the location geofence.';if(detail.includes('LOCATION_NOT_VERIFIED'))return 'This restroom is not currently available for check-in. Its listing may have been rejected or disabled.';if(detail.includes('LOCATION_COORDINATES_UNAVAILABLE'))return 'This restroom does not have usable map coordinates yet, so GPS check-in is unavailable.';if(detail.includes('LEAVE_REQUIRED_BEFORE_REPEAT_CHECK_IN'))return 'You already checked in here. Leave the location before checking in again.';if(detail.includes('DAILY_PROGRESSION_CAP_REACHED'))return 'You reached today’s progression limit. Check-in rewards will be available again tomorrow.';if(detail.includes('AUTH_REQUIRED'))return 'Sign in to check in.';if(detail.includes('LOCATION_REQUIRED'))return 'Kleenest needs a valid current location to verify this check-in.';return friendlyActionError(error,'Check-in could not be completed. Please try again.');}
+function checkInErrorMessage(error:any){const detail=String(error?.message||'');if(detail.includes('PRECISE_LOCATION_REQUIRED'))return 'Precise location is required for a verified check-in. Turn on Precise location for Kleenest in your phone settings, then try again.';if(detail.includes('MOCKED_LOCATION_NOT_ALLOWED'))return 'Verified check-in cannot use a simulated location.';if(detail.includes('LOCATION_FIX_UNAVAILABLE'))return 'Kleenest could not get a reliable location fix. Keep location services on and try again.';if(detail.includes('OUTSIDE_GEOFENCE'))return 'Your GPS fix is still outside this restroom’s verification area. Kleenest now accounts for indoor GPS uncertainty, but the reading is not close enough yet.';if(detail.includes('LOCATION_NOT_VERIFIED'))return 'This restroom is not currently available for check-in. Its listing may have been rejected or disabled.';if(detail.includes('LOCATION_COORDINATES_UNAVAILABLE'))return 'This restroom does not have usable map coordinates yet, so GPS check-in is unavailable.';if(detail.includes('LEAVE_REQUIRED_BEFORE_REPEAT_CHECK_IN'))return 'You already checked in here. Leave the location before checking in again.';if(detail.includes('DAILY_PROGRESSION_CAP_REACHED'))return 'You reached today’s progression limit. Check-in rewards will be available again tomorrow.';if(detail.includes('AUTH_REQUIRED'))return 'Sign in to check in.';if(detail.includes('LOCATION_REQUIRED'))return 'Kleenest needs a valid current location to verify this check-in.';return friendlyActionError(error,'Check-in could not be completed. Please try again.');}
 async function progressionSnapshot(){const[dashboard,quests,progression]=await Promise.all([getMobileProgressionDashboard().catch(()=>({})),listMobileActiveQuests(12).catch(()=>[]),getProgressionOverviewV2().catch(()=>({}))]);const trustDiscoveryXp=(Array.isArray(progression?.recent_xp)?progression.recent_xp:[]).filter((event:any)=>Boolean(event?.subject?.trust_discovery)).reduce((sum:number,event:any)=>sum+Number(event?.xp||0),0);return{dashboard,quests,progression,trustDiscoveryXp};}
 type AmenityDraft={selected:boolean;quantity:string;sentiment:'good'|'needs_attention'};
 type CommunityPhoto=ReviewPhoto&{reviewId:string;reviewCreatedAt:string;helpfulCount:number;featuredCommunity:boolean};
@@ -156,12 +157,30 @@ export default function LocationDetailScreen(){
   }
   async function checkIn(){
     if(facilityRequired){setMessage('Which restroom did you use? Choose the specific restroom before verifying this visit.');return}
+    let proofMeta:Record<string,string|number|boolean|null>={locationId};
     try{
       const before=await progressionSnapshot();
       const permission=await Location.requestForegroundPermissionsAsync();
       if(permission.status!=='granted')throw new Error(permission.canAskAgain===false?'Location permission is blocked. Enable location for Kleenest in your phone settings, then try again.':'Location permission is required to check in.');
-      const current=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.High});
-      const result:any=await mobileCheckIn(locationId,current.coords.latitude,current.coords.longitude,selectedFacilityId||null);
+      const precise=isPreciseLocationPermission(permission,Platform.OS);
+      proofMeta={...proofMeta,permissionPrecision:Platform.OS==='android'?String(permission.android?.accuracy||'unknown'):Platform.OS==='ios'?String(permission.ios?.accuracy||'unknown'):'unknown'};
+      if(!precise)throw new Error('PRECISE_LOCATION_REQUIRED');
+      if(Platform.OS==='android')await Location.enableNetworkProviderAsync().catch(()=>{});
+      const fixes:Location.LocationObject[]=[];
+      const recent=await Location.getLastKnownPositionAsync({maxAge:15000,requiredAccuracy:100}).catch(()=>null);
+      if(recent)fixes.push(recent);
+      for(let attempt=0;attempt<3;attempt++){
+        const fix=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Highest,mayShowUserSettingsDialog:true});
+        fixes.push(fix);
+        if(fix.coords.accuracy!=null&&fix.coords.accuracy<=35)break;
+      }
+      const current=selectBestLocationFix(fixes);
+      if(!current)throw new Error('LOCATION_FIX_UNAVAILABLE');
+      if(current.mocked===true)throw new Error('MOCKED_LOCATION_NOT_ALLOWED');
+      const accuracyMeters=current.coords.accuracy==null?null:Math.max(0,Number(current.coords.accuracy));
+      proofMeta={...proofMeta,gpsAccuracyMeters:accuracyMeters,gpsSampleCount:fixes.length,gpsFixAgeMs:Math.max(0,Date.now()-Number(current.timestamp||Date.now()))};
+      recordBetaBreadcrumb('check_in_location_proof',`/location/${locationId}`,undefined,proofMeta);
+      const result:any=await mobileCheckIn(locationId,current.coords.latitude,current.coords.longitude,selectedFacilityId||null,accuracyMeters);
       const[eligible,nextPresence]=await Promise.all([findLatestEligibleReviewCheckIn(locationId).catch(()=>null),getConsumerLocationPresence(locationId).catch(()=>null)]);
       setCheckInId(eligible?.id||(result?.review_ready?result?.check_in_id||result?.id:null)||null);
       if(eligible?.restroom_facility_id)setSelectedFacilityId(String(eligible.restroom_facility_id));
@@ -169,12 +188,17 @@ export default function LocationDetailScreen(){
       setPresence(nextPresence);
       const after=await progressionSnapshot();
       const distance=result?.distance_meters!=null?` · ${Math.round(Number(result.distance_meters))} m proof`:'';
+      const accuracyAssist=Boolean(result?.accuracy_assisted);
       const recentPresence=result?.verified_from==='recent_presence_window';
-      const base=result?.already_checked_in?`This visit is already verified.${eligible?' Your verified review is ready.':''}`:recentPresence?`Visit verified from your recent on-site presence${distance}. You can now leave a verified review.`:missionMatches?`GPS + geofence visit verified${distance}. Continue with the server-defined mission evidence goal.`:`Visit verified · GPS + geofence proof${distance}. You can now leave a verified review.`;
+      const base=result?.already_checked_in?`This visit is already verified.${eligible?' Your verified review is ready.':''}`:accuracyAssist?`Visit verified with precise GPS + indoor accuracy allowance${distance}. You can now leave a verified review.`:recentPresence?`Visit verified from your recent on-site presence${distance}. You can now leave a verified review.`:missionMatches?`GPS + geofence visit verified${distance}. Continue with the server-defined mission evidence goal.`:`Visit verified · GPS + geofence proof${distance}. You can now leave a verified review.`;
       const visualPrefix=!result?.already_checked_in&&checkInAnimation==='signal-ripple'?'◌ Signal Ripple · ':!result?.already_checked_in&&checkInAnimation==='guardian-lock'?'◆ Guardian Lock · ':'';
       setMessage(visualPrefix+rewardMessage(before.dashboard,after.dashboard,before.quests,after.quests,base));
-      captureConsumerCoreLoopEvent('arrival_detected',locationId,{source:'location_detail',alreadyCheckedIn:Boolean(result?.already_checked_in),restroomFacilityId:selectedFacilityId||null});
-    }catch(error:any){setMessage(checkInErrorMessage(error))}
+      captureConsumerCoreLoopEvent('arrival_detected',locationId,{source:'location_detail',alreadyCheckedIn:Boolean(result?.already_checked_in),restroomFacilityId:selectedFacilityId||null,accuracyAssisted:accuracyAssist,gpsAccuracyMeters:accuracyMeters});
+    }catch(error:any){
+      recordBetaBreadcrumb('check_in_failed',`/location/${locationId}`,String(error?.message||'check_in_failed').slice(0,180),proofMeta);
+      captureBetaError(error,{route:`/location/${locationId}`,operation:'verified_check_in',metadata:proofMeta});
+      setMessage(checkInErrorMessage(error));
+    }
   }
   async function choosePhotos(){try{const remaining=Math.max(1,3-reviewPhotos.length);const next=await chooseReviewPhotos(remaining);if(next.length)setReviewPhotos(current=>[...current,...next].slice(0,3))}catch(error:any){setMessage(friendlyActionError(error,'Review photos could not be selected.'))}}
   async function takePhoto(){try{if(reviewPhotos.length>=3){setMessage('You already selected the maximum of 3 review photos.');return}const next=await captureReviewPhoto();if(next)setReviewPhotos(current=>[...current,next].slice(0,3))}catch(error:any){setMessage(friendlyActionError(error,'Review photo could not be taken.'))}}
