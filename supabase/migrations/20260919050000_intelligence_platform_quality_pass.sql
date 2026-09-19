@@ -70,15 +70,23 @@ begin
     changed_at=now()
   returning revision into v_revision;
 
-  v_snapshot:=coalesce(
-    p_snapshot,
-    jsonb_build_object(
+  if p_snapshot is not null then
+    v_snapshot:=p_snapshot;
+  elsif exists(select 1 from public.locations l where l.id=p_location_id and l.is_active is distinct from false) then
+    v_snapshot:=jsonb_build_object(
       'contract_version',1,
       'location_id',p_location_id,
       'revision',v_revision,
       'proof',public.location_proof_card(p_location_id)
-    )
-  );
+    );
+  else
+    v_snapshot:=jsonb_build_object(
+      'contract_version',1,
+      'location_id',p_location_id,
+      'revision',v_revision,
+      'inactive',true
+    );
+  end if;
 
   insert into public.intelligence_change_outbox(
     location_id,revision,changed_dimensions,source_type,source_id,public_snapshot
@@ -189,7 +197,8 @@ declare v_location uuid;
 begin
   v_location:=case when tg_op='DELETE' then old.location_id else new.location_id end;
   perform public.record_intelligence_change(v_location,array['amenities','fit']::text[],'location_amenities',null,null);
-  return coalesce(new,old);
+  if tg_op='DELETE' then return old; end if;
+  return new;
 end;
 $function$;
 
@@ -373,7 +382,7 @@ declare
 begin
   if not public.is_platform_owner_session() then raise exception 'Platform owner access required'; end if;
   select count(*),
-    coalesce(extract(epoch from(now()-min(created_at))) filter(where processed_at is null),0)
+    coalesce(extract(epoch from (now()-min(created_at))),0)
   into v_backlog,v_oldest
   from public.intelligence_change_outbox
   where processed_at is null;
