@@ -1,4 +1,5 @@
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -15,6 +16,7 @@ function authRedirect(){
  const base=window.location.pathname.startsWith('/Kleenest_Production')?'/Kleenest_Production':'';
  return `${window.location.origin}${base}/profile/`;
 }
+function authUrlValue(url:string,key:string){const match=url.match(new RegExp(`[?#&]${key}=([^&#]+)`));return match?.[1]?decodeURIComponent(match[1].replace(/\+/g,' ')):''}
 
 export default function SignupScreen(){
  const theme=useConsumerTheme();
@@ -43,7 +45,13 @@ export default function SignupScreen(){
    if(error)throw error;
    if(!data.url)throw new Error('Google sign-in could not be started.');
    if(Platform.OS==='web'&&typeof window!=='undefined')window.location.assign(data.url);
-   else await Linking.openURL(data.url);
+   else {
+    const authResult=await WebBrowser.openAuthSessionAsync(data.url,redirectTo);
+    if(authResult.type==='success'){
+     const accepted=await handleAuthUrl(authResult.url);
+     if(!accepted)throw new Error('Google sign-in returned without a usable Kleenest session.');
+    }else if(authResult.type==='cancel'||authResult.type==='dismiss')setMessage('Google sign-in was cancelled.');
+   }
   }catch(error:any){setMessage(error?.message||'Google sign-in could not be started.')}finally{setBusy(false)}
  }
 
