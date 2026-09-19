@@ -22,12 +22,15 @@ expect(service,/functions\.invoke\('business-self-service-provision'/,'Business 
 expect(service,/\.is\('business_id',null\).*\.is\('claimed_business_id',null\)/s,'claim search must only offer unowned locations');
 expect(page,/CREATE WORKSPACE & CONTINUE/,'Get Started must expose the provisioning action');
 expect(page,/previewBusinessOnboarding/,'Get Started must seed targeted onboarding before navigation');
-expect(page,/router\.replace\('\/onboarding'\)/,'Get Started must continue into mandatory onboarding');
+expect(page,/intent==='claim'/,'Get Started must preserve a dedicated claim-first path');
+expect(page,/Claim this location for free/,'Get Started must expose the free claim action');
+expect(page,/router\.replace\('\/verification-center'\)/,'Claim-first setup must continue into verification');
 expect(auth,/\/get-started/,'Business auth must route no-workspace users into provisioning');
 expect(layout,/needsProvisioning/,'Business layout must distinguish signed-in users without a workspace');
 expect(layout,/get-started/,'Business layout must allow the provisioning route');
 expect(fleetAuth,/intent=fleet/,'Fleet signup must hand no-workspace users to unified Business provisioning');
-expect(marketing,/START BUSINESS \/ FLEET \/ ENTERPRISE/,'public For Business page must expose the unified start CTA');
+expect(marketing,/CLAIM YOUR LOCATION FREE/,'public For Business page must expose free claiming as the primary CTA');
+expect(marketing,/openBusinessPortal\('signup','claim'\)/,'public free-claim CTA must preserve claim intent through auth');
 expect(marketing,/BUSINESS SIGN IN/,'public For Business page must expose Business sign-in');
 expect(migration,/businesses_member_select/,'pending Business rows must be visible to their authenticated members');
 expect(migration,/bm\.user_id=\(select auth\.uid\(\)\)/,'member visibility must be scoped to the caller');
