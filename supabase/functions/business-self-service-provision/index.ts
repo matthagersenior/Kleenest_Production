@@ -142,42 +142,94 @@ async function submitExistingClaim(req: Request, businessId: string, locationIdR
   return { locationId, action: 'claim_submitted' };
 }
 
-async function createOwnedLocation(actor: Actor, businessId: string, businessName: string, raw: NewLocation) {
+async function resolveBusinessLocation(req: Request, raw: NewLocation) {
+  const query = [text(raw?.address), text(raw?.city), text(raw?.state), text(raw?.postalCode), text(raw?.country) || 'US'].filter(Boolean).join(', ');
+  if (!query) throw new ProvisionError('Location address is required.');
+  const authHeader = req.headers.get('authorization') ?? '';
+  const userClient = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data, error } = await userClient.functions.invoke('resolve-consumer-location', {
+    body: { query },
+  });
+  if (error) throw new ProvisionError('Kleenest could not locate that address. Check the address and try again.');
+  const resolvedLatitude = Number(data?.resolved?.latitude);
+  const resolvedLongitude = Number(data?.resolved?.longitude);
+  if (!Number.isFinite(resolvedLatitude) || !Number.isFinite(resolvedLongitude)) {
+    throw new ProvisionError('Kleenest could not locate that address. Check the address and try again.');
+  }
+  return {
+    resolvedLatitude,
+    resolvedLongitude,
+    resolvedLabel: text(data?.resolved?.label) || query,
+    geocoderProvider: text(data?.provider) || 'configured',
+  };
+}
+
+async function createOwnedLocation(req: Request, actor: Actor, businessId: string, businessName: string, raw: NewLocation) {
   const name = text(raw?.name) || businessName;
   const address = text(raw?.address);
-  const { data: owned, error: ownedError } = await admin
+  const city = text(raw?.city);
+  const state = text(raw?.state);
+  const postalCode = text(raw?.postalCode);
+  const { resolvedLatitude, resolvedLongitude, resolvedLabel, geocoderProvider } = await resolveBusinessLocation(req, raw);
+  const { data: matches, error: matchError } = await admin
     .from('locations')
-    .select('id,name,address')
-    .eq('business_id', businessId)
-    .limit(100);
-  if (ownedError) throw ownedError;
+    .select('id,name,address,city,state')
+    .ilike('name', name)
+    .limit(50);
+  if (matchError) throw matchError;
 
-  const duplicate = (owned ?? []).find(row =>
+  const duplicate = (matches ?? []).find(row =>
     normalized(row.name) === normalized(name) &&
-    normalized(row.address) === normalized(address)
+    normalized(row.address) === normalized(address) &&
+    normalized(row.city) === normalized(city) &&
+    normalized(row.state) === normalized(state)
   );
-  if (duplicate?.id) return { locationId: String(duplicate.id), action: 'already_owned' };
 
-  const { data: location, error } = await admin
-    .from('locations')
-    .insert({
-      business_id: businessId,
-      claimed_business_id: businessId,
-      name,
-      address: address || null,
-      city: text(raw?.city) || null,
-      state: text(raw?.state) || null,
-      postal_code: text(raw?.postalCode) || null,
-      country: text(raw?.country) || 'US',
-      source: 'business_self_service',
-      created_by: actor.userId,
-      owner_name: businessName,
-      owner_email: actor.email,
-    })
-    .select('id')
-    .single();
-  if (error || !location?.id) throw error ?? new Error('Location was not created.');
-  return { locationId: String(location.id), action: 'location_created' };
+  let locationId = duplicate?.id ? String(duplicate.id) : '';
+  if (!locationId) {
+    const { data: brand } = await admin.rpc('normalize_ingestion_brand', {
+      p_brand: null,
+      p_name: name,
+      p_operator: null,
+    });
+    const { data: location, error } = await admin
+      .from('locations')
+      .insert({
+        name,
+        address: address || null,
+        city: city || null,
+        state: state || null,
+        postal_code: postalCode || null,
+        country: text(raw?.country) || 'US',
+        latitude: resolvedLatitude,
+        longitude: resolvedLongitude,
+        source: 'business_self_service',
+        source_dataset: 'user_discovery',
+        brand_name: brand || null,
+        created_by: actor.userId,
+        owner_name: businessName,
+        owner_email: actor.email,
+        source_metadata: {
+          provider: 'user_discovery',
+          source_dataset: 'business_self_service',
+          brand: brand || null,
+          captured_at: new Date().toISOString(),
+          geocoder_provider: geocoderProvider,
+          geocoder_label: resolvedLabel,
+          authority_status: 'unclaimed_pending_verification',
+        },
+      })
+      .select('id')
+      .single();
+    if (error || !location?.id) throw error ?? new Error('Location was not created.');
+    locationId = String(location.id);
+  }
+
+  const claim = await submitExistingClaim(req, businessId, locationId);
+  return { ...claim, action: duplicate ? claim.action : 'location_created_claim_submitted' };
 }
 
 Deno.serve(async req => {
@@ -199,7 +251,7 @@ Deno.serve(async req => {
     if (body?.existingLocationId) {
       location = await submitExistingClaim(req, workspace.businessId, body.existingLocationId);
     } else if (body?.newLocation && typeof body.newLocation === 'object' && !Array.isArray(body.newLocation)) {
-      location = await createOwnedLocation(actor, workspace.businessId, businessName, body.newLocation as NewLocation);
+      location = await createOwnedLocation(req, actor, workspace.businessId, businessName, body.newLocation as NewLocation);
     }
 
     return json(req, {
