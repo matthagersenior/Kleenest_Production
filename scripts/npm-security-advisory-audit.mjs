@@ -23,15 +23,32 @@ for(const [path,meta] of Object.entries(lock.packages)){
 for(const name of Object.keys(payload))payload[name]=[...new Set(payload[name])].sort();
 if(!Object.keys(payload).length)throw new Error('Dependency graph is empty; refusing to pass the security gate.');
 
-const response=await fetch('https://registry.npmjs.org/-/npm/v1/security/advisories/bulk',{
-  method:'POST',
-  headers:{'content-type':'application/json','accept':'application/json'},
-  body:JSON.stringify(payload),
-});
-if(!response.ok){
-  throw new Error(`npm bulk advisory endpoint failed: HTTP ${response.status} ${await response.text()}`);
+const endpoint='https://registry.npmjs.org/-/npm/v1/security/advisories/bulk';
+let result=null;
+let lastError='';
+for(let attempt=1;attempt<=5;attempt+=1){
+  try{
+    const response=await fetch(endpoint,{
+      method:'POST',
+      headers:{'content-type':'application/json','accept':'application/json'},
+      body:JSON.stringify(payload),
+    });
+    if(response.ok){
+      result=await response.json();
+      break;
+    }
+    lastError=`HTTP ${response.status} ${await response.text()}`;
+    if(response.status<500&&response.status!==429)break;
+  }catch(error){
+    lastError=String(error);
+  }
+  if(attempt<5){
+    const delayMs=attempt*5000;
+    console.warn(`npm advisory service unavailable (${lastError}); retrying in ${delayMs/1000}s (${attempt}/5).`);
+    await new Promise(resolve=>setTimeout(resolve,delayMs));
+  }
 }
-const result=await response.json();
+if(result===null)throw new Error(`npm bulk advisory endpoint failed after retries: ${lastError}`);
 const findings=[];
 for(const [name,advisories] of Object.entries(result||{})){
   for(const advisory of Array.isArray(advisories)?advisories:[]){
