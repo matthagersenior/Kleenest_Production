@@ -110,7 +110,7 @@ declare
   p record;
   v_events integer:=0;
   v_rows integer:=0;
-  v_failed boolean:=false;
+  v_row_events integer:=0;
 begin
   for r in
     select *
@@ -121,19 +121,19 @@ begin
     limit greatest(1,least(coalesce(p_limit,100),500))
   loop
     v_rows:=v_rows+1;
-    v_failed:=false;
-    for p in
-      select pp.id
-      from public.platform_partners pp
-      where pp.status='active'
-        and public.platform_partner_product_enabled(pp.id,'place_details')
-        and exists(
-          select 1 from public.platform_webhook_endpoints ep
-          where ep.partner_id=pp.id and ep.active
-            and ('*'=any(ep.event_types) or 'intelligence.changed'=any(ep.event_types))
-        )
-    loop
-      begin
+    v_row_events:=0;
+    begin
+      for p in
+        select pp.id
+        from public.platform_partners pp
+        where pp.status='active'
+          and public.platform_partner_product_enabled(pp.id,'place_details')
+          and exists(
+            select 1 from public.platform_webhook_endpoints ep
+            where ep.partner_id=pp.id and ep.active
+              and ('*'=any(ep.event_types) or 'intelligence.changed'=any(ep.event_types))
+          )
+      loop
         perform public.enqueue_platform_webhook_event(
           p.id,
           'intelligence.changed',
@@ -148,17 +148,16 @@ begin
             'changedAt',r.created_at
           )
         );
-        v_events:=v_events+1;
-      exception when others then
-        -- Keep the row pending for the next bounded flush instead of blocking source evidence writes.
-        v_failed:=true;
-      end;
-    end loop;
-    if not v_failed then
+        v_row_events:=v_row_events+1;
+      end loop;
       update public.intelligence_change_outbox
       set processed_at=now()
       where id=r.id;
-    end if;
+      v_events:=v_events+v_row_events;
+    exception when others then
+      -- The subtransaction rolls back every enqueue for this row, so retry cannot duplicate partial delivery.
+      null;
+    end;
   end loop;
   return jsonb_build_object('processed',v_rows,'webhook_events',v_events,'processed_at',now());
 end;
