@@ -16,7 +16,8 @@ const policyConvergence=read('supabase/migrations/20260913171236_converge_busine
 expect(edge,/auth\.getUser\(\)/,'Edge Function must validate the caller JWT');
 expect(edge,/SERVICE_ROLE_KEY/,'Edge Function must keep privileged bootstrap server-side');
 expect(edge,/role:\s*'owner'/,'new workspace must assign the caller owner role');
-expect(edge,/status:\s*'pending'/,'existing-location claims must remain pending');
+expect(edge,/\.rpc\('claim_location_for_business'/,'self-service location claims must delegate to the canonical authenticated claim authority');
+if(/from\('location_claims'\)[\s\S]*upsert\(/.test(edge))throw new Error('Self-service onboarding audit failed: Edge Function must not bypass canonical claim verification with a direct location_claims upsert');
 expect(edge,/source:\s*'business_self_service'/,'new locations must preserve provenance');
 expect(service,/functions\.invoke\('business-self-service-provision'/,'Business app must call the canonical bootstrap function');
 expect(service,/\.is\('business_id',null\).*\.is\('claimed_business_id',null\)/s,'claim search must only offer unowned locations');
