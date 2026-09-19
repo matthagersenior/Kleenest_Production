@@ -46,7 +46,7 @@ jobs:
         run: npm ci --no-audit --no-fund --prefer-offline
       - name: Dependency advisory gate
         timeout-minutes: 5
-        run: npm audit --audit-level=moderate
+        run: node scripts/npm-security-advisory-audit.mjs moderate
       - name: Resolve latest Consumer APK baseline
         id: consumer-apk-baseline
         continue-on-error: true
