@@ -124,33 +124,21 @@ async function ensureWorkspace(actor: Actor, businessName: string) {
   return { businessId, created: true };
 }
 
-async function submitExistingClaim(actor: Actor, businessId: string, locationIdRaw: unknown) {
+async function submitExistingClaim(req: Request, businessId: string, locationIdRaw: unknown) {
   const locationId = uuid(locationIdRaw, 'Location');
-  const { data: location, error } = await admin
-    .from('locations')
-    .select('id,business_id,claimed_business_id,is_active')
-    .eq('id', locationId)
-    .maybeSingle();
-  if (error) throw error;
-  if (!location || location.is_active === false) throw new ProvisionError('Location not found', 404);
+  const authHeader = req.headers.get('authorization') ?? '';
+  const userClient = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: authHeader } },
+  });
 
-  const direct = location.business_id ? String(location.business_id) : '';
-  const claimed = location.claimed_business_id ? String(location.claimed_business_id) : '';
-  if ((direct && direct !== businessId) || (claimed && claimed !== businessId)) {
-    throw new ProvisionError('That location is already managed by another business.', 409);
-  }
-  if (direct === businessId || claimed === businessId) {
-    return { locationId, action: 'already_owned' };
-  }
-
-  const { error: claimError } = await admin.from('location_claims').upsert({
-    location_id: locationId,
-    business_id: businessId,
-    claimed_by: actor.userId,
-    status: 'pending',
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'location_id,business_id' });
-  if (claimError) throw claimError;
+  // Delegate all claim authority to the canonical authenticated RPC.
+  // Free/self-service claiming changes price and funnel friction, never verification strength.
+  const { error } = await userClient.rpc('claim_location_for_business', {
+    p_location_id: locationId,
+    p_business_id: businessId,
+  });
+  if (error) throw new ProvisionError(error.message || 'Location claim could not be submitted.', 400);
   return { locationId, action: 'claim_submitted' };
 }
 
@@ -209,7 +197,7 @@ Deno.serve(async req => {
     let location: { locationId: string | null; action: string } = { locationId: null, action: 'none' };
 
     if (body?.existingLocationId) {
-      location = await submitExistingClaim(actor, workspace.businessId, body.existingLocationId);
+      location = await submitExistingClaim(req, workspace.businessId, body.existingLocationId);
     } else if (body?.newLocation && typeof body.newLocation === 'object' && !Array.isArray(body.newLocation)) {
       location = await createOwnedLocation(actor, workspace.businessId, businessName, body.newLocation as NewLocation);
     }
