@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
 import { ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
-import { clearAppSearchRecents,loadAppSearchRecents,rememberAppSearchQuery,searchAppIndex,type AppSearchEntry } from '@kleenest/mobile-core';
+import { clearAppSearchRecents,loadAppSearchRecents,loadCapabilitySearchEntries,rememberAppSearchQuery,searchAppIndex,type AppSearchEntry,type CapabilitySearchEntry } from '@kleenest/mobile-core';
 import { searchOwnerUsers } from '../services/ownerAdmin';
 import { searchOwnerBusinesses } from '../services/ownerBusinesses';
 import { getOwnerCreatorMissionAttributionSummary } from '../services/ownerEconomy';
@@ -11,8 +11,10 @@ type Row=Record<string,any>;
 export default function GlobalSearch(){
  const theme=usePlatformTheme(),router=useRouter();
  const[query,setQuery]=useState(''),[people,setPeople]=useState<Row[]>([]),[businesses,setBusinesses]=useState<Row[]>([]),[missions,setMissions]=useState<Row[]>([]),[allMissions,setAllMissions]=useState<Row[]>([]),[recents,setRecents]=useState<string[]>([]),[busy,setBusy]=useState(false);
+ const[capabilities,setCapabilities]=useState<CapabilitySearchEntry[]>([]);
+ useEffect(()=>{void loadCapabilitySearchEntries('owner').then(setCapabilities)},[]);
  useEffect(()=>{void loadAppSearchRecents('owner').then(setRecents);void getOwnerCreatorMissionAttributionSummary(366).then(v=>setAllMissions(Array.isArray(v.missions)?v.missions:[])).catch(()=>{})},[]);
- const indexed=useMemo(()=>searchAppIndex('owner',query,38),[query]);
+ const indexed=useMemo(()=>searchAppIndex('owner',query,38),[query,capabilities]);
  async function search(value=query){
   const q=value.trim();setQuery(q);if(q.length<2){setPeople([]);setBusinesses([]);setMissions([]);return}
   setBusy(true);
