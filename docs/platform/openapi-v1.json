@@ -690,6 +690,197 @@
           }
         }
       }
+    },
+    "/v1/places/{placeId}/intelligence": {
+      "get": {
+        "tags": [
+          "Intelligence"
+        ],
+        "summary": "Explain current Kleenest intelligence for a place",
+        "security": [
+          {
+            "KleenestApiKey": []
+          },
+          {
+            "KleenestClientToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "placeId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deterministic place intelligence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPlaceIntelligence"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/v1/places/{placeId}/proof": {
+      "get": {
+        "tags": [
+          "Intelligence"
+        ],
+        "summary": "Get the public proof card for a place",
+        "security": [
+          {
+            "KleenestApiKey": []
+          },
+          {
+            "KleenestClientToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "placeId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evidence proof card",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPlaceProof"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/v1/places/{placeId}/access": {
+      "get": {
+        "tags": [
+          "Intelligence"
+        ],
+        "summary": "Get the public/partner-safe verified access projection",
+        "security": [
+          {
+            "KleenestApiKey": []
+          },
+          {
+            "KleenestClientToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "placeId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified access projection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicVerifiedAccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/v1/intelligence/route": {
+      "post": {
+        "tags": [
+          "Intelligence"
+        ],
+        "summary": "Explain deterministic restroom intelligence along a route",
+        "security": [
+          {
+            "KleenestApiKey": []
+          },
+          {
+            "KleenestClientToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteRecommendationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Route intelligence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicRouteIntelligence"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1876,6 +2067,162 @@
             "type": "boolean"
           }
         }
+      },
+      "PublicPlaceIntelligence": {
+        "type": "object",
+        "properties": {
+          "contractVersion": {
+            "const": 1
+          },
+          "locationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "now": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "explanation": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "locationId",
+          "revision",
+          "now",
+          "explanation",
+          "generatedAt"
+        ]
+      },
+      "PublicPlaceProof": {
+        "type": "object",
+        "properties": {
+          "contractVersion": {
+            "const": 1
+          },
+          "locationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "proof": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "locationId",
+          "revision",
+          "proof",
+          "generatedAt"
+        ]
+      },
+      "PublicVerifiedAccess": {
+        "type": "object",
+        "properties": {
+          "contractVersion": {
+            "const": 1
+          },
+          "locationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "access": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "locationId",
+          "revision",
+          "access",
+          "generatedAt"
+        ]
+      },
+      "PublicRouteIntelligence": {
+        "type": "object",
+        "properties": {
+          "contractVersion": {
+            "const": 1
+          },
+          "route": {
+            "$ref": "#/components/schemas/LineString"
+          },
+          "coverage": {
+            "type": "object",
+            "properties": {
+              "recommendationCount": {
+                "type": "integer"
+              },
+              "trustedCount": {
+                "type": "integer"
+              },
+              "coveragePct": {
+                "type": "number"
+              },
+              "longestGapMeters": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "recommendationCount",
+              "trustedCount",
+              "coveragePct",
+              "longestGapMeters"
+            ]
+          },
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecommendationCandidate"
+            }
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "route",
+          "coverage",
+          "recommendations",
+          "explanation",
+          "generatedAt"
+        ]
       }
     },
     "responses": {
