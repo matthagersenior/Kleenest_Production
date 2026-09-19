@@ -42,7 +42,7 @@ export default function SignupScreen(){
   else if(accessToken&&refreshToken){const{error}=await client.auth.setSession({access_token:accessToken,refresh_token:refreshToken});if(error)throw error}
   else return false;
   markConsumerAppSession();
-  router.replace('/home' as any);
+  router.replace('/home');
   return true;
  }
 
@@ -79,7 +79,7 @@ export default function SignupScreen(){
    const{error}=await client.auth.signInWithPassword({email:normalized,password});
    if(error)throw error;
    markConsumerAppSession();
-   router.replace('/' as any);
+   router.replace('/home');
   }catch(error:any){
    const text=String(error?.message||'Sign in failed.');
    if(/email.*not.*confirm|not.*confirm.*email/i.test(text)){
@@ -103,7 +103,7 @@ export default function SignupScreen(){
    if(error)throw error;
    if(data.session){
     markConsumerAppSession();
-    router.replace((intent==='family'?'/family':'/') as any);
+    router.replace((intent==='family'?'/family':'/home') as any);
     return;
    }
    setNeedsConfirmation(true);
