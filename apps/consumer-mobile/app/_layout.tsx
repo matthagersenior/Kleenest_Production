@@ -112,11 +112,12 @@ export default function RootLayout() {
     <Tabs.Screen name="index" options={{ href:null,title:'Launch',headerShown:false }}/>
     <Tabs.Screen name="home" options={{ title:'Home',headerShown:false,tabBarIcon:tabIcon('⌂'),tabBarLabel:tabLabel('Home') }}/>
     <Tabs.Screen name="explore" options={{ title:'Explore',headerShown:false,tabBarIcon:tabIcon('⌖'),tabBarLabel:tabLabel('Explore') }}/>
-    <Tabs.Screen name="progress" options={{ title:'Progress',headerShown:false,tabBarIcon:tabIcon('★'),tabBarLabel:tabLabel('Progress') }}/>
+    <Tabs.Screen name="qr" options={{ title:'Check In',headerShown:false,tabBarIcon:tabIcon('✓'),tabBarLabel:tabLabel('Check In') }}/>
+    <Tabs.Screen name="progress" options={{ href:null,title:'Progress',headerShown:false }}/>
     <Tabs.Screen name="passport" options={{ href:null,title:'Kleenest Passport' }}/>
     <Tabs.Screen name="intelligence" options={{ href:null,title:'Kleenest Intelligence' }}/>
     <Tabs.Screen name="social" options={{ title:'Community',headerShown:false,tabBarIcon:tabIcon('●'),tabBarLabel:tabLabel('Community') }}/>
-    <Tabs.Screen name="search" options={{ title:'Search',headerShown:false,tabBarIcon:tabIcon('⌕'),tabBarLabel:tabLabel('Search') }}/>
+    <Tabs.Screen name="search" options={{ href:null,title:'Search',headerShown:false }}/>
     <Tabs.Screen name="profile" options={{ title:'Profile',headerShown:false,tabBarIcon:tabIcon('◉'),tabBarLabel:tabLabel('Profile') }}/>
     <Tabs.Screen name="signup" options={{ href:null,title:'Join Kleenest' }}/>
     <Tabs.Screen name="install" options={{ href:null,title:'Install Kleenest' }}/>
@@ -135,7 +136,7 @@ export default function RootLayout() {
     <Tabs.Screen name="game/[code]" options={{ href:null,title:'Game Arena',headerShown:false }}/>
     <Tabs.Screen name="reward-tools" options={{ href:null,title:'Reward Toolkit',headerShown:false }}/>
     <Tabs.Screen name="route" options={{ href:null,title:'Routes' }}/>
-    <Tabs.Screen name="qr" options={{ href:null,title:'Scan QR' }}/>
+
     <Tabs.Screen name="location-qr" options={{ href:null,title:'Location QR' }}/>
     <Tabs.Screen name="location/[id]" options={{ href:null,title:'Restroom' }}/>
     <Tabs.Screen name="contributor/[id]" options={{ href:null,title:'Contributor' }}/>
