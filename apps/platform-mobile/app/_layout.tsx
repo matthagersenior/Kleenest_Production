@@ -76,7 +76,8 @@ export default function Layout(){
     <Tabs.Screen name="capabilities" options={{href:null,title:'Capabilities'}}/>
     <Tabs.Screen name="audit" options={{href:null,title:'Audit'}}/>
     <Tabs.Screen name="data" options={{href:null,title:'Data'}}/>
-    <Tabs.Screen name="notifications" options={{href:null,title:'Live Network Messaging'}}/>\n    <Tabs.Screen name="communications" options={{href:null,title:'Communications'}}/>
+    <Tabs.Screen name="notifications" options={{href:null,title:'Live Network Messaging'}}/>
+    <Tabs.Screen name="communications" options={{href:null,title:'Communications'}}/>
     <Tabs.Screen name="feedback-inbox" options={{href:null,title:'Tell Kleenest'}}/>
     <Tabs.Screen name="beta-incidents" options={{href:null,title:'Beta Incidents'}}/>
     <Tabs.Screen name="relevance" options={{href:null,title:'Relevance + Sponsorship'}}/>
