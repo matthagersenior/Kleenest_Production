@@ -15,6 +15,7 @@ const migration=requireFile('supabase/migrations/20260922110000_admob_health_tel
 requireAll('Consumer AdMob telemetry service',telemetry,[
   "rpc('record_admob_telemetry_event'",
   "type AdMobTelemetryEvent",
+  "'initialized'",
   "'request'",
   "'fill'",
   "'impression'",
@@ -58,7 +59,10 @@ requireAll('AdMob telemetry schema',migration,[
   "grant execute on function public.record_admob_telemetry_event",
   "grant execute on function public.owner_admob_health_snapshot",
   'revoke all on public.admob_telemetry_events from anon,authenticated',
-  "event_type in ('request','fill','impression','click','paid','no_fill','load_error','consent_blocked','initialization_error')",
+  "event_type in ('initialized','request','fill','impression','click','paid','no_fill','load_error','consent_blocked','initialization_error')",
+  "'stores_user_id',false",
+  "'stores_device_id',false",
+  "'stores_location',false",
 ]);
 
 if(failures.length){
