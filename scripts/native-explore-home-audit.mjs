@@ -25,14 +25,16 @@ assert.match(home, /onPress=\{action\('\/explore'\)\}/);
 assert.match(home, /onPress=\{action\('\/qr'\)\}/);
 assert.match(home, /onPress=\{action\('\/discover'\)\}/);
 assert.match(home, /YOUR KLEENEST/);
-assert.match(home, /onPress=\{action\('\/saved'\)\}/);
-assert.match(home, /onPress=\{action\('\/route'\)\}/);
-assert.match(home, /onPress=\{action\('\/progress'\)\}/);
-assert.match(home, /onPress=\{action\('\/assistant'\)\}/);
+for (const route of ['/saved','/route','/progress','/games','/social','/assistant']) {
+  assert.match(home, new RegExp(`route:['"]${route.replace('/','\\/')}['"]`));
+}
+assert.match(home, /onPress=\{action\(item\.route\)\}/);
 assert.doesNotMatch(home, /CORE ACTIONS/);
 assert.doesNotMatch(home, /QUICK ACTIONS/);
 assert.doesNotMatch(home, /FeatureCard/);
 assert.match(layout, /name="qr" options=\{\{ title:'Check In'/);
+assert.match(layout, /name="games" options=\{\{ title:'Game Center'[^}]*tabBarIcon/s);
+assert.match(layout, /name="social" options=\{\{ href:null,title:'Community'/);
 assert.match(layout, /name="progress" options=\{\{ href:null/);
 assert.match(layout, /name="search" options=\{\{ href:null/);
 assert.doesNotMatch(home, /THE KLEENEST LOOP/);

@@ -42,7 +42,7 @@ if(!failures.length){
  if(!hub.includes("pathname:'/game/[code]'")||!hub.includes('params:{code:game.code}'))failures.push('Game Center cards must deep-link the selected canonical game arena.');
  if(!play.includes("pathname:'/game/[code]'")||!play.includes('params:{code:game.code}'))failures.push('Play Game Center cards must deep-link the selected canonical game arena.');
  if(!arena.includes('useLocalSearchParams')||!arena.includes('g.code===code'))failures.push('Game arenas must honor the selected canonical game code instead of defaulting every launch.');
- if(!new RegExp("name=[\"']games[\"'][^>]*href:\\s*null").test(layout)||!new RegExp("name=[\"']game/\\[code\\][\"'][^>]*href:\\s*null").test(layout))failures.push('Game hub and per-game arena must remain hidden secondary routes beneath Play.');
+ if(!layout.includes('<Tabs.Screen name="games" options={{ title:\'Game Center\'')||new RegExp("name=[\"']games[\"'][^>]*href:\\s*null").test(layout)||!new RegExp("name=[\"']game/\\[code\\][\"'][^>]*href:\\s*null").test(layout))failures.push('Game Center must remain a primary tab while per-game arenas stay hidden secondary routes.');
 
  if(!migrations.includes("set search_path = ''")||!migrations.includes('v_score:=least(v_raw_score,v_max_score)')||!migrations.includes('safe_score:=least(raw_score,max_score)'))failures.push('Solo and challenge score authorities must clamp scores with empty search paths.');
  if(!migrations.includes("values(\n   v_user,'game_score','game',v_game.id")&&!migrations.includes("values(v_user,'game_score','game',v_game.id"))failures.push("Game score persistence must use canonical progression source_type 'game'.");

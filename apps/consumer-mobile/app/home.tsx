@@ -14,6 +14,16 @@ const action=(route:string)=>()=>router.push(route as any);
 const initialHero:OrganicHeroItem={id:'find',kind:'find_bathroom',eyebrow:'FIND THE BEST BATHROOM',title:'What is useful near you right now?',body:'Search nearby or around any address, then compare freshness, Kleenest status, amenities, trust and distance.',cta:'Search the map',route:'/explore',meta:'Organic discovery',score:60};
 const initialPolicy:OrganicHeroPolicy={surface_code:'consumer_home',active:true,max_cards:5,allowed_kinds:['find_bathroom'],weights:{find_bathroom:60},swipe_enabled:true,dot_indicators:true,autoplay:false};
 
+type HomeShortcut={route:string;icon:string;title:string;detail:string;featured?:boolean};
+const homeShortcuts:HomeShortcut[]=[
+  {route:'/saved',icon:'♡',title:'Saved',detail:'Your go-to places'},
+  {route:'/route',icon:'↗',title:'Routes',detail:'Plan bathroom stops'},
+  {route:'/progress',icon:'★',title:'Progress',detail:'XP, levels + rewards'},
+  {route:'/games',icon:'▦',title:'Game Center',detail:'Play + earn',featured:true},
+  {route:'/social',icon:'●',title:'Community',detail:'People + updates'},
+  {route:'/assistant',icon:'✦',title:'Kleenest AI',detail:'Ask for help'},
+];
+
 export default function HomeScreen(){
   const theme=useConsumerTheme();
   const{ready:experienceReady,signedIn,installed,appActive}=useConsumerWebExperience();
@@ -60,12 +70,27 @@ export default function HomeScreen(){
     <SponsoredSlot surface="home" contextClass="home_after_relevance"/>
 
     <View>
-      <Text style={[s.shortcutsLabel,{color:theme.muted}]}>YOUR KLEENEST</Text>
+      <View style={s.shortcutsHeading}>
+        <Text style={[s.shortcutsLabel,{color:theme.muted}]}>YOUR KLEENEST</Text>
+        <Text style={[s.shortcutsHint,{color:theme.muted}]}>Quick access</Text>
+      </View>
       <View style={s.shortcuts}>
-        <Pressable style={[s.shortcut,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/saved')}><Text style={[s.shortcutText,{color:theme.ink}]}>♡ Saved</Text></Pressable>
-        <Pressable style={[s.shortcut,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/route')}><Text style={[s.shortcutText,{color:theme.ink}]}>↗ Routes</Text></Pressable>
-        <Pressable style={[s.shortcut,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/progress')}><Text style={[s.shortcutText,{color:theme.ink}]}>★ Progress</Text></Pressable>
-        <Pressable style={[s.shortcut,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/assistant')}><Text style={[s.shortcutText,{color:theme.ink}]}>✦ Kleenest AI</Text></Pressable>
+        {homeShortcuts.map(item=><Pressable
+          key={item.route}
+          accessibilityRole="button"
+          accessibilityLabel={item.title}
+          style={[s.shortcut,{backgroundColor:item.featured?theme.accentSoft:theme.surface,borderColor:item.featured?theme.accent:theme.line}]}
+          onPress={action(item.route)}
+        >
+          <View style={[s.shortcutIcon,{backgroundColor:item.featured?theme.accent:theme.surfaceRaised,borderColor:item.featured?theme.accent:theme.line}]}>
+            <Text style={[s.shortcutIconText,{color:item.featured?theme.accentText:theme.accent}]}>{item.icon}</Text>
+          </View>
+          <View style={s.shortcutCopy}>
+            <Text numberOfLines={1} style={[s.shortcutText,{color:theme.ink}]}>{item.title}</Text>
+            <Text numberOfLines={1} style={[s.shortcutDetail,{color:theme.muted}]}>{item.detail}</Text>
+          </View>
+          <Text style={[s.shortcutArrow,{color:item.featured?theme.accent:theme.muted}]}>›</Text>
+        </Pressable>)}
       </View>
     </View>
 
@@ -96,10 +121,17 @@ const s=StyleSheet.create({
   actionRow:{flexDirection:'row',gap:8},
   secondaryAction:{flex:1,minHeight:48,borderWidth:1,borderRadius:13,alignItems:'center',justifyContent:'center',paddingHorizontal:8},
   secondaryLabel:{fontSize:10,fontWeight:'900',letterSpacing:.6,textAlign:'center'},
-  shortcutsLabel:{fontSize:9,fontWeight:'900',letterSpacing:1.2,marginBottom:7},
-  shortcuts:{flexDirection:'row',flexWrap:'wrap',gap:8},
-  shortcut:{borderWidth:1,borderRadius:999,paddingHorizontal:13,paddingVertical:10},
-  shortcutText:{fontSize:11,fontWeight:'900'},
+  shortcutsHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:8,paddingHorizontal:1},
+  shortcutsLabel:{fontSize:9,fontWeight:'900',letterSpacing:1.2},
+  shortcutsHint:{fontSize:9,fontWeight:'800'},
+  shortcuts:{flexDirection:'row',flexWrap:'wrap',gap:10},
+  shortcut:{width:'48%',flexGrow:1,minHeight:76,borderWidth:1,borderRadius:16,padding:11,flexDirection:'row',alignItems:'center',gap:9},
+  shortcutIcon:{width:34,height:34,borderRadius:11,borderWidth:1,alignItems:'center',justifyContent:'center'},
+  shortcutIconText:{fontSize:17,fontWeight:'900'},
+  shortcutCopy:{flex:1,minWidth:0},
+  shortcutText:{fontSize:12,fontWeight:'900'},
+  shortcutDetail:{fontSize:9,lineHeight:12,fontWeight:'700',marginTop:2},
+  shortcutArrow:{fontSize:18,fontWeight:'900',marginLeft:1},
   install:{borderWidth:1,borderRadius:14,paddingHorizontal:14,paddingVertical:11,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
   installText:{fontSize:12,fontWeight:'900'},
   profileHint:{paddingVertical:8,paddingHorizontal:4},
