@@ -86,8 +86,8 @@ export default function HomeScreen(){
             <Text style={[s.shortcutIconText,{color:item.featured?theme.accentText:theme.accent}]}>{item.icon}</Text>
           </View>
           <View style={s.shortcutCopy}>
-            <Text numberOfLines={1} style={[s.shortcutText,{color:theme.ink}]}>{item.title}</Text>
-            <Text numberOfLines={1} style={[s.shortcutDetail,{color:theme.muted}]}>{item.detail}</Text>
+            <Text style={[s.shortcutText,{color:theme.ink}]}>{item.title}</Text>
+            <Text style={[s.shortcutDetail,{color:theme.muted}]}>{item.detail}</Text>
           </View>
           <Text style={[s.shortcutArrow,{color:item.featured?theme.accent:theme.muted}]}>›</Text>
         </Pressable>)}
@@ -125,13 +125,13 @@ const s=StyleSheet.create({
   shortcutsLabel:{fontSize:9,fontWeight:'900',letterSpacing:1.2},
   shortcutsHint:{fontSize:9,fontWeight:'800'},
   shortcuts:{flexDirection:'row',flexWrap:'wrap',gap:10},
-  shortcut:{width:'48%',flexGrow:1,minHeight:76,borderWidth:1,borderRadius:16,padding:11,flexDirection:'row',alignItems:'center',gap:9},
-  shortcutIcon:{width:34,height:34,borderRadius:11,borderWidth:1,alignItems:'center',justifyContent:'center'},
-  shortcutIconText:{fontSize:17,fontWeight:'900'},
-  shortcutCopy:{flex:1,minWidth:0},
-  shortcutText:{fontSize:12,fontWeight:'900'},
-  shortcutDetail:{fontSize:9,lineHeight:12,fontWeight:'700',marginTop:2},
-  shortcutArrow:{fontSize:18,fontWeight:'900',marginLeft:1},
+  shortcut:{width:'48%',flexGrow:1,minHeight:96,borderWidth:1,borderRadius:16,padding:11,paddingRight:10,flexDirection:'row',alignItems:'center',gap:8,position:'relative'},
+  shortcutIcon:{width:32,height:32,borderRadius:10,borderWidth:1,alignItems:'center',justifyContent:'center',flexShrink:0},
+  shortcutIconText:{fontSize:16,fontWeight:'900'},
+  shortcutCopy:{flex:1,minWidth:0,paddingRight:18},
+  shortcutText:{fontSize:12,lineHeight:16,fontWeight:'900',flexShrink:1},
+  shortcutDetail:{fontSize:9,lineHeight:13,fontWeight:'700',marginTop:2,flexShrink:1},
+  shortcutArrow:{position:'absolute',right:9,top:35,fontSize:18,fontWeight:'900'},
   install:{borderWidth:1,borderRadius:14,paddingHorizontal:14,paddingVertical:11,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
   installText:{fontSize:12,fontWeight:'900'},
   profileHint:{paddingVertical:8,paddingHorizontal:4},
