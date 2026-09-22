@@ -9,7 +9,7 @@ const required=[
   'apps/consumer-mobile/components/StorePurchaseControls.tsx',
   'apps/consumer-mobile/services/storePurchases.ts',
   'supabase/functions/verify-mobile-store-purchase/index.ts',
-  'supabase/migrations/20260922083500_native_remove_ads_store_entitlement.sql',
+  'supabase/migrations/20260922082956_native_remove_ads_store_entitlement.sql',
   'docs/NATIVE_REMOVE_ADS_STORE_BILLING.md',
 ];
 for(const file of required)if(!fs.existsSync(file))failures.push(`Missing Remove Ads store surface: ${file}`);
