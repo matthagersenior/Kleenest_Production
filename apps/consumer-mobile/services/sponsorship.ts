@@ -31,7 +31,7 @@ export async function listSponsoredCards(surface:string,context:Record<string,un
     cta_label:String(row.cta_label||'Learn more'),
     destination_url:String(row.destination_url||''),
     target_location_id:row.target_location_id?String(row.target_location_id):null,
-    creative_mode:['image_text','image_only'].includes(String(row.creative_mode))?String(row.creative_mode) as 'image_text'|'image_only':'text_only',
+    creative_mode:(['image_text','image_only'] as const).includes(String(row.creative_mode) as 'image_text'|'image_only')?(String(row.creative_mode) as 'image_text'|'image_only'):'text_only',
     image_url:row.image_url?String(row.image_url):null,
     image_alt:row.image_alt?String(row.image_alt):null,
     logo_url:row.logo_url?String(row.logo_url):null,
