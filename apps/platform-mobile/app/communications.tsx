@@ -21,6 +21,8 @@ import {
 
 WebBrowser.maybeCompleteAuthSession();
 
+const productionOAuthRelay='https://matthagersenior.github.io/Kleenest_Production/';
+
 const gmailScopes=[
   'openid',
   'email',
@@ -154,9 +156,10 @@ export default function Communications(){
     const client=getKleenestSupabaseClient();
     const{data:{session:ownerSession}}=await client.auth.getSession();
     if(!ownerSession){setNotice('Sign in to the Owner app before connecting Gmail.');return}
+    const nativeAppOAuthReturn=Linking.createURL('communications',{scheme:'kleenest-owner',isTripleSlashed:false});
     const redirectTo=Platform.OS==='web'&&typeof window!=='undefined'
       ? `${window.location.origin}${window.location.pathname}`
-      : Linking.createURL('communications',{scheme:'kleenest-owner',isTripleSlashed:false});
+      : productionOAuthRelay;
     setBusy(true);setNotice('');
     try{
       const{data,error}=await client.auth.signInWithOAuth({
@@ -174,7 +177,8 @@ export default function Communications(){
         window.location.assign(data.url);
         return;
       }
-      const result=await WebBrowser.openAuthSessionAsync(data.url,redirectTo);
+      const relayStart=`${productionOAuthRelay}?kleenest_oauth_start=owner-gmail&authorize=${encodeURIComponent(data.url)}`;
+      const result=await WebBrowser.openAuthSessionAsync(relayStart,nativeAppOAuthReturn);
       if(result.type==='cancel'||result.type==='dismiss'){setNotice('Gmail connection was cancelled.');return}
       if(result.type!=='success'||!result.url)throw new Error('Google did not return to KleenestOS.');
       await finishGmailOAuth(result.url,ownerSession);

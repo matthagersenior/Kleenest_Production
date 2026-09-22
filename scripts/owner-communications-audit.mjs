@@ -12,6 +12,7 @@ const layout=requireFile('apps/platform-mobile/app/_layout.tsx');
 const home=requireFile('apps/platform-mobile/app/index.tsx');
 const gateway=requireFile('supabase/functions/owner-email-gateway/index.ts');
 const appSearch=requireFile('packages/mobile-core/src/appSearch.ts');
+const oauthRelay=requireFile('apps/consumer-mobile/services/operatorOAuthRelay.ts');
 
 requireAll('Owner communications route',layout,[
   'name="communications"',
@@ -43,6 +44,18 @@ requireAll('Owner Gmail connection UI',screen,[
   "Linking.createURL('communications'",
   'exchangeCodeForSession',
   'provider_token',
+  "productionOAuthRelay='https://matthagersenior.github.io/Kleenest_Production/'",
+  'kleenest_oauth_start=owner-gmail',
+  'encodeURIComponent(data.url)',
+  'openAuthSessionAsync(relayStart,nativeAppOAuthReturn)',
+]);
+requireAll('Owner Gmail native callback relay',oauthRelay,[
+  "OWNER_GMAIL_OAUTH_RETURN_KEY='kleenest.native.owner.gmail.oauth.return'",
+  "search.get('kleenest_oauth_start')!=='owner-gmail'",
+  "destination.origin!==KLEENEST_SUPABASE_ORIGIN",
+  "destination.pathname!=='/auth/v1/authorize'",
+  "'kleenest-owner://communications'",
+  'OPERATOR_OAUTH_MAX_AGE_MS',
 ]);
 requireAll('Owner email workflow UI',screen,[
   'Search mail',
