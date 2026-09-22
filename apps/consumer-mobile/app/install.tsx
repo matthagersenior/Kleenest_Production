@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { palette } from '../components/ConsumerUI';
 import { markConsumerAppPresence } from '../services/webExperience';
 import { useConsumerTheme } from '../services/theme';
+import { captureAcquisitionEvent, captureInstallCenterLanding } from '../services/acquisitionAttribution';
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -189,13 +190,17 @@ export default function InstallKleenest(){
   },[]);
 
   useEffect(()=>{
+    captureInstallCenterLanding({device_kind:deviceKind,browser_kind:browserKind});
+  },[deviceKind,browserKind]);
+
+  useEffect(()=>{
     if(Platform.OS!=='web'||typeof window==='undefined')return;
     void refreshDiagnostics();
     const capture=(event:Event)=>{
       event.preventDefault();
       setPrompt(event as InstallPromptEvent);
     };
-    const installedHandler=()=>{markConsumerAppPresence();setInstalled(true);setPrompt(null);setMessage('Kleenest is installed on this device.');};
+    const installedHandler=()=>{markConsumerAppPresence();captureAcquisitionEvent('install_success',{metadata:{method:'pwa',device_kind:deviceKind,browser_kind:browserKind}});setInstalled(true);setPrompt(null);setMessage('Kleenest is installed on this device.');};
     window.addEventListener('beforeinstallprompt',capture);
     window.addEventListener('appinstalled',installedHandler);
     const timer=window.setTimeout(()=>void refreshDiagnostics(),1200);
@@ -204,7 +209,7 @@ export default function InstallKleenest(){
       window.removeEventListener('beforeinstallprompt',capture);
       window.removeEventListener('appinstalled',installedHandler);
     };
-  },[refreshDiagnostics]);
+  },[browserKind,deviceKind,refreshDiagnostics]);
 
   const environment=useMemo(()=>{
     if(isIOS)return'IPHONE / IPAD';
@@ -226,6 +231,7 @@ export default function InstallKleenest(){
 
   async function installWeb(){
     if(installed){setMessage('Kleenest is already running as an installed web app on this device.');return}
+    captureAcquisitionEvent('install_intent',{metadata:{method:'pwa',device_kind:deviceKind,browser_kind:browserKind}});
     if(isIOS){
       setMessage('On iPhone or iPad: Share → Add to Home Screen → keep Open as Web App enabled → Add.');
       return;
@@ -242,7 +248,13 @@ export default function InstallKleenest(){
   }
 
   async function shareInstall(){
-    const url=browserUrl(INSTALL_PATH);
+    const tracked=new URL(browserUrl(INSTALL_PATH));
+    tracked.searchParams.set('utm_source','share');
+    tracked.searchParams.set('utm_medium','referral');
+    tracked.searchParams.set('utm_campaign','install_center_share');
+    tracked.searchParams.set('utm_content','share_button');
+    const url=tracked.toString();
+    captureAcquisitionEvent('share',{metadata:{kind:'install_link',device_kind:deviceKind,browser_kind:browserKind}});
     if(Platform.OS==='web'&&typeof navigator!=='undefined'){
       if(typeof navigator.share==='function'){
         try{await navigator.share({title:'Install Kleenest',text:'Install the Kleenest restroom discovery app.',url});setMessage('Install link shared.');return}catch{}
@@ -256,6 +268,7 @@ export default function InstallKleenest(){
 
   async function copyApkLink(){
     const url=browserUrl(APK_PATH);
+    captureAcquisitionEvent('share',{metadata:{kind:'apk_link_copy',device_kind:deviceKind,browser_kind:browserKind}});
     if(Platform.OS==='web'&&typeof navigator!=='undefined'&&navigator.clipboard?.writeText){
       try{await navigator.clipboard.writeText(url);setMessage('Direct APK link copied.');return}catch{}
     }
@@ -263,11 +276,12 @@ export default function InstallKleenest(){
   }
 
   async function downloadApk(){await Linking.openURL(browserUrl(APK_PATH))}
+  async function trackApkDownload(){captureAcquisitionEvent('apk_download',{metadata:{method:'direct_apk',device_kind:deviceKind,browser_kind:browserKind}});await downloadApk()}
   async function openChecksum(){await Linking.openURL(browserUrl(CHECKSUM_PATH))}
-  async function openKleenest(){await Linking.openURL(browserUrl(APP_PATH))}
-  function continueAsGuest(){router.push('/?app=1' as any)}
-  function joinKleenest(){router.push('/signup' as any)}
-  function signIn(){router.push('/profile' as any)}
+  async function openKleenest(){captureAcquisitionEvent('open_app',{metadata:{from:'install_center',device_kind:deviceKind,browser_kind:browserKind}});await Linking.openURL(browserUrl(APP_PATH))}
+  function continueAsGuest(){captureAcquisitionEvent('continue_guest',{metadata:{from:'install_center',device_kind:deviceKind,browser_kind:browserKind}});router.push('/?app=1' as any)}
+  function joinKleenest(){captureAcquisitionEvent('signup_intent',{metadata:{from:'install_center',device_kind:deviceKind,browser_kind:browserKind}});router.push('/signup' as any)}
+  function signIn(){captureAcquisitionEvent('signin_intent',{metadata:{from:'install_center',device_kind:deviceKind,browser_kind:browserKind}});router.push('/profile' as any)}
 
   const releaseStatus=releaseLoading?'CHECKING':releaseState?.status||'STATUS UNAVAILABLE';
   const releaseGood=releaseState?.otaCompatible===true&&!releaseState?.nativeDrift;
@@ -344,7 +358,7 @@ export default function InstallKleenest(){
         <Text selectable style={[s.directLink,{color:theme.ink}]}>{hostedApkUrl}</Text>
       </View>
       <View style={s.buttonRow}>
-        <Pressable accessibilityRole="link" accessibilityLabel="Download Android APK" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void downloadApk()}><Text style={[s.primaryText,{color:theme.accentText}]}>DOWNLOAD ANDROID APK</Text></Pressable>
+        <Pressable accessibilityRole="link" accessibilityLabel="Download Android APK" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void trackApkDownload()}><Text style={[s.primaryText,{color:theme.accentText}]}>DOWNLOAD ANDROID APK</Text></Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Copy APK link" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void copyApkLink()}><Text style={[s.secondaryText,{color:theme.accent}]}>COPY APK LINK</Text></Pressable>
         <Pressable accessibilityRole="link" accessibilityLabel="View SHA-256 checksum" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void openChecksum()}><Text style={[s.secondaryText,{color:theme.accent}]}>VIEW SHA-256 CHECKSUM</Text></Pressable>
       </View>
