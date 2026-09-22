@@ -18,7 +18,7 @@ for(const file of required)if(!fs.existsSync(file))failures.push(`Missing AdMob/
 
 if(!failures.length){
   const pkg=read(required[0]),config=read(required[1]),service=read(required[2]),native=read(required[3]),web=read(required[4]),sponsored=read(required[5]),explore=read(required[6]),progress=read(required[7]),games=read(required[8]),sql=read(required[9]);
-  if(!pkg.includes('"react-native-google-mobile-ads": "16.5.0"'))failures.push('Consumer must pin the vetted Google Mobile Ads bridge.');
+  if(!pkg.includes('"react-native-google-mobile-ads": "16.3.4"'))failures.push('Consumer must pin the Kotlin-compatible Google Mobile Ads bridge.');
   for(const token of ['react-native-google-mobile-ads','ADMOB_ANDROID_APP_ID','ADMOB_IOS_APP_ID','ca-app-pub-6958734306376288~2901875327','ca-app-pub-6958734306376288~3275164438'])if(!config.includes(token))failures.push(`AdMob Expo config missing: ${token}`);
   if(!native.includes('ca-app-pub-6958734306376288/6751375017'))failures.push('Android Native Advanced production ad unit is not configured.');
   if(!native.includes('ca-app-pub-6958734306376288/2327160255'))failures.push('iOS Native Advanced production ad unit is not configured.');

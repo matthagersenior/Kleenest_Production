@@ -46,7 +46,7 @@
     "react-native-worklets": "0.10.1",
     "maplibre-gl": "^6.4.1",
     "expo-web-browser": "~57.0.2",
-    "react-native-google-mobile-ads": "16.5.0"
+    "react-native-google-mobile-ads": "16.3.4"
   },
   "devDependencies": {
     "@types/react": "~19.2.0",
