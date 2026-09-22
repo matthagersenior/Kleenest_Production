@@ -49,6 +49,15 @@ export async function getOwnerRelevanceSponsorshipSnapshot(){
   return (await rpc('owner_relevance_sponsorship_snapshot'))||{hero_policies:[],placements:[],campaigns:[],rules:{}};
 }
 
+export async function getOwnerAdMobHealthSnapshot(hours=24){
+  await requirePlatformOwner();
+  const safeHours=Math.min(Math.max(Math.round(Number(hours)||24),1),168);
+  return (await rpc('owner_admob_health_snapshot',{p_hours:safeHours}))||{
+    hours:safeHours,status:'no_data',requests:0,fills:0,fill_rate:null,impressions:0,clicks:0,no_fill:0,load_errors:0,
+    initialized:0,initialization_errors:0,consent_blocked:0,last_event_at:null,placements:[],recent_failures:[],
+  };
+}
+
 export async function updateOwnerHeroPolicy(row:Record<string,any>,patch:Record<string,unknown>={},reason='KleenestOS organic relevance update'){
   await requirePlatformOwner();
   const next={...row,...patch};
