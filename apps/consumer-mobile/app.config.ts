@@ -4,6 +4,8 @@ const PRODUCTION_EAS_PROJECT_ID = '22a65aa3-c615-4c4f-a34d-084babc28fd7';
 const configuredEasProjectId = process.env.EAS_PROJECT_ID;
 const standaloneAndroid = process.env.KLEENEST_STANDALONE_ANDROID === '1';
 const googleServicesFile = process.env.GOOGLE_SERVICES_FILE;
+const admobAndroidAppId = process.env.ADMOB_ANDROID_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
+const admobIosAppId = process.env.ADMOB_IOS_APP_ID || 'ca-app-pub-3940256099942544~1458002511';
 
 if (configuredEasProjectId && configuredEasProjectId !== PRODUCTION_EAS_PROJECT_ID) {
   throw new Error(`[Kleenest] EAS_PROJECT_ID drift detected. Expected ${PRODUCTION_EAS_PROJECT_ID}, received ${configuredEasProjectId}.`);
@@ -78,12 +80,24 @@ const config: ExpoConfig = {
     ['expo-camera', { cameraPermission: 'Kleenest uses your camera to scan Kleenest restroom QR codes.' }],
     ['expo-image-picker', { photosPermission: 'Kleenest uses your photo library so you can choose a public contributor profile photo.', microphonePermission: false }],
     ['expo-notifications', { defaultChannel: 'kleenest-updates' }],
+    ['react-native-google-mobile-ads', {
+      androidAppId: admobAndroidAppId,
+      iosAppId: admobIosAppId,
+      delayAppMeasurementInit: true,
+      optimizeInitialization: true,
+      optimizeAdLoading: true,
+    }],
   ],
   experiments: { typedRoutes: true, baseUrl: '/Kleenest_Production' },
   extra: {
     appRole: 'consumer',
     otaChannel,
     previewRole: 'non-blocking-web-preview',
+    networkAds: {
+      provider: 'admob',
+      configuredWithTestAppId: !process.env.ADMOB_ANDROID_APP_ID && !process.env.ADMOB_IOS_APP_ID,
+      removeAdsScope: 'network-only',
+    },
     productionEnvironment: {
       expoProjectId: PRODUCTION_EAS_PROJECT_ID,
       supabaseProjectRef: 'ssgesjzdvdsqacdtasje',

@@ -7,6 +7,7 @@ import { divisionForXp,divisionProgress,nextDivisionForXp } from '../services/en
 import { getProgressionOverviewV2 } from '../services/discoveryProgression';
 import { listGameChallenges,respondGameChallenge } from '../services/games';
 import { SponsoredSlot } from '../components/SponsoredSlot';
+import { AdMobNativeSlot } from '../components/AdMobNativeSlot';
 
 const ARENA_LABEL:Record<string,string>={
  clean_sweep:'CLEAN SWEEP',bathroom_memory:'MEMORY GRID',trust_or_bust:'TRUST TRIAL',flush_the_facts:'SPEED RUN',
@@ -64,7 +65,7 @@ export default function GamesHub(){
     <View style={[s.leagueRow,{backgroundColor:theme.resolved==='dark'?theme.surface:'#4a3976'}]}><View style={[s.divisionIcon,{backgroundColor:theme.surface}]}><Text style={[s.divisionGlyph,{color:theme.accent}]}>{division.icon}</Text></View><View style={{flex:1}}><Text style={s.divisionName}>{division.name} Division</Text><Text style={s.meta}>{next?String(Math.max(0,next.minXp-xp))+' XP to '+next.name:'Top current division'}</Text><View style={s.track}><View style={[s.fill,{backgroundColor:theme.accent,width:(String(Math.round(pct*100))+'%') as any}]} /></View></View><Pressable accessibilityRole="button" accessibilityLabel="Open League progress" style={[s.progressButton,{backgroundColor:theme.surface}]} onPress={()=>router.push('/progress')}><Text style={[s.progressButtonText,{color:theme.accent}]}>League →</Text></Pressable></View>
    </View>
 
-   <SponsoredSlot surface="games" contextClass="game_center_between_groups"/>
+   <SponsoredSlot surface="games" contextClass="game_center_between_groups" fallback={<AdMobNativeSlot contextClass="game_center_between_groups" keywords={['games','restroom','travel']}/>}/>
 
    {groups.map(group=><View key={group.title} style={s.section}>
     <Text style={[s.sectionLabel,{color:theme.muted}]}>{group.title}</Text>

@@ -1,18 +1,20 @@
 import * as Linking from 'expo-linking';
-import { useEffect,useRef,useState } from 'react';
+import { useEffect,useRef,useState,type ReactNode } from 'react';
 import { Pressable,StyleSheet,Text,View } from 'react-native';
 import { listSponsoredCards,recordSponsoredEvent,type SponsoredCard } from '../services/sponsorship';
 import { useConsumerTheme } from '../services/theme';
 
-export function SponsoredSlot({surface,context={},contextClass}:{surface:string;context?:Record<string,unknown>;contextClass?:string}){
+export function SponsoredSlot({surface,context={},contextClass,fallback=null}:{surface:string;context?:Record<string,unknown>;contextClass?:string;fallback?:ReactNode}){
   const theme=useConsumerTheme();
   const[card,setCard]=useState<SponsoredCard|null>(null);
+  const[loaded,setLoaded]=useState(false);
+  const[dismissed,setDismissed]=useState(false);
   const recorded=useRef('');
-  useEffect(()=>{let active=true;void listSponsoredCards(surface,context).then(rows=>{if(active)setCard(rows[0]||null)});return()=>{active=false}},[surface,JSON.stringify(context)]);
+  useEffect(()=>{let active=true;setLoaded(false);setDismissed(false);void listSponsoredCards(surface,context).then(rows=>{if(active){setCard(rows[0]||null);setLoaded(true)}}).catch(()=>{if(active){setCard(null);setLoaded(true)}});return()=>{active=false}},[surface,JSON.stringify(context)]);
   useEffect(()=>{if(!card||recorded.current===card.campaign_id)return;recorded.current=card.campaign_id;void recordSponsoredEvent(card,'impression',contextClass||surface)},[card,contextClass,surface]);
-  if(!card)return null;
+  if(!card)return loaded&&!dismissed?<>{fallback}</>:null;
   async function open(current:SponsoredCard){void recordSponsoredEvent(current,'click',contextClass||surface);await Linking.openURL(current.destination_url)}
-  function dismiss(current:SponsoredCard){void recordSponsoredEvent(current,'dismiss',contextClass||surface);setCard(null)}
+  function dismiss(current:SponsoredCard){void recordSponsoredEvent(current,'dismiss',contextClass||surface);setDismissed(true);setCard(null)}
   return <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
     <View style={s.top}><Text style={[s.label,{color:theme.muted}]}>{card.label.toUpperCase()} · {card.sponsor_name}</Text><Pressable accessibilityRole="button" accessibilityLabel="Hide sponsored card" onPress={()=>dismiss(card)}><Text style={[s.close,{color:theme.muted}]}>×</Text></Pressable></View>
     <Text style={[s.title,{color:theme.ink}]}>{card.headline}</Text>

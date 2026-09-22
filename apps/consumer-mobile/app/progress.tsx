@@ -7,6 +7,7 @@ import { equipProgressionReward,getProgressionOverviewV2,getProgressionRewards,g
 import { clearTrustMission,readTrustMission,startCoverageMission,type TrustMission } from '../services/trustMissions';
 import { palette } from '../components/ConsumerUI';
 import { SponsoredSlot } from '../components/SponsoredSlot';
+import { AdMobNativeSlot } from '../components/AdMobNativeSlot';
 import { badgeCollectionTier,divisionForXp,divisionProgress,nextDivisionForXp } from '../services/engagementMetaGame';
 import { useConsumerTheme } from '../services/theme';
 
@@ -154,7 +155,7 @@ export default function ProgressScreen(){
   <View style={s.actions}><Pressable accessibilityRole="button" accessibilityLabel="Find useful work nearby" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>router.push('/discover')}><Text style={[s.primaryText,{color:theme.accentText}]}>Find useful work nearby</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open Game Center" style={[s.secondary,s.topActionSecondary,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/games')}><Text style={[s.secondaryText,{color:theme.accent}]}>Game Center</Text></Pressable></View>
   <View style={s.rewardToolsRow}><Pressable accessibilityRole="button" accessibilityLabel="Open progression reward toolkit" style={[s.secondary,s.rewardToolsButton,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/reward-tools')}><Text style={[s.secondaryText,{color:theme.accent}]}>Reward Toolkit</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open Kleenest Passport" style={[s.secondary,s.rewardToolsButton,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/passport')}><Text style={[s.secondaryText,{color:theme.accent}]}>Kleenest Passport</Text></Pressable></View>
 
-  <SponsoredSlot surface="progress" contextClass="progress_between_sections"/>
+  <SponsoredSlot surface="progress" contextClass="progress_between_sections" fallback={<AdMobNativeSlot contextClass="progress_between_sections" keywords={['restroom','travel','local discovery']}/>}/>
 
   <View style={[s.leagueCard,{backgroundColor:theme.surface,borderColor:theme.accent}]}><View style={s.leagueHead}><View style={[s.leagueIcon,{backgroundColor:theme.accent}]}><Text style={[s.leagueIconText,{color:theme.accentText}]}>{leagueDivision.icon}</Text></View><View style={{flex:1}}><Text style={[s.kicker,{color:theme.muted}]}>KLEENEST LEAGUE</Text><Text style={[s.leagueTitle,{color:theme.ink}]}>{leagueDivision.name} Division</Text><Text style={[s.body,{color:theme.muted}]}>{leagueDivision.description}</Text></View></View><View style={[s.trackSmall,{backgroundColor:theme.surfaceRaised}]}><View style={[s.fillSmall,{backgroundColor:theme.accent,width:(String(Math.round(leaguePct*100))+'%') as any}]} /></View><Text style={[s.meta,{color:theme.muted}]}>{nextLeagueDivision?Math.max(0,nextLeagueDivision.minXp-totalXp).toLocaleString()+' XP to '+nextLeagueDivision.name:'Top current division'} · {collectionTier}</Text></View>
 

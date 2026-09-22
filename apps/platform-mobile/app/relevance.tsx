@@ -50,7 +50,7 @@ export default function RelevanceControl(){
    <Rule ok={data?.rules?.hero_is_organic_only!==false} text="Hero placement is organic Kleenest relevance only."/>
    <Rule ok={data?.rules?.paid_can_change_trust===false} text="Payment cannot change trust, freshness, verification or ranking."/>
    <Rule ok={data?.rules?.sensitive_targeting_allowed===false} text="Sensitive targeting is not allowed."/>
-   <Rule ok={data?.rules?.premium_removes_sponsored!==false} text="Consumer Premium / Family / eligible Premium access suppresses sponsored inventory."/>
+   <Rule ok={data?.rules?.premium_removes_sponsored===false} text="$5 Remove Ads / Premium suppresses AdMob and other network inventory only. Direct Kleenest Sponsored recommendations remain available."/>
   </View>
 
   <View style={{gap:10}}>

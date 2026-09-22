@@ -28,6 +28,7 @@ const domainSpecs:Domain[]=[
  {href:'/live-network',title:'Live Network',body:'Geofences, operational coverage and audience updates.',gate:'communications',glyph:'◉',group:'Operate'},
  {href:'/devices',title:'Smart Devices',body:'Connected-facility sensors, commands, automations and device health.',gate:'always',glyph:'⌁',group:'Operate'},
  {href:'/engagement',title:'Growth & engagement',body:'Promotions, campaigns, contests and events.',gate:'advancedEngagement',glyph:'↗',group:'Grow'},
+ {href:'/advertising',title:'Advertise',body:'Target tasteful sponsored recommendations by context, route and amenity without buying organic rank.',gate:'always',glyph:'◎',group:'Grow'},
  {href:'/growth',title:'Growth summary',body:'Connect offers, visits, campaigns and repeat engagement outcomes.',gate:'advancedEngagement',glyph:'↑',group:'Grow'},
  {href:'/qr-studio',title:'QR Studio',body:'Create, design, version, activate and attribute QR programs.',gate:'qr',glyph:'▦',group:'Grow'},
  {href:'/reviews',title:'Reviews',body:'Read verified feedback, evidence and publish Business replies.',gate:'reviews',glyph:'★',group:'Grow'},
