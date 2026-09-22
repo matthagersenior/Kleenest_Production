@@ -103,7 +103,7 @@ export default function Communications(){
     if(!ownerSession){setNotice('Sign in to the Owner app before connecting Gmail.');return}
     const redirectTo=Platform.OS==='web'&&typeof window!=='undefined'
       ? `${window.location.origin}${window.location.pathname}`
-      : Linking.createURL('communications',{scheme:'kleenest-owner',isTripleSlashed:false});
+      : Linking.createURL('auth',{scheme:'kleenest-owner',isTripleSlashed:false});
     setBusy(true);setNotice('');
     try{
       const{data,error}=await client.auth.signInWithOAuth({
