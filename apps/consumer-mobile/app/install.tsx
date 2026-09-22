@@ -275,7 +275,8 @@ export default function InstallKleenest(){
     setMessage(`Direct APK link: ${url}`);
   }
 
-  async function downloadApk(){captureAcquisitionEvent('apk_download',{metadata:{method:'direct_apk',device_kind:deviceKind,browser_kind:browserKind}});await Linking.openURL(browserUrl(APK_PATH))}
+  async function downloadApk(){await Linking.openURL(browserUrl(APK_PATH))}
+  async function trackApkDownload(){captureAcquisitionEvent('apk_download',{metadata:{method:'direct_apk',device_kind:deviceKind,browser_kind:browserKind}});await downloadApk()}
   async function openChecksum(){await Linking.openURL(browserUrl(CHECKSUM_PATH))}
   async function openKleenest(){captureAcquisitionEvent('open_app',{metadata:{from:'install_center',device_kind:deviceKind,browser_kind:browserKind}});await Linking.openURL(browserUrl(APP_PATH))}
   function continueAsGuest(){captureAcquisitionEvent('continue_guest',{metadata:{from:'install_center',device_kind:deviceKind,browser_kind:browserKind}});router.push('/?app=1' as any)}
@@ -357,7 +358,7 @@ export default function InstallKleenest(){
         <Text selectable style={[s.directLink,{color:theme.ink}]}>{hostedApkUrl}</Text>
       </View>
       <View style={s.buttonRow}>
-        <Pressable accessibilityRole="link" accessibilityLabel="Download Android APK" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void downloadApk()}><Text style={[s.primaryText,{color:theme.accentText}]}>DOWNLOAD ANDROID APK</Text></Pressable>
+        <Pressable accessibilityRole="link" accessibilityLabel="Download Android APK" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void trackApkDownload()}><Text style={[s.primaryText,{color:theme.accentText}]}>DOWNLOAD ANDROID APK</Text></Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Copy APK link" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void copyApkLink()}><Text style={[s.secondaryText,{color:theme.accent}]}>COPY APK LINK</Text></Pressable>
         <Pressable accessibilityRole="link" accessibilityLabel="View SHA-256 checksum" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void openChecksum()}><Text style={[s.secondaryText,{color:theme.accent}]}>VIEW SHA-256 CHECKSUM</Text></Pressable>
       </View>
