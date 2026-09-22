@@ -4,6 +4,8 @@ import mobileAds,{AdsConsent,NativeAd,NativeAdView,NativeAsset,NativeAssetType,T
 import { consumerNetworkAdsEnabled } from '../services/networkAds';
 import { useConsumerTheme } from '../services/theme';
 
+const PRODUCTION_ANDROID_NATIVE_AD_UNIT_ID='ca-app-pub-6958734306376288/6751375017';
+
 let initialization:Promise<boolean>|null=null;
 function ensureInitialized(){
   if(!initialization)initialization=(async()=>{
@@ -30,7 +32,7 @@ export function AdMobNativeSlot({keywords=[],contextClass}:{keywords?:string[];c
     void ensureInitialized().then(async ready=>{
       if(!active||!ready)return;
       const configured=Platform.select({
-        android:process.env.EXPO_PUBLIC_ADMOB_NATIVE_ANDROID_ID,
+        android:process.env.EXPO_PUBLIC_ADMOB_NATIVE_ANDROID_ID||PRODUCTION_ANDROID_NATIVE_AD_UNIT_ID,
         ios:process.env.EXPO_PUBLIC_ADMOB_NATIVE_IOS_ID,
         default:undefined,
       });
