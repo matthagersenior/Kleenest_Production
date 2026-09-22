@@ -77,6 +77,7 @@ const config: ExpoConfig = {
       isIosBackgroundLocationEnabled: true,
     }],
     'expo-secure-store',
+    'expo-iap',
     ...devClientPlugins,
     '@maplibre/maplibre-react-native',
     ['expo-camera', { cameraPermission: 'Kleenest uses your camera to scan Kleenest restroom QR codes.' }],
