@@ -230,8 +230,8 @@ export default function InstallKleenest(){
   },[browserKind,isIOS]);
 
   async function installWeb(){
-    captureAcquisitionEvent('install_intent',{metadata:{method:'pwa',device_kind:deviceKind,browser_kind:browserKind}});
     if(installed){setMessage('Kleenest is already running as an installed web app on this device.');return}
+    captureAcquisitionEvent('install_intent',{metadata:{method:'pwa',device_kind:deviceKind,browser_kind:browserKind}});
     if(isIOS){
       setMessage('On iPhone or iPad: Share → Add to Home Screen → keep Open as Web App enabled → Add.');
       return;
