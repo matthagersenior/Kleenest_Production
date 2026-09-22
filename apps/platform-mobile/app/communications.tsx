@@ -316,19 +316,19 @@ export default function Communications(){
 
     <View style={{gap:9}}>
       <SectionHeader title="Inbox" body={threads.length?`${threads.length} recent conversation${threads.length===1?'':'s'} · tap one to read and respond.`:'No matching inbox conversations.'}/>
-      {threads.map(thread=><Pressable key={thread.id} onPress={()=>void openThread(thread)} style={{...card,gap:6,borderColor:thread.unread?theme.accent:theme.line}}>
-        <View style={{flexDirection:'row',alignItems:'center',gap:8}}>
-          <Text numberOfLines={1} style={{flex:1,fontWeight:thread.unread?'900':'800',color:theme.ink}}>{thread.from}</Text>
-          {thread.unread?<StatusPill label="UNREAD" tone="warning"/>:null}
-        </View>
-        <Text numberOfLines={1} style={{fontSize:16,fontWeight:'900',color:theme.ink}}>{thread.subject}</Text>
-        <Text numberOfLines={2} style={{lineHeight:18,color:theme.muted}}>{excerpt(thread.snippet)}</Text>
-        <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8}}>
-          <Text style={{fontSize:11,color:theme.muted}}>{formatDate(thread.date)} · {thread.messageCount} message{thread.messageCount===1?'':'s'}</Text>
-          <View style={{flexDirection:'row',gap:8}}>
-            <Pressable onPress={event=>{event.stopPropagation();void markUnread(thread.id)}}><Text style={{fontWeight:'900',color:theme.accent}}>Mark unread</Text></Pressable>
-            <Pressable onPress={event=>{event.stopPropagation();void archive(thread.id)}}><Text style={{fontWeight:'900',color:theme.muted}}>Archive</Text></Pressable>
+      {threads.map(thread=><Pressable key={thread.id} onPress={()=>void openThread(thread)} style={{...card,gap:8,borderColor:thread.unread?theme.accent:theme.line,overflow:'hidden'}}>
+        <View style={{flexDirection:'row',alignItems:'center',gap:8,minWidth:0}}>
+          <View style={{flex:1,minWidth:0}}>
+            <Text numberOfLines={1} ellipsizeMode="tail" style={{fontWeight:thread.unread?'900':'800',color:theme.ink,flexShrink:1}}>{thread.from}</Text>
           </View>
+          {thread.unread?<View style={{flexShrink:0}}><StatusPill label="UNREAD" tone="warning"/></View>:null}
+        </View>
+        <Text numberOfLines={2} ellipsizeMode="tail" style={{fontSize:16,fontWeight:'900',color:theme.ink,flexShrink:1}}>{thread.subject}</Text>
+        <Text numberOfLines={2} ellipsizeMode="tail" style={{lineHeight:18,color:theme.muted,flexShrink:1}}>{excerpt(thread.snippet)}</Text>
+        <Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:11,color:theme.muted,flexShrink:1}}>{formatDate(thread.date)} · {thread.messageCount} message{thread.messageCount===1?'':'s'}</Text>
+        <View style={{flexDirection:'row',flexWrap:'wrap',justifyContent:'flex-end',gap:12}}>
+          <Pressable onPress={event=>{event.stopPropagation();void markUnread(thread.id)}} style={{flexShrink:0}}><Text style={{fontWeight:'900',color:theme.accent}}>Mark unread</Text></Pressable>
+          <Pressable onPress={event=>{event.stopPropagation();void archive(thread.id)}} style={{flexShrink:0}}><Text style={{fontWeight:'900',color:theme.muted}}>Archive</Text></Pressable>
         </View>
       </Pressable>)}
     </View>
