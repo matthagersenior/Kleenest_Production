@@ -184,6 +184,7 @@ const s=StyleSheet.create({
  row:{flexDirection:'row',alignItems:'center',gap:10},
  title:{fontSize:17,fontWeight:'900'},
  meta:{fontSize:11,lineHeight:16,fontWeight:'700'},
+ sectionLabel:{fontSize:10,fontWeight:'900',letterSpacing:1.1,marginTop:4},
  value:{fontSize:12,fontWeight:'900'},
  rule:{flexDirection:'row',gap:8,alignItems:'flex-start'},
  controlRow:{flexDirection:'row',gap:8,alignItems:'center',flexWrap:'wrap'},
