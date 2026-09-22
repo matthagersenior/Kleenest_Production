@@ -79,7 +79,7 @@ function AppleInstallSteps(){
     <View style={s.steps}>
       <InstallStep number="1" title="Open this Installation Center in Safari" body="On iPhone or iPad, Safari is the reliable install path. If you are reading this in another browser, copy this page address, open Safari, paste it into the address bar, and return to this page."/>
       <InstallStep number="2" title="Tap Safari’s Share button" body="Look for the square with an upward arrow. It is usually at the bottom of the screen on iPhone and near the top on iPad."/>
-      <InstallStep number="3" title="Choose Add to Home Screen" body="Scroll down in the Share sheet until you see Add to Home Screen. If it is hidden, scroll farther down rather than choosing Add Bookmark."/>
+      <InstallStep number="3" title="Choose Add to Home Screen" body="Scroll down in the Share sheet until you see Add to Home Screen. If it is missing, scroll to the bottom, tap Edit Actions, add Add to Home Screen, then return and choose it. Do not choose Add Bookmark."/>
       <InstallStep number="4" title="Confirm the web-app option" body="On newer iOS versions, keep Open as Web App enabled if that switch is shown. Leave the name as Kleenest unless you specifically want to rename the icon."/>
       <InstallStep number="5" title="Tap Add" body="Tap Add in the upper-right corner. Safari will close the install sheet and place a Kleenest icon on your Home Screen."/>
       <InstallStep number="6" title="Find Kleenest after installation" body="Return to your Home Screen, look for the Kleenest icon, and tap it. It should open in its own app-style window instead of a normal Safari tab."/>
@@ -100,7 +100,9 @@ function WebInstallSteps({deviceKind,browserKind}:{deviceKind:DeviceKind;browser
           ? (desktop?'Firefox desktop may not offer full PWA installation. Open this same Installation Center link in Chrome or Edge, then use their Install app option.':'Open Firefox’s menu and choose Add to Home screen when that option is available.')
           : browserKind==='chrome'
             ? (desktop?'Open Chrome’s three-dot menu and choose Install page as app, Install Kleenest, or the install icon in the address bar.':'Open Chrome’s three-dot menu and choose Add to Home screen or Install app.')
-            : 'Open your browser menu and look for Install app, Add to Home Screen, Add to phone, or Install this site as an app.';
+            : browserKind==='safari'&&desktop
+              ? 'In Safari on Mac, use Share → Add to Dock → Add. Click the Share button in the toolbar, choose Add to Dock, then click Add in the confirmation window.'
+              : 'Open your browser menu and look for Install app, Add to Home Screen, Add to phone, or Install this site as an app.';
   const installedLocation=desktop
     ? 'Open your computer’s Start menu, Applications folder, browser app launcher, taskbar, or dock and look for Kleenest.'
     : 'Return to your Android Home Screen or open the app drawer and look for the Kleenest icon.';
@@ -128,6 +130,24 @@ function AndroidApkInstallSteps(){
       <InstallStep number="4" title="Allow this source if Android asks" body="If Android says your browser or Files app is not allowed to install unknown apps, tap Settings, turn on Allow from this source for the app you used to open the APK, then go back to the installer."/>
       <InstallStep number="5" title="Tap Install, then Open" body="Android will show the Kleenest install screen. Tap Install. When it finishes, tap Open or find Kleenest in your app drawer."/>
       <InstallStep number="6" title="Optional: turn the temporary permission back off" body="After Kleenest is installed, you can return to Android Settings and turn Allow from this source back off for the browser or Files app."/>
+    </View>
+  </View>
+}
+
+function InstallChoiceGuide({deviceKind}:{deviceKind:DeviceKind}){
+  const theme=useConsumerTheme();
+  const ios=deviceKind==='ios';
+  const android=deviceKind==='android';
+  return <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.accent}]}>
+    <Text style={[s.kicker,{color:theme.accent}]}>WHICH INSTALL SHOULD I CHOOSE?</Text>
+    <Text style={[s.cardTitle,{color:theme.ink}]}>Pick the simplest option for your device.</Text>
+    <Text style={[s.cardBody,{color:theme.muted}]}>You do not need to understand “PWA” or “APK.” Follow the recommendation for the device you are using now.</Text>
+    <View style={s.steps}>
+      {ios?<InstallStep number="1" title="iPhone or iPad: use the Web App" body="Open this page in Safari, then use Share → Add to Home Screen → Open as Web App → Add. Android APK files do not install on iPhone or iPad."/>:null}
+      {android?<InstallStep number="1" title="Recommended for most Android users: Web App" body="Choose INSTALL WEB APP first. It is the simplest install, adds a Kleenest icon to your Home Screen or app drawer, and avoids Android’s unknown-app permission screen."/>:null}
+      {android?<InstallStep number="2" title="Native Android option: APK" body="Choose DOWNLOAD ANDROID APK when you specifically want the native Android package. The numbered APK steps below explain every warning and permission prompt."/>:null}
+      {!ios&&!android?<InstallStep number="1" title="Windows or Mac: use the Web App" body="Use INSTALL WEB APP. Chrome and Edge can install Kleenest as an app; Safari on Mac uses Share → Add to Dock → Add. Android APK files are not for Windows or Mac."/>:null}
+      <InstallStep number={ios||!android?"2":"3"} title="Not ready to install? Keep using Kleenest in the browser" body="Installation is optional. Continue as a guest, sign in, or create an account now; you can return to this Installation Center later."/>
     </View>
   </View>
 }
@@ -200,6 +220,7 @@ export default function InstallKleenest(){
     if(browserKind==='edge')return'In Edge, use Apps or Install this site as an app if the automatic prompt is unavailable.';
     if(browserKind==='samsung')return'In Samsung Internet, use Add page to → Home screen if the automatic prompt is unavailable.';
     if(browserKind==='firefox')return'Use the browser menu and choose Add to Home screen when offered.';
+    if(browserKind==='safari')return'On a Mac in Safari: Share → Add to Dock → Add.';
     return'Use your browser menu and choose Install app or Add to Home Screen if the automatic prompt is unavailable.';
   },[browserKind,isIOS]);
 
@@ -265,6 +286,8 @@ export default function InstallKleenest(){
     </View>
 
     {message?<View style={[s.notice,{backgroundColor:theme.surfaceRaised,borderColor:theme.warning}]}><Text style={[s.noticeText,{color:theme.warning}]}>{message}</Text></View>:null}
+
+    <InstallChoiceGuide deviceKind={deviceKind}/>
 
     <View style={[s.continueCard,{backgroundColor:theme.surface,borderColor:theme.accent}]}>
       <Text style={[s.kicker,{color:theme.accent}]}>NO INSTALL REQUIRED</Text>
