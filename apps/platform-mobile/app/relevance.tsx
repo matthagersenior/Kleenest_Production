@@ -2,21 +2,35 @@ import { useEffect,useMemo,useState } from 'react';
 import { Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { OSHero,OSSwitch,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
-import { getOwnerRelevanceSponsorshipSnapshot,updateOwnerHeroPolicy,updateOwnerSponsoredPlacement,upsertOwnerSponsoredCampaign } from '../services/ownerAdmin';
+import { getOwnerAdMobHealthSnapshot,getOwnerRelevanceSponsorshipSnapshot,updateOwnerHeroPolicy,updateOwnerSponsoredPlacement,upsertOwnerSponsoredCampaign } from '../services/ownerAdmin';
 
 const human=(value:string)=>value.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
 const number=(value:any,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;
 const splitCsv=(value:string)=>value.split(',').map(v=>v.trim()).filter(Boolean);
+const percent=(value:any,digits=1)=>value===null||value===undefined?'—':String(number(value).toFixed(digits))+'%';
+const when=(value:any)=>value?new Date(String(value)).toLocaleString():'No events yet';
 
 export default function RelevanceControl(){
  const theme=usePlatformTheme(),card=useOSCardStyle();
  const[data,setData]=useState<any>({hero_policies:[],placements:[],campaigns:[],rules:{}}),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ const[adMob,setAdMob]=useState<any>({hours:24,status:'no_data',requests:0,fills:0,fill_rate:null,impressions:0,clicks:0,no_fill:0,load_errors:0,initialized:0,initialization_errors:0,consent_blocked:0,last_event_at:null,placements:[],recent_failures:[]}),[adMobHours,setAdMobHours]=useState(24);
  const[sponsor,setSponsor]=useState(''),[headline,setHeadline]=useState(''),[body,setBody]=useState(''),[url,setUrl]=useState(''),[cta,setCta]=useState('Learn more'),[coarseRegion,setCoarseRegion]=useState(''),[routeContext,setRouteContext]=useState(''),[amenities,setAmenities]=useState(''),[interests,setInterests]=useState(''),[selectedPlacements,setSelectedPlacements]=useState<string[]>([]);
  const placements=Array.isArray(data?.placements)?data.placements:[],policies=Array.isArray(data?.hero_policies)?data.hero_policies:[],campaigns=Array.isArray(data?.campaigns)?data.campaigns:[];
  const availablePlacements=useMemo(()=>placements.filter((row:any)=>row.owner_enabled!==false&&row.active!==false),[placements]);
+ const adMobPlacements=Array.isArray(adMob?.placements)?adMob.placements:[],adMobFailures=Array.isArray(adMob?.recent_failures)?adMob.recent_failures:[];
+ const adMobStatus=String(adMob?.status||'no_data');
+ const adMobTone:'good'|'warning'|'danger'|'neutral'=adMobStatus==='receiving_fills'?'good':adMobStatus==='initialization_error'?'danger':adMobStatus==='no_fill'||adMobStatus==='degraded'?'warning':'neutral';
 
- async function load(){setBusy(true);setMessage('');try{setData(await getOwnerRelevanceSponsorshipSnapshot())}catch(error:any){setMessage(error?.message||'Relevance controls could not be loaded.')}finally{setBusy(false)}}
- useEffect(()=>{void load()},[]);
+ async function load(){
+  setBusy(true);setMessage('');
+  try{
+   setData(await getOwnerRelevanceSponsorshipSnapshot());
+   try{setAdMob(await getOwnerAdMobHealthSnapshot(adMobHours))}
+   catch(error:any){setAdMob((current:any)=>({...current,hours:adMobHours,status:'unavailable'}));setMessage(error?.message||'AdMob health telemetry could not be loaded.')}
+  }catch(error:any){setMessage(error?.message||'Relevance controls could not be loaded.')}
+  finally{setBusy(false)}
+ }
+ useEffect(()=>{void load()},[adMobHours]);
 
  async function mutate(action:()=>Promise<any>,success:string){setBusy(true);setMessage('');try{await action();setMessage(success);await load()}catch(error:any){setMessage(error?.message||'Update failed.')}finally{setBusy(false)}}
  const tuneHero=(row:any,patch:Record<string,unknown>)=>mutate(()=>updateOwnerHeroPolicy(row,patch),'Organic hero policy updated.');
@@ -51,6 +65,46 @@ export default function RelevanceControl(){
    <Rule ok={data?.rules?.paid_can_change_trust===false} text="Payment cannot change trust, freshness, verification or ranking."/>
    <Rule ok={data?.rules?.sensitive_targeting_allowed===false} text="Sensitive targeting is not allowed."/>
    <Rule ok={data?.rules?.premium_removes_sponsored===false} text="$5 Remove Ads / Premium suppresses AdMob and other network inventory only. Direct Kleenest Sponsored recommendations remain available."/>
+  </View>
+
+  <View style={{gap:10}}>
+   <SectionHeader title="AdMob Health" body="Live Google network-ad serving telemetry from the Consumer app. This is operational health only; no user, device, location, targeting or content data is stored."/>
+   <View style={{...card,gap:10}}>
+    <View style={s.row}><View style={{flex:1,gap:3}}><Text style={[s.title,{color:theme.ink}]}>Google Mobile Ads</Text><Text style={[s.meta,{color:theme.muted}]}>{adMobHours}h window · last event {when(adMob?.last_event_at)}</Text></View><StatusPill label={human(adMobStatus)} tone={adMobTone}/></View>
+    <View style={s.controlRow}><Control label="24 hours" onPress={()=>setAdMobHours(24)}/><Control label="7 days" onPress={()=>setAdMobHours(168)}/></View>
+    <View style={s.metricGrid}>
+      <HealthMetric label="SDK initialized" value={number(adMob?.initialized)}/>
+      <HealthMetric label="Requests" value={number(adMob?.requests)}/>
+      <HealthMetric label="Fills" value={number(adMob?.fills)}/>
+      <HealthMetric label="Fill rate" value={percent(adMob?.fill_rate)}/>
+      <HealthMetric label="Impressions" value={number(adMob?.impressions)}/>
+      <HealthMetric label="Clicks" value={number(adMob?.clicks)}/>
+      <HealthMetric label="No-fill" value={number(adMob?.no_fill)}/>
+      <HealthMetric label="Load errors" value={number(adMob?.load_errors)}/>
+    </View>
+    {adMobStatus==='no_data'?<Text style={[s.meta,{color:theme.muted}]}>No AdMob telemetry yet. Open the Consumer app on a network-ad eligible account and visit Explore, Progress or Games to generate a request.</Text>:null}
+    {adMobStatus==='initialization_error'?<Text style={[s.warning,{color:theme.danger}]}>Google Mobile Ads has initialization failures and no successful initialization in this window.</Text>:null}
+    {adMobStatus==='no_fill'?<Text style={[s.warning,{color:theme.warning}]}>Requests are reaching Google, but Google returned no inventory in this window.</Text>:null}
+    {adMobStatus==='receiving_fills'?<Text style={[s.good,{color:theme.success}]}>Google is returning ad fills. Impression and click counts confirm whether rendered ads are being seen and used.</Text>:null}
+   </View>
+
+   <View style={{...card,gap:9}}>
+    <SectionHeader title="Placement health" body="Requests and outcomes by Consumer surface."/>
+    {adMobPlacements.length?adMobPlacements.map((row:any)=><View key={String(row.placement_code)} style={[s.healthRow,{borderColor:theme.line}]}>
+      <View style={{flex:1}}><Text style={{fontWeight:'900',color:theme.ink}}>{human(String(row.placement_code))}</Text><Text style={[s.meta,{color:theme.muted}]}>{number(row.requests)} requests · {number(row.fills)} fills · {number(row.impressions)} impressions · {number(row.clicks)} clicks</Text></View>
+      <Text style={{fontWeight:'900',color:theme.accent}}>{row.requests?percent(100*number(row.fills)/Math.max(1,number(row.requests))):'—'}</Text>
+    </View>):<Text style={[s.meta,{color:theme.muted}]}>No placement requests recorded in this window.</Text>}
+   </View>
+
+   <View style={{...card,gap:9}}>
+    <SectionHeader title="Recent AdMob failures" body="No-fill is shown separately from SDK/load failures so inventory shortages do not masquerade as broken integration."/>
+    {adMobFailures.length?adMobFailures.map((row:any,index:number)=><View key={String(row.created_at||index)+':'+index} style={[s.failure,{borderColor:theme.line}]}>
+      <View style={s.row}><Text style={{flex:1,fontWeight:'900',color:row.event_type==='no_fill'?theme.warning:theme.danger}}>{human(String(row.event_type||'error'))}</Text><Text style={[s.meta,{color:theme.muted}]}>{when(row.created_at)}</Text></View>
+      <Text style={[s.meta,{color:theme.ink}]}>{human(String(row.placement_code||'sdk'))} · {String(row.platform||'unknown')}</Text>
+      {row.error_code?<Text selectable style={[s.meta,{color:theme.muted}]}>{String(row.error_code)}</Text>:null}
+      {row.error_message?<Text selectable style={[s.meta,{color:theme.muted}]}>{String(row.error_message)}</Text>:null}
+    </View>):<Text style={[s.meta,{color:theme.muted}]}>No AdMob failures recorded in this window.</Text>}
+   </View>
   </View>
 
   <View style={{gap:10}}>
@@ -104,6 +158,7 @@ export default function RelevanceControl(){
  </ScrollView>;
 }
 
+function HealthMetric({label,value}:{label:string;value:string|number}){const theme=usePlatformTheme();return <View style={[s.metric,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.metricLabel,{color:theme.muted}]}>{label}</Text><Text style={[s.metricValue,{color:theme.ink}]}>{String(value)}</Text></View>}
 function Rule({ok,text}:{ok:boolean;text:string}){const theme=usePlatformTheme();return <View style={s.rule}><Text style={{fontWeight:'900',color:ok?theme.success:theme.danger}}>{ok?'✓':'!'}</Text><Text style={{flex:1,color:theme.ink,fontWeight:'700'}}>{text}</Text></View>}
 function Control({label,onPress}:{label:string;onPress:()=>void}){const theme=usePlatformTheme();return <Pressable onPress={onPress} style={[s.control,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={{fontWeight:'900',fontSize:10,color:theme.accent}}>{label}</Text></Pressable>}
 function ToggleRow({label,value,onChange}:{label:string;value:boolean;onChange:(value:boolean)=>void}){const theme=usePlatformTheme();return <View style={s.row}><Text style={{flex:1,fontWeight:'800',color:theme.ink}}>{label}</Text><OSSwitch value={value} onValueChange={onChange}/></View>}
@@ -122,4 +177,12 @@ const s=StyleSheet.create({
  chips:{flexDirection:'row',gap:7,flexWrap:'wrap'},
  chip:{borderWidth:1,borderRadius:999,paddingHorizontal:10,paddingVertical:8},
  primary:{borderWidth:1,borderRadius:12,paddingHorizontal:13,paddingVertical:11},
+ metricGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ metric:{minWidth:'46%',flexGrow:1,borderWidth:1,borderRadius:13,padding:11,gap:3},
+ metricLabel:{fontSize:9,fontWeight:'900',letterSpacing:.7,textTransform:'uppercase'},
+ metricValue:{fontSize:21,fontWeight:'900'},
+ healthRow:{borderTopWidth:1,paddingTop:9,flexDirection:'row',alignItems:'center',gap:10},
+ failure:{borderTopWidth:1,paddingTop:9,gap:3},
+ warning:{fontSize:11,lineHeight:17,fontWeight:'800'},
+ good:{fontSize:11,lineHeight:17,fontWeight:'800'},
 });
