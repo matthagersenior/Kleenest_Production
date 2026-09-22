@@ -17,6 +17,14 @@ test('Installation Center click-through and release assets',async({page,request}
   await expect(page.getByRole('button',{name:'CHECK INSTALLATION',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'SHARE INSTALL LINK',exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:'OPEN KLEENEST',exact:true})).toBeVisible();
+  await expect(page.getByText('ANDROID APK · DIRECT DOWNLOAD',{exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'DOWNLOAD ANDROID APK',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'COPY APK LINK',exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'VIEW SHA-256 CHECKSUM',exact:true})).toBeVisible();
+  await expect(page.locator('body')).toContainText('If you have never installed a web app before');
+  await expect(page.locator('body')).toContainText('Find Kleenest after installation');
+  await expect(page.locator('body')).toContainText('Allow from this source');
+  await expect(page.locator('body')).toContainText('https://matthagersenior.github.io/Kleenest_Production/Kleenest-Consumer.apk');
 
   await page.getByRole('button',{name:'INSTALL WEB APP',exact:true}).click();
   await expect(page.locator('body')).toContainText(/Install app|Add to Home Screen|automatic prompt|browser menu/i);
@@ -51,10 +59,16 @@ test('Installation Center click-through and release assets',async({page,request}
 
   const checksum=await request.get(BASE+'Kleenest-Consumer.apk.sha256');
   expect(checksum.ok()).toBeTruthy();
-  expect((await checksum.text()).trim()).toMatch(/^[a-f0-9]{64}\s+/i);
+  const checksumText=(await checksum.text()).trim();
+  expect(checksumText).toMatch(/^[a-f0-9]{64}\s+/i);
+  expect(checksumText).toContain('Kleenest-Consumer.apk');
 
   const apkHead=await request.head(BASE+'Kleenest-Consumer.apk');
   expect(apkHead.ok()).toBeTruthy();
+  const apkHeaders=apkHead.headers();
+  expect(String(apkHeaders['content-type']||'')).toMatch(/android|octet-stream|application\/zip/i);
+  const apkLength=Number(apkHeaders['content-length']||0);
+  if(apkLength)expect(apkLength).toBeGreaterThan(1_000_000);
 
   const worker=await request.get(BASE+'sw.js');
   expect(worker.ok()).toBeTruthy();
