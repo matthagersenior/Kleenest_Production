@@ -194,6 +194,8 @@ jobs:
         run: node scripts/mandatory-onboarding-consumer-focus-audit.mjs
       - name: Tell Kleenest owner queue routing
         run: node scripts/tell-kleenest-owner-queue-audit.mjs
+      - name: Owner communications and email
+        run: node scripts/owner-communications-audit.mjs
       - name: Business onboarding tier authority
         run: node scripts/business-onboarding-tier-authority-audit.mjs
       - name: Business Fleet onboarding portfolio home
