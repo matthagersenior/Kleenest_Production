@@ -1,8 +1,8 @@
 import { useEffect,useMemo,useState } from 'react';
-import { Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
+import { Image,Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { OSHero,OSSwitch,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
-import { getOwnerAdMobHealthSnapshot,getOwnerRelevanceSponsorshipSnapshot,updateOwnerHeroPolicy,updateOwnerSponsoredPlacement,upsertOwnerSponsoredCampaign } from '../services/ownerAdmin';
+import { chooseOwnerSponsoredCreative,getOwnerAdMobHealthSnapshot,getOwnerRelevanceSponsorshipSnapshot,updateOwnerHeroPolicy,updateOwnerSponsoredPlacement,uploadOwnerSponsoredCreative,upsertOwnerSponsoredCampaign,type OwnerSponsoredCreativeDraft } from '../services/ownerAdmin';
 
 const human=(value:string)=>value.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
 const number=(value:any,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;
@@ -15,6 +15,7 @@ export default function RelevanceControl(){
  const[data,setData]=useState<any>({hero_policies:[],placements:[],campaigns:[],rules:{}}),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
  const[adMob,setAdMob]=useState<any>({hours:24,status:'no_data',requests:0,fills:0,fill_rate:null,impressions:0,clicks:0,no_fill:0,load_errors:0,initialized:0,initialization_errors:0,consent_blocked:0,last_event_at:null,placements:[],recent_failures:[]}),[adMobHours,setAdMobHours]=useState(24);
  const[sponsor,setSponsor]=useState(''),[headline,setHeadline]=useState(''),[body,setBody]=useState(''),[url,setUrl]=useState(''),[cta,setCta]=useState('Learn more'),[coarseRegion,setCoarseRegion]=useState(''),[routeContext,setRouteContext]=useState(''),[amenities,setAmenities]=useState(''),[interests,setInterests]=useState(''),[selectedPlacements,setSelectedPlacements]=useState<string[]>([]);
+ const[creativeMode,setCreativeMode]=useState<'text_only'|'image_text'|'image_only'>('text_only'),[imageUrl,setImageUrl]=useState(''),[imageAlt,setImageAlt]=useState(''),[logoUrl,setLogoUrl]=useState(''),[pickedImage,setPickedImage]=useState<OwnerSponsoredCreativeDraft|null>(null);
  const placements=Array.isArray(data?.placements)?data.placements:[],policies=Array.isArray(data?.hero_policies)?data.hero_policies:[],campaigns=Array.isArray(data?.campaigns)?data.campaigns:[];
  const availablePlacements=useMemo(()=>placements.filter((row:any)=>row.owner_enabled!==false&&row.active!==false),[placements]);
  const adMobPlacements=Array.isArray(adMob?.placements)?adMob.placements:[],adMobFailures=Array.isArray(adMob?.recent_failures)?adMob.recent_failures:[];
@@ -39,19 +40,27 @@ export default function RelevanceControl(){
 
  async function createCampaign(status:'draft'|'active'){
   if(!sponsor.trim()||!headline.trim()||!url.trim()||!selectedPlacements.length){setMessage('Sponsor, headline, destination URL and at least one placement are required.');return}
+  if(creativeMode!=='text_only'&&!pickedImage&&!imageUrl.trim()){setMessage('Choose an image or enter an HTTPS image URL for this creative mode.');return}
+  if((pickedImage||imageUrl.trim())&&!imageAlt.trim()){setMessage('Add image alt text so the sponsored creative is accessible.');return}
   const targeting:Record<string,unknown>={};
   if(coarseRegion.trim())targeting.coarse_region=coarseRegion.trim();
   if(routeContext.trim())targeting.route_context=routeContext.trim();
   if(splitCsv(amenities).length)targeting.amenities=splitCsv(amenities);
   if(splitCsv(interests).length)targeting.broad_interests=splitCsv(interests);
-  await mutate(()=>upsertOwnerSponsoredCampaign({name:headline.trim(),sponsorName:sponsor.trim(),headline:headline.trim(),body:body.trim(),ctaLabel:cta.trim()||'Learn more',destinationUrl:url.trim(),status,targeting,frequencyCapDaily:2,placementCodes:selectedPlacements}),status==='active'?'Sponsored campaign activated.':'Sponsored campaign saved as draft.');
-  setSponsor('');setHeadline('');setBody('');setUrl('');setCta('Learn more');setCoarseRegion('');setRouteContext('');setAmenities('');setInterests('');setSelectedPlacements([]);
+  setBusy(true);setMessage('');
+  try{
+   const resolvedImage=pickedImage?await uploadOwnerSponsoredCreative(pickedImage):imageUrl.trim()||null;
+   await upsertOwnerSponsoredCampaign({name:headline.trim(),sponsorName:sponsor.trim(),headline:headline.trim(),body:body.trim(),ctaLabel:cta.trim()||'Learn more',destinationUrl:url.trim(),status,targeting,frequencyCapDaily:2,placementCodes:selectedPlacements,creativeMode,imageUrl:resolvedImage,imageAlt:resolvedImage?imageAlt.trim():null,logoUrl:logoUrl.trim()||null});
+   setMessage(status==='active'?'Sponsored campaign activated.':'Sponsored campaign saved as draft.');
+   setSponsor('');setHeadline('');setBody('');setUrl('');setCta('Learn more');setCoarseRegion('');setRouteContext('');setAmenities('');setInterests('');setSelectedPlacements([]);setCreativeMode('text_only');setImageUrl('');setImageAlt('');setLogoUrl('');setPickedImage(null);
+   await load();
+  }catch(error:any){setMessage(error?.message||'Campaign could not be saved.')}finally{setBusy(false)}
  }
 
  async function setCampaignStatus(row:any,status:'active'|'paused'|'ended'){
   await mutate(()=>upsertOwnerSponsoredCampaign({
     id:String(row.id),name:String(row.name),sponsorName:String(row.sponsor_name),headline:String(row.headline),body:String(row.body||''),ctaLabel:String(row.cta_label||'Learn more'),destinationUrl:String(row.destination_url),
-    targetLocationId:row.target_location_id?String(row.target_location_id):null,status,startsAt:row.starts_at||null,endsAt:row.ends_at||null,targeting:row.targeting||{},frequencyCapDaily:number(row.frequency_cap_daily,2),impressionCapTotal:row.impression_cap_total==null?null:number(row.impression_cap_total),ownerPriority:number(row.owner_priority),placementCodes:Array.isArray(row.placements)?row.placements.map(String):[],
+    targetLocationId:row.target_location_id?String(row.target_location_id):null,status,startsAt:row.starts_at||null,endsAt:row.ends_at||null,targeting:row.targeting||{},frequencyCapDaily:number(row.frequency_cap_daily,2),impressionCapTotal:row.impression_cap_total==null?null:number(row.impression_cap_total),ownerPriority:number(row.owner_priority),placementCodes:Array.isArray(row.placements)?row.placements.map(String):[],creativeMode:row.creative_mode||'text_only',imageUrl:row.image_url||null,imageAlt:row.image_alt||null,logoUrl:row.logo_url||null,
   }),`Campaign ${status}.`);
  }
 
@@ -141,6 +150,13 @@ export default function RelevanceControl(){
    <Field label="Headline" value={headline} onChange={setHeadline} placeholder="Useful, specific offer"/>
    <Field label="Body" value={body} onChange={setBody} placeholder="Why this is relevant"/>
    <Field label="Destination URL" value={url} onChange={setUrl} placeholder="https://…"/>
+   <Text style={[s.sectionLabel,{color:theme.accent}]}>AD CREATIVE</Text>
+   <View style={s.chips}>{(['text_only','image_text','image_only'] as const).map(mode=><Pressable key={mode} onPress={()=>setCreativeMode(mode)} style={[s.chip,{backgroundColor:creativeMode===mode?theme.accent:theme.surfaceRaised,borderColor:creativeMode===mode?theme.accent:theme.line}]}><Text style={{fontWeight:'900',fontSize:10,color:creativeMode===mode?theme.accentText:theme.ink}}>{human(mode)}</Text></Pressable>)}</View>
+   <View style={s.controlRow}><Control label={pickedImage?'Change image':'Choose & crop image'} onPress={async()=>{try{const asset=await chooseOwnerSponsoredCreative();if(asset){setPickedImage(asset);setImageUrl('');if(creativeMode==='text_only')setCreativeMode('image_text')}}catch(error:any){setMessage(error?.message||'Image could not be selected.')}}}/>{(pickedImage||imageUrl)?<Control label="Remove image" onPress={()=>{setPickedImage(null);setImageUrl('');setImageAlt('');setCreativeMode('text_only')}}/>:null}</View>
+   <Field label="Image URL (optional alternative to upload)" value={imageUrl} onChange={value=>{setImageUrl(value);if(value.trim())setPickedImage(null)}} placeholder="https://…"/>
+   <Field label="Image alt text" value={imageAlt} onChange={setImageAlt} placeholder="Describe the sponsored image"/>
+   <Field label="Sponsor logo URL (optional)" value={logoUrl} onChange={setLogoUrl} placeholder="https://…"/>
+   {(pickedImage?.uri||imageUrl.trim())?<Image source={{uri:pickedImage?.uri||imageUrl.trim()}} accessibilityLabel={imageAlt||'Sponsored creative preview'} resizeMode="cover" style={s.creativeImage}/>:null}
    <Field label="CTA" value={cta} onChange={setCta} placeholder="Learn more"/>
    <Field label="Coarse region (optional)" value={coarseRegion} onChange={setCoarseRegion} placeholder="St. Louis metro"/>
    <Field label="Route context (optional)" value={routeContext} onChange={setRouteContext} placeholder="nearby or route"/>
@@ -153,7 +169,7 @@ export default function RelevanceControl(){
 
   <View style={{gap:10}}>
    <SectionHeader title="Campaigns" body="Pause or reactivate paid content without touching organic ranking."/>
-   {campaigns.length?campaigns.map((row:any)=><View key={String(row.id)} style={card}><View style={s.row}><View style={{flex:1}}><Text style={[s.title,{color:theme.ink}]}>{row.headline}</Text><Text style={[s.meta,{color:theme.muted}]}>{row.sponsor_name} · {String(row.status).toUpperCase()}</Text></View><StatusPill label={String(row.status).toUpperCase()} tone={row.status==='active'?'good':row.status==='paused'?'warning':'neutral'}/></View><Text style={[s.meta,{color:theme.muted}]}>{number(row.impressions)} impressions · {number(row.clicks)} clicks · {(row.placements||[]).map(human).join(' · ')}</Text><View style={s.controlRow}>{row.status==='active'?<Control label="Pause" onPress={()=>setCampaignStatus(row,'paused')}/>:<Control label="Activate" onPress={()=>setCampaignStatus(row,'active')}/>}<Control label="End" onPress={()=>setCampaignStatus(row,'ended')}/></View></View>):<View style={card}><Text style={{color:theme.muted}}>No sponsored campaigns yet. Organic relevance works independently.</Text></View>}
+   {campaigns.length?campaigns.map((row:any)=><View key={String(row.id)} style={card}><View style={s.row}><View style={{flex:1}}><Text style={[s.title,{color:theme.ink}]}>{row.headline}</Text><Text style={[s.meta,{color:theme.muted}]}>{row.sponsor_name} · {String(row.status).toUpperCase()}</Text></View><StatusPill label={String(row.status).toUpperCase()} tone={row.status==='active'?'good':row.status==='paused'?'warning':'neutral'}/></View>{row.image_url&&row.creative_mode!=='text_only'?<Image source={{uri:String(row.image_url)}} accessibilityLabel={String(row.image_alt||`${row.sponsor_name} sponsored image`)} resizeMode="cover" style={s.creativeImage}/>:null}<Text style={[s.meta,{color:theme.muted}]}>{human(String(row.creative_mode||'text_only'))} · {number(row.impressions)} impressions · {number(row.clicks)} clicks · {(row.placements||[]).map(human).join(' · ')}</Text><View style={s.controlRow}>{row.status==='active'?<Control label="Pause" onPress={()=>setCampaignStatus(row,'paused')}/>:<Control label="Activate" onPress={()=>setCampaignStatus(row,'active')}/>}<Control label="End" onPress={()=>setCampaignStatus(row,'ended')}/></View></View>):<View style={card}><Text style={{color:theme.muted}}>No sponsored campaigns yet. Organic relevance works independently.</Text></View>}
   </View>
  </ScrollView>;
 }
@@ -168,6 +184,7 @@ const s=StyleSheet.create({
  row:{flexDirection:'row',alignItems:'center',gap:10},
  title:{fontSize:17,fontWeight:'900'},
  meta:{fontSize:11,lineHeight:16,fontWeight:'700'},
+ sectionLabel:{fontSize:10,fontWeight:'900',letterSpacing:1.1,marginTop:4},
  value:{fontSize:12,fontWeight:'900'},
  rule:{flexDirection:'row',gap:8,alignItems:'flex-start'},
  controlRow:{flexDirection:'row',gap:8,alignItems:'center',flexWrap:'wrap'},
@@ -177,6 +194,7 @@ const s=StyleSheet.create({
  chips:{flexDirection:'row',gap:7,flexWrap:'wrap'},
  chip:{borderWidth:1,borderRadius:999,paddingHorizontal:10,paddingVertical:8},
  primary:{borderWidth:1,borderRadius:12,paddingHorizontal:13,paddingVertical:11},
+ creativeImage:{width:'100%',aspectRatio:16/9,borderRadius:12},
  metricGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},
  metric:{minWidth:'46%',flexGrow:1,borderWidth:1,borderRadius:13,padding:11,gap:3},
  metricLabel:{fontSize:9,fontWeight:'900',letterSpacing:.7,textTransform:'uppercase'},

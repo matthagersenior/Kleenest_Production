@@ -10,6 +10,10 @@ export type SponsoredCard={
   cta_label:string;
   destination_url:string;
   target_location_id:string|null;
+  creative_mode:'text_only'|'image_text'|'image_only';
+  image_url:string|null;
+  image_alt:string|null;
+  logo_url:string|null;
 };
 
 const client=()=>getKleenestSupabaseClient();
@@ -17,17 +21,25 @@ const client=()=>getKleenestSupabaseClient();
 export async function listSponsoredCards(surface:string,context:Record<string,unknown>={}):Promise<SponsoredCard[]>{
   const{data,error}=await client().rpc('consumer_sponsored_cards',{p_surface:surface,p_context:context});
   if(error)return[];
-  return (Array.isArray(data)?data:[]).map((row:any)=>({
-    campaign_id:String(row.campaign_id),
-    placement_code:String(row.placement_code),
-    label:String(row.label||'Sponsored'),
-    sponsor_name:String(row.sponsor_name||'Sponsor'),
-    headline:String(row.headline||''),
-    body:row.body?String(row.body):null,
-    cta_label:String(row.cta_label||'Learn more'),
-    destination_url:String(row.destination_url||''),
-    target_location_id:row.target_location_id?String(row.target_location_id):null,
-  })).filter(row=>row.campaign_id&&row.placement_code&&row.headline&&row.destination_url);
+  return (Array.isArray(data)?data:[]).map((row:any):SponsoredCard=>{
+    const rawMode=String(row.creative_mode||'text_only');
+    const creativeMode:SponsoredCard['creative_mode']=rawMode==='image_text'||rawMode==='image_only'?rawMode:'text_only';
+    return {
+      campaign_id:String(row.campaign_id),
+      placement_code:String(row.placement_code),
+      label:String(row.label||'Sponsored'),
+      sponsor_name:String(row.sponsor_name||'Sponsor'),
+      headline:String(row.headline||''),
+      body:row.body?String(row.body):null,
+      cta_label:String(row.cta_label||'Learn more'),
+      destination_url:String(row.destination_url||''),
+      target_location_id:row.target_location_id?String(row.target_location_id):null,
+      creative_mode:creativeMode,
+      image_url:row.image_url?String(row.image_url):null,
+      image_alt:row.image_alt?String(row.image_alt):null,
+      logo_url:row.logo_url?String(row.logo_url):null,
+    };
+  }).filter(row=>row.campaign_id&&row.placement_code&&row.headline&&row.destination_url);
 }
 
 export async function recordSponsoredEvent(card:SponsoredCard,eventType:'impression'|'click'|'dismiss',contextClass?:string){
