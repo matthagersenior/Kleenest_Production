@@ -9,8 +9,10 @@ const edgePath='supabase/functions/ingest-map-candidates-v3/index.ts';
 const corePath='packages/mobile-core/src/adaptiveDiscovery.ts';
 const provisionPath='supabase/functions/business-self-service-provision/index.ts';
 const businessStartPath='apps/business-mobile/app/get-started.tsx';
-const brandPath='supabase/migrations/20260919173000_general_brand_identity_registry.sql';
-for(const path of [edgePath,corePath,provisionPath,brandPath,businessStartPath])requireFile(path);
+const brandName=fs.readdirSync('supabase/migrations').find(name=>name.includes('general_brand_identity_registry')&&name.endsWith('.sql'));
+const brandPath=brandName?`supabase/migrations/${brandName}`:'';
+for(const path of [edgePath,corePath,provisionPath,businessStartPath])requireFile(path);
+if(!brandName)failures.push('missing general_brand_identity_registry migration');
 
 const edge=read(edgePath),core=read(corePath),provision=read(provisionPath),brand=read(brandPath),businessStart=read(businessStartPath);
 
