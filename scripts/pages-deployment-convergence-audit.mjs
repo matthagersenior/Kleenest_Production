@@ -58,7 +58,7 @@ if(!installer.includes("github.event.workflow_run.head_branch == 'main'"))throw 
 if(!installer.includes("github.event.workflow_run.conclusion == 'success'"))throw new Error('Consumer installer deployment must require successful web validation before publishing.');
 if(installer.includes('workflows: ["Build Kleenest App Family Android APKs"]'))throw new Error('Consumer web publishing must not wait on the Android family matrix.');
 if(installer.includes("github.event.workflow_run.conclusion != 'cancelled'"))throw new Error('Consumer installer deployment must not publish from failed or skipped validation runs.');
-for(const token of ['group: kleenest-consumer-preview-pages',"cancel-in-progress: ${{ github.event.workflow_run.conclusion == 'success' }}"])requireToken(installer,token,'Consumer Pages publisher concurrency policy');
+for(const token of ["group: kleenest-consumer-preview-pages-${{ github.event.workflow_run.head_branch }}","cancel-in-progress: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}"])requireToken(installer,token,'Consumer Pages publisher concurrency policy');
 
 for(const token of ["output: 'single'","bundler: 'metro'","baseUrl: '/Kleenest_Production'","previewRole: 'non-blocking-web-preview'"])requireToken(appConfig,token,'Expo consumer preview config');
 const consumerInstall=read('apps/consumer-mobile/app/install.tsx');
