@@ -115,9 +115,10 @@ export default function Layout() {
     <Tabs.Screen name="index" options={{title:'Home'}}/>
     <Tabs.Screen name="tools" options={{title:'Actions'}}/>
     <Tabs.Screen name="locations" options={{title:'Locations'}}/>
+    <Tabs.Screen name="location-media" options={{href:null,title:'Official Media'}}/>
     <Tabs.Screen name="verification-center" options={{href:null,title:'Verification Center'}}/>
-    <Tabs.Screen name="engagement" options={{href:null,title:'Growth'}}/>
-    <Tabs.Screen name="advertising" options={{href:null,title:'Advertise'}}/>
+    <Tabs.Screen name="engagement" options={{href:null,title:'Campaigns & Promotions'}}/>
+    <Tabs.Screen name="advertising" options={{href:null,title:'Sponsored Ads'}}/>
     <Tabs.Screen name="operations" options={{title:'Operations'}}/>
     <Tabs.Screen name="fleet" options={{href:null,title:'Fleet Suite'}}/>
     <Tabs.Screen name="analytics" options={{title:'Analytics'}}/>
@@ -140,7 +141,7 @@ export default function Layout() {
     <Tabs.Screen name="progression" options={{href:null,title:'Progression'}}/>
     <Tabs.Screen name="intelligence" options={{href:null,title:'Intelligence'}}/>
     <Tabs.Screen name="capabilities" options={{href:null,title:'Capabilities'}}/>
-    <Tabs.Screen name="growth" options={{href:null,title:'Growth Summary'}}/>
+    <Tabs.Screen name="growth" options={{href:null,title:'Growth Performance'}}/>
     <Tabs.Screen name="prevention" options={{href:null,title:'Prevention'}}/>
     <Tabs.Screen name="trust-operations" options={{href:null,title:'Trust Operations'}}/>
     <Tabs.Screen name="governance" options={{href:null,title:'Governance & Reporting'}}/>
