@@ -1,7 +1,8 @@
-import { useEffect,useMemo,useState } from 'react';
+import { useEffect,useMemo,useRef,useState } from 'react';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform,Pressable,RefreshControl,ScrollView,Text,TextInput,View } from 'react-native';
+import { useLocalSearchParams,useRouter } from 'expo-router';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { OSHero,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
@@ -53,6 +54,9 @@ function excerpt(value:string,max=220){
 export default function Communications(){
   const theme=usePlatformTheme();
   const card=useOSCardStyle();
+  const router=useRouter();
+  const params=useLocalSearchParams<{code?:string;error?:string;error_description?:string}>();
+  const callbackHandled=useRef('');
   const[providerToken,setProviderToken]=useState('');
   const[status,setStatus]=useState<OwnerMailConnectionStatus|null>(null);
   const[threads,setThreads]=useState<OwnerMailThreadSummary[]>([]);
@@ -94,7 +98,56 @@ export default function Communications(){
     }finally{setBusy(false);setSearching(false)}
   }
 
-  useEffect(()=>{void load()},[]);
+  async function finishGmailOAuth(urlOrCode:string,originalSession?:any){
+    const client=getKleenestSupabaseClient();
+    const oauthError=urlOrCode.includes('://')
+      ? authParam(urlOrCode,'error_description')||authParam(urlOrCode,'error')
+      : '';
+    if(oauthError)throw new Error(oauthError);
+    const code=urlOrCode.includes('://')?authParam(urlOrCode,'code'):urlOrCode;
+    if(!code)throw new Error('Google returned to KleenestOS without an authorization code.');
+
+    const before=originalSession??(await client.auth.getSession()).data.session;
+    const{error:exchangeError}=await client.auth.exchangeCodeForSession(code);
+    if(exchangeError)throw exchangeError;
+
+    const{data:{session:connectedSession}}=await client.auth.getSession();
+    if(!connectedSession)throw new Error('Google connected, but no Owner session was returned.');
+    if(before&&connectedSession.user.id!==before.user.id){
+      await client.auth.setSession({access_token:before.access_token,refresh_token:before.refresh_token});
+      throw new Error('Choose the Google account tied to this Owner identity. The original Owner session was restored safely.');
+    }
+    const token=String(connectedSession.provider_token||'');
+    if(!token)throw new Error('Google connected, but Gmail authorization was not returned. Reconnect and approve Gmail access.');
+    const auth=await getOwnerAuthorization();
+    if(!auth.authorized)throw new Error('The connected Google account does not have Owner/admin authority.');
+    await load(token);
+    return token;
+  }
+
+  useEffect(()=>{
+    const code=typeof params.code==='string'?params.code:'';
+    const oauthError=(typeof params.error_description==='string'?params.error_description:'')||(typeof params.error==='string'?params.error:'');
+    const callbackKey=code||oauthError;
+    if(callbackKey&&callbackHandled.current!==callbackKey){
+      callbackHandled.current=callbackKey;
+      setBusy(true);setNotice('');
+      (async()=>{
+        try{
+          if(oauthError)throw new Error(oauthError);
+          await finishGmailOAuth(code);
+          setNotice('Gmail connected.');
+        }catch(error:any){
+          setNotice(String(error?.message||'Gmail connection failed.'));
+        }finally{
+          setBusy(false);
+          router.replace('/communications');
+        }
+      })();
+      return;
+    }
+    if(!callbackKey)void load();
+  },[params.code,params.error,params.error_description]);
 
   async function connectGmail(){
     if(busy)return;
@@ -103,7 +156,7 @@ export default function Communications(){
     if(!ownerSession){setNotice('Sign in to the Owner app before connecting Gmail.');return}
     const redirectTo=Platform.OS==='web'&&typeof window!=='undefined'
       ? `${window.location.origin}${window.location.pathname}`
-      : Linking.createURL('auth',{scheme:'kleenest-owner',isTripleSlashed:false});
+      : Linking.createURL('communications',{scheme:'kleenest-owner',isTripleSlashed:false});
     setBusy(true);setNotice('');
     try{
       const{data,error}=await client.auth.signInWithOAuth({
@@ -124,24 +177,8 @@ export default function Communications(){
       const result=await WebBrowser.openAuthSessionAsync(data.url,redirectTo);
       if(result.type==='cancel'||result.type==='dismiss'){setNotice('Gmail connection was cancelled.');return}
       if(result.type!=='success'||!result.url)throw new Error('Google did not return to KleenestOS.');
-      const oauthError=authParam(result.url,'error_description')||authParam(result.url,'error');
-      if(oauthError)throw new Error(oauthError);
-      const code=authParam(result.url,'code');
-      if(code){
-        const{error:exchangeError}=await client.auth.exchangeCodeForSession(code);
-        if(exchangeError)throw exchangeError;
-      }
-      const{data:{session:connectedSession}}=await client.auth.getSession();
-      if(!connectedSession)throw new Error('Google connected, but no Owner session was returned.');
-      if(Platform.OS!=='web'&&connectedSession.user.id!==ownerSession.user.id){
-        await client.auth.setSession({access_token:ownerSession.access_token,refresh_token:ownerSession.refresh_token});
-        throw new Error('Choose the Google account tied to this Owner identity. The original Owner session was restored safely.');
-      }
-      const token=String(connectedSession.provider_token||'');
-      if(!token)throw new Error('Google connected, but Gmail authorization was not returned. Reconnect and approve Gmail access.');
-      const auth=await getOwnerAuthorization();
-      if(!auth.authorized)throw new Error('The connected Google account does not have Owner/admin authority.');
-      await load(token);
+      await finishGmailOAuth(result.url,ownerSession);
+      setNotice('Gmail connected.');
     }catch(error:any){
       setNotice(String(error?.message||'Gmail connection failed.'));
     }finally{setBusy(false)}
