@@ -61,13 +61,74 @@ function browserLabel(kind:BrowserKind){
   return kind==='opera'?'Opera':kind==='samsung'?'Samsung Internet':kind==='edge'?'Edge':kind==='firefox'?'Firefox':kind==='chrome'?'Chrome':kind==='safari'?'Safari':'Browser';
 }
 
+function InstallStep({number,title,body}:{number:string;title:string;body:string}){
+  const theme=useConsumerTheme();
+  return <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+    <Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>{number}</Text>
+    <View style={s.stepCopy}>
+      <Text style={[s.stepTitle,{color:theme.ink}]}>{title}</Text>
+      <Text style={[s.stepBody,{color:theme.muted}]}>{body}</Text>
+    </View>
+  </View>
+}
+
 function AppleInstallSteps(){
   const theme=useConsumerTheme();
-  return <View style={s.steps}>
-    <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>1</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Open Kleenest in Safari</Text><Text style={[s.stepBody,{color:theme.muted}]}>Safari gives iPhone and iPad the clearest web-app installation path.</Text></View></View>
-    <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>2</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Tap Share</Text><Text style={[s.stepBody,{color:theme.muted}]}>Use the Share button in Safari.</Text></View></View>
-    <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>3</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Choose Add to Home Screen</Text><Text style={[s.stepBody,{color:theme.muted}]}>Scroll the share sheet if needed, then choose Add to Home Screen.</Text></View></View>
-    <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>4</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Keep Open as Web App enabled</Text><Text style={[s.stepBody,{color:theme.muted}]}>Tap Add. Kleenest gets its own Home Screen icon and opens in an app-style window.</Text></View></View>
+  return <View style={s.guidance}>
+    <Text style={[s.guidanceIntro,{color:theme.ink}]}>If you have never installed a web app before, follow these steps exactly. Nothing here changes your Apple ID or installs an APK.</Text>
+    <View style={s.steps}>
+      <InstallStep number="1" title="Open this Installation Center in Safari" body="On iPhone or iPad, Safari is the reliable install path. If you are reading this in another browser, copy this page address, open Safari, paste it into the address bar, and return to this page."/>
+      <InstallStep number="2" title="Tap Safari’s Share button" body="Look for the square with an upward arrow. It is usually at the bottom of the screen on iPhone and near the top on iPad."/>
+      <InstallStep number="3" title="Choose Add to Home Screen" body="Scroll down in the Share sheet until you see Add to Home Screen. If it is hidden, scroll farther down rather than choosing Add Bookmark."/>
+      <InstallStep number="4" title="Confirm the web-app option" body="On newer iOS versions, keep Open as Web App enabled if that switch is shown. Leave the name as Kleenest unless you specifically want to rename the icon."/>
+      <InstallStep number="5" title="Tap Add" body="Tap Add in the upper-right corner. Safari will close the install sheet and place a Kleenest icon on your Home Screen."/>
+      <InstallStep number="6" title="Find Kleenest after installation" body="Return to your Home Screen, look for the Kleenest icon, and tap it. It should open in its own app-style window instead of a normal Safari tab."/>
+    </View>
+  </View>
+}
+
+function WebInstallSteps({deviceKind,browserKind}:{deviceKind:DeviceKind;browserKind:BrowserKind}){
+  const theme=useConsumerTheme();
+  const desktop=deviceKind==='desktop';
+  const menuInstruction=browserKind==='opera'
+    ? 'Open Opera’s menu and choose Install app or Add to Home screen. The exact wording can vary slightly by Opera version.'
+    : browserKind==='samsung'
+      ? 'Open Samsung Internet’s menu, choose Add page to, then choose Home screen.'
+      : browserKind==='edge'
+        ? (desktop?'Open the three-dot menu, choose Apps, then Install this site as an app.':'Open Edge’s menu and choose Add to phone, Add to Home screen, or Install app when offered.')
+        : browserKind==='firefox'
+          ? (desktop?'Firefox desktop may not offer full PWA installation. Open this same Installation Center link in Chrome or Edge, then use their Install app option.':'Open Firefox’s menu and choose Add to Home screen when that option is available.')
+          : browserKind==='chrome'
+            ? (desktop?'Open Chrome’s three-dot menu and choose Install page as app, Install Kleenest, or the install icon in the address bar.':'Open Chrome’s three-dot menu and choose Add to Home screen or Install app.')
+            : 'Open your browser menu and look for Install app, Add to Home Screen, Add to phone, or Install this site as an app.';
+  const installedLocation=desktop
+    ? 'Open your computer’s Start menu, Applications folder, browser app launcher, taskbar, or dock and look for Kleenest.'
+    : 'Return to your Android Home Screen or open the app drawer and look for the Kleenest icon.';
+  return <View style={s.guidance}>
+    <Text style={[s.guidanceIntro,{color:theme.ink}]}>If you have never installed a web app before, use this checklist from top to bottom. A web app is the Kleenest website saved as an app icon; it does not require an APK.</Text>
+    <View style={s.steps}>
+      <InstallStep number="1" title="Stay on this Installation Center page" body="Do not download anything for the web-app method. Keep this page open in your browser while you follow the next steps."/>
+      <InstallStep number="2" title="Try the green INSTALL WEB APP button" body="Tap or click INSTALL WEB APP above. If your browser shows an Install confirmation, choose Install. If nothing appears, continue to step 3."/>
+      <InstallStep number="3" title="If you do not see an Install option" body={menuInstruction}/>
+      <InstallStep number="4" title="Confirm the installation" body="When the browser asks for confirmation, choose Install, Add, or Add to Home Screen. You do not need to create a new Kleenest account to install it."/>
+      <InstallStep number="5" title="Find Kleenest after installation" body={installedLocation}/>
+      <InstallStep number="6" title="If it still will not install" body="Refresh this page once and check Install Health above. Secure Web and PWA Shell should show READY. On desktop Firefox, use Chrome or Edge for the install. You can always use Kleenest in the browser without installing it."/>
+    </View>
+  </View>
+}
+
+function AndroidApkInstallSteps(){
+  const theme=useConsumerTheme();
+  return <View style={s.guidance}>
+    <Text style={[s.guidanceIntro,{color:theme.ink}]}>The APK is the native Android installer. These steps are for an Android phone or tablet. iPhone, iPad, Windows, and Mac cannot install an Android APK directly.</Text>
+    <View style={s.steps}>
+      <InstallStep number="1" title="Tap DOWNLOAD ANDROID APK" body="Your browser downloads the file named Kleenest-Consumer.apk directly from this Installation Center."/>
+      <InstallStep number="2" title="Accept the browser download warning if Android shows one" body="Android may warn that APK files can be harmful because this installer is outside Google Play. Continue only when the address is matthagersenior.github.io/Kleenest_Production and the file name is Kleenest-Consumer.apk."/>
+      <InstallStep number="3" title="Open the downloaded APK" body="When the download finishes, tap the download notification. If you dismissed it, open your browser’s Downloads list or the Files app, open Downloads, and tap Kleenest-Consumer.apk."/>
+      <InstallStep number="4" title="Allow this source if Android asks" body="If Android says your browser or Files app is not allowed to install unknown apps, tap Settings, turn on Allow from this source for the app you used to open the APK, then go back to the installer."/>
+      <InstallStep number="5" title="Tap Install, then Open" body="Android will show the Kleenest install screen. Tap Install. When it finishes, tap Open or find Kleenest in your app drawer."/>
+      <InstallStep number="6" title="Optional: turn the temporary permission back off" body="After Kleenest is installed, you can return to Android Settings and turn Allow from this source back off for the browser or Files app."/>
+    </View>
   </View>
 }
 
