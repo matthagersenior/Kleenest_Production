@@ -61,13 +61,74 @@ function browserLabel(kind:BrowserKind){
   return kind==='opera'?'Opera':kind==='samsung'?'Samsung Internet':kind==='edge'?'Edge':kind==='firefox'?'Firefox':kind==='chrome'?'Chrome':kind==='safari'?'Safari':'Browser';
 }
 
+function InstallStep({number,title,body}:{number:string;title:string;body:string}){
+  const theme=useConsumerTheme();
+  return <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+    <Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>{number}</Text>
+    <View style={s.stepCopy}>
+      <Text style={[s.stepTitle,{color:theme.ink}]}>{title}</Text>
+      <Text style={[s.stepBody,{color:theme.muted}]}>{body}</Text>
+    </View>
+  </View>
+}
+
 function AppleInstallSteps(){
   const theme=useConsumerTheme();
-  return <View style={s.steps}>
-    <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>1</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Open Kleenest in Safari</Text><Text style={[s.stepBody,{color:theme.muted}]}>Safari gives iPhone and iPad the clearest web-app installation path.</Text></View></View>
-    <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>2</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Tap Share</Text><Text style={[s.stepBody,{color:theme.muted}]}>Use the Share button in Safari.</Text></View></View>
-    <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>3</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Choose Add to Home Screen</Text><Text style={[s.stepBody,{color:theme.muted}]}>Scroll the share sheet if needed, then choose Add to Home Screen.</Text></View></View>
-    <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>4</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Keep Open as Web App enabled</Text><Text style={[s.stepBody,{color:theme.muted}]}>Tap Add. Kleenest gets its own Home Screen icon and opens in an app-style window.</Text></View></View>
+  return <View style={s.guidance}>
+    <Text style={[s.guidanceIntro,{color:theme.ink}]}>If you have never installed a web app before, follow these steps exactly. Nothing here changes your Apple ID or installs an APK.</Text>
+    <View style={s.steps}>
+      <InstallStep number="1" title="Open this Installation Center in Safari" body="On iPhone or iPad, Safari is the reliable install path. If you are reading this in another browser, copy this page address, open Safari, paste it into the address bar, and return to this page."/>
+      <InstallStep number="2" title="Tap Safari’s Share button" body="Look for the square with an upward arrow. It is usually at the bottom of the screen on iPhone and near the top on iPad."/>
+      <InstallStep number="3" title="Choose Add to Home Screen" body="Scroll down in the Share sheet until you see Add to Home Screen. If it is hidden, scroll farther down rather than choosing Add Bookmark."/>
+      <InstallStep number="4" title="Confirm the web-app option" body="On newer iOS versions, keep Open as Web App enabled if that switch is shown. Leave the name as Kleenest unless you specifically want to rename the icon."/>
+      <InstallStep number="5" title="Tap Add" body="Tap Add in the upper-right corner. Safari will close the install sheet and place a Kleenest icon on your Home Screen."/>
+      <InstallStep number="6" title="Find Kleenest after installation" body="Return to your Home Screen, look for the Kleenest icon, and tap it. It should open in its own app-style window instead of a normal Safari tab."/>
+    </View>
+  </View>
+}
+
+function WebInstallSteps({deviceKind,browserKind}:{deviceKind:DeviceKind;browserKind:BrowserKind}){
+  const theme=useConsumerTheme();
+  const desktop=deviceKind==='desktop';
+  const menuInstruction=browserKind==='opera'
+    ? 'Open Opera’s menu and choose Install app or Add to Home screen. The exact wording can vary slightly by Opera version.'
+    : browserKind==='samsung'
+      ? 'Open Samsung Internet’s menu, choose Add page to, then choose Home screen.'
+      : browserKind==='edge'
+        ? (desktop?'Open the three-dot menu, choose Apps, then Install this site as an app.':'Open Edge’s menu and choose Add to phone, Add to Home screen, or Install app when offered.')
+        : browserKind==='firefox'
+          ? (desktop?'Firefox desktop may not offer full PWA installation. Open this same Installation Center link in Chrome or Edge, then use their Install app option.':'Open Firefox’s menu and choose Add to Home screen when that option is available.')
+          : browserKind==='chrome'
+            ? (desktop?'Open Chrome’s three-dot menu and choose Install page as app, Install Kleenest, or the install icon in the address bar.':'Open Chrome’s three-dot menu and choose Add to Home screen or Install app.')
+            : 'Open your browser menu and look for Install app, Add to Home Screen, Add to phone, or Install this site as an app.';
+  const installedLocation=desktop
+    ? 'Open your computer’s Start menu, Applications folder, browser app launcher, taskbar, or dock and look for Kleenest.'
+    : 'Return to your Android Home Screen or open the app drawer and look for the Kleenest icon.';
+  return <View style={s.guidance}>
+    <Text style={[s.guidanceIntro,{color:theme.ink}]}>If you have never installed a web app before, use this checklist from top to bottom. A web app is the Kleenest website saved as an app icon; it does not require an APK.</Text>
+    <View style={s.steps}>
+      <InstallStep number="1" title="Stay on this Installation Center page" body="Do not download anything for the web-app method. Keep this page open in your browser while you follow the next steps."/>
+      <InstallStep number="2" title="Try the green INSTALL WEB APP button" body="Tap or click INSTALL WEB APP above. If your browser shows an Install confirmation, choose Install. If nothing appears, continue to step 3."/>
+      <InstallStep number="3" title="If you do not see an Install option" body={menuInstruction}/>
+      <InstallStep number="4" title="Confirm the installation" body="When the browser asks for confirmation, choose Install, Add, or Add to Home Screen. You do not need to create a new Kleenest account to install it."/>
+      <InstallStep number="5" title="Find Kleenest after installation" body={installedLocation}/>
+      <InstallStep number="6" title="If it still will not install" body="Refresh this page once and check Install Health above. Secure Web and PWA Shell should show READY. On desktop Firefox, use Chrome or Edge for the install. You can always use Kleenest in the browser without installing it."/>
+    </View>
+  </View>
+}
+
+function AndroidApkInstallSteps(){
+  const theme=useConsumerTheme();
+  return <View style={s.guidance}>
+    <Text style={[s.guidanceIntro,{color:theme.ink}]}>The APK is the native Android installer. These steps are for an Android phone or tablet. iPhone, iPad, Windows, and Mac cannot install an Android APK directly.</Text>
+    <View style={s.steps}>
+      <InstallStep number="1" title="Tap DOWNLOAD ANDROID APK" body="Your browser downloads the file named Kleenest-Consumer.apk directly from this Installation Center."/>
+      <InstallStep number="2" title="Accept the browser download warning if Android shows one" body="Android may warn that APK files can be harmful because this installer is outside Google Play. Continue only when the address is matthagersenior.github.io/Kleenest_Production and the file name is Kleenest-Consumer.apk."/>
+      <InstallStep number="3" title="Open the downloaded APK" body="When the download finishes, tap the download notification. If you dismissed it, open your browser’s Downloads list or the Files app, open Downloads, and tap Kleenest-Consumer.apk."/>
+      <InstallStep number="4" title="Allow this source if Android asks" body="If Android says your browser or Files app is not allowed to install unknown apps, tap Settings, turn on Allow from this source for the app you used to open the APK, then go back to the installer."/>
+      <InstallStep number="5" title="Tap Install, then Open" body="Android will show the Kleenest install screen. Tap Install. When it finishes, tap Open or find Kleenest in your app drawer."/>
+      <InstallStep number="6" title="Optional: turn the temporary permission back off" body="After Kleenest is installed, you can return to Android Settings and turn Allow from this source back off for the browser or Files app."/>
+    </View>
   </View>
 }
 
@@ -172,6 +233,14 @@ export default function InstallKleenest(){
     setMessage(`Share this install link: ${url}`);
   }
 
+  async function copyApkLink(){
+    const url=browserUrl(APK_PATH);
+    if(Platform.OS==='web'&&typeof navigator!=='undefined'&&navigator.clipboard?.writeText){
+      try{await navigator.clipboard.writeText(url);setMessage('Direct APK link copied.');return}catch{}
+    }
+    setMessage(`Direct APK link: ${url}`);
+  }
+
   async function downloadApk(){await Linking.openURL(browserUrl(APK_PATH))}
   async function openChecksum(){await Linking.openURL(browserUrl(CHECKSUM_PATH))}
   async function openKleenest(){await Linking.openURL(browserUrl(APP_PATH))}
@@ -181,6 +250,7 @@ export default function InstallKleenest(){
 
   const releaseStatus=releaseLoading?'CHECKING':releaseState?.status||'STATUS UNAVAILABLE';
   const releaseGood=releaseState?.otaCompatible===true&&!releaseState?.nativeDrift;
+  const hostedApkUrl=browserUrl(APK_PATH);
 
   return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.page}>
     <View style={[s.hero,{backgroundColor:theme.accent}]}>
@@ -236,18 +306,28 @@ export default function InstallKleenest(){
     {!isIOS?<View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
       <Text style={[s.kicker,{color:theme.accent}]}>{isAndroid?'ANDROID · WEB APP':'BROWSER APP'}</Text>
       <Text style={[s.cardTitle,{color:theme.ink}]}>Install the Kleenest web app</Text>
-      <Text style={[s.cardBody,{color:theme.muted}]}>Recommended for most people. It opens in its own app window, keeps the Kleenest icon on your device, updates quickly, and uses the same Kleenest account and network.</Text>
+      <Text style={[s.cardBody,{color:theme.muted}]}>Recommended for most people. A web app is the Kleenest website saved to your device like an app: it gets its own icon, opens in an app-style window, updates quickly, and uses the same Kleenest account and network.</Text>
       <Pressable accessibilityRole="button" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void installWeb()}><Text style={[s.primaryText,{color:theme.accentText}]}>{installed?'WEB APP INSTALLED':'INSTALL WEB APP'}</Text></Pressable>
       {!installed?<Text style={[s.help,{color:theme.muted}]}>{prompt?'Your browser is ready for a one-tap install.':browserHelp}</Text>:null}
+      <WebInstallSteps deviceKind={deviceKind} browserKind={browserKind}/>
     </View>:null}
 
-    {isAndroid?<View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-      <Text style={[s.kicker,{color:theme.accent}]}>ANDROID · DIRECT INSTALL</Text>
-      <Text style={[s.cardTitle,{color:theme.ink}]}>Verified Kleenest Android APK</Text>
-      <Text style={[s.cardBody,{color:theme.muted}]}>Prefer a native Android package? Download the verified release APK. The Installation Center keeps showing whether the current web/OTA code is compatible with that APK baseline.</Text>
-      <Pressable accessibilityRole="link" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void downloadApk()}><Text style={[s.primaryText,{color:theme.accentText}]}>DOWNLOAD ANDROID APK</Text></Pressable>
-      <Pressable accessibilityRole="link" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void openChecksum()}><Text style={[s.secondaryText,{color:theme.accent}]}>VIEW SHA-256 CHECKSUM</Text></Pressable>
-    </View>:null}
+    <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+      <Text style={[s.kicker,{color:theme.accent}]}>ANDROID APK · DIRECT DOWNLOAD</Text>
+      <Text style={[s.cardTitle,{color:theme.ink}]}>Download the native Android APK directly from this Installation Center.</Text>
+      <Text style={[s.cardBody,{color:theme.muted}]}>{isAndroid?'This is the verified native Android package. Use it when you want the installed Android app instead of the web app.':'The APK is always available here even when you open the Installation Center on a computer or iPhone. Download or copy the link, then open it on the Android phone or tablet where you want Kleenest installed.'}</Text>
+      <View style={[s.directLinkBox,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+        <Text style={[s.directLinkLabel,{color:theme.accent}]}>DIRECT APK FILE</Text>
+        <Text selectable style={[s.directLink,{color:theme.ink}]}>{hostedApkUrl}</Text>
+      </View>
+      <View style={s.buttonRow}>
+        <Pressable accessibilityRole="link" accessibilityLabel="Download Android APK" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void downloadApk()}><Text style={[s.primaryText,{color:theme.accentText}]}>DOWNLOAD ANDROID APK</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Copy APK link" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void copyApkLink()}><Text style={[s.secondaryText,{color:theme.accent}]}>COPY APK LINK</Text></Pressable>
+        <Pressable accessibilityRole="link" accessibilityLabel="View SHA-256 checksum" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void openChecksum()}><Text style={[s.secondaryText,{color:theme.accent}]}>VIEW SHA-256 CHECKSUM</Text></Pressable>
+      </View>
+      <Text style={[s.help,{color:theme.muted}]}>The published file is Kleenest-Consumer.apk. The checksum link lets advanced users verify the exact downloaded file; beginners can simply follow the numbered Android steps below.</Text>
+      <AndroidApkInstallSteps/>
+    </View>
 
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
       <Text style={[s.kicker,{color:theme.accent}]}>IF INSTALLATION DOESN'T WORK</Text>
@@ -257,7 +337,7 @@ export default function InstallKleenest(){
         <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>1</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Check the browser instructions above</Text><Text style={[s.stepBody,{color:theme.muted}]}>{browserHelp}</Text></View></View>
         <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>2</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Run Install Health again</Text><Text style={[s.stepBody,{color:theme.muted}]}>Secure Web and PWA Shell should show READY. If the shell still says LOADING, refresh this page once and check again.</Text></View></View>
         <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>3</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Remove an old shortcut if it behaves strangely</Text><Text style={[s.stepBody,{color:theme.muted}]}>If an older Kleenest shortcut only opens a browser tab or looks stale, remove that shortcut and install again from this page.</Text></View></View>
-        <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>4</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Android has a second path</Text><Text style={[s.stepBody,{color:theme.muted}]}>The web app is recommended for most people. If you specifically want the native Android package, use the verified APK option above.</Text></View></View>
+        <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>4</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Android has a second path</Text><Text style={[s.stepBody,{color:theme.muted}]}>The web app is recommended for most people. The direct Android APK is also always available above, even if you opened this page on another device.</Text></View></View>
       </View>
       <View style={s.buttonRow}>
         <Pressable accessibilityRole="button" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void refreshDiagnostics()}><Text style={[s.secondaryText,{color:theme.accent}]}>CHECK INSTALLATION AGAIN</Text></Pressable>
@@ -324,6 +404,11 @@ const s=StyleSheet.create({
   secondaryText:{fontSize:9,fontWeight:'900',color:palette.green},
   buttonRow:{flexDirection:'row',flexWrap:'wrap',gap:7},
   help:{fontSize:10,lineHeight:15,color:'#718077'},
+  guidance:{gap:8,marginTop:4},
+  guidanceIntro:{fontSize:11,lineHeight:17,fontWeight:'800',color:palette.ink},
+  directLinkBox:{borderWidth:1,borderRadius:12,padding:10,gap:4},
+  directLinkLabel:{fontSize:8,fontWeight:'900',letterSpacing:.7,color:palette.green},
+  directLink:{fontSize:10,lineHeight:15,fontWeight:'700',color:palette.ink},
   steps:{gap:8,marginTop:3},
   step:{flexDirection:'row',gap:10,alignItems:'flex-start',backgroundColor:'#f4f8f5',borderRadius:13,padding:11},
   stepNumber:{width:24,height:24,borderRadius:12,textAlign:'center',paddingTop:4,overflow:'hidden',backgroundColor:palette.green,color:'#fff',fontSize:10,fontWeight:'900'},

@@ -152,7 +152,13 @@ jobs:
           done
           cp apps/consumer-mobile/dist/index.html apps/consumer-mobile/dist/404.html
           touch apps/consumer-mobile/dist/.nojekyll
-          sha256sum apps/consumer-mobile/dist/Kleenest-Consumer.apk > apps/consumer-mobile/dist/Kleenest-Consumer.apk.sha256
+          APK_FILE="apps/consumer-mobile/dist/Kleenest-Consumer.apk"
+          test -s "$APK_FILE"
+          APK_BYTES="$(wc -c < "$APK_FILE" | tr -d '[:space:]')"
+          test "$APK_BYTES" -gt 1000000
+          unzip -t "$APK_FILE" >/dev/null
+          sha256sum "$APK_FILE" > apps/consumer-mobile/dist/Kleenest-Consumer.apk.sha256
+          grep -q "Kleenest-Consumer.apk" apps/consumer-mobile/dist/Kleenest-Consumer.apk.sha256
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
