@@ -38,6 +38,7 @@ requireAll('Owner Gmail connection UI',screen,[
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.send',
   'openAuthSessionAsync',
+  "Linking.createURL('auth'",
   'exchangeCodeForSession',
   'provider_token',
 ]);
