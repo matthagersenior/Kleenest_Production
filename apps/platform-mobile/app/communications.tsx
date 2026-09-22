@@ -205,7 +205,7 @@ export default function Communications(){
       {notice?<View style={{...card,borderColor:theme.warning}}><Text style={{fontWeight:'800',color:theme.warning}}>{notice}</Text></View>:null}
       <View style={{...card,gap:10}}>
         <SectionHeader title="Connect your mailbox" body="KleenestOS requests Gmail read, modify and send permission so this screen can show conversations, reply in-thread, archive, and manage unread state."/>
-        <Pressable disabled={busy} onPress={connectGmail} style={{backgroundColor:theme.accent,borderRadius:14,padding:14,alignItems:'center',opacity:busy?.6:1}}>
+        <Pressable disabled={busy} onPress={connectGmail} style={{backgroundColor:theme.accent,borderRadius:14,padding:14,alignItems:'center',opacity:busy?0.6:1}}>
           <Text style={{fontWeight:'900',color:theme.accentText}}>{busy?'Connecting…':'Connect Gmail'}</Text>
         </Pressable>
         <Text style={{fontSize:12,lineHeight:18,color:theme.muted}}>No Gmail password is stored in KleenestOS. If Google access expires, this screen asks you to reconnect.</Text>
@@ -251,7 +251,7 @@ export default function Communications(){
         <Text style={{fontWeight:'900',color:theme.ink}}>Reply</Text>
         <TextInput value={replyBody} onChangeText={setReplyBody} multiline placeholder="Write your reply…" placeholderTextColor={theme.muted} style={{minHeight:120,textAlignVertical:'top',borderWidth:1,borderColor:theme.line,borderRadius:13,padding:12,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
         <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
-          <Pressable disabled={!replyBody.trim()||busy} onPress={()=>void sendReply()} style={{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:theme.accent,opacity:!replyBody.trim()||busy?.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>Reply</Text></Pressable>
+          <Pressable disabled={!replyBody.trim()||busy} onPress={()=>void sendReply()} style={{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:theme.accent,opacity:(!replyBody.trim()||busy)?0.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>Reply</Text></Pressable>
           <Pressable onPress={()=>void markUnread(selected.id)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Mark unread</Text></Pressable>
           <Pressable onPress={()=>void archive(selected.id)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.ink}}>Archive</Text></Pressable>
         </View>
