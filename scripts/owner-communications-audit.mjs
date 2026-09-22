@@ -49,7 +49,7 @@ requireAll('Owner Gmail connection UI',screen,[
   'insufficient authentication scopes',
   "productionOAuthRelay='https://matthagersenior.github.io/Kleenest_Production/'",
   'kleenest_oauth_start=owner-gmail',
-  'encodeURIComponent(data.url)',
+  'encodeURIComponent(scopedAuthorizeUrl)',
   'openAuthSessionAsync(relayStart,nativeAppOAuthReturn)',
 ]);
 requireAll('Owner Gmail native callback relay',oauthRelay,[
