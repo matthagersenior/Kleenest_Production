@@ -60,7 +60,8 @@ requireAll('Owner email gateway authorization',gateway,[
   "rpc('admin_authorization_v1')",
   'authorization',
   'authorized',
-  'gmail.googleapis.com/gmail/v1/users/me/profile',
+  "const GMAIL='https://gmail.googleapis.com/gmail/v1/users/me'",
+  "'/profile'",
 ]);
 requireAll('Owner email gateway capabilities',gateway,[
   'list_threads',
@@ -68,8 +69,8 @@ requireAll('Owner email gateway capabilities',gateway,[
   'reply',
   'archive',
   'set_read',
-  '/gmail/v1/users/me/threads',
-  '/gmail/v1/users/me/messages/send',
+  "'/threads'",
+  "'/messages/send'",
   'In-Reply-To',
   'References',
   'threadId',
