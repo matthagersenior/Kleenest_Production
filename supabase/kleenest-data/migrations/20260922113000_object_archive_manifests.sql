@@ -61,3 +61,7 @@ begin
 end $$;
 revoke all on function public.archive_object_backfill_batch(text,uuid,integer) from public,anon,authenticated;
 grant execute on function public.archive_object_backfill_batch(text,uuid,integer) to service_role;
+
+-- Legacy archive writer is internal-only; keep it off the public Data API.
+revoke all on function public.ingest_archived_ingestion_runs(jsonb) from public,anon,authenticated;
+grant execute on function public.ingest_archived_ingestion_runs(jsonb) to service_role;
