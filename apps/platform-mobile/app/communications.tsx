@@ -243,14 +243,15 @@ export default function Communications(){
     finally{setBusy(false)}
   }
 
-  async function markUnread(threadId:string){
+  async function setThreadReadState(threadId:string,read:boolean){
     if(!providerToken)return;
     setBusy(true);
     try{
-      await setOwnerMailThreadRead(providerToken,threadId,false);
-      setThreads(current=>current.map(item=>item.id===threadId?{...item,unread:true}:item));
-      if(selected?.id===threadId)setSelected(current=>current?{...current,unread:true}:current);
-      setNotice('Conversation marked unread.');
+      await setOwnerMailThreadRead(providerToken,threadId,read);
+      const unread=!read;
+      setThreads(current=>current.map(item=>item.id===threadId?{...item,unread}:item));
+      if(selected?.id===threadId)setSelected(current=>current?{...current,unread}:current);
+      setNotice(read?'Conversation marked read.':'Conversation marked unread.');
     }catch(error:any){setNotice(String(error?.message||'Read state could not be updated.'))}
     finally{setBusy(false)}
   }
@@ -308,7 +309,7 @@ export default function Communications(){
         <TextInput value={replyBody} onChangeText={setReplyBody} multiline placeholder="Write your reply…" placeholderTextColor={theme.muted} style={{minHeight:120,textAlignVertical:'top',borderWidth:1,borderColor:theme.line,borderRadius:13,padding:12,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
         <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
           <Pressable disabled={!replyBody.trim()||busy} onPress={()=>void sendReply()} style={{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:theme.accent,opacity:(!replyBody.trim()||busy)?0.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>Reply</Text></Pressable>
-          <Pressable onPress={()=>void markUnread(selected.id)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Mark unread</Text></Pressable>
+          <Pressable onPress={()=>void setThreadReadState(selected.id,selected.unread)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>{selected.unread?'Mark read':'Mark unread'}</Text></Pressable>
           <Pressable onPress={()=>void archive(selected.id)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.ink}}>Archive</Text></Pressable>
         </View>
       </View>
@@ -327,7 +328,7 @@ export default function Communications(){
         <Text numberOfLines={2} ellipsizeMode="tail" style={{lineHeight:18,color:theme.muted,flexShrink:1}}>{excerpt(thread.snippet)}</Text>
         <Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:11,color:theme.muted,flexShrink:1}}>{formatDate(thread.date)} · {thread.messageCount} message{thread.messageCount===1?'':'s'}</Text>
         <View style={{flexDirection:'row',flexWrap:'wrap',justifyContent:'flex-end',gap:12}}>
-          <Pressable onPress={event=>{event.stopPropagation();void markUnread(thread.id)}} style={{flexShrink:0}}><Text style={{fontWeight:'900',color:theme.accent}}>Mark unread</Text></Pressable>
+          <Pressable onPress={event=>{event.stopPropagation();void setThreadReadState(thread.id,thread.unread)}} style={{flexShrink:0}}><Text style={{fontWeight:'900',color:theme.accent}}>{thread.unread?'Mark read':'Mark unread'}</Text></Pressable>
           <Pressable onPress={event=>{event.stopPropagation();void archive(thread.id)}} style={{flexShrink:0}}><Text style={{fontWeight:'900',color:theme.muted}}>Archive</Text></Pressable>
         </View>
       </Pressable>)}
