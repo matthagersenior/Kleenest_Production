@@ -10,7 +10,7 @@ const photoActions=read('apps/consumer-mobile/components/PhotoTrustActions.tsx')
 const reviewPhotos=read('apps/consumer-mobile/services/reviewPhotos.ts');
 const reviewStrip=read('apps/consumer-mobile/components/ReviewPhotoStrip.tsx');
 const consumerDetail=read('apps/consumer-mobile/app/location/[id].tsx');
-const businessGrowth=read('apps/business-mobile/app/growth.tsx');
+const businessReviews=read('apps/business-mobile/app/reviews.tsx');
 const ownerAdmin=read('apps/platform-mobile/services/ownerAdmin.ts');
 const ownerModeration=read('apps/platform-mobile/app/moderation.tsx');
 const businessAuth=read('apps/business-mobile/app/auth.tsx');
@@ -40,7 +40,7 @@ requireTokens('Consumer photo controls',photoActions,['Helpful ·','Not helpful 
 requireTokens('Review photo identity',reviewPhotos,['review_photo_id','helpful_votes','not_helpful_votes']);
 requireTokens('Review photo strip controls',reviewStrip,['PhotoTrustActions','review_photo_id']);
 requireTokens('Consumer location photo controls',consumerDetail,['PhotoTrustActions','immediate KleenestOS review']);
-requireTokens('Business photo governance',businessGrowth,['Helpful ·','Not helpful ·','Flag / dispute','KleenestOS owner moderation']);
+requireTokens('Business photo governance',businessReviews,['Helpful ·','Not helpful ·','Flag / dispute','KleenestOS owner moderation']);
 requireTokens('Owner photo queue service',ownerAdmin,['admin_list_review_photo_reports','resolveOwnerReviewPhotoReport','review-photos']);
 requireTokens('Owner photo moderation UI',ownerModeration,['Photo flags','Photo reports','Hide photo','Restore photo','Mark reviewing']);
 
