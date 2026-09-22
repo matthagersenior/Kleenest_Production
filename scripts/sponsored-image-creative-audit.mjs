@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 
-const migration=fs.readFileSync(new URL('../supabase/migrations/20260922113000_sponsored_ad_image_creatives.sql',import.meta.url),'utf8');
+const migration=fs.readFileSync(new URL('../supabase/migrations/20260922163048_sponsored_ad_image_creatives.sql',import.meta.url),'utf8');
 const consumer=fs.readFileSync(new URL('../apps/consumer-mobile/components/SponsoredSlot.tsx',import.meta.url),'utf8');
 const consumerService=fs.readFileSync(new URL('../apps/consumer-mobile/services/sponsorship.ts',import.meta.url),'utf8');
 const business=fs.readFileSync(new URL('../apps/business-mobile/app/advertising.tsx',import.meta.url),'utf8');
