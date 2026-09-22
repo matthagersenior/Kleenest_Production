@@ -13,6 +13,8 @@ export default function Layout(){
   const[ready,setReady]=useState(false);
   const[signedIn,setSignedIn]=useState(false);
   const onAuthRoute=segments[0]==='auth';
+  const onSearchRoute=segments[0]==='search';
+  const onAccountRoute=segments[0]==='account';
 
   useEffect(()=>{
     let active=true;
@@ -55,7 +57,20 @@ export default function Layout(){
 
   if(!ready)return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:theme.canvas}}><ActivityIndicator size="large"/></View>;
 
-  return <><StatusBar style={theme.statusBar}/><Tabs screenOptions={{headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{color:theme.ink},tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarLabelStyle:{fontWeight:'800'},headerRight:segments[0]==='search'?undefined:()=> <Pressable accessibilityRole="button" accessibilityLabel="Search KleenestOS" onPress={()=>router.push('/search')} style={{paddingHorizontal:11,paddingVertical:7,borderRadius:999,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.accent}}>⌕ Search</Text></Pressable>,tabBarStyle:onAuthRoute?{display:'none'}:{backgroundColor:theme.surface,borderTopColor:theme.line}}}>
+  return <><StatusBar style={theme.statusBar}/><Tabs screenOptions={{
+    headerStyle:{backgroundColor:theme.canvas},
+    headerShadowVisible:false,
+    headerTitle:'',
+    headerTitleStyle:{color:theme.ink},
+    tabBarActiveTintColor:theme.accent,
+    tabBarInactiveTintColor:theme.muted,
+    tabBarLabelStyle:{fontWeight:'800'},
+    headerRight:onAuthRoute?undefined:()=> <View style={{flexDirection:'row',gap:7,marginRight:8}}>
+      {!onSearchRoute?<Pressable accessibilityRole="button" accessibilityLabel="Search KleenestOS" onPress={()=>router.push('/search')} style={{paddingHorizontal:10,paddingVertical:7,borderRadius:999,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.accent}}>⌕ Search</Text></Pressable>:null}
+      {!onAccountRoute?<Pressable accessibilityRole="button" accessibilityLabel="Open Owner profile and themes" onPress={()=>router.push('/account')} style={{paddingHorizontal:10,paddingVertical:7,borderRadius:999,backgroundColor:theme.surface,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.accent}}>Profile</Text></Pressable>:null}
+    </View>,
+    tabBarStyle:onAuthRoute?{display:'none'}:{backgroundColor:theme.surface,borderTopColor:theme.line}
+  }}>
     <Tabs.Screen name="index" options={{title:'Home'}}/>
     <Tabs.Screen name="control" options={{title:'Control'}}/>
     <Tabs.Screen name="pilots" options={{title:'Pilots'}}/>
@@ -65,7 +80,7 @@ export default function Layout(){
     <Tabs.Screen name="businesses" options={{href:null,title:'Businesses'}}/>
     <Tabs.Screen name="moderation" options={{href:null,title:'Moderation'}}/>
     <Tabs.Screen name="access" options={{href:null,title:'Access'}}/>
-    <Tabs.Screen name="search" options={{href:null,title:'Search'}}/>
+    <Tabs.Screen name="search" options={{href:null,title:'Search',headerTitle:'Search'}}/>
     <Tabs.Screen name="auth" options={{href:null,title:'Sign in',headerShown:false}}/>
     <Tabs.Screen name="accounts" options={{href:null,title:'Accounts'}}/>
     <Tabs.Screen name="history" options={{href:null,title:'History'}}/>
@@ -84,6 +99,6 @@ export default function Layout(){
     <Tabs.Screen name="support" options={{href:null,title:'Support'}}/>
     <Tabs.Screen name="terms" options={{href:null,title:'Terms'}}/>
     <Tabs.Screen name="privacy" options={{href:null,title:'Privacy'}}/>
-    <Tabs.Screen name="account" options={{href:null,title:'Account'}}/>
+    <Tabs.Screen name="account" options={{href:null,title:'Account',headerTitle:'Profile & Themes'}}/>
   </Tabs></>;
 }
