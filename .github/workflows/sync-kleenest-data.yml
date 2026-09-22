@@ -34,7 +34,7 @@ jobs:
           test -n "$PROD_KEY" || { echo "Missing KLEENEST_PROD_SERVICE_ROLE_KEY"; exit 1; }
           test -n "$DATA_KEY" || { echo "Missing KLEENEST_DATA_SERVICE_ROLE_KEY"; exit 1; }
 
-      - name: Incrementally mirror hot provenance into Kleenest_Data
+      - name: Incrementally archive hot provenance into verified Storage objects
         env:
           PROD_KEY: ${{ secrets.KLEENEST_PROD_SERVICE_ROLE_KEY }}
           DATA_KEY: ${{ secrets.KLEENEST_DATA_SERVICE_ROLE_KEY }}
@@ -43,6 +43,7 @@ jobs:
           set -euo pipefail
 
           # Wide idempotent overlap ensures queued/delayed runners cannot miss fresh ingestion.
+          # archive-object-ingest uses content-addressed paths, so repeats do not grow Postgres.
           SINCE="$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
           BATCH=500
 
@@ -53,13 +54,8 @@ jobs:
             count="$(jq 'length' "$file")"
             [ "$count" -eq 0 ] && return 0
 
-            jq -n --arg kind "$kind" --slurpfile rows "$file" '{p_kind:$kind,p_rows:$rows[0]}' > payload.json
-            curl --fail-with-body --silent --show-error \
-              -X POST "$DATA_SUPABASE_URL/rest/v1/rpc/archive_ingest_batch" \
-              -H "apikey: $DATA_KEY" \
-              -H "Authorization: Bearer $DATA_KEY" \
-              -H 'Content-Type: application/json' \
-              --data-binary @payload.json >/dev/null
+            jq -n --arg kind "$kind" --slurpfile rows "$file"               '{kind:$kind,rows:$rows[0],source:"github_hourly_overlap"}' > payload.json
+            curl --fail-with-body --silent --show-error               -X POST "$DATA_SUPABASE_URL/functions/v1/archive-object-ingest"               -H "apikey: $DATA_KEY"               -H "Authorization: Bearer $DATA_KEY"               -H 'Content-Type: application/json'               --data-binary @payload.json >/dev/null
           }
 
           fetch_pages() {
@@ -71,13 +67,7 @@ jobs:
             while true; do
               local end=$((offset + BATCH - 1))
               local code
-              code="$(curl --silent --show-error \
-                -o rows.json -w '%{http_code}' \
-                "$PROD_SUPABASE_URL/rest/v1/$table?select=*&$filter&order=id.asc" \
-                -H "apikey: $PROD_KEY" \
-                -H "Authorization: Bearer $PROD_KEY" \
-                -H "Range: $offset-$end" \
-                -H 'Range-Unit: items')"
+              code="$(curl --silent --show-error                 -o rows.json -w '%{http_code}'                 "$PROD_SUPABASE_URL/rest/v1/$table?select=*&$filter&order=id.asc"                 -H "apikey: $PROD_KEY"                 -H "Authorization: Bearer $PROD_KEY"                 -H "Range: $offset-$end"                 -H 'Range-Unit: items')"
               [ "$code" = "200" ] || [ "$code" = "206" ] || { cat rows.json; exit 1; }
 
               local count
@@ -96,14 +86,9 @@ jobs:
 
           rm -f rows.json payload.json
 
-      - name: Verify archive RPC responds
+      - name: Verify object archive endpoint
         env:
           DATA_KEY: ${{ secrets.KLEENEST_DATA_SERVICE_ROLE_KEY }}
         run: |
           set -euo pipefail
-          curl --fail-with-body --silent --show-error \
-            -X POST "$DATA_SUPABASE_URL/rest/v1/rpc/archive_ingest_batch" \
-            -H "apikey: $DATA_KEY" \
-            -H "Authorization: Bearer $DATA_KEY" \
-            -H 'Content-Type: application/json' \
-            --data '{"p_kind":"external_location_records","p_rows":[]}' >/dev/null
+          curl --fail-with-body --silent --show-error             -X POST "$DATA_SUPABASE_URL/functions/v1/archive-object-ingest"             -H "apikey: $DATA_KEY"             -H "Authorization: Bearer $DATA_KEY"             -H 'Content-Type: application/json'             --data '{"kind":"external_location_records","rows":[],"source":"github_health_check"}'             | jq -e '.ok == true and .skipped == true' >/dev/null
