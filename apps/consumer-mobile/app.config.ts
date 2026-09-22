@@ -4,8 +4,10 @@ const PRODUCTION_EAS_PROJECT_ID = '22a65aa3-c615-4c4f-a34d-084babc28fd7';
 const configuredEasProjectId = process.env.EAS_PROJECT_ID;
 const standaloneAndroid = process.env.KLEENEST_STANDALONE_ANDROID === '1';
 const googleServicesFile = process.env.GOOGLE_SERVICES_FILE;
-const admobAndroidAppId = process.env.ADMOB_ANDROID_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
-const admobIosAppId = process.env.ADMOB_IOS_APP_ID || 'ca-app-pub-3940256099942544~1458002511';
+const PRODUCTION_ADMOB_ANDROID_APP_ID = 'ca-app-pub-6958734306376288~2901875327';
+const GOOGLE_TEST_ADMOB_IOS_APP_ID = 'ca-app-pub-3940256099942544~1458002511';
+const admobAndroidAppId = process.env.ADMOB_ANDROID_APP_ID || PRODUCTION_ADMOB_ANDROID_APP_ID;
+const admobIosAppId = process.env.ADMOB_IOS_APP_ID || GOOGLE_TEST_ADMOB_IOS_APP_ID;
 
 if (configuredEasProjectId && configuredEasProjectId !== PRODUCTION_EAS_PROJECT_ID) {
   throw new Error(`[Kleenest] EAS_PROJECT_ID drift detected. Expected ${PRODUCTION_EAS_PROJECT_ID}, received ${configuredEasProjectId}.`);
@@ -95,7 +97,8 @@ const config: ExpoConfig = {
     previewRole: 'non-blocking-web-preview',
     networkAds: {
       provider: 'admob',
-      configuredWithTestAppId: !process.env.ADMOB_ANDROID_APP_ID && !process.env.ADMOB_IOS_APP_ID,
+      androidUsesProductionAppId: admobAndroidAppId === PRODUCTION_ADMOB_ANDROID_APP_ID,
+      iosUsesTestAppId: admobIosAppId === GOOGLE_TEST_ADMOB_IOS_APP_ID,
       removeAdsScope: 'network-only',
     },
     productionEnvironment: {
