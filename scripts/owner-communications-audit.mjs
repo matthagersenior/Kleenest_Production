@@ -69,7 +69,7 @@ requireAll('Owner email gateway capabilities',gateway,[
   'reply',
   'archive',
   'set_read',
-  "'/threads'",
+  '/threads?',
   "'/messages/send'",
   'In-Reply-To',
   'References',
