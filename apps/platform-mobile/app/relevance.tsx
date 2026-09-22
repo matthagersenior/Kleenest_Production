@@ -2,23 +2,33 @@ import { useEffect,useMemo,useState } from 'react';
 import { Image,Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { OSHero,OSSwitch,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
-import { chooseOwnerSponsoredCreative,getOwnerAdMobHealthSnapshot,getOwnerRelevanceSponsorshipSnapshot,updateOwnerHeroPolicy,updateOwnerSponsoredPlacement,uploadOwnerSponsoredCreative,upsertOwnerSponsoredCampaign,type OwnerSponsoredCreativeDraft } from '../services/ownerAdmin';
+import { chooseOwnerSponsoredCreative,getOwnerAcquisitionSummary,getOwnerAdMobHealthSnapshot,getOwnerRelevanceSponsorshipSnapshot,updateOwnerHeroPolicy,updateOwnerSponsoredPlacement,uploadOwnerSponsoredCreative,upsertOwnerSponsoredCampaign,type OwnerSponsoredCreativeDraft } from '../services/ownerAdmin';
 
 const human=(value:string)=>value.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
 const number=(value:any,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;
 const splitCsv=(value:string)=>value.split(',').map(v=>v.trim()).filter(Boolean);
 const percent=(value:any,digits=1)=>value===null||value===undefined?'—':String(number(value).toFixed(digits))+'%';
 const when=(value:any)=>value?new Date(String(value)).toLocaleString():'No events yet';
+const INSTALL_CENTER_URL='https://matthagersenior.github.io/Kleenest_Production/install';
+const SOCIAL_PROFILE_LINKS=[
+ {label:'Facebook',source:'facebook'},
+ {label:'Instagram',source:'instagram'},
+ {label:'TikTok',source:'tiktok'},
+ {label:'X',source:'x'},
+ {label:'Snapchat',source:'snapchat'},
+].map(item=>({...item,url:`${INSTALL_CENTER_URL}?utm_source=${item.source}&utm_medium=organic_social&utm_campaign=profile_launch&utm_content=bio`}));
 
 export default function RelevanceControl(){
  const theme=usePlatformTheme(),card=useOSCardStyle();
  const[data,setData]=useState<any>({hero_policies:[],placements:[],campaigns:[],rules:{}}),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
  const[adMob,setAdMob]=useState<any>({hours:24,status:'no_data',requests:0,fills:0,fill_rate:null,impressions:0,clicks:0,no_fill:0,load_errors:0,initialized:0,initialization_errors:0,consent_blocked:0,last_event_at:null,placements:[],recent_failures:[]}),[adMobHours,setAdMobHours]=useState(24);
+ const[acquisition,setAcquisition]=useState<any>({days:30,since:null,totals:{},by_source:[],by_content:[]}),[acquisitionDays,setAcquisitionDays]=useState(30);
  const[sponsor,setSponsor]=useState(''),[headline,setHeadline]=useState(''),[body,setBody]=useState(''),[url,setUrl]=useState(''),[cta,setCta]=useState('Learn more'),[coarseRegion,setCoarseRegion]=useState(''),[routeContext,setRouteContext]=useState(''),[amenities,setAmenities]=useState(''),[interests,setInterests]=useState(''),[selectedPlacements,setSelectedPlacements]=useState<string[]>([]);
  const[creativeMode,setCreativeMode]=useState<'text_only'|'image_text'|'image_only'>('text_only'),[imageUrl,setImageUrl]=useState(''),[imageAlt,setImageAlt]=useState(''),[logoUrl,setLogoUrl]=useState(''),[pickedImage,setPickedImage]=useState<OwnerSponsoredCreativeDraft|null>(null);
  const placements=Array.isArray(data?.placements)?data.placements:[],policies=Array.isArray(data?.hero_policies)?data.hero_policies:[],campaigns=Array.isArray(data?.campaigns)?data.campaigns:[];
  const availablePlacements=useMemo(()=>placements.filter((row:any)=>row.owner_enabled!==false&&row.active!==false),[placements]);
  const adMobPlacements=Array.isArray(adMob?.placements)?adMob.placements:[],adMobFailures=Array.isArray(adMob?.recent_failures)?adMob.recent_failures:[];
+ const acquisitionSources=Array.isArray(acquisition?.by_source)?acquisition.by_source:[],acquisitionContent=Array.isArray(acquisition?.by_content)?acquisition.by_content:[];
  const adMobStatus=String(adMob?.status||'no_data');
  const adMobTone:'good'|'warning'|'danger'|'neutral'=adMobStatus==='receiving_fills'?'good':adMobStatus==='initialization_error'?'danger':adMobStatus==='no_fill'||adMobStatus==='degraded'?'warning':'neutral';
 
@@ -28,10 +38,12 @@ export default function RelevanceControl(){
    setData(await getOwnerRelevanceSponsorshipSnapshot());
    try{setAdMob(await getOwnerAdMobHealthSnapshot(adMobHours))}
    catch(error:any){setAdMob((current:any)=>({...current,hours:adMobHours,status:'unavailable'}));setMessage(error?.message||'AdMob health telemetry could not be loaded.')}
+   try{setAcquisition(await getOwnerAcquisitionSummary(acquisitionDays))}
+   catch(error:any){setAcquisition((current:any)=>({...current,days:acquisitionDays}));setMessage(error?.message||'Social acquisition telemetry could not be loaded.')}
   }catch(error:any){setMessage(error?.message||'Relevance controls could not be loaded.')}
   finally{setBusy(false)}
  }
- useEffect(()=>{void load()},[adMobHours]);
+ useEffect(()=>{void load()},[adMobHours,acquisitionDays]);
 
  async function mutate(action:()=>Promise<any>,success:string){setBusy(true);setMessage('');try{await action();setMessage(success);await load()}catch(error:any){setMessage(error?.message||'Update failed.')}finally{setBusy(false)}}
  const tuneHero=(row:any,patch:Record<string,unknown>)=>mutate(()=>updateOwnerHeroPolicy(row,patch),'Organic hero policy updated.');
@@ -113,6 +125,31 @@ export default function RelevanceControl(){
       {row.error_code?<Text selectable style={[s.meta,{color:theme.muted}]}>{String(row.error_code)}</Text>:null}
       {row.error_message?<Text selectable style={[s.meta,{color:theme.muted}]}>{String(row.error_message)}</Text>:null}
     </View>):<Text style={[s.meta,{color:theme.muted}]}>No AdMob failures recorded in this window.</Text>}
+   </View>
+  </View>
+
+  <View style={{gap:10}}>
+   <SectionHeader title="Social acquisition" body="Track every public profile, social post and QR campaign from Installation Center visit through install intent. Attribution is first-party and uses UTM tags plus an anonymous session key." />
+   <View style={{...card,gap:10}}>
+    <View style={s.row}><View style={{flex:1,gap:3}}><Text style={[s.title,{color:theme.ink}]}>Installation Center funnel</Text><Text style={[s.meta,{color:theme.muted}]}>{acquisitionDays} day window · since {when(acquisition?.since)}</Text></View><StatusPill label={number(acquisition?.totals?.landing_views)>0?'RECEIVING':'NO TRAFFIC'} tone={number(acquisition?.totals?.landing_views)>0?'good':'neutral'}/></View>
+    <View style={s.controlRow}><Control label="7 days" onPress={()=>setAcquisitionDays(7)}/><Control label="30 days" onPress={()=>setAcquisitionDays(30)}/><Control label="90 days" onPress={()=>setAcquisitionDays(90)}/></View>
+    <View style={s.metricGrid}>
+      <HealthMetric label="Visits" value={number(acquisition?.totals?.landing_views)}/>
+      <HealthMetric label="Unique visitors" value={number(acquisition?.totals?.unique_visitors)}/>
+      <HealthMetric label="Install intents" value={number(acquisition?.totals?.install_intents)}/>
+      <HealthMetric label="Intent rate" value={percent(acquisition?.totals?.install_intent_rate)}/>
+      <HealthMetric label="PWA installs" value={number(acquisition?.totals?.install_successes)}/>
+      <HealthMetric label="APK downloads" value={number(acquisition?.totals?.apk_downloads)}/>
+      <HealthMetric label="Guest entries" value={number(acquisition?.totals?.guest_entries)}/>
+      <HealthMetric label="Signup intents" value={number(acquisition?.totals?.signup_intents)}/>
+    </View>
+    {acquisitionSources.length?acquisitionSources.map((row:any,index:number)=><View key={String(row.utm_source||'direct')+':'+String(row.utm_medium||'')+':'+index} style={[s.healthRow,{borderColor:theme.line}]}><View style={{flex:1}}><Text style={{fontWeight:'900',color:theme.ink}}>{human(String(row.utm_source||'direct'))}</Text><Text style={[s.meta,{color:theme.muted}]}>{number(row.landing_views)} visits · {number(row.unique_visitors)} unique · {number(row.install_intents)} install intents · {number(row.apk_downloads)} APK downloads</Text></View><Text style={{fontWeight:'900',color:theme.accent}}>{percent(row.install_intent_rate)}</Text></View>):<Text style={[s.meta,{color:theme.muted}]}>No tracked Installation Center traffic yet.</Text>}
+   </View>
+   <View style={{...card,gap:9}}>
+    <SectionHeader title="Profile tracking links" body="Use these exact URLs in each social profile. The visitor still sees the same Installation Center, while Owner records the source automatically."/>
+    {SOCIAL_PROFILE_LINKS.map(item=><View key={item.source} style={[s.failure,{borderColor:theme.line}]}><Text style={{fontWeight:'900',color:theme.ink}}>{item.label}</Text><Text selectable style={[s.meta,{color:theme.accent}]}>{item.url}</Text></View>)}
+    <Text style={[s.meta,{color:theme.muted}]}>For individual posts, keep the same source/medium/campaign and change utm_content from bio to a unique post name such as post01_restroom_gamble.</Text>
+    {acquisitionContent.slice(0,12).map((row:any,index:number)=><View key={String(row.utm_source)+':'+String(row.utm_campaign)+':'+String(row.utm_content)+':'+index} style={[s.healthRow,{borderColor:theme.line}]}><View style={{flex:1}}><Text style={{fontWeight:'900',color:theme.ink}}>{human(String(row.utm_source||'direct'))} · {String(row.utm_content||'profile')}</Text><Text style={[s.meta,{color:theme.muted}]}>{number(row.landing_views)} visits · {number(row.install_intents)} install intents · {percent(row.install_intent_rate)}</Text></View></View>)}
    </View>
   </View>
 
