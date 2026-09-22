@@ -11,6 +11,7 @@ const service=requireFile('apps/platform-mobile/services/communications.ts');
 const layout=requireFile('apps/platform-mobile/app/_layout.tsx');
 const home=requireFile('apps/platform-mobile/app/index.tsx');
 const gateway=requireFile('supabase/functions/owner-email-gateway/index.ts');
+const appSearch=requireFile('packages/mobile-core/src/appSearch.ts');
 
 requireAll('Owner communications route',layout,[
   'name="communications"',
@@ -20,6 +21,15 @@ requireAll('Owner communications route',layout,[
 requireAll('Owner communications discoverability',home,[
   "'/communications'",
   "'Communications & Email'",
+]);
+requireAll('Owner communications search discoverability',appSearch,[
+  "id:'communications-email'",
+  "route:'/communications'",
+  "'email'",
+  "'gmail'",
+  "'inbox'",
+  "'reply'",
+  "'outreach'",
 ]);
 requireAll('Owner Gmail connection UI',screen,[
   'Connect Gmail',
