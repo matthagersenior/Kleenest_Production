@@ -40,7 +40,7 @@ requireAll('Owner Gmail connection UI',screen,[
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.send',
   'openAuthSessionAsync',
-  "Linking.createURL('auth'",
+  "Linking.createURL('communications'",
   'exchangeCodeForSession',
   'provider_token',
 ]);
@@ -93,4 +93,4 @@ must(!gateway.includes('SUPABASE_SERVICE_ROLE_KEY'),'Owner email gateway must au
 must(!gateway.includes('provider_refresh_token'),'The first release must not persist or transport a Google refresh token; reconnect is explicit when Google access expires.');
 
 if(failures.length){console.error(`Owner communications audit failed with ${failures.length} gap(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
-console.log('Owner communications audit passed: Owner can connect Gmail, search/read threads, reply in-thread, archive, and manage read state through an owner-authorized server gateway.');
+console.log('Owner communications audit passed: Gmail OAuth returns to Communications, then Owner can search/read threads, reply in-thread, archive, and manage read state through an owner-authorized server gateway.');

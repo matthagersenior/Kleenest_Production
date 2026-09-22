@@ -51,7 +51,18 @@ type GatewayInput=Record<string,unknown>;
 
 async function invoke<T>(body:GatewayInput):Promise<T>{
   const {data,error}=await getKleenestSupabaseClient().functions.invoke('owner-email-gateway',{body});
-  if(error)throw error;
+  if(error){
+    const context=(error as any)?.context;
+    if(context&&typeof context.clone==='function'){
+      try{
+        const payload=await context.clone().json();
+        if(payload?.error)throw new Error(String(payload.error));
+      }catch(cause){
+        if(cause instanceof Error&&cause.message&&cause.message!==error.message)throw cause;
+      }
+    }
+    throw error;
+  }
   if(data?.error)throw new Error(String(data.error));
   return data as T;
 }
