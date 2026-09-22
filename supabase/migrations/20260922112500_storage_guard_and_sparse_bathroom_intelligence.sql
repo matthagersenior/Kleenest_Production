@@ -158,7 +158,7 @@ create or replace function public.strip_legacy_location_metadata_batch(p_limit i
 returns jsonb language plpgsql security definer set search_path='' as $function$
 declare v_count integer:=0;v_remaining bigint:=0;
 begin
- if coalesce(auth.jwt()->>'role','')<>'service_role' and current_user<>'service_role'
+ if session_user<>'postgres' and coalesce(auth.jwt()->>'role','')<>'service_role' and current_user<>'service_role'
     and not coalesce(public.is_platform_owner(auth.uid()),false)
  then raise exception 'service_role or platform owner required' using errcode='42501';end if;
  with target as(
