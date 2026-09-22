@@ -2,7 +2,9 @@ import fs from 'node:fs';
 
 const failures=[];
 const read=p=>fs.readFileSync(p,'utf8');
-const migration=read('supabase/migrations/20260919173000_general_brand_identity_registry.sql');
+const migrationName=fs.readdirSync('supabase/migrations').find(name=>name.includes('general_brand_identity_registry')&&name.endsWith('.sql'));
+if(!migrationName)throw new Error('General brand identity migration source is missing.');
+const migration=read(`supabase/migrations/${migrationName}`);
 
 for(const token of [
   'brand_identity_aliases',
