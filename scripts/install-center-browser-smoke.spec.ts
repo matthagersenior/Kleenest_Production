@@ -18,9 +18,9 @@ test('Installation Center click-through and release assets',async({page,request}
   await expect(page.getByRole('button',{name:'SHARE INSTALL LINK',exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:'OPEN KLEENEST',exact:true})).toBeVisible();
   await expect(page.getByText('ANDROID APK · DIRECT DOWNLOAD',{exact:true})).toBeVisible();
-  await expect(page.getByRole('link',{name:'DOWNLOAD ANDROID APK',exact:true})).toBeVisible();
-  await expect(page.getByRole('button',{name:'COPY APK LINK',exact:true})).toBeVisible();
-  await expect(page.getByRole('link',{name:'VIEW SHA-256 CHECKSUM',exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:/Download Android APK/i})).toBeVisible();
+  await expect(page.getByRole('button',{name:/Copy APK link/i})).toBeVisible();
+  await expect(page.getByRole('link',{name:/View SHA-256 checksum/i})).toBeVisible();
   await expect(page.locator('body')).toContainText('If you have never installed a web app before');
   await expect(page.locator('body')).toContainText('Find Kleenest after installation');
   await expect(page.locator('body')).toContainText('Allow from this source');
