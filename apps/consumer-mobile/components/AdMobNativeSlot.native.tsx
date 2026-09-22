@@ -1,7 +1,8 @@
 import { useEffect,useMemo,useState } from 'react';
 import { Image,Platform,StyleSheet,Text,View } from 'react-native';
-import mobileAds,{AdsConsent,NativeAd,NativeAdView,NativeAsset,NativeAssetType,TestIds} from 'react-native-google-mobile-ads';
+import mobileAds,{AdsConsent,NativeAd,NativeAdEventType,NativeAdView,NativeAsset,NativeAssetType,TestIds} from 'react-native-google-mobile-ads';
 import { consumerNetworkAdsEnabled } from '../services/networkAds';
+import { classifyAdMobLoadFailure,recordAdMobTelemetry } from '../services/admobTelemetry';
 import { useConsumerTheme } from '../services/theme';
 
 const PRODUCTION_ANDROID_NATIVE_AD_UNIT_ID='ca-app-pub-6958734306376288/6751375017';
@@ -13,9 +14,19 @@ function ensureInitialized(){
     try{await AdsConsent.gatherConsent()}catch{}
     try{
       const info=await AdsConsent.getConsentInfo();
-      if(!info.canRequestAds)return false;
-    }catch{return false}
-    try{await mobileAds().initialize();return true}catch{return false}
+      if(!info.canRequestAds){void recordAdMobTelemetry('consent_blocked','sdk');return false}
+    }catch(error:any){
+      void recordAdMobTelemetry('initialization_error','sdk',{errorCode:String(error?.code||'consent_info_error'),errorMessage:String(error?.message||error||'Consent state unavailable')});
+      return false
+    }
+    try{
+      await mobileAds().initialize();
+      void recordAdMobTelemetry('initialized','sdk');
+      return true
+    }catch(error:any){
+      void recordAdMobTelemetry('initialization_error','sdk',{errorCode:String(error?.code||'initialize_error'),errorMessage:String(error?.message||error||'Google Mobile Ads initialization failed')});
+      return false
+    }
   })();
   return initialization;
 }
@@ -37,13 +48,22 @@ export function AdMobNativeSlot({keywords=[],contextClass}:{keywords?:string[];c
         ios:process.env.EXPO_PUBLIC_ADMOB_NATIVE_IOS_ID||PRODUCTION_IOS_NATIVE_AD_UNIT_ID,
         default:undefined,
       });
+      const adUnitId=configured||TestIds.NATIVE;
+      const placement=contextClass||'network';
+      void recordAdMobTelemetry('request',placement,{adUnitId});
       try{
-        const ad=await NativeAd.createForAdRequest(configured||TestIds.NATIVE,{
+        const ad=await NativeAd.createForAdRequest(adUnitId,{
           requestNonPersonalizedAdsOnly:true,
           keywords:cleanKeywords.length?cleanKeywords:undefined,
         });
+        void recordAdMobTelemetry('fill',placement,{adUnitId,responseId:ad.responseId});
+        ad.addAdEventListener(NativeAdEventType.IMPRESSION,()=>{void recordAdMobTelemetry('impression',placement,{adUnitId,responseId:ad.responseId})});
+        ad.addAdEventListener(NativeAdEventType.CLICKED,()=>{void recordAdMobTelemetry('click',placement,{adUnitId,responseId:ad.responseId})});
         if(active)setNativeAd(ad);else ad.destroy();
-      }catch{}
+      }catch(error){
+        const failure=classifyAdMobLoadFailure(error);
+        void recordAdMobTelemetry(failure.eventType,placement,{adUnitId,errorCode:failure.errorCode,errorMessage:failure.errorMessage});
+      }
     });
     return()=>{active=false};
   },[allowed,cleanKeywords.join('|')]);
