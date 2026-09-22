@@ -233,6 +233,14 @@ export default function InstallKleenest(){
     setMessage(`Share this install link: ${url}`);
   }
 
+  async function copyApkLink(){
+    const url=browserUrl(APK_PATH);
+    if(Platform.OS==='web'&&typeof navigator!=='undefined'&&navigator.clipboard?.writeText){
+      try{await navigator.clipboard.writeText(url);setMessage('Direct APK link copied.');return}catch{}
+    }
+    setMessage(`Direct APK link: ${url}`);
+  }
+
   async function downloadApk(){await Linking.openURL(browserUrl(APK_PATH))}
   async function openChecksum(){await Linking.openURL(browserUrl(CHECKSUM_PATH))}
   async function openKleenest(){await Linking.openURL(browserUrl(APP_PATH))}
@@ -242,6 +250,7 @@ export default function InstallKleenest(){
 
   const releaseStatus=releaseLoading?'CHECKING':releaseState?.status||'STATUS UNAVAILABLE';
   const releaseGood=releaseState?.otaCompatible===true&&!releaseState?.nativeDrift;
+  const hostedApkUrl=browserUrl(APK_PATH);
 
   return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.page}>
     <View style={[s.hero,{backgroundColor:theme.accent}]}>
@@ -297,18 +306,28 @@ export default function InstallKleenest(){
     {!isIOS?<View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
       <Text style={[s.kicker,{color:theme.accent}]}>{isAndroid?'ANDROID · WEB APP':'BROWSER APP'}</Text>
       <Text style={[s.cardTitle,{color:theme.ink}]}>Install the Kleenest web app</Text>
-      <Text style={[s.cardBody,{color:theme.muted}]}>Recommended for most people. It opens in its own app window, keeps the Kleenest icon on your device, updates quickly, and uses the same Kleenest account and network.</Text>
+      <Text style={[s.cardBody,{color:theme.muted}]}>Recommended for most people. A web app is the Kleenest website saved to your device like an app: it gets its own icon, opens in an app-style window, updates quickly, and uses the same Kleenest account and network.</Text>
       <Pressable accessibilityRole="button" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void installWeb()}><Text style={[s.primaryText,{color:theme.accentText}]}>{installed?'WEB APP INSTALLED':'INSTALL WEB APP'}</Text></Pressable>
       {!installed?<Text style={[s.help,{color:theme.muted}]}>{prompt?'Your browser is ready for a one-tap install.':browserHelp}</Text>:null}
+      <WebInstallSteps deviceKind={deviceKind} browserKind={browserKind}/>
     </View>:null}
 
-    {isAndroid?<View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-      <Text style={[s.kicker,{color:theme.accent}]}>ANDROID · DIRECT INSTALL</Text>
-      <Text style={[s.cardTitle,{color:theme.ink}]}>Verified Kleenest Android APK</Text>
-      <Text style={[s.cardBody,{color:theme.muted}]}>Prefer a native Android package? Download the verified release APK. The Installation Center keeps showing whether the current web/OTA code is compatible with that APK baseline.</Text>
-      <Pressable accessibilityRole="link" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void downloadApk()}><Text style={[s.primaryText,{color:theme.accentText}]}>DOWNLOAD ANDROID APK</Text></Pressable>
-      <Pressable accessibilityRole="link" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void openChecksum()}><Text style={[s.secondaryText,{color:theme.accent}]}>VIEW SHA-256 CHECKSUM</Text></Pressable>
-    </View>:null}
+    <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+      <Text style={[s.kicker,{color:theme.accent}]}>ANDROID APK · DIRECT DOWNLOAD</Text>
+      <Text style={[s.cardTitle,{color:theme.ink}]}>Download the native Android APK directly from this Installation Center.</Text>
+      <Text style={[s.cardBody,{color:theme.muted}]}>{isAndroid?'This is the verified native Android package. Use it when you want the installed Android app instead of the web app.':'The APK is always available here even when you open the Installation Center on a computer or iPhone. Download or copy the link, then open it on the Android phone or tablet where you want Kleenest installed.'}</Text>
+      <View style={[s.directLinkBox,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+        <Text style={[s.directLinkLabel,{color:theme.accent}]}>DIRECT APK FILE</Text>
+        <Text selectable style={[s.directLink,{color:theme.ink}]}>{hostedApkUrl}</Text>
+      </View>
+      <View style={s.buttonRow}>
+        <Pressable accessibilityRole="link" accessibilityLabel="Download Android APK" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void downloadApk()}><Text style={[s.primaryText,{color:theme.accentText}]}>DOWNLOAD ANDROID APK</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Copy APK link" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void copyApkLink()}><Text style={[s.secondaryText,{color:theme.accent}]}>COPY APK LINK</Text></Pressable>
+        <Pressable accessibilityRole="link" accessibilityLabel="View SHA-256 checksum" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void openChecksum()}><Text style={[s.secondaryText,{color:theme.accent}]}>VIEW SHA-256 CHECKSUM</Text></Pressable>
+      </View>
+      <Text style={[s.help,{color:theme.muted}]}>The published file is Kleenest-Consumer.apk. The checksum link lets advanced users verify the exact downloaded file; beginners can simply follow the numbered Android steps below.</Text>
+      <AndroidApkInstallSteps/>
+    </View>
 
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
       <Text style={[s.kicker,{color:theme.accent}]}>IF INSTALLATION DOESN'T WORK</Text>
@@ -318,7 +337,7 @@ export default function InstallKleenest(){
         <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>1</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Check the browser instructions above</Text><Text style={[s.stepBody,{color:theme.muted}]}>{browserHelp}</Text></View></View>
         <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>2</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Run Install Health again</Text><Text style={[s.stepBody,{color:theme.muted}]}>Secure Web and PWA Shell should show READY. If the shell still says LOADING, refresh this page once and check again.</Text></View></View>
         <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>3</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Remove an old shortcut if it behaves strangely</Text><Text style={[s.stepBody,{color:theme.muted}]}>If an older Kleenest shortcut only opens a browser tab or looks stale, remove that shortcut and install again from this page.</Text></View></View>
-        <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>4</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Android has a second path</Text><Text style={[s.stepBody,{color:theme.muted}]}>The web app is recommended for most people. If you specifically want the native Android package, use the verified APK option above.</Text></View></View>
+        <View style={[s.step,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.stepNumber,{backgroundColor:theme.accent,color:theme.accentText}]}>4</Text><View style={s.stepCopy}><Text style={[s.stepTitle,{color:theme.ink}]}>Android has a second path</Text><Text style={[s.stepBody,{color:theme.muted}]}>The web app is recommended for most people. The direct Android APK is also always available above, even if you opened this page on another device.</Text></View></View>
       </View>
       <View style={s.buttonRow}>
         <Pressable accessibilityRole="button" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void refreshDiagnostics()}><Text style={[s.secondaryText,{color:theme.accent}]}>CHECK INSTALLATION AGAIN</Text></Pressable>
@@ -385,6 +404,11 @@ const s=StyleSheet.create({
   secondaryText:{fontSize:9,fontWeight:'900',color:palette.green},
   buttonRow:{flexDirection:'row',flexWrap:'wrap',gap:7},
   help:{fontSize:10,lineHeight:15,color:'#718077'},
+  guidance:{gap:8,marginTop:4},
+  guidanceIntro:{fontSize:11,lineHeight:17,fontWeight:'800',color:palette.ink},
+  directLinkBox:{borderWidth:1,borderRadius:12,padding:10,gap:4},
+  directLinkLabel:{fontSize:8,fontWeight:'900',letterSpacing:.7,color:palette.green},
+  directLink:{fontSize:10,lineHeight:15,fontWeight:'700',color:palette.ink},
   steps:{gap:8,marginTop:3},
   step:{flexDirection:'row',gap:10,alignItems:'flex-start',backgroundColor:'#f4f8f5',borderRadius:13,padding:11},
   stepNumber:{width:24,height:24,borderRadius:12,textAlign:'center',paddingTop:4,overflow:'hidden',backgroundColor:palette.green,color:'#fff',fontSize:10,fontWeight:'900'},
