@@ -10,7 +10,18 @@ export type ResolvedQrAction={
   location_id:string|null;
   location_name?:string|null;
   location_address?:string|null;
+  location_city?:string|null;
+  location_state?:string|null;
+  location_postal_code?:string|null;
+  location_place_type?:string|null;
+  brand_name?:string|null;
+  rating?:number|null;
+  review_count?:number|null;
   business_id:string|null;
+  business_name?:string|null;
+  business_logo_url?:string|null;
+  business_website?:string|null;
+  business_description?:string|null;
   label:string|null;
   purpose:string|null;
   action_type:string;
@@ -25,6 +36,9 @@ export type ResolvedQrAction={
   claimable?:boolean;
   network?:Record<string,unknown>;
   deep_link?:string|null;
+  feedback_available?:boolean;
+  review_requires_verified_visit?:boolean;
+  location_route?:string|null;
 };
 
 export type LocationQrIdentity=ResolvedQrAction&{
@@ -84,10 +98,11 @@ export async function recordLocationQrPlacementEvent(
   return data as {event_id?:string;duplicate?:boolean;event_type?:string;placement_status?:QrPlacementStatus;distance_meters?:number;xp_awarded?:number;progression?:Record<string,unknown>};
 }
 
-export async function verifyQrCheckIn(code:string,latitude:number,longitude:number){
+export async function verifyQrCheckIn(code:string,latitude:number,longitude:number,accuracyMeters:number|null=null){
   const value=normalizeQrCode(code);if(!value)throw new Error('QR code is required.');
   const client=getKleenestSupabaseClient();
-  const {data,error}=await client.rpc('verify_checkin',{p_qr_code:value,p_lat:latitude,p_lng:longitude});
+  const normalizedAccuracy=Number.isFinite(Number(accuracyMeters))?Math.max(0,Number(accuracyMeters)):null;
+  const {data,error}=await client.rpc('verify_checkin',{p_qr_code:value,p_lat:latitude,p_lng:longitude,p_accuracy_m:normalizedAccuracy});
   if(error)throw error;
   return data;
 }
