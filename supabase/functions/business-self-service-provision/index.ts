@@ -124,6 +124,16 @@ async function ensureWorkspace(actor: Actor, businessName: string) {
   return { businessId, created: true };
 }
 
+async function cleanupCreatedWorkspace(businessId: string, actor: Actor) {
+  const [{ count: claims }, { count: managed }] = await Promise.all([
+    admin.from('location_claims').select('id', { count: 'exact', head: true }).eq('business_id', businessId),
+    admin.from('locations').select('id', { count: 'exact', head: true }).or(`business_id.eq.${businessId},claimed_business_id.eq.${businessId}`),
+  ]);
+  if (Number(claims || 0) > 0 || Number(managed || 0) > 0) return;
+  await admin.from('business_members').delete().eq('business_id', businessId).eq('user_id', actor.userId);
+  await admin.from('businesses').delete().eq('id', businessId);
+}
+
 async function submitExistingClaim(req: Request, businessId: string, locationIdRaw: unknown) {
   const locationId = uuid(locationIdRaw, 'Location');
   const authHeader = req.headers.get('authorization') ?? '';
@@ -174,27 +184,32 @@ async function createOwnedLocation(req: Request, actor: Actor, businessId: strin
   const state = text(raw?.state);
   const postalCode = text(raw?.postalCode);
   const { resolvedLatitude, resolvedLongitude, resolvedLabel, geocoderProvider } = await resolveBusinessLocation(req, raw);
-  const { data: matches, error: matchError } = await admin
-    .from('locations')
-    .select('id,name,address,city,state')
-    .ilike('name', name)
-    .limit(50);
+
+  const { data: brandIdentity, error: brandError } = await admin.rpc('resolve_location_brand_identity', {
+    p_brand: null,
+    p_name: name,
+    p_operator: null,
+  });
+  if (brandError) throw brandError;
+  const brand = text(brandIdentity?.canonical_brand) || null;
+
+  const { data: matchedLocationId, error: matchError } = await admin.rpc('resolve_location_external_identity_v2', {
+    p_source_dataset: 'business_self_service',
+    p_source_external_id: null,
+    p_latitude: resolvedLatitude,
+    p_longitude: resolvedLongitude,
+    p_name: name,
+    p_brand: brand,
+    p_operator: null,
+    p_address: address || null,
+    p_city: city || null,
+    p_state: state || null,
+  });
   if (matchError) throw matchError;
 
-  const duplicate = (matches ?? []).find(row =>
-    normalized(row.name) === normalized(name) &&
-    normalized(row.address) === normalized(address) &&
-    normalized(row.city) === normalized(city) &&
-    normalized(row.state) === normalized(state)
-  );
-
-  let locationId = duplicate?.id ? String(duplicate.id) : '';
+  let locationId = text(matchedLocationId);
+  const duplicate = Boolean(locationId);
   if (!locationId) {
-    const { data: brand } = await admin.rpc('normalize_ingestion_brand', {
-      p_brand: null,
-      p_name: name,
-      p_operator: null,
-    });
     const { data: location, error } = await admin
       .from('locations')
       .insert({
@@ -208,14 +223,16 @@ async function createOwnedLocation(req: Request, actor: Actor, businessId: strin
         longitude: resolvedLongitude,
         source: 'business_self_service',
         source_dataset: 'user_discovery',
-        brand_name: brand || null,
+        brand_name: brand,
         created_by: actor.userId,
         owner_name: businessName,
         owner_email: actor.email,
         source_metadata: {
           provider: 'user_discovery',
           source_dataset: 'business_self_service',
-          brand: brand || null,
+          brand,
+          brand_identity_source: text(brandIdentity?.source) || null,
+          brand_identity_confidence: brandIdentity?.confidence ?? null,
           captured_at: new Date().toISOString(),
           geocoder_provider: geocoderProvider,
           geocoder_label: resolvedLabel,
@@ -239,6 +256,7 @@ Deno.serve(async req => {
 
   const actor = await actorFor(req);
   if (!actor) return json(req, { error: 'Unauthorized' }, 401);
+  let createdWorkspaceId: string | null = null;
 
   try {
     const body = await req.json().catch(() => ({}));
@@ -246,6 +264,7 @@ Deno.serve(async req => {
     if (!businessName) throw new ProvisionError('Business name is required.');
 
     const workspace = await ensureWorkspace(actor, businessName);
+    if (workspace.created) createdWorkspaceId = workspace.businessId;
     let location: { locationId: string | null; action: string } = { locationId: null, action: 'none' };
 
     if (body?.existingLocationId) {
@@ -263,6 +282,11 @@ Deno.serve(async req => {
       verificationStatus: 'pending',
     });
   } catch (error) {
+    if (createdWorkspaceId) {
+      await cleanupCreatedWorkspace(createdWorkspaceId, actor).catch(cleanupError =>
+        console.error('business-self-service-provision cleanup failed', cleanupError instanceof Error ? cleanupError.name : 'unknown_error')
+      );
+    }
     if (error instanceof ProvisionError) return json(req, { error: error.message }, error.status);
     console.error('business-self-service-provision failed', error instanceof Error ? error.name : 'unknown_error');
     return json(req, { error: 'Business setup could not be completed.' }, 400);

@@ -55,7 +55,7 @@ if(!failures.length){
   for(const token of ['KLEENEST COMMUNITY QR','A sticker is evidence, not ownership.','I placed this QR here','Verify this placement','Unauthorized placement','kleenest-business://locations'])
     if(!identity.includes(token))failures.push('Location QR experience missing '+token);
 
-  for(const token of ['COMMUNITY LOCATION QR','Verify visit with this QR','business_claimed','canonical_location_identity'])
+  for(const token of ['COMMUNITY LOCATION QR','Verify visit & review','Open location & feedback','business_claimed','canonical_location_identity'])
     if(!scanner.includes(token))failures.push('QR scanner community identity handling missing '+token);
 
   if(!detail.includes("pathname:'/location-qr'"))failures.push('Full location details must expose the permanent Location QR.');

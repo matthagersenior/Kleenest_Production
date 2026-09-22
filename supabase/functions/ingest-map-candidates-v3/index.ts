@@ -196,11 +196,12 @@ async function live(overpassQuery: string) {
 }
 
 async function persist(locations: any[]) {
-  if (!locations.length) return { ok: true, imported_locations: 0, updated_locations: 0, skipped_rows: 0, errors: [] };
+  if (!locations.length) return { ok: true, imported_locations: 0, updated_locations: 0, skipped_rows: 0, row_errors_count: 0, queued_repairs: 0, queued_for_repair: false, canonicalization_complete: true, durably_accounted: true };
   const url = Deno.env.get("SUPABASE_URL");
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return { ok: false, deferred: true, code: "CANONICAL_PERSISTENCE_DEFERRED" };
-  let imported = 0, updated = 0, skipped = 0, rowErrors = 0;
+  let imported = 0, updated = 0, skipped = 0, rowErrors = 0, queuedRepairs = 0;
+  let canonicalizationComplete = true, durablyAccounted = true;
   try {
     for (let i = 0; i < locations.length; i += 500) {
       const response = await fetch(`${url}/rest/v1/rpc/ingest_external_locations`, {
@@ -217,9 +218,22 @@ async function persist(locations: any[]) {
       imported += Number(result.imported_locations || 0);
       updated += Number(result.updated_locations || 0);
       skipped += Number(result.skipped_rows || 0);
+      queuedRepairs += Number(result.queued_repairs || 0);
+      canonicalizationComplete = canonicalizationComplete && result.canonicalization_complete !== false;
+      durablyAccounted = durablyAccounted && result.durably_accounted !== false;
       if (Array.isArray(result.errors)) rowErrors += result.errors.length;
     }
-    return { ok: true, imported_locations: imported, updated_locations: updated, skipped_rows: skipped, row_errors_count: rowErrors };
+    return {
+      ok: durablyAccounted,
+      imported_locations: imported,
+      updated_locations: updated,
+      skipped_rows: skipped,
+      row_errors_count: rowErrors,
+      queued_repairs: queuedRepairs,
+      queued_for_repair: queuedRepairs > 0,
+      canonicalization_complete: canonicalizationComplete,
+      durably_accounted: durablyAccounted,
+    };
   } catch (error) {
     console.error("ingest-map-candidates-v3 persistence exception", error instanceof Error ? error.message : "unknown");
     return { ok: false, deferred: true, code: "CANONICAL_PERSISTENCE_DEFERRED" };
@@ -279,14 +293,24 @@ Deno.serve(async request => {
   const shouldPersist = body.collect !== false;
   const persistence = shouldPersist ? await persist(allLocations) : { ok: true, skipped: true };
   const persistenceWarning = shouldPersist && persistence.ok === false
-    ? { code: "PERSISTENCE_DEFERRED", stage: "persistence", message: "Live places are available, but canonical persistence was deferred. The map can continue using the live result." }
-    : null;
+    ? { code: "PERSISTENCE_DEFERRED", stage: "persistence", message: "Live places are available, but some canonical persistence could not be completed or durably queued. The map can continue using the live result." }
+    : shouldPersist && Number((persistence as any).queued_repairs || 0) > 0
+      ? { code: "PERSISTENCE_REPAIR_QUEUED", stage: "persistence", message: "Live places are available. Some canonical rows were durably queued for automatic retry." }
+      : null;
 
   return json({
     ok: true,
     degraded: Boolean(persistenceWarning),
     contract: "interactive-discovery-plus-canonical-persistence",
-    canonical_persistence: shouldPersist ? (persistence.ok ? "ingest_external_locations" : "deferred") : "skipped",
+    canonical_persistence: shouldPersist
+      ? ((persistence as any).canonicalization_complete
+          ? "ingest_external_locations"
+          : (persistence as any).queued_for_repair
+            ? "queued_for_repair"
+            : "partial")
+      : "skipped",
+    canonicalization_complete: shouldPersist ? Boolean((persistence as any).canonicalization_complete) : null,
+    queued_for_repair: shouldPersist ? Boolean((persistence as any).queued_for_repair) : false,
     acquisition_status: visibleLocations.length ? "success" : "empty",
     cached: false,
     discovered: visibleLocations.length,
