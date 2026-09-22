@@ -50,6 +50,12 @@ export async function getOwnerRelevanceSponsorshipSnapshot(){
   return (await rpc('owner_relevance_sponsorship_snapshot'))||{hero_policies:[],placements:[],campaigns:[],rules:{}};
 }
 
+export async function getOwnerAcquisitionSummary(days=30){
+  await requirePlatformOwner();
+  const safeDays=Math.min(Math.max(Math.round(Number(days)||30),1),366);
+  return (await rpc('owner_acquisition_attribution_summary',{p_days:safeDays}))||{days:safeDays,since:null,totals:{},by_source:[],by_content:[]};
+}
+
 export async function getOwnerAdMobHealthSnapshot(hours=24){
   await requirePlatformOwner();
   const safeHours=Math.min(Math.max(Math.round(Number(hours)||24),1),168);
