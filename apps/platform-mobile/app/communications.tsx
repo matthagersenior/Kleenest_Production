@@ -72,7 +72,7 @@ export default function Communications(){
     return String(data.session?.provider_token||'');
   }
 
-  async function load(nextToken?:string){
+  async function load(nextToken?:string,options:{query?:string;unreadOnly?:boolean}={}){
     const token=nextToken||providerToken||await tokenFromSession();
     if(!token){setProviderToken('');setStatus(null);setThreads([]);return}
     setBusy(true);
@@ -82,7 +82,7 @@ export default function Communications(){
       setProviderToken(token);
       const[nextStatus,nextThreads]=await Promise.all([
         getOwnerMailStatus(token),
-        listOwnerMailThreads(token,{query,unreadOnly,maxResults:30}),
+        listOwnerMailThreads(token,{query:options.query??query,unreadOnly:options.unreadOnly??unreadOnly,maxResults:30}),
       ]);
       setStatus(nextStatus);
       setThreads(nextThreads.threads);
@@ -149,7 +149,7 @@ export default function Communications(){
 
   async function search(){
     setSearching(true);
-    await load();
+    await load(undefined,{query,unreadOnly});
   }
 
   async function openThread(row:OwnerMailThreadSummary){
@@ -236,7 +236,7 @@ export default function Communications(){
         <Pressable onPress={()=>void search()} style={{justifyContent:'center',paddingHorizontal:14,borderRadius:12,backgroundColor:theme.accent}}><Text style={{fontWeight:'900',color:theme.accentText}}>{searching?'…':'Search'}</Text></Pressable>
       </View>
       <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
-        <Pressable onPress={()=>{setUnreadOnly(value=>!value);setTimeout(()=>void load(),0)}} style={{paddingHorizontal:12,paddingVertical:9,borderRadius:999,backgroundColor:unreadOnly?theme.accent:theme.accentSoft}}><Text style={{fontWeight:'900',color:unreadOnly?theme.accentText:theme.accent}}>Unread</Text></Pressable>
+        <Pressable onPress={()=>{const next=!unreadOnly;setUnreadOnly(next);void load(undefined,{unreadOnly:next})}} style={{paddingHorizontal:12,paddingVertical:9,borderRadius:999,backgroundColor:unreadOnly?theme.accent:theme.accentSoft}}><Text style={{fontWeight:'900',color:unreadOnly?theme.accentText:theme.accent}}>Unread</Text></Pressable>
         <Pressable onPress={()=>void load()} style={{paddingHorizontal:12,paddingVertical:9,borderRadius:999,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Refresh</Text></Pressable>
         <Pressable onPress={connectGmail} style={{paddingHorizontal:12,paddingVertical:9,borderRadius:999,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.ink}}>Reconnect Gmail</Text></Pressable>
       </View>
