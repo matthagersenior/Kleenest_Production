@@ -49,7 +49,7 @@ export default function Advertising(){
 
  return <ScrollView refreshControl={<RefreshControl refreshing={busy} onRefresh={load}/>} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={[s.page,{backgroundColor:theme.canvas}]}>
   <View style={[s.hero,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#173f2d',borderColor:theme.line}]}>
-   <Text style={s.eyebrow}>KLEENEST BUSINESS · ADVERTISE</Text><Text style={s.title}>Be useful at the moment a customer needs you.</Text>
+   <Text style={s.eyebrow}>KLEENEST BUSINESS · SPONSORED ADS</Text><Text style={s.title}>Create a Kleenest Sponsored ad.</Text>
    <Text style={s.heroBody}>Create tasteful sponsored recommendations that fit Kleenest workflows. Target context—not sensitive identity. Paid placement never changes trust, freshness, verification or organic ranking.</Text>
   </View>
   {message?<View style={[s.notice,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={{color:theme.ink,fontWeight:'800'}}>{message}</Text></View>:null}
