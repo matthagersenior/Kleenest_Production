@@ -20,7 +20,8 @@ create table if not exists public.admob_telemetry_events (
 );
 
 alter table public.admob_telemetry_events enable row level security;
-revoke all on public.admob_telemetry_events from public,anon,authenticated;
+revoke all on public.admob_telemetry_events from public;
+revoke all on public.admob_telemetry_events from anon,authenticated;
 grant select,insert,delete on public.admob_telemetry_events to service_role;
 
 create index if not exists admob_telemetry_events_created_idx
