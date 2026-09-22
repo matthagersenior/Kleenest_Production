@@ -27,10 +27,14 @@ const gmailScopes=[
   'openid',
   'email',
   'profile',
-  'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.modify',
-  'https://www.googleapis.com/auth/gmail.send',
 ].join(' ');
+
+function enforceGmailScopes(url:string){
+  const parsed=new URL(url);
+  parsed.searchParams.set('scopes',gmailScopes);
+  return parsed.toString();
+}
 
 function authParam(url:string,name:string){
   try{
@@ -95,8 +99,10 @@ export default function Communications(){
       setNotice('');
     }catch(error:any){
       const text=String(error?.message||'Gmail could not be loaded.');
-      if(/401|unauth|token|credential/i.test(text)){setProviderToken('');setStatus(null);setThreads([])}
-      setNotice(text);
+      if(/401|unauth|token|credential|insufficient authentication scopes/i.test(text)){setProviderToken('');setStatus(null);setThreads([])}
+      setNotice(/insufficient authentication scopes/i.test(text)
+        ? 'Google returned without the Gmail permission KleenestOS needs. Reconnect Gmail and approve mailbox access. If Google never offers Gmail access, the Google OAuth consent screen must enable the Gmail modify scope.'
+        : text);
     }finally{setBusy(false);setSearching(false)}
   }
 
@@ -168,16 +174,17 @@ export default function Communications(){
           redirectTo,
           skipBrowserRedirect:Platform.OS!=='web',
           scopes:gmailScopes,
-          queryParams:{access_type:'offline',prompt:'consent'},
+          queryParams:{access_type:'offline',prompt:'consent select_account',include_granted_scopes:'true'},
         },
       });
       if(error)throw error;
       if(!data.url)throw new Error('Google did not return an authorization URL.');
+      const scopedAuthorizeUrl=enforceGmailScopes(data.url);
       if(Platform.OS==='web'&&typeof window!=='undefined'){
-        window.location.assign(data.url);
+        window.location.assign(scopedAuthorizeUrl);
         return;
       }
-      const relayStart=`${productionOAuthRelay}?kleenest_oauth_start=owner-gmail&authorize=${encodeURIComponent(data.url)}`;
+      const relayStart=`${productionOAuthRelay}?kleenest_oauth_start=owner-gmail&authorize=${encodeURIComponent(scopedAuthorizeUrl)}`;
       const result=await WebBrowser.openAuthSessionAsync(relayStart,nativeAppOAuthReturn);
       if(result.type==='cancel'||result.type==='dismiss'){setNotice('Gmail connection was cancelled.');return}
       if(result.type!=='success'||!result.url)throw new Error('Google did not return to KleenestOS.');
