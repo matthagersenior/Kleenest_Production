@@ -5,6 +5,7 @@ import { consumerNetworkAdsEnabled } from '../services/networkAds';
 import { useConsumerTheme } from '../services/theme';
 
 const PRODUCTION_ANDROID_NATIVE_AD_UNIT_ID='ca-app-pub-6958734306376288/6751375017';
+const PRODUCTION_IOS_NATIVE_AD_UNIT_ID='ca-app-pub-6958734306376288/2327160255';
 
 let initialization:Promise<boolean>|null=null;
 function ensureInitialized(){
@@ -33,7 +34,7 @@ export function AdMobNativeSlot({keywords=[],contextClass}:{keywords?:string[];c
       if(!active||!ready)return;
       const configured=Platform.select({
         android:process.env.EXPO_PUBLIC_ADMOB_NATIVE_ANDROID_ID||PRODUCTION_ANDROID_NATIVE_AD_UNIT_ID,
-        ios:process.env.EXPO_PUBLIC_ADMOB_NATIVE_IOS_ID,
+        ios:process.env.EXPO_PUBLIC_ADMOB_NATIVE_IOS_ID||PRODUCTION_IOS_NATIVE_AD_UNIT_ID,
         default:undefined,
       });
       try{
