@@ -65,11 +65,11 @@ requireText(focus, 'https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'F
 requireText(focus, "breaker:'single_429_15m_or_2_consecutive_or_legacy_rate'", 'Endpoint breaker policy must remain source-controlled.');
 
 const geo = requireFile('supabase/functions/geo-catalog-exporter/index.ts');
-requireText(geo, 'sxgymblzmwdqnaidbbuq.supabase.co/functions/v1/geo-catalog-receiver', 'Geo catalog exporter must target Kleenest_Data.');
+requireText(geo, 'sxgymblzmwdqnaidbbuq.supabase.co/functions/v1/archive-object-ingest', 'Geo catalog exporter must target the verified Kleenest_Data object archive.');
 requireText(geo, "geo_catalog_export_ack", 'Geo catalog exporter must acknowledge its watermark after transfer.');
 
 const cold = requireFile('supabase/functions/cold-provenance-offloader/index.ts');
-requireText(cold, 'sxgymblzmwdqnaidbbuq.supabase.co/functions/v1/cold-provenance-receiver', 'Cold provenance offloader must target Kleenest_Data.');
+requireText(cold, 'sxgymblzmwdqnaidbbuq.supabase.co/functions/v1/archive-object-ingest', 'Cold provenance offloader must target the verified Kleenest_Data object archive.');
 requireText(cold, 'cold_external_location_archive_ack', 'Cold provenance offloader must acknowledge and delete transferred rows.');
 
 const legacyArchive = requireFile('supabase/functions/kleenest-archive-exporter/index.ts');
@@ -81,5 +81,6 @@ const sync = requireFile('.github/workflows/sync-kleenest-data.yml');
 requireText(sync, "cron: '17 * * * *'", 'Kleenest_Data archive reconciliation workflow must remain hourly.');
 requireText(sync, 'KLEENEST_PROD_SERVICE_ROLE_KEY', 'Archive reconciliation must require the Production service-role secret.');
 requireText(sync, 'KLEENEST_DATA_SERVICE_ROLE_KEY', 'Archive reconciliation must require the Kleenest_Data service-role secret.');
+requireText(sync, '/functions/v1/archive-object-ingest', 'Archive reconciliation must write verified Storage objects rather than relational mirror rows.');
 
 console.log('Production live configuration source-control audit passed.');
