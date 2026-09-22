@@ -9,7 +9,7 @@ const beta=read('apps/consumer-mobile/components/BetaReportButton.tsx');
 for(const token of ['seasonIdentity:{flex:1,minWidth:0}',"seasonTitle:{fontSize:28,lineHeight:31,fontWeight:'900',color:'#fff',marginTop:3,flexShrink:1}"]){
   if(!progress.includes(token))failures.push('Progress mobile overflow guard missing '+token);
 }
-for(const token of ['const tabLabel=',"tabBarItemStyle:{minWidth:0,paddingHorizontal:0}","tabBarLabel:tabLabel('Explore')","tabBarLabel:tabLabel('Community')"]){
+for(const token of ['const tabLabel=',"tabBarItemStyle:{minWidth:0,paddingHorizontal:0,paddingVertical:1}","tabBarLabel:tabLabel('Explore')","tabBarLabel:tabLabel('Games')","tabIcon('games',theme.accentSoft)"]){
   if(!layout.includes(token))failures.push('Bottom navigation polish missing '+token);
 }
 for(const token of [

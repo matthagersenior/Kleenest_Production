@@ -5,6 +5,7 @@ import { router, Tabs, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { AppState,Platform,Text,View,useColorScheme, type ColorValue } from 'react-native';
+import Svg,{Circle,Path,Rect} from 'react-native-svg';
 import { notificationDestination } from '../services/notificationRouting';
 import { refreshConsumerLiveNetworkRegions } from '../services/liveNetwork';
 import { refreshConsumerPresence } from '../services/presence';
@@ -58,8 +59,19 @@ async function openNotificationResponse(response: Notifications.NotificationResp
   if (destination) router.push(destination as any);
 }
 
-const tabIcon=(glyph:string)=>(props:{color:ColorValue;focused:boolean;size:number})=><Text accessible={false} style={{fontSize:props.focused?20:18,color:props.color,fontWeight:'900'}}>{glyph}</Text>;
-const tabLabel=(label:string)=>(props:{color:ColorValue})=><Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72} maxFontSizeMultiplier={1.15} style={{width:'100%',fontSize:10,fontWeight:'900',textAlign:'center',color:props.color}}>{label}</Text>;
+type TabIconKind='home'|'explore'|'check'|'games'|'profile';
+
+function TabVectorIcon({kind,color}:{kind:TabIconKind;color:ColorValue}){
+  const stroke=String(color);
+  if(kind==='home')return <Svg width={22} height={22} viewBox="0 0 24 24"><Path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1v-9.5Z" fill="none" stroke={stroke} strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round"/></Svg>;
+  if(kind==='explore')return <Svg width={22} height={22} viewBox="0 0 24 24"><Circle cx={12} cy={12} r={7.2} fill="none" stroke={stroke} strokeWidth={2}/><Circle cx={12} cy={12} r={2.2} fill={stroke}/><Path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3" stroke={stroke} strokeWidth={2} strokeLinecap="round"/></Svg>;
+  if(kind==='check')return <Svg width={22} height={22} viewBox="0 0 24 24"><Rect x={3.5} y={3.5} width={17} height={17} rx={5} fill="none" stroke={stroke} strokeWidth={2}/><Path d="m8.2 12.2 2.4 2.4 5.4-5.5" fill="none" stroke={stroke} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"/></Svg>;
+  if(kind==='games')return <Svg width={23} height={23} viewBox="0 0 24 24"><Rect x={3.2} y={7.2} width={17.6} height={10.8} rx={5.2} fill="none" stroke={stroke} strokeWidth={2}/><Path d="M7.2 12.6h4M9.2 10.6v4" stroke={stroke} strokeWidth={2} strokeLinecap="round"/><Circle cx={15.8} cy={11.4} r={1.1} fill={stroke}/><Circle cx={18} cy={13.7} r={1.1} fill={stroke}/></Svg>;
+  return <Svg width={22} height={22} viewBox="0 0 24 24"><Circle cx={12} cy={8} r={3.3} fill="none" stroke={stroke} strokeWidth={2}/><Path d="M5.2 20c.8-4 3.1-6.1 6.8-6.1S18 16 18.8 20" fill="none" stroke={stroke} strokeWidth={2} strokeLinecap="round"/></Svg>;
+}
+
+const tabIcon=(kind:TabIconKind,activeBackground:string)=>(props:{color:ColorValue;focused:boolean;size:number})=><View accessible={false} style={{width:36,height:32,borderRadius:12,alignItems:'center',justifyContent:'center',backgroundColor:props.focused?activeBackground:'transparent'}}><TabVectorIcon kind={kind} color={props.color}/></View>;
+const tabLabel=(label:string)=>(props:{color:ColorValue})=><Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72} maxFontSizeMultiplier={1.15} style={{width:'100%',fontSize:9.5,fontWeight:'900',textAlign:'center',color:props.color,letterSpacing:.1}}>{label}</Text>;
 
 export default function RootLayout() {
   const pathname=usePathname();
@@ -107,18 +119,18 @@ export default function RootLayout() {
   if(operatorOAuthRelaying)return null;
   const tabs=<Tabs initialRouteName={Platform.OS==='web'?'index':'explore'} screenOptions={{
     headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{fontWeight:'900',color:theme.ink},
-    tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarStyle:publicWeb?({display:'none'} as any):{height:68,paddingTop:6,paddingBottom:8,backgroundColor:theme.surface,borderTopColor:theme.line},tabBarItemStyle:{minWidth:0,paddingHorizontal:0},tabBarLabelStyle:{fontWeight:'900',fontSize:10},
+    tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarStyle:publicWeb?({display:'none'} as any):{height:74,paddingTop:7,paddingBottom:9,backgroundColor:theme.surfaceRaised,borderTopWidth:1,borderTopColor:theme.line,elevation:12,shadowColor:'#000',shadowOpacity:.12,shadowRadius:10,shadowOffset:{width:0,height:-3}},tabBarItemStyle:{minWidth:0,paddingHorizontal:0,paddingVertical:1},tabBarLabelStyle:{fontWeight:'900',fontSize:9.5},
   }}>
     <Tabs.Screen name="index" options={{ href:null,title:'Launch',headerShown:false }}/>
-    <Tabs.Screen name="home" options={{ title:'Home',headerShown:false,tabBarIcon:tabIcon('⌂'),tabBarLabel:tabLabel('Home') }}/>
-    <Tabs.Screen name="explore" options={{ title:'Explore',headerShown:false,tabBarIcon:tabIcon('⌖'),tabBarLabel:tabLabel('Explore') }}/>
-    <Tabs.Screen name="qr" options={{ title:'Check In',headerShown:false,tabBarIcon:tabIcon('✓'),tabBarLabel:tabLabel('Check In') }}/>
+    <Tabs.Screen name="home" options={{ title:'Home',headerShown:false,tabBarIcon:tabIcon('home',theme.accentSoft),tabBarLabel:tabLabel('Home') }}/>
+    <Tabs.Screen name="explore" options={{ title:'Explore',headerShown:false,tabBarIcon:tabIcon('explore',theme.accentSoft),tabBarLabel:tabLabel('Explore') }}/>
+    <Tabs.Screen name="qr" options={{ title:'Check In',headerShown:false,tabBarIcon:tabIcon('check',theme.accentSoft),tabBarLabel:tabLabel('Check In') }}/>
     <Tabs.Screen name="progress" options={{ href:null,title:'Progress',headerShown:false }}/>
     <Tabs.Screen name="passport" options={{ href:null,title:'Kleenest Passport' }}/>
     <Tabs.Screen name="intelligence" options={{ href:null,title:'Kleenest Intelligence' }}/>
-    <Tabs.Screen name="social" options={{ title:'Community',headerShown:false,tabBarIcon:tabIcon('●'),tabBarLabel:tabLabel('Community') }}/>
+    <Tabs.Screen name="social" options={{ href:null,title:'Community',headerShown:false }}/>
     <Tabs.Screen name="search" options={{ href:null,title:'Search',headerShown:false }}/>
-    <Tabs.Screen name="profile" options={{ title:'Profile',headerShown:false,tabBarIcon:tabIcon('◉'),tabBarLabel:tabLabel('Profile') }}/>
+    <Tabs.Screen name="profile" options={{ title:'Profile',headerShown:false,tabBarIcon:tabIcon('profile',theme.accentSoft),tabBarLabel:tabLabel('Profile') }}/>
     <Tabs.Screen name="signup" options={{ href:null,title:'Join Kleenest' }}/>
     <Tabs.Screen name="install" options={{ href:null,title:'Install Kleenest' }}/>
     <Tabs.Screen name="creator" options={{ href:null,title:'Creator mission',headerShown:false }}/>
@@ -132,7 +144,7 @@ export default function RootLayout() {
     <Tabs.Screen name="access" options={{ href:null,title:'Access & Preferred' }}/>
     <Tabs.Screen name="messages" options={{ href:null,title:'Messages' }}/>
     <Tabs.Screen name="offline" options={{ href:null,title:'Offline Trips' }}/>
-    <Tabs.Screen name="games" options={{ href:null,title:'Game Center' }}/>
+    <Tabs.Screen name="games" options={{ title:'Game Center',headerShown:false,tabBarIcon:tabIcon('games',theme.accentSoft),tabBarLabel:tabLabel('Games') }}/>
     <Tabs.Screen name="game/[code]" options={{ href:null,title:'Game Arena',headerShown:false }}/>
     <Tabs.Screen name="reward-tools" options={{ href:null,title:'Reward Toolkit',headerShown:false }}/>
     <Tabs.Screen name="route" options={{ href:null,title:'Routes' }}/>
