@@ -99,6 +99,8 @@ export default function Communications(){
   async function connectGmail(){
     if(busy)return;
     const client=getKleenestSupabaseClient();
+    const{data:{session:ownerSession}}=await client.auth.getSession();
+    if(!ownerSession){setNotice('Sign in to the Owner app before connecting Gmail.');return}
     const redirectTo=Platform.OS==='web'&&typeof window!=='undefined'
       ? `${window.location.origin}${window.location.pathname}`
       : Linking.createURL('communications',{scheme:'kleenest-owner',isTripleSlashed:false});
@@ -129,7 +131,13 @@ export default function Communications(){
         const{error:exchangeError}=await client.auth.exchangeCodeForSession(code);
         if(exchangeError)throw exchangeError;
       }
-      const token=await tokenFromSession();
+      const{data:{session:connectedSession}}=await client.auth.getSession();
+      if(!connectedSession)throw new Error('Google connected, but no Owner session was returned.');
+      if(Platform.OS!=='web'&&connectedSession.user.id!==ownerSession.user.id){
+        await client.auth.setSession({access_token:ownerSession.access_token,refresh_token:ownerSession.refresh_token});
+        throw new Error('Choose the Google account tied to this Owner identity. The original Owner session was restored safely.');
+      }
+      const token=String(connectedSession.provider_token||'');
       if(!token)throw new Error('Google connected, but Gmail authorization was not returned. Reconnect and approve Gmail access.');
       const auth=await getOwnerAuthorization();
       if(!auth.authorized)throw new Error('The connected Google account does not have Owner/admin authority.');
