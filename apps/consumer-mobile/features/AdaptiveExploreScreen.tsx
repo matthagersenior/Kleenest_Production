@@ -56,6 +56,7 @@ import {
 } from '../components/RestroomSignals';
 import { palette } from '../components/ConsumerUI';
 import { SponsoredSlot } from '../components/SponsoredSlot';
+import { AdMobNativeSlot } from '../components/AdMobNativeSlot';
 
 const DRAFT_KEY = 'kleenest.native.route.draft';
 const OSM_STYLE: any = {
@@ -1406,7 +1407,7 @@ export default function AdaptiveExploreScreen() {
               </View>
             ) : null}
 
-            <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results"/>
+            <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results" fallback={<AdMobNativeSlot contextClass="maps_between_results" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>}/>
 
             <View style={s.listHeading}>
               <View>
