@@ -8,6 +8,8 @@ const paths={
   core:'packages/mobile-core/src/adaptiveDiscovery.ts',
   publicEntry:'packages/mobile-core/src/publicEntry.ts',
   cache:'apps/consumer-mobile/services/nearbyCache.ts',
+  locationResolver:'apps/consumer-mobile/services/locationResolver.ts',
+  locationResolverEdge:'supabase/functions/resolve-consumer-location/index.ts',
   migration:'supabase/migrations/20260906052000_consumer_adaptive_route_search.sql',
   densityMigration:'supabase/migrations/20260914165745_density_adaptive_discovery_ranking.sql',
   densityCompatMigration:'supabase/migrations/20260914170001_density_discovery_anon_compat.sql',
@@ -16,13 +18,29 @@ const paths={
 for(const [label,path] of Object.entries(paths))if(!fs.existsSync(path))throw new Error(`${label} adaptive-search authority missing: ${path}`);
 const read=path=>fs.readFileSync(path,'utf8');
 const requireToken=(text,token,label)=>{if(!text.includes(token))throw new Error(`${label} missing ${token}`)};
-const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), cache=read(paths.cache), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration);
+const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), cache=read(paths.cache), locationResolver=read(paths.locationResolver), locationResolverEdge=read(paths.locationResolverEdge), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration);
 
 for(const token of ['1 mi','2 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Expand for required amenities','Maximum distance','Nearby','Along route','findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route','Start navigation'])requireToken(screen,token,'Consumer adaptive Explore');
 for(const token of ['AdaptiveExploreScreen'])requireToken(entry,token,'Consumer Explore entry');
 for(const token of ['CompactRestroomSignals','RestroomSignals'])requireToken(signals,token,'Consumer restroom signal presentation');
 for(const token of ['map_network_nearby_v3','map_network_along_route_v1','AmenityMatchRule','findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','402336','DENSE_LOCAL_RESULT_COUNT','MODERATE_LOCAL_RESULT_COUNT','hardRadius','Math.min(500'])requireToken(core,token,'Mobile discovery core');
 requireToken(publicEntry,"export * from './adaptiveDiscovery';",'Mobile public entry');
+for(const token of [
+  "functions.invoke('resolve-consumer-location'",
+  'resolved?.latitude',
+  'resolved?.longitude',
+])requireToken(locationResolver,token,'Consumer location resolver client boundary');
+for(const token of [
+  "CENSUS_GEOCODER_URL",
+  "Public_AR_Current",
+  "addressMatches",
+  "normalizeCensusCandidate",
+  "lookupCensus",
+  "looksLikeUsStreetAddress",
+  "nominatimCandidates.length ? nominatimCandidates : await lookupCensus(query)",
+])requireToken(locationResolverEdge,token,'Consumer residential geocoder fallback');
+if(locationResolverEdge.includes("fetch('https://maps.googleapis.com"))throw new Error('Consumer address geocoding must not depend on a client-shipped Google Maps key.');
+
 requireToken(cache,'rows.slice(0,500)','Dense nearby cache must preserve the full 500-row discovery window');
 for(const token of ['map_network_nearby_v3','map_network_along_route_v1','p_amenity_match','SECURITY INVOKER','REVOKE ALL ON FUNCTION','GRANT EXECUTE ON FUNCTION','anon, authenticated','402336','40234','jsonb_array_length','ST_DWithin','route_fraction','distance_to_route_meters'])requireToken(migration,token,'Adaptive discovery migration');
 if(migration.includes('SECURITY DEFINER'))throw new Error('Adaptive discovery RPCs must not use SECURITY DEFINER.');
