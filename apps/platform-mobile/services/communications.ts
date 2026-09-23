@@ -67,37 +67,43 @@ async function invoke<T>(body:GatewayInput):Promise<T>{
   return data as T;
 }
 
-export function getOwnerMailStatus(providerToken:string){
-  return invoke<OwnerMailConnectionStatus>({action:'status',providerToken});
+export function connectOwnerMail(providerToken:string,providerRefreshToken:string){
+  return invoke<OwnerMailConnectionStatus>({
+    action:'connect',
+    providerToken,
+    providerRefreshToken,
+  });
 }
 
-export function listOwnerMailThreads(providerToken:string,input:{query?:string;unreadOnly?:boolean;maxResults?:number}={}){
+export function getOwnerMailStatus(){
+  return invoke<OwnerMailConnectionStatus>({action:'status'});
+}
+
+export function listOwnerMailThreads(input:{query?:string;unreadOnly?:boolean;maxResults?:number}={}){
   return invoke<{threads:OwnerMailThreadSummary[];nextPageToken:string|null}>({
     action:'list_threads',
-    providerToken,
     query:input.query?.trim()||'',
     unreadOnly:Boolean(input.unreadOnly),
     maxResults:Math.min(Math.max(input.maxResults||30,1),50),
   });
 }
 
-export function getOwnerMailThread(providerToken:string,threadId:string){
-  return invoke<{thread:OwnerMailThread}>({action:'get_thread',providerToken,threadId});
+export function getOwnerMailThread(threadId:string){
+  return invoke<{thread:OwnerMailThread}>({action:'get_thread',threadId});
 }
 
-export function replyOwnerMailThread(providerToken:string,input:{threadId:string;body:string}){
+export function replyOwnerMailThread(input:{threadId:string;body:string}){
   return invoke<{messageId:string;threadId:string}>({
     action:'reply',
-    providerToken,
     threadId:input.threadId,
     body:input.body.trim(),
   });
 }
 
-export function archiveOwnerMailThread(providerToken:string,threadId:string){
-  return invoke<{ok:true}>({action:'archive',providerToken,threadId});
+export function archiveOwnerMailThread(threadId:string){
+  return invoke<{ok:true}>({action:'archive',threadId});
 }
 
-export function setOwnerMailThreadRead(providerToken:string,threadId:string,read:boolean){
-  return invoke<{ok:true}>({action:'set_read',providerToken,threadId,read});
+export function setOwnerMailThreadRead(threadId:string,read:boolean){
+  return invoke<{ok:true}>({action:'set_read',threadId,read});
 }
