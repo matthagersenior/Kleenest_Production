@@ -231,11 +231,15 @@ async function refreshGoogleAccessToken(connection:OwnerGmailConnection){
 
 async function gmailConnected(connection:OwnerGmailConnection,path:string,init:RequestInit={}){
   let token=String(connection.provider_access_token||'');
-  if(!token)token=await refreshGoogleAccessToken(connection);
+  if(!token){
+    if(!connection.provider_refresh_token||!connection.google_client_id)throw Object.assign(new Error('Gmail authorization needs to be renewed. Reconnect Gmail once.'),{status:401});
+    token=await refreshGoogleAccessToken(connection);
+  }
   try{
     return await gmail(token,path,init);
   }catch(error:any){
     if(Number(error?.status)!==401)throw error;
+    if(!connection.provider_refresh_token||!connection.google_client_id)throw Object.assign(new Error('Gmail authorization needs to be renewed. Reconnect Gmail once.'),{status:401});
     token=await refreshGoogleAccessToken(connection);
     return gmail(token,path,init);
   }
@@ -309,6 +313,7 @@ Deno.serve(async(req:Request)=>{
     const{authorization,userId}=await authorize(req);
     const body=await req.json().catch(()=>({}));
     const action=requiredText(body?.action,'action',40);
+    const legacyProviderToken=optionalText(body?.providerToken,5000);
 
     if(action==='connect'){
       const providerToken=requiredText(body?.providerToken,'providerToken',5000);
@@ -343,8 +348,34 @@ Deno.serve(async(req:Request)=>{
       });
     }
 
-    const connection=await loadConnection(userId);
-    if(action==='status'&&!connection)return json({...disconnectedStatus(),authorization});
+    let connection=await loadConnection(userId);
+    if(action==='status'&&!connection){
+      if(!legacyProviderToken)return json({...disconnectedStatus(),authorization});
+      const profile=await gmail(legacyProviderToken,'/profile');
+      return json({
+        connected:true,
+        emailAddress:profile.emailAddress??null,
+        messagesTotal:Number(profile.messagesTotal??0),
+        threadsTotal:Number(profile.threadsTotal??0),
+        historyId:profile.historyId?String(profile.historyId):null,
+        authorization,
+      });
+    }
+    if(!connection&&legacyProviderToken){
+      const now=new Date().toISOString();
+      connection={
+        owner_user_id:userId,
+        email_address:null,
+        google_client_id:'',
+        provider_refresh_token:'',
+        provider_access_token:legacyProviderToken,
+        granted_scopes:null,
+        connected_at:now,
+        updated_at:now,
+        last_refreshed_at:null,
+        last_error:null,
+      };
+    }
     if(!connection)throw Object.assign(new Error('Connect Gmail once to enable the Owner inbox.'),{status:401});
 
     if(action==='status'){
