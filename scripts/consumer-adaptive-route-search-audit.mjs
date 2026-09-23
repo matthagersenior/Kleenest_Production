@@ -14,7 +14,7 @@ const paths={
   densityMigration:'supabase/migrations/20260914165745_density_adaptive_discovery_ranking.sql',
   densityCompatMigration:'supabase/migrations/20260914170001_density_discovery_anon_compat.sql',
   densitySafeMigration:'supabase/migrations/20260914170218_density_discovery_safe_v3_projection.sql',
-  routePermissionRepair:'supabase/migrations/20260923200600_route_search_sanitized_projection.sql',
+  routePermissionRepair:'supabase/migrations/20260923200727_route_search_sanitized_projection.sql',
 };
 for(const [label,path] of Object.entries(paths))if(!fs.existsSync(path))throw new Error(`${label} adaptive-search authority missing: ${path}`);
 const read=path=>fs.readFileSync(path,'utf8');
