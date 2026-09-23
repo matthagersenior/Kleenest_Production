@@ -59,6 +59,17 @@ for(const token of ['organizeDiscoveryRows','const freshness=','const kleenest='
 if(!screen.includes('RECOMMENDED'))throw new Error('Discovery must visually identify its recommended nearby result.');
 if(!screen.includes('effectiveRadiusMeters')||!screen.includes('attemptedRadiiMeters'))throw new Error('Adaptive expansion provenance must remain available to the UI without requiring verbose density explainer copy.');
 if(!screen.includes('route.distanceMiles')||!screen.includes('route.durationMinutes'))throw new Error('Along-route distance/ETA must derive from actual built-route totals.');
+if(!migration.includes("FROM public.map_network_nearby_v2("))throw new Error('Along-route discovery must consume the sanitized map projection instead of raw locations.');
+const alongRouteStart=migration.indexOf('CREATE OR REPLACE FUNCTION public.map_network_along_route_v1');
+const alongRouteBody=migration.slice(alongRouteStart);
+if(alongRouteBody.includes('FROM public.locations'))throw new Error('Along-route discovery must not read raw public.locations from the mobile caller context.');
+for(const token of [
+  'destinationCardOpen',
+  'Select destination marker',
+  'Search bathrooms near destination',
+  'Use destination for along-route search',
+])requireToken(screen,token,'Selectable destination marker/card');
+
 
 // Explore is one continuous consumer page: compact search controls → map → results.
 // Detailed qualification controls live in a dismissible filter menu so the map stays high.
