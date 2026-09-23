@@ -1045,7 +1045,7 @@ export default function AdaptiveExploreScreen() {
           </Pressable>
         </View>
 
-        {searchAreaLabel?<View style={[s.searchAreaChip,{backgroundColor:theme.accentSoft}]}><Text style={[s.searchAreaText,{color:theme.ink}]}>{mode==='route'?'Destination':'Searching near'} {searchAreaLabel}</Text><Pressable accessibilityRole="button" accessibilityLabel={mode==='route'?'Clear route destination':'Use my location instead'} onPress={()=>{setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');setRoute(null);void load({clearQuery:true});}}><Text style={[s.searchAreaAction,{color:theme.accent}]}>{mode==='route'?'Clear destination':'Use my location'}</Text></Pressable></View>:null}
+        {searchAreaLabel?<View style={[s.searchAreaChip,{backgroundColor:theme.accentSoft}]}><Text style={[s.searchAreaText,{color:theme.ink}]}>{mode==='route'?'Destination':'Searching near'} {searchAreaLabel}</Text><Pressable accessibilityRole="button" accessibilityLabel={mode==='route'?'Clear route destination':'Use my location instead'} onPress={()=>{setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');setRoute(null);if(mode==='nearby')void load({clearQuery:true});else{setRows([]);setSelectedId('');setMessage('Enter a destination address above, or use your saved route draft.');}}}><Text style={[s.searchAreaAction,{color:theme.accent}]}>{mode==='route'?'Clear destination':'Use my location'}</Text></Pressable></View>:null}
 
         <View style={[s.segment,{backgroundColor:theme.surfaceRaised}]} accessibilityRole="tablist">
           <Pressable
