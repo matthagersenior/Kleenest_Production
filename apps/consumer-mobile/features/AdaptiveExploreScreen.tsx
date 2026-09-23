@@ -18,7 +18,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   FlatList,
   Modal,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
