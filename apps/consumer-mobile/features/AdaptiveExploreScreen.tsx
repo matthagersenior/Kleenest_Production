@@ -6,6 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import {
   buildMobileRoute,
+  buildMobileRouteToDestination,
   findAdaptiveNearbyRestrooms,
   listNearbyRestrooms,
   listRestroomsAlongRoute,
@@ -145,8 +146,25 @@ const looksLikeAddressOrArea = (value: string) => {
     || /\b(school|academy|college|university|campus|hospital|clinic|medical center|airport|station|terminal|park|library|church|synagogue|mosque|temple|stadium|arena|museum|hotel|motel|resort|courthouse|city hall)\b/i.test(query)
   );
 };
-const navigateUrl = (row: any) =>
-  `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${row.latitude},${row.longitude}`)}&travelmode=driving`;
+const navigateUrl = (row: any, activeRoute?: any) => {
+  const destination=Array.isArray(activeRoute?.destinationCoordinates)&&activeRoute.destinationCoordinates.length===2
+    ? activeRoute.destinationCoordinates
+    : null;
+  const origin=Array.isArray(activeRoute?.originCoordinates)&&activeRoute.originCoordinates.length===2
+    ? activeRoute.originCoordinates
+    : null;
+  if(activeRoute?.directDestination&&destination&&origin&&hasCoordinates(row)){
+    const params=new URLSearchParams({
+      api:'1',
+      origin:`${origin[1]},${origin[0]}`,
+      destination:`${destination[1]},${destination[0]}`,
+      travelmode:'driving',
+      waypoints:`${row.latitude},${row.longitude}`,
+    });
+    return `https://www.google.com/maps/dir/?${params.toString()}`;
+  }
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${row.latitude},${row.longitude}`)}&travelmode=driving`;
+};
 
 const ratingOf=(row:any)=>{const value=Number(row?.rating ?? row?.average_rating ?? row?.star_rating ?? 0);return Number.isFinite(value)?value:0;};
 const freshestEvidenceAt=(row:any)=>{const values=[row?.network?.latest_evidence_at,row?.trust?.latest_verified_at,row?.trust?.latest_amenity_observed_at,row?.consumer_photo_created_at].map((value:any)=>value?new Date(value).getTime():NaN).filter((value:number)=>Number.isFinite(value));return values.length?Math.max(...values):null;};
@@ -763,22 +781,42 @@ export default function AdaptiveExploreScreen() {
 
   async function loadRoute() {
     const current = await currentLocation();
-    const raw = await SecureStore.getItemAsync(DRAFT_KEY);
-    const stopIds = parseRouteDraft(raw);
-    if (!stopIds.length) {
-      throw new Error(
-        'Your route has no stops yet. Open Route, add at least one destination bathroom, then search along it.',
-      );
+    const rawQuery = search.trim();
+    const currentOrigin:[number,number]=[current.coords.longitude,current.coords.latitude];
+    let built:any=null;
+    let routeSearch=rawQuery;
+    let destinationLabel='';
+
+    if(rawQuery&&looksLikeAddressOrArea(rawQuery)){
+      const match=await resolveConsumerSearchLocation(rawQuery);
+      if(!match)throw new Error(`Kleenest could not locate “${rawQuery}”. Try the street number plus city/state or ZIP.`);
+      const destination:[number,number]=[match.longitude,match.latitude];
+      destinationLabel=match.label||rawQuery;
+      built=await buildMobileRouteToDestination(currentOrigin,destination,destinationLabel);
+      routeSearch='';
+      setSearchAreaOrigin(destination);
+      setSearchAreaLabel(destinationLabel);
+      setPendingMapOrigin(null);
+    }else{
+      setSearchAreaOrigin(null);
+      setSearchAreaLabel('');
+      const raw = await SecureStore.getItemAsync(DRAFT_KEY);
+      const stopIds = parseRouteDraft(raw);
+      if (!stopIds.length) {
+        throw new Error(
+          rawQuery
+            ? 'Enter a street address or destination to find bathrooms along the way, or add bathroom stops to your saved Route.'
+            : 'Enter a destination address above, or open Route and add at least one bathroom stop.',
+        );
+      }
+      built = await buildMobileRoute(currentOrigin, stopIds);
     }
-    const built = await buildMobileRoute(
-      [current.coords.longitude, current.coords.latitude],
-      stopIds,
-    );
-    if (!built?.geometry) throw new Error('The saved route could not produce route geometry.');
+
+    if (!built?.geometry) throw new Error('The route could not produce usable route geometry.');
     const data = await listRestroomsAlongRoute({
       routeGeoJSON: built.geometry,
       corridorMeters: corridor,
-      search: search.trim(),
+      search: routeSearch,
       amenityNames: selectedAmenityNames,
       amenityMatch: matchRule,
       limit: 40,
@@ -786,17 +824,21 @@ export default function AdaptiveExploreScreen() {
     const enrichedBase = await enrich(data);
     const progressionRadius=Math.min(402336,Math.max(corridor,Math.round((Number(built.distanceMiles||0)+10)*1609.344)));
     const livePresence=await recordConsumerPresenceAt(current.coords.latitude,current.coords.longitude).catch(()=>null);
-    const enriched = attachPresence(await enrichProgression(enrichedBase,current.coords.latitude,current.coords.longitude,progressionRadius),livePresence);
+    const enriched = organizeDiscoveryRows(
+      attachPresence(await enrichProgression(enrichedBase,current.coords.latitude,current.coords.longitude,progressionRadius),livePresence),
+      selectedAmenityNames,
+    );
     setRows(enriched);
     setRoute(built);
     setSelectedId('');
     setCached(false);
     setAttemptedRadiiMeters([]);
-    setMapCenter([current.coords.longitude, current.coords.latitude]);
+    setMapCenter(currentOrigin);
+    const routeName=destinationLabel?` to ${destinationLabel}`:'';
     setMessage(
       enriched.length
-        ? `${enriched.length} qualifying bathroom${enriched.length === 1 ? '' : 's'} along your ${Number(built.distanceMiles || 0).toFixed(0)} mi route, within ${radiusLabel(corridor)} of the route.`
-        : `No qualifying bathrooms found within ${radiusLabel(corridor)} of this route.`,
+        ? `${enriched.length} qualifying bathroom${enriched.length === 1 ? '' : 's'} along your ${Number(built.distanceMiles || 0).toFixed(0)} mi route${routeName}, within ${radiusLabel(corridor)} of the route.`
+        : `No qualifying bathrooms found within ${radiusLabel(corridor)} of the route${routeName}.`,
     );
   }
 
@@ -872,7 +914,7 @@ export default function AdaptiveExploreScreen() {
       captureConsumerRouteIntent(id);
       captureConsumerCoreLoopEvent('navigation_started',id,{source:'explore'});
     }
-    await Linking.openURL(navigateUrl(row));
+    await Linking.openURL(navigateUrl(row,route));
   }
 
   async function checkIn(row:any){
@@ -990,7 +1032,7 @@ export default function AdaptiveExploreScreen() {
             onChangeText={setSearch}
             onSubmitEditing={() => void load()}
             returnKeyType="search"
-            placeholder="Address, school, workplace, city or brand"
+            placeholder={mode==='route'?"Destination address/place, or bathroom brand":"Address, school, workplace, city or brand"}
             placeholderTextColor={theme.muted}
           />
           <Pressable
@@ -1003,7 +1045,7 @@ export default function AdaptiveExploreScreen() {
           </Pressable>
         </View>
 
-        {searchAreaLabel?<View style={[s.searchAreaChip,{backgroundColor:theme.accentSoft}]}><Text style={[s.searchAreaText,{color:theme.ink}]}>Searching near {searchAreaLabel}</Text><Pressable accessibilityRole="button" accessibilityLabel="Use my location instead" onPress={()=>{setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');void load({clearQuery:true});}}><Text style={[s.searchAreaAction,{color:theme.accent}]}>Use my location</Text></Pressable></View>:null}
+        {searchAreaLabel?<View style={[s.searchAreaChip,{backgroundColor:theme.accentSoft}]}><Text style={[s.searchAreaText,{color:theme.ink}]}>{mode==='route'?'Destination':'Searching near'} {searchAreaLabel}</Text><Pressable accessibilityRole="button" accessibilityLabel={mode==='route'?'Clear route destination':'Use my location instead'} onPress={()=>{setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');setRoute(null);void load({clearQuery:true});}}><Text style={[s.searchAreaAction,{color:theme.accent}]}>{mode==='route'?'Clear destination':'Use my location'}</Text></Pressable></View>:null}
 
         <View style={[s.segment,{backgroundColor:theme.surfaceRaised}]} accessibilityRole="tablist">
           <Pressable
@@ -1255,7 +1297,7 @@ export default function AdaptiveExploreScreen() {
                 </View>
               </Marker>:null}
               {searchAreaOrigin?<Marker id="searched-area-marker" lngLat={searchAreaOrigin} anchor="center">
-                <View accessibilityLabel={`Search area: ${searchAreaLabel}`} style={[s.searchedAreaMarker,{backgroundColor:theme.surface,borderColor:theme.accent}]}><Text style={[s.searchedAreaMarkerText,{color:theme.accent}]}>◎</Text></View>
+                <View accessibilityLabel={`${mode==='route'?'Destination':'Search area'}: ${searchAreaLabel}`} style={[s.searchedAreaMarker,{backgroundColor:theme.surface,borderColor:theme.accent}]}><Text style={[s.searchedAreaMarkerText,{color:theme.accent}]}>◎</Text></View>
               </Marker>:null}
               {visibleRows.filter(hasCoordinates).map((row) => {
                 const id = idOf(row);
