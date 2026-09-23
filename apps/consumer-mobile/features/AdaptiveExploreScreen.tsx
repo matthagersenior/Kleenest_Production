@@ -824,9 +824,9 @@ export default function AdaptiveExploreScreen() {
     const enrichedBase = await enrich(data);
     const progressionRadius=Math.min(402336,Math.max(corridor,Math.round((Number(built.distanceMiles||0)+10)*1609.344)));
     const livePresence=await recordConsumerPresenceAt(current.coords.latitude,current.coords.longitude).catch(()=>null);
-    const enriched = organizeDiscoveryRows(
-      attachPresence(await enrichProgression(enrichedBase,current.coords.latitude,current.coords.longitude,progressionRadius),livePresence),
-      selectedAmenityNames,
+    const enriched = attachPresence(
+      await enrichProgression(enrichedBase,current.coords.latitude,current.coords.longitude,progressionRadius),
+      livePresence,
     );
     setRows(enriched);
     setRoute(built);
