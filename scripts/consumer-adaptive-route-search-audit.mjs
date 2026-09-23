@@ -72,7 +72,7 @@ for(const token of [
 ])requireToken(screen,token,'Selectable destination marker/card');
 
 for(const token of [
-  "mode==='route'?\`${visibleRows.length} along route · ${radiusLabel(corridor)} corridor\`",
+  "mode==='route'? \`${visibleRows.length} along route · ${radiusLabel(corridor)} corridor\`",
   "setRoute(built);",
   "setCameraNonce((value) => value + 1);",
   "destinationCardOpen?'destination':'route'",
