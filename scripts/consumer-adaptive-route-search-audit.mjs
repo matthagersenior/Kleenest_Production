@@ -14,11 +14,12 @@ const paths={
   densityMigration:'supabase/migrations/20260914165745_density_adaptive_discovery_ranking.sql',
   densityCompatMigration:'supabase/migrations/20260914170001_density_discovery_anon_compat.sql',
   densitySafeMigration:'supabase/migrations/20260914170218_density_discovery_safe_v3_projection.sql',
+  routePermissionRepair:'supabase/migrations/20260923200600_route_search_sanitized_projection.sql',
 };
 for(const [label,path] of Object.entries(paths))if(!fs.existsSync(path))throw new Error(`${label} adaptive-search authority missing: ${path}`);
 const read=path=>fs.readFileSync(path,'utf8');
 const requireToken=(text,token,label)=>{if(!text.includes(token))throw new Error(`${label} missing ${token}`)};
-const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), cache=read(paths.cache), locationResolver=read(paths.locationResolver), locationResolverEdge=read(paths.locationResolverEdge), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration);
+const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), cache=read(paths.cache), locationResolver=read(paths.locationResolver), locationResolverEdge=read(paths.locationResolverEdge), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration), routePermissionRepair=read(paths.routePermissionRepair);
 
 for(const token of ['1 mi','2 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Expand for required amenities','Maximum distance','Nearby','Along route','findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route','Start navigation'])requireToken(screen,token,'Consumer adaptive Explore');
 for(const token of ['AdaptiveExploreScreen'])requireToken(entry,token,'Consumer Explore entry');
@@ -59,10 +60,9 @@ for(const token of ['organizeDiscoveryRows','const freshness=','const kleenest='
 if(!screen.includes('RECOMMENDED'))throw new Error('Discovery must visually identify its recommended nearby result.');
 if(!screen.includes('effectiveRadiusMeters')||!screen.includes('attemptedRadiiMeters'))throw new Error('Adaptive expansion provenance must remain available to the UI without requiring verbose density explainer copy.');
 if(!screen.includes('route.distanceMiles')||!screen.includes('route.durationMinutes'))throw new Error('Along-route distance/ETA must derive from actual built-route totals.');
-if(!migration.includes("FROM public.map_network_nearby_v2("))throw new Error('Along-route discovery must consume the sanitized map projection instead of raw locations.');
-const alongRouteStart=migration.indexOf('CREATE OR REPLACE FUNCTION public.map_network_along_route_v1');
-const alongRouteBody=migration.slice(alongRouteStart);
-if(alongRouteBody.includes('FROM public.locations'))throw new Error('Along-route discovery must not read raw public.locations from the mobile caller context.');
+if(!routePermissionRepair.includes("public.map_network_nearby_v2("))throw new Error('Along-route discovery must consume the sanitized map projection instead of raw locations.');
+if(routePermissionRepair.includes('FROM public.locations'))throw new Error('Along-route discovery must not read raw public.locations from the mobile caller context.');
+for(const token of ['SECURITY INVOKER','REVOKE ALL ON FUNCTION','GRANT EXECUTE ON FUNCTION','distance_to_route_meters','route_fraction'])requireToken(routePermissionRepair,token,'Route permission repair');
 for(const token of [
   'destinationCardOpen',
   'Select destination marker',
