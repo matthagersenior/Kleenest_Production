@@ -15,11 +15,12 @@ const paths={
   densityCompatMigration:'supabase/migrations/20260914170001_density_discovery_anon_compat.sql',
   densitySafeMigration:'supabase/migrations/20260914170218_density_discovery_safe_v3_projection.sql',
   routePermissionRepair:'supabase/migrations/20260923200727_route_search_sanitized_projection.sql',
+  betaButton:'apps/consumer-mobile/components/BetaReportButton.tsx',
 };
 for(const [label,path] of Object.entries(paths))if(!fs.existsSync(path))throw new Error(`${label} adaptive-search authority missing: ${path}`);
 const read=path=>fs.readFileSync(path,'utf8');
 const requireToken=(text,token,label)=>{if(!text.includes(token))throw new Error(`${label} missing ${token}`)};
-const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), cache=read(paths.cache), locationResolver=read(paths.locationResolver), locationResolverEdge=read(paths.locationResolverEdge), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration), routePermissionRepair=read(paths.routePermissionRepair);
+const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), cache=read(paths.cache), locationResolver=read(paths.locationResolver), locationResolverEdge=read(paths.locationResolverEdge), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration), routePermissionRepair=read(paths.routePermissionRepair), betaButton=read(paths.betaButton);
 
 for(const token of ['1 mi','2 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Expand for required amenities','Maximum distance','Nearby','Along route','findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route','Start navigation'])requireToken(screen,token,'Consumer adaptive Explore');
 for(const token of ['AdaptiveExploreScreen'])requireToken(entry,token,'Consumer Explore entry');
@@ -69,6 +70,22 @@ for(const token of [
   'Search bathrooms near destination',
   'Use destination for along-route search',
 ])requireToken(screen,token,'Selectable destination marker/card');
+
+for(const token of [
+  "mode==='route'? \`${visibleRows.length} along route · ${radiusLabel(corridor)} corridor\`",
+  "setRoute(built);",
+  "setCameraNonce((value) => value + 1);",
+  "destinationCardOpen?'destination':'route'",
+  "Longest stretch between qualifying bathrooms:",
+  "setMessage(enriched.length ? '' :",
+])requireToken(screen,token,'Along-route map framing and compact result summary');
+if(screen.includes("{visibleRows.length} nearby · {radiusLabel(effectiveRadiusMeters)}"))throw new Error('Along-route results must not reuse Nearby radius copy.');
+if(screen.includes("Largest qualifying-restroom gap:"))throw new Error('Route coverage guidance must use compact plain-language copy.');
+if(!screen.includes("from 'react-native-safe-area-context'"))throw new Error('Explore must use the safe-area-context boundary on edge-to-edge Android.');
+if(screen.includes('  SafeAreaView,\n  ScrollView,'))throw new Error('Explore must not use React Native SafeAreaView on edge-to-edge Android.');
+for(const token of ["const compactFab=route==='/explore';","compactFab?'✦':'✦ Tell Kleenest'","fabCompact"])requireToken(betaButton,token,'Compact Explore beta feedback control');
+if(signals.includes("accessibilityLabel=\"Open map legend\" onPress={()=>setExpanded(true)} style={[styles.legendCompact,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[styles.legendToggle,{color:theme.accent}]}>＋</Text>"))throw new Error('Map legend control must not look like a second zoom-in button.');
+
 
 
 // Explore is one continuous consumer page: compact search controls → map → results.

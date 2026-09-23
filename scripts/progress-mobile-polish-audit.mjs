@@ -14,7 +14,9 @@ for(const token of ['const tabLabel=',"tabBarItemStyle:{minWidth:0,paddingHorizo
 }
 for(const token of [
   'accessibilityLabel="Tell Kleenest what you think"',
-  '✦ Tell Kleenest</Text>',
+  "compactFab?'✦':'✦ Tell Kleenest'",
+  "const compactFab=route==='/explore';",
+  'fabCompact',
   "right:14,bottom:78",
   "borderRadius:999",
   "paddingHorizontal:13,paddingVertical:10",
@@ -22,7 +24,7 @@ for(const token of [
 ]){
   if(!beta.includes(token))failures.push('Beta feedback labeled-pill contract missing '+token);
 }
-if(beta.includes("width:46,height:46")||beta.includes('}>✦</Text>'))failures.push('Beta feedback regressed to the icon-only control; keep the labeled Tell Kleenest pill during beta.');
+if(!beta.includes("compactFab?'✦':'✦ Tell Kleenest'"))failures.push('Beta feedback must stay labeled outside Explore while using a compact non-obstructive control on Explore.');
 
 if(failures.length){
   console.error('Progress mobile polish audit failed:');

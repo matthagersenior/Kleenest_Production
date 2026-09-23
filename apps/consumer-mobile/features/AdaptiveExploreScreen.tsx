@@ -14,14 +14,12 @@ import {
   type AmenityMatchRule,
 } from '@kleenest/mobile-core';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   FlatList,
   Modal,
-  Platform,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Switch,
@@ -401,7 +399,6 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
 
 export default function AdaptiveExploreScreen() {
  const theme=useConsumerTheme();
-  const insets=useSafeAreaInsets();
   const {height:windowHeight}=useWindowDimensions();
   const exploreMapHeight=Math.max(360,Math.min(480,Math.round(windowHeight*0.44)));
   const listRef=useRef<any>(null);
@@ -441,7 +438,7 @@ export default function AdaptiveExploreScreen() {
   const [checkInFeedback,setCheckInFeedback]=useState<Record<string,CheckInActionFeedback>>({});
   const [cached, setCached] = useState(false);
   const [mapInteracting,setMapInteracting]=useState(false);
-  const searchPanelTop=Platform.OS==='android'?Math.max(8,insets.top+4):8;
+  const searchPanelTop=8;
   const mapChromeTop=10;
 
   const unlockedMapFilters=Array.isArray(rewardCapabilities?.unlocked_map_filters)?rewardCapabilities.unlocked_map_filters:[];
@@ -862,15 +859,14 @@ export default function AdaptiveExploreScreen() {
     );
     setRows(enriched);
     setRoute(built);
+    setCameraNonce((value) => value + 1);
     setSelectedId('');
     setCached(false);
     setAttemptedRadiiMeters([]);
     setMapCenter(currentOrigin);
     const routeName=destinationLabel?` to ${destinationLabel}`:'';
-    setMessage(
-      enriched.length
-        ? `${enriched.length} qualifying bathroom${enriched.length === 1 ? '' : 's'} along your ${Number(built.distanceMiles || 0).toFixed(0)} mi route${routeName}, within ${radiusLabel(corridor)} of the route.`
-        : `No qualifying bathrooms found within ${radiusLabel(corridor)} of the route${routeName}.`,
+    setMessage(enriched.length ? '' :
+      `No qualifying bathrooms found within ${radiusLabel(corridor)} of the route${routeName}.`
     );
   }
 
@@ -1041,7 +1037,7 @@ export default function AdaptiveExploreScreen() {
     : { center: mapCenter || searchAreaOrigin || origin || [0, 0], zoom: mapZoom };
 
   return (
-    <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}>
+    <SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.canvas}]}>
       <FlatList
         ref={listRef}
         style={s.pageScroll}
@@ -1308,7 +1304,7 @@ export default function AdaptiveExploreScreen() {
             >
             <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE} onRegionDidChange={handleMapRegionDidChange}>
               <Camera
-                key={`explore-camera-${cameraNonce}-${selectedId}-${mode}`}
+                key={`explore-camera-${cameraNonce}-${selectedId}-${mode}-${destinationCardOpen?'destination':'route'}`}
                 initialViewState={cameraViewState}
               />
               {route?.geometry ? (
@@ -1499,21 +1495,20 @@ export default function AdaptiveExploreScreen() {
           {visibleRows.length?(
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Show ${visibleRows.length} nearby result${visibleRows.length===1?'':'s'}`}
+              accessibilityLabel={`Show ${visibleRows.length} ${mode==='route'?'along-route':'nearby'} result${visibleRows.length===1?'':'s'}`}
               accessibilityHint="Jump to the first search result"
               onPress={()=>listRef.current?.scrollToIndex({index:0,animated:true,viewPosition:0})}
               style={[s.resultsHandoff,{backgroundColor:theme.surface,borderColor:theme.line}]}
             >
               <Text numberOfLines={1} style={[s.resultsHandoffText,{color:theme.ink}]}>
-                {visibleRows.length} nearby · {radiusLabel(effectiveRadiusMeters)}{freshNearbyCount?` · ${freshNearbyCount} fresh`:''}{kleenestNearbyCount?` · ${kleenestNearbyCount} Kleenest`:''}
+                {mode==='route'? `${visibleRows.length} along route · ${radiusLabel(corridor)} corridor` : `${visibleRows.length} nearby · ${radiusLabel(effectiveRadiusMeters)}${freshNearbyCount?` · ${freshNearbyCount} fresh`:''}${kleenestNearbyCount?` · ${kleenestNearbyCount} Kleenest`:''}`}
               </Text>
               <Text style={[s.resultsHandoffAction,{color:theme.accent}]}>Results ↓</Text>
             </Pressable>
           ):null}
           {mode === 'route' && routeGap != null ? (
             <View style={[s.routeCoverage,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-              <Text style={[s.routeCoverageTitle,{color:theme.ink}]}>Largest qualifying-restroom gap: ~{routeGap.toFixed(routeGap < 10 ? 1 : 0)} mi</Text>
-              <Text style={[s.help,{color:theme.muted}]}>Based on current qualifying candidates along the route; opening hours and availability can change.</Text>
+              <Text numberOfLines={1} style={[s.routeCoverageTitle,{color:theme.ink}]}>Longest stretch between qualifying bathrooms: ~{routeGap.toFixed(routeGap < 10 ? 1 : 0)} mi</Text>
             </View>
           ) : null}
         </View>
@@ -1534,11 +1529,11 @@ export default function AdaptiveExploreScreen() {
             <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results" fallback={<AdMobNativeSlot contextClass="maps_between_results" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>}/>
 
             <View style={s.listHeading}>
-              <View>
+              <View style={s.listHeadingMain}>
                 <Text style={[s.listEyebrow,{color:theme.accent}]}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
                 <Text style={[s.listTitle,{color:theme.ink}]}>{mode === 'route' ? 'Bathrooms ahead' : 'Nearby businesses & bathrooms'}</Text>
               </View>
-              <Text style={[s.listNote,{color:theme.muted}]}>{activeFilterCount?filterSummary:(cached ? 'Cached · pull to refresh' : 'Everything · distance + actions')}</Text>
+              <Text numberOfLines={1} style={[s.listNote,{color:theme.muted}]}>{activeFilterCount?filterSummary:(cached ? 'Cached' : mode==='route'? `${radiusLabel(corridor)} corridor` : 'Distance + actions')}</Text>
             </View>
           </View>
         }
@@ -1747,15 +1742,16 @@ const s = StyleSheet.create({
   modalClose: { width: 38, height: 38, borderRadius: 19, backgroundColor: palette.green, alignItems: 'center', justifyContent: 'center' },
   modalCloseText: { color: '#fff', fontSize: 22, lineHeight: 24, fontWeight: '900' },
   modalDone: { minHeight: 40, borderRadius: 11, backgroundColor: palette.green, alignItems: 'center', justifyContent: 'center' },
-  routeCoverage: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: '#fff7e8', borderWidth: 1, borderColor: '#ead9b4' },
-  routeCoverageTitle: { fontSize: 10, fontWeight: '900', color: palette.ink },
+  routeCoverage: { paddingHorizontal: 14, paddingVertical: 5, borderBottomWidth: 1, borderColor: '#ead9b4' },
+  routeCoverageTitle: { fontSize: 9, fontWeight: '800', color: palette.ink },
   list: { paddingHorizontal: 14, paddingBottom: 34, gap: 8 },
   listHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 8, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 8 },
+  listHeadingMain:{flex:1,minWidth:0},
   resultItem: { paddingHorizontal: 14, paddingBottom: 8 },
   listFooter: { paddingHorizontal: 14, paddingBottom: 34 },
   listEyebrow: { fontSize: 8, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
   listTitle: { fontSize: 17, fontWeight: '900', color: palette.ink },
-  listNote: { fontSize: 8, fontWeight: '800', color: '#718077' },
+  listNote: { maxWidth:'34%', fontSize: 8, fontWeight: '800', color: '#718077', textAlign:'right' },
   card: { borderRadius: 16, padding: 10, backgroundColor: '#fff', borderWidth: 1, borderColor: '#dce6df', gap: 5 },
   cardActive: { borderColor: palette.green, borderWidth: 2 },
   cardMain: { gap: 4 },
