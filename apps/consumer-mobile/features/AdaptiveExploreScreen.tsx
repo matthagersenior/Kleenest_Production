@@ -413,6 +413,7 @@ export default function AdaptiveExploreScreen() {
   const [mapZoom, setMapZoom] = useState(13);
   const [cameraNonce, setCameraNonce] = useState(0);
   const [selectedId, setSelectedId] = useState('');
+  const [destinationCardOpen,setDestinationCardOpen]=useState(false);
   const [search, setSearch] = useState('');
   const [searchAreaOrigin,setSearchAreaOrigin]=useState<[number,number]|null>(null);
   const [searchAreaLabel,setSearchAreaLabel]=useState('');
@@ -502,7 +503,7 @@ export default function AdaptiveExploreScreen() {
     [amenities],
   );
   const routeBounds = useMemo(() => {
-    if (!route?.geometry?.coordinates?.length || selected) return null;
+    if (!route?.geometry?.coordinates?.length || selected || destinationCardOpen) return null;
     const points = route.geometry.coordinates as [number, number][];
     let west = Math.min(...points.map((point) => point[0]));
     let east = Math.max(...points.map((point) => point[0]));
@@ -511,7 +512,7 @@ export default function AdaptiveExploreScreen() {
     if (west === east) { west -= 0.01; east += 0.01; }
     if (south === north) { south -= 0.01; north += 0.01; }
     return [west, south, east, north] as [number, number, number, number];
-  }, [route, selectedId]);
+  }, [route, selectedId, destinationCardOpen]);
   const routeGap = useMemo(() => {
     if (!route || !visibleRows.length) return null;
     const fractions = [
@@ -553,6 +554,7 @@ export default function AdaptiveExploreScreen() {
   }
 
   function selectRow(row: any) {
+    setDestinationCardOpen(false);
     const id = idOf(row);
     if(id)captureConsumerCoreLoopEvent('place_selected',id,{source:'explore'});
     setSelectedId(id);
@@ -562,6 +564,35 @@ export default function AdaptiveExploreScreen() {
       setCameraNonce((value) => value + 1);
     }
     if (mode === 'nearby' && id) void writeNearbyContinuity(id, radius);
+  }
+
+  function selectDestinationMarker(){
+    if(!searchAreaOrigin)return;
+    setSelectedId('');
+    setDestinationCardOpen(true);
+    setMapCenter(searchAreaOrigin);
+    setMapZoom(14);
+    setCameraNonce((value)=>value+1);
+  }
+
+  function searchBathroomsNearDestination(){
+    if(!searchAreaOrigin)return;
+    setMode('nearby');
+    setRoute(null);
+    setRows([]);
+    setSelectedId('');
+    setDestinationCardOpen(false);
+    setTimeout(()=>void loadNearby(false,false,null),0);
+  }
+
+  function useDestinationForRoute(){
+    if(!searchAreaOrigin)return;
+    setMode('route');
+    setRows([]);
+    setSelectedId('');
+    setDestinationCardOpen(false);
+    setRoute(null);
+    setTimeout(()=>void loadRoute(),0);
   }
 
   function chooseRadius(nextRadius: number) {
@@ -576,8 +607,9 @@ export default function AdaptiveExploreScreen() {
     setMode(next);
     setRows([]);
     setSelectedId('');
+    setDestinationCardOpen(false);
     setRoute(null);
-    if(next==='route'){setSearchAreaOrigin(null);setSearchAreaLabel('');}
+    if(next==='route'&&(!search.trim()||!looksLikeAddressOrArea(search))){setSearchAreaOrigin(null);setSearchAreaLabel('');}
     setAttemptedRadiiMeters([]);
     setCached(false);
     setMessage(
@@ -1045,7 +1077,7 @@ export default function AdaptiveExploreScreen() {
           </Pressable>
         </View>
 
-        {searchAreaLabel?<View style={[s.searchAreaChip,{backgroundColor:theme.accentSoft}]}><Text style={[s.searchAreaText,{color:theme.ink}]}>{mode==='route'?'Destination':'Searching near'} {searchAreaLabel}</Text><Pressable accessibilityRole="button" accessibilityLabel={mode==='route'?'Clear route destination':'Use my location instead'} onPress={()=>{setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');setRoute(null);if(mode==='nearby')void load({clearQuery:true});else{setRows([]);setSelectedId('');setMessage('Enter a destination address above, or use your saved route draft.');}}}><Text style={[s.searchAreaAction,{color:theme.accent}]}>{mode==='route'?'Clear destination':'Use my location'}</Text></Pressable></View>:null}
+        {searchAreaLabel?<View style={[s.searchAreaChip,{backgroundColor:theme.accentSoft}]}><Text style={[s.searchAreaText,{color:theme.ink}]}>{mode==='route'?'Destination':'Searching near'} {searchAreaLabel}</Text><Pressable accessibilityRole="button" accessibilityLabel={mode==='route'?'Clear route destination':'Use my location instead'} onPress={()=>{setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');setDestinationCardOpen(false);setRoute(null);if(mode==='nearby')void load({clearQuery:true});else{setRows([]);setSelectedId('');setMessage('Enter a destination address above, or use your saved route draft.');}}}><Text style={[s.searchAreaAction,{color:theme.accent}]}>{mode==='route'?'Clear destination':'Use my location'}</Text></Pressable></View>:null}
 
         <View style={[s.segment,{backgroundColor:theme.surfaceRaised}]} accessibilityRole="tablist">
           <Pressable
@@ -1296,8 +1328,16 @@ export default function AdaptiveExploreScreen() {
                   <View style={s.userLocationDot} />
                 </View>
               </Marker>:null}
-              {searchAreaOrigin?<Marker id="searched-area-marker" lngLat={searchAreaOrigin} anchor="center">
-                <View accessibilityLabel={`${mode==='route'?'Destination':'Search area'}: ${searchAreaLabel}`} style={[s.searchedAreaMarker,{backgroundColor:theme.surface,borderColor:theme.accent}]}><Text style={[s.searchedAreaMarkerText,{color:theme.accent}]}>◎</Text></View>
+              {searchAreaOrigin?<Marker id="searched-area-marker" lngLat={searchAreaOrigin} anchor="center" onPress={selectDestinationMarker}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Select destination marker"
+                  hitSlop={14}
+                  onPress={(event)=>{event.stopPropagation();selectDestinationMarker();}}
+                  style={[s.searchedAreaMarker,{backgroundColor:theme.surface,borderColor:theme.accent}]}
+                >
+                  <Text style={[s.searchedAreaMarkerText,{color:theme.accent}]}>◎</Text>
+                </Pressable>
               </Marker>:null}
               {visibleRows.filter(hasCoordinates).map((row) => {
                 const id = idOf(row);
@@ -1352,6 +1392,48 @@ export default function AdaptiveExploreScreen() {
             <View pointerEvents="box-none" style={[s.legendWrap,{top:mapChromeTop+46}]}>
               <MapLegend />
             </View>
+            {destinationCardOpen&&searchAreaOrigin&&!selected ? (
+              <View pointerEvents="auto" style={[s.selectedPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+                <View style={s.selectedHead}>
+                  <Text style={[s.selectedLabel,{color:theme.accent}]}>DESTINATION</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Close destination card"
+                    hitSlop={12}
+                    onPress={()=>setDestinationCardOpen(false)}
+                    style={[s.close,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
+                  >
+                    <Text style={[s.closeText,{color:theme.accent}]}>×</Text>
+                    <Text style={[s.closeLabel,{color:theme.muted}]}>Close</Text>
+                  </Pressable>
+                </View>
+                <ScrollView style={s.selectedBodyScroll} contentContainerStyle={s.selectedBodyContent} showsVerticalScrollIndicator={false}>
+                  <Text numberOfLines={2} style={[s.selectedTitle,{color:theme.ink}]}>{searchAreaLabel||'Destination'}</Text>
+                  <Text style={[s.help,{color:theme.muted}]}>
+                    {mode==='route'?'This is your active route destination. Search its corridor or switch to bathrooms around the destination.':'This searched address can be used as a route destination or as the center of a nearby bathroom search.'}
+                  </Text>
+                  <View style={s.actionRow}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Search bathrooms near destination"
+                      style={[s.primarySmall,{backgroundColor:theme.accent}]}
+                      onPress={searchBathroomsNearDestination}
+                    >
+                      <Text style={[s.primaryText,{color:theme.accentText}]}>Search nearby</Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Use destination for along-route search"
+                      style={[s.secondarySmall,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
+                      onPress={useDestinationForRoute}
+                    >
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>{mode==='route'?'Refresh route':'Use as destination'}</Text>
+                    </Pressable>
+                  </View>
+                  {route?.distanceMiles?<Text style={[s.meta,{color:theme.muted}]}>{Number(route.distanceMiles).toFixed(0)} mi route · about {Math.round(Number(route.durationMinutes||0))} min</Text>:null}
+                </ScrollView>
+              </View>
+            ) : null}
             {selected ? (
               <View pointerEvents="auto" style={[s.selectedPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
                 <View style={s.selectedHead}>
