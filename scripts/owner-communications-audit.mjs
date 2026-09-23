@@ -13,6 +13,7 @@ const home=requireFile('apps/platform-mobile/app/index.tsx');
 const gateway=requireFile('supabase/functions/owner-email-gateway/index.ts');
 const appSearch=requireFile('packages/mobile-core/src/appSearch.ts');
 const oauthRelay=requireFile('apps/consumer-mobile/services/operatorOAuthRelay.ts');
+const gmailPersistence=requireFile('supabase/migrations/20260923180713_owner_gmail_persistence.sql');
 
 requireAll('Owner communications route',layout,[
   'name="communications"',
@@ -43,6 +44,8 @@ requireAll('Owner Gmail connection UI',screen,[
   "Linking.createURL('communications'",
   'exchangeCodeForSession',
   'provider_token',
+  'provider_refresh_token',
+  'connectOwnerMail',
   "parsed.searchParams.set('scopes',gmailScopes)",
   "include_granted_scopes:'true'",
   "prompt:'consent select_account'",
@@ -75,6 +78,8 @@ requireAll('Owner email workflow UI',screen,[
 ]);
 requireAll('Owner email client boundary',service,[
   "functions.invoke('owner-email-gateway'",
+  "action:'connect'",
+  'providerRefreshToken',
   "action:'status'",
   "action:'list_threads'",
   "action:'get_thread'",
@@ -84,15 +89,23 @@ requireAll('Owner email client boundary',service,[
 ]);
 must(!service.includes('gmail.googleapis.com'),'Owner mobile client must not call Gmail directly; Gmail access stays behind the server gateway.');
 must(!service.toLowerCase().includes('service_role'),'Owner mobile client must never contain a Supabase service role key.');
+must(!service.includes("action:'list_threads',\n    providerToken"),'Routine Owner Gmail calls must use the persisted server connection instead of transporting provider tokens.');
 
 requireAll('Owner email gateway authorization',gateway,[
   "rpc('admin_authorization_v1')",
   'authorization',
   'authorized',
+  'SUPABASE_SECRET_KEYS',
+  "from('owner_gmail_connections')",
   "const GMAIL='https://gmail.googleapis.com/gmail/v1/users/me'",
   "'/profile'",
 ]);
 requireAll('Owner email gateway capabilities',gateway,[
+  "action==='connect'",
+  'provider_refresh_token',
+  "GOOGLE_TOKEN='https://oauth2.googleapis.com/token'",
+  "grant_type:'refresh_token'",
+  'refreshGoogleAccessToken',
   'list_threads',
   'get_thread',
   'reply',
@@ -105,8 +118,14 @@ requireAll('Owner email gateway capabilities',gateway,[
   'threadId',
   'removeLabelIds',
 ]);
-must(!gateway.includes('SUPABASE_SERVICE_ROLE_KEY'),'Owner email gateway must authorize with the caller context rather than embedding service-role authority.');
-must(!gateway.includes('provider_refresh_token'),'The first release must not persist or transport a Google refresh token; reconnect is explicit when Google access expires.');
+requireAll('Owner Gmail persistence migration',gmailPersistence,[
+  'create table if not exists public.owner_gmail_connections',
+  'provider_refresh_token text not null',
+  'google_client_id text not null',
+  'enable row level security',
+  'revoke all on table public.owner_gmail_connections from anon, authenticated',
+  'grant select, insert, update, delete on table public.owner_gmail_connections to service_role',
+]);
 
 if(failures.length){console.error(`Owner communications audit failed with ${failures.length} gap(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
-console.log('Owner communications audit passed: Gmail OAuth returns to Communications, then Owner can search/read threads, reply in-thread, archive, and manage read state through an owner-authorized server gateway.');
+console.log('Owner communications audit passed: Gmail OAuth persists a service-only refresh credential, restores the Owner session, refreshes Gmail access server-side, and keeps inbox actions behind Owner authorization.');

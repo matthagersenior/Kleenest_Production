@@ -9,6 +9,7 @@ import { usePlatformTheme } from '../services/theme';
 import { getOwnerAuthorization } from '../services/ownerAdmin';
 import {
   archiveOwnerMailThread,
+  connectOwnerMail,
   getOwnerMailStatus,
   getOwnerMailThread,
   listOwnerMailThreads,
@@ -63,7 +64,6 @@ export default function Communications(){
   const router=useRouter();
   const params=useLocalSearchParams<{code?:string;error?:string;error_description?:string}>();
   const callbackHandled=useRef('');
-  const[providerToken,setProviderToken]=useState('');
   const[status,setStatus]=useState<OwnerMailConnectionStatus|null>(null);
   const[threads,setThreads]=useState<OwnerMailThreadSummary[]>([]);
   const[selected,setSelected]=useState<OwnerMailThread|null>(null);
@@ -76,30 +76,25 @@ export default function Communications(){
 
   const unreadCount=useMemo(()=>threads.filter(thread=>thread.unread).length,[threads]);
 
-  async function tokenFromSession(){
-    const client=getKleenestSupabaseClient();
-    const{data}=await client.auth.getSession();
-    return String(data.session?.provider_token||'');
-  }
-
-  async function load(nextToken?:string,options:{query?:string;unreadOnly?:boolean}={}){
-    const token=nextToken||providerToken||await tokenFromSession();
-    if(!token){setProviderToken('');setStatus(null);setThreads([]);return}
+  async function load(options:{query?:string;unreadOnly?:boolean}={}){
     setBusy(true);
     try{
       const auth=await getOwnerAuthorization();
       if(!auth.authorized)throw new Error('Owner/admin authority is required for Communications.');
-      setProviderToken(token);
-      const[nextStatus,nextThreads]=await Promise.all([
-        getOwnerMailStatus(token),
-        listOwnerMailThreads(token,{query:options.query??query,unreadOnly:options.unreadOnly??unreadOnly,maxResults:30}),
-      ]);
+      const nextStatus=await getOwnerMailStatus();
       setStatus(nextStatus);
+      if(!nextStatus.connected){
+        setThreads([]);
+        setSelected(null);
+        setNotice('');
+        return;
+      }
+      const nextThreads=await listOwnerMailThreads({query:options.query??query,unreadOnly:options.unreadOnly??unreadOnly,maxResults:30});
       setThreads(nextThreads.threads);
       setNotice('');
     }catch(error:any){
       const text=String(error?.message||'Gmail could not be loaded.');
-      if(/401|unauth|token|credential|insufficient authentication scopes/i.test(text)){setProviderToken('');setStatus(null);setThreads([])}
+      if(/401|unauth|credential|reconnect gmail|authorization needs to be renewed/i.test(text)){setStatus(null);setThreads([])}
       setNotice(/insufficient authentication scopes/i.test(text)
         ? 'Google returned without the Gmail permission KleenestOS needs. Reconnect Gmail and approve mailbox access. If Google never offers Gmail access, the Google OAuth consent screen must enable the Gmail modify scope.'
         : text);
@@ -120,16 +115,19 @@ export default function Communications(){
     if(exchangeError)throw exchangeError;
 
     const{data:{session:connectedSession}}=await client.auth.getSession();
-    if(!connectedSession)throw new Error('Google connected, but no Owner session was returned.');
-    if(before&&connectedSession.user.id!==before.user.id){
-      await client.auth.setSession({access_token:before.access_token,refresh_token:before.refresh_token});
-      throw new Error('Choose the Google account tied to this Owner identity. The original Owner session was restored safely.');
-    }
+    if(!connectedSession)throw new Error('Google connected, but no OAuth session was returned.');
     const token=String(connectedSession.provider_token||'');
+    const refreshToken=String(connectedSession.provider_refresh_token||'');
     if(!token)throw new Error('Google connected, but Gmail authorization was not returned. Reconnect and approve Gmail access.');
+    if(!refreshToken)throw new Error('Google did not return an offline Gmail refresh credential. Reconnect Gmail and approve access once more.');
+    if(before){
+      const{error:restoreError}=await client.auth.setSession({access_token:before.access_token,refresh_token:before.refresh_token});
+      if(restoreError)throw restoreError;
+    }
     const auth=await getOwnerAuthorization();
-    if(!auth.authorized)throw new Error('The connected Google account does not have Owner/admin authority.');
-    await load(token);
+    if(!auth.authorized)throw new Error('Owner/admin authority is required to attach a Gmail mailbox.');
+    await connectOwnerMail(token,refreshToken);
+    await load();
     return token;
   }
 
@@ -197,18 +195,17 @@ export default function Communications(){
 
   async function search(){
     setSearching(true);
-    await load(undefined,{query,unreadOnly});
+    await load({query,unreadOnly});
   }
 
   async function openThread(row:OwnerMailThreadSummary){
-    if(!providerToken)return;
     setBusy(true);
     try{
-      const result=await getOwnerMailThread(providerToken,row.id);
+      const result=await getOwnerMailThread(row.id);
       setSelected(result.thread);
       setReplyBody('');
       if(result.thread.unread){
-        await setOwnerMailThreadRead(providerToken,row.id,true);
+        await setOwnerMailThreadRead(row.id,true);
         setThreads(current=>current.map(item=>item.id===row.id?{...item,unread:false}:item));
         setSelected(current=>current?{...current,unread:false}:current);
       }
@@ -218,12 +215,12 @@ export default function Communications(){
   }
 
   async function sendReply(){
-    if(!providerToken||!selected||!replyBody.trim())return;
+    if(!selected||!replyBody.trim())return;
     setBusy(true);
     try{
-      await replyOwnerMailThread(providerToken,{threadId:selected.id,body:replyBody});
+      await replyOwnerMailThread({threadId:selected.id,body:replyBody});
       setReplyBody('');
-      const result=await getOwnerMailThread(providerToken,selected.id);
+      const result=await getOwnerMailThread(selected.id);
       setSelected(result.thread);
       setNotice('Reply sent from Gmail.');
       await load();
@@ -232,10 +229,9 @@ export default function Communications(){
   }
 
   async function archive(threadId:string){
-    if(!providerToken)return;
     setBusy(true);
     try{
-      await archiveOwnerMailThread(providerToken,threadId);
+      await archiveOwnerMailThread(threadId);
       setThreads(current=>current.filter(item=>item.id!==threadId));
       if(selected?.id===threadId)setSelected(null);
       setNotice('Conversation archived in Gmail.');
@@ -244,10 +240,9 @@ export default function Communications(){
   }
 
   async function setThreadReadState(threadId:string,read:boolean){
-    if(!providerToken)return;
     setBusy(true);
     try{
-      await setOwnerMailThreadRead(providerToken,threadId,read);
+      await setOwnerMailThreadRead(threadId,read);
       const unread=!read;
       setThreads(current=>current.map(item=>item.id===threadId?{...item,unread}:item));
       if(selected?.id===threadId)setSelected(current=>current?{...current,unread}:current);
@@ -256,7 +251,7 @@ export default function Communications(){
     finally{setBusy(false)}
   }
 
-  if(!providerToken||!status){
+  if(!status?.connected){
     return <ScrollView contentContainerStyle={{padding:16,gap:16,paddingBottom:70,backgroundColor:theme.canvas}}>
       <OSHero eyebrow="KLEENESTOS · COMMUNICATIONS" title="Email inbox" body="Read and respond to Kleenest outreach, partnership and prospect email without leaving the Owner app. Gmail access is granted explicitly and stays behind Owner authorization."/>
       {notice?<View style={{...card,borderColor:theme.warning}}><Text style={{fontWeight:'800',color:theme.warning}}>{notice}</Text></View>:null}
@@ -285,7 +280,7 @@ export default function Communications(){
         <Pressable onPress={()=>void search()} style={{justifyContent:'center',paddingHorizontal:14,borderRadius:12,backgroundColor:theme.accent}}><Text style={{fontWeight:'900',color:theme.accentText}}>{searching?'…':'Search'}</Text></Pressable>
       </View>
       <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
-        <Pressable onPress={()=>{const next=!unreadOnly;setUnreadOnly(next);void load(undefined,{unreadOnly:next})}} style={{paddingHorizontal:12,paddingVertical:9,borderRadius:999,backgroundColor:unreadOnly?theme.accent:theme.accentSoft}}><Text style={{fontWeight:'900',color:unreadOnly?theme.accentText:theme.accent}}>Unread</Text></Pressable>
+        <Pressable onPress={()=>{const next=!unreadOnly;setUnreadOnly(next);void load({unreadOnly:next})}} style={{paddingHorizontal:12,paddingVertical:9,borderRadius:999,backgroundColor:unreadOnly?theme.accent:theme.accentSoft}}><Text style={{fontWeight:'900',color:unreadOnly?theme.accentText:theme.accent}}>Unread</Text></Pressable>
         <Pressable onPress={()=>void load()} style={{paddingHorizontal:12,paddingVertical:9,borderRadius:999,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Refresh</Text></Pressable>
         <Pressable onPress={connectGmail} style={{paddingHorizontal:12,paddingVertical:9,borderRadius:999,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.ink}}>Reconnect Gmail</Text></Pressable>
       </View>
