@@ -32,7 +32,7 @@ if(!failures.length){
   ];
   for(const [capability,present] of matureDiscoveryCapabilities)if(!present)failures.push(`Explore missing mature discovery capability: ${capability}`);
   if(!/router\.push\(\s*\{\s*pathname\s*:\s*['"]\/route['"]/.test(explore))failures.push('Explore missing mature discovery capability: route navigation');
-  if(!explore.includes('findAdaptiveNearbyRestrooms')||!explore.includes('listRestroomsAlongRoute'))failures.push('Explore must preserve nearby discovery while adding along-route discovery.');
+  if(!explore.includes('findAdaptiveNearbyRestrooms')||!explore.includes('listPlacesAlongRoute'))failures.push('Explore must preserve nearby discovery while adding along-route discovery.');
   if(!explore.includes('selectedAmenityNames')||!explore.includes('matchRule'))failures.push('Explore amenity filters must remain wired into adaptive nearby and route queries.');
 
   for(const token of ['remote','address','place_search','map_pin','gps','onsite_live','saveDiscovery','saveEvidence','choosePhoto'])if(!discover.includes(token))failures.push(`Discover missing canonical contribution capability: ${token}`);

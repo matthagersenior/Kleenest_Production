@@ -15,16 +15,17 @@ const paths={
   densityCompatMigration:'supabase/migrations/20260914170001_density_discovery_anon_compat.sql',
   densitySafeMigration:'supabase/migrations/20260914170218_density_discovery_safe_v3_projection.sql',
   routePermissionRepair:'supabase/migrations/20260923200727_route_search_sanitized_projection.sql',
+  routeAllPlacesMigration:'supabase/migrations/20260923221800_route_all_discovered_places.sql',
 };
 for(const [label,path] of Object.entries(paths))if(!fs.existsSync(path))throw new Error(`${label} adaptive-search authority missing: ${path}`);
 const read=path=>fs.readFileSync(path,'utf8');
 const requireToken=(text,token,label)=>{if(!text.includes(token))throw new Error(`${label} missing ${token}`)};
-const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), cache=read(paths.cache), locationResolver=read(paths.locationResolver), locationResolverEdge=read(paths.locationResolverEdge), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration), routePermissionRepair=read(paths.routePermissionRepair);
+const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), cache=read(paths.cache), locationResolver=read(paths.locationResolver), locationResolverEdge=read(paths.locationResolverEdge), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration), routePermissionRepair=read(paths.routePermissionRepair), routeAllPlacesMigration=read(paths.routeAllPlacesMigration);
 
-for(const token of ['1 mi','2 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Expand for required amenities','Maximum distance','Nearby','Along route','findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route','Start navigation'])requireToken(screen,token,'Consumer adaptive Explore');
+for(const token of ['1 mi','2 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Expand for required amenities','Maximum distance','Nearby','Along route','findAdaptiveNearbyRestrooms','listPlacesAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route','Start navigation'])requireToken(screen,token,'Consumer adaptive Explore');
 for(const token of ['AdaptiveExploreScreen'])requireToken(entry,token,'Consumer Explore entry');
 for(const token of ['CompactRestroomSignals','RestroomSignals'])requireToken(signals,token,'Consumer restroom signal presentation');
-for(const token of ['map_network_nearby_v3','map_network_along_route_v1','AmenityMatchRule','findAdaptiveNearbyRestrooms','listRestroomsAlongRoute','402336','DENSE_LOCAL_RESULT_COUNT','MODERATE_LOCAL_RESULT_COUNT','hardRadius','Math.min(500'])requireToken(core,token,'Mobile discovery core');
+for(const token of ['map_network_nearby_v3','map_network_along_route_v1','AmenityMatchRule','findAdaptiveNearbyRestrooms','listPlacesAlongRoute','listRestroomsAlongRoute','402336','DENSE_LOCAL_RESULT_COUNT','MODERATE_LOCAL_RESULT_COUNT','hardRadius','Math.min(500'])requireToken(core,token,'Mobile discovery core');
 requireToken(publicEntry,"export * from './adaptiveDiscovery';",'Mobile public entry');
 for(const token of [
   "functions.invoke('resolve-consumer-location'",
@@ -63,6 +64,10 @@ if(!screen.includes('route.distanceMiles')||!screen.includes('route.durationMinu
 if(!routePermissionRepair.includes("public.map_network_nearby_v2("))throw new Error('Along-route discovery must consume the sanitized map projection instead of raw locations.');
 if(routePermissionRepair.includes('FROM public.locations'))throw new Error('Along-route discovery must not read raw public.locations from the mobile caller context.');
 for(const token of ['SECURITY INVOKER','REVOKE ALL ON FUNCTION','GRANT EXECUTE ON FUNCTION','distance_to_route_meters','route_fraction'])requireToken(routePermissionRepair,token,'Route permission repair');
+for(const token of ["trim(p_category),''),'restroom'))='all'","p_limit > 250","greatest(30000","distance_to_route_meters","route_fraction"])requireToken(routeAllPlacesMigration,token,'All-place route discovery migration');
+if(routeAllPlacesMigration.includes('FROM public.locations'))throw new Error('All-place route discovery must stay on the sanitized nearby projection.');
+if(!screen.includes("category: 'all'")||!screen.includes('limit: 200'))throw new Error('Along-route Explore must request the widened discovered-place projection.');
+if(screen.includes('refreshControl={<RefreshControl'))throw new Error('Explore pull-to-refresh must stay disabled so map panning cannot trigger a page refresh gesture.');
 for(const token of [
   'destinationCardOpen',
   'Select destination marker',
@@ -93,7 +98,7 @@ for(const token of [
   '<CompactRestroomSignals',
   '<FlatList',
   'ListHeaderComponent={',
-  'refreshControl={<RefreshControl',
+  'accessibilityLabel="Fit full route on map"',
   'onDirections={() => void directions(item)}',
   'onAddToRoute={() => addToRoute(item)}',
   'onDetails={() => router.push',
@@ -144,4 +149,4 @@ for(const token of [
 if(screen.includes("{selected ? 'Selected on map' : 'Tap this card to focus its map pin'}"))throw new Error('Result cards must not spend vertical space on redundant map-selection hint copy.');
 if(screen.includes('Road trip / advanced')||screen.includes('showAdvanced ? ('))throw new Error('Detailed controls must stay in the dismissible filter modal.');
 
-console.log('Consumer adaptive nearby and route-aware restroom discovery authority audit passed.');
+console.log('Consumer adaptive nearby and route-aware discovered-place authority audit passed.');

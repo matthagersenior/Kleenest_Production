@@ -209,17 +209,37 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
   };
 }
 
-export async function listRestroomsAlongRoute(input:{routeGeoJSON:any;corridorMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;limit?:number}){
+export type RouteDiscoveryCategory='restroom'|'all';
+
+export async function listPlacesAlongRoute(input:{routeGeoJSON:any;corridorMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;category?:RouteDiscoveryCategory;limit?:number}){
   const geometry=input.routeGeoJSON;
   if(!geometry||geometry.type!=='LineString'||!Array.isArray(geometry.coordinates)||geometry.coordinates.length<2||geometry.coordinates.length>5000)throw new Error('Build a valid route before searching along it.');
   const corridorMeters=Math.round(Number(input.corridorMeters));
   if(!Number.isFinite(corridorMeters)||corridorMeters<100||corridorMeters>40234)throw new Error('Route corridor is outside the supported range.');
   const amenityNames=normalizedAmenities(input.amenityNames||[]);
   const amenityMatch=validMatchRule(input.amenityMatch||'any');
-  const limit=Math.max(1,Math.min(50,Math.round(input.limit||40)));
-  const {data,error}=await getKleenestSupabaseClient().rpc('map_network_along_route_v1',{
-    p_route_geojson:geometry,p_corridor_m:corridorMeters,p_limit:limit,p_category:'restroom',p_search:boundedSearch(input.search||'')||null,p_amenity_names:amenityNames,p_amenity_match:amenityMatch,
-  });
+  const category:RouteDiscoveryCategory=input.category==='restroom'?'restroom':'all';
+  const limit=Math.max(1,Math.min(250,Math.round(input.limit||200)));
+  const client=getKleenestSupabaseClient();
+  const params={
+    p_route_geojson:geometry,
+    p_corridor_m:corridorMeters,
+    p_limit:limit,
+    p_category:category,
+    p_search:boundedSearch(input.search||'')||null,
+    p_amenity_names:amenityNames,
+    p_amenity_match:amenityMatch,
+  };
+  let {data,error}=await client.rpc('map_network_along_route_v1',params);
+  // Compatibility while the widened route projection migration is rolling out:
+  // older deployments cap this RPC at 50 rows.
+  if(error&&limit>50&&/limit|50/i.test(String((error as any)?.message||(error as any)?.details||''))){
+    ({data,error}=await client.rpc('map_network_along_route_v1',{...params,p_limit:50}));
+  }
   if(error)throw error;
   return Array.isArray(data)?data:[];
+}
+
+export async function listRestroomsAlongRoute(input:{routeGeoJSON:any;corridorMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;limit?:number}){
+  return listPlacesAlongRoute({...input,category:'restroom'});
 }

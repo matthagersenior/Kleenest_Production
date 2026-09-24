@@ -9,7 +9,7 @@ const evidence={
   routes:['explore.tsx','location/[id].tsx','qr.tsx','saved.tsx','route.tsx','offline.tsx','social.tsx','messages.tsx','notifications.tsx','play.tsx','games.tsx','family.tsx','membership.tsx','support.tsx','privacy.tsx','account-deletion.tsx','safety.tsx'],
   markers:[
    ['services/safety.ts','report_user'],['services/safety.ts','block_user'],['services/safety.ts','report_review'],['app/location/[id].tsx','mobileCheckIn'],['app/location/[id].tsx','createMobileReview'],
-   ['app/explore.tsx','AdaptiveExploreScreen'],['features/AdaptiveExploreScreen.tsx','findAdaptiveNearbyRestrooms'],['features/AdaptiveExploreScreen.tsx','listRestroomsAlongRoute'],['features/AdaptiveExploreScreen.tsx','listAmenityCatalog'],['features/AdaptiveExploreScreen.tsx','captureConsumerRouteIntent'],['features/AdaptiveExploreScreen.tsx','consumer_photo_url'],['services/locationPresentation.ts','mobile_location_presentation_v1'],['app/location/[id].tsx','COMMUNITY PHOTOS']
+   ['app/explore.tsx','AdaptiveExploreScreen'],['features/AdaptiveExploreScreen.tsx','findAdaptiveNearbyRestrooms'],['features/AdaptiveExploreScreen.tsx','listPlacesAlongRoute'],['features/AdaptiveExploreScreen.tsx','listAmenityCatalog'],['features/AdaptiveExploreScreen.tsx','captureConsumerRouteIntent'],['features/AdaptiveExploreScreen.tsx','consumer_photo_url'],['services/locationPresentation.ts','mobile_location_presentation_v1'],['app/location/[id].tsx','COMMUNITY PHOTOS']
   ]
  },
  business:{
