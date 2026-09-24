@@ -49,7 +49,7 @@ if(!failures.length){
  if(!locationResolverEdge.includes('limit=5')&&!locationResolverEdge.includes("limit', '5'"))failures.push('Server location resolver must request multiple candidates rather than trusting one opaque provider hit.');
  if(!explore.includes('getLastKnownPositionAsync'))failures.push('Explore first-load location acquisition must fall back to the last known device position when a fresh fix transiently fails.');
  if(!explore.includes('preserveCacheOnEmpty'))failures.push('Explore first load must preserve a useful nearby cache instead of replacing it with a transient empty live response.');
- if(!explore.includes('findAdaptiveNearbyRestrooms')||!explore.includes('listRestroomsAlongRoute'))failures.push('Rich Explore must add adaptive nearby and route-corridor discovery without replacing mature nearby authority.');
+ if(!explore.includes('findAdaptiveNearbyRestrooms')||!explore.includes('listPlacesAlongRoute'))failures.push('Rich Explore must add adaptive nearby and route-corridor discovery without replacing mature nearby authority.');
  if(!adaptiveCore.includes('listNearbyMapCandidates')||!adaptiveCore.includes("p_category:'all'"))failures.push('Adaptive Explore must merge nearby map candidates so businesses without restroom evidence can still be offered for consumer verification.');
  if(!adaptiveCore.includes('restroom_candidate_status')||!adaptiveCore.includes("'needs_verification'"))failures.push('Candidate rows must be explicitly classified instead of being presented as verified bathrooms.');
  if(!adaptiveCore.includes('mergeNearbyDiscoveryRows'))failures.push('Adaptive nearby discovery must deduplicate verified restroom evidence and verification candidates.');
