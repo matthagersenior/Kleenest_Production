@@ -64,7 +64,7 @@ if(!screen.includes('route.distanceMiles')||!screen.includes('route.durationMinu
 if(!routePermissionRepair.includes("public.map_network_nearby_v2("))throw new Error('Along-route discovery must consume the sanitized map projection instead of raw locations.');
 if(routePermissionRepair.includes('FROM public.locations'))throw new Error('Along-route discovery must not read raw public.locations from the mobile caller context.');
 for(const token of ['SECURITY INVOKER','REVOKE ALL ON FUNCTION','GRANT EXECUTE ON FUNCTION','distance_to_route_meters','route_fraction'])requireToken(routePermissionRepair,token,'Route permission repair');
-for(const token of ["p_category),'restroom'))='all'","p_limit > 250","greatest(30000","distance_to_route_meters","route_fraction"])requireToken(routeAllPlacesMigration,token,'All-place route discovery migration');
+for(const token of ["trim(p_category),''),'restroom'))='all'","p_limit > 250","greatest(30000","distance_to_route_meters","route_fraction"])requireToken(routeAllPlacesMigration,token,'All-place route discovery migration');
 if(routeAllPlacesMigration.includes('FROM public.locations'))throw new Error('All-place route discovery must stay on the sanitized nearby projection.');
 if(!screen.includes("category: 'all'")||!screen.includes('limit: 200'))throw new Error('Along-route Explore must request the widened discovered-place projection.');
 if(screen.includes('refreshControl={<RefreshControl'))throw new Error('Explore pull-to-refresh must stay disabled so map panning cannot trigger a page refresh gesture.');
