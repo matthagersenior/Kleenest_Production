@@ -1,0 +1,6 @@
+-- Production migration history marker.
+-- The first indexed route-corridor implementation was immediately superseded by
+-- 20260924151211_route_corridor_private_projection after role-level verification
+-- caught that SECURITY INVOKER callers could not read the protected source tables.
+-- Keeping this version as a no-op preserves migration-history alignment while
+-- fresh environments apply only the corrected private sanitized projection.

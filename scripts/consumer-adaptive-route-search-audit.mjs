@@ -16,11 +16,12 @@ const paths={
   densitySafeMigration:'supabase/migrations/20260914170218_density_discovery_safe_v3_projection.sql',
   routePermissionRepair:'supabase/migrations/20260923200727_route_search_sanitized_projection.sql',
   routeAllPlacesMigration:'supabase/migrations/20260923221800_route_all_discovered_places.sql',
+  routeSpatialMigration:'supabase/migrations/20260924151211_route_corridor_private_projection.sql',
 };
 for(const [label,path] of Object.entries(paths))if(!fs.existsSync(path))throw new Error(`${label} adaptive-search authority missing: ${path}`);
 const read=path=>fs.readFileSync(path,'utf8');
 const requireToken=(text,token,label)=>{if(!text.includes(token))throw new Error(`${label} missing ${token}`)};
-const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), cache=read(paths.cache), locationResolver=read(paths.locationResolver), locationResolverEdge=read(paths.locationResolverEdge), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration), routePermissionRepair=read(paths.routePermissionRepair), routeAllPlacesMigration=read(paths.routeAllPlacesMigration);
+const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), cache=read(paths.cache), locationResolver=read(paths.locationResolver), locationResolverEdge=read(paths.locationResolverEdge), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration), routePermissionRepair=read(paths.routePermissionRepair), routeAllPlacesMigration=read(paths.routeAllPlacesMigration), routeSpatialMigration=read(paths.routeSpatialMigration);
 
 for(const token of ['1 mi','2 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Expand for required amenities','Maximum distance','Nearby','Along route','findAdaptiveNearbyRestrooms','listPlacesAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route','Start navigation'])requireToken(screen,token,'Consumer adaptive Explore');
 for(const token of ['AdaptiveExploreScreen'])requireToken(entry,token,'Consumer Explore entry');
@@ -66,6 +67,12 @@ if(routePermissionRepair.includes('FROM public.locations'))throw new Error('Alon
 for(const token of ['SECURITY INVOKER','REVOKE ALL ON FUNCTION','GRANT EXECUTE ON FUNCTION','distance_to_route_meters','route_fraction'])requireToken(routePermissionRepair,token,'Route permission repair');
 for(const token of ["trim(p_category),''),'restroom'))='all'","p_limit > 250","greatest(30000","distance_to_route_meters","route_fraction"])requireToken(routeAllPlacesMigration,token,'All-place route discovery migration');
 if(routeAllPlacesMigration.includes('FROM public.locations'))throw new Error('All-place route discovery must stay on the sanitized nearby projection.');
+for(const token of ['CREATE SCHEMA IF NOT EXISTS kleenest_api_private','SECURITY DEFINER','ST_DWithin(l.geom,v_route_geog,p_corridor_m)','distance_to_route_meters','route_fraction','CREATE OR REPLACE FUNCTION public.map_network_along_route_v1','SECURITY INVOKER'])requireToken(routeSpatialMigration,token,'Indexed private route projection migration');
+if(routeSpatialMigration.includes('sample_points')||routeSpatialMigration.includes('generate_series(0,v_sample_count)')||routeSpatialMigration.includes('map_network_nearby_v2('))throw new Error('Final route projection must use direct indexed corridor lookup instead of repeated giant-radius sampling.');
+const routePublicWrapper=routeSpatialMigration.slice(routeSpatialMigration.lastIndexOf('CREATE OR REPLACE FUNCTION public.map_network_along_route_v1'));
+if(routePublicWrapper.includes('SECURITY DEFINER'))throw new Error('Public route wrapper must remain SECURITY INVOKER.');
+if(routePublicWrapper.includes('FROM public.locations'))throw new Error('Public route wrapper must not read raw locations directly.');
+if(!routeSpatialMigration.includes("v_category='all'"))throw new Error('Indexed route projection must preserve all-discovered-place mode.');
 if(!screen.includes("category: 'all'")||!screen.includes('limit: 200'))throw new Error('Along-route Explore must request the widened discovered-place projection.');
 if(screen.includes('refreshControl={<RefreshControl'))throw new Error('Explore pull-to-refresh must stay disabled so map panning cannot trigger a page refresh gesture.');
 for(const token of [
