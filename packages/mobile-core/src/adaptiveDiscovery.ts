@@ -242,17 +242,4 @@ export async function listPlacesAlongRoute(input:{routeGeoJSON:any;corridorMeter
 
 export async function listRestroomsAlongRoute(input:{routeGeoJSON:any;corridorMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;limit?:number}){
   return listPlacesAlongRoute({...input,category:'restroom'});
-}){
-  const geometry=input.routeGeoJSON;
-  if(!geometry||geometry.type!=='LineString'||!Array.isArray(geometry.coordinates)||geometry.coordinates.length<2||geometry.coordinates.length>5000)throw new Error('Build a valid route before searching along it.');
-  const corridorMeters=Math.round(Number(input.corridorMeters));
-  if(!Number.isFinite(corridorMeters)||corridorMeters<100||corridorMeters>40234)throw new Error('Route corridor is outside the supported range.');
-  const amenityNames=normalizedAmenities(input.amenityNames||[]);
-  const amenityMatch=validMatchRule(input.amenityMatch||'any');
-  const limit=Math.max(1,Math.min(50,Math.round(input.limit||40)));
-  const {data,error}=await getKleenestSupabaseClient().rpc('map_network_along_route_v1',{
-    p_route_geojson:geometry,p_corridor_m:corridorMeters,p_limit:limit,p_category:'restroom',p_search:boundedSearch(input.search||'')||null,p_amenity_names:amenityNames,p_amenity_match:amenityMatch,
-  });
-  if(error)throw error;
-  return Array.isArray(data)?data:[];
 }
