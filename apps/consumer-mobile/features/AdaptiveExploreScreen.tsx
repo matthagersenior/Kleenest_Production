@@ -9,7 +9,7 @@ import {
   buildMobileRouteToDestination,
   findAdaptiveNearbyRestrooms,
   listNearbyRestrooms,
-  listRestroomsAlongRoute,
+  listPlacesAlongRoute,
   mobileCheckIn,
   type AmenityMatchRule,
 } from '@kleenest/mobile-core';
@@ -20,7 +20,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -196,6 +195,7 @@ function recommendationReason(row:any,requested:string[]){
 const isFreshWithinDays=(row:any,days:number|null)=>{if(!days)return true;const time=freshestEvidenceAt(row);return time!=null&&Date.now()-time<=days*86400000;};
 const hasVerifiedEvidence=(row:any)=>Boolean(row?.network?.network_verified)||Number(row?.trust?.verified_visit_count||0)>0;
 const hasEvidenceGap=(row:any)=>{const fresh=freshestEvidenceAt(row);const stale=!fresh||Date.now()-fresh>30*86400000;const visits=Math.max(Number(row?.trust?.verified_visit_count||0),Number(row?.network?.verified_visits||0));return stale||visits<2||Boolean(row?.needs_restroom_verification);};
+const hasRestroomSignal=(row:any)=>{const category=String(row?.category||row?.place_type||'').toLowerCase();if(['restroom','bathroom','toilet'].includes(category))return true;return Array.isArray(row?.amenities)&&row.amenities.some((entry:any)=>/^(public )?(restroom|bathroom|toilet|toilets)$/i.test(String(typeof entry==='string'?entry:entry?.name||'').trim()));};
 
 function trustSummaryLine(item: any) {
   const trust = item?.trust;
@@ -518,6 +518,7 @@ export default function AdaptiveExploreScreen() {
     const fractions = [
       0,
       ...visibleRows
+        .filter(hasRestroomSignal)
         .map((row) => Math.max(0, Math.min(1, Number(row.route_fraction || 0))))
         .sort((a, b) => a - b),
       1,
@@ -627,6 +628,14 @@ export default function AdaptiveExploreScreen() {
     setMapCenter(target);
     setMapZoom(13);
     setCameraNonce((value) => value + 1);
+  }
+
+  function fitRouteMap() {
+    if(!route?.geometry?.coordinates?.length)return;
+    setSelectedId('');
+    setDestinationCardOpen(false);
+    setPendingMapOrigin(null);
+    setCameraNonce((value)=>value+1);
   }
 
   function handleMapRegionDidChange(event:any){
@@ -845,13 +854,14 @@ export default function AdaptiveExploreScreen() {
     }
 
     if (!built?.geometry) throw new Error('The route could not produce usable route geometry.');
-    const data = await listRestroomsAlongRoute({
+    const data = await listPlacesAlongRoute({
       routeGeoJSON: built.geometry,
       corridorMeters: corridor,
       search: routeSearch,
       amenityNames: selectedAmenityNames,
       amenityMatch: matchRule,
-      limit: 40,
+      category: 'all',
+      limit: 200,
     });
     const enrichedBase = await enrich(data);
     const progressionRadius=Math.min(402336,Math.max(corridor,Math.round((Number(built.distanceMiles||0)+10)*1609.344)));
@@ -866,11 +876,12 @@ export default function AdaptiveExploreScreen() {
     setCached(false);
     setAttemptedRadiiMeters([]);
     setMapCenter(currentOrigin);
+    setCameraNonce((value)=>value+1);
     const routeName=destinationLabel?` to ${destinationLabel}`:'';
     setMessage(
       enriched.length
-        ? `${enriched.length} qualifying bathroom${enriched.length === 1 ? '' : 's'} along your ${Number(built.distanceMiles || 0).toFixed(0)} mi route${routeName}, within ${radiusLabel(corridor)} of the route.`
-        : `No qualifying bathrooms found within ${radiusLabel(corridor)} of the route${routeName}.`,
+        ? `${enriched.length} discovered place${enriched.length === 1 ? '' : 's'} along your ${Number(built.distanceMiles || 0).toFixed(0)} mi route${routeName}, within ${radiusLabel(corridor)} of the route.`
+        : `No discovered places matched within ${radiusLabel(corridor)} of the route${routeName}.`,
     );
   }
 
@@ -902,7 +913,7 @@ export default function AdaptiveExploreScreen() {
           if (fallback.radiusMeters) setRadius(fallback.radiusMeters);
           setCached(true);
           setMessage(
-            `Live lookup failed. Showing cached bathrooms from ${cachedAgeLabel(fallback.savedAt)}; pull to refresh for a live result.`,
+            `Live lookup failed. Showing cached bathrooms from ${cachedAgeLabel(fallback.savedAt)}; tap Search for a live result.`,
           );
           setLoading(false);
           return;
@@ -1051,7 +1062,6 @@ export default function AdaptiveExploreScreen() {
         keyExtractor={idOf}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
         ListHeaderComponent={
           <View style={s.exploreCanvas}>
       <View style={[s.searchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
@@ -1308,7 +1318,7 @@ export default function AdaptiveExploreScreen() {
             >
             <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE} onRegionDidChange={handleMapRegionDidChange}>
               <Camera
-                key={`explore-camera-${cameraNonce}-${selectedId}-${mode}`}
+                key={`explore-camera-${cameraNonce}-${selectedId}-${mode}-${route?.geometry?.coordinates?.length||0}-${route?.destinationCoordinates?.join(',')||''}`}
                 initialViewState={cameraViewState}
               />
               {route?.geometry ? (
@@ -1377,6 +1387,9 @@ export default function AdaptiveExploreScreen() {
               <Pressable accessibilityRole="button" accessibilityLabel={searchAreaOrigin?'Center map on searched area':'Center map on my location'} style={[s.mapControl,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={recenterMap}>
                 <Text style={[s.mapControlText,{color:theme.accent}]}>⌖</Text>
               </Pressable>
+              {mode==='route'&&route?.geometry?<Pressable accessibilityRole="button" accessibilityLabel="Fit full route on map" style={[s.mapControl,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={fitRouteMap}>
+                <Text style={[s.mapControlText,{color:theme.accent}]}>↔</Text>
+              </Pressable>:null}
             </View>
             {pendingMapOrigin&&mode==='nearby'?(
               <Pressable
@@ -1512,8 +1525,8 @@ export default function AdaptiveExploreScreen() {
           ):null}
           {mode === 'route' && routeGap != null ? (
             <View style={[s.routeCoverage,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-              <Text style={[s.routeCoverageTitle,{color:theme.ink}]}>Largest qualifying-restroom gap: ~{routeGap.toFixed(routeGap < 10 ? 1 : 0)} mi</Text>
-              <Text style={[s.help,{color:theme.muted}]}>Based on current qualifying candidates along the route; opening hours and availability can change.</Text>
+              <Text style={[s.routeCoverageTitle,{color:theme.ink}]}>Largest current restroom-signal gap: ~{routeGap.toFixed(routeGap < 10 ? 1 : 0)} mi</Text>
+              <Text style={[s.help,{color:theme.muted}]}>Calculated from restroom-qualified signals inside the broader discovered-place route view; opening hours and availability can change.</Text>
             </View>
           ) : null}
         </View>
@@ -1527,7 +1540,7 @@ export default function AdaptiveExploreScreen() {
                     Requested {radiusLabel(radius)} · effective {radiusLabel(effectiveRadiusMeters)} · searched {attemptedRadiiMeters.map(radiusLabel).join(' → ')}
                   </Text>
                 ) : null}
-                {cached ? <Text style={[s.provenance,{color:theme.muted}]}>Offline continuity result — refresh for live qualification.</Text> : null}
+                {cached ? <Text style={[s.provenance,{color:theme.muted}]}>Offline continuity result — tap Search for live qualification.</Text> : null}
               </View>
             ) : null}
 
@@ -1536,9 +1549,9 @@ export default function AdaptiveExploreScreen() {
             <View style={s.listHeading}>
               <View>
                 <Text style={[s.listEyebrow,{color:theme.accent}]}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
-                <Text style={[s.listTitle,{color:theme.ink}]}>{mode === 'route' ? 'Bathrooms ahead' : 'Nearby businesses & bathrooms'}</Text>
+                <Text style={[s.listTitle,{color:theme.ink}]}>{mode === 'route' ? 'Discovered places ahead' : 'Nearby businesses & bathrooms'}</Text>
               </View>
-              <Text style={[s.listNote,{color:theme.muted}]}>{activeFilterCount?filterSummary:(cached ? 'Cached · pull to refresh' : 'Everything · distance + actions')}</Text>
+              <Text style={[s.listNote,{color:theme.muted}]}>{activeFilterCount?filterSummary:(cached ? 'Cached · tap Search to refresh' : 'Everything · distance + actions')}</Text>
             </View>
           </View>
         }
