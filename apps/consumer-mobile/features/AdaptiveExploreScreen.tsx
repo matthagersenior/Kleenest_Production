@@ -7,7 +7,9 @@ import { router } from 'expo-router';
 import {
   buildMobileRoute,
   buildMobileRouteToDestination,
+  findAdaptiveNearbyPlaces,
   findAdaptiveNearbyRestrooms,
+  listNearbyMapCandidates,
   listNearbyRestrooms,
   listPlacesAlongRoute,
   mobileCheckIn,
@@ -328,7 +330,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ selected }}
-        accessibilityLabel={`${item.name || 'Restroom location'}, ${route && ahead != null ? `${ahead.toFixed(ahead < 10 ? 1 : 0)} miles ahead` : distanceLabel(item.distance_meters)}`}
+        accessibilityLabel={`${item.name || 'Nearby place'}, ${route && ahead != null ? `${ahead.toFixed(ahead < 10 ? 1 : 0)} miles ahead` : distanceLabel(item.distance_meters)}`}
         onPress={onSelect}
         style={s.cardMain}
       >
@@ -336,7 +338,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
           <FreshnessHeatRing item={item} size={34} photoUrl={item.consumer_photo_url ? String(item.consumer_photo_url) : undefined} />
           <View style={{ flex: 1 }}>
             <View style={s.cardTitleRow}>
-              <Text style={[s.cardTitle,{color:theme.ink}]}>{item.name || 'Restroom location'}</Text>
+              <Text style={[s.cardTitle,{color:theme.ink}]}>{item.name || 'Nearby place'}</Text>
               {item.discovery_recommended?<View style={[s.recommendedBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.recommendedBadgeText,{color:theme.accent}]}>RECOMMENDED</Text></View>:null}
             </View>
             {item.discovery_recommended?<Text style={[s.recommendedReason,{color:theme.muted}]}>{recommendationReason(item,requestedAmenities)}</Text>:null}
@@ -576,7 +578,7 @@ export default function AdaptiveExploreScreen() {
     setCameraNonce((value)=>value+1);
   }
 
-  function searchBathroomsNearDestination(){
+  function searchNearDestination(){
     if(!searchAreaOrigin)return;
     setMode('nearby');
     setRoute(null);
@@ -615,7 +617,7 @@ export default function AdaptiveExploreScreen() {
     setCached(false);
     setMessage(
       next === 'nearby'
-        ? 'Search nearby bathrooms.'
+        ? 'Discover nearby places.'
         : 'Along route uses your saved route draft and current location.',
     );
   }
@@ -681,7 +683,7 @@ export default function AdaptiveExploreScreen() {
     const permission = await Location.requestForegroundPermissionsAsync();
     if (permission.status !== 'granted') {
       throw new Error(
-        'Location access is needed for restroom discovery. Enable it in phone settings and try again.',
+        'Location access is needed for nearby discovery. Enable it in phone settings and try again.',
       );
     }
     const lastKnown=await Location.getLastKnownPositionAsync().catch(()=>null);
@@ -729,21 +731,36 @@ export default function AdaptiveExploreScreen() {
     let result: any;
     let usedMatureFallback = false;
     try {
-      result = await findAdaptiveNearbyRestrooms({
-        latitude,
-        longitude,
-        requestedRadiusMeters: radius,
-        maxRadiusMeters: maxRadius,
-        search: query,
-        amenityNames: selectedAmenityNames,
-        amenityMatch: matchRule,
-        autoExpand: selectedAmenityNames.length ? autoExpand : true,
-        hardRadius: selectedAmenityNames.length > 0 && !autoExpand,
-        limit: 500,
-      });
+      if(selectedAmenityNames.length){
+        result = await findAdaptiveNearbyRestrooms({
+          latitude,
+          longitude,
+          requestedRadiusMeters: radius,
+          maxRadiusMeters: maxRadius,
+          search: query,
+          amenityNames: selectedAmenityNames,
+          amenityMatch: matchRule,
+          autoExpand,
+          hardRadius: !autoExpand,
+          limit: 500,
+        });
+      }else{
+        result = await findAdaptiveNearbyPlaces({
+          latitude,
+          longitude,
+          requestedRadiusMeters: radius,
+          maxRadiusMeters: maxRadius,
+          search: query,
+          autoExpand: true,
+          hardRadius: false,
+          limit: 500,
+        });
+      }
     } catch (error) {
       if (matchRule !== 'all') throw error;
-      const legacyRows = await listNearbyRestrooms(latitude,longitude,radius,query,selectedAmenityNames);
+      const legacyRows = selectedAmenityNames.length
+        ? await listNearbyRestrooms(latitude,longitude,radius,query,selectedAmenityNames)
+        : await listNearbyMapCandidates({latitude,longitude,radiusMeters:radius,search:query,limit:500});
       result = { rows: legacyRows, requestedRadiusMeters: radius, effectiveRadiusMeters: radius, attemptedRadiiMeters: [radius], expanded: false };
       usedMatureFallback = true;
     }
@@ -751,14 +768,12 @@ export default function AdaptiveExploreScreen() {
     let discoveryRows=result.rows;
     let relaxedAmenityFallback=false;
     if(!discoveryRows.length&&selectedAmenityNames.length&&autoExpand&&!query){
-      const fallbackResult=await findAdaptiveNearbyRestrooms({
+      const fallbackResult=await findAdaptiveNearbyPlaces({
         latitude,
         longitude,
         requestedRadiusMeters:1609,
         maxRadiusMeters:maxRadius,
         search:'',
-        amenityNames:[],
-        amenityMatch:'any',
         autoExpand:true,
         hardRadius:false,
         limit:500,
@@ -803,10 +818,10 @@ export default function AdaptiveExploreScreen() {
 
     if(areaMatch){
       setMessage(enriched.length
-        ? `${enriched.length} bathroom${enriched.length===1?'':'s'} found while searching near ${areaMatch.label} within ${radiusLabel(result.effectiveRadiusMeters)}${result.expanded?' after adaptive expansion':''}.`
-        : `No qualifying bathrooms found while searching near ${areaMatch.label} through ${radiusLabel(result.effectiveRadiusMeters)}.`);
+        ? `${enriched.length} place${enriched.length===1?'':'s'} discovered around ${areaMatch.label} within ${radiusLabel(result.effectiveRadiusMeters)}${result.expanded?' after adaptive expansion':''}.`
+        : `No discovered places were found around ${areaMatch.label} through ${radiusLabel(result.effectiveRadiusMeters)}.`);
     } else if (usedMatureFallback) {
-      setMessage(enriched.length?`${enriched.length} nearby bathroom${enriched.length===1?'':'s'} found using the proven nearby search path while adaptive discovery recovers.`:'No bathrooms matched the current nearby search.');
+      setMessage(enriched.length?`${enriched.length} nearby place${enriched.length===1?'':'s'} found using the fallback discovery path while adaptive discovery recovers.`:'No places matched the current nearby search.');
     } else if (relaxedAmenityFallback) {
       setMessage(`No exact amenity match was found through your expanded search, so Kleenest kept the page useful with ${enriched.length} nearby place${enriched.length===1?'':'s'}. Results are organized by freshness, Kleenest status, amenities, then distance.`);
     } else if (!query && !selectedAmenityNames.length) {
@@ -816,7 +831,7 @@ export default function AdaptiveExploreScreen() {
     } else if (result.expanded) {
       setMessage(enriched.length?`Expanded through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')} and found ${enriched.length} qualifying location${enriched.length===1?'':'s'}.`:`No qualifying locations found after expanding through ${radiusLabel(result.effectiveRadiusMeters)}.`);
     } else {
-      setMessage(enriched.length?`${enriched.length} qualifying bathroom${enriched.length===1?'':'s'} within ${radiusLabel(result.effectiveRadiusMeters)}.`:`No qualifying bathrooms found within ${radiusLabel(result.effectiveRadiusMeters)}.`);
+      setMessage(enriched.length?`${enriched.length} qualifying place${enriched.length===1?'':'s'} within ${radiusLabel(result.effectiveRadiusMeters)}.`:`No qualifying places found within ${radiusLabel(result.effectiveRadiusMeters)}.`);
     }
   }
 
@@ -913,7 +928,7 @@ export default function AdaptiveExploreScreen() {
           if (fallback.radiusMeters) setRadius(fallback.radiusMeters);
           setCached(true);
           setMessage(
-            `Live lookup failed. Showing cached bathrooms from ${cachedAgeLabel(fallback.savedAt)}; tap Search for a live result.`,
+            `Live lookup failed. Showing cached nearby places from ${cachedAgeLabel(fallback.savedAt)}; tap Search for a live result.`,
           );
           setLoading(false);
           return;
@@ -922,7 +937,7 @@ export default function AdaptiveExploreScreen() {
       setRows([]);
       setSelectedId('');
       setRoute(null);
-      setMessage(error?.message || 'Bathroom search failed.');
+      setMessage(error?.message || 'Nearby discovery failed.');
     } finally {
       setLoading(false);
     }
@@ -1067,7 +1082,7 @@ export default function AdaptiveExploreScreen() {
       <View style={[s.searchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
         <View style={s.searchRow}>
           <TextInput
-            accessibilityLabel="Search bathrooms"
+            accessibilityLabel={mode==='route'?'Search places along route':'Discover nearby places'}
             style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}
             maxFontSizeMultiplier={1.2}
             value={search}
@@ -1423,14 +1438,14 @@ export default function AdaptiveExploreScreen() {
                 <ScrollView style={s.selectedBodyScroll} contentContainerStyle={s.selectedBodyContent} showsVerticalScrollIndicator={false}>
                   <Text numberOfLines={2} style={[s.selectedTitle,{color:theme.ink}]}>{searchAreaLabel||'Destination'}</Text>
                   <Text style={[s.help,{color:theme.muted}]}>
-                    {mode==='route'?'This is your active route destination. Search its corridor or switch to bathrooms around the destination.':'This searched address can be used as a route destination or as the center of a nearby bathroom search.'}
+                    {mode==='route'?'This is your active route destination. Search its corridor or switch to discovery around the destination.':'This searched address is now the center of discovery, as if you were there. Nearby businesses, places, and restroom signals are discovered around it.'}
                   </Text>
                   <View style={s.actionRow}>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Search bathrooms near destination"
+                      accessibilityLabel="Discover places near destination"
                       style={[s.primarySmall,{backgroundColor:theme.accent}]}
-                      onPress={searchBathroomsNearDestination}
+                      onPress={searchNearDestination}
                     >
                       <Text style={[s.primaryText,{color:theme.accentText}]}>Search nearby</Text>
                     </Pressable>
@@ -1467,7 +1482,7 @@ export default function AdaptiveExploreScreen() {
                     <FreshnessHeatRing item={selected} size={34} photoUrl={selected.consumer_photo_url ? String(selected.consumer_photo_url) : undefined} />
                     <View style={{ flex: 1 }}>
                       <View style={s.cardTitleRow}>
-                        <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{selected.name || 'Restroom location'}</Text>
+                        <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{selected.name || 'Nearby place'}</Text>
                         {selected.discovery_recommended?<View style={[s.recommendedBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.recommendedBadgeText,{color:theme.accent}]}>RECOMMENDED</Text></View>:null}
                       </View>
                       <Text numberOfLines={1} style={[s.selectedDecisionMeta,{color:theme.muted}]}>
