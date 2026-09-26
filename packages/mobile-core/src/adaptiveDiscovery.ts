@@ -209,6 +209,74 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
   };
 }
 
+
+export async function findAdaptiveNearbyPlaces(input:{latitude:number;longitude:number;requestedRadiusMeters:number;maxRadiusMeters:number;search?:string;autoExpand?:boolean;hardRadius?:boolean;limit?:number}):Promise<AdaptiveNearbyResult>{
+  const requestedRadiusMeters=boundedRadius(input.requestedRadiusMeters);
+  const maxRadiusMeters=Math.max(requestedRadiusMeters,boundedRadius(input.maxRadiusMeters));
+  const limit=Math.max(1,Math.min(500,Math.round(input.limit||500)));
+  const hardRadius=input.hardRadius===true;
+  const radii=[requestedRadiusMeters];
+  if(!hardRadius&&input.autoExpand!==false){
+    for(const radius of ADAPTIVE_RADIUS_METERS)if(radius>requestedRadiusMeters&&radius<=maxRadiusMeters)radii.push(radius);
+    if(radii[radii.length-1]!==maxRadiusMeters)radii.push(maxRadiusMeters);
+  }
+  const attemptedRadiiMeters:number[]=[];
+  let rows:any[]=[];
+  let effectiveRadiusMeters=requestedRadiusMeters;
+  let densityClass:'dense'|'moderate'|'sparse'='sparse';
+  for(const radiusMeters of [...new Set(radii)]){
+    attemptedRadiiMeters.push(radiusMeters);
+    effectiveRadiusMeters=radiusMeters;
+    const harvestPromise=radiusMeters<=LIVE_DISCOVERY_RADIUS_METERS
+      ? harvestNearbyMapCandidates({latitude:input.latitude,longitude:input.longitude,radiusMeters,amenityNames:[]})
+      : null;
+    const loadCanonical=()=>listNearbyMapCandidates({
+      latitude:input.latitude,
+      longitude:input.longitude,
+      radiusMeters,
+      search:input.search,
+      limit,
+    });
+    rows=await loadCanonical();
+
+    const locallyEnough=(radiusMeters<=1609&&rows.length>=DENSE_LOCAL_RESULT_COUNT)
+      ||(radiusMeters<=3219&&rows.length>=MODERATE_LOCAL_RESULT_COUNT)
+      ||(radiusMeters>=8047&&rows.length>0);
+    if(harvestPromise){
+      if(locallyEnough){
+        void harvestPromise.catch(()=>{});
+      }else{
+        const harvest=await harvestPromise.catch(()=>null);
+        const changed=Number(harvest?.persistence?.imported_locations||0)+Number(harvest?.persistence?.updated_locations||0);
+        if(changed>0||(!rows.length&&Number(harvest?.canonical_candidates_discovered||0)>0))rows=await loadCanonical();
+      }
+    }
+
+    if(radiusMeters<=1609&&rows.length>=DENSE_LOCAL_RESULT_COUNT){
+      densityClass='dense';
+      break;
+    }
+    if(radiusMeters<=3219&&rows.length>=MODERATE_LOCAL_RESULT_COUNT){
+      densityClass='moderate';
+      break;
+    }
+    if(radiusMeters>=8047&&rows.length>0){
+      densityClass='sparse';
+      break;
+    }
+  }
+  return {
+    rows,
+    requestedRadiusMeters,
+    effectiveRadiusMeters,
+    maxRadiusMeters,
+    expanded:effectiveRadiusMeters>requestedRadiusMeters,
+    attemptedRadiiMeters,
+    densityClass,
+    resultCount:rows.length,
+  };
+}
+
 export type RouteDiscoveryCategory='restroom'|'all';
 
 export async function listPlacesAlongRoute(input:{routeGeoJSON:any;corridorMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;category?:RouteDiscoveryCategory;limit?:number}){

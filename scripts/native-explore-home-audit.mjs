@@ -8,6 +8,7 @@ const layout = read('apps/consumer-mobile/app/_layout.tsx');
 const home = read('apps/consumer-mobile/app/home.tsx');
 const explore = read('apps/consumer-mobile/features/AdaptiveExploreScreen.tsx');
 const signals = read('apps/consumer-mobile/components/RestroomSignals.tsx');
+const adaptiveDiscovery = read('packages/mobile-core/src/adaptiveDiscovery.ts');
 
 assert.match(index, /Redirect/);
 assert.match(index, /href=["']\/explore["']/);
@@ -77,5 +78,13 @@ assert.doesNotMatch(explore, /mapControls:\s*\{[^}]*top:\s*174/s);
 assert.match(explore, /scrollEnabled=\{!mapInteracting\}/);
 assert.match(explore, /onTouchStart=\{\(\)=>setMapInteracting\(true\)\}/);
 assert.match(explore, /discoveryStatus/);
+assert.match(explore, /findAdaptiveNearbyPlaces/);
+assert.match(explore, /result = await findAdaptiveNearbyPlaces\(/);
+assert.match(explore, /listNearbyMapCandidates/);
+assert.match(explore, /This searched address is now the center of discovery, as if you were there/);
+assert.match(explore, /Discover places near destination/);
+assert.doesNotMatch(explore, /center of a nearby bathroom search/);
+assert.match(adaptiveDiscovery, /export async function findAdaptiveNearbyPlaces/);
+assert.match(adaptiveDiscovery, /p_category:'all'/);
 
 console.log('native explore-home contract: PASS');
