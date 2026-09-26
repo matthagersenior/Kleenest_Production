@@ -55,8 +55,8 @@ if(densitySafeMigration.includes('from public.locations'))throw new Error('Final
 if(/TODO|coming soon|not implemented|placeholder\s+(?:implementation|behavior|logic|code|handler)/i.test(screen+core+migration+densityMigration+densityCompatMigration+densitySafeMigration))throw new Error('Adaptive discovery cannot ship placeholder/TODO behavior.');
 if(!screen.includes("matchRule === 'all'")||!screen.includes('selectedAmenityNames.length'))throw new Error('Amenity all/any controls are not wired to selected amenities.');
 if(!screen.includes('useState(1609)'))throw new Error('Nearby discovery must start at the dense-area 1 mile default.');
-if(!screen.includes('selectedAmenityNames.length ? autoExpand : true'))throw new Error('Default discovery must keep expanding when local supply is sparse.');
-if(!screen.includes('hardRadius: selectedAmenityNames.length > 0 && !autoExpand'))throw new Error('Zero-result hard radius behavior must be reserved for explicit amenity-constrained searches.');
+if(!screen.includes('findAdaptiveNearbyPlaces')||!screen.includes('autoExpand: true'))throw new Error('Default all-place discovery must keep expanding when local supply is sparse.');
+if(!screen.includes('findAdaptiveNearbyRestrooms')||!screen.includes('hardRadius: !autoExpand'))throw new Error('Zero-result hard radius behavior must be reserved for explicit amenity-constrained searches.');
 if(!screen.includes('useState(402336)'))throw new Error('Adaptive discovery must retain the supported 250 mile fallback ceiling.');
 for(const token of ['organizeDiscoveryRows','const freshness=','const kleenest=','const amenities=','distance_meters'])requireToken(screen,token,'Freshness → Kleenest → Amenities → distance ranking');
 if(!screen.includes('RECOMMENDED'))throw new Error('Discovery must visually identify its recommended nearby result.');
