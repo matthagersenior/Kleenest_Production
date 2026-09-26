@@ -78,7 +78,7 @@ if(screen.includes('refreshControl={<RefreshControl'))throw new Error('Explore p
 for(const token of [
   'destinationCardOpen',
   'Select destination marker',
-  'Search bathrooms near destination',
+  'Discover places near destination',
   'Use destination for along-route search',
 ])requireToken(screen,token,'Selectable destination marker/card');
 
