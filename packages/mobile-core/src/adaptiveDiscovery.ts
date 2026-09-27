@@ -5,7 +5,7 @@ export const MILE_METERS=1609.344;
 export const NEARBY_RADIUS_METERS=[1609,3219,8047,16093,40234,80467] as const;
 export const ADAPTIVE_RADIUS_METERS=[1609,3219,8047,16093,40234,80467,160934,402336] as const;
 export const DENSE_LOCAL_RESULT_COUNT=12;
-export const MODERATE_LOCAL_RESULT_COUNT=8;
+export const MODERATE_LOCAL_RESULT_COUNT=25;
 export const MAX_NEARBY_RADIUS_METERS=402336;
 export const LIVE_DISCOVERY_RADIUS_METERS=40234;
 const liveDiscoveryRequests=new Map<string,Promise<any>>();
@@ -117,10 +117,16 @@ export async function listNearbyMapCandidates(input:{latitude:number;longitude:n
   const latitude=Number(input.latitude),longitude=Number(input.longitude);
   boundedCoordinate(latitude,longitude);
   const radiusMeters=boundedRadius(input.radiusMeters);
-  const limit=Math.max(1,Math.min(500,Math.round(input.limit||500)));
-  const {data,error}=await getKleenestSupabaseClient().rpc('map_network_nearby_v2',{
-    p_lat:latitude,p_lng:longitude,p_radius_m:radiusMeters,p_limit:limit,p_category:'all',p_search:boundedSearch(input.search||'')||null,p_amenity_names:null,
+  const limit=Math.max(1,Math.min(2000,Math.round(input.limit||2000)));
+  const client=getKleenestSupabaseClient();
+  let {data,error}=await client.rpc('map_network_nearby_all_v1',{
+    p_lat:latitude,p_lng:longitude,p_radius_m:radiusMeters,p_limit:limit,p_search:boundedSearch(input.search||'')||null,
   });
+  if(error&&/map_network_nearby_all_v1|PGRST202/i.test(String((error as any)?.message||(error as any)?.code||''))){
+    ({data,error}=await client.rpc('map_network_nearby_v2',{
+      p_lat:latitude,p_lng:longitude,p_radius_m:radiusMeters,p_limit:Math.min(limit,500),p_category:'all',p_search:boundedSearch(input.search||'')||null,p_amenity_names:null,
+    }));
+  }
   if(error)throw error;
   return Array.isArray(data)?data:[];
 }
@@ -213,7 +219,7 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
 export async function findAdaptiveNearbyPlaces(input:{latitude:number;longitude:number;requestedRadiusMeters:number;maxRadiusMeters:number;search?:string;autoExpand?:boolean;hardRadius?:boolean;limit?:number}):Promise<AdaptiveNearbyResult>{
   const requestedRadiusMeters=boundedRadius(input.requestedRadiusMeters);
   const maxRadiusMeters=Math.max(requestedRadiusMeters,boundedRadius(input.maxRadiusMeters));
-  const limit=Math.max(1,Math.min(500,Math.round(input.limit||500)));
+  const limit=Math.max(1,Math.min(2000,Math.round(input.limit||2000)));
   const hardRadius=input.hardRadius===true;
   const radii=[requestedRadiusMeters];
   if(!hardRadius&&input.autoExpand!==false){
@@ -239,18 +245,9 @@ export async function findAdaptiveNearbyPlaces(input:{latitude:number;longitude:
     });
     rows=await loadCanonical();
 
-    const locallyEnough=(radiusMeters<=1609&&rows.length>=DENSE_LOCAL_RESULT_COUNT)
-      ||(radiusMeters<=3219&&rows.length>=MODERATE_LOCAL_RESULT_COUNT)
-      ||(radiusMeters>=8047&&rows.length>0);
-    if(harvestPromise){
-      if(locallyEnough){
-        void harvestPromise.catch(()=>{});
-      }else{
-        const harvest=await harvestPromise.catch(()=>null);
-        const changed=Number(harvest?.persistence?.imported_locations||0)+Number(harvest?.persistence?.updated_locations||0);
-        if(changed>0||(!rows.length&&Number(harvest?.canonical_candidates_discovered||0)>0))rows=await loadCanonical();
-      }
-    }
+    // Canonical discovery is the interactive path. Live harvesting updates the
+    // shared inventory in the background and must never block the map/results.
+    if(harvestPromise)void harvestPromise.catch(()=>{});
 
     if(radiusMeters<=1609&&rows.length>=DENSE_LOCAL_RESULT_COUNT){
       densityClass='dense';
