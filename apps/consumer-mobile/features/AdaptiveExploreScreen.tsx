@@ -407,6 +407,8 @@ export default function AdaptiveExploreScreen() {
   const {height:windowHeight}=useWindowDimensions();
   const exploreMapHeight=Math.max(360,Math.min(480,Math.round(windowHeight*0.44)));
   const listRef=useRef<any>(null);
+  const cameraRef=useRef<any>(null);
+  const nearbyEnrichmentRunRef=useRef(0);
   const [mode, setMode] = useState<'nearby' | 'route'>('nearby');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
@@ -604,6 +606,7 @@ export default function AdaptiveExploreScreen() {
     setPendingMapOrigin(null);
     setMapCenter(target);
     setMapZoom(13);
+    cameraRef.current?.jumpTo({center:target,zoom:13});
     setCameraNonce((value)=>value+1);
   }
 
@@ -638,6 +641,7 @@ export default function AdaptiveExploreScreen() {
     setPendingMapOrigin(null);
     setMapCenter(target);
     setMapZoom(13);
+    cameraRef.current?.jumpTo({center:target,zoom:13});
     setCameraNonce((value) => value + 1);
   }
 
@@ -710,6 +714,7 @@ export default function AdaptiveExploreScreen() {
   }
 
   async function loadNearby(clearQuery = false, preserveCacheOnEmpty = false, overrideOrigin:[number,number]|null=null) {
+    const enrichmentRun=++nearbyEnrichmentRunRef.current;
     const rawQuery=clearQuery?'':search.trim();
     if(clearQuery){
       setSearch('');
@@ -731,8 +736,9 @@ export default function AdaptiveExploreScreen() {
     const mapAreaOrigin=overrideOrigin||retainedMapOrigin;
     const current=areaMatch||mapAreaOrigin?null:await currentLocation();
     const livePresence=areaMatch||mapAreaOrigin
-      ? await refreshConsumerPresence().catch(()=>null)
+      ? null
       : await recordConsumerPresenceAt(Number(current!.coords.latitude),Number(current!.coords.longitude)).catch(()=>null);
+    if(areaMatch||mapAreaOrigin)void refreshConsumerPresence().catch(()=>null);
     const nextOrigin:[number,number]=areaMatch
       ? areaMatch.origin
       : mapAreaOrigin
@@ -783,14 +789,14 @@ export default function AdaptiveExploreScreen() {
           search: query,
           autoExpand: true,
           hardRadius: false,
-          limit: 500,
+          limit: 2000,
         });
       }
     } catch (error) {
       if (matchRule !== 'all') throw error;
       const legacyRows = selectedAmenityNames.length
         ? await listNearbyRestrooms(latitude,longitude,radius,query,selectedAmenityNames)
-        : await listNearbyMapCandidates({latitude,longitude,radiusMeters:radius,search:query,limit:500});
+        : await listNearbyMapCandidates({latitude,longitude,radiusMeters:radius,search:query,limit:2000});
       result = { rows: legacyRows, requestedRadiusMeters: radius, effectiveRadiusMeters: radius, attemptedRadiiMeters: [radius], expanded: false };
       usedMatureFallback = true;
     }
@@ -806,7 +812,7 @@ export default function AdaptiveExploreScreen() {
         search:'',
         autoExpand:true,
         hardRadius:false,
-        limit:500,
+        limit:2000,
       });
       discoveryRows=fallbackResult.rows;
       if(discoveryRows.length){
@@ -814,12 +820,8 @@ export default function AdaptiveExploreScreen() {
         relaxedAmenityFallback=true;
       }
     }
-    const enrichedBase = await enrich(discoveryRows);
-    const enriched = organizeDiscoveryRows(
-      attachPresence(await enrichProgression(enrichedBase,latitude,longitude,result.effectiveRadiusMeters),livePresence),
-      selectedAmenityNames,
-    );
-    if (!areaMatch&&!enriched.length && preserveCacheOnEmpty && !query && !selectedAmenityNames.length) {
+    const displayRows=organizeDiscoveryRows(attachPresence(discoveryRows,livePresence),selectedAmenityNames);
+    if (!areaMatch&&!displayRows.length && preserveCacheOnEmpty && !query && !selectedAmenityNames.length) {
       const fallback = await readNearbyCache();
       if (fallback?.rows?.length) {
         const fallbackSelected = selectedId && fallback.rows.some((row: any) => idOf(row) === selectedId) ? selectedId : '';
@@ -832,37 +834,52 @@ export default function AdaptiveExploreScreen() {
       }
     }
 
-    const verificationCandidates = enriched.filter((row) => row?.needs_restroom_verification === true).length;
-    const restroomEvidence = enriched.length - verificationCandidates;
     const resetSelectionForOriginChange=Boolean(areaMatch)||clearQuery;
-    const preservedId = !resetSelectionForOriginChange && selectedId && enriched.some((row) => idOf(row) === selectedId) ? selectedId : '';
-    setRows(enriched);setRoute(null);
+    const preservedId = !resetSelectionForOriginChange && selectedId && displayRows.some((row) => idOf(row) === selectedId) ? selectedId : '';
+    setRows(displayRows);setRoute(null);
     if (!preservedId) setMapCenter(nextOrigin);
     setEffectiveRadiusMeters(result.effectiveRadiusMeters);setAttemptedRadiiMeters(result.attemptedRadiiMeters);setCached(false);setSelectedId(preservedId);
 
-    captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:enriched.length,search:rawQuery,amenityCount:selectedAmenityNames.length});
-    captureConsumerCoreLoopEvent('nearby_results_shown',null,{resultCount:enriched.length,radiusMeters:result.effectiveRadiusMeters,search:Boolean(rawQuery),cached:false});
+    captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:displayRows.length,search:rawQuery,amenityCount:selectedAmenityNames.length});
+    captureConsumerCoreLoopEvent('nearby_results_shown',null,{resultCount:displayRows.length,radiusMeters:result.effectiveRadiusMeters,search:Boolean(rawQuery),cached:false});
 
-    if (!areaMatch&&!query && !selectedAmenityNames.length && enriched.length) {
-      void writeNearbyCache(enriched,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
+    if (!areaMatch&&!query && !selectedAmenityNames.length && displayRows.length) {
+      void writeNearbyCache(displayRows,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
     }
 
+    // Trust, network, photos and progression are enhancements, not blockers.
+    // Paint the complete canonical map first, then enrich the same rows in place.
+    void (async()=>{
+      try{
+        const enrichedBase=await enrich(discoveryRows);
+        const enriched=organizeDiscoveryRows(
+          attachPresence(await enrichProgression(enrichedBase,latitude,longitude,result.effectiveRadiusMeters),livePresence),
+          selectedAmenityNames,
+        );
+        if(nearbyEnrichmentRunRef.current!==enrichmentRun)return;
+        setRows(enriched);
+        if(!areaMatch&&!query&&!selectedAmenityNames.length&&enriched.length){
+          void writeNearbyCache(enriched,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
+        }
+      }catch{}
+    })();
+
     if(areaMatch){
-      setMessage(enriched.length
-        ? `${enriched.length} place${enriched.length===1?'':'s'} discovered around ${areaMatch.label} within ${radiusLabel(result.effectiveRadiusMeters)}${result.expanded?' after adaptive expansion':''}.`
+      setMessage(displayRows.length
+        ? `${displayRows.length} place${displayRows.length===1?'':'s'} discovered around ${areaMatch.label} within ${radiusLabel(result.effectiveRadiusMeters)}${result.expanded?' after adaptive expansion':''}.`
         : `No discovered places were found around ${areaMatch.label} through ${radiusLabel(result.effectiveRadiusMeters)}.`);
     } else if (usedMatureFallback) {
-      setMessage(enriched.length?`${enriched.length} nearby place${enriched.length===1?'':'s'} found using the fallback discovery path while adaptive discovery recovers.`:'No places matched the current nearby search.');
+      setMessage(displayRows.length?`${displayRows.length} nearby place${displayRows.length===1?'':'s'} found using the fallback discovery path while adaptive discovery recovers.`:'No places matched the current nearby search.');
     } else if (relaxedAmenityFallback) {
-      setMessage(`No exact amenity match was found through your expanded search, so Kleenest kept the page useful with ${enriched.length} nearby place${enriched.length===1?'':'s'}. Results are organized by freshness, Kleenest status, amenities, then distance.`);
+      setMessage(`No exact amenity match was found through your expanded search, so Kleenest kept the page useful with ${displayRows.length} nearby place${displayRows.length===1?'':'s'}. Results are organized by freshness, Kleenest status, amenities, then distance.`);
     } else if (!query && !selectedAmenityNames.length) {
-      setMessage(enriched.length
+      setMessage(displayRows.length
         ? (result.expanded?`Expanded nearby search through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')}.`:'')
         : 'Live discovery returned no local data, so Kleenest will keep the last useful nearby set when one is available.');
     } else if (result.expanded) {
-      setMessage(enriched.length?`Expanded through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')} and found ${enriched.length} qualifying location${enriched.length===1?'':'s'}.`:`No qualifying locations found after expanding through ${radiusLabel(result.effectiveRadiusMeters)}.`);
+      setMessage(displayRows.length?`Expanded through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')} and found ${displayRows.length} qualifying location${displayRows.length===1?'':'s'}.`:`No qualifying locations found after expanding through ${radiusLabel(result.effectiveRadiusMeters)}.`);
     } else {
-      setMessage(enriched.length?`${enriched.length} qualifying place${enriched.length===1?'':'s'} within ${radiusLabel(result.effectiveRadiusMeters)}.`:`No qualifying places found within ${radiusLabel(result.effectiveRadiusMeters)}.`);
+      setMessage(displayRows.length?`${displayRows.length} qualifying place${displayRows.length===1?'':'s'} within ${radiusLabel(result.effectiveRadiusMeters)}.`:`No qualifying places found within ${radiusLabel(result.effectiveRadiusMeters)}.`);
     }
   }
 
@@ -1364,6 +1381,7 @@ export default function AdaptiveExploreScreen() {
             >
             <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE} onRegionDidChange={handleMapRegionDidChange}>
               <Camera
+                ref={cameraRef}
                 key={`explore-camera-${cameraNonce}-${selectedId}-${mode}-${route?.geometry?.coordinates?.length||0}-${route?.destinationCoordinates?.join(',')||''}`}
                 initialViewState={cameraViewState}
               />
