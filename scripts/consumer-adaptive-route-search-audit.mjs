@@ -17,11 +17,15 @@ const paths={
   routePermissionRepair:'supabase/migrations/20260923200727_route_search_sanitized_projection.sql',
   routeAllPlacesMigration:'supabase/migrations/20260923221800_route_all_discovered_places.sql',
   routeSpatialMigration:'supabase/migrations/20260924151211_route_corridor_private_projection.sql',
+  fastNearbyMigration:'supabase/migrations/20260927034954_fast_complete_nearby_all_projection.sql',
+  locationTrust:'apps/consumer-mobile/services/locationTrust.ts',
+  locationPresentation:'apps/consumer-mobile/services/locationPresentation.ts',
+  restroomFacilities:'apps/consumer-mobile/services/restroomFacilities.ts',
 };
 for(const [label,path] of Object.entries(paths))if(!fs.existsSync(path))throw new Error(`${label} adaptive-search authority missing: ${path}`);
 const read=path=>fs.readFileSync(path,'utf8');
 const requireToken=(text,token,label)=>{if(!text.includes(token))throw new Error(`${label} missing ${token}`)};
-const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), cache=read(paths.cache), locationResolver=read(paths.locationResolver), locationResolverEdge=read(paths.locationResolverEdge), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration), routePermissionRepair=read(paths.routePermissionRepair), routeAllPlacesMigration=read(paths.routeAllPlacesMigration), routeSpatialMigration=read(paths.routeSpatialMigration);
+const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), cache=read(paths.cache), locationResolver=read(paths.locationResolver), locationResolverEdge=read(paths.locationResolverEdge), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration), routePermissionRepair=read(paths.routePermissionRepair), routeAllPlacesMigration=read(paths.routeAllPlacesMigration), routeSpatialMigration=read(paths.routeSpatialMigration), fastNearbyMigration=read(paths.fastNearbyMigration), locationTrust=read(paths.locationTrust), locationPresentation=read(paths.locationPresentation), restroomFacilities=read(paths.restroomFacilities);
 
 for(const token of ['1 mi','2 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Expand for required amenities','Maximum distance','Nearby','Along route','findAdaptiveNearbyRestrooms','listPlacesAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route','Start navigation'])requireToken(screen,token,'Consumer adaptive Explore');
 for(const token of ['AdaptiveExploreScreen'])requireToken(entry,token,'Consumer Explore entry');
@@ -40,8 +44,13 @@ for(const token of [
   "normalizeCensusCandidate",
   "lookupCensus",
   "looksLikeUsStreetAddress",
-  "nominatimCandidates.length ? nominatimCandidates : await lookupCensus(query)",
-])requireToken(locationResolverEdge,token,'Consumer residential geocoder fallback');
+  "if (looksLikeUsStreetAddress(query))",
+  "candidates = await lookupCensus(query);",
+  "candidates = await lookupPrimary(query);",
+])requireToken(locationResolverEdge,token,'Consumer residential geocoder priority');
+const censusIndex=locationResolverEdge.indexOf("candidates = await lookupCensus(query);");
+const primaryIndex=locationResolverEdge.indexOf("candidates = await lookupPrimary(query);");
+if(!(censusIndex>=0&&primaryIndex>censusIndex))throw new Error('Exact U.S. street addresses must try Census before the throttled general geocoder.');
 if(locationResolverEdge.includes("fetch('https://maps.googleapis.com"))throw new Error('Consumer address geocoding must not depend on a client-shipped Google Maps key.');
 
 requireToken(cache,'rows.slice(0,500)','Dense nearby cache must preserve the full 500-row discovery window');
@@ -87,6 +96,24 @@ for(const token of [
 ])requireToken(screen,token,'Searched-address Explore origin parity');
 if(!screen.includes("const query=areaMatch?'':rawQuery;"))throw new Error('Resolved address searches must discover the full nearby network instead of text-filtering results by the address string.');
 if(!screen.includes('result = await findAdaptiveNearbyPlaces({'))throw new Error('Everything-mode address discovery must use the same adaptive all-place engine as app-open nearby discovery.');
+for(const token of [
+  'const cameraRef=useRef<any>(null);',
+  'cameraRef.current?.jumpTo({center:target,zoom:13})',
+  'const enrichmentRun=++nearbyEnrichmentRunRef.current;',
+  'Trust, network, photos and progression are enhancements, not blockers.',
+  'limit: 2000',
+])requireToken(screen,token,'Immediate searched-location rendering');
+if(!core.includes('export const MODERATE_LOCAL_RESULT_COUNT=25;'))throw new Error('Sparse suburban discovery must not stop at the old 8-result two-mile threshold.');
+for(const token of ["rpc('map_network_nearby_all_v1'","Math.min(2000","Canonical discovery is the interactive path"])requireToken(core,token,'Fast complete all-place discovery');
+const placesCore=core.slice(core.indexOf('export async function findAdaptiveNearbyPlaces'),core.indexOf('export type RouteDiscoveryCategory'));
+if(placesCore.includes('const harvest=await harvestPromise'))throw new Error('Default all-place discovery must not block on live harvesting.');
+for(const token of ['map_network_nearby_all_core_v1','ST_DWithin(l.geom,v_origin,p_radius_m)','p_limit > 2000','SECURITY DEFINER','CREATE OR REPLACE FUNCTION public.map_network_nearby_all_v1','SECURITY INVOKER'])requireToken(fastNearbyMigration,token,'Fast indexed nearby projection');
+const nearbyPublicWrapper=fastNearbyMigration.slice(fastNearbyMigration.lastIndexOf('CREATE OR REPLACE FUNCTION public.map_network_nearby_all_v1'));
+if(nearbyPublicWrapper.includes('SECURITY DEFINER'))throw new Error('Public fast nearby wrapper must remain SECURITY INVOKER.');
+if(nearbyPublicWrapper.includes('FROM public.locations'))throw new Error('Public fast nearby wrapper must not expose raw locations.');
+for(const [text,label,chunk] of [[locationTrust,'trust enrichment',100],[locationPresentation,'presentation enrichment',200],[restroomFacilities,'facility enrichment',200]]){
+  if(!text.includes('for(let index=0;index<ids.length;index+=' + chunk))throw new Error(label+' must chunk the complete result set instead of truncating it.');
+}
 if(screen.includes('refreshControl={<RefreshControl'))throw new Error('Explore pull-to-refresh must stay disabled so map panning cannot trigger a page refresh gesture.');
 for(const token of [
   'destinationCardOpen',
