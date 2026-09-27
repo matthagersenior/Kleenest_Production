@@ -74,6 +74,19 @@ if(routePublicWrapper.includes('SECURITY DEFINER'))throw new Error('Public route
 if(routePublicWrapper.includes('FROM public.locations'))throw new Error('Public route wrapper must not read raw locations directly.');
 if(!routeSpatialMigration.includes("v_category='all'"))throw new Error('Indexed route projection must preserve all-discovered-place mode.');
 if(!screen.includes("category: 'all'")||!screen.includes('limit: 200'))throw new Error('Along-route Explore must request the widened discovered-place projection.');
+for(const token of [
+  'function snapMapToDiscoveryOrigin(target:[number,number])',
+  "setSelectedId('')",
+  'setDestinationCardOpen(false)',
+  'setMapCenter(target)',
+  'setMapZoom(13)',
+  'setCameraNonce((value)=>value+1)',
+  'snapMapToDiscoveryOrigin(areaMatch.origin)',
+  'const resetSelectionForOriginChange=Boolean(areaMatch)||clearQuery',
+  "accessibilityLabel={mode==='route'?'Select destination marker':'Searched location — active Explore origin'}",
+])requireToken(screen,token,'Searched-address Explore origin parity');
+if(!screen.includes("const query=areaMatch?'':rawQuery;"))throw new Error('Resolved address searches must discover the full nearby network instead of text-filtering results by the address string.');
+if(!screen.includes('result = await findAdaptiveNearbyPlaces({'))throw new Error('Everything-mode address discovery must use the same adaptive all-place engine as app-open nearby discovery.');
 if(screen.includes('refreshControl={<RefreshControl'))throw new Error('Explore pull-to-refresh must stay disabled so map panning cannot trigger a page refresh gesture.');
 for(const token of [
   'destinationCardOpen',
