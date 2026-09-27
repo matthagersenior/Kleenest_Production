@@ -55,17 +55,23 @@ export type RestroomFacilitySummary={
 };
 
 export async function listRestroomFacilitySummaries(locationIds:string[]):Promise<RestroomFacilitySummary[]>{
-  const ids=[...new Set((locationIds||[]).map(String).filter(Boolean))].slice(0,200);
+  const ids=[...new Set((locationIds||[]).map(String).filter(Boolean))];
   if(!ids.length)return[];
-  const{data,error}=await getKleenestSupabaseClient().rpc('list_restroom_facility_summaries',{p_location_ids:ids});
-  if(error)throw error;
-  return (Array.isArray(data)?data:[]).map((row:any)=>({
-    location_id:String(row.location_id),
-    facility_count:Number(row.facility_count||0),
-    facility_types:Array.isArray(row.facility_types)?row.facility_types.map(String) as RestroomFacilityType[]:[],
-    business_confirmed_count:Number(row.business_confirmed_count||0),
-    freshest_observed_at:row.freshest_observed_at?String(row.freshest_observed_at):null,
+  const client=getKleenestSupabaseClient();
+  const chunks:string[][]=[];
+  for(let index=0;index<ids.length;index+=200)chunks.push(ids.slice(index,index+200));
+  const pages=await Promise.all(chunks.map(async chunk=>{
+    const{data,error}=await client.rpc('list_restroom_facility_summaries',{p_location_ids:chunk});
+    if(error)throw error;
+    return (Array.isArray(data)?data:[]).map((row:any)=>({
+      location_id:String(row.location_id),
+      facility_count:Number(row.facility_count||0),
+      facility_types:Array.isArray(row.facility_types)?row.facility_types.map(String) as RestroomFacilityType[]:[],
+      business_confirmed_count:Number(row.business_confirmed_count||0),
+      freshest_observed_at:row.freshest_observed_at?String(row.freshest_observed_at):null,
+    }));
   }));
+  return pages.flat();
 }
 
 export async function identifyRestroomFacility(locationId:string,facilityType:RestroomFacilityType,label?:string|null):Promise<RestroomFacility>{
