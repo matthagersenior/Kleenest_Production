@@ -180,23 +180,38 @@ async function lookup(query: string): Promise<Candidate[]> {
   const cached = cache.get(key);
   if (cached && cached.expiresAt > now) return cached.value;
 
-  let nominatimCandidates: Candidate[] = [];
-  let primaryError: unknown = null;
-  try {
-    nominatimCandidates = await lookupPrimary(query);
-  } catch (error) {
-    primaryError = error;
-  }
-
   let candidates: Candidate[] = [];
-  try {
-    candidates = nominatimCandidates.length ? nominatimCandidates : await lookupCensus(query);
-  } catch (censusError) {
-    if (primaryError) throw primaryError;
-    throw censusError;
+  let firstError: unknown = null;
+
+  // Exact U.S. street addresses are what Census is designed for. Try it first
+  // instead of paying the Nominatim queue/throttle cost and then falling back.
+  if (looksLikeUsStreetAddress(query)) {
+    try {
+      candidates = await lookupCensus(query);
+    } catch (error) {
+      firstError = error;
+    }
   }
 
-  if (!candidates.length && primaryError) throw primaryError;
+  if (!candidates.length) {
+    try {
+      candidates = await lookupPrimary(query);
+    } catch (error) {
+      if (firstError) throw firstError;
+      firstError = error;
+    }
+  }
+
+  if (!candidates.length && !looksLikeUsStreetAddress(query)) {
+    try {
+      candidates = await lookupCensus(query);
+    } catch (error) {
+      if (firstError) throw firstError;
+      firstError = error;
+    }
+  }
+
+  if (!candidates.length && firstError) throw firstError;
   cache.set(key, {
     expiresAt: Date.now() + (candidates.length ? CACHE_TTL_MS : EMPTY_CACHE_TTL_MS),
     value: candidates,
