@@ -13,7 +13,7 @@ if(!failures.length){
  const explore=`${exploreEntry}\n${adaptiveExplore}`;
  if(!migration.includes('mobile_location_trust_summaries')||!migration.includes("where r.status='published'")||!migration.includes('count(distinct p.check_in_id)')||!migration.includes('count(rp.id)')||!migration.includes('count(distinct ao.amenity_id)'))failures.push('Trust summary must aggregate only published-review-linked evidence.');
  if(!migration.includes("set search_path = ''")||!migration.includes('A maximum of 100 location ids may be requested'))failures.push('Trust summary RPC must use empty search path and bounded batching.');
- if(!service.includes("rpc('mobile_location_trust_summaries'")||!service.includes('.slice(0,100)')||!service.includes('attachLocationTrust'))failures.push('Mobile trust adapter must batch through the canonical RPC.');
+ if(!service.includes("rpc('mobile_location_trust_summaries'")||!service.includes('for(let index=0;index<ids.length;index+=100)')||!service.includes('p_location_ids:chunk')||!service.includes('Promise.all(chunks.map')||!service.includes('attachLocationTrust'))failures.push('Mobile trust adapter must chunk the complete result set through the canonical 100-id RPC boundary.');
  const mapsTrustIds=/data\s*\.\s*map\s*\(\s*idOf\s*\)/s.test(adaptiveExplore);
  const batchesTrust=/listLocationTrustSummaries\s*\(\s*ids\s*\)/s.test(adaptiveExplore)||/listLocationTrustSummaries\s*\(\s*data\s*\.\s*map\s*\(/s.test(adaptiveExplore);
  const attachesTrust=/attachLocationTrust\s*\(\s*data\s*,\s*summaries\s*\)/s.test(adaptiveExplore);
