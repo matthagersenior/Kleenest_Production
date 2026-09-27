@@ -598,6 +598,15 @@ export default function AdaptiveExploreScreen() {
     setTimeout(()=>void loadRoute(),0);
   }
 
+  function snapMapToDiscoveryOrigin(target:[number,number]) {
+    setSelectedId('');
+    setDestinationCardOpen(false);
+    setPendingMapOrigin(null);
+    setMapCenter(target);
+    setMapZoom(13);
+    setCameraNonce((value)=>value+1);
+  }
+
   function chooseRadius(nextRadius: number) {
     setRadius(nextRadius);
     setEffectiveRadiusMeters(nextRadius);
@@ -702,7 +711,14 @@ export default function AdaptiveExploreScreen() {
 
   async function loadNearby(clearQuery = false, preserveCacheOnEmpty = false, overrideOrigin:[number,number]|null=null) {
     const rawQuery=clearQuery?'':search.trim();
-    if(clearQuery){setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');setPendingMapOrigin(null);}
+    if(clearQuery){
+      setSearch('');
+      setSearchAreaOrigin(null);
+      setSearchAreaLabel('');
+      setPendingMapOrigin(null);
+      setDestinationCardOpen(false);
+      setRoute(null);
+    }
 
     let areaMatch:{origin:[number,number];label:string}|null=null;
     if(rawQuery&&looksLikeAddressOrArea(rawQuery)){
@@ -724,9 +740,23 @@ export default function AdaptiveExploreScreen() {
         : [Number(current!.coords.longitude),Number(current!.coords.latitude)];
     const latitude=nextOrigin[1],longitude=nextOrigin[0];
     const query=areaMatch?'':rawQuery;
-    if(areaMatch){setSearchAreaOrigin(areaMatch.origin);setSearchAreaLabel(areaMatch.label);setPendingMapOrigin(null);}
-    else if(overrideOrigin){setSearch('');setSearchAreaOrigin(overrideOrigin);setSearchAreaLabel('Map area');setPendingMapOrigin(null);}
-    else if(rawQuery){setSearchAreaOrigin(null);setSearchAreaLabel('');setPendingMapOrigin(null);}
+    if(areaMatch){
+      setSearchAreaOrigin(areaMatch.origin);
+      setSearchAreaLabel(areaMatch.label);
+      snapMapToDiscoveryOrigin(areaMatch.origin);
+    }
+    else if(overrideOrigin){
+      setSearch('');
+      setSearchAreaOrigin(overrideOrigin);
+      setSearchAreaLabel('Map area');
+      setPendingMapOrigin(null);
+    }
+    else if(rawQuery){
+      setSearchAreaOrigin(null);
+      setSearchAreaLabel('');
+      setPendingMapOrigin(null);
+    }
+    if(clearQuery) snapMapToDiscoveryOrigin(nextOrigin);
 
     let result: any;
     let usedMatureFallback = false;
@@ -804,7 +834,8 @@ export default function AdaptiveExploreScreen() {
 
     const verificationCandidates = enriched.filter((row) => row?.needs_restroom_verification === true).length;
     const restroomEvidence = enriched.length - verificationCandidates;
-    const preservedId = selectedId && enriched.some((row) => idOf(row) === selectedId) ? selectedId : '';
+    const resetSelectionForOriginChange=Boolean(areaMatch)||clearQuery;
+    const preservedId = !resetSelectionForOriginChange && selectedId && enriched.some((row) => idOf(row) === selectedId) ? selectedId : '';
     setRows(enriched);setRoute(null);
     if (!preservedId) setMapCenter(nextOrigin);
     setEffectiveRadiusMeters(result.effectiveRadiusMeters);setAttemptedRadiiMeters(result.attemptedRadiiMeters);setCached(false);setSelectedId(preservedId);
@@ -1052,7 +1083,7 @@ export default function AdaptiveExploreScreen() {
           }
           setCached(true);
           setMessage(
-            `Showing your last nearby bathrooms from ${cachedAgeLabel(cache.savedAt)} while current results load.`,
+            `Showing your last nearby places from ${cachedAgeLabel(cache.savedAt)} while current results load.`,
           );
         }
       })
@@ -1353,15 +1384,15 @@ export default function AdaptiveExploreScreen() {
                   <View style={s.userLocationDot} />
                 </View>
               </Marker>:null}
-              {searchAreaOrigin?<Marker id="searched-area-marker" lngLat={searchAreaOrigin} anchor="center" onPress={selectDestinationMarker}>
+              {searchAreaOrigin?<Marker id="searched-area-marker" lngLat={searchAreaOrigin} anchor="center" onPress={mode==='route'?selectDestinationMarker:recenterMap}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Select destination marker"
+                  accessibilityLabel={mode==='route'?'Select destination marker':'Searched location — active Explore origin'}
                   hitSlop={14}
-                  onPress={(event)=>{event.stopPropagation();selectDestinationMarker();}}
+                  onPress={(event)=>{event.stopPropagation();if(mode==='route')selectDestinationMarker();else recenterMap();}}
                   style={[s.searchedAreaMarker,{backgroundColor:theme.surface,borderColor:theme.accent}]}
                 >
-                  <Text style={[s.searchedAreaMarkerText,{color:theme.accent}]}>◎</Text>
+                  <Text style={[s.searchedAreaMarkerText,{color:theme.accent}]}>{mode==='route'?'◎':'⌖'}</Text>
                 </Pressable>
               </Marker>:null}
               {visibleRows.filter(hasCoordinates).map((row) => {
