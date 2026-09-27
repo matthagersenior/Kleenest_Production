@@ -136,7 +136,7 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
   const maxRadiusMeters=Math.max(requestedRadiusMeters,boundedRadius(input.maxRadiusMeters));
   const amenityNames=normalizedAmenities(input.amenityNames||[]);
   const amenityMatch=validMatchRule(input.amenityMatch||'any');
-  const limit=Math.max(1,Math.min(2000,Math.round(input.limit||2000)));
+  const limit=Math.max(1,Math.min(500,Math.round(input.limit||500)));
   const hardRadius=input.hardRadius===true;
   const radii=[requestedRadiusMeters];
   if(!hardRadius&&input.autoExpand!==false){
@@ -219,7 +219,7 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
 export async function findAdaptiveNearbyPlaces(input:{latitude:number;longitude:number;requestedRadiusMeters:number;maxRadiusMeters:number;search?:string;autoExpand?:boolean;hardRadius?:boolean;limit?:number}):Promise<AdaptiveNearbyResult>{
   const requestedRadiusMeters=boundedRadius(input.requestedRadiusMeters);
   const maxRadiusMeters=Math.max(requestedRadiusMeters,boundedRadius(input.maxRadiusMeters));
-  const limit=Math.max(1,Math.min(500,Math.round(input.limit||500)));
+  const limit=Math.max(1,Math.min(2000,Math.round(input.limit||2000)));
   const hardRadius=input.hardRadius===true;
   const radii=[requestedRadiusMeters];
   if(!hardRadius&&input.autoExpand!==false){
@@ -245,9 +245,6 @@ export async function findAdaptiveNearbyPlaces(input:{latitude:number;longitude:
     });
     rows=await loadCanonical();
 
-    const locallyEnough=(radiusMeters<=1609&&rows.length>=DENSE_LOCAL_RESULT_COUNT)
-      ||(radiusMeters<=3219&&rows.length>=MODERATE_LOCAL_RESULT_COUNT)
-      ||(radiusMeters>=8047&&rows.length>0);
     // Canonical discovery is the interactive path. Live harvesting updates the
     // shared inventory in the background and must never block the map/results.
     if(harvestPromise)void harvestPromise.catch(()=>{});
