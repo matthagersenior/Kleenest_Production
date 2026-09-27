@@ -35,11 +35,17 @@ const normalize=(row:any):LocationTrustSummary=>({
 });
 
 export async function listLocationTrustSummaries(locationIds:string[]){
-  const ids=[...new Set(locationIds.filter(Boolean).map(String))].slice(0,100);
+  const ids=[...new Set(locationIds.filter(Boolean).map(String))];
   if(!ids.length)return[];
-  const{data,error}=await getKleenestSupabaseClient().rpc('mobile_location_trust_summaries',{p_location_ids:ids});
-  if(error)throw error;
-  return(Array.isArray(data)?data:[]).map(normalize);
+  const client=getKleenestSupabaseClient();
+  const chunks=[] as string[][];
+  for(let index=0;index<ids.length;index+=100)chunks.push(ids.slice(index,index+100));
+  const pages=await Promise.all(chunks.map(async chunk=>{
+    const{data,error}=await client.rpc('mobile_location_trust_summaries',{p_location_ids:chunk});
+    if(error)throw error;
+    return(Array.isArray(data)?data:[]).map(normalize);
+  }));
+  return pages.flat();
 }
 
 export async function getLocationTrustSummary(locationId:string){
@@ -108,11 +114,17 @@ const normalizeNetwork=(row:any):LocationNetworkStatus=>({
 });
 
 export async function listLocationNetworkStatuses(locationIds:string[]){
-  const ids=[...new Set(locationIds.filter(Boolean).map(String))].slice(0,200);
+  const ids=[...new Set(locationIds.filter(Boolean).map(String))];
   if(!ids.length)return[];
-  const{data,error}=await getKleenestSupabaseClient().rpc('mobile_location_network_statuses',{p_location_ids:ids});
-  if(error)throw error;
-  return(Array.isArray(data)?data:[]).map(normalizeNetwork);
+  const client=getKleenestSupabaseClient();
+  const chunks=[] as string[][];
+  for(let index=0;index<ids.length;index+=200)chunks.push(ids.slice(index,index+200));
+  const pages=await Promise.all(chunks.map(async chunk=>{
+    const{data,error}=await client.rpc('mobile_location_network_statuses',{p_location_ids:chunk});
+    if(error)throw error;
+    return(Array.isArray(data)?data:[]).map(normalizeNetwork);
+  }));
+  return pages.flat();
 }
 
 export async function getLocationNetworkStatus(locationId:string){
