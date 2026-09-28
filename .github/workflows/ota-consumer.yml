@@ -2,6 +2,7 @@ name: Publish Emergency Consumer OTA
 
 on:
   workflow_dispatch:
+  # Repository owner may comment /publish-consumer-ota on a pull request.
   issue_comment:
     types: [created]
 
