@@ -2,6 +2,9 @@ name: Publish Emergency Consumer OTA
 
 on:
   workflow_dispatch:
+  # Repository owner may comment /publish-consumer-ota on a pull request.
+  issue_comment:
+    types: [created]
 
 permissions:
   actions: read
@@ -13,6 +16,7 @@ concurrency:
 
 jobs:
   verify:
+    if: github.event_name == 'workflow_dispatch' || (github.event.issue.pull_request && github.event.comment.body == '/publish-consumer-ota' && github.event.comment.user.login == github.repository_owner)
     runs-on: ubuntu-latest
     timeout-minutes: 25
     outputs:
