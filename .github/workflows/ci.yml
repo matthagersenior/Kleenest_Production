@@ -277,6 +277,8 @@ jobs:
         run: node scripts/owner-runtime-integrity-audit.mjs
       - name: Operator functional parity
         run: node scripts/operator-functional-parity-audit.mjs
+      - name: Compact progression groups
+        run: node scripts/progression-compact-groups-audit.mjs
       - name: Full authority chain parity
         run: npm run audit
       - name: Consumer native typecheck
