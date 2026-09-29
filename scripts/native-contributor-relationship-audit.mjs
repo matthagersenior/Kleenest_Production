@@ -3,7 +3,7 @@ import fs from 'node:fs';
 const migrationPath='supabase/migrations/20260831074500_mobile_contributor_relationship_status_authority.sql';
 const servicePath='apps/consumer-mobile/services/contributors.ts';
 const screenPath='apps/consumer-mobile/app/contributor/[id].tsx';
-const socialPath='apps/consumer-mobile/app/social.tsx';
+const socialPath='apps/consumer-mobile/app/home.tsx';
 const failures=[];
 for(const file of[migrationPath,servicePath,screenPath,socialPath])if(!fs.existsSync(file))failures.push(`missing contributor relationship file: ${file}`);
 if(!failures.length){
@@ -15,9 +15,9 @@ if(!failures.length){
  if(!screen.includes('await toggleMobileFollow(userId);await load()'))failures.push('Follow mutation must reload canonical relationship state after completion.');
  if(!screen.includes('Follows you')||!screen.includes('You follow each other'))failures.push('Contributor UI must expose incoming and mutual relationship context.');
  if(screen.includes('Follow / Unfollow'))failures.push('Generic ambiguous follow label must not return on contributor profile.');
- if(!social.includes('const followerIds=useMemo')||!social.includes('relationshipLabel(id,followingIds,followerIds)'))failures.push('Community search must derive relationship labels from already-loaded following/follower sets without N+1 calls.');
- for(const label of ["return'Mutual'","return'Following'","return'Follow back'","return'Follow'"])if(!social.includes(label))failures.push(`Community search missing explicit relationship state: ${label}`);
- if(social.includes('Follow / Unfollow'))failures.push('Generic ambiguous follow label must not remain in Community search.');
+ if(!social.includes('const followerIds=useMemo')||!social.includes('relationshipLabel(id,followingIds,followerIds)'))failures.push('Merged Home People search must derive relationship labels from already-loaded following/follower sets without N+1 calls.');
+ for(const label of ["return'Mutual'","return'Following'","return'Follow back'","return'Follow'"])if(!social.includes(label))failures.push(`Merged Home People search missing explicit relationship state: ${label}`);
+ if(social.includes('Follow / Unfollow'))failures.push('Generic ambiguous follow label must not remain in Merged Home People search.');
 }
 if(failures.length){console.error('Native contributor relationship audit failed:');for(const failure of failures)console.error(`- ${failure}`);process.exit(1)}
 console.log('Native contributor relationship audit passed.');
