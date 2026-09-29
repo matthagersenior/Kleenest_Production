@@ -7,7 +7,7 @@ const files={
  tools:fs.readFileSync('apps/consumer-mobile/app/reward-tools.tsx','utf8'),
  explore:fs.readFileSync('apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','utf8'),
  location:fs.readFileSync('apps/consumer-mobile/app/location/[id].tsx','utf8'),
- social:fs.readFileSync('apps/consumer-mobile/app/social.tsx','utf8'),
+ home:fs.readFileSync('apps/consumer-mobile/app/home.tsx','utf8'),
  layout:fs.readFileSync('apps/consumer-mobile/app/_layout.tsx','utf8'),
  progress:fs.readFileSync('apps/consumer-mobile/app/progress.tsx','utf8'),
 };
@@ -28,7 +28,7 @@ if(files.explore.includes('equippedMapFilter'))throw new Error('Explore must aut
 if(/EQUIPABLE_REWARD_KINDS=\[[^\]]*'map_filter'/.test(files.progress))throw new Error('Progress must not expose map filters as an either/or equipment slot.');
 need('progress','PERMANENT FILTER · STACKS WITH OTHER UNLOCKED FILTERS','permanent map-filter reward presentation');
 for(const token of ['getRewardCapabilities','checkInAnimation','Signal Ripple','Guardian Lock'])need('location',token,'check-in reward runtime');
-for(const token of ['listRewardReactions','toggleRewardReaction','reactionOptions','reactionChip'])need('social',token,'Community reward reactions');
+for(const token of ['listRewardReactions','toggleRewardReaction','reactionOptions','reactionChip'])need('home',token,'Home community reward reactions');
 need('layout','name="reward-tools"','reward toolkit route');
 need('progress',"router.push('/reward-tools')",'progress reward toolkit entry');
 
