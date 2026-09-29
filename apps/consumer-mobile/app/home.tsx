@@ -79,7 +79,9 @@ export default function HomeScreen(){
       </View>
 
       <View style={[s.homeTabs,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
-        {(['feed','people','league'] as HomeView[]).map(item=><Pressable key={item} accessibilityRole="tab" accessibilityLabel={item==='feed'?'Feed':item==='people'?'People':'League'} accessibilityState={{selected:view===item}} style={[s.homeTab,view===item&&{backgroundColor:theme.accent}]} onPress={()=>setView(item)}><Text style={[s.homeTabText,{color:view===item?theme.accentText:theme.muted}]}>{item.toUpperCase()}</Text></Pressable>)}
+        <Pressable accessibilityRole="tab" accessibilityLabel="Feed" accessibilityState={{selected:view==='feed'}} style={[s.homeTab,view==='feed'&&{backgroundColor:theme.accent}]} onPress={()=>setView('feed')}><Text style={[s.homeTabText,{color:view==='feed'?theme.accentText:theme.muted}]}>FEED</Text></Pressable>
+        <Pressable accessibilityRole="tab" accessibilityLabel="People" accessibilityState={{selected:view==='people'}} style={[s.homeTab,view==='people'&&{backgroundColor:theme.accent}]} onPress={()=>setView('people')}><Text style={[s.homeTabText,{color:view==='people'?theme.accentText:theme.muted}]}>PEOPLE</Text></Pressable>
+        <Pressable accessibilityRole="tab" accessibilityLabel="League" accessibilityState={{selected:view==='league'}} style={[s.homeTab,view==='league'&&{backgroundColor:theme.accent}]} onPress={()=>setView('league')}><Text style={[s.homeTabText,{color:view==='league'?theme.accentText:theme.muted}]}>LEAGUE</Text></Pressable>
       </View>
 
       {view==='feed'?<>
