@@ -20,7 +20,7 @@ for(const [label,path,context] of [
 for(const [label,path,context] of [
   ['Progress World','apps/consumer-mobile/app/progress.tsx','progress'],
   ['Game Center','apps/consumer-mobile/app/games.tsx','game'],
-  ['Community','apps/consumer-mobile/app/social.tsx','community'],
+  ['Home Community','apps/consumer-mobile/app/home.tsx','community'],
 ]){
   const source=read(path);
   if(!source.includes("resolveKleenestTheme(themeMode,systemScheme==='dark','"+context+"')"))failures.push(label+' must use its contextual theme accent.');
