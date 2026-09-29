@@ -81,7 +81,7 @@ need('Progress nested cards','apps/consumer-mobile/app/progress.tsx',[
   'style={[s.badge,{backgroundColor:theme.surface,borderColor:theme.line}',
   "useConsumerTheme('progress')",
 ]);
-need('Community nested cards','apps/consumer-mobile/app/social.tsx',[
+need('Home Community nested cards','apps/consumer-mobile/app/home.tsx',[
   'style={[s.feedLocation,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,borderWidth:1}]}',
   'style={[s.evidenceBox,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}',
   "useConsumerTheme('community')",
