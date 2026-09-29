@@ -33,11 +33,12 @@ if(!failures.length){
     [explore,'<SponsoredSlot surface="maps"','contextClass="maps_network_after_results_4"'],
     [progress,'<SponsoredSlot surface="progress"','contextClass="progress_network_after_trust"'],
     [games,'<SponsoredSlot surface="games"','contextClass="game_center_network_after_first_group"'],
-    [home,'<SponsoredSlot surface="home"','contextClass="home_feed_network_after_updates_4"'],
+    [home,'contextClass="home_feed_sponsored_after_updates_2"','contextClass="home_feed_network_after_updates_4"'],
   ]) {
     if(!source.includes(sponsoredToken))failures.push(`Missing dedicated Kleenest Sponsored placement: ${sponsoredToken}`);
     if(!source.includes(networkToken))failures.push(`Missing independent AdMob placement: ${networkToken}`);
   }
+  if(!home.includes('contextClass="home_feed_network_after_updates_12"'))failures.push('Long Home feeds must expose a second independent AdMob placement after update 12.');
   if(!profile.includes('contextClass="profile_network_before_account"'))failures.push('Profile must expose one independent lower-page AdMob placement.');
   if(profile.includes('fallback={<AdMobNativeSlot'))failures.push('Profile AdMob may not compete with Kleenest Sponsored inventory.');
   if(!sql.includes("'premium_removes_sponsored',false")||!sql.includes("'remove_ads_scope','network_only'"))failures.push('Remove Ads must remain network-only.');
