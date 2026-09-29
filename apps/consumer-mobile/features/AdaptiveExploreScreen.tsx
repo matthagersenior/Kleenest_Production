@@ -1619,7 +1619,7 @@ export default function AdaptiveExploreScreen() {
             </View>
           </View>
         }
-        renderItem={({ item,index }) => (
+        renderItem={({ item }) => (
           <>
             <View style={[s.resultItem,{backgroundColor:theme.surface,borderColor:theme.line}]}>
               <ResultCard
@@ -1637,7 +1637,7 @@ export default function AdaptiveExploreScreen() {
                 checkInFeedback={checkInFeedback[idOf(item)]}
               />
             </View>
-            {index===3?<View style={s.resultItem}><AdMobNativeSlot contextClass="maps_network_after_results_4" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/></View>:null}
+            {Number(item?.discovery_rank)===4?<View style={s.resultItem}><AdMobNativeSlot contextClass="maps_network_after_results_4" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/></View>:null}
           </>
         )}
         ListEmptyComponent={!loading ? (
