@@ -3,7 +3,7 @@ import fs from 'node:fs';
 const failures=[];
 const read=p=>fs.readFileSync(p,'utf8');
 const progress=read('apps/consumer-mobile/app/progress.tsx');
-const social=read('apps/consumer-mobile/app/social.tsx');
+const social=read('apps/consumer-mobile/app/home.tsx');
 const service=read('apps/consumer-mobile/services/discoveryProgression.ts');
 const meta=read('apps/consumer-mobile/services/engagementMetaGame.ts');
 const migrations=fs.readdirSync('supabase/migrations').sort().map(n=>read('supabase/migrations/'+n)).join('\n');
@@ -24,7 +24,7 @@ expect(progress,/getProgressionWorld/,'Progress screen must load Progression Wor
 for(const token of ['SEASON 01','THE FRESHNESS RUN','NEXT REVEAL','CHAPTERS','COMMUNITY METER','BADGE COLLECTIONS','PRIZE LADDER','RIVAL LADDER','TRUST RANK','EVIDENCE-BACKED'])if(!progress.includes(token))failures.push('Progress screen missing '+token+' presentation.');
 expect(progress,/ObjectiveWorldCard/,'Objectives must use distinct world-aware presentation instead of only generic XP cards.');
 for(const kind of ['quest','mission','challenge','journey','campaign','contest'])if(!progress.includes("kind==='"+kind+"'"))failures.push('Progress screen must differentiate '+kind+' mechanics.');
-expect(social,/SEASON RIVALS/,'Community must surface seasonal competition and rivals.');
+expect(social,/SEASON RIVALS/,'Merged Home League view must surface seasonal competition and rivals.');
 expect(meta,/ENGAGEMENT_SPONSOR_SURFACES=\['game_center','progress','community'\]/,'Sponsor eligibility must remain limited to engagement surfaces.');
 if(failures.length){console.error('Progression World engagement audit failed:');failures.forEach(f=>console.error('- '+f));process.exit(1)}
 console.log('Progression World engagement audit passed: seasons, chapters, collections, community goals, contests and rivals are distinct and canonical.');
