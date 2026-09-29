@@ -64,9 +64,9 @@ if(fs.existsSync(hubPath)){
 }
 const metaGame=fs.readFileSync('apps/consumer-mobile/services/engagementMetaGame.ts','utf8');
 const progress=fs.readFileSync('apps/consumer-mobile/app/progress.tsx','utf8');
-const community=fs.readFileSync('apps/consumer-mobile/app/social.tsx','utf8');
+const community=fs.readFileSync('apps/consumer-mobile/app/home.tsx','utf8');
 if(!/KLEENEST_DIVISIONS/.test(metaGame)||!/KLEENEST LEAGUE/.test(progress))failures.push('Progression must expose the Kleenest League meta-game.');
-if(!/COMMUNITY COMPETITION/.test(community))failures.push('Community must connect social play, rivals and league standing.');
+if(!/COMMUNITY COMPETITION/.test(community))failures.push('Merged Home League view must connect social play, rivals and league standing.');
 if(!/ENGAGEMENT_SPONSOR_SURFACES=\['game_center','progress','community'\]/.test(metaGame))failures.push('Ad/sponsor eligibility must stay constrained to engagement surfaces.');
 
 if(failures.length){
