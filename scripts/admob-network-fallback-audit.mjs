@@ -12,12 +12,14 @@ const required=[
   'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
   'apps/consumer-mobile/app/progress.tsx',
   'apps/consumer-mobile/app/games.tsx',
+  'apps/consumer-mobile/app/home.tsx',
+  'apps/consumer-mobile/app/profile.tsx',
   'supabase/migrations/20260920205000_business_self_service_sponsorship_and_network_ad_boundary.sql',
 ];
 for(const file of required)if(!fs.existsSync(file))failures.push(`Missing AdMob/network boundary surface: ${file}`);
 
 if(!failures.length){
-  const pkg=read(required[0]),config=read(required[1]),service=read(required[2]),native=read(required[3]),web=read(required[4]),sponsored=read(required[5]),explore=read(required[6]),progress=read(required[7]),games=read(required[8]),sql=read(required[9]);
+  const pkg=read(required[0]),config=read(required[1]),service=read(required[2]),native=read(required[3]),web=read(required[4]),sponsored=read(required[5]),explore=read(required[6]),progress=read(required[7]),games=read(required[8]),home=read(required[9]),profile=read(required[10]),sql=read(required[11]);
   if(!pkg.includes('"react-native-google-mobile-ads": "16.3.4"'))failures.push('Consumer must pin the Kotlin-compatible Google Mobile Ads bridge.');
   for(const token of ['react-native-google-mobile-ads','ADMOB_ANDROID_APP_ID','ADMOB_IOS_APP_ID','ca-app-pub-6958734306376288~2901875327','ca-app-pub-6958734306376288~3275164438'])if(!config.includes(token))failures.push(`AdMob Expo config missing: ${token}`);
   if(!native.includes('ca-app-pub-6958734306376288/6751375017'))failures.push('Android Native Advanced production ad unit is not configured.');
@@ -31,10 +33,13 @@ if(!failures.length){
     [explore,'<SponsoredSlot surface="maps"','contextClass="maps_network_after_results_4"'],
     [progress,'<SponsoredSlot surface="progress"','contextClass="progress_network_after_trust"'],
     [games,'<SponsoredSlot surface="games"','contextClass="game_center_network_after_first_group"'],
+    [home,'<SponsoredSlot surface="home"','contextClass="home_feed_network_after_updates_4"'],
   ]) {
     if(!source.includes(sponsoredToken))failures.push(`Missing dedicated Kleenest Sponsored placement: ${sponsoredToken}`);
     if(!source.includes(networkToken))failures.push(`Missing independent AdMob placement: ${networkToken}`);
   }
+  if(!profile.includes('contextClass="profile_network_before_account"'))failures.push('Profile must expose one independent lower-page AdMob placement.');
+  if(profile.includes('fallback={<AdMobNativeSlot'))failures.push('Profile AdMob may not compete with Kleenest Sponsored inventory.');
   if(!sql.includes("'premium_removes_sponsored',false")||!sql.includes("'remove_ads_scope','network_only'"))failures.push('Remove Ads must remain network-only.');
   const sponsoredFn=sql.slice(sql.indexOf('create or replace function public.consumer_sponsored_cards'),sql.indexOf('create or replace function public.business_sponsorship_snapshot'));
   if(sponsoredFn.includes('has_kleenest_premium')||sponsoredFn.includes('consumer_network_ads_enabled'))failures.push('Direct Kleenest sponsorship must not consult the network-ad removal entitlement.');
