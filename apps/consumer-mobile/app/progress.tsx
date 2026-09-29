@@ -170,7 +170,7 @@ export default function ProgressScreen(){
   </View>
 
   {openSection==='next'?<>
-  <SponsoredSlot surface="progress" contextClass="progress_between_sections" fallback={<AdMobNativeSlot contextClass="progress_between_sections" keywords={['restroom','travel','local discovery']}/>}/>
+  <SponsoredSlot surface="progress" contextClass="progress_between_sections"/>
 
   <View style={[s.leagueCard,{backgroundColor:theme.surface,borderColor:theme.accent}]}><View style={s.leagueHead}><View style={[s.leagueIcon,{backgroundColor:theme.accent}]}><Text style={[s.leagueIconText,{color:theme.accentText}]}>{leagueDivision.icon}</Text></View><View style={{flex:1}}><Text style={[s.kicker,{color:theme.muted}]}>KLEENEST LEAGUE</Text><Text style={[s.leagueTitle,{color:theme.ink}]}>{leagueDivision.name} Division</Text><Text style={[s.body,{color:theme.muted}]}>{leagueDivision.description}</Text></View></View><View style={[s.trackSmall,{backgroundColor:theme.surfaceRaised}]}><View style={[s.fillSmall,{backgroundColor:theme.accent,width:(String(Math.round(leaguePct*100))+'%') as any}]} /></View><Text style={[s.meta,{color:theme.muted}]}>{nextLeagueDivision?Math.max(0,nextLeagueDivision.minXp-totalXp).toLocaleString()+' XP to '+nextLeagueDivision.name:'Top current division'} · {collectionTier}</Text></View>
 
@@ -180,6 +180,8 @@ export default function ProgressScreen(){
    <View style={s.trustStats}><MiniDark value={Number(trust?.evidence_score||0)} label="evidence score"/><MiniDark value={'+'+Number(trust?.progression_bonus||0)} label="progress bonus"/><MiniDark value={Number(trust?.verified_checkins||0)} label="verified visits"/></View>
    <Text style={[s.trustFoot,{color:theme.muted}]}>{trust?.explanation||'Verified evidence grows trust. Games improve mastery but cannot manufacture contributor authority.'}</Text>
   </View>
+
+  <AdMobNativeSlot contextClass="progress_network_after_trust" keywords={['restroom','travel','local discovery']}/>
   </>:null}
 
   {openSection==='rewards'&&rewards.length?<View>

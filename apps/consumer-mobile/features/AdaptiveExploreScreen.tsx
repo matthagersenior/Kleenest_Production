@@ -1608,7 +1608,7 @@ export default function AdaptiveExploreScreen() {
               </View>
             ) : null}
 
-            <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results" fallback={<AdMobNativeSlot contextClass="maps_between_results" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>}/>
+            <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results"/>
 
             <View style={s.listHeading}>
               <View>
@@ -1620,22 +1620,25 @@ export default function AdaptiveExploreScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <View style={[s.resultItem,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-            <ResultCard
-              item={item}
-              selected={idOf(item) === selectedId}
-              onSelect={() => selectRow(item)}
-              onDirections={() => void directions(item)}
-              onCheckIn={() => void checkIn(item)}
-              onAddToRoute={() => addToRoute(item)}
-              onKnow={() => contributeKnowledge(item)}
-              onDetails={() => router.push(`/location/${idOf(item)}`)}
-              onReview={() => router.push({pathname:'/location/[id]',params:{id:idOf(item),review:'1'}})}
-              route={mode === 'route' ? route : null}
-              requestedAmenities={selectedAmenityNames}
-              checkInFeedback={checkInFeedback[idOf(item)]}
-            />
-          </View>
+          <>
+            <View style={[s.resultItem,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+              <ResultCard
+                item={item}
+                selected={idOf(item) === selectedId}
+                onSelect={() => selectRow(item)}
+                onDirections={() => void directions(item)}
+                onCheckIn={() => void checkIn(item)}
+                onAddToRoute={() => addToRoute(item)}
+                onKnow={() => contributeKnowledge(item)}
+                onDetails={() => router.push(`/location/${idOf(item)}`)}
+                onReview={() => router.push({pathname:'/location/[id]',params:{id:idOf(item),review:'1'}})}
+                route={mode === 'route' ? route : null}
+                requestedAmenities={selectedAmenityNames}
+                checkInFeedback={checkInFeedback[idOf(item)]}
+              />
+            </View>
+            {Number(item?.discovery_rank)===4?<View style={s.resultItem}><AdMobNativeSlot contextClass="maps_network_after_results_4" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/></View>:null}
+          </>
         )}
         ListEmptyComponent={!loading ? (
           <View style={[s.resultItem,{backgroundColor:theme.surface,borderColor:theme.line}]}>

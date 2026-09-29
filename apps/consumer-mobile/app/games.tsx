@@ -65,9 +65,9 @@ export default function GamesHub(){
     <View style={[s.leagueRow,{backgroundColor:theme.resolved==='dark'?theme.surface:'#4a3976'}]}><View style={[s.divisionIcon,{backgroundColor:theme.surface}]}><Text style={[s.divisionGlyph,{color:theme.accent}]}>{division.icon}</Text></View><View style={{flex:1}}><Text style={s.divisionName}>{division.name} Division</Text><Text style={s.meta}>{next?String(Math.max(0,next.minXp-xp))+' XP to '+next.name:'Top current division'}</Text><View style={s.track}><View style={[s.fill,{backgroundColor:theme.accent,width:(String(Math.round(pct*100))+'%') as any}]} /></View></View><Pressable accessibilityRole="button" accessibilityLabel="Open League progress" style={[s.progressButton,{backgroundColor:theme.surface}]} onPress={()=>router.push('/progress')}><Text style={[s.progressButtonText,{color:theme.accent}]}>League →</Text></Pressable></View>
    </View>
 
-   <SponsoredSlot surface="games" contextClass="game_center_between_groups" fallback={<AdMobNativeSlot contextClass="game_center_between_groups" keywords={['games','restroom','travel']}/>}/>
+   <SponsoredSlot surface="games" contextClass="game_center_between_groups"/>
 
-   {groups.map(group=><View key={group.title} style={s.section}>
+   {groups.map((group,index)=><View key={group.title} style={s.section}>
     <Text style={[s.sectionLabel,{color:theme.muted}]}>{group.title}</Text>
     <View style={s.grid}>{group.items.map(game=><Pressable accessibilityRole="button" accessibilityLabel={'Play '+game.name} key={game.code} style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push({pathname:'/game/[code]',params:{code:game.code}})}>
       <View style={s.cardTop}><Text style={s.icon}>{game.accent}</Text><View style={[s.difficulty,{backgroundColor:theme.accentSoft}]}><Text style={[s.difficultyText,{color:theme.accent}]}>{game.difficulty.toUpperCase()}</Text></View></View>
@@ -76,6 +76,7 @@ export default function GamesHub(){
       <Text style={[s.cardBody,{color:theme.muted}]}>{MODE_PROMISE[game.mode]||game.description}</Text>
       <View style={s.cardFoot}><Text style={[s.rounds,{color:theme.muted}]}>{game.rounds} {game.mode==='memory'?'pairs':'rounds'}</Text><Text style={[s.play,{color:theme.accent}]}>PLAY →</Text></View>
     </Pressable>)}</View>
+    {index===0?<AdMobNativeSlot contextClass="game_center_network_after_first_group" keywords={['games','restroom','travel']}/>:null}
    </View>)}
 
    <View style={s.section}>

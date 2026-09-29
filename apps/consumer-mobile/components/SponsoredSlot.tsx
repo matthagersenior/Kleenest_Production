@@ -1,21 +1,19 @@
 import * as Linking from 'expo-linking';
-import { useEffect,useRef,useState,type ReactNode } from 'react';
+import { useEffect,useRef,useState } from 'react';
 import { Image,Pressable,StyleSheet,Text,View } from 'react-native';
 import { listSponsoredCards,recordSponsoredEvent,type SponsoredCard } from '../services/sponsorship';
 import { useConsumerTheme } from '../services/theme';
 
-export function SponsoredSlot({surface,context={},contextClass,fallback=null}:{surface:string;context?:Record<string,unknown>;contextClass?:string;fallback?:ReactNode}){
+export function SponsoredSlot({surface,context={},contextClass}:{surface:string;context?:Record<string,unknown>;contextClass?:string}){
   const theme=useConsumerTheme();
   const[card,setCard]=useState<SponsoredCard|null>(null);
-  const[loaded,setLoaded]=useState(false);
-  const[dismissed,setDismissed]=useState(false);
   const[imageFailed,setImageFailed]=useState(false);
   const recorded=useRef('');
-  useEffect(()=>{let active=true;setLoaded(false);setDismissed(false);setImageFailed(false);void listSponsoredCards(surface,context).then(rows=>{if(active){setCard(rows[0]||null);setLoaded(true)}}).catch(()=>{if(active){setCard(null);setLoaded(true)}});return()=>{active=false}},[surface,JSON.stringify(context)]);
+  useEffect(()=>{let active=true;setImageFailed(false);void listSponsoredCards(surface,context).then(rows=>{if(active)setCard(rows[0]||null)}).catch(()=>{if(active)setCard(null)});return()=>{active=false}},[surface,JSON.stringify(context)]);
   useEffect(()=>{if(!card||recorded.current===card.campaign_id)return;recorded.current=card.campaign_id;void recordSponsoredEvent(card,'impression',contextClass||surface)},[card,contextClass,surface]);
-  if(!card)return loaded&&!dismissed?<>{fallback}</>:null;
+  if(!card)return null;
   async function open(current:SponsoredCard){void recordSponsoredEvent(current,'click',contextClass||surface);await Linking.openURL(current.destination_url)}
-  function dismiss(current:SponsoredCard){void recordSponsoredEvent(current,'dismiss',contextClass||surface);setDismissed(true);setCard(null)}
+  function dismiss(current:SponsoredCard){void recordSponsoredEvent(current,'dismiss',contextClass||surface);setCard(null)}
   return <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
     <View style={s.top}><View style={s.brand}>{card.logo_url?<Image source={{uri:card.logo_url}} accessibilityLabel={`${card.sponsor_name} logo`} resizeMode="contain" style={s.logo}/>:null}<Text style={[s.label,{color:theme.muted}]}>{card.label.toUpperCase()} · {card.sponsor_name}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Hide sponsored card" onPress={()=>dismiss(card)}><Text style={[s.close,{color:theme.muted}]}>×</Text></Pressable></View>
     {card.image_url&&card.creative_mode!=='text_only'&&!imageFailed?<Image source={{uri:card.image_url}} accessibilityLabel={card.image_alt||`${card.sponsor_name} sponsored image`} resizeMode="cover" style={s.image} onError={()=>setImageFailed(true)}/>:null}

@@ -25,8 +25,16 @@ if(!failures.length){
   if(!service.includes("rpc('consumer_network_ads_enabled'"))failures.push('Network ads must honor the dedicated removable-network-ad entitlement RPC.');
   for(const token of ['AdsConsent.gatherConsent','canRequestAds','NativeAd.createForAdRequest','TestIds.NATIVE','requestNonPersonalizedAdsOnly:true','AD · GOOGLE','Remove Ads hides network ads'])if(!native.includes(token))failures.push(`Native AdMob card missing contract: ${token}`);
   if(!web.includes('return null'))failures.push('Web must remain safe when the native AdMob module is unavailable.');
-  for(const token of ['fallback?:ReactNode','loaded&&!dismissed','setDismissed(true)'])if(!sponsored.includes(token))failures.push(`Direct sponsorship waterfall missing: ${token}`);
-  for(const source of [explore,progress,games])if(!source.includes('fallback={<AdMobNativeSlot'))failures.push('Every current sponsored inventory surface must use AdMob only as fallback.');
+  if(/fallback\??:|fallback=|ReactNode/.test(sponsored))failures.push('Kleenest Sponsored must own dedicated inventory and may not accept a network-ad fallback.');
+  for(const source of [explore,progress,games])if(source.includes('fallback={<AdMobNativeSlot'))failures.push('AdMob and Kleenest Sponsored inventory must never share a fallback slot.');
+  for(const [source,sponsoredToken,networkToken] of [
+    [explore,'<SponsoredSlot surface="maps"','contextClass="maps_network_after_results_4"'],
+    [progress,'<SponsoredSlot surface="progress"','contextClass="progress_network_after_trust"'],
+    [games,'<SponsoredSlot surface="games"','contextClass="game_center_network_after_first_group"'],
+  ]) {
+    if(!source.includes(sponsoredToken))failures.push(`Missing dedicated Kleenest Sponsored placement: ${sponsoredToken}`);
+    if(!source.includes(networkToken))failures.push(`Missing independent AdMob placement: ${networkToken}`);
+  }
   if(!sql.includes("'premium_removes_sponsored',false")||!sql.includes("'remove_ads_scope','network_only'"))failures.push('Remove Ads must remain network-only.');
   const sponsoredFn=sql.slice(sql.indexOf('create or replace function public.consumer_sponsored_cards'),sql.indexOf('create or replace function public.business_sponsorship_snapshot'));
   if(sponsoredFn.includes('has_kleenest_premium')||sponsoredFn.includes('consumer_network_ads_enabled'))failures.push('Direct Kleenest sponsorship must not consult the network-ad removal entitlement.');
