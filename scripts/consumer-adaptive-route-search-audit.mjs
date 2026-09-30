@@ -85,7 +85,7 @@ if(routePublicWrapper.includes('FROM public.locations'))throw new Error('Public 
 if(!routeSpatialMigration.includes("v_category='all'"))throw new Error('Indexed route projection must preserve all-discovered-place mode.');
 if(!screen.includes("category: 'all'")||!screen.includes('limit: 200'))throw new Error('Along-route Explore must request the widened discovered-place projection.');
 for(const token of [
-  'function snapMapToDiscoveryOrigin(target:[number,number])',
+  'function snapMapToDiscoveryOrigin(target:[number,number],openDestinationCard=false)',
   "setSelectedId('')",
   'setDestinationCardOpen(false)',
   'setMapCenter(target)',
