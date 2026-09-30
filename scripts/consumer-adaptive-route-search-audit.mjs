@@ -93,7 +93,7 @@ for(const token of [
   'setCameraNonce((value)=>value+1)',
   'snapMapToDiscoveryOrigin(areaMatch.origin,true)',
   'const resetSelectionForOriginChange=Boolean(areaMatch)||clearQuery',
-  "accessibilityLabel={mode==='route'?'Select destination marker':'Searched location — active Explore origin'}",
+  "accessibilityLabel={mode==='route'?'Select destination marker':'Select searched destination marker'}",
 ])requireToken(screen,token,'Searched-address Explore origin parity');
 if(!screen.includes("const query=areaMatch?'':rawQuery;"))throw new Error('Resolved address searches must discover the full nearby network instead of text-filtering results by the address string.');
 if(!screen.includes('result = await findAdaptiveNearbyPlaces({'))throw new Error('Everything-mode address discovery must use the same adaptive all-place engine as app-open nearby discovery.');
