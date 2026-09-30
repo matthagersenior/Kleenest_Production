@@ -20,6 +20,8 @@ fs.copyFileSync(icon512Source,path.join(dist,'app-icon-512.svg'));
 let html=fs.readFileSync(indexPath,'utf8');
 const headMarker='<!-- kleenest-consumer-pwa-head -->';
 const bodyMarker='<!-- kleenest-consumer-pwa-worker -->';
+const adsenseMarker='<!-- kleenest-consumer-adsense-head -->';
+const adsenseClient=String(process.env.EXPO_PUBLIC_ADSENSE_CLIENT_ID||'').trim();
 
 if(!html.includes(headMarker)){
   const pwaHead=`${headMarker}
@@ -32,6 +34,14 @@ if(!html.includes(headMarker)){
 <link rel="apple-touch-icon" href="/Kleenest_Production/app-icon.png" />`;
   if(!html.includes('</head>'))throw new Error('Consumer web export is missing </head>.');
   html=html.replace('</head>',`${pwaHead}\n</head>`);
+}
+
+if(adsenseClient&&!html.includes(adsenseMarker)){
+  if(!/^ca-pub-\d+$/.test(adsenseClient))throw new Error('EXPO_PUBLIC_ADSENSE_CLIENT_ID must use the ca-pub-######## format.');
+  const adsenseHead=`${adsenseMarker}
+<script id="kleenest-adsense-loader" async crossorigin="anonymous" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}"></script>`;
+  if(!html.includes('</head>'))throw new Error('Consumer web export is missing </head>.');
+  html=html.replace('</head>',`${adsenseHead}\n</head>`);
 }
 
 if(!html.includes(bodyMarker)){
