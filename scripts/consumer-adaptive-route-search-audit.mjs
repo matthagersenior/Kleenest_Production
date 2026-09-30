@@ -91,7 +91,7 @@ for(const token of [
   'setMapCenter(target)',
   'setMapZoom(13)',
   'setCameraNonce((value)=>value+1)',
-  'snapMapToDiscoveryOrigin(areaMatch.origin)',
+  'snapMapToDiscoveryOrigin(areaMatch.origin,true)',
   'const resetSelectionForOriginChange=Boolean(areaMatch)||clearQuery',
   "accessibilityLabel={mode==='route'?'Select destination marker':'Searched location — active Explore origin'}",
 ])requireToken(screen,token,'Searched-address Explore origin parity');
