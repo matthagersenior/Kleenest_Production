@@ -2,7 +2,7 @@ import { useEffect,useMemo,useState } from 'react';
 import { Image,Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { OSHero,OSSwitch,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
-import { chooseOwnerSponsoredCreative,getOwnerAcquisitionSummary,getOwnerAdMobHealthSnapshot,getOwnerRelevanceSponsorshipSnapshot,updateOwnerHeroPolicy,updateOwnerSponsoredPlacement,uploadOwnerSponsoredCreative,upsertOwnerSponsoredCampaign,type OwnerSponsoredCreativeDraft } from '../services/ownerAdmin';
+import { chooseOwnerSponsoredCreative,getOwnerAcquisitionSummary,getOwnerAdMobHealthSnapshot,getOwnerNetworkAdPlacements,getOwnerRelevanceSponsorshipSnapshot,updateOwnerHeroPolicy,updateOwnerNetworkAdPlacement,updateOwnerNetworkAdSettings,updateOwnerSponsoredPlacement,uploadOwnerSponsoredCreative,upsertOwnerSponsoredCampaign,type OwnerSponsoredCreativeDraft } from '../services/ownerAdmin';
 
 const human=(value:string)=>value.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
 const number=(value:any,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;
@@ -22,12 +22,14 @@ export default function RelevanceControl(){
  const theme=usePlatformTheme(),card=useOSCardStyle();
  const[data,setData]=useState<any>({hero_policies:[],placements:[],campaigns:[],rules:{}}),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
  const[adMob,setAdMob]=useState<any>({hours:24,status:'no_data',requests:0,fills:0,fill_rate:null,impressions:0,clicks:0,no_fill:0,load_errors:0,initialized:0,initialization_errors:0,consent_blocked:0,last_event_at:null,placements:[],recent_failures:[]}),[adMobHours,setAdMobHours]=useState(24);
+ const[networkAds,setNetworkAds]=useState<any>({global_enabled:false,session_cap:0,placements:[],rules:{}});
  const[acquisition,setAcquisition]=useState<any>({days:30,since:null,totals:{},by_source:[],by_content:[]}),[acquisitionDays,setAcquisitionDays]=useState(30);
  const[sponsor,setSponsor]=useState(''),[headline,setHeadline]=useState(''),[body,setBody]=useState(''),[url,setUrl]=useState(''),[cta,setCta]=useState('Learn more'),[coarseRegion,setCoarseRegion]=useState(''),[routeContext,setRouteContext]=useState(''),[amenities,setAmenities]=useState(''),[interests,setInterests]=useState(''),[selectedPlacements,setSelectedPlacements]=useState<string[]>([]);
  const[creativeMode,setCreativeMode]=useState<'text_only'|'image_text'|'image_only'>('text_only'),[imageUrl,setImageUrl]=useState(''),[imageAlt,setImageAlt]=useState(''),[logoUrl,setLogoUrl]=useState(''),[pickedImage,setPickedImage]=useState<OwnerSponsoredCreativeDraft|null>(null);
  const placements=Array.isArray(data?.placements)?data.placements:[],policies=Array.isArray(data?.hero_policies)?data.hero_policies:[],campaigns=Array.isArray(data?.campaigns)?data.campaigns:[];
  const availablePlacements=useMemo(()=>placements.filter((row:any)=>row.owner_enabled!==false&&row.active!==false),[placements]);
  const adMobPlacements=Array.isArray(adMob?.placements)?adMob.placements:[],adMobFailures=Array.isArray(adMob?.recent_failures)?adMob.recent_failures:[];
+ const networkAdPlacements=Array.isArray(networkAds?.placements)?networkAds.placements:[];
  const acquisitionSources=Array.isArray(acquisition?.by_source)?acquisition.by_source:[],acquisitionContent=Array.isArray(acquisition?.by_content)?acquisition.by_content:[];
  const adMobStatus=String(adMob?.status||'no_data');
  const adMobTone:'good'|'warning'|'danger'|'neutral'=adMobStatus==='receiving_fills'?'good':adMobStatus==='initialization_error'?'danger':adMobStatus==='no_fill'||adMobStatus==='degraded'?'warning':'neutral';
@@ -38,6 +40,8 @@ export default function RelevanceControl(){
    setData(await getOwnerRelevanceSponsorshipSnapshot());
    try{setAdMob(await getOwnerAdMobHealthSnapshot(adMobHours))}
    catch(error:any){setAdMob((current:any)=>({...current,hours:adMobHours,status:'unavailable'}));setMessage(error?.message||'AdMob health telemetry could not be loaded.')}
+   try{setNetworkAds(await getOwnerNetworkAdPlacements())}
+   catch(error:any){setNetworkAds((current:any)=>({...current,global_enabled:false}));setMessage(error?.message||'AdMob controls could not be loaded.')}
    try{setAcquisition(await getOwnerAcquisitionSummary(acquisitionDays))}
    catch(error:any){setAcquisition((current:any)=>({...current,days:acquisitionDays}));setMessage(error?.message||'Social acquisition telemetry could not be loaded.')}
   }catch(error:any){setMessage(error?.message||'Relevance controls could not be loaded.')}
@@ -48,6 +52,8 @@ export default function RelevanceControl(){
  async function mutate(action:()=>Promise<any>,success:string){setBusy(true);setMessage('');try{await action();setMessage(success);await load()}catch(error:any){setMessage(error?.message||'Update failed.')}finally{setBusy(false)}}
  const tuneHero=(row:any,patch:Record<string,unknown>)=>mutate(()=>updateOwnerHeroPolicy(row,patch),'Organic hero policy updated.');
  const tunePlacement=(row:any,patch:Record<string,unknown>)=>mutate(()=>updateOwnerSponsoredPlacement(row,patch),'Sponsored placement updated.');
+ const tuneNetworkSettings=(patch:Record<string,unknown>)=>mutate(()=>updateOwnerNetworkAdSettings(networkAds,patch),'AdMob serving policy updated.');
+ const tuneNetworkPlacement=(row:any,patch:Record<string,unknown>)=>mutate(()=>updateOwnerNetworkAdPlacement(row,patch),'AdMob placement updated.');
  function togglePlacement(code:string){setSelectedPlacements(current=>current.includes(code)?current.filter(x=>x!==code):[...current,code])}
 
  async function createCampaign(status:'draft'|'active'){
@@ -86,6 +92,23 @@ export default function RelevanceControl(){
    <Rule ok={data?.rules?.paid_can_change_trust===false} text="Payment cannot change trust, freshness, verification or ranking."/>
    <Rule ok={data?.rules?.sensitive_targeting_allowed===false} text="Sensitive targeting is not allowed."/>
    <Rule ok={data?.rules?.premium_removes_sponsored===false} text="$5 Remove Ads / Premium suppresses AdMob and other network inventory only. Direct Kleenest Sponsored recommendations remain available."/>
+  </View>
+
+  <View style={{gap:10}}>
+   <SectionHeader title="AdMob Controls" body="KleenestOS controls whether Google network inventory may appear. Ad unit IDs stay deployment-managed; direct Kleenest Sponsored inventory remains completely separate."/>
+   <View style={{...card,gap:10}}>
+    <ToggleRow label="Global network ads" value={networkAds?.global_enabled!==false} onChange={value=>tuneNetworkSettings({global_enabled:value})}/>
+    <View style={s.controlRow}><Control label="Session cap −" onPress={()=>tuneNetworkSettings({session_cap:Math.max(0,number(networkAds?.session_cap,4)-1)})}/><Text style={[s.value,{color:theme.ink}]}>{number(networkAds?.session_cap,4)} requests/session</Text><Control label="Session cap +" onPress={()=>tuneNetworkSettings({session_cap:Math.min(20,number(networkAds?.session_cap,4)+1)})}/></View>
+    <Text style={[s.meta,{color:theme.muted}]}>Remove Ads/Premium always wins for entitled users. The session cap limits total network-ad requests across Consumer surfaces.</Text>
+   </View>
+   <View style={{...card,gap:9}}>
+    <SectionHeader title="Network placements" body="Each slot is independent, can be disabled instantly, and never shares inventory with Kleenest Sponsored."/>
+    {networkAdPlacements.length?networkAdPlacements.map((row:any)=><View key={String(row.placement_code)} style={[s.failure,{borderColor:theme.line}]}>
+      <View style={s.row}><View style={{flex:1}}><Text style={{fontWeight:'900',color:theme.ink}}>{human(String(row.placement_code))}</Text><Text style={[s.meta,{color:theme.muted}]}>{human(String(row.surface))} · {human(String(row.slot))}</Text></View><OSSwitch value={row.active!==false} onValueChange={value=>tuneNetworkPlacement(row,{active:value})}/></View>
+      <View style={s.controlRow}><ToggleRow label="Android" value={row.android_enabled!==false} onChange={value=>tuneNetworkPlacement(row,{android_enabled:value})}/><ToggleRow label="iOS" value={row.ios_enabled!==false} onChange={value=>tuneNetworkPlacement(row,{ios_enabled:value})}/></View>
+      <View style={s.controlRow}><Control label="Per-session −" onPress={()=>tuneNetworkPlacement(row,{max_per_session:Math.max(0,number(row.max_per_session,1)-1)})}/><Text style={[s.value,{color:theme.ink}]}>{number(row.max_per_session,1)}/session</Text><Control label="Per-session +" onPress={()=>tuneNetworkPlacement(row,{max_per_session:Math.min(5,number(row.max_per_session,1)+1)})}/></View>
+    </View>):<Text style={[s.meta,{color:theme.muted}]}>No network placements are configured.</Text>}
+   </View>
   </View>
 
   <View style={{gap:10}}>
