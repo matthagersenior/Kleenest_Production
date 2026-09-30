@@ -65,6 +65,35 @@ export async function getOwnerAdMobHealthSnapshot(hours=24){
   };
 }
 
+export async function getOwnerNetworkAdPlacements(){
+  await requirePlatformOwner();
+  return (await rpc('owner_network_ad_placement_snapshot'))||{global_enabled:false,session_cap:0,placements:[],rules:{}};
+}
+
+export async function updateOwnerNetworkAdSettings(row:Record<string,any>,patch:Record<string,unknown>={},reason='KleenestOS AdMob settings update'){
+  await requirePlatformOwner();
+  const next={...row,...patch};
+  return rpc('owner_update_network_ad_settings',{
+    p_global_enabled:next.global_enabled!==false,
+    p_session_cap:Math.min(Math.max(Math.round(Number(next.session_cap)||0),0),20),
+    p_reason:reason,
+  });
+}
+
+export async function updateOwnerNetworkAdPlacement(row:Record<string,any>,patch:Record<string,unknown>={},reason='KleenestOS AdMob placement update'){
+  await requirePlatformOwner();
+  const next={...row,...patch};
+  return rpc('owner_update_network_ad_placement',{
+    p_placement_code:String(next.placement_code),
+    p_active:next.active!==false,
+    p_android_enabled:next.android_enabled!==false,
+    p_ios_enabled:next.ios_enabled!==false,
+    p_max_per_session:Math.min(Math.max(Math.round(Number(next.max_per_session)||0),0),5),
+    p_owner_notes:next.owner_notes??null,
+    p_reason:reason,
+  });
+}
+
 export async function updateOwnerHeroPolicy(row:Record<string,any>,patch:Record<string,unknown>={},reason='KleenestOS organic relevance update'){
   await requirePlatformOwner();
   const next={...row,...patch};
