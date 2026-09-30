@@ -25,6 +25,100 @@ function regionCode(address: Record<string, unknown>) {
   return match ? match[1].toUpperCase() : text(address.state);
 }
 
+type ReverseResult = {
+  provider: "nominatim" | "photon";
+  display: string;
+  houseNumber: string;
+  road: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  raw: any;
+  sourceUrl: string;
+};
+
+async function reverseLookup(latitude: number, longitude: number): Promise<ReverseResult> {
+  const nominatimParams = new URLSearchParams({
+    format: "jsonv2",
+    lat: String(latitude),
+    lon: String(longitude),
+    addressdetails: "1",
+    zoom: "18",
+  });
+  const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?${nominatimParams}`;
+  const nominatimResponse = await fetch(nominatimUrl, {
+    headers: {
+      Accept: "application/json",
+      "Accept-Language": "en",
+      "User-Agent": "Kleenest/1.0 (https://matthagersenior.github.io/Kleenest_Production/)",
+      Referer: "https://matthagersenior.github.io/Kleenest_Production/",
+    },
+    signal: AbortSignal.timeout(10000),
+  }).catch(() => null);
+
+  if (nominatimResponse?.ok) {
+    const geo = await nominatimResponse.json();
+    const a = (geo?.address ?? {}) as Record<string, unknown>;
+    return {
+      provider: "nominatim",
+      display: text(geo?.display_name),
+      houseNumber: text(a.house_number),
+      road: text(a.road || a.pedestrian || a.footway),
+      city: text(a.city || a.town || a.village || a.municipality),
+      state: regionCode(a),
+      postalCode: text(a.postcode),
+      country: text(a.country_code).toUpperCase(),
+      raw: geo,
+      sourceUrl: nominatimUrl,
+    };
+  }
+
+  const photonParams = new URLSearchParams({
+    lat: String(latitude),
+    lon: String(longitude),
+    limit: "1",
+    lang: "en",
+  });
+  const photonUrl = `https://photon.komoot.io/reverse?${photonParams}`;
+  const photonResponse = await fetch(photonUrl, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "Kleenest/1.0 (https://matthagersenior.github.io/Kleenest_Production/)",
+      Referer: "https://matthagersenior.github.io/Kleenest_Production/",
+    },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!photonResponse.ok) {
+    throw new Error(
+      `Reverse geocoders unavailable (Nominatim ${nominatimResponse?.status ?? "network"}, Photon ${photonResponse.status})`,
+    );
+  }
+  const geo = await photonResponse.json();
+  const feature = Array.isArray(geo?.features) ? geo.features[0] : null;
+  const p = (feature?.properties ?? {}) as Record<string, unknown>;
+  const display = [
+    text(p.name),
+    text([p.housenumber, p.street].filter(Boolean).join(" ")),
+    text(p.city || p.locality || p.county),
+    text(p.state),
+    text(p.postcode),
+    text(p.country),
+  ].filter(Boolean).join(", ");
+  return {
+    provider: "photon",
+    display,
+    houseNumber: text(p.housenumber),
+    road: text(p.street || p.name),
+    city: text(p.city || p.locality || p.county),
+    state: text(p.state),
+    postalCode: text(p.postcode),
+    country: text(p.countrycode).toUpperCase(),
+    raw: geo,
+    sourceUrl: photonUrl,
+  };
+}
+
 async function authorized(request: Request) {
   const workerSecret = text(request.headers.get("x-kleenest-worker-secret"));
   if (workerSecret) {
@@ -68,50 +162,36 @@ Deno.serve(async (request) => {
 
   const results: Array<Record<string, unknown>> = [];
   for (const location of locations ?? []) {
-    const params = new URLSearchParams({
-      format: "jsonv2",
-      lat: String(location.latitude),
-      lon: String(location.longitude),
-      addressdetails: "1",
-      zoom: "18",
-    });
-
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?${params}`,
-      {
-        headers: {
-          "User-Agent": "Kleenest/1.0 (https://matthagersenior.github.io/)",
-          "Accept-Language": "en",
-        },
-      },
-    );
-
-    if (!response.ok) {
+    let reverse: ReverseResult;
+    try {
+      reverse = await reverseLookup(
+        Number(location.latitude),
+        Number(location.longitude),
+      );
+    } catch (error) {
       results.push({
         id: location.id,
         status: "error",
-        http_status: response.status,
+        error: error instanceof Error ? error.message : "Reverse geocoding failed",
       });
       await sleep(1100);
       continue;
     }
 
-    const geo = await response.json();
-    const a = (geo?.address ?? {}) as Record<string, unknown>;
-    const houseNumber = text(a.house_number);
-    const road = text(a.road || a.pedestrian || a.footway);
+    const houseNumber = reverse.houseNumber;
+    const road = reverse.road;
     const street = text([houseNumber, road].filter(Boolean).join(" "));
-    const city = text(a.city || a.town || a.village || a.municipality);
-    const state = regionCode(a);
-    const postalCode = text(a.postcode);
-    const country = text(a.country_code).toUpperCase() || text(location.country);
-    const display = text(geo?.display_name);
+    const city = reverse.city;
+    const state = reverse.state;
+    const postalCode = reverse.postalCode;
+    const country = reverse.country || text(location.country);
+    const display = reverse.display;
 
     const { error: backfillError } = await supabase
       .from("location_address_backfills")
       .upsert({
         location_id: location.id,
-        provider: "nominatim",
+        provider: reverse.provider,
         display_address: display || null,
         house_number: houseNumber || null,
         road: road || null,
@@ -122,13 +202,12 @@ Deno.serve(async (request) => {
         latitude: Number(location.latitude),
         longitude: Number(location.longitude),
         fetched_at: new Date().toISOString(),
-        source_url: `https://nominatim.openstreetmap.org/reverse?${params}`,
+        source_url: reverse.sourceUrl,
         metadata: {
-          osm_type: geo?.osm_type ?? null,
-          osm_id: geo?.osm_id ?? null,
           source: text(body?.source) || "manual",
+          provider: reverse.provider,
         },
-        raw_data: geo ?? null,
+        raw_data: reverse.raw ?? null,
       }, { onConflict: "location_id" });
 
     if (backfillError) {
