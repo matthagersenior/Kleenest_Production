@@ -50,7 +50,14 @@ export type OwnerMailThread={
 type GatewayInput=Record<string,unknown>;
 
 async function invoke<T>(body:GatewayInput):Promise<T>{
-  const {data,error}=await getKleenestSupabaseClient().functions.invoke('owner-email-gateway',{body});
+  const client=getKleenestSupabaseClient();
+  const {data:{session},error:sessionError}=await client.auth.getSession();
+  if(sessionError)throw sessionError;
+  if(!session?.access_token)throw new Error('Owner sign-in is required.');
+  const {data,error}=await client.functions.invoke('owner-email-gateway',{
+    body,
+    headers:{Authorization:`Bearer ${session.access_token}`},
+  });
   if(error){
     const context=(error as any)?.context;
     if(context&&typeof context.clone==='function'){

@@ -78,6 +78,8 @@ requireAll('Owner email workflow UI',screen,[
 ]);
 requireAll('Owner email client boundary',service,[
   "functions.invoke('owner-email-gateway'",
+  "auth.getSession()",
+  "headers:{Authorization:`Bearer ${session.access_token}`}",
   "action:'connect'",
   'providerRefreshToken',
   "action:'status'",
@@ -93,6 +95,9 @@ must(!service.includes("action:'list_threads',\n    providerToken"),'Routine Own
 
 requireAll('Owner email gateway authorization',gateway,[
   "rpc('admin_authorization_v1')",
+  "const jwt=authorizationHeader.slice('Bearer '.length).trim()",
+  "client.auth.getUser(jwt)",
+  "global:{headers:{Authorization:`Bearer ${jwt}`}}",
   'authorization',
   'authorized',
   'SUPABASE_SECRET_KEYS',
@@ -128,4 +133,4 @@ requireAll('Owner Gmail persistence migration',gmailPersistence,[
 ]);
 
 if(failures.length){console.error(`Owner communications audit failed with ${failures.length} gap(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
-console.log('Owner communications audit passed: Gmail OAuth persists a service-only refresh credential, restores the Owner session, refreshes Gmail access server-side, and keeps inbox actions behind Owner authorization.');
+console.log('Owner communications audit passed: Gmail OAuth explicitly carries and validates the active Owner JWT, persists a service-only refresh credential, restores the Owner session, refreshes Gmail access server-side, and keeps inbox actions behind Owner authorization.');
