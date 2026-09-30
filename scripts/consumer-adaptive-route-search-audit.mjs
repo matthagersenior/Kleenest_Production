@@ -85,15 +85,15 @@ if(routePublicWrapper.includes('FROM public.locations'))throw new Error('Public 
 if(!routeSpatialMigration.includes("v_category='all'"))throw new Error('Indexed route projection must preserve all-discovered-place mode.');
 if(!screen.includes("category: 'all'")||!screen.includes('limit: 200'))throw new Error('Along-route Explore must request the widened discovered-place projection.');
 for(const token of [
-  'function snapMapToDiscoveryOrigin(target:[number,number])',
+  'function snapMapToDiscoveryOrigin(target:[number,number],openDestinationCard=false)',
   "setSelectedId('')",
   'setDestinationCardOpen(false)',
   'setMapCenter(target)',
   'setMapZoom(13)',
   'setCameraNonce((value)=>value+1)',
-  'snapMapToDiscoveryOrigin(areaMatch.origin)',
+  'snapMapToDiscoveryOrigin(areaMatch.origin,true)',
   'const resetSelectionForOriginChange=Boolean(areaMatch)||clearQuery',
-  "accessibilityLabel={mode==='route'?'Select destination marker':'Searched location — active Explore origin'}",
+  "accessibilityLabel={mode==='route'?'Select destination marker':'Select searched destination marker'}",
 ])requireToken(screen,token,'Searched-address Explore origin parity');
 if(!screen.includes("const query=areaMatch?'':rawQuery;"))throw new Error('Resolved address searches must discover the full nearby network instead of text-filtering results by the address string.');
 if(!screen.includes('result = await findAdaptiveNearbyPlaces({'))throw new Error('Everything-mode address discovery must use the same adaptive all-place engine as app-open nearby discovery.');
@@ -120,8 +120,22 @@ for(const token of [
   'destinationCardOpen',
   'Select destination marker',
   'Discover places near destination',
-  'Use destination for along-route search',
+  'Add searched destination to route',
 ])requireToken(screen,token,'Selectable destination marker/card');
+
+for(const token of [
+  'const SEARCH_DESTINATION_GEOFENCE_RADIUS_M=150;',
+  'const searchedDestination=useMemo(',
+  'geofence_radius_m:SEARCH_DESTINATION_GEOFENCE_RADIUS_M',
+  'function snapMapToDiscoveryOrigin(target:[number,number],openDestinationCard=false)',
+  'setDestinationCardOpen(openDestinationCard)',
+  'snapMapToDiscoveryOrigin(areaMatch.origin,true)',
+  'async function goToSearchDestination()',
+  'function addSearchDestinationToRoute()',
+  'onPress={()=>void goToSearchDestination()}',
+  'onPress={addSearchDestinationToRoute}',
+])requireToken(screen,token,'Resolved searched-address destination actions');
+if(screen.includes("onPress={mode==='route'?selectDestinationMarker:recenterMap}"))throw new Error('Searched-address marker must open its destination card in both Nearby and Along route modes.');
 
 for(const token of [
   "mode==='route'? \`${visibleRows.length} along route · ${radiusLabel(corridor)} corridor\`",
