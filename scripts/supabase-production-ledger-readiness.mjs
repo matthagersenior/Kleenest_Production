@@ -87,6 +87,15 @@ for(let attempt=1;attempt<=maxAttempts;attempt+=1){
     throw new Error(`Production is missing source-controlled migration versions after ${maxAttempts} checks: ${missing.join(', ')||'unknown'}. Native Supabase GitHub deployment did not converge; OTA remains blocked.`);
   }
 
+  if(response.status===429||response.status>=500){
+    if(attempt<maxAttempts){
+      console.log(`Production readiness dependency returned HTTP ${response.status}; retrying (attempt ${attempt}/${maxAttempts}).`);
+      await sleep(retryDelayMs);
+      continue;
+    }
+    throw new Error(`Production migration readiness dependency remained unavailable after ${maxAttempts} checks: HTTP ${response.status}.`);
+  }
+
   if(!response.ok){
     throw new Error(`OIDC-protected production migration readiness failed: HTTP ${response.status}.`);
   }

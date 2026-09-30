@@ -16,7 +16,7 @@ const required=[
   'apps/consumer-mobile/app/profile.tsx',
   'supabase/migrations/20260920205000_business_self_service_sponsorship_and_network_ad_boundary.sql',
   'supabase/migrations/20260930012000_owner_admob_placement_control.sql',
-  'supabase/migrations/20260930102000_web_network_ads_policy.sql',
+  'supabase/migrations/20260930102358_web_network_ads_policy.sql',
   'apps/platform-mobile/services/ownerAdmin.ts',
   'apps/platform-mobile/app/relevance.tsx',
 ];

@@ -93,11 +93,18 @@ async function isMigrationApplied(version: string): Promise<boolean> {
 Deno.serve(async (request) => {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
-  try {
-    const auth = request.headers.get("authorization") ?? "";
-    if (!auth.startsWith("Bearer ")) return json({ error: "GitHub OIDC token required" }, 401);
-    const claims = await verifyGitHubOidc(auth.slice(7));
+  const auth = request.headers.get("authorization") ?? "";
+  if (!auth.startsWith("Bearer ")) return json({ error: "GitHub OIDC token required" }, 401);
 
+  let claims: Record<string, unknown>;
+  try {
+    claims = await verifyGitHubOidc(auth.slice(7));
+  } catch (error) {
+    console.error("production-migration-readiness OIDC rejected", error);
+    return json({ error: "Unauthorized production readiness request" }, 401);
+  }
+
+  try {
     const body = await request.json();
     const versions = Array.isArray(body?.versions) ? body.versions : [];
     if (versions.length < 1 || versions.length > 100 || versions.some((v: unknown) => typeof v !== "string" || !/^\d{14}$/.test(v))) {
@@ -117,7 +124,7 @@ Deno.serve(async (request) => {
       sha: claims.sha,
     }, missing.length === 0 ? 200 : 409);
   } catch (error) {
-    console.error("production-migration-readiness rejected request", error);
-    return json({ error: "Unauthorized production readiness request" }, 401);
+    console.error("production-migration-readiness dependency failure", error);
+    return json({ error: "Production migration readiness temporarily unavailable" }, 503);
   }
 });
