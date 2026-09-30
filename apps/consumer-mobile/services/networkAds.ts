@@ -13,8 +13,8 @@ type NetworkAdPlacementPolicy={
 let sessionRequests=0;
 const placementRequests=new Map<string,number>();
 
-function nativePlatform(){
-  return Platform.OS==='android'||Platform.OS==='ios'?Platform.OS:null;
+function networkPlatform(){
+  return Platform.OS==='android'||Platform.OS==='ios'||Platform.OS==='web'?Platform.OS:null;
 }
 
 export async function consumerNetworkAdsEnabled(){
@@ -25,7 +25,7 @@ export async function consumerNetworkAdsEnabled(){
 
 export async function consumerNetworkAdPlacementEnabled(placementCode:string){
   const code=String(placementCode||'').trim().toLowerCase();
-  const platform=nativePlatform();
+  const platform=networkPlatform();
   if(!platform||!code)return false;
 
   const enabled=await client().rpc('consumer_network_ad_placement_enabled',{
