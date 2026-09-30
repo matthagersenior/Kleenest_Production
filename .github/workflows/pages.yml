@@ -99,6 +99,8 @@ jobs:
           test -s apps/platform-mobile/dist/index.html
           grep -q "KleenestOS" apps/platform-mobile/dist/index.html
       - name: Prepare installable Consumer Web PWA
+        env:
+          EXPO_PUBLIC_ADSENSE_CLIENT_ID: ${{ vars.EXPO_PUBLIC_ADSENSE_CLIENT_ID }}
         run: |
           node scripts/prepare-consumer-web-pwa.mjs
           test -s apps/consumer-mobile/dist/manifest.webmanifest
