@@ -70,7 +70,7 @@ export async function getOwnerNetworkAdPlacements(){
   return (await rpc('owner_network_ad_placement_snapshot'))||{global_enabled:false,session_cap:0,placements:[],rules:{}};
 }
 
-export async function updateOwnerNetworkAdSettings(row:Record<string,any>,patch:Record<string,unknown>={},reason='KleenestOS AdMob settings update'){
+export async function updateOwnerNetworkAdSettings(row:Record<string,any>,patch:Record<string,unknown>={},reason='KleenestOS Google network ad settings update'){
   await requirePlatformOwner();
   const next={...row,...patch};
   return rpc('owner_update_network_ad_settings',{
@@ -80,14 +80,15 @@ export async function updateOwnerNetworkAdSettings(row:Record<string,any>,patch:
   });
 }
 
-export async function updateOwnerNetworkAdPlacement(row:Record<string,any>,patch:Record<string,unknown>={},reason='KleenestOS AdMob placement update'){
+export async function updateOwnerNetworkAdPlacement(row:Record<string,any>,patch:Record<string,unknown>={},reason='KleenestOS Google network ad placement update'){
   await requirePlatformOwner();
   const next={...row,...patch};
-  return rpc('owner_update_network_ad_placement',{
+  return rpc('owner_update_network_ad_placement_v2',{
     p_placement_code:String(next.placement_code),
     p_active:next.active!==false,
     p_android_enabled:next.android_enabled!==false,
     p_ios_enabled:next.ios_enabled!==false,
+    p_web_enabled:next.web_enabled!==false,
     p_max_per_session:Math.min(Math.max(Math.round(Number(next.max_per_session)||0),0),5),
     p_owner_notes:next.owner_notes??null,
     p_reason:reason,

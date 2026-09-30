@@ -48,6 +48,8 @@ jobs:
         env:
           EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
           EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+          EXPO_PUBLIC_ADSENSE_CLIENT_ID: ${{ vars.EXPO_PUBLIC_ADSENSE_CLIENT_ID }}
+          EXPO_PUBLIC_ADSENSE_WEB_DISPLAY_SLOT: ${{ vars.EXPO_PUBLIC_ADSENSE_WEB_DISPLAY_SLOT }}
       - name: Export Kleenest Business Web
         run: npm run web:export --workspace @kleenest/business-mobile
         env:
@@ -97,6 +99,8 @@ jobs:
           test -s apps/platform-mobile/dist/index.html
           grep -q "KleenestOS" apps/platform-mobile/dist/index.html
       - name: Prepare installable Consumer Web PWA
+        env:
+          EXPO_PUBLIC_ADSENSE_CLIENT_ID: ${{ vars.EXPO_PUBLIC_ADSENSE_CLIENT_ID }}
         run: |
           node scripts/prepare-consumer-web-pwa.mjs
           test -s apps/consumer-mobile/dist/manifest.webmanifest

@@ -52,8 +52,8 @@ export default function RelevanceControl(){
  async function mutate(action:()=>Promise<any>,success:string){setBusy(true);setMessage('');try{await action();setMessage(success);await load()}catch(error:any){setMessage(error?.message||'Update failed.')}finally{setBusy(false)}}
  const tuneHero=(row:any,patch:Record<string,unknown>)=>mutate(()=>updateOwnerHeroPolicy(row,patch),'Organic hero policy updated.');
  const tunePlacement=(row:any,patch:Record<string,unknown>)=>mutate(()=>updateOwnerSponsoredPlacement(row,patch),'Sponsored placement updated.');
- const tuneNetworkSettings=(patch:Record<string,unknown>)=>mutate(()=>updateOwnerNetworkAdSettings(networkAds,patch),'AdMob serving policy updated.');
- const tuneNetworkPlacement=(row:any,patch:Record<string,unknown>)=>mutate(()=>updateOwnerNetworkAdPlacement(row,patch),'AdMob placement updated.');
+ const tuneNetworkSettings=(patch:Record<string,unknown>)=>mutate(()=>updateOwnerNetworkAdSettings(networkAds,patch),'Google network-ad serving policy updated.');
+ const tuneNetworkPlacement=(row:any,patch:Record<string,unknown>)=>mutate(()=>updateOwnerNetworkAdPlacement(row,patch),'Google network-ad placement updated.');
  function togglePlacement(code:string){setSelectedPlacements(current=>current.includes(code)?current.filter(x=>x!==code):[...current,code])}
 
  async function createCampaign(status:'draft'|'active'){
@@ -95,7 +95,7 @@ export default function RelevanceControl(){
   </View>
 
   <View style={{gap:10}}>
-   <SectionHeader title="AdMob Controls" body="KleenestOS controls whether Google network inventory may appear. Ad unit IDs stay deployment-managed; direct Kleenest Sponsored inventory remains completely separate."/>
+   <SectionHeader title="Google Network Ad Controls" body="KleenestOS controls Google AdMob on native apps and AdSense on Consumer Web. Publisher/ad unit IDs stay deployment-managed; direct Kleenest Sponsored inventory remains completely separate."/>
    <View style={{...card,gap:10}}>
     <ToggleRow label="Global network ads" value={networkAds?.global_enabled!==false} onChange={value=>tuneNetworkSettings({global_enabled:value})}/>
     <View style={s.controlRow}><Control label="Session cap −" onPress={()=>tuneNetworkSettings({session_cap:Math.max(0,number(networkAds?.session_cap,4)-1)})}/><Text style={[s.value,{color:theme.ink}]}>{number(networkAds?.session_cap,4)} requests/session</Text><Control label="Session cap +" onPress={()=>tuneNetworkSettings({session_cap:Math.min(20,number(networkAds?.session_cap,4)+1)})}/></View>
@@ -105,14 +105,14 @@ export default function RelevanceControl(){
     <SectionHeader title="Network placements" body="Each slot is independent, can be disabled instantly, and never shares inventory with Kleenest Sponsored."/>
     {networkAdPlacements.length?networkAdPlacements.map((row:any)=><View key={String(row.placement_code)} style={[s.failure,{borderColor:theme.line}]}>
       <View style={s.row}><View style={{flex:1}}><Text style={{fontWeight:'900',color:theme.ink}}>{human(String(row.placement_code))}</Text><Text style={[s.meta,{color:theme.muted}]}>{human(String(row.surface))} · {human(String(row.slot))}</Text></View><OSSwitch value={row.active!==false} onValueChange={value=>tuneNetworkPlacement(row,{active:value})}/></View>
-      <View style={s.controlRow}><ToggleRow label="Android" value={row.android_enabled!==false} onChange={value=>tuneNetworkPlacement(row,{android_enabled:value})}/><ToggleRow label="iOS" value={row.ios_enabled!==false} onChange={value=>tuneNetworkPlacement(row,{ios_enabled:value})}/></View>
+      <View style={s.controlRow}><ToggleRow label="Android" value={row.android_enabled!==false} onChange={value=>tuneNetworkPlacement(row,{android_enabled:value})}/><ToggleRow label="iOS" value={row.ios_enabled!==false} onChange={value=>tuneNetworkPlacement(row,{ios_enabled:value})}/><ToggleRow label="Web" value={row.web_enabled!==false} onChange={value=>tuneNetworkPlacement(row,{web_enabled:value})}/></View>
       <View style={s.controlRow}><Control label="Per-session −" onPress={()=>tuneNetworkPlacement(row,{max_per_session:Math.max(0,number(row.max_per_session,1)-1)})}/><Text style={[s.value,{color:theme.ink}]}>{number(row.max_per_session,1)}/session</Text><Control label="Per-session +" onPress={()=>tuneNetworkPlacement(row,{max_per_session:Math.min(5,number(row.max_per_session,1)+1)})}/></View>
     </View>):<Text style={[s.meta,{color:theme.muted}]}>No network placements are configured.</Text>}
    </View>
   </View>
 
   <View style={{gap:10}}>
-   <SectionHeader title="AdMob Health" body="Live Google network-ad serving telemetry from the Consumer app. This is operational health only; no user, device, location, targeting or content data is stored."/>
+   <SectionHeader title="Native AdMob Health" body="Live Android/iOS AdMob telemetry from the Consumer app. Web AdSense serving is controlled above but is reported in AdSense until web telemetry is added. No user, device, location, targeting or content data is stored here."/>
    <View style={{...card,gap:10}}>
     <View style={s.row}><View style={{flex:1,gap:3}}><Text style={[s.title,{color:theme.ink}]}>Google Mobile Ads</Text><Text style={[s.meta,{color:theme.muted}]}>{adMobHours}h window · last event {when(adMob?.last_event_at)}</Text></View><StatusPill label={human(adMobStatus)} tone={adMobTone}/></View>
     <View style={s.controlRow}><Control label="24 hours" onPress={()=>setAdMobHours(24)}/><Control label="7 days" onPress={()=>setAdMobHours(168)}/></View>
