@@ -689,7 +689,7 @@ export default function AdaptiveExploreScreen() {
     }
   }
 
-  async function currentLocation() {
+  async function currentLocation(forceMapRecenter = false) {
     const permission = await Location.requestForegroundPermissionsAsync();
     if (permission.status !== 'granted') {
       throw new Error(
@@ -706,11 +706,21 @@ export default function AdaptiveExploreScreen() {
     });
     const point: [number, number] = [current.coords.longitude, current.coords.latitude];
     setOrigin(point);
-    if (!selectedId) setMapCenter(point);
+    if (forceMapRecenter) {
+      setSelectedId('');
+      setDestinationCardOpen(false);
+      setPendingMapOrigin(null);
+      setMapCenter(point);
+      setMapZoom(13);
+      cameraRef.current?.jumpTo({center:point,zoom:13});
+      setCameraNonce((value) => value + 1);
+    } else if (!selectedId) {
+      setMapCenter(point);
+    }
     return current;
   }
 
-  async function loadNearby(clearQuery = false, preserveCacheOnEmpty = false, overrideOrigin:[number,number]|null=null) {
+  async function loadNearby(clearQuery = false, preserveCacheOnEmpty = false, overrideOrigin:[number,number]|null=null, forceLiveRecenter=false) {
     const enrichmentRun=++nearbyEnrichmentRunRef.current;
     const rawQuery=clearQuery?'':search.trim();
     if(clearQuery){
@@ -731,7 +741,7 @@ export default function AdaptiveExploreScreen() {
 
     const retainedMapOrigin=!rawQuery&&searchAreaLabel==='Map area'&&searchAreaOrigin?searchAreaOrigin:null;
     const mapAreaOrigin=overrideOrigin||retainedMapOrigin;
-    const current=areaMatch||mapAreaOrigin?null:await currentLocation();
+    const current=areaMatch||mapAreaOrigin?null:await currentLocation(forceLiveRecenter);
     const livePresence=areaMatch||mapAreaOrigin
       ? null
       : await recordConsumerPresenceAt(Number(current!.coords.latitude),Number(current!.coords.longitude)).catch(()=>null);
@@ -945,7 +955,7 @@ export default function AdaptiveExploreScreen() {
     );
   }
 
-  async function load(options: { clearQuery?: boolean; preserveCacheOnEmpty?: boolean; mapOrigin?: [number,number] | null } = {}) {
+  async function load(options: { clearQuery?: boolean; preserveCacheOnEmpty?: boolean; mapOrigin?: [number,number] | null; recenterOnLiveLocation?: boolean } = {}) {
     if (loading) return;
     setLoading(true);
     setMessage(mode === 'nearby' ? 'Searching nearby…' : 'Building route and searching its corridor…');
@@ -954,6 +964,7 @@ export default function AdaptiveExploreScreen() {
         Boolean(options.clearQuery),
         Boolean(options.preserveCacheOnEmpty),
         options.mapOrigin||null,
+        Boolean(options.recenterOnLiveLocation),
       );
       else await loadRoute();
     } catch (error: any) {
@@ -1102,7 +1113,7 @@ export default function AdaptiveExploreScreen() {
         }
       })
       .finally(() => {
-        if (active) void load({ preserveCacheOnEmpty: true });
+        if (active) void load({ preserveCacheOnEmpty: true, recenterOnLiveLocation: true });
       });
     return () => { active = false; };
   }, []);
