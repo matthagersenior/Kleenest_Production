@@ -59,6 +59,7 @@ import { SponsoredSlot } from '../components/SponsoredSlot';
 import { AdMobNativeSlot } from '../components/AdMobNativeSlot';
 
 const DRAFT_KEY = 'kleenest.native.route.draft';
+const SEARCH_DESTINATION_GEOFENCE_RADIUS_M=150;
 const OSM_STYLE: any = {
   version: 8,
   sources: {
@@ -442,6 +443,15 @@ export default function AdaptiveExploreScreen() {
   const [checkInFeedback,setCheckInFeedback]=useState<Record<string,CheckInActionFeedback>>({});
   const [cached, setCached] = useState(false);
   const [mapInteracting,setMapInteracting]=useState(false);
+  const searchedDestination=useMemo(()=>searchAreaOrigin?{
+    id:'searched-destination',
+    name:searchAreaLabel||'Searched destination',
+    address:searchAreaLabel||'',
+    longitude:searchAreaOrigin[0],
+    latitude:searchAreaOrigin[1],
+    geofence_radius_m:SEARCH_DESTINATION_GEOFENCE_RADIUS_M,
+    ephemeral_destination:true,
+  }:null,[searchAreaOrigin,searchAreaLabel]);
   const searchPanelTop=8;
   const mapChromeTop=10;
 
@@ -577,6 +587,15 @@ export default function AdaptiveExploreScreen() {
     setCameraNonce((value)=>value+1);
   }
 
+  async function goToSearchDestination(){
+    if(!searchedDestination||!hasCoordinates(searchedDestination))return;
+    await Linking.openURL(navigateUrl(searchedDestination));
+  }
+
+  function addSearchDestinationToRoute(){
+    useDestinationForRoute();
+  }
+
   function searchNearDestination(){
     if(!searchAreaOrigin)return;
     setMode('nearby');
@@ -597,9 +616,9 @@ export default function AdaptiveExploreScreen() {
     setTimeout(()=>void loadRoute(),0);
   }
 
-  function snapMapToDiscoveryOrigin(target:[number,number]) {
+  function snapMapToDiscoveryOrigin(target:[number,number],openDestinationCard=false) {
     setSelectedId('');
-    setDestinationCardOpen(false);
+    setDestinationCardOpen(openDestinationCard);
     setPendingMapOrigin(null);
     setMapCenter(target);
     setMapZoom(13);
@@ -756,7 +775,7 @@ export default function AdaptiveExploreScreen() {
     if(areaMatch){
       setSearchAreaOrigin(areaMatch.origin);
       setSearchAreaLabel(areaMatch.label);
-      snapMapToDiscoveryOrigin(areaMatch.origin);
+      snapMapToDiscoveryOrigin(areaMatch.origin,true);
     }
     else if(overrideOrigin){
       setSearch('');
@@ -904,6 +923,7 @@ export default function AdaptiveExploreScreen() {
       const destination:[number,number]=[match.longitude,match.latitude];
       destinationLabel=match.label||rawQuery;
       built=await buildMobileRouteToDestination(currentOrigin,destination,destinationLabel);
+      built={...built,destinationGeofenceRadiusMeters:SEARCH_DESTINATION_GEOFENCE_RADIUS_M};
       routeSearch='';
       setSearchAreaOrigin(destination);
       setSearchAreaLabel(destinationLabel);
@@ -943,6 +963,7 @@ export default function AdaptiveExploreScreen() {
     setRows(enriched);
     setRoute(built);
     setSelectedId('');
+    setDestinationCardOpen(Boolean(destinationLabel));
     setCached(false);
     setAttemptedRadiiMeters([]);
     setMapCenter(currentOrigin);
@@ -1410,12 +1431,12 @@ export default function AdaptiveExploreScreen() {
                   <View style={s.userLocationDot} />
                 </View>
               </Marker>:null}
-              {searchAreaOrigin?<Marker id="searched-area-marker" lngLat={searchAreaOrigin} anchor="center" onPress={mode==='route'?selectDestinationMarker:recenterMap}>
+              {searchAreaOrigin?<Marker id="searched-area-marker" lngLat={searchAreaOrigin} anchor="center" onPress={selectDestinationMarker}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={mode==='route'?'Select destination marker':'Searched location — active Explore origin'}
+                  accessibilityLabel={mode==='route'?'Select destination marker':'Select searched destination marker'}
                   hitSlop={14}
-                  onPress={(event)=>{event.stopPropagation();if(mode==='route')selectDestinationMarker();else recenterMap();}}
+                  onPress={(event)=>{event.stopPropagation();selectDestinationMarker();}}
                   style={[s.searchedAreaMarker,{backgroundColor:theme.surface,borderColor:theme.accent}]}
                 >
                   <Text style={[s.searchedAreaMarkerText,{color:theme.accent}]}>{mode==='route'?'◎':'⌖'}</Text>
@@ -1497,22 +1518,35 @@ export default function AdaptiveExploreScreen() {
                   <Text style={[s.help,{color:theme.muted}]}>
                     {mode==='route'?'This is your active route destination. Search its corridor or switch to discovery around the destination.':'This searched address is now the center of discovery, as if you were there. Nearby businesses, places, and restroom signals are discovered around it.'}
                   </Text>
+                  <Text style={[s.meta,{color:theme.muted}]}>
+                    {searchedDestination?`${Number(searchedDestination.latitude).toFixed(5)}, ${Number(searchedDestination.longitude).toFixed(5)} · ${SEARCH_DESTINATION_GEOFENCE_RADIUS_M} m destination geofence`:''}
+                  </Text>
                   <View style={s.actionRow}>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Discover places near destination"
+                      accessibilityLabel="Start directions to searched destination"
                       style={[s.primarySmall,{backgroundColor:theme.accent}]}
-                      onPress={searchNearDestination}
+                      onPress={()=>void goToSearchDestination()}
                     >
-                      <Text style={[s.primaryText,{color:theme.accentText}]}>Search nearby</Text>
+                      <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
                     </Pressable>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Use destination for along-route search"
+                      accessibilityLabel="Add searched destination to route"
                       style={[s.secondarySmall,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
-                      onPress={useDestinationForRoute}
+                      onPress={addSearchDestinationToRoute}
                     >
-                      <Text style={[s.secondaryText,{color:theme.accent}]}>{mode==='route'?'Refresh route':'Use as destination'}</Text>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
+                    </Pressable>
+                  </View>
+                  <View style={s.selectedMoreRow}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Discover places near destination"
+                      style={[s.secondarySmall,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,flex:1}]}
+                      onPress={searchNearDestination}
+                    >
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>Search nearby</Text>
                     </Pressable>
                   </View>
                   {route?.distanceMiles?<Text style={[s.meta,{color:theme.muted}]}>{Number(route.distanceMiles).toFixed(0)} mi route · about {Math.round(Number(route.durationMinutes||0))} min</Text>:null}
