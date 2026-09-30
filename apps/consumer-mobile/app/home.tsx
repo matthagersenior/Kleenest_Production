@@ -1,139 +1,119 @@
+import { listMobileFollowers, listMobileFollowing, toggleMobileFollow, loadKleenestThemeMode, resolveKleenestTheme, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
+import PhotoEvidencePreview from '../components/PhotoEvidencePreview';
+import { listMobileCommunityActivity } from '../services/communityActivity';
+import { searchContributors } from '../services/contributors';
+import { formatVisitEvidence } from '../services/evidenceFormatting';
 import { router } from 'expo-router';
-import { useEffect,useState } from 'react';
-import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { palette } from '../components/ConsumerUI';
-import { RelevanceHeroCarousel } from '../components/RelevanceHeroCarousel';
+import { useEffect, useMemo, useState } from 'react';
+import { Image, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
+import { SectionHeader, TrustStrip, palette } from '../components/ConsumerUI';
 import { SponsoredSlot } from '../components/SponsoredSlot';
+import { AdMobNativeSlot } from '../components/AdMobNativeSlot';
 import { MarketingHome } from '../components/MarketingSite';
-import { hasCurrentPolicyAcceptance } from '../services/safety';
 import { useConsumerWebExperience } from '../services/webExperience';
+import { divisionForXp } from '../services/engagementMetaGame';
+import { getProgressionWorld } from '../services/discoveryProgression';
+import { listProgressionIdentities } from '../services/progressionIdentity';
 import { useConsumerTheme } from '../services/theme';
-import { buildConsumerHomeHeroes,type OrganicHeroItem,type OrganicHeroPolicy } from '../services/heroRelevance';
+import { getRewardCapabilities,listRewardReactions,toggleRewardReaction } from '../services/rewardRuntime';
 
-const action=(route:string)=>()=>router.push(route as any);
-const initialHero:OrganicHeroItem={id:'find',kind:'find_bathroom',eyebrow:'FIND THE BEST BATHROOM',title:'What is useful near you right now?',body:'Search nearby or around any address, then compare freshness, Kleenest status, amenities, trust and distance.',cta:'Search the map',route:'/explore',meta:'Organic discovery',score:60};
-const initialPolicy:OrganicHeroPolicy={surface_code:'consumer_home',active:true,max_cards:5,allowed_kinds:['find_bathroom'],weights:{find_bathroom:60},swipe_enabled:true,dot_indicators:true,autoplay:false};
-
-type HomeShortcut={route:string;icon:string;title:string;detail:string;featured?:boolean};
-const homeShortcuts:HomeShortcut[]=[
-  {route:'/saved',icon:'♡',title:'Saved',detail:'Your go-to places'},
-  {route:'/route',icon:'↗',title:'Routes',detail:'Plan bathroom stops'},
-  {route:'/progress',icon:'★',title:'Progress',detail:'XP, levels + rewards'},
-  {route:'/games',icon:'▦',title:'Game Center',detail:'Play + earn',featured:true},
-  {route:'/social',icon:'●',title:'Community',detail:'People + updates'},
-  {route:'/assistant',icon:'✦',title:'Kleenest AI',detail:'Ask for help'},
+function Avatar({person,size=46}:{person:any;size?:number}){const theme=useConsumerTheme('community');const initials=(person?.display_name||person?.username||'K').trim().slice(0,1).toUpperCase();return person?.avatar_url?<Image source={{uri:person.avatar_url}} style={[s.avatar,{width:size,height:size,borderRadius:size/2,backgroundColor:theme.surfaceRaised}]}/>:<View style={[s.avatarFallback,{width:size,height:size,borderRadius:size/2,backgroundColor:theme.accent}]}><Text style={[s.avatarFallbackText,{color:theme.accentText}]}>{initials}</Text></View>}
+function TrustLine({person}:{person:any}){const theme=useConsumerTheme('community');const identity=person?.progressionIdentity||person?.progression_identity||{},reputation=String(identity.trust_rank||person?.reputation_level||'new').replaceAll('_',' ');return <View style={s.trustRow}><View style={[s.trustBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line,borderWidth:1}]}><Text style={[s.trustBadgeText,{color:theme.accent}]}>TRUST · {reputation.toUpperCase()}</Text></View>{identity.level?<Text style={[s.identityMeta,{color:theme.muted}]}>LV {identity.level} · {identity.level_title||'Scout'}</Text>:null}<Text style={[s.meta,{color:theme.muted}]}>{person?.total_check_ins??0} check-ins · {person?.total_reviews??0} reviews · {person?.verified_review_count??0} verified · {person?.helpful_received??0} helpful</Text></View>}
+function evidenceLine(item:any){if(!item?.verified)return null;return formatVisitEvidence({verifiedAt:item.verifiedAt,verificationMethod:item.verificationMethod,verifiedDistanceMeters:item.verifiedDistanceMeters,photoEvidenceCount:item.photoEvidenceCount,amenityEvidenceCount:item.amenityEvidenceCount})}
+function relationshipLabel(id:string,followingIds:Set<string>,followerIds:Set<string>){const following=followingIds.has(id),followsYou=followerIds.has(id);if(following&&followsYou)return'Mutual';if(following)return'Following';if(followsYou)return'Follow back';return'Follow';}
+function leagueLabel(person:any){return divisionForXp(Number(person?.points||0)).name+' Division';}
+type HomeView='feed'|'people'|'league';
+const homeActions=[
+  {route:'/saved',label:'Saved'},
+  {route:'/route',label:'Routes'},
+  {route:'/progress',label:'Progress'},
+  {route:'/assistant',label:'Kleenest AI'},
+  {route:'/discover',label:'Add place'},
+  {route:'/messages',label:'Messages'},
 ];
-
 export default function HomeScreen(){
-  const theme=useConsumerTheme();
-  const{ready:experienceReady,signedIn,installed,appActive}=useConsumerWebExperience();
-  const[policyRequired,setPolicyRequired]=useState(false);
-  const[heroItems,setHeroItems]=useState<OrganicHeroItem[]>([]);
-  const[heroPolicy,setHeroPolicy]=useState<OrganicHeroPolicy>(initialPolicy);
-  const[heroReady,setHeroReady]=useState(false);
-  useEffect(()=>{let active=true;if(!signedIn){setPolicyRequired(false);return()=>{active=false}}void hasCurrentPolicyAcceptance().then(accepted=>{if(active)setPolicyRequired(!accepted)}).catch(()=>{if(active)setPolicyRequired(false)});return()=>{active=false}},[signedIn]);
-  useEffect(()=>{
-    if(!experienceReady){setHeroReady(false);return;}
-    let active=true;
-    setHeroReady(false);
-    void buildConsumerHomeHeroes(signedIn)
-      .then(result=>{if(!active)return;setHeroPolicy(result.policy);setHeroItems(result.items.length?result.items:[initialHero]);setHeroReady(true)})
-      .catch(()=>{if(!active)return;setHeroPolicy(initialPolicy);setHeroItems([initialHero]);setHeroReady(true)});
-    return()=>{active=false};
-  },[experienceReady,signedIn]);
+  const systemScheme=useColorScheme();
+  const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
+  const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','community');
+  const{ready:experienceReady,signedIn,appActive}=useConsumerWebExperience();
+  const[view,setView]=useState<HomeView>('feed');
+  const [query,setQuery]=useState(''),[rows,setRows]=useState<any[]>([]),[following,setFollowing]=useState<any[]>([]),[followers,setFollowers]=useState<any[]>([]),[activity,setActivity]=useState<any[]>([]),[world,setWorld]=useState<any>({}),[rewardCapabilities,setRewardCapabilities]=useState<any>({}),[rewardReactions,setRewardReactions]=useState<Record<string,any>>({}),[message,setMessage]=useState('');
+  async function refresh(){try{const[nextFollowing,nextFollowers,nextActivity,nextWorld,nextCapabilities]=await Promise.all([listMobileFollowing(),listMobileFollowers(),listMobileCommunityActivity(16),getProgressionWorld().catch(()=>({})),getRewardCapabilities().catch(()=>({}))]);const identities=await listProgressionIdentities([...nextFollowing,...nextFollowers].map((person:any)=>String(person.id||person.user_id))).catch(()=>({}));const reactions=await listRewardReactions(nextActivity.map((item:any)=>String(item.reviewId||'')).filter(Boolean)).catch(()=>({}));setFollowing(nextFollowing.map((person:any)=>({...person,progressionIdentity:(identities as any)[String(person.id||person.user_id)]||null})));setFollowers(nextFollowers.map((person:any)=>({...person,progressionIdentity:(identities as any)[String(person.id||person.user_id)]||null})));setActivity(nextActivity);setWorld(nextWorld||{});setRewardCapabilities(nextCapabilities||{});setRewardReactions(reactions as Record<string,any>)}catch(error:any){setMessage(error?.message||'Community could not be loaded.')}}
+  useEffect(()=>{let active=true;void loadKleenestThemeMode().then(mode=>{if(active)setThemeMode(mode)});const unsubscribe=subscribeKleenestTheme(mode=>{if(active)setThemeMode(mode)});return()=>{active=false;unsubscribe()}},[]);
+  useEffect(()=>{if(signedIn)void refresh()},[signedIn]);
+  async function search(){try{const data=await searchContributors(query);const identities=await listProgressionIdentities(data.map((person:any)=>String(person.user_id))).catch(()=>({}));const enriched=data.map((person:any)=>({...person,progressionIdentity:(identities as any)[String(person.user_id)]||null}));setRows(enriched);setMessage(enriched.length?'':'No people found.')}catch(error:any){setMessage(error?.message||'People search failed.')}}
+  async function follow(id:string){try{await toggleMobileFollow(id);await refresh();setMessage('Follow state updated.')}catch(error:any){setMessage(error?.message||'Follow state could not be changed.')}}
+  const reactionPack=String(rewardCapabilities?.equipped?.reaction_pack?.reward_key||'');
+  const reactionOptions=reactionPack==='guardian-pack'?['guardian','gold','resolved','evidence']:reactionPack==='signal-pack'?['fresh','verified','route','helpful']:[];
+  const reactionGlyph:Record<string,string>={fresh:'◌',verified:'✓',route:'⌖',helpful:'♡',guardian:'◆',gold:'✪',resolved:'↻',evidence:'⌁'};
+  async function react(reviewId:string,reaction:string){try{await toggleRewardReaction(reviewId,reaction);const next=await listRewardReactions(activity.map((item:any)=>String(item.reviewId||'')).filter(Boolean));setRewardReactions(next as Record<string,any>)}catch(error:any){setMessage(error?.message||'Reaction could not be updated.')}}
+  const followingIds=useMemo(()=>new Set(following.map(person=>String(person.id))),[following]);
+  const followerIds=useMemo(()=>new Set(followers.map(person=>String(person.id))),[followers]);
+  const openProfile=(id:string)=>router.push({pathname:'/contributor/[id]',params:{id}});
+  const openActivity=(item:any)=>{if(item.locationId)router.push(`/location/${String(item.locationId)}`)};
   if(!experienceReady)return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}/>;
   if(Platform.OS==='web'&&!appActive)return <MarketingHome/>;
-  if(!heroReady)return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}/>;
-  const showInstall=Platform.OS==='web'&&!signedIn&&!installed;
-
   return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-    <View style={s.brandRow}>
-      <View><Text style={[s.brand,{color:theme.ink}]}>KLEENEST</Text><Text style={[s.brandSub,{color:theme.muted}]}>Find it. Trust it. Go.</Text></View>
-      <Pressable style={[s.profileChip,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={action(signedIn?'/profile':'/signup')}><Text style={[s.profileChipText,{color:theme.accent}]}>{signedIn?'PROFILE':'GET STARTED'}</Text></Pressable>
+    {!signedIn?<>
+      <View style={[s.guestCard,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+        <Text style={[s.homeEyebrow,{color:theme.muted}]}>HOME</Text>
+        <Text style={[s.homeTitle,{color:theme.ink}]}>Your Kleenest starts with Explore.</Text>
+        <Text style={[s.body,{color:theme.muted}]}>Find restrooms now. Sign in when you want saved places, community updates, progression and messages to follow you.</Text>
+        <View style={s.guestActions}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Explore" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>router.push('/explore')}><Text style={[s.primaryText,{color:theme.accentText}]}>Explore</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Sign in" style={[s.secondary,{backgroundColor:theme.accentSoft}]} onPress={()=>router.push('/signup?mode=signin' as any)}><Text style={[s.secondaryText,{color:theme.accent}]}>Sign in</Text></Pressable>
+        </View>
+      </View>
+    </>:<>
+      <View style={[s.homeHeader,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+        <View style={{flex:1}}>
+          <Text style={[s.homeEyebrow,{color:theme.muted}]}>HOME</Text>
+          <Text style={[s.homeTitle,{color:theme.ink}]}>Your Kleenest</Text>
+          <Text style={[s.homeSub,{color:theme.muted}]}>{activity.length} updates · {following.length} following · {followers.length} followers</Text>
+        </View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Profile" style={[s.profileButton,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={()=>router.push('/profile')}><Text style={[s.profileButtonText,{color:theme.accent}]}>PROFILE</Text></Pressable>
+      </View>
+
+      <View style={s.quickGrid}>
+        {homeActions.map(item=><Pressable key={item.route} accessibilityRole="button" accessibilityLabel={item.label} style={[s.quickAction,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push(item.route as any)}><Text style={[s.quickActionText,{color:theme.ink}]}>{item.label}</Text><Text style={[s.quickArrow,{color:theme.accent}]}>›</Text></Pressable>)}
+      </View>
+
+      <View style={[s.homeTabs,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+        <Pressable accessibilityRole="tab" accessibilityLabel="Feed" accessibilityState={{selected:view==='feed'}} style={[s.homeTab,view==='feed'&&{backgroundColor:theme.accent}]} onPress={()=>setView('feed')}><Text style={[s.homeTabText,{color:view==='feed'?theme.accentText:theme.muted}]}>FEED</Text></Pressable>
+        <Pressable accessibilityRole="tab" accessibilityLabel="People" accessibilityState={{selected:view==='people'}} style={[s.homeTab,view==='people'&&{backgroundColor:theme.accent}]} onPress={()=>setView('people')}><Text style={[s.homeTabText,{color:view==='people'?theme.accentText:theme.muted}]}>PEOPLE</Text></Pressable>
+        <Pressable accessibilityRole="tab" accessibilityLabel="League" accessibilityState={{selected:view==='league'}} style={[s.homeTab,view==='league'&&{backgroundColor:theme.accent}]} onPress={()=>setView('league')}><Text style={[s.homeTabText,{color:view==='league'?theme.accentText:theme.muted}]}>LEAGUE</Text></Pressable>
+      </View>
+
+      {view==='feed'?<>
+    <View style={s.pulseHead}><View style={{flex:1}}><Text style={s.pulseEyebrow}>COMMUNITY PULSE</Text><Text style={[s.pulseTitle,{color:theme.ink}]}>What your network is learning</Text><Text style={[s.body,{color:theme.muted}]}>Published reviews from you and people you follow, with visit-backed evidence attached.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Refresh community pulse" style={[s.refreshButton,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,borderWidth:1}]} onPress={refresh}><Text style={[s.refresh,{color:theme.accent}]}>Refresh</Text></Pressable></View>
+    {activity.length?activity.map((item,index)=>{const evidence=evidenceLine(item);return <View key={item.id} style={{gap:11}}><Pressable accessibilityRole="button" accessibilityLabel={item.locationId?`Open restroom update ${item.title||''}`:'Community update without a linked restroom'} accessibilityState={{disabled:!item.locationId}} disabled={!item.locationId} onPress={()=>openActivity(item)} style={[s.feedRow,{backgroundColor:theme.surface,borderColor:theme.line}]} ><View style={s.feedIdentity}><Avatar person={item.contributor} size={42}/><View style={{flex:1}}><Text style={[s.cardTitle,{color:theme.ink}]}>{item.contributor?.display_name||item.contributor?.username||'Kleenest contributor'}</Text><View style={s.trustRow}><View style={[s.trustBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line,borderWidth:1}]}><Text style={[s.trustBadgeText,{color:theme.accent}]}>TRUST · {String(item.progressionIdentity?.trust_rank||item.reputationLevel||'new').replaceAll('_',' ').toUpperCase()}</Text></View>{item.progressionIdentity?.level?<Text style={[s.identityMeta,{color:theme.muted}]}>LV {item.progressionIdentity.level} · {item.progressionIdentity.level_title||'Scout'}</Text>:null}{item.verified?<View style={[s.verifiedBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line,borderWidth:1}]}><Text style={[s.verifiedBadgeText,{color:theme.accent}]}>✓ VERIFIED VISIT</Text></View>:null}</View></View></View><View style={[s.feedLocation,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,borderWidth:1}]}><Text style={[s.feedLocationLabel,{color:theme.accent}]}>RESTROOM UPDATE</Text><Text style={[s.feedTitle,{color:theme.ink}]}>{item.title}</Text>{item.location?.name?<Text style={[s.locationName,{color:theme.muted}]}>{item.location.name}</Text>:null}</View>{item.detail?<Text style={[s.body,{color:theme.muted}]}>{item.detail}</Text>:null}<PhotoEvidencePreview photos={item.photos} maxCount={3} size={92}/>{evidence?<View style={[s.evidenceBox,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.evidenceLabel,{color:theme.accent}]}>VISIT EVIDENCE</Text><Text style={[s.evidenceText,{color:theme.ink}]}>{evidence}</Text></View>:null}<View style={s.feedMeta}><Text style={[s.meta,{color:theme.muted}]}>{new Date(item.createdAt).toLocaleDateString()}</Text><Text style={[s.meta,{color:theme.muted}]}>{item.helpfulCount??0} helpful</Text></View>{reactionOptions.length&&item.reviewId?<View style={s.reactionRow}>{reactionOptions.map(reaction=>{const state=rewardReactions[String(item.reviewId)]||{};const mine=Array.isArray(state.mine)&&state.mine.includes(reaction);const count=Number(state.counts?.[reaction]||0);return <Pressable key={reaction} accessibilityRole="button" accessibilityLabel={`${reaction} reaction`} accessibilityState={{selected:mine}} onPress={(event)=>{event.stopPropagation();void react(String(item.reviewId),reaction)}} style={[s.reactionChip,{backgroundColor:mine?theme.accent:theme.surfaceRaised,borderColor:mine?theme.accent:theme.line}]}><Text style={[s.reactionText,{color:mine?theme.accentText:theme.ink}]}>{reactionGlyph[reaction]||'•'} {reaction.replaceAll('_',' ')}{count?` ${count}`:''}</Text></Pressable>})}</View>:null}{item.locationId?<Text style={[s.openLink,{color:theme.accent}]}>Open restroom →</Text>:<Text style={[s.meta,{color:theme.muted}]}>No linked restroom</Text>}</Pressable>{index===1?<SponsoredSlot surface="home" contextClass="home_feed_sponsored_after_updates_2"/>:null}{index===3?<AdMobNativeSlot contextClass="home_feed_network_after_updates_4" keywords={['community','local discovery','travel','restroom']}/>:null}{index===11?<AdMobNativeSlot contextClass="home_feed_network_after_updates_12" keywords={['community','local discovery','travel','restroom']}/>:null}</View>}):<View style={[s.emptyCard,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.emptyTitle,{color:theme.ink}]}>Your pulse is ready to grow</Text><Text style={[s.body,{color:theme.muted}]}>Follow contributors or publish a review to start your trusted community feed.</Text></View>}
+
+      </>:null}
+
+      {view==='people'?<>
+    <View style={[s.searchCard,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={s.searchEyebrow}>GROW YOUR NETWORK</Text><Text style={[s.searchTitle,{color:theme.ink}]}>Find contributors</Text><Text style={[s.searchBody,{color:theme.muted}]}>Search by name or username, then inspect their contribution-backed standing before you follow.</Text><View style={s.searchRow}><TextInput accessibilityLabel="Search contributors by name or username" style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} placeholderTextColor={theme.muted} value={query} onChangeText={setQuery} onSubmitEditing={search} returnKeyType="search" placeholder="Name or username"/><Pressable accessibilityRole="button" accessibilityLabel="Search contributors" style={[s.primary,{backgroundColor:theme.accent}]} onPress={search}><Text style={[s.primaryText,{color:theme.accentText}]}>Search</Text></Pressable></View>{message?<Text style={[s.message,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.muted}]}>{message}</Text>:null}{rows.map(item=>{const id=String(item.user_id),label=relationshipLabel(id,followingIds,followerIds),active=followingIds.has(id);return <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]} key={id}><Pressable accessibilityRole="button" accessibilityLabel={`Open ${item.display_name||item.username||'contributor'} profile`} style={s.identityRow} onPress={()=>openProfile(id)}><Avatar person={item}/><View style={{flex:1}}><Text style={[s.cardTitle,{color:theme.ink}]}>{item.display_name||item.username||'Kleenest user'}</Text>{item.username?<Text style={[s.meta,{color:theme.muted}]}>@{item.username}</Text>:null}<TrustLine person={item}/><Text style={[s.meta,{color:theme.muted}]}>{leagueLabel(item)} · Level {item.level??1} · {item.points??0} pts · {item.badge_count??0} badges</Text>{followerIds.has(id)?<Text style={s.relationshipHint}>{active?'You follow each other':'Follows you'}</Text>:null}{item.bio?<Text style={[s.body,{color:theme.muted}]}>{item.bio}</Text>:null}</View></Pressable><Pressable accessibilityRole="button" accessibilityLabel={`${label} ${item.display_name||item.username||'contributor'}`} style={active?[s.relationshipActive,{backgroundColor:theme.accent,borderColor:theme.accent}]:[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>follow(id)}><Text style={[active?s.relationshipActiveText:s.secondaryText,{color:active?theme.accentText:theme.accent}]}>{label}</Text></Pressable></View>})}</View>
+
+    <SectionHeader eyebrow="YOUR NETWORK" title="Following" body="Contributors whose published restroom evidence becomes part of your community context."/>
+    {following.length?following.slice(0,8).map(person=><Pressable accessibilityRole="button" accessibilityLabel={`Open ${person.display_name||person.username||'contributor'} profile`} style={[s.personRow,{backgroundColor:theme.surface,borderColor:theme.line}]} key={person.id} onPress={()=>openProfile(String(person.id))}><Avatar person={person} size={44}/><View style={{flex:1}}><Text style={[s.cardTitle,{color:theme.ink}]}>{person.display_name||person.username||'Kleenest user'}</Text>{person.username?<Text style={[s.meta,{color:theme.muted}]}>@{person.username}</Text>:null}<TrustLine person={person}/><Text style={[s.meta,{color:theme.muted}]}>{leagueLabel(person)} · Level {person.level??1} · {person.points??0} pts</Text></View><Text style={[s.openChevron,{color:theme.accent}]}>›</Text></Pressable>):<View style={[s.emptyCard,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.emptyTitle,{color:theme.ink}]}>Start your trusted network</Text><Text style={[s.body,{color:theme.muted}]}>Find a few useful contributors above. Their published restroom evidence will begin shaping your community pulse.</Text></View>}
+
+    <SectionHeader eyebrow="PEOPLE WHO TRUST YOUR WORK" title="Followers" body="People who chose to include your published contribution signals in their network."/>
+    {followers.length?followers.slice(0,8).map(person=><View style={[s.followerCard,{backgroundColor:theme.surface,borderColor:theme.line}]} key={person.id}><Pressable accessibilityRole="button" accessibilityLabel={`Open ${person.display_name||person.username||'contributor'} profile`} style={s.personRowInner} onPress={()=>openProfile(String(person.id))}><Avatar person={person} size={42}/><View style={{flex:1}}><Text style={[s.cardTitle,{color:theme.ink}]}>{person.display_name||person.username||'Kleenest user'}</Text>{person.username?<Text style={[s.meta,{color:theme.muted}]}>@{person.username}</Text>:null}<TrustLine person={person}/><Text style={[s.meta,{color:theme.muted}]}>{leagueLabel(person)} · Level {person.level??1} · {person.points??0} pts</Text></View></Pressable>{followingIds.has(String(person.id))?<View style={s.mutualBadge}><Text style={s.mutualBadgeText}>MUTUAL</Text></View>:<Pressable accessibilityRole="button" accessibilityLabel={`Follow back ${person.display_name||person.username||'contributor'}`} style={[s.secondary,{backgroundColor:theme.accentSoft}]} onPress={()=>follow(String(person.id))}><Text style={[s.secondaryText,{color:theme.accent}]}>Follow back</Text></Pressable>}</View>):<Text style={[s.body,{color:theme.muted}]}>Followers will appear here with the same contribution context used across Kleenest.</Text>}
+
+
+      </>:null}
+
+      {view==='league'?<>
+    <View style={[s.competition,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#12383b',borderWidth:1,borderColor:theme.accent}]}><View style={{flex:1}}><Text style={s.competitionKicker}>COMMUNITY COMPETITION</Text><Text style={s.competitionTitle}>Rivals, challenges and the Kleenest League.</Text><Text style={s.competitionBody}>Your badges, game mastery, useful contributions and standing become part of the social game. Follow people you respect, challenge them, and climb against the same community whose evidence you rely on.</Text></View><View style={s.competitionActions}><Pressable accessibilityRole="button" accessibilityLabel="Open Game Center" style={[s.competitionPrimary,{backgroundColor:theme.surface,borderColor:theme.line,borderWidth:1}]} onPress={()=>router.push('/games')}><Text style={[s.competitionPrimaryText,{color:theme.accent}]}>Game Center</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open League and badges" style={[s.competitionSecondary,{backgroundColor:theme.accent,borderColor:theme.accent,borderWidth:1}]} onPress={()=>router.push('/progress')}><Text style={[s.competitionSecondaryText,{color:theme.accentText}]}>League + badges</Text></Pressable></View></View>
+
+    <View style={[s.seasonRivals,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+      <View style={s.seasonRivalsHead}><View style={{flex:1}}><Text style={s.seasonRivalsKicker}>SEASON RIVALS</Text><Text style={[s.seasonRivalsTitle,{color:theme.ink}]}>{String(world?.season?.name||'The Freshness Run')}</Text><Text style={[s.seasonRivalsBody,{color:theme.muted}]}>People you follow—and people following you—become the rivals that make the season feel alive. Trust still comes from evidence; this ladder is about seasonal contribution momentum.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Open season progress" style={[s.seasonRivalsButton,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,borderWidth:1}]} onPress={()=>router.push('/progress')}><Text style={[s.seasonRivalsButtonText,{color:theme.accent}]}>Open season</Text></Pressable></View>
+      {Array.isArray(world?.rivals)&&world.rivals.length?world.rivals.slice(0,6).map((r:any)=><Pressable accessibilityRole="button" accessibilityLabel={r.is_current_user?'Your season standing':`Open ${r.display_name||'rival'} profile`} accessibilityState={{disabled:Boolean(r.is_current_user)}} disabled={Boolean(r.is_current_user)} key={String(r.user_id)} style={s.seasonRivalRow} onPress={()=>openProfile(String(r.user_id))}><Text style={[s.seasonRivalRank,{color:theme.accent}]}>#{r.rank}</Text><View style={{flex:1}}><Text style={[s.seasonRivalName,{color:theme.ink}]}>{r.is_current_user?'You':r.display_name}</Text><Text style={[s.seasonRivalMeta,{color:theme.muted}]}>{Number(r.score||0).toLocaleString()} season XP{r.is_current_user?' · your current pace':''}</Text></View>{r.is_current_user?<View style={[s.youChip,{backgroundColor:theme.accent}]}><Text style={[s.youChipText,{color:theme.accentText}]}>YOU</Text></View>:<Text style={[s.openChevron,{color:theme.accent}]}>›</Text>}</Pressable>):<Text style={[s.seasonRivalsBody,{color:theme.muted}]}>Follow contributors to build a personal rival ladder for this season.</Text>}
     </View>
 
-    {policyRequired?<Pressable accessibilityRole="button" style={[s.notice,{backgroundColor:theme.surfaceRaised,borderColor:theme.warning}]} onPress={action('/legal')}><View style={{flex:1}}><Text style={[s.noticeKicker,{color:theme.warning}]}>ACTION REQUIRED</Text><Text style={[s.noticeTitle,{color:theme.ink}]}>Review community terms</Text></View><Text style={[s.arrow,{color:theme.warning}]}>›</Text></Pressable>:null}
-    {!signedIn?<Pressable accessibilityRole="button" style={[s.notice,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/signup')}><View style={{flex:1}}><Text style={[s.noticeKicker,{color:theme.accent}]}>GUEST MODE</Text><Text style={[s.noticeTitle,{color:theme.ink}]}>Browse now. Sign in when you want sync + rewards.</Text></View><Text style={[s.arrow,{color:theme.accent}]}>›</Text></Pressable>:null}
 
-    <View style={[s.primaryPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-      <Text style={[s.primaryKicker,{color:theme.muted}]}>WHERE DO YOU NEED TO GO?</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Find a bathroom" style={[s.findAction,{backgroundColor:theme.accent}]} onPress={action('/explore')}>
-        <View style={{flex:1}}><Text style={[s.findTitle,{color:theme.accentText}]}>Find a restroom</Text><Text style={[s.findBody,{color:theme.accentText}]}>Search nearby, compare trust, then go.</Text></View><Text style={[s.findArrow,{color:theme.accentText}]}>→</Text>
-      </Pressable>
-      <View style={s.actionRow}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Check in" style={[s.secondaryAction,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={action('/qr')}><Text style={[s.secondaryLabel,{color:theme.accent}]}>✓ CHECK IN</Text></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Add a missing place" style={[s.secondaryAction,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={action('/discover')}><Text style={[s.secondaryLabel,{color:theme.accent}]}>＋ ADD PLACE</Text></Pressable>
-      </View>
-    </View>
-
-    <RelevanceHeroCarousel items={heroItems} dotIndicators={heroPolicy.dot_indicators} swipeEnabled={heroPolicy.swipe_enabled} autoplay={heroPolicy.autoplay} onOpen={route=>router.push(route as any)}/>
-    <SponsoredSlot surface="home" contextClass="home_after_relevance"/>
-
-    <View>
-      <View style={s.shortcutsHeading}>
-        <Text style={[s.shortcutsLabel,{color:theme.muted}]}>YOUR KLEENEST</Text>
-        <Text style={[s.shortcutsHint,{color:theme.muted}]}>Quick access</Text>
-      </View>
-      <View style={s.shortcuts}>
-        {homeShortcuts.map(item=><Pressable
-          key={item.route}
-          accessibilityRole="button"
-          accessibilityLabel={item.title}
-          style={[s.shortcut,{backgroundColor:item.featured?theme.accentSoft:theme.surface,borderColor:item.featured?theme.accent:theme.line}]}
-          onPress={action(item.route)}
-        >
-          <View style={[s.shortcutIcon,{backgroundColor:item.featured?theme.accent:theme.surfaceRaised,borderColor:item.featured?theme.accent:theme.line}]}>
-            <Text style={[s.shortcutIconText,{color:item.featured?theme.accentText:theme.accent}]}>{item.icon}</Text>
-          </View>
-          <View style={s.shortcutCopy}>
-            <Text style={[s.shortcutText,{color:theme.ink}]}>{item.title}</Text>
-            <Text style={[s.shortcutDetail,{color:theme.muted}]}>{item.detail}</Text>
-          </View>
-          <Text style={[s.shortcutArrow,{color:item.featured?theme.accent:theme.muted}]}>›</Text>
-        </Pressable>)}
-      </View>
-    </View>
-
-    {showInstall?<Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest" style={[s.install,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={action('/install')}><Text style={[s.installText,{color:theme.accent}]}>Install Kleenest on this device</Text><Text style={[s.arrow,{color:theme.accent}]}>›</Text></Pressable>:null}
-
-    <Pressable accessibilityRole="button" style={s.profileHint} onPress={action('/profile')}><Text style={[s.profileHintText,{color:theme.muted}]}>Membership, family, messages, notifications, support and account controls live in Profile →</Text></Pressable>
+      </>:null}
+    </>}
   </ScrollView></SafeAreaView>;
 }
-
-const s=StyleSheet.create({
-  safe:{flex:1,backgroundColor:palette.canvas},
-  content:{padding:20,paddingBottom:36,gap:14},
-  brandRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
-  brand:{fontSize:15,fontWeight:'900',letterSpacing:2.8},
-  brandSub:{fontSize:11,fontWeight:'800',marginTop:2},
-  profileChip:{borderWidth:1,paddingHorizontal:12,paddingVertical:8,borderRadius:999},
-  profileChipText:{fontSize:9,fontWeight:'900',letterSpacing:1},
-  notice:{borderWidth:1,borderRadius:15,paddingHorizontal:14,paddingVertical:11,flexDirection:'row',alignItems:'center',gap:10},
-  noticeKicker:{fontSize:8,fontWeight:'900',letterSpacing:1},
-  noticeTitle:{fontSize:13,lineHeight:17,fontWeight:'900',marginTop:2},
-  arrow:{fontSize:25,fontWeight:'800'},
-  primaryPanel:{borderWidth:1,borderRadius:20,padding:14,gap:10},
-  primaryKicker:{fontSize:9,fontWeight:'900',letterSpacing:1.2},
-  findAction:{minHeight:78,borderRadius:16,padding:15,flexDirection:'row',alignItems:'center',gap:12},
-  findTitle:{fontSize:21,fontWeight:'900'},
-  findBody:{fontSize:11,lineHeight:16,fontWeight:'700',opacity:.82,marginTop:3},
-  findArrow:{fontSize:28,fontWeight:'900'},
-  actionRow:{flexDirection:'row',gap:8},
-  secondaryAction:{flex:1,minHeight:48,borderWidth:1,borderRadius:13,alignItems:'center',justifyContent:'center',paddingHorizontal:8},
-  secondaryLabel:{fontSize:10,fontWeight:'900',letterSpacing:.6,textAlign:'center'},
-  shortcutsHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:8,paddingHorizontal:1},
-  shortcutsLabel:{fontSize:9,fontWeight:'900',letterSpacing:1.2},
-  shortcutsHint:{fontSize:9,fontWeight:'800'},
-  shortcuts:{flexDirection:'row',flexWrap:'wrap',gap:10},
-  shortcut:{width:'48%',flexGrow:1,minHeight:96,borderWidth:1,borderRadius:16,padding:11,paddingRight:10,flexDirection:'row',alignItems:'center',gap:8,position:'relative'},
-  shortcutIcon:{width:32,height:32,borderRadius:10,borderWidth:1,alignItems:'center',justifyContent:'center',flexShrink:0},
-  shortcutIconText:{fontSize:16,fontWeight:'900'},
-  shortcutCopy:{flex:1,minWidth:0,paddingRight:18},
-  shortcutText:{fontSize:12,lineHeight:16,fontWeight:'900',flexShrink:1},
-  shortcutDetail:{fontSize:9,lineHeight:13,fontWeight:'700',marginTop:2,flexShrink:1},
-  shortcutArrow:{position:'absolute',right:9,top:35,fontSize:18,fontWeight:'900'},
-  install:{borderWidth:1,borderRadius:14,paddingHorizontal:14,paddingVertical:11,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
-  installText:{fontSize:12,fontWeight:'900'},
-  profileHint:{paddingVertical:8,paddingHorizontal:4},
-  profileHintText:{fontSize:10,lineHeight:15,fontWeight:'700',textAlign:'center'},
-});
+function Stat({value,label,dark=false}:{value:any;label:string;dark?:boolean}){const theme=useConsumerTheme('community');return <View style={[s.stat,{backgroundColor:dark?theme.surfaceRaised:theme.surface,borderColor:theme.line}]}><Text style={[s.statValue,{color:dark?theme.ink:theme.accent}]}>{value}</Text><Text style={[s.meta,{color:theme.muted}]}>{label}</Text></View>}
+const s=StyleSheet.create({homeHeader:{flexDirection:'row',alignItems:'center',gap:12,padding:14,borderRadius:18,borderWidth:1},homeEyebrow:{fontSize:8,fontWeight:'900',letterSpacing:1.4},homeTitle:{fontSize:27,lineHeight:31,fontWeight:'900'},homeSub:{fontSize:11,fontWeight:'700',marginTop:3},profileButton:{borderWidth:1,borderRadius:999,paddingHorizontal:11,paddingVertical:8},profileButtonText:{fontSize:8,fontWeight:'900',letterSpacing:1},quickGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},quickAction:{width:'48%',minHeight:46,borderRadius:14,borderWidth:1,paddingHorizontal:12,paddingVertical:10,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},quickActionText:{fontSize:11,fontWeight:'900'},quickArrow:{fontSize:18,fontWeight:'900'},homeTabs:{flexDirection:'row',borderRadius:14,borderWidth:1,padding:3,gap:3},homeTab:{flex:1,minHeight:38,borderRadius:11,alignItems:'center',justifyContent:'center'},homeTabText:{fontSize:9,fontWeight:'900',letterSpacing:.8},guestCard:{borderRadius:20,borderWidth:1,padding:18,gap:9},guestActions:{flexDirection:'row',gap:8,flexWrap:'wrap'},safe:{flex:1,backgroundColor:palette.canvas},content:{padding:20,paddingBottom:44,gap:11},hero:{backgroundColor:palette.green,padding:19,borderRadius:24,gap:7,shadowColor:'#000',shadowOpacity:.08,shadowRadius:14,elevation:3},heroEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.7,color:'#bcd4c5'},heroTitle:{fontSize:29,lineHeight:33,fontWeight:'900',color:'#fff'},heroBody:{fontSize:13,lineHeight:20,color:'#dce9e1'},stats:{flexDirection:'row',gap:8,marginTop:8},stat:{flex:1,backgroundColor:'#fff',padding:12,borderRadius:15,borderWidth:1,borderColor:palette.line},statDark:{backgroundColor:'#28503c',borderColor:'#3b624e'},statValue:{fontSize:20,fontWeight:'900',color:palette.green},statValueDark:{color:'#fff'},meta:{color:'#65756b',fontSize:11,fontWeight:'700',marginTop:2},metaDark:{color:'#c8dbcf'},searchCard:{backgroundColor:'#fff',padding:16,borderRadius:20,borderWidth:1,borderColor:palette.line,gap:7},searchEyebrow:{fontSize:8,fontWeight:'900',letterSpacing:1.3,color:'#557060'},searchTitle:{fontSize:21,fontWeight:'900',color:palette.ink},searchBody:{fontSize:12,lineHeight:18,color:palette.muted},body:{fontSize:14,lineHeight:21,color:'#53645a'},searchRow:{flexDirection:'row',gap:8,marginTop:5},input:{flex:1,backgroundColor:'#f9fbfa',borderWidth:1,borderColor:'#ccd9d1',borderRadius:14,padding:13},primary:{backgroundColor:palette.green,padding:13,borderRadius:13,justifyContent:'center'},primaryText:{color:'#fff',fontWeight:'900'},message:{color:'#53645a',fontWeight:'700',fontSize:12},trustRow:{flexDirection:'row',alignItems:'center',gap:7,flexWrap:'wrap',marginTop:4},trustBadge:{backgroundColor:'#dceee2',paddingHorizontal:8,paddingVertical:4,borderRadius:999},trustBadgeText:{fontSize:8,fontWeight:'900',letterSpacing:.4,color:palette.green},identityMeta:{fontSize:8,fontWeight:'900',letterSpacing:.3,color:'#65756b'},verifiedBadge:{backgroundColor:palette.green,paddingHorizontal:8,paddingVertical:4,borderRadius:999},verifiedBadgeText:{fontSize:8,fontWeight:'900',letterSpacing:.3,color:'#fff'},relationshipHint:{fontSize:10,fontWeight:'900',color:palette.green,marginTop:4},avatar:{backgroundColor:'#e7eee9'},avatarFallback:{backgroundColor:palette.green,alignItems:'center',justifyContent:'center'},avatarFallbackText:{color:'#fff',fontWeight:'900'},identityRow:{flexDirection:'row',alignItems:'center',gap:11},card:{backgroundColor:'#fff',padding:14,borderRadius:16,borderWidth:1,borderColor:palette.line,gap:9,marginTop:4},cardTitle:{fontSize:15,fontWeight:'900',color:palette.ink},secondary:{backgroundColor:'#edf3ef',padding:10,borderRadius:12,alignSelf:'flex-start'},secondaryText:{color:palette.green,fontWeight:'900'},relationshipActive:{backgroundColor:palette.green,padding:10,borderRadius:12,alignSelf:'flex-start'},relationshipActiveText:{color:'#fff',fontWeight:'900'},personRow:{backgroundColor:'#fff',padding:14,borderRadius:17,flexDirection:'row',alignItems:'center',gap:11,borderWidth:1,borderColor:palette.line},openChevron:{fontSize:27,fontWeight:'800',color:palette.green},personRowInner:{flexDirection:'row',alignItems:'center',gap:11},followerCard:{backgroundColor:'#fff',padding:14,borderRadius:17,gap:10,borderWidth:1,borderColor:palette.line},mutualBadge:{alignSelf:'flex-start',backgroundColor:'#dceee2',paddingHorizontal:10,paddingVertical:6,borderRadius:999},mutualBadgeText:{fontSize:9,fontWeight:'900',letterSpacing:.6,color:palette.green},pulseHead:{flexDirection:'row',gap:10,alignItems:'flex-end',marginTop:16},pulseEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.4,color:'#557060'},pulseTitle:{fontSize:23,lineHeight:27,fontWeight:'900',color:palette.ink,marginTop:3},refreshButton:{backgroundColor:'#e7efe9',borderRadius:12,paddingHorizontal:11,paddingVertical:9},refresh:{color:palette.green,fontWeight:'900',fontSize:10},feedRow:{backgroundColor:'#fff',padding:15,borderRadius:19,gap:9,borderWidth:1,borderColor:'#d3e1d8'},feedIdentity:{flexDirection:'row',alignItems:'center',gap:10},feedLocation:{backgroundColor:'#f4f8f5',borderRadius:13,padding:10},feedLocationLabel:{fontSize:8,fontWeight:'900',letterSpacing:1.1,color:'#557060'},feedTitle:{fontSize:16,fontWeight:'900',color:palette.ink,marginTop:2},locationName:{fontSize:11,fontWeight:'800',color:palette.green,marginTop:3},evidenceBox:{backgroundColor:'#f1f7f3',borderWidth:1,borderColor:'#d7e6dc',borderRadius:12,padding:10,gap:3},evidenceLabel:{fontSize:9,fontWeight:'900',letterSpacing:1,color:palette.green},evidenceText:{fontSize:11,fontWeight:'700',color:'#40584a'},feedMeta:{flexDirection:'row',justifyContent:'space-between',gap:10,flexWrap:'wrap'},reactionRow:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:3},reactionChip:{minHeight:32,borderWidth:1,borderRadius:999,paddingHorizontal:9,alignItems:'center',justifyContent:'center'},reactionText:{fontSize:9,fontWeight:'900',textTransform:'capitalize'},openLink:{color:palette.green,fontWeight:'900',fontSize:11},emptyCard:{backgroundColor:'#fff',borderWidth:1,borderColor:palette.line,borderRadius:17,padding:15,gap:5},emptyTitle:{fontSize:16,fontWeight:'900',color:palette.ink},competition:{backgroundColor:'#102f21',borderRadius:20,padding:16,gap:10},competitionKicker:{fontSize:8,fontWeight:'900',letterSpacing:1.4,color:'#bcd4c5'},competitionTitle:{fontSize:21,lineHeight:25,fontWeight:'900',color:'#fff'},competitionBody:{fontSize:12,lineHeight:18,color:'#dce9e1',marginTop:4},competitionActions:{flexDirection:'row',gap:8,flexWrap:'wrap'},competitionPrimary:{backgroundColor:'#fff',borderRadius:12,paddingHorizontal:12,paddingVertical:10},competitionPrimaryText:{fontWeight:'900',color:palette.green},competitionSecondary:{backgroundColor:'#244c37',borderRadius:12,paddingHorizontal:12,paddingVertical:10},competitionSecondaryText:{fontWeight:'900',color:'#fff'},seasonRivals:{backgroundColor:'#fff',borderRadius:20,padding:16,borderWidth:1,borderColor:palette.line,gap:9},seasonRivalsHead:{flexDirection:'row',gap:10,alignItems:'flex-start'},seasonRivalsKicker:{fontSize:8,fontWeight:'900',letterSpacing:1.4,color:'#8a6414'},seasonRivalsTitle:{fontSize:21,fontWeight:'900',color:palette.ink,marginTop:2},seasonRivalsBody:{fontSize:11.5,lineHeight:17,color:palette.muted,marginTop:3},seasonRivalsButton:{backgroundColor:'#173d2b',paddingHorizontal:10,paddingVertical:9,borderRadius:11},seasonRivalsButtonText:{fontSize:9,fontWeight:'900',color:'#fff'},seasonRivalRow:{flexDirection:'row',gap:10,alignItems:'center',borderTopWidth:1,borderTopColor:'#edf1ee',paddingTop:9},seasonRivalRank:{width:34,fontSize:16,fontWeight:'900',color:palette.green},seasonRivalName:{fontSize:13,fontWeight:'900',color:palette.ink},seasonRivalMeta:{fontSize:10,color:palette.muted,marginTop:2},youChip:{backgroundColor:palette.green,borderRadius:999,paddingHorizontal:8,paddingVertical:5},youChipText:{fontSize:8,fontWeight:'900',color:'#fff'}});

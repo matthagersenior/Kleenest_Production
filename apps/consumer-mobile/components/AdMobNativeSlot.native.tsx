@@ -1,9 +1,10 @@
 import { useEffect,useMemo,useState } from 'react';
-import { Image,Platform,StyleSheet,Text,View } from 'react-native';
+import { Image,Platform,Pressable,StyleSheet,Text,View } from 'react-native';
 import mobileAds,{AdsConsent,NativeAd,NativeAdEventType,NativeAdView,NativeAsset,NativeAssetType,TestIds} from 'react-native-google-mobile-ads';
-import { consumerNetworkAdsEnabled } from '../services/networkAds';
+import { consumerNetworkAdPlacementEnabled } from '../services/networkAds';
 import { classifyAdMobLoadFailure,recordAdMobTelemetry } from '../services/admobTelemetry';
 import { useConsumerTheme } from '../services/theme';
+import { router } from 'expo-router';
 
 const PRODUCTION_ANDROID_NATIVE_AD_UNIT_ID='ca-app-pub-6958734306376288/6751375017';
 const PRODUCTION_IOS_NATIVE_AD_UNIT_ID='ca-app-pub-6958734306376288/2327160255';
@@ -37,7 +38,7 @@ export function AdMobNativeSlot({keywords=[],contextClass}:{keywords?:string[];c
   const[nativeAd,setNativeAd]=useState<NativeAd|null>(null);
   const cleanKeywords=useMemo(()=>Array.from(new Set(keywords.map(v=>String(v).trim().toLowerCase()).filter(Boolean))).slice(0,10),[keywords.join('|')]);
 
-  useEffect(()=>{let active=true;void consumerNetworkAdsEnabled().then(value=>{if(active)setAllowed(value)});return()=>{active=false}},[]);
+  useEffect(()=>{let active=true;const placement=contextClass||'network';void consumerNetworkAdPlacementEnabled(placement).then(value=>{if(active)setAllowed(value)});return()=>{active=false}},[contextClass]);
   useEffect(()=>{
     if(!allowed)return;
     let active=true;
@@ -70,7 +71,8 @@ export function AdMobNativeSlot({keywords=[],contextClass}:{keywords?:string[];c
   useEffect(()=>()=>{nativeAd?.destroy()},[nativeAd]);
 
   if(!allowed||!nativeAd)return null;
-  return <NativeAdView nativeAd={nativeAd} style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+  return <View style={s.wrap}>
+   <NativeAdView nativeAd={nativeAd} style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
     <View style={s.top}>
       <View style={[s.adBadge,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.adBadgeText,{color:theme.muted}]}>AD · GOOGLE</Text></View>
       <Text style={[s.context,{color:theme.muted}]}>{contextClass?.replaceAll('_',' ').toUpperCase()||'NETWORK'}</Text>
@@ -84,11 +86,16 @@ export function AdMobNativeSlot({keywords=[],contextClass}:{keywords?:string[];c
       </View>
     </View>
     {nativeAd.callToAction?<NativeAsset assetType={NativeAssetType.CALL_TO_ACTION}><Text style={[s.cta,{color:theme.accent,backgroundColor:theme.accentSoft,borderColor:theme.line}]}>{nativeAd.callToAction} →</Text></NativeAsset>:null}
-    <Text style={[s.note,{color:theme.muted}]}>Google network ad · Remove Ads hides network ads. Kleenest Sponsored recommendations are separate.</Text>
-  </NativeAdView>;
+    <Text style={[s.note,{color:theme.muted}]}>Google network ad · Kleenest Sponsored recommendations are separate.</Text>
+   </NativeAdView>
+   <Pressable accessibilityRole="button" accessibilityLabel="Remove Google and network ads for five dollars one time" onPress={()=>router.push('/membership')} style={[s.removeAds,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+    <Text style={[s.removeAdsText,{color:theme.accent}]}>Remove network ads · $5 one-time →</Text>
+   </Pressable>
+  </View>;
 }
 
 const s=StyleSheet.create({
+  wrap:{gap:6},
   card:{borderRadius:17,borderWidth:1,padding:13,gap:8,minHeight:110},
   top:{minHeight:20,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingRight:24,gap:8},
   adBadge:{borderRadius:6,borderWidth:1,paddingHorizontal:6,paddingVertical:3},
@@ -101,4 +108,6 @@ const s=StyleSheet.create({
   body:{fontSize:12,lineHeight:17},
   cta:{alignSelf:'flex-start',overflow:'hidden',borderWidth:1,borderRadius:11,paddingHorizontal:11,paddingVertical:8,fontSize:10,fontWeight:'900'},
   note:{fontSize:9,lineHeight:13,fontWeight:'700'},
+  removeAds:{alignSelf:'flex-end',borderWidth:1,borderRadius:999,paddingHorizontal:10,paddingVertical:6},
+  removeAdsText:{fontSize:9,fontWeight:'900'},
 });

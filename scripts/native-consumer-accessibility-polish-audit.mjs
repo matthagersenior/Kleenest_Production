@@ -12,7 +12,7 @@ const notifications=read('apps/consumer-mobile/app/notifications.tsx');
 const interactionFiles=[
   'apps/consumer-mobile/app/signup.tsx',
   'apps/consumer-mobile/app/profile.tsx',
-  'apps/consumer-mobile/app/social.tsx',
+  'apps/consumer-mobile/app/home.tsx',
   'apps/consumer-mobile/app/progress.tsx',
   'apps/consumer-mobile/app/games.tsx',
   'apps/consumer-mobile/app/discover.tsx',
@@ -52,8 +52,8 @@ for(const file of interactionFiles){
 }
 const discover=read('apps/consumer-mobile/app/discover.tsx');
 for(const token of ["function editCoordinate(axis:'lat'|'lon',value:string)","setAccuracy(null)","setMethod('map_pin')","onChangeText={value=>editCoordinate('lat',value)}","onChangeText={value=>editCoordinate('lon',value)}"])if(!discover.includes(token))failures.push(`Discover evidence provenance downgrade missing ${token}`);
-const social=read('apps/consumer-mobile/app/social.tsx');
-for(const token of ['disabled={Boolean(r.is_current_user)}','disabled={!item.locationId}',"item.locationId?<Text style={[s.openLink"])if(!social.includes(token))failures.push(`Community dead-tap guard missing ${token}`);
+const social=read('apps/consumer-mobile/app/home.tsx');
+for(const token of ['disabled={Boolean(r.is_current_user)}','disabled={!item.locationId}',"item.locationId?<Text style={[s.openLink"])if(!social.includes(token))failures.push(`Home community dead-tap guard missing ${token}`);
 const stateSources={
   'apps/consumer-mobile/app/explore.tsx':explore,
   'apps/consumer-mobile/app/location/[id].tsx':location,

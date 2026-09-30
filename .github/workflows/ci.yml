@@ -86,6 +86,8 @@ jobs:
 
       - name: AdMob and sponsored inventory separation
         run: node scripts/admob-network-fallback-audit.mjs
+      - name: Consumer Home and Community information architecture
+        run: node scripts/consumer-home-community-ia-audit.mjs
       - name: Consumer presentation convergence
         run: node scripts/native-consumer-presentation-convergence-audit.mjs
       - name: Public marketing imagery convergence

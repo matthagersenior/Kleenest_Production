@@ -89,7 +89,7 @@ export default function GamesHub(){
     <Text style={s.sectionLabelLight}>THE BIGGER GAME</Text>
     <Text style={s.metaTitle}>Games feed your Kleenest identity.</Text>
     <Text style={s.metaBody}>Personal bests, mastery, badges, streaks, useful real-world contributions and community standing all become part of the same long-term climb. XP moves the bar; mastery and reputation make the climb worth defending.</Text>
-    <View style={s.metaActions}><Pressable accessibilityRole="button" accessibilityLabel="Open progress and badges" style={[s.lightButton,{backgroundColor:theme.surface}]} onPress={()=>router.push('/progress')}><Text style={[s.lightButtonText,{color:theme.accent}]}>Progress + badges</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open community and rivals" style={[s.lightButton,{backgroundColor:theme.surface}]} onPress={()=>router.push('/social')}><Text style={[s.lightButtonText,{color:theme.accent}]}>Community + rivals</Text></Pressable></View>
+    <View style={s.metaActions}><Pressable accessibilityRole="button" accessibilityLabel="Open progress and badges" style={[s.lightButton,{backgroundColor:theme.surface}]} onPress={()=>router.push('/progress')}><Text style={[s.lightButtonText,{color:theme.accent}]}>Progress + badges</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open community and rivals" style={[s.lightButton,{backgroundColor:theme.surface}]} onPress={()=>router.push('/home')}><Text style={[s.lightButtonText,{color:theme.accent}]}>Community + rivals</Text></Pressable></View>
    </View>
  </ScrollView></SafeAreaView>;
 }

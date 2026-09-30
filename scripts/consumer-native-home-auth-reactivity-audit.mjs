@@ -44,20 +44,19 @@ if(!failures.length){
   }
   for(const token of [
     'ready:experienceReady',
-    'const[heroItems,setHeroItems]=useState<OrganicHeroItem[]>([])',
-    'const[heroReady,setHeroReady]=useState(false)',
+    'signedIn',
     'if(!experienceReady)return <SafeAreaView',
-    'if(!heroReady)return <SafeAreaView',
-    'buildConsumerHomeHeroes(signedIn)',
-    'setHeroReady(true)',
+    'useEffect(()=>{if(signedIn)void refresh()},[signedIn])',
+    '!signedIn?<>',
+    'MarketingHome',
   ]){
     if(!home.includes(token))failures.push(`Consumer Home hydration guard missing ${token}.`);
   }
   const experienceGate=home.indexOf('if(!experienceReady)return <SafeAreaView');
-  const heroGate=home.indexOf('if(!heroReady)return <SafeAreaView');
-  const heroRender=home.indexOf('<RelevanceHeroCarousel');
-  if(!(experienceGate>=0&&heroGate>experienceGate&&heroRender>heroGate)){
-    failures.push('Consumer Home must resolve auth and hero state before rendering the relevance hero.');
+  const signedInBranch=home.indexOf('!signedIn?<>');
+  const communityLoad=home.indexOf('useEffect(()=>{if(signedIn)void refresh()},[signedIn])');
+  if(!(communityLoad>=0&&experienceGate>communityLoad&&signedInBranch>experienceGate)){
+    failures.push('Consumer Home must resolve auth readiness before rendering signed-in or guest Home content.');
   }
 }
 

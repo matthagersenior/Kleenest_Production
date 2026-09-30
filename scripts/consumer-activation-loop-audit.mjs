@@ -8,7 +8,7 @@ const files={
   discover:'apps/consumer-mobile/app/discover.tsx',
   progress:'apps/consumer-mobile/app/progress.tsx',
   location:'apps/consumer-mobile/app/location/[id].tsx',
-  social:'apps/consumer-mobile/app/social.tsx',
+  social:'apps/consumer-mobile/app/home.tsx',
   play:'apps/consumer-mobile/app/play.tsx',
   activity:'apps/consumer-mobile/app/activity.tsx',
   core:'packages/mobile-core/src/index.ts',
@@ -56,8 +56,8 @@ if(!failures.length){
  if(!amenities.includes("rpc('record_review_amenity_inventory'")||!amenities.includes('progression'))failures.push('Amenity evidence must use the server authority that also returns progression context.');
  if(!photos.includes('review-photos'))failures.push('Review photo evidence must use the canonical review-photo storage boundary.');
 
- for(const token of ['COMMUNITY','People helping people find better bathrooms.','COMMUNITY PULSE','VERIFIED VISIT','reputation'])if(!social.includes(token))failures.push(`Community activation missing ${token}.`);
- if(!social.includes('listMobileCommunityActivity')||!social.includes('toggleMobileFollow'))failures.push('Community must consume canonical published activity and relationship authority.');
+ for(const token of ["type HomeView='feed'|'people'|'league'",'COMMUNITY PULSE','VERIFIED VISIT','TRUST ·'])if(!social.includes(token))failures.push(`Merged Home community activation missing ${token}.`);
+ if(!social.includes('listMobileCommunityActivity')||!social.includes('toggleMobileFollow'))failures.push('Merged Home must consume canonical published activity and relationship authority.');
  for(const token of ['getMobileProgressionDashboard','listMobileActiveQuests','listMobileChallenges','listMobileContests','listMobileLeaderboard','ACTIVE TRUST MISSION'])if(!play.includes(token))failures.push(`Legacy progression compatibility surface missing ${token}.`);
  if(!activity.includes('TRUST MISSION')||!activity.includes('View strengthened restroom'))failures.push('Personal activity must connect completed evidence missions back to the strengthened restroom.');
 

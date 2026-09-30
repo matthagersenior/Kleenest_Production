@@ -122,15 +122,16 @@ export default function RootLayout() {
     tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarStyle:publicWeb?({display:'none'} as any):{height:74,paddingTop:7,paddingBottom:9,backgroundColor:theme.surfaceRaised,borderTopWidth:1,borderTopColor:theme.line,elevation:12,shadowColor:'#000',shadowOpacity:.12,shadowRadius:10,shadowOffset:{width:0,height:-3}},tabBarItemStyle:{minWidth:0,paddingHorizontal:0,paddingVertical:1},tabBarLabelStyle:{fontWeight:'900',fontSize:9.5},
   }}>
     <Tabs.Screen name="index" options={{ href:null,title:'Launch',headerShown:false }}/>
-    <Tabs.Screen name="home" options={{ title:'Home',headerShown:false,tabBarIcon:tabIcon('home',theme.accentSoft),tabBarLabel:tabLabel('Home') }}/>
     <Tabs.Screen name="explore" options={{ title:'Explore',headerShown:false,tabBarIcon:tabIcon('explore',theme.accentSoft),tabBarLabel:tabLabel('Explore') }}/>
     <Tabs.Screen name="qr" options={{ title:'Check In',headerShown:false,tabBarIcon:tabIcon('check',theme.accentSoft),tabBarLabel:tabLabel('Check In') }}/>
+    <Tabs.Screen name="home" options={{ title:'Home',headerShown:false,tabBarIcon:tabIcon('home',theme.accentSoft),tabBarLabel:tabLabel('Home') }}/>
+    <Tabs.Screen name="games" options={{ title:'Game Center',headerShown:false,tabBarIcon:tabIcon('games',theme.accentSoft),tabBarLabel:tabLabel('Games') }}/>
+    <Tabs.Screen name="profile" options={{ title:'Profile',headerShown:false,tabBarIcon:tabIcon('profile',theme.accentSoft),tabBarLabel:tabLabel('Profile') }}/>
     <Tabs.Screen name="progress" options={{ href:null,title:'Progress',headerShown:false }}/>
     <Tabs.Screen name="passport" options={{ href:null,title:'Kleenest Passport' }}/>
     <Tabs.Screen name="intelligence" options={{ href:null,title:'Kleenest Intelligence' }}/>
     <Tabs.Screen name="social" options={{ href:null,title:'Community',headerShown:false }}/>
     <Tabs.Screen name="search" options={{ href:null,title:'Search',headerShown:false }}/>
-    <Tabs.Screen name="profile" options={{ title:'Profile',headerShown:false,tabBarIcon:tabIcon('profile',theme.accentSoft),tabBarLabel:tabLabel('Profile') }}/>
     <Tabs.Screen name="signup" options={{ href:null,title:'Join Kleenest' }}/>
     <Tabs.Screen name="install" options={{ href:null,title:'Install Kleenest' }}/>
     <Tabs.Screen name="creator" options={{ href:null,title:'Creator mission',headerShown:false }}/>
@@ -144,7 +145,6 @@ export default function RootLayout() {
     <Tabs.Screen name="access" options={{ href:null,title:'Access & Preferred' }}/>
     <Tabs.Screen name="messages" options={{ href:null,title:'Messages' }}/>
     <Tabs.Screen name="offline" options={{ href:null,title:'Offline Trips' }}/>
-    <Tabs.Screen name="games" options={{ title:'Game Center',headerShown:false,tabBarIcon:tabIcon('games',theme.accentSoft),tabBarLabel:tabLabel('Games') }}/>
     <Tabs.Screen name="game/[code]" options={{ href:null,title:'Game Arena',headerShown:false }}/>
     <Tabs.Screen name="reward-tools" options={{ href:null,title:'Reward Toolkit',headerShown:false }}/>
     <Tabs.Screen name="route" options={{ href:null,title:'Routes' }}/>

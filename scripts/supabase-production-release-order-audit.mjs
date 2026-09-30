@@ -38,6 +38,9 @@ expect(readiness,'Waiting for native Supabase GitHub deployment','bounded native
 expect(readiness,'Native Supabase GitHub deployment did not converge; OTA remains blocked.','native deployment fail-closed message');
 expect(readiness,'const maxAttempts=36','bounded retry count');
 expect(readiness,'const retryDelayMs=5000','bounded retry delay');
+expect(readiness,"['20260923221800','20260924151211']",'explicit obsolete route-migration supersession');
+expect(readiness,'const sourceVersionSet=new Set(sourceVersions)','supersession must be source-controlled on both sides');
+expect(readiness,'verifying the authoritative successor instead of replaying the obsolete function definition','supersession audit trail');
 reject(readiness,'/rest/v1/rpc/production_migration_applied','direct public RPC readiness access');
 reject(readiness,'SUPABASE_PUBLISHABLE_KEY','publishable key in readiness verifier');
 

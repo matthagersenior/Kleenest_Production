@@ -206,7 +206,7 @@ requireTokens('Consumer seasonal runtime enforcement','apps/consumer-mobile/app/
 requireTokens('Consumer seasonal reward vault','apps/consumer-mobile/app/progress.tsx',[
   'REWARD LOCKER','TRUST DISCOVERY','PUBLIC SHOWCASE','showcaseSlots',
 ]);
-requireTokens('Community public trust identity','apps/consumer-mobile/app/social.tsx',[
+requireTokens('Home Community public trust identity','apps/consumer-mobile/app/home.tsx',[
   'listProgressionIdentities','TRUST ·','progressionIdentity',
 ]);
 requireTokens('Location reviewer trust identity','apps/consumer-mobile/app/location/[id].tsx',[
