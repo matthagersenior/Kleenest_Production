@@ -33,6 +33,7 @@
     "react-router-dom": "^7.8.2"
   },
   "overrides": {
+    "brace-expansion": "5.0.12",
     "query-string": {
       "decode-uri-component": "0.5.0"
     },
