@@ -124,6 +124,20 @@ for(const token of [
 ])requireToken(screen,token,'Selectable destination marker/card');
 
 for(const token of [
+  'const SEARCH_DESTINATION_GEOFENCE_RADIUS_M=150;',
+  'const searchedDestination=useMemo(',
+  'geofence_radius_m:SEARCH_DESTINATION_GEOFENCE_RADIUS_M',
+  'function snapMapToDiscoveryOrigin(target:[number,number],openDestinationCard=false)',
+  'setDestinationCardOpen(openDestinationCard)',
+  'snapMapToDiscoveryOrigin(areaMatch.origin,true)',
+  'async function goToSearchDestination()',
+  'function addSearchDestinationToRoute()',
+  'onPress={()=>void goToSearchDestination()}',
+  'onPress={addSearchDestinationToRoute}',
+])requireToken(screen,token,'Resolved searched-address destination actions');
+if(screen.includes("onPress={mode==='route'?selectDestinationMarker:recenterMap}"))throw new Error('Searched-address marker must open its destination card in both Nearby and Along route modes.');
+
+for(const token of [
   "mode==='route'? \`${visibleRows.length} along route · ${radiusLabel(corridor)} corridor\`",
   'Longest stretch between qualifying bathrooms:',
   "from 'react-native-safe-area-context'",
