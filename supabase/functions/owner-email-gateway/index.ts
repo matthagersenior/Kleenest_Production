@@ -143,12 +143,14 @@ function adminClient(){
 async function authorize(req:Request){
   const authorizationHeader=req.headers.get('authorization')||'';
   if(!authorizationHeader.startsWith('Bearer '))throw Object.assign(new Error('Owner sign-in is required.'),{status:401});
+  const jwt=authorizationHeader.slice('Bearer '.length).trim();
+  if(!jwt)throw Object.assign(new Error('Owner sign-in is required.'),{status:401});
   const client=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
     auth:{persistSession:false,autoRefreshToken:false},
-    global:{headers:{authorization:authorizationHeader}},
+    global:{headers:{Authorization:`Bearer ${jwt}`}},
   });
   const[{data:userData,error:userError},{data,error}]=await Promise.all([
-    client.auth.getUser(),
+    client.auth.getUser(jwt),
     client.rpc('admin_authorization_v1'),
   ]);
   if(userError||!userData.user)throw Object.assign(new Error('Owner sign-in is required.'),{status:401});
