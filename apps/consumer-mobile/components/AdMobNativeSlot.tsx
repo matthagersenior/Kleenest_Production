@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { consumerNetworkAdPlacementEnabled } from '../services/networkAds';
 import { useConsumerTheme } from '../services/theme';
 
-const ADSENSE_CLIENT=String(process.env.EXPO_PUBLIC_ADSENSE_CLIENT_ID||'').trim();
+const ADSENSE_CLIENT=String(process.env.EXPO_PUBLIC_ADSENSE_CLIENT_ID||'ca-pub-6958734306376288').trim();
 const ADSENSE_WEB_DISPLAY_SLOT=String(process.env.EXPO_PUBLIC_ADSENSE_WEB_DISPLAY_SLOT||'').trim();
 
 function ensureAdSenseScript(client:string){
