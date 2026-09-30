@@ -154,10 +154,23 @@ Deno.serve(async (request) => {
 
   const body = await request.json().catch(() => ({}));
   const limit = Math.min(Math.max(Number(body?.limit ?? 12), 1), 25);
+  const requestedLocationIds = Array.isArray(body?.location_ids)
+    ? [...new Set(body.location_ids.map((value: unknown) => text(value)).filter((value: string) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+      ))].slice(0, limit)
+    : [];
 
-  const { data: locations, error } = await supabase.rpc("address_backfill_candidates", {
-    p_limit: limit,
-  });
+  const locationResult = requestedLocationIds.length
+    ? await supabase
+        .from("locations")
+        .select("id,latitude,longitude,address,city,state,postal_code,country")
+        .in("id", requestedLocationIds)
+        .not("latitude", "is", null)
+        .not("longitude", "is", null)
+        .limit(limit)
+    : await supabase.rpc("address_backfill_candidates", { p_limit: limit });
+  const locations = locationResult.data;
+  const error = locationResult.error;
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   const results: Array<Record<string, unknown>> = [];
