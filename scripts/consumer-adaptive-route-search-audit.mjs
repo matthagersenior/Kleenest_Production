@@ -120,7 +120,7 @@ for(const token of [
   'destinationCardOpen',
   'Select destination marker',
   'Discover places near destination',
-  'Use destination for along-route search',
+  'Add searched destination to route',
 ])requireToken(screen,token,'Selectable destination marker/card');
 
 for(const token of [
