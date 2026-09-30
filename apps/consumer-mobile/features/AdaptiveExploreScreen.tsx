@@ -1638,6 +1638,7 @@ export default function AdaptiveExploreScreen() {
               />
             </View>
             {Number(item?.discovery_rank)===4?<View style={s.resultItem}><AdMobNativeSlot contextClass="maps_network_after_results_4" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/></View>:null}
+            {Number(item?.discovery_rank)===14?<View style={s.resultItem}><AdMobNativeSlot contextClass="maps_network_after_results_14" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/></View>:null}
           </>
         )}
         ListEmptyComponent={!loading ? (
