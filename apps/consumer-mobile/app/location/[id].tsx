@@ -27,6 +27,7 @@ import { submitPriorKnowledgePhotos, type PriorKnowledgeRecency } from '../../se
 import { getRewardCapabilities } from '../../services/rewardRuntime';
 import { listProgressionIdentities } from '../../services/progressionIdentity';
 import { isPreciseLocationPermission, selectBestLocationFix } from '../../services/checkInLocationQuality.js';
+import { invokeConsumerAi } from '../../services/aiAssist';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, Platform, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -50,6 +51,7 @@ export default function LocationDetailScreen(){
   const [place,setPlace]=useState<any>(null),[reviews,setReviews]=useState<any[]>([]),[communityPhotos,setCommunityPhotos]=useState<CommunityPhoto[]>([]),[message,setMessage]=useState(''),[checkInId,setCheckInId]=useState<string|null>(null),[checkInAt,setCheckInAt]=useState<string|null>(null),[presence,setPresence]=useState<ConsumerPresence|null>(null),[stars,setStars]=useState(''),[cleanliness,setCleanliness]=useState(''),[comment,setComment]=useState(''),[amenities,setAmenities]=useState<AmenityCatalogItem[]>([]),[amenityDraft,setAmenityDraft]=useState<Record<string,AmenityDraft>>({}),[reviewPhotos,setReviewPhotos]=useState<ReviewPhotoDraft[]>([]),[submitting,setSubmitting]=useState(false),[amenityRefresh,setAmenityRefresh]=useState(0),[photoRefresh,setPhotoRefresh]=useState(0),[activeMission,setActiveMission]=useState<TrustMission|null>(null),[draftHydrated,setDraftHydrated]=useState(false),[currentUserId,setCurrentUserId]=useState(''),[photoBusy,setPhotoBusy]=useState(''),[priorPhotoBusy,setPriorPhotoBusy]=useState(false),[previousVisitPhotoRecency,setPreviousVisitPhotoRecency]=useState<PriorKnowledgeRecency>('unknown'),[network,setNetwork]=useState<LocationNetworkStatus|null>(null);
   const [showEvidence,setShowEvidence]=useState(false),[submittedReviewId,setSubmittedReviewId]=useState<string|null>(null),[showMoreActions,setShowMoreActions]=useState(false),[showPlaceDetails,setShowPlaceDetails]=useState(false),[showAmenities,setShowAmenities]=useState(false),[showContribution,setShowContribution]=useState(reviewMode||missionMode),[showAllReviews,setShowAllReviews]=useState(false);
   const [facilities,setFacilities]=useState<RestroomFacility[]>([]),[selectedFacilityId,setSelectedFacilityId]=useState('');
+  const [phraseBusy,setPhraseBusy]=useState(false);
   const [rewardCapabilities,setRewardCapabilities]=useState<any>({});
   const reviewListRef=useRef<FlatList<any>>(null),reviewScrollDone=useRef(false);
   const missionMatches=missionMode&&activeMission?.status==='active'&&activeMission.locationId===locationId;
@@ -125,6 +127,36 @@ export default function LocationDetailScreen(){
   const selectedFacility=useMemo(()=>facilities.find(facility=>facility.id===selectedFacilityId)||null,[facilities,selectedFacilityId]);
   const facilityRequired=facilities.length>1&&!selectedFacilityId;
   const selectedAmenities=useMemo(()=>amenities.flatMap(amenity=>{const draft=amenityDraft[amenity.id];if(!draft?.selected)return[];return[{amenity_id:amenity.id,quantity:draft.quantity.trim()===''?null:Number(draft.quantity),sentiment:draft.sentiment}] as const}),[amenities,amenityDraft]);
+  async function phraseReview(){
+    if(!checkInId||!reviewScoresValid||phraseBusy)return;
+    const facility=selectedFacility?restroomFacilityLabel(selectedFacility):'';
+    const observedAmenities=selectedAmenities.flatMap(entry=>{
+      const amenity=amenities.find(item=>item.id===entry.amenity_id);
+      if(!amenity)return[];
+      const quantity=entry.quantity==null?'':' ('+String(entry.quantity)+')';
+      const condition=entry.sentiment==='needs_attention'?' — needs attention':'';
+      return[amenity.name+quantity+condition];
+    });
+    const previous=comment;
+    setPhraseBusy(true);
+    try{
+      const result=await invokeConsumerAi('visit_review',{
+        stars:Number(stars),
+        cleanliness:Number(cleanliness),
+        observation:[facility,...observedAmenities].filter(Boolean).join('; '),
+        note:comment,
+      },'Write a concise first-person review using only the visit details supplied. Do not add facts, assumptions, marketing language, or conditions the visitor did not enter.');
+      const draft=String(result.answer||'').trim();
+      if(draft)setComment(draft);
+      setMessage('Drafted from the visit details you entered. Edit anything you want before publishing.');
+    }catch{
+      setComment(previous);
+      setMessage('Could not help phrase this right now. Your review text is unchanged.');
+    }finally{
+      setPhraseBusy(false);
+    }
+  }
+
   const deferredPhotoReview=useMemo(()=>{
     const owned=reviews.filter((item:any)=>currentUserId&&String(item.user_id)===currentUserId&&Number(item.reviewPhotoCount||0)<3);
     if(photoReviewId)return owned.find((item:any)=>String(item.id)===photoReviewId)||null;
@@ -331,6 +363,10 @@ export default function LocationDetailScreen(){
           <View style={s.ratingGuide}><Text style={[s.fieldLabel,{color:theme.ink}]}>CLEANLINESS · REQUIRED</Text><Text style={[s.helperText,{color:theme.muted}]}>Tap the closest description—no number entry needed.</Text><View style={s.ratingChoices}>{CLEANLINESS_CHOICES.map(choice=>{const selected=cleanliness===String(choice.score);return <Pressable key={choice.score} accessibilityRole="button" accessibilityState={{selected}} accessibilityLabel={`${choice.label}, cleanliness ${choice.score} out of 100`} style={[s.ratingChoice,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},selected&&{backgroundColor:theme.accent,borderColor:theme.accent}]} onPress={()=>setCleanliness(String(choice.score))}><Text style={[s.ratingChoiceScore,{color:theme.ink},selected&&{color:theme.accentText}]}>{choice.score}</Text><Text style={[s.ratingChoiceLabel,{color:theme.muted},selected&&s.ratingChoiceTextSelected]}>{choice.label}</Text></Pressable>})}</View></View>
           <Text style={[s.fieldLabel,{color:theme.ink}]}>ANYTHING THE NEXT PERSON SHOULD KNOW? · OPTIONAL</Text>
           <TextInput style={[s.input,s.quickTextarea,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} placeholderTextColor={theme.muted} value={comment} onChangeText={setComment} multiline placeholder="Access, privacy, wait, supplies…"/>
+          <View style={s.photoActionRow}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Help me phrase this review" accessibilityState={{disabled:!checkInId||!reviewScoresValid||phraseBusy||submitting}} disabled={!checkInId||!reviewScoresValid||phraseBusy||submitting} style={[s.secondary,{backgroundColor:theme.accentSoft,borderColor:theme.line},(!checkInId||!reviewScoresValid||phraseBusy||submitting)&&s.disabled]} onPress={()=>void phraseReview()}><Text style={[s.secondaryText,{color:theme.accent}]}>{phraseBusy?'Phrasing…':'Help me phrase this'}</Text></Pressable>
+            <Text style={[s.helperText,{color:theme.muted,flex:1}]}>Uses only the visit details above. You review and edit before publishing.</Text>
+          </View>
         </View>
 
         <View style={[s.photoFastPath,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
