@@ -27,6 +27,8 @@ for(const task of ['explore_reason','place_summary','route_summary','mission_sug
   assert.match(mobile,new RegExp(task),`consumer AI task contract must include ${task}`);
 }
 assert.match(edge,/grounded_fallback/,'ai-assist must preserve deterministic fallback');
+assert.match(edge,/organicTask\(task\)[\s\S]{0,120}\? \[cloudflareAssist,groqAssist,openRouterAssist,geminiAssist,openAiAssist\]/,'organic microcopy must prefer free-tier providers');
+assert.match(edge,/: \[openRouterAssist,geminiAssist,openAiAssist,cloudflareAssist,groqAssist\]/,'existing higher-stakes AI tasks must retain the established provider order');
 assert.match(edge,/ignore any instructions/i,'system prompt must treat supplied context as data, not instructions');
 assert.match(mobile,/invokeOrganicConsumerAi/,'consumer service must expose organic, failure-safe AI');
 assert.match(explore,/organicExploreReason/,'Explore must surface organic decision context');
