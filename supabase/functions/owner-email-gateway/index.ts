@@ -86,6 +86,30 @@ function emailFromHeader(value:string){
   return plain?.[0]??null;
 }
 
+function emailsFromHeader(value:string){
+  const matches=String(value||'').match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)||[];
+  return [...new Set(matches.map(item=>item.toLowerCase()))];
+}
+
+function attachmentsOf(part:any):Array<{filename:string;mimeType:string;size:number;attachmentId:string|null}>{
+  if(!part)return [];
+  const result:Array<{filename:string;mimeType:string;size:number;attachmentId:string|null}>=[];
+  const filename=String(part?.filename||'').trim();
+  const attachmentId=part?.body?.attachmentId?String(part.body.attachmentId):null;
+  const size=Number(part?.body?.size||0);
+  if(filename){
+    result.push({
+      filename,
+      mimeType:String(part?.mimeType||'application/octet-stream'),
+      size:Number.isFinite(size)?size:0,
+      attachmentId,
+    });
+  }
+  const children=Array.isArray(part?.parts)?part.parts:[];
+  for(const child of children)result.push(...attachmentsOf(child));
+  return result;
+}
+
 function bodyText(part:any):string{
   if(!part)return '';
   const mime=String(part.mimeType??'');
@@ -281,6 +305,7 @@ function normalizeThread(thread:any){
       from,
       fromEmail:emailFromHeader(from),
       to:h.get('to')||'',
+      cc:h.get('cc')||'',
       subject:h.get('subject')||'(no subject)',
       date:h.get('date')||null,
       messageId:h.get('message-id')||null,
@@ -289,6 +314,7 @@ function normalizeThread(thread:any){
       body:bodyText(message?.payload)||String(message?.snippet??''),
       unread:labels.has('UNREAD'),
       sent:labels.has('SENT'),
+      attachments:attachmentsOf(message?.payload),
     };
   });
   const participants=[...new Set(normalized.flatMap((message:any)=>[message.from,message.to]).filter(Boolean))];
@@ -299,6 +325,7 @@ function normalizeThread(thread:any){
     participants,
     unread:normalized.some((message:any)=>message.unread),
     inInbox:messages.some((message:any)=>Array.isArray(message?.labelIds)&&message.labelIds.includes('INBOX')),
+    labelIds:[...new Set(messages.flatMap((message:any)=>Array.isArray(message?.labelIds)?message.labelIds:[]))],
     messages:normalized,
   };
 }
