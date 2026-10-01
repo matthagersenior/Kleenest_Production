@@ -1,0 +1,1011 @@
+{
+  "version": 1,
+  "asOf": "2026-10-01",
+  "completionMeaning": "Only status=live may be described as implemented, complete, shipped, or available without qualification.",
+  "states": [
+    "legacy-unverified",
+    "idea",
+    "data",
+    "backend",
+    "wired",
+    "discoverable",
+    "usable",
+    "persistent",
+    "verified",
+    "live",
+    "internal"
+  ],
+  "enforcement": {
+    "afterPullRequest": 319,
+    "productChangePrefixes": [
+      "apps/",
+      "packages/",
+      "supabase/migrations/",
+      "supabase/functions/",
+      "mcp/"
+    ],
+    "liveRequires": [
+      "user journey",
+      "UI evidence",
+      "logic evidence",
+      "discoverability evidence",
+      "loading/empty/error/success states",
+      "state persistence or explicit statelessness",
+      "automated verification",
+      "production verification"
+    ]
+  },
+  "certificationPriority": [
+    "consumer.discovery",
+    "consumer.maps",
+    "consumer.guest-mode",
+    "consumer.address-origin-discovery",
+    "consumer.along-route-discovery",
+    "consumer.check-in",
+    "consumer.reviews",
+    "consumer.photos",
+    "consumer.notifications",
+    "business.workspace-selection",
+    "business.locations",
+    "business.self-service-onboarding",
+    "business.sponsored-ad-creation",
+    "fleet.dispatch",
+    "fleet.routes",
+    "fleet.geofence-execution",
+    "fleet.nearby-relief-discovery",
+    "platform.admin-dashboard",
+    "platform.owner-email-inbox",
+    "platform.sponsored-ad-crud",
+    "platform.creator-missions",
+    "platform.theme-entitlements"
+  ],
+  "grandfatheredUnverified": [
+    "consumer.discovery",
+    "consumer.maps",
+    "consumer.trust-signals",
+    "consumer.check-in",
+    "consumer.qr",
+    "consumer.reviews",
+    "consumer.photos",
+    "consumer.amenities",
+    "consumer.saved",
+    "consumer.routes",
+    "consumer.offline",
+    "consumer.community",
+    "consumer.messages",
+    "consumer.notifications",
+    "consumer.progression",
+    "consumer.quests",
+    "consumer.contests",
+    "consumer.games",
+    "consumer.family",
+    "consumer.membership",
+    "consumer.support",
+    "consumer.privacy",
+    "consumer.account-deletion",
+    "consumer.ugc-reporting",
+    "consumer.user-blocking",
+    "business.workspace-selection",
+    "business.dashboard",
+    "business.profile",
+    "business.locations",
+    "business.reviews",
+    "business.review-replies",
+    "business.promotions",
+    "business.campaigns",
+    "business.contests",
+    "business.events",
+    "business.media",
+    "business.qr-management",
+    "business.qr-branding",
+    "business.analytics",
+    "business.occupancy",
+    "business.visitors",
+    "business.roi",
+    "business.benchmarks",
+    "business.restroom-health",
+    "business.trust-quality",
+    "business.remediation",
+    "business.reverification",
+    "business.preventive-maintenance",
+    "business.enterprise-control",
+    "business.networks",
+    "business.partners",
+    "business.notifications",
+    "business.support",
+    "business.privacy",
+    "business.account-control",
+    "fleet.workspace-selection",
+    "fleet.dispatch",
+    "fleet.routes",
+    "fleet.route-stop-timing",
+    "fleet.drivers",
+    "fleet.vehicles",
+    "fleet.maintenance",
+    "fleet.alerts",
+    "fleet.operational-signals",
+    "fleet.exceptions",
+    "fleet.remediation-risk",
+    "fleet.prevention-portfolio",
+    "fleet.preventive-schedule",
+    "fleet.prevention-effectiveness",
+    "fleet.preventive-dispatch",
+    "fleet.notifications",
+    "fleet.offline-recovery",
+    "fleet.support",
+    "fleet.privacy",
+    "fleet.account-control",
+    "platform.admin-dashboard",
+    "platform.pending-businesses",
+    "platform.business-verification",
+    "platform.account-capabilities",
+    "platform.business-access",
+    "platform.business-tier",
+    "platform.member-management",
+    "platform.review-reports",
+    "platform.moderation",
+    "platform.platform-activity",
+    "platform.control-history",
+    "platform.notifications",
+    "platform.support",
+    "platform.privacy",
+    "platform.account-control",
+    "consumer.guest-mode",
+    "consumer.address-origin-discovery",
+    "consumer.along-route-discovery",
+    "consumer.discovery-canonicalization",
+    "consumer.web-map-fallback",
+    "consumer.review-photo-add-later",
+    "consumer.week-in-review",
+    "business.self-service-onboarding",
+    "business.sponsored-ad-creation",
+    "platform.owner-email-inbox",
+    "platform.sponsored-ad-crud",
+    "platform.creator-missions",
+    "platform.theme-entitlements",
+    "fleet.geofence-execution",
+    "fleet.nearby-relief-discovery"
+  ],
+  "features": [
+    {
+      "id": "consumer.discovery",
+      "product": "consumer",
+      "capability": "discovery",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.maps",
+      "product": "consumer",
+      "capability": "maps",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.trust-signals",
+      "product": "consumer",
+      "capability": "trust-signals",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.check-in",
+      "product": "consumer",
+      "capability": "check-in",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.qr",
+      "product": "consumer",
+      "capability": "qr",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.reviews",
+      "product": "consumer",
+      "capability": "reviews",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.photos",
+      "product": "consumer",
+      "capability": "photos",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.amenities",
+      "product": "consumer",
+      "capability": "amenities",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.saved",
+      "product": "consumer",
+      "capability": "saved",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.routes",
+      "product": "consumer",
+      "capability": "routes",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.offline",
+      "product": "consumer",
+      "capability": "offline",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.community",
+      "product": "consumer",
+      "capability": "community",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.messages",
+      "product": "consumer",
+      "capability": "messages",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.notifications",
+      "product": "consumer",
+      "capability": "notifications",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.progression",
+      "product": "consumer",
+      "capability": "progression",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.quests",
+      "product": "consumer",
+      "capability": "quests",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.contests",
+      "product": "consumer",
+      "capability": "contests",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.games",
+      "product": "consumer",
+      "capability": "games",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.family",
+      "product": "consumer",
+      "capability": "family",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.membership",
+      "product": "consumer",
+      "capability": "membership",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.support",
+      "product": "consumer",
+      "capability": "support",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.privacy",
+      "product": "consumer",
+      "capability": "privacy",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.account-deletion",
+      "product": "consumer",
+      "capability": "account-deletion",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.ugc-reporting",
+      "product": "consumer",
+      "capability": "ugc-reporting",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.user-blocking",
+      "product": "consumer",
+      "capability": "user-blocking",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.workspace-selection",
+      "product": "business",
+      "capability": "workspace-selection",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.dashboard",
+      "product": "business",
+      "capability": "dashboard",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.profile",
+      "product": "business",
+      "capability": "profile",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.locations",
+      "product": "business",
+      "capability": "locations",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.reviews",
+      "product": "business",
+      "capability": "reviews",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.review-replies",
+      "product": "business",
+      "capability": "review-replies",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.promotions",
+      "product": "business",
+      "capability": "promotions",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.campaigns",
+      "product": "business",
+      "capability": "campaigns",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.contests",
+      "product": "business",
+      "capability": "contests",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.events",
+      "product": "business",
+      "capability": "events",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.media",
+      "product": "business",
+      "capability": "media",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.qr-management",
+      "product": "business",
+      "capability": "qr-management",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.qr-branding",
+      "product": "business",
+      "capability": "qr-branding",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.analytics",
+      "product": "business",
+      "capability": "analytics",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.occupancy",
+      "product": "business",
+      "capability": "occupancy",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.visitors",
+      "product": "business",
+      "capability": "visitors",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.roi",
+      "product": "business",
+      "capability": "roi",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.benchmarks",
+      "product": "business",
+      "capability": "benchmarks",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.restroom-health",
+      "product": "business",
+      "capability": "restroom-health",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.trust-quality",
+      "product": "business",
+      "capability": "trust-quality",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.remediation",
+      "product": "business",
+      "capability": "remediation",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.reverification",
+      "product": "business",
+      "capability": "reverification",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.preventive-maintenance",
+      "product": "business",
+      "capability": "preventive-maintenance",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.enterprise-control",
+      "product": "business",
+      "capability": "enterprise-control",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.networks",
+      "product": "business",
+      "capability": "networks",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.partners",
+      "product": "business",
+      "capability": "partners",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.notifications",
+      "product": "business",
+      "capability": "notifications",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.support",
+      "product": "business",
+      "capability": "support",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.privacy",
+      "product": "business",
+      "capability": "privacy",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "business.account-control",
+      "product": "business",
+      "capability": "account-control",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.workspace-selection",
+      "product": "fleet",
+      "capability": "workspace-selection",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.dispatch",
+      "product": "fleet",
+      "capability": "dispatch",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.routes",
+      "product": "fleet",
+      "capability": "routes",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.route-stop-timing",
+      "product": "fleet",
+      "capability": "route-stop-timing",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.drivers",
+      "product": "fleet",
+      "capability": "drivers",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.vehicles",
+      "product": "fleet",
+      "capability": "vehicles",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.maintenance",
+      "product": "fleet",
+      "capability": "maintenance",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.alerts",
+      "product": "fleet",
+      "capability": "alerts",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.operational-signals",
+      "product": "fleet",
+      "capability": "operational-signals",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.exceptions",
+      "product": "fleet",
+      "capability": "exceptions",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.remediation-risk",
+      "product": "fleet",
+      "capability": "remediation-risk",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.prevention-portfolio",
+      "product": "fleet",
+      "capability": "prevention-portfolio",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.preventive-schedule",
+      "product": "fleet",
+      "capability": "preventive-schedule",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.prevention-effectiveness",
+      "product": "fleet",
+      "capability": "prevention-effectiveness",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.preventive-dispatch",
+      "product": "fleet",
+      "capability": "preventive-dispatch",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.notifications",
+      "product": "fleet",
+      "capability": "notifications",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.offline-recovery",
+      "product": "fleet",
+      "capability": "offline-recovery",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.support",
+      "product": "fleet",
+      "capability": "support",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.privacy",
+      "product": "fleet",
+      "capability": "privacy",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "fleet.account-control",
+      "product": "fleet",
+      "capability": "account-control",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.admin-dashboard",
+      "product": "platform",
+      "capability": "admin-dashboard",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.pending-businesses",
+      "product": "platform",
+      "capability": "pending-businesses",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.business-verification",
+      "product": "platform",
+      "capability": "business-verification",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.account-capabilities",
+      "product": "platform",
+      "capability": "account-capabilities",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.business-access",
+      "product": "platform",
+      "capability": "business-access",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.business-tier",
+      "product": "platform",
+      "capability": "business-tier",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.member-management",
+      "product": "platform",
+      "capability": "member-management",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.review-reports",
+      "product": "platform",
+      "capability": "review-reports",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.moderation",
+      "product": "platform",
+      "capability": "moderation",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.platform-activity",
+      "product": "platform",
+      "capability": "platform-activity",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.control-history",
+      "product": "platform",
+      "capability": "control-history",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.notifications",
+      "product": "platform",
+      "capability": "notifications",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.support",
+      "product": "platform",
+      "capability": "support",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.privacy",
+      "product": "platform",
+      "capability": "privacy",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "platform.account-control",
+      "product": "platform",
+      "capability": "account-control",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "This capability predates the feature lifecycle contract. Structural parity may exist, but discoverability, usability, persistence/refresh, and production verification have not yet been certified as one vertical slice."
+    },
+    {
+      "id": "consumer.guest-mode",
+      "product": "consumer",
+      "capability": "guest-mode",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Guest use and sign-up value are present in code, but the full first-time-user distinction is not certified end to end."
+    },
+    {
+      "id": "consumer.address-origin-discovery",
+      "product": "consumer",
+      "capability": "address-origin-discovery",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Address search is intended to behave like moving the discovery origin; merged repairs exist, but the complete production user flow is not yet certified under this contract."
+    },
+    {
+      "id": "consumer.along-route-discovery",
+      "product": "consumer",
+      "capability": "along-route-discovery",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Along-route discovery has active implementation history, but it is not yet certified as a complete production user journey under this contract."
+    },
+    {
+      "id": "consumer.discovery-canonicalization",
+      "product": "consumer",
+      "capability": "discovery-canonicalization",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Discovered places are intended to become known/canonical Kleenest places; backend and discovery work exists, but end-to-end certification is pending."
+    },
+    {
+      "id": "consumer.web-map-fallback",
+      "product": "consumer",
+      "capability": "web-map-fallback",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Fallback map behavior is merged on main, but production-equivalent discoverability, interaction, and state behavior still need lifecycle certification."
+    },
+    {
+      "id": "consumer.review-photo-add-later",
+      "product": "consumer",
+      "capability": "review-photo-add-later",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Photo evidence/add-later behavior has implementation history, but the entire contribution flow is not yet lifecycle-certified."
+    },
+    {
+      "id": "consumer.week-in-review",
+      "product": "consumer",
+      "capability": "week-in-review",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Week-in-review surfaces exist, but notification delivery and end-user completion are not yet lifecycle-certified."
+    },
+    {
+      "id": "business.self-service-onboarding",
+      "product": "business",
+      "capability": "self-service-onboarding",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Business onboarding exists, but acquisition-through-operational-readiness is not yet certified as one complete user journey."
+    },
+    {
+      "id": "business.sponsored-ad-creation",
+      "product": "business",
+      "capability": "sponsored-ad-creation",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Business advertising surfaces exist, but create-preview-publish-observe lifecycle is not yet certified end to end."
+    },
+    {
+      "id": "platform.owner-email-inbox",
+      "product": "platform",
+      "capability": "owner-email-inbox",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "A smart inbox implementation exists on open PR #316, so this is not live on main and remains uncertified."
+    },
+    {
+      "id": "platform.sponsored-ad-crud",
+      "product": "platform",
+      "capability": "sponsored-ad-crud",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Owner advertising controls have implementation history, but complete CRUD-to-consumer-placement behavior is not yet lifecycle-certified."
+    },
+    {
+      "id": "platform.creator-missions",
+      "product": "platform",
+      "capability": "creator-missions",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Creator mission concepts and supporting work exist, but owner creation through creator attribution/reward is not yet certified end to end."
+    },
+    {
+      "id": "platform.theme-entitlements",
+      "product": "platform",
+      "capability": "theme-entitlements",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Theme/reward controls exist in parts of the product, but owner grant/unlock through user persistence is not yet lifecycle-certified."
+    },
+    {
+      "id": "fleet.geofence-execution",
+      "product": "fleet",
+      "capability": "geofence-execution",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Fleet geofence logic exists, but manager setup through field execution and persistence is not yet lifecycle-certified."
+    },
+    {
+      "id": "fleet.nearby-relief-discovery",
+      "product": "fleet",
+      "capability": "nearby-relief-discovery",
+      "kind": "user",
+      "status": "legacy-unverified",
+      "gap": "Fleet nearby/relief discovery exists in product surfaces, but the complete operational flow is not yet lifecycle-certified."
+    }
+  ]
+}
