@@ -1,0 +1,23 @@
+name: Organic intelligence
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/ai-assist/**'
+      - 'apps/consumer-mobile/services/aiAssist.ts'
+      - 'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx'
+      - 'apps/consumer-mobile/app/route.tsx'
+      - 'apps/consumer-mobile/app/location/[id].tsx'
+      - 'scripts/organic-ai-assist-audit.mjs'
+      - 'package.json'
+  push:
+    branches:
+      - 'feat/organic-intelligence-layer'
+jobs:
+  organic-ai:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/organic-ai-assist-audit.mjs
