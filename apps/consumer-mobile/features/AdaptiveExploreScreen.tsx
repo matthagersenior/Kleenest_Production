@@ -14,6 +14,8 @@ import {
   listNearbyRestrooms,
   listPlacesAlongRoute,
   mobileCheckIn,
+  BATHROOM_FIT_OPTIONS,
+  getBathroomFitPreferences,
   type AmenityMatchRule,
 } from '@kleenest/mobile-core';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -499,6 +501,7 @@ export default function AdaptiveExploreScreen() {
   const [corridor, setCorridor] = useState(16093);
   const [amenities, setAmenities] = useState<AmenityCatalogItem[]>([]);
   const [selectedAmenityNames, setSelectedAmenityNames] = useState<string[]>([]);
+  const [preferenceAmenityNames,setPreferenceAmenityNames]=useState<string[]>([]);
   const [kleenestOnly,setKleenestOnly]=useState(false);
   const [progressionOnly,setProgressionOnly]=useState(false);
   const [minimumStars,setMinimumStars]=useState(0);
@@ -584,6 +587,25 @@ export default function AdaptiveExploreScreen() {
       .slice(0, 24),
     [amenities],
   );
+  useEffect(()=>{
+    let active=true;
+    if(!amenities.length){setPreferenceAmenityNames([]);return()=>{active=false};}
+    getBathroomFitPreferences().then(preferences=>{
+      if(!active)return;
+      const wanted=BATHROOM_FIT_OPTIONS.filter(([key])=>Boolean(preferences?.[key])).map(([,label])=>String(label));
+      const normalized=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+      const matched=wanted.flatMap(label=>{
+        const target=normalized(label);
+        const exact=amenities.find(item=>normalized(item.name)===target);
+        if(exact)return[exact.name];
+        const fuzzy=amenities.find(item=>normalized(item.name).includes(target)||target.includes(normalized(item.name)));
+        return fuzzy?[fuzzy.name]:[];
+      });
+      setPreferenceAmenityNames(Array.from(new Set(matched)));
+    }).catch(()=>{if(active)setPreferenceAmenityNames([])});
+    return()=>{active=false};
+  },[amenities]);
+  const rankingAmenityNames=selectedAmenityNames.length?selectedAmenityNames:preferenceAmenityNames;
   const routeBounds = useMemo(() => {
     if (!route?.geometry?.coordinates?.length || selected || destinationCardOpen) return null;
     const points = route.geometry.coordinates as [number, number][];
@@ -939,7 +961,7 @@ export default function AdaptiveExploreScreen() {
         relaxedAmenityFallback=true;
       }
     }
-    const displayRows=organizeDiscoveryRows(attachPresence(discoveryRows,livePresence),activeAmenityNames);
+    const displayRows=organizeDiscoveryRows(attachPresence(discoveryRows,livePresence),rankingAmenities);
     if (!areaMatch&&!displayRows.length && preserveCacheOnEmpty && !query && !activeAmenityNames.length) {
       const fallback = await readNearbyCache();
       if (fallback?.rows?.length) {
@@ -984,7 +1006,7 @@ export default function AdaptiveExploreScreen() {
         const enrichedBase=await enrich(completeRows);
         const enriched=organizeDiscoveryRows(
           attachPresence(await enrichProgression(enrichedBase,latitude,longitude,result.effectiveRadiusMeters),livePresence),
-          activeAmenityNames,
+          rankingAmenities,
         );
         if(nearbyEnrichmentRunRef.current!==enrichmentRun)return;
         setRows(enriched);
@@ -1777,13 +1799,13 @@ export default function AdaptiveExploreScreen() {
                         {selected.discovery_recommended?<View style={[s.recommendedBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.recommendedBadgeText,{color:theme.accent}]}>RECOMMENDED</Text></View>:null}
                       </View>
                       <Text numberOfLines={1} style={[s.selectedDecisionMeta,{color:theme.muted}]}>
-                        {[selected.discovery_recommended?recommendationReason(selected,selectedAmenityNames):null,selectedRoutePosition || distanceLabel(selected.distance_meters)].filter(Boolean).join(' · ')}
+                        {[selected.discovery_recommended?recommendationReason(selected,rankingAmenityNames):null,selectedRoutePosition || distanceLabel(selected.distance_meters)].filter(Boolean).join(' · ')}
                       </Text>
                       <Text numberOfLines={1} style={[s.meta,{color:theme.muted}]}>{[selected.address, selected.city].filter(Boolean).join(', ') || 'Address unavailable'}</Text>
                     </View>
                   </View>
                   <DecisionRestroomSignals item={selected} />
-                  <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
+                  <RequestedAmenityMatches item={selected} requested={rankingAmenityNames} compact />
                   <View style={s.actionRow}>
                     <Pressable
                       accessibilityRole="button"
@@ -1874,7 +1896,7 @@ export default function AdaptiveExploreScreen() {
                 onDetails={() => router.push(`/location/${idOf(item)}`)}
                 onReview={() => router.push({pathname:'/location/[id]',params:{id:idOf(item),review:'1'}})}
                 route={mode === 'route' ? route : null}
-                requestedAmenities={selectedAmenityNames}
+                requestedAmenities={rankingAmenityNames}
                 checkInFeedback={checkInFeedback[idOf(item)]}
               />
             </View>
