@@ -37,7 +37,7 @@ test('map-area search overrides a retained typed address',async()=>{
   let source=declaration(screenPath,'loadNearby');
   source=source.slice(0,source.indexOf('    let result:'))+'return {nextOrigin,query};}';
   const noop=()=>{};
-  const dragged:[number,number]=[-90.31,38.66];
+  const dragged=[-90.31,38.66];
   const context={nearbyEnrichmentRunRef:{current:0},search:'4500 Maryland Ave, St Louis, MO',searchAreaOrigin:[-90.24897,38.65415],searchAreaLabel:'4500 Maryland Ave',
     looksLikeAddressOrArea:()=>true,resolveConsumerSearchLocation:async()=>{geocodeCalls++;return {longitude:-90.24897,latitude:38.65415,label:'4500 Maryland Ave'};},
     currentLocation:async()=>{gpsCalls++;return {coords:{longitude:-90,latitude:39}};},
