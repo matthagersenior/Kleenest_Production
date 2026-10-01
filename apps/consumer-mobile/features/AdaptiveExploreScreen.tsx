@@ -825,7 +825,7 @@ export default function AdaptiveExploreScreen() {
         ? mapAreaOrigin
         : [Number(current!.coords.longitude),Number(current!.coords.latitude)];
     const latitude=nextOrigin[1],longitude=nextOrigin[0];
-    const query=areaMatch?'':rawQuery;
+    const query=areaMatch||overrideOrigin?'':rawQuery;
     if(areaMatch){
       setSearchAreaOrigin(areaMatch.origin);
       setSearchAreaLabel(areaMatch.label);
