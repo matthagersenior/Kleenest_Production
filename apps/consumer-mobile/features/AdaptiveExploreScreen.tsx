@@ -41,6 +41,8 @@ import {
   cachedAgeLabel,
   readNearbyCache,
   readNearbyContinuity,
+  takeExploreReturnState,
+  writeExploreReturnState,
   writeNearbyCache,
   writeNearbyContinuity,
 } from '../services/nearbyCache';
@@ -628,8 +630,17 @@ export default function AdaptiveExploreScreen() {
     setCameraNonce((value)=>value+1);
   }
 
+  async function preserveExploreReturnState(){
+    await writeExploreReturnState({
+      mode,search,rows,origin,mapCenter,mapZoom,selectedId,searchAreaOrigin,searchAreaLabel,destinationCardOpen,
+      radiusMeters:radius,maxRadiusMeters:maxRadius,effectiveRadiusMeters,attemptedRadiiMeters,corridorMeters:corridor,
+      selectedAmenityNames,matchRule,autoExpand,route,
+    });
+  }
+
   async function goToSearchDestination(){
     if(!searchedDestination||!hasCoordinates(searchedDestination))return;
+    await preserveExploreReturnState();
     await Linking.openURL(navigateUrl(searchedDestination));
   }
 
@@ -1121,6 +1132,7 @@ export default function AdaptiveExploreScreen() {
       captureConsumerRouteIntent(id);
       captureConsumerCoreLoopEvent('navigation_started',id,{source:'explore'});
     }
+    await preserveExploreReturnState();
     await Linking.openURL(navigateUrl(row,route));
   }
 
@@ -1173,9 +1185,35 @@ export default function AdaptiveExploreScreen() {
     listAmenityCatalog().then(setAmenities).catch(() => {});
     getRewardCapabilities().then(setRewardCapabilities).catch(()=>setRewardCapabilities({}));
     let active = true;
-    Promise.all([readNearbyCache(), readNearbyContinuity()])
-      .then(([cache, continuity]) => {
+    let restoredExternalReturn=false;
+    Promise.all([readNearbyCache(), readNearbyContinuity(), takeExploreReturnState()])
+      .then(([cache, continuity, externalReturn]) => {
         if (!active) return;
+        if(externalReturn){
+          restoredExternalReturn=true;
+          setMode(externalReturn.mode);
+          setSearch(externalReturn.search||'');
+          setRows(externalReturn.rows||[]);
+          setOrigin(externalReturn.origin||null);
+          setMapCenter(externalReturn.mapCenter||externalReturn.searchAreaOrigin||externalReturn.origin||null);
+          if(Number.isFinite(externalReturn.mapZoom))setMapZoom(Number(externalReturn.mapZoom));
+          setSelectedId(externalReturn.selectedId||'');
+          setSearchAreaOrigin(externalReturn.searchAreaOrigin||null);
+          setSearchAreaLabel(externalReturn.searchAreaLabel||'');
+          setDestinationCardOpen(Boolean(externalReturn.destinationCardOpen));
+          if(Number.isFinite(externalReturn.radiusMeters))setRadius(Number(externalReturn.radiusMeters));
+          if(Number.isFinite(externalReturn.maxRadiusMeters))setMaxRadius(Number(externalReturn.maxRadiusMeters));
+          if(Number.isFinite(externalReturn.effectiveRadiusMeters))setEffectiveRadiusMeters(Number(externalReturn.effectiveRadiusMeters));
+          setAttemptedRadiiMeters(Array.isArray(externalReturn.attemptedRadiiMeters)?externalReturn.attemptedRadiiMeters:[]);
+          if(Number.isFinite(externalReturn.corridorMeters))setCorridor(Number(externalReturn.corridorMeters));
+          setSelectedAmenityNames(Array.isArray(externalReturn.selectedAmenityNames)?externalReturn.selectedAmenityNames:[]);
+          setMatchRule(externalReturn.matchRule==='any'?'any':'all');
+          setAutoExpand(externalReturn.autoExpand!==false);
+          setRoute(externalReturn.route||null);
+          setCached(false);
+          setMessage('Restored your Explore search after directions.');
+          return;
+        }
         if (
           continuity?.radiusMeters &&
           radiusChoices.some((choice) => choice.meters === continuity.radiusMeters)
@@ -1206,7 +1244,7 @@ export default function AdaptiveExploreScreen() {
         }
       })
       .finally(() => {
-        if (active) void load({ preserveCacheOnEmpty: true, recenterOnLiveLocation: true });
+        if (active&&!restoredExternalReturn) void load({ preserveCacheOnEmpty: true, recenterOnLiveLocation: true });
       });
     return () => { active = false; };
   }, []);
