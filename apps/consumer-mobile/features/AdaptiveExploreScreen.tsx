@@ -126,6 +126,35 @@ const distanceLabel = (meters: any) => {
   if (value == null) return '—';
   return `${value.toFixed(value < 10 ? 1 : 0)} mi`;
 };
+type MapMarkerGroup={key:string;rows:any[];center:[number,number]};
+function markerClusterCellDegrees(zoom:number){
+  if(zoom<11)return .03;
+  if(zoom<12)return .018;
+  if(zoom<13)return .010;
+  if(zoom<14)return .0065;
+  if(zoom<15)return .003;
+  if(zoom<16)return .0014;
+  if(zoom<17)return .00065;
+  return 0;
+}
+function organizeMapMarkers(rows:any[],zoom:number):MapMarkerGroup[]{
+  const usable=(rows||[]).filter(hasCoordinates);
+  const cell=markerClusterCellDegrees(zoom);
+  if(!cell)return usable.map(row=>({key:`place:${idOf(row)}`,rows:[row],center:[Number(row.longitude),Number(row.latitude)]}));
+  const buckets=new globalThis.Map<string,any[]>();
+  for(const row of usable){
+    const lng=Number(row.longitude),lat=Number(row.latitude);
+    const key=`${Math.floor((lng+180)/cell)}:${Math.floor((lat+90)/cell)}`;
+    const bucket=buckets.get(key)||[];
+    bucket.push(row);
+    buckets.set(key,bucket);
+  }
+  return [...buckets.entries()].map(([key,bucket])=>{
+    const longitude=bucket.reduce((sum,row)=>sum+Number(row.longitude),0)/bucket.length;
+    const latitude=bucket.reduce((sum,row)=>sum+Number(row.latitude),0)/bucket.length;
+    return {key:`cluster:${key}`,rows:bucket,center:[longitude,latitude]};
+  });
+}
 const verificationWindowLabel = (value: string | null | undefined) => {
   if (!value) return '';
   const expires = new Date(value).getTime();
@@ -481,6 +510,7 @@ export default function AdaptiveExploreScreen() {
     if(progressionPriority&&progressionFilterUnlocked)return [...filtered].sort((a,b)=>Number(Boolean(b?.progression_opportunity))-Number(Boolean(a?.progression_opportunity)));
     return filtered;
   },[rows,kleenestOnly,progressionOnly,minimumStars,freshnessDays,verifiedEvidenceOnly,evidenceGapOnly,progressionPriority,progressionFilterUnlocked]);
+  const markerGroups=useMemo(()=>organizeMapMarkers(visibleRows,mapZoom),[visibleRows,mapZoom]);
   const freshNearbyCount=useMemo(()=>visibleRows.filter((row)=>isFreshWithinDays(row,7)).length,[visibleRows]);
   const kleenestNearbyCount=useMemo(()=>visibleRows.filter(isKleenestPlace).length,[visibleRows]);
   const activeFilterCount=(kleenestOnly?1:0)+(progressionOnly?1:0)+(minimumStars>0?1:0)+(freshnessDays?1:0)+(selectedAmenityNames.length?1:0)+(verifiedEvidenceOnly?1:0)+(evidenceGapOnly?1:0)+(progressionPriority?1:0);
@@ -673,6 +703,8 @@ export default function AdaptiveExploreScreen() {
   function handleMapRegionDidChange(event:any){
     setMapInteracting(false);
     const viewState=event?.nativeEvent;
+    const observedZoom=Number(viewState?.zoom??viewState?.zoomLevel);
+    if(Number.isFinite(observedZoom))setMapZoom(Math.min(18,Math.max(7,observedZoom)));
     if(mode!=='nearby'||!viewState?.userInteraction||!Array.isArray(viewState.center))return;
     const next:[number,number]=[Number(viewState.center[0]),Number(viewState.center[1])];
     if(!Number.isFinite(next[0])||!Number.isFinite(next[1]))return;
@@ -1454,13 +1486,50 @@ export default function AdaptiveExploreScreen() {
                   <Text style={[s.searchedAreaMarkerText,{color:theme.accent}]}>{mode==='route'?'◎':'⌖'}</Text>
                 </Pressable>
               </Marker>:null}
-              {visibleRows.filter(hasCoordinates).map((row) => {
-                const id = idOf(row);
-                const active = id === selectedId;
+              {markerGroups.map((group) => {
+                if(group.rows.length>1){
+                  return (
+                    <Marker
+                      key={group.key}
+                      id={group.key.replace(/[^a-z0-9_-]/gi,'-')}
+                      lngLat={group.center}
+                      anchor="center"
+                      onPress={()=>{
+                        setSelectedId('');
+                        setDestinationCardOpen(false);
+                        setPendingMapOrigin(null);
+                        setMapCenter(group.center);
+                        setMapZoom(current=>Math.min(18,Math.max(14,current+2)));
+                        setCameraNonce(value=>value+1);
+                      }}
+                    >
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`${group.rows.length} places in this map cluster. Tap to zoom in.`}
+                        hitSlop={12}
+                        onPress={(event)=>{
+                          event.stopPropagation();
+                          setSelectedId('');
+                          setDestinationCardOpen(false);
+                          setPendingMapOrigin(null);
+                          setMapCenter(group.center);
+                          setMapZoom(current=>Math.min(18,Math.max(14,current+2)));
+                          setCameraNonce(value=>value+1);
+                        }}
+                        style={[s.clusterMarker,{backgroundColor:theme.surface,borderColor:theme.accent}]}
+                      >
+                        <Text adjustsFontSizeToFit numberOfLines={1} style={[s.clusterMarkerCount,{color:theme.accent}]}>{group.rows.length}</Text>
+                      </Pressable>
+                    </Marker>
+                  );
+                }
+                const row=group.rows[0];
+                const id=idOf(row);
+                const active=id===selectedId;
                 return (
                   <Marker
                     key={id}
-                    id={`restroom-${id}`}
+                    id={`place-${id}`}
                     lngLat={[Number(row.longitude), Number(row.latitude)]}
                     anchor="bottom"
                     onPress={() => selectRow(row)}
@@ -1475,7 +1544,7 @@ export default function AdaptiveExploreScreen() {
                       }}
                       style={[s.marker,active&&s.markerActive,equippedMapFlair==='freshness-halo'&&{borderWidth:3,borderColor:theme.accent,backgroundColor:theme.accentSoft},equippedMapFlair==='gold-ring'&&{borderWidth:3,borderColor:'#e7c45d',backgroundColor:'#3b3216'}]}
                     >
-                      <FreshnessHeatRing item={row} size={22} />
+                      <FreshnessHeatRing item={row} size={22} active={active} />
                     </Pressable>
                   </Marker>
                 );
@@ -1824,6 +1893,8 @@ const s = StyleSheet.create({
   searchedAreaMarker:{width:30,height:30,borderRadius:15,backgroundColor:'#fff',borderWidth:3,borderColor:'#986c20',alignItems:'center',justifyContent:'center'},searchedAreaMarkerText:{fontSize:18,fontWeight:'900',color:'#986c20'},
   marker: { minWidth: 44, minHeight: 44, borderRadius: 22, backgroundColor: 'transparent', borderWidth: 0, alignItems: 'center', justifyContent: 'center', padding: 2 },
   markerActive: { transform: [{ scale: 1.08 }] },
+  clusterMarker:{minWidth:42,height:42,borderRadius:21,borderWidth:3,alignItems:'center',justifyContent:'center',paddingHorizontal:6,elevation:8},
+  clusterMarkerCount:{fontSize:13,fontWeight:'900',letterSpacing:-.4},
   markerPhoto:{width:34,height:34,borderRadius:17,backgroundColor:'#e7eee9'},
   markerPhotoActive:{width:42,height:42,borderRadius:21},
   mapControls: { position: 'absolute', right: 10, zIndex:54, elevation:18, gap: 6 },
