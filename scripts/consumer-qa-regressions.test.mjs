@@ -31,7 +31,7 @@ test('brand search retains the chosen Sparta origin without requesting GPS',asyn
   let source=declaration(screenPath,'loadNearby');
   source=source.slice(0,source.indexOf('    let result:'))+'return {nextOrigin,query};}';
   const noop=()=>{};
-  const context={nearbyEnrichmentRunRef:{current:0},search:'Pizza Hut',searchAreaOrigin:[-89.701,38.123],searchAreaLabel:'Sparta, Illinois',
+  const context={nearbyEnrichmentRunRef:{current:0},activeIntentRef:{current:null},activeIntentAmenitiesRef:{current:null},selectedAmenityNames:[],radius:1609,maxRadius:402336,autoExpand:true,search:'Pizza Hut',searchAreaOrigin:[-89.701,38.123],searchAreaLabel:'Sparta, Illinois',
     looksLikeAddressOrArea:()=>false,currentLocation:async()=>{gpsCalls++;return {coords:{longitude:-90,latitude:39}};},
     recordConsumerPresenceAt:async()=>null,refreshConsumerPresence:async()=>null,
     setSearch:noop,setSearchAreaOrigin:value=>{if(value===null)cleared=true;},setSearchAreaLabel:noop,setPendingMapOrigin:noop,setDestinationCardOpen:noop,setRoute:noop,snapMapToDiscoveryOrigin:noop};
@@ -167,7 +167,8 @@ test('Explore core filters use user language instead of implementation language'
 
 
 test('natural discovery request is not mistaken for a literal address search',()=>{
-  const looksLikeAddressOrArea=compile(variableDeclaration(screenPath,'looksLikeAddressOrArea'),{},'looksLikeAddressOrArea');
+  const intentHelpers=optionalHelpers('apps/consumer-mobile/services/discoveryIntentCore.js');
+  const looksLikeAddressOrArea=compile(variableDeclaration(screenPath,'looksLikeAddressOrArea'),{shouldInterpretDiscoveryQuery:intentHelpers.shouldInterpretDiscoveryQuery},'looksLikeAddressOrArea');
   assert.equal(looksLikeAddressOrArea('123 Main St, Sparta, IL 62286'),true);
   assert.equal(looksLikeAddressOrArea('Pizza Hut'),false);
   assert.equal(looksLikeAddressOrArea('clean restroom with a changing table on my way to St. Louis'),false);
@@ -180,7 +181,7 @@ test('map-area search overrides a retained typed address',async()=>{
   source=source.slice(0,source.indexOf('    let result:'))+'return {nextOrigin,query};}';
   const noop=()=>{};
   const dragged=[-90.31,38.66];
-  const context={nearbyEnrichmentRunRef:{current:0},search:'4500 Maryland Ave, St Louis, MO',searchAreaOrigin:[-90.24897,38.65415],searchAreaLabel:'4500 Maryland Ave',
+  const context={nearbyEnrichmentRunRef:{current:0},activeIntentRef:{current:null},activeIntentAmenitiesRef:{current:null},selectedAmenityNames:[],radius:1609,maxRadius:402336,autoExpand:true,search:'4500 Maryland Ave, St Louis, MO',searchAreaOrigin:[-90.24897,38.65415],searchAreaLabel:'4500 Maryland Ave',
     looksLikeAddressOrArea:()=>true,resolveConsumerSearchLocation:async()=>{geocodeCalls++;return {longitude:-90.24897,latitude:38.65415,label:'4500 Maryland Ave'};},
     currentLocation:async()=>{gpsCalls++;return {coords:{longitude:-90,latitude:39}};},
     recordConsumerPresenceAt:async()=>null,refreshConsumerPresence:async()=>null,
