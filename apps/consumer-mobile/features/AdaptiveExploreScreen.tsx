@@ -60,6 +60,7 @@ import {
 import { palette } from '../components/ConsumerUI';
 import { SponsoredSlot } from '../components/SponsoredSlot';
 import { AdMobNativeSlot } from '../components/AdMobNativeSlot';
+import { organicExploreReason } from '../services/aiAssist';
 
 const DRAFT_KEY = 'kleenest.native.route.draft';
 const SEARCH_DESTINATION_GEOFENCE_RADIUS_M=150;
@@ -478,6 +479,7 @@ export default function AdaptiveExploreScreen() {
   const [route, setRoute] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [organicInsight,setOrganicInsight]=useState('');
   const [checkInFeedback,setCheckInFeedback]=useState<Record<string,CheckInActionFeedback>>({});
   const [cached, setCached] = useState(false);
   const [mapInteracting,setMapInteracting]=useState(false);
@@ -539,6 +541,7 @@ export default function AdaptiveExploreScreen() {
     () => visibleRows.find((row) => idOf(row) === selectedId) || null,
     [visibleRows, selectedId],
   );
+  useEffect(()=>{let active=true;setOrganicInsight('');if(!selected)return()=>{active=false};void organicExploreReason(selected,selectedAmenityNames,mode==='route'?route:null).then(answer=>{if(active)setOrganicInsight(answer)}).catch(()=>{});return()=>{active=false}},[selected,selectedAmenityNames,mode,route]);
   const selectedRoutePosition = useMemo(() => {
     if (!selected || mode !== 'route' || !route) return '';
     const fraction = Math.max(0, Math.min(1, Number(selected.route_fraction || 0)));
@@ -1694,6 +1697,7 @@ export default function AdaptiveExploreScreen() {
                       <Text numberOfLines={1} style={[s.selectedDecisionMeta,{color:theme.muted}]}>
                         {[selected.discovery_recommended?recommendationReason(selected,selectedAmenityNames):null,selectedRoutePosition || distanceLabel(selected.distance_meters)].filter(Boolean).join(' · ')}
                       </Text>
+                      {organicInsight?<Text numberOfLines={2} style={[s.meta,{color:theme.ink,fontWeight:'800'}]}>{organicInsight}</Text>:null}
                       <Text numberOfLines={1} style={[s.meta,{color:theme.muted}]}>{[selected.address, selected.city].filter(Boolean).join(', ') || 'Address unavailable'}</Text>
                     </View>
                   </View>
