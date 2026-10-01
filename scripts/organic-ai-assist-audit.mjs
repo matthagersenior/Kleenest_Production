@@ -40,7 +40,7 @@ assert.match(progress,/organicMissionSuggestion/,'Progress must surface an organ
 assert.match(week,/organicWeeklyRecap/,'native Week in Review must surface an organic recap');
 assert.match(webWeek,/organicWeeklyRecap/,'web Week in Review must surface an organic recap');
 assert.match(businessAi,/business_insight/,'business AI contract must include business_insight');
-assert.match(businessHome,/runOrganicBusinessInsight/,'Business home must surface an organic business signal');
+assert.match(businessHome,/organicBusinessInsight/,'Business home must surface an organic business signal');
 assert.match(webBusiness,/organicBusinessInsight/,'web Business workspace must surface an organic business signal');
 
 console.log('organic-ai-assist-audit: ok');
