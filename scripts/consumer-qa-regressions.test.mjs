@@ -32,6 +32,28 @@ test('brand search retains the chosen Sparta origin without requesting GPS',asyn
   assert.equal(gpsCalls,0);assert.deepEqual(result.nextOrigin,[-89.701,38.123]);assert.equal(result.query,'Pizza Hut');assert.equal(cleared,false);
 });
 
+test('map-area search overrides a retained typed address',async()=>{
+  let gpsCalls=0,geocodeCalls=0;
+  let source=declaration(screenPath,'loadNearby');
+  source=source.slice(0,source.indexOf('    let result:'))+'return {nextOrigin,query};}';
+  const noop=()=>{};
+  const dragged:[number,number]=[-90.31,38.66];
+  const context={nearbyEnrichmentRunRef:{current:0},search:'4500 Maryland Ave, St Louis, MO',searchAreaOrigin:[-90.24897,38.65415],searchAreaLabel:'4500 Maryland Ave',
+    looksLikeAddressOrArea:()=>true,resolveConsumerSearchLocation:async()=>{geocodeCalls++;return {longitude:-90.24897,latitude:38.65415,label:'4500 Maryland Ave'};},
+    currentLocation:async()=>{gpsCalls++;return {coords:{longitude:-90,latitude:39}};},
+    recordConsumerPresenceAt:async()=>null,refreshConsumerPresence:async()=>null,
+    setSearch:noop,setSearchAreaOrigin:noop,setSearchAreaLabel:noop,setPendingMapOrigin:noop,setDestinationCardOpen:noop,setRoute:noop,snapMapToDiscoveryOrigin:noop};
+  const result=await compile(source,context,'loadNearby')(false,false,dragged,false);
+  assert.equal(gpsCalls,0);assert.equal(geocodeCalls,0);assert.deepEqual(result.nextOrigin,dragged);assert.equal(result.query,'');
+});
+
+test('destination card keeps map-area search reachable after a drag',()=>{
+  const source=fs.readFileSync(screenPath,'utf8');
+  assert.ok(source.includes("pendingMapOrigin&&mode==='nearby'&&!destinationCardOpen"));
+  assert.ok(source.includes("mode==='nearby'&&pendingMapOrigin?<Pressable"));
+  assert.ok(source.includes('accessibilityLabel="Search this map area"'));
+});
+
 for(const value of [null,undefined,'',0,75])test(`cleanliness ${JSON.stringify(value)} preserves unknown versus observed zero`,()=>{
   const path='apps/consumer-mobile/components/RestroomSignals.tsx';
   const React={createElement:(type,props,...children)=>({type,props,children})};
