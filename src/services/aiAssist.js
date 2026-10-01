@@ -34,8 +34,6 @@ const freshnessLabel=place=>text(place?.intelligence?.freshness_label||place?.fr
 
 export async function organicExploreReason(place){
   const context={place:{
-    id:String(place?.location_id||place?.place_id||place?.id||''),
-    name:text(place?.name),
     distance_label:distanceLabel(place),
     verification_label:verificationLabel(place),
     freshness_label:freshnessLabel(place),
@@ -48,8 +46,6 @@ export async function organicExploreReason(place){
 
 export async function organicPlaceSummary(place,reviews=[]){
   const context={place:{
-    id:String(place?.id||place?.location_id||''),
-    name:text(place?.name),
     verification_label:verificationLabel(place),
     freshness_label:freshnessLabel(place),
     rating:Number.isFinite(Number(place?.rating))?Number(place.rating):null,
@@ -65,7 +61,7 @@ export async function organicPlaceSummary(place,reviews=[]){
 export async function organicRouteSummary(route,stops=[]){
   const context={
     route:{distance_miles:route?.distanceMiles??null,duration_minutes:route?.durationMinutes??null,provider:text(route?.provider)},
-    stops:stops.slice(0,12).map((stop,index)=>({order:index+1,id:String(stop?.id||''),name:text(stop?.name),verification_label:verificationLabel(stop),freshness_label:freshnessLabel(stop)})),
+    stops:stops.slice(0,12).map((stop,index)=>({order:index+1,name:text(stop?.name),verification_label:verificationLabel(stop),freshness_label:freshnessLabel(stop)})),
   };
   const core=[route?.distanceMiles!=null?`${route.distanceMiles} mi`:null,route?.durationMinutes!=null?`${route.durationMinutes} min`:null,`${stops.length} stop${stops.length===1?'':'s'}`].filter(Boolean).join(' · ');
   return (await invokeOrganicAi('route_summary',context,'Summarize this built route without changing the chosen order.',`Route brief: ${core}. Your stop order stays under your control.`)).answer;
