@@ -453,6 +453,10 @@ Deno.serve(async(req:Request)=>{
     if(action==='get_thread'){
       const threadId=requiredText(body?.threadId,'threadId',200);
       const thread=normalizeThread(await loadThread(connection,threadId,'full'));
+      const labels=await gmailConnected(connection,'/labels');
+      const labelMap=new Map<string,string>((Array.isArray(labels?.labels)?labels.labels:[])
+        .map((row:any)=>[String(row?.id||''),String(row?.name||'')]));
+      thread.labelNames=thread.labelIds.map((id:string)=>labelMap.get(id)).filter(Boolean);
       return json({thread});
     }
 
