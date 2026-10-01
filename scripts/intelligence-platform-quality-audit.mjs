@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 
 const failures=[];
 const read=(path)=>fs.existsSync(path)?fs.readFileSync(path,'utf8'):'';
@@ -141,6 +142,13 @@ tokens('mobile-core domain facade',mobileIndex,[
   "export * from './progression'",
   "export * from './routes'",
 ]);
+
+try{
+  execFileSync(process.execPath,['--test','scripts/ambient-discovery-intent.test.mjs'],{stdio:'inherit'});
+  execFileSync(process.execPath,['scripts/ambient-intelligence-product-audit.mjs'],{stdio:'inherit'});
+}catch{
+  failures.push('ambient discovery intent or product-shape contract failed');
+}
 
 if(failures.length){
   console.error(`Intelligence platform quality audit failed (${failures.length}):`);

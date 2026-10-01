@@ -64,7 +64,7 @@ if(/TODO|coming soon|not implemented|placeholder\s+(?:implementation|behavior|lo
 if(!screen.includes("matchRule === 'all'")||!screen.includes('selectedAmenityNames.length'))throw new Error('Amenity all/any controls are not wired to selected amenities.');
 if(!screen.includes('useState(1609)'))throw new Error('Nearby discovery must start at the dense-area 1 mile default.');
 if(!screen.includes('findAdaptiveNearbyPlaces')||!screen.includes('autoExpand: true'))throw new Error('Default all-place discovery must keep expanding when local supply is sparse.');
-if(!screen.includes('findAdaptiveNearbyRestrooms')||!screen.includes('hardRadius: !autoExpand'))throw new Error('Zero-result hard radius behavior must be reserved for explicit amenity-constrained searches.');
+if(!screen.includes('findAdaptiveNearbyRestrooms')||!(screen.includes('hardRadius: !autoExpand')||screen.includes('hardRadius: !activeAutoExpand')))throw new Error('Zero-result hard radius behavior must be reserved for explicit amenity-constrained searches, including intent-aware radius constraints.');
 if(!screen.includes('useState(402336)'))throw new Error('Adaptive discovery must retain the supported 250 mile fallback ceiling.');
 for(const token of ['organizeDiscoveryRows','const freshness=','const kleenest=','const amenities=','distance_meters'])requireToken(screen,token,'Freshness → Kleenest → Amenities → distance ranking');
 if(!screen.includes('RECOMMENDED'))throw new Error('Discovery must visually identify its recommended nearby result.');
@@ -93,7 +93,7 @@ for(const token of [
   'const resetSelectionForOriginChange=Boolean(areaMatch)||clearQuery',
   "accessibilityLabel={mode==='route'?'Select destination marker':'Select searched destination marker'}",
 ])requireToken(screen,token,'Searched-address Explore origin parity');
-if(!screen.includes("const query=areaMatch?'':rawQuery;"))throw new Error('Resolved address searches must discover the full nearby network instead of text-filtering results by the address string.');
+if(!screen.includes("const query=areaMatch||overrideOrigin?'':rawQuery;"))throw new Error('Resolved address and dragged-map searches must discover the full nearby network instead of text-filtering results by stale address text.');
 if(!screen.includes('result = await findAdaptiveNearbyPlaces({'))throw new Error('Everything-mode address discovery must use the same adaptive all-place engine as app-open nearby discovery.');
 for(const token of [
   'const cameraRef=useRef<any>(null);',

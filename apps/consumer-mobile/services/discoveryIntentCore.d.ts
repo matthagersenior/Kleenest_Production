@@ -1,0 +1,21 @@
+export type DiscoveryMode='nearby'|'route';
+export type DiscoveryIntent={
+  mode:DiscoveryMode;
+  originText:string;
+  destinationText:string;
+  placeQuery:string;
+  amenityTerms:string[];
+  restroomRequired:boolean;
+  freshnessDays:number|null;
+  minimumStars:number|null;
+  verifiedOnly:boolean;
+  kleenestOnly:boolean;
+  maxDetourMiles:number|null;
+  maxRadiusMiles:number|null;
+  summary:string;
+  source:'interpreted'|'fallback';
+};
+export function shouldInterpretDiscoveryQuery(value:string):boolean;
+export function deterministicDiscoveryIntent(queryValue:string,currentMode?:DiscoveryMode,amenityCatalog?:string[]):DiscoveryIntent;
+export function sanitizeDiscoveryIntent(value:unknown,fallback:DiscoveryIntent,amenityCatalog?:string[]):DiscoveryIntent;
+export function resolveIntentAmenityNames(intent:DiscoveryIntent|null,amenityCatalog?:string[]):string[];

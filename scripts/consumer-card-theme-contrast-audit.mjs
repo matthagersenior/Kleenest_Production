@@ -67,7 +67,7 @@ need('Home relevance carousel','apps/consumer-mobile/components/RelevanceHeroCar
   "theme.resolved==='dark'?theme.muted:theme.accentText",
 ]);
 need('Sponsored cards','apps/consumer-mobile/components/SponsoredSlot.tsx',[
-  'style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.card,compact&&s.cardCompact,{backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.cta,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}',
   'style={[s.note,{color:theme.muted}]}',
 ]);

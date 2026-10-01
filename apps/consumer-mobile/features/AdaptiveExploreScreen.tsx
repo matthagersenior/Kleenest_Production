@@ -14,6 +14,8 @@ import {
   listNearbyRestrooms,
   listPlacesAlongRoute,
   mobileCheckIn,
+  BATHROOM_FIT_OPTIONS,
+  getBathroomFitPreferences,
   type AmenityMatchRule,
 } from '@kleenest/mobile-core';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -37,10 +39,13 @@ import { visitFreshness } from '../services/evidenceFormatting';
 import { attachLocationNetwork, attachLocationTrust, listLocationNetworkStatuses, listLocationTrustSummaries, networkEvidenceSummary } from '../services/locationTrust';
 import { useConsumerTheme } from '../services/theme';
 import { resolveConsumerSearchLocation } from '../services/locationResolver';
+import { interpretDiscoveryIntent, resolveIntentAmenityNames, shouldInterpretDiscoveryQuery, type DiscoveryIntent } from '../services/discoveryIntent';
 import {
   cachedAgeLabel,
   readNearbyCache,
   readNearbyContinuity,
+  takeExploreReturnState,
+  writeExploreReturnState,
   writeNearbyCache,
   writeNearbyContinuity,
 } from '../services/nearbyCache';
@@ -60,6 +65,7 @@ import {
 import { palette } from '../components/ConsumerUI';
 import { SponsoredSlot } from '../components/SponsoredSlot';
 import { AdMobNativeSlot } from '../components/AdMobNativeSlot';
+import { organicExploreReason } from '../services/aiAssist';
 
 const DRAFT_KEY = 'kleenest.native.route.draft';
 const SEARCH_DESTINATION_GEOFENCE_RADIUS_M=150;
@@ -173,6 +179,7 @@ const verificationWindowLabel = (value: string | null | undefined) => {
 const radiusLabel = (meters: number) => `${Math.round(meters / 1609.344)} mi`;
 const looksLikeAddressOrArea = (value: string) => {
   const query=value.trim();
+  if(shouldInterpretDiscoveryQuery(query))return false;
   return Boolean(query) && (
     /\d/.test(query)
     || /,/.test(query)
@@ -277,6 +284,22 @@ function matchedRequestedAmenities(item: any, requested: string[]) {
   return requested.filter((name) => available.has(String(name).trim().toLowerCase()));
 }
 
+function matchExplanationLines(item:any,requested:string[],route:any){
+  const lines:string[]=[];
+  const matches=matchedRequestedAmenities(item,requested);
+  if(matches.length)lines.push('Matches '+matches.slice(0,3).join(', '));
+  const fresh=visitFreshness(item?.trust?.latest_verified_at||item?.network?.latest_evidence_at||item?.updated_at);
+  if(fresh)lines.push('Evidence '+fresh.toLowerCase());
+  const confirmations=Math.max(Number(item?.trust?.verified_visit_count||0),Number(item?.network?.verified_visits||0));
+  if(confirmations>0)lines.push(String(confirmations)+' verified visit'+(confirmations===1?'':'s'));
+  if(item?.network?.network_verified)lines.push('Kleenest Network verified');
+  const clean=Number(item?.cleanliness_pct);
+  if(Number.isFinite(clean)&&clean>0)lines.push(Math.round(clean)+'% cleanliness from recorded evidence');
+  if(route&&Number.isFinite(Number(item?.distance_to_route_meters)))lines.push(distanceLabel(item.distance_to_route_meters)+' off route');
+  else if(Number.isFinite(Number(item?.distance_meters)))lines.push(distanceLabel(item.distance_meters)+' away');
+  return Array.from(new Set(lines)).slice(0,4);
+}
+
 function RequestedAmenityMatches({ item, requested, compact = false }: {
   item: any;
   requested: string[];
@@ -360,6 +383,8 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
   const reviewCount = Number(item.review_count || 0);
   const checkInBusy=checkInFeedback?.status==='checking';
   const [showTrustEvidence,setShowTrustEvidence]=useState(false);
+  const [showMatchEvidence,setShowMatchEvidence]=useState(false);
+  const matchLines=matchExplanationLines(item,requestedAmenities,route);
   return (
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}, selected && s.cardActive]}>
       <Pressable
@@ -395,6 +420,15 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         ) : null}
         <CompactRestroomSignals item={item} />
         <RequestedAmenityMatches item={item} requested={requestedAmenities} />
+        {matchLines.length?<View style={s.trustSummaryRow}>
+          <Text style={[s.trustLine,{color:theme.muted}]}>{matchLines[0]}</Text>
+          <Pressable accessibilityRole="button" accessibilityState={{expanded:showMatchEvidence}} onPress={()=>setShowMatchEvidence(value=>!value)} hitSlop={8}>
+            <Text style={[s.trustWhy,{color:theme.accent}]}>{showMatchEvidence?'Hide match details':'Why this match?'}</Text>
+          </Pressable>
+        </View>:null}
+        {showMatchEvidence&&matchLines.length?<View style={[s.trustEvidenceBox,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+          {matchLines.map((line,index)=><Text key={line+String(index)} style={[s.trustEvidenceText,{color:theme.ink}]}>• {line}</Text>)}
+        </View>:null}
         <View style={s.trustSummaryRow}>
           <Text style={[s.trustLine,{color:theme.ink}]}>{trustSummaryLine(item)}</Text>
           <Pressable accessibilityRole="button" accessibilityState={{expanded:showTrustEvidence}} onPress={()=>setShowTrustEvidence(value=>!value)} hitSlop={8}>
@@ -443,6 +477,8 @@ export default function AdaptiveExploreScreen() {
   const listRef=useRef<any>(null);
   const cameraRef=useRef<any>(null);
   const nearbyEnrichmentRunRef=useRef(0);
+  const activeIntentRef=useRef<DiscoveryIntent|null>(null);
+  const activeIntentAmenitiesRef=useRef<string[]|null>(null);
   const [mode, setMode] = useState<'nearby' | 'route'>('nearby');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
@@ -455,6 +491,7 @@ export default function AdaptiveExploreScreen() {
   const [fitRouteCamera,setFitRouteCamera]=useState(true);
   const [destinationCardOpen,setDestinationCardOpen]=useState(false);
   const [search, setSearch] = useState('');
+  const [interpretedIntent,setInterpretedIntent]=useState<DiscoveryIntent|null>(null);
   const [searchAreaOrigin,setSearchAreaOrigin]=useState<[number,number]|null>(null);
   const [searchAreaLabel,setSearchAreaLabel]=useState('');
   const [pendingMapOrigin,setPendingMapOrigin]=useState<[number,number]|null>(null);
@@ -467,6 +504,7 @@ export default function AdaptiveExploreScreen() {
   const [corridor, setCorridor] = useState(16093);
   const [amenities, setAmenities] = useState<AmenityCatalogItem[]>([]);
   const [selectedAmenityNames, setSelectedAmenityNames] = useState<string[]>([]);
+  const [preferenceAmenityNames,setPreferenceAmenityNames]=useState<string[]>([]);
   const [kleenestOnly,setKleenestOnly]=useState(false);
   const [progressionOnly,setProgressionOnly]=useState(false);
   const [minimumStars,setMinimumStars]=useState(0);
@@ -478,6 +516,7 @@ export default function AdaptiveExploreScreen() {
   const [route, setRoute] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [organicInsight,setOrganicInsight]=useState('');
   const [checkInFeedback,setCheckInFeedback]=useState<Record<string,CheckInActionFeedback>>({});
   const [cached, setCached] = useState(false);
   const [mapInteracting,setMapInteracting]=useState(false);
@@ -552,6 +591,26 @@ export default function AdaptiveExploreScreen() {
       .slice(0, 24),
     [amenities],
   );
+  useEffect(()=>{
+    let active=true;
+    if(!amenities.length){setPreferenceAmenityNames([]);return()=>{active=false};}
+    getBathroomFitPreferences().then(preferences=>{
+      if(!active)return;
+      const wanted=BATHROOM_FIT_OPTIONS.filter(([key])=>Boolean(preferences?.[key])).map(([,label])=>String(label));
+      const normalized=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+      const matched=wanted.flatMap(label=>{
+        const target=normalized(label);
+        const exact=amenities.find(item=>normalized(item.name)===target);
+        if(exact)return[exact.name];
+        const fuzzy=amenities.find(item=>normalized(item.name).includes(target)||target.includes(normalized(item.name)));
+        return fuzzy?[fuzzy.name]:[];
+      });
+      setPreferenceAmenityNames(Array.from(new Set(matched)));
+    }).catch(()=>{if(active)setPreferenceAmenityNames([])});
+    return()=>{active=false};
+  },[amenities]);
+  const rankingAmenityNames=selectedAmenityNames.length?selectedAmenityNames:preferenceAmenityNames;
+  useEffect(()=>{let active=true;setOrganicInsight('');if(!selected)return()=>{active=false};void organicExploreReason(selected,rankingAmenityNames,mode==='route'?route:null).then(answer=>{if(active)setOrganicInsight(answer)}).catch(()=>{});return()=>{active=false}},[selected,rankingAmenityNames,mode,route]);
   const routeBounds = useMemo(() => {
     if (!route?.geometry?.coordinates?.length || selected || destinationCardOpen) return null;
     const points = route.geometry.coordinates as [number, number][];
@@ -628,8 +687,17 @@ export default function AdaptiveExploreScreen() {
     setCameraNonce((value)=>value+1);
   }
 
+  async function preserveExploreReturnState(){
+    await writeExploreReturnState({
+      mode,search,rows,origin,mapCenter,mapZoom,selectedId,searchAreaOrigin,searchAreaLabel,destinationCardOpen,
+      radiusMeters:radius,maxRadiusMeters:maxRadius,effectiveRadiusMeters,attemptedRadiiMeters,corridorMeters:corridor,
+      selectedAmenityNames,matchRule,autoExpand,route,
+    });
+  }
+
   async function goToSearchDestination(){
     if(!searchedDestination||!hasCoordinates(searchedDestination))return;
+    await preserveExploreReturnState();
     await Linking.openURL(navigateUrl(searchedDestination));
   }
 
@@ -794,7 +862,15 @@ export default function AdaptiveExploreScreen() {
 
   async function loadNearby(clearQuery = false, preserveCacheOnEmpty = false, overrideOrigin:[number,number]|null=null, forceLiveRecenter=false) {
     const enrichmentRun=++nearbyEnrichmentRunRef.current;
-    const rawQuery=clearQuery?'':search.trim();
+    const intent=activeIntentRef.current;
+    const activeAmenityNames=activeIntentAmenitiesRef.current??selectedAmenityNames;
+    const requiresRestroom=Boolean(intent?.restroomRequired)||activeAmenityNames.length>0;
+    const originalQuery=clearQuery?'':search.trim();
+    const rawQuery=intent?intent.placeQuery:originalQuery;
+    const intentRadiusMeters=intent?.maxRadiusMiles?Math.round(intent.maxRadiusMiles*1609.344):null;
+    const requestedRadiusMeters=intentRadiusMeters||radius;
+    const maxRadiusMeters=intentRadiusMeters||maxRadius;
+    const activeAutoExpand=intentRadiusMeters?false:autoExpand;
     if(clearQuery){
       setSearch('');
       setSearchAreaOrigin(null);
@@ -805,10 +881,11 @@ export default function AdaptiveExploreScreen() {
     }
 
     let areaMatch:{origin:[number,number];label:string}|null=null;
-    if(rawQuery&&looksLikeAddressOrArea(rawQuery)){
-      const match=await resolveConsumerSearchLocation(rawQuery);
-      if(!match)throw new Error(`Kleenest could not locate “${rawQuery}”. Try the street number plus city/state or ZIP.`);
-      areaMatch={origin:[match.longitude,match.latitude],label:match.label||rawQuery};
+    const areaQuery=!overrideOrigin?(intent?.originText||(!intent&&rawQuery&&looksLikeAddressOrArea(rawQuery)?rawQuery:'')):'';
+    if(areaQuery){
+      const match=await resolveConsumerSearchLocation(areaQuery);
+      if(!match)throw new Error('Kleenest could not locate “'+areaQuery+'”. Try the street number plus city/state or ZIP.');
+      areaMatch={origin:[match.longitude,match.latitude],label:match.label||areaQuery};
     }
 
     // A brand/category filters the selected origin; only Use my location resets it.
@@ -825,7 +902,7 @@ export default function AdaptiveExploreScreen() {
         ? mapAreaOrigin
         : [Number(current!.coords.longitude),Number(current!.coords.latitude)];
     const latitude=nextOrigin[1],longitude=nextOrigin[0];
-    const query=areaMatch?'':rawQuery;
+    const query=areaMatch||overrideOrigin?'':rawQuery;
     if(areaMatch){
       setSearchAreaOrigin(areaMatch.origin);
       setSearchAreaLabel(areaMatch.label);
@@ -845,25 +922,25 @@ export default function AdaptiveExploreScreen() {
     let result: any;
     let usedMatureFallback = false;
     try {
-      if(selectedAmenityNames.length){
+      if(requiresRestroom){
         result = await findAdaptiveNearbyRestrooms({
           latitude,
           longitude,
-          requestedRadiusMeters: radius,
-          maxRadiusMeters: maxRadius,
+          requestedRadiusMeters,
+          maxRadiusMeters,
           search: query,
-          amenityNames: selectedAmenityNames,
+          amenityNames: activeAmenityNames,
           amenityMatch: matchRule,
-          autoExpand,
-          hardRadius: !autoExpand,
+          autoExpand:activeAutoExpand,
+          hardRadius: !activeAutoExpand,
           limit: 500,
         });
       }else{
         result = await findAdaptiveNearbyPlaces({
           latitude,
           longitude,
-          requestedRadiusMeters: radius,
-          maxRadiusMeters: maxRadius,
+          requestedRadiusMeters,
+          maxRadiusMeters,
           search: query,
           autoExpand: true,
           hardRadius: false,
@@ -872,21 +949,21 @@ export default function AdaptiveExploreScreen() {
       }
     } catch (error) {
       if (matchRule !== 'all') throw error;
-      const legacyRows = selectedAmenityNames.length
-        ? await listNearbyRestrooms(latitude,longitude,radius,query,selectedAmenityNames)
+      const legacyRows = activeAmenityNames.length
+        ? await listNearbyRestrooms(latitude,longitude,radius,query,activeAmenityNames)
         : await listNearbyMapCandidates({latitude,longitude,radiusMeters:radius,search:query,limit:2000});
-      result = { rows: legacyRows, requestedRadiusMeters: radius, effectiveRadiusMeters: radius, attemptedRadiiMeters: [radius], expanded: false };
+      result = { rows: legacyRows, requestedRadiusMeters, effectiveRadiusMeters: radius, attemptedRadiiMeters: [radius], expanded: false };
       usedMatureFallback = true;
     }
 
     let discoveryRows=result.rows;
     let relaxedAmenityFallback=false;
-    if(!discoveryRows.length&&selectedAmenityNames.length&&autoExpand&&!query){
+    if(!discoveryRows.length&&activeAmenityNames.length&&activeAutoExpand&&!query){
       const fallbackResult=await findAdaptiveNearbyPlaces({
         latitude,
         longitude,
         requestedRadiusMeters:1609,
-        maxRadiusMeters:maxRadius,
+        maxRadiusMeters,
         search:'',
         autoExpand:true,
         hardRadius:false,
@@ -898,8 +975,8 @@ export default function AdaptiveExploreScreen() {
         relaxedAmenityFallback=true;
       }
     }
-    const displayRows=organizeDiscoveryRows(attachPresence(discoveryRows,livePresence),selectedAmenityNames);
-    if (!areaMatch&&!displayRows.length && preserveCacheOnEmpty && !query && !selectedAmenityNames.length) {
+    const displayRows=organizeDiscoveryRows(attachPresence(discoveryRows,livePresence),rankingAmenityNames);
+    if (!areaMatch&&!displayRows.length && preserveCacheOnEmpty && !query && !activeAmenityNames.length) {
       const fallback = await readNearbyCache();
       if (fallback?.rows?.length) {
         const fallbackSelected = selectedId && fallback.rows.some((row: any) => idOf(row) === selectedId) ? selectedId : '';
@@ -918,10 +995,10 @@ export default function AdaptiveExploreScreen() {
     if (!preservedId) setMapCenter(nextOrigin);
     setEffectiveRadiusMeters(result.effectiveRadiusMeters);setAttemptedRadiiMeters(result.attemptedRadiiMeters);setCached(false);setSelectedId(preservedId);
 
-    captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:displayRows.length,search:rawQuery,amenityCount:selectedAmenityNames.length});
+    captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:displayRows.length,search:originalQuery,amenityCount:activeAmenityNames.length});
     captureConsumerCoreLoopEvent('nearby_results_shown',null,{resultCount:displayRows.length,radiusMeters:result.effectiveRadiusMeters,search:Boolean(rawQuery),cached:false});
 
-    if (!areaMatch&&!query && !selectedAmenityNames.length && displayRows.length) {
+    if (!areaMatch&&!query && !activeAmenityNames.length && !requiresRestroom && displayRows.length) {
       void writeNearbyCache(displayRows,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
     }
 
@@ -931,7 +1008,7 @@ export default function AdaptiveExploreScreen() {
     // this same search session before enrichment and ranking.
     void (async()=>{
       try{
-        const completeRows=!selectedAmenityNames.length
+        const completeRows=!requiresRestroom
           ? await refreshNearbyPlaceInventory({
               latitude,
               longitude,
@@ -943,11 +1020,11 @@ export default function AdaptiveExploreScreen() {
         const enrichedBase=await enrich(completeRows);
         const enriched=organizeDiscoveryRows(
           attachPresence(await enrichProgression(enrichedBase,latitude,longitude,result.effectiveRadiusMeters),livePresence),
-          selectedAmenityNames,
+          rankingAmenityNames,
         );
         if(nearbyEnrichmentRunRef.current!==enrichmentRun)return;
         setRows(enriched);
-        if(!areaMatch&&!query&&!selectedAmenityNames.length&&enriched.length){
+        if(!areaMatch&&!query&&!activeAmenityNames.length&&!requiresRestroom&&enriched.length){
           void writeNearbyCache(enriched,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
         }
       }catch{}
@@ -961,7 +1038,7 @@ export default function AdaptiveExploreScreen() {
       setMessage(displayRows.length?`${displayRows.length} nearby place${displayRows.length===1?'':'s'} found using the fallback discovery path while adaptive discovery recovers.`:'No places matched the current nearby search.');
     } else if (relaxedAmenityFallback) {
       setMessage(`No exact amenity match was found through your expanded search, so Kleenest kept the page useful with ${displayRows.length} nearby place${displayRows.length===1?'':'s'}. Results are organized by freshness, Kleenest status, amenities, then distance.`);
-    } else if (!query && !selectedAmenityNames.length) {
+    } else if (!query && !activeAmenityNames.length) {
       setMessage(displayRows.length
         ? (result.expanded?`Expanded nearby search through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')}.`:'')
         : 'Live discovery returned no local data, so Kleenest will keep the last useful nearby set when one is available.');
@@ -974,17 +1051,22 @@ export default function AdaptiveExploreScreen() {
 
   async function loadRoute() {
     const current = await currentLocation();
-    const rawQuery = search.trim();
+    const intent=activeIntentRef.current;
+    const activeAmenityNames=activeIntentAmenitiesRef.current??selectedAmenityNames;
+    const originalQuery=search.trim();
+    const rawQuery=intent?intent.placeQuery:originalQuery;
+    const destinationQuery=intent?.destinationText||(!intent&&rawQuery&&looksLikeAddressOrArea(rawQuery)?rawQuery:'');
     const currentOrigin:[number,number]=[current.coords.longitude,current.coords.latitude];
+    const activeCorridor=intent?.maxDetourMiles?Math.max(402,Math.min(40234,Math.round(intent.maxDetourMiles*1609.344))):corridor;
     let built:any=null;
     let routeSearch=rawQuery;
     let destinationLabel='';
 
-    if(rawQuery&&looksLikeAddressOrArea(rawQuery)){
-      const match=await resolveConsumerSearchLocation(rawQuery);
-      if(!match)throw new Error(`Kleenest could not locate “${rawQuery}”. Try the street number plus city/state or ZIP.`);
+    if(destinationQuery){
+      const match=await resolveConsumerSearchLocation(destinationQuery);
+      if(!match)throw new Error('Kleenest could not locate “'+destinationQuery+'”. Try the street number plus city/state or ZIP.');
       const destination:[number,number]=[match.longitude,match.latitude];
-      destinationLabel=match.label||rawQuery;
+      destinationLabel=match.label||destinationQuery;
       built=await buildMobileRouteToDestination(currentOrigin,destination,destinationLabel);
       built={...built,destinationGeofenceRadiusMeters:SEARCH_DESTINATION_GEOFENCE_RADIUS_M};
       routeSearch='';
@@ -1009,15 +1091,15 @@ export default function AdaptiveExploreScreen() {
     if (!built?.geometry) throw new Error('The route could not produce usable route geometry.');
     const data = await listPlacesAlongRoute({
       routeGeoJSON: built.geometry,
-      corridorMeters: corridor,
+      corridorMeters: activeCorridor,
       search: routeSearch,
-      amenityNames: selectedAmenityNames,
+      amenityNames: activeAmenityNames,
       amenityMatch: matchRule,
       category: 'all',
       limit: 200,
     });
     const enrichedBase = await enrich(data);
-    const progressionRadius=Math.min(402336,Math.max(corridor,Math.round((Number(built.distanceMiles||0)+10)*1609.344)));
+    const progressionRadius=Math.min(402336,Math.max(activeCorridor,Math.round((Number(built.distanceMiles||0)+10)*1609.344)));
     const livePresence=await recordConsumerPresenceAt(current.coords.latitude,current.coords.longitude).catch(()=>null);
     const enriched = attachPresence(
       await enrichProgression(enrichedBase,current.coords.latitude,current.coords.longitude,progressionRadius),
@@ -1035,17 +1117,48 @@ export default function AdaptiveExploreScreen() {
     const routeName=destinationLabel?` to ${destinationLabel}`:'';
     setMessage(
       enriched.length
-        ? `${enriched.length} discovered place${enriched.length === 1 ? '' : 's'} along your ${Number(built.distanceMiles || 0).toFixed(0)} mi route${routeName}, within ${radiusLabel(corridor)} of the route.`
-        : `No discovered places matched within ${radiusLabel(corridor)} of the route${routeName}.`,
+        ? `${enriched.length} discovered place${enriched.length === 1 ? '' : 's'} along your ${Number(built.distanceMiles || 0).toFixed(0)} mi route${routeName}, within ${radiusLabel(activeCorridor)} of the route.`
+        : `No discovered places matched within ${radiusLabel(activeCorridor)} of the route${routeName}.`,
     );
   }
 
   async function load(options: { clearQuery?: boolean; preserveCacheOnEmpty?: boolean; mapOrigin?: [number,number] | null; recenterOnLiveLocation?: boolean } = {}) {
     if (loading) return;
     setLoading(true);
-    setMessage(mode === 'nearby' ? 'Searching nearby…' : 'Building route and searching its corridor…');
-    try {
-      if (mode === 'nearby') await loadNearby(
+    const originalQuery=options.clearQuery?'':search.trim();
+    let targetMode: 'nearby'|'route'=mode;
+    let intent:DiscoveryIntent|null=null;
+    let intentAmenities:string[]|null=null;
+    try{
+      intent=originalQuery?await interpretDiscoveryIntent(originalQuery,mode,amenities.map(item=>item.name)):null;
+      if(intent){
+        targetMode=intent.mode;
+        intentAmenities=resolveIntentAmenityNames(intent,amenities.map(item=>item.name));
+        activeIntentRef.current=intent;
+        activeIntentAmenitiesRef.current=intentAmenities.length?intentAmenities:selectedAmenityNames;
+        setInterpretedIntent(intent);
+        if(intent.mode!==mode){setMode(intent.mode);setRows([]);setSelectedId('');setRoute(null);}
+        if(intentAmenities.length)setSelectedAmenityNames(intentAmenities);
+        if(intent.minimumStars!=null)setMinimumStars(intent.minimumStars);
+        if(intent.freshnessDays!=null)setFreshnessDays(intent.freshnessDays);
+        if(intent.kleenestOnly)setKleenestOnly(true);
+        if(intent.verifiedOnly&&precisionFilterUnlocked)setVerifiedEvidenceOnly(true);
+        if(intent.maxRadiusMiles!=null){
+          const meters=Math.max(1609,Math.min(402336,Math.round(intent.maxRadiusMiles*1609.344)));
+          setRadius(meters);setMaxRadius(meters);setAutoExpand(false);
+        }
+        if(intent.maxDetourMiles!=null){
+          const meters=Math.max(402,Math.min(40234,Math.round(intent.maxDetourMiles*1609.344)));
+          setCorridor(meters);
+        }
+      }else{
+        activeIntentRef.current=null;
+        activeIntentAmenitiesRef.current=null;
+        setInterpretedIntent(null);
+      }
+      if(options.clearQuery)setInterpretedIntent(null);
+      setMessage(targetMode === 'nearby' ? 'Searching nearby…' : 'Building route and searching its corridor…');
+      if (targetMode === 'nearby') await loadNearby(
         Boolean(options.clearQuery),
         Boolean(options.preserveCacheOnEmpty),
         options.mapOrigin||null,
@@ -1080,6 +1193,8 @@ export default function AdaptiveExploreScreen() {
       setRoute(null);
       setMessage(error?.message || 'Nearby discovery failed.');
     } finally {
+      activeIntentRef.current=null;
+      activeIntentAmenitiesRef.current=null;
       setLoading(false);
     }
   }
@@ -1088,6 +1203,9 @@ export default function AdaptiveExploreScreen() {
     const id = idOf(row);
     if (!id) return;
     captureConsumerRouteIntent(id);
+    const routeStart=mode==='route'&&Array.isArray(route?.originCoordinates)
+      ? route.originCoordinates
+      : searchAreaOrigin||origin;
     router.push({
       pathname: '/route',
       params: {
@@ -1096,6 +1214,11 @@ export default function AdaptiveExploreScreen() {
         addAddress: String(row?.address || ''),
         addCity: String(row?.city || ''),
         addState: String(row?.state || ''),
+        ...(routeStart?{
+          startLng:String(routeStart[0]),
+          startLat:String(routeStart[1]),
+          startLabel:mode==='route'?'Route start':searchAreaLabel||'Selected discovery area',
+        }:{}),
       },
     });
   }
@@ -1113,6 +1236,7 @@ export default function AdaptiveExploreScreen() {
       captureConsumerRouteIntent(id);
       captureConsumerCoreLoopEvent('navigation_started',id,{source:'explore'});
     }
+    await preserveExploreReturnState();
     await Linking.openURL(navigateUrl(row,route));
   }
 
@@ -1165,9 +1289,35 @@ export default function AdaptiveExploreScreen() {
     listAmenityCatalog().then(setAmenities).catch(() => {});
     getRewardCapabilities().then(setRewardCapabilities).catch(()=>setRewardCapabilities({}));
     let active = true;
-    Promise.all([readNearbyCache(), readNearbyContinuity()])
-      .then(([cache, continuity]) => {
+    let restoredExternalReturn=false;
+    Promise.all([readNearbyCache(), readNearbyContinuity(), takeExploreReturnState()])
+      .then(([cache, continuity, externalReturn]) => {
         if (!active) return;
+        if(externalReturn){
+          restoredExternalReturn=true;
+          setMode(externalReturn.mode);
+          setSearch(externalReturn.search||'');
+          setRows(externalReturn.rows||[]);
+          setOrigin(externalReturn.origin||null);
+          setMapCenter(externalReturn.mapCenter||externalReturn.searchAreaOrigin||externalReturn.origin||null);
+          if(Number.isFinite(externalReturn.mapZoom))setMapZoom(Number(externalReturn.mapZoom));
+          setSelectedId(externalReturn.selectedId||'');
+          setSearchAreaOrigin(externalReturn.searchAreaOrigin||null);
+          setSearchAreaLabel(externalReturn.searchAreaLabel||'');
+          setDestinationCardOpen(Boolean(externalReturn.destinationCardOpen));
+          if(Number.isFinite(externalReturn.radiusMeters))setRadius(Number(externalReturn.radiusMeters));
+          if(Number.isFinite(externalReturn.maxRadiusMeters))setMaxRadius(Number(externalReturn.maxRadiusMeters));
+          if(Number.isFinite(externalReturn.effectiveRadiusMeters))setEffectiveRadiusMeters(Number(externalReturn.effectiveRadiusMeters));
+          setAttemptedRadiiMeters(Array.isArray(externalReturn.attemptedRadiiMeters)?externalReturn.attemptedRadiiMeters:[]);
+          if(Number.isFinite(externalReturn.corridorMeters))setCorridor(Number(externalReturn.corridorMeters));
+          setSelectedAmenityNames(Array.isArray(externalReturn.selectedAmenityNames)?externalReturn.selectedAmenityNames:[]);
+          setMatchRule(externalReturn.matchRule==='any'?'any':'all');
+          setAutoExpand(externalReturn.autoExpand!==false);
+          setRoute(externalReturn.route||null);
+          setCached(false);
+          setMessage('Restored your Explore search after directions.');
+          return;
+        }
         if (
           continuity?.radiusMeters &&
           radiusChoices.some((choice) => choice.meters === continuity.radiusMeters)
@@ -1198,7 +1348,7 @@ export default function AdaptiveExploreScreen() {
         }
       })
       .finally(() => {
-        if (active) void load({ preserveCacheOnEmpty: true, recenterOnLiveLocation: true });
+        if (active&&!restoredExternalReturn) void load({ preserveCacheOnEmpty: true, recenterOnLiveLocation: true });
       });
     return () => { active = false; };
   }, []);
@@ -1231,7 +1381,7 @@ export default function AdaptiveExploreScreen() {
             style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}
             maxFontSizeMultiplier={1.2}
             value={search}
-            onChangeText={setSearch}
+            onChangeText={(value)=>{setSearch(value);setInterpretedIntent(null);}}
             onSubmitEditing={() => void load()}
             returnKeyType="search"
             placeholder={mode==='route'?"Where are you going? Enter an address or place":"Address, school, workplace, city or brand"}
@@ -1246,6 +1396,11 @@ export default function AdaptiveExploreScreen() {
             <Text maxFontSizeMultiplier={1.15} style={[s.searchButtonText,{color:theme.accentText}]}>{loading ? 'WORKING…' : 'SEARCH'}</Text>
           </Pressable>
         </View>
+
+        {interpretedIntent?.summary?<View style={[s.searchAreaChip,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+          <Text style={[s.searchAreaText,{color:theme.ink}]}>Searching for {interpretedIntent.summary}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Clear interpreted search" onPress={()=>{setInterpretedIntent(null);setSearch('');}}><Text style={[s.searchAreaAction,{color:theme.accent}]}>Clear</Text></Pressable>
+        </View>:null}
 
         {searchAreaLabel?<View style={[s.searchAreaChip,{backgroundColor:theme.accentSoft}]}><Text style={[s.searchAreaText,{color:theme.ink}]}>{mode==='route'?'Destination':'Searching near'} {searchAreaLabel}</Text><Pressable accessibilityRole="button" accessibilityLabel={mode==='route'?'Clear route destination':'Use my location instead'} onPress={()=>{setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');setDestinationCardOpen(false);setRoute(null);if(mode==='nearby')void load({clearQuery:true});else{setRows([]);setSelectedId('');setMessage('Enter a destination address above, or use your saved route draft.');}}}><Text style={[s.searchAreaAction,{color:theme.accent}]}>{mode==='route'?'Clear destination':'Use my location'}</Text></Pressable></View>:null}
 
@@ -1605,7 +1760,7 @@ export default function AdaptiveExploreScreen() {
                 <Text style={[s.mapControlText,{color:theme.accent}]}>↔</Text>
               </Pressable>:null}
             </View>
-            {pendingMapOrigin&&mode==='nearby'?(
+            {pendingMapOrigin&&mode==='nearby'&&!destinationCardOpen?(
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Search this map area"
@@ -1657,7 +1812,15 @@ export default function AdaptiveExploreScreen() {
                   >
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
                   </Pressable>
-                  {mode==='nearby'?<Pressable
+                  {mode==='nearby'&&pendingMapOrigin?<Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Search this map area"
+                    style={[s.secondarySmall,s.destinationAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
+                    disabled={loading}
+                    onPress={()=>void load({mapOrigin:pendingMapOrigin})}
+                  >
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>{loading?'Searching…':'Search here'}</Text>
+                  </Pressable>:mode==='nearby'?<Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Refresh discovery near destination"
                     style={[s.secondarySmall,s.destinationAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
@@ -1692,13 +1855,14 @@ export default function AdaptiveExploreScreen() {
                         {selected.discovery_recommended?<View style={[s.recommendedBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.recommendedBadgeText,{color:theme.accent}]}>RECOMMENDED</Text></View>:null}
                       </View>
                       <Text numberOfLines={1} style={[s.selectedDecisionMeta,{color:theme.muted}]}>
-                        {[selected.discovery_recommended?recommendationReason(selected,selectedAmenityNames):null,selectedRoutePosition || distanceLabel(selected.distance_meters)].filter(Boolean).join(' · ')}
+                        {[selected.discovery_recommended?recommendationReason(selected,rankingAmenityNames):null,selectedRoutePosition || distanceLabel(selected.distance_meters)].filter(Boolean).join(' · ')}
                       </Text>
+                      {organicInsight?<Text numberOfLines={2} style={[s.meta,{color:theme.ink,fontWeight:'800'}]}>{organicInsight}</Text>:null}
                       <Text numberOfLines={1} style={[s.meta,{color:theme.muted}]}>{[selected.address, selected.city].filter(Boolean).join(', ') || 'Address unavailable'}</Text>
                     </View>
                   </View>
                   <DecisionRestroomSignals item={selected} />
-                  <RequestedAmenityMatches item={selected} requested={selectedAmenityNames} compact />
+                  <RequestedAmenityMatches item={selected} requested={rankingAmenityNames} compact />
                   <View style={s.actionRow}>
                     <Pressable
                       accessibilityRole="button"
@@ -1764,7 +1928,7 @@ export default function AdaptiveExploreScreen() {
               </View>
             ) : null}
 
-            <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results"/>
+            <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results" compact/>
 
             <View style={s.listHeading}>
               <View style={s.listHeadingMain}>
