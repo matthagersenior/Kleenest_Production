@@ -87,8 +87,6 @@ export async function organicExploreReason(row:any,requestedAmenities:string[]=[
   const fraction=Math.max(0,Math.min(1,Number(row?.route_fraction||0)));
   const routePosition=route&&Number.isFinite(Number(route?.distanceMiles))?`about ${(Number(route.distanceMiles)*fraction).toFixed(1)} mi ahead`:'';
   const context={place:{
-    id:String(row?.id||row?.location_id||''),
-    name:text(row?.name||row?.business_name),
     distance_label:distanceText(row),
     route_position:routePosition,
     freshness_label:freshnessLabel(row),
@@ -103,8 +101,6 @@ export async function organicExploreReason(row:any,requestedAmenities:string[]=[
 
 export async function organicPlaceSummary(place:any,reviews:any[]=[]){
   const context={place:{
-    id:String(place?.id||place?.location_id||''),
-    name:text(place?.name),
     rating:Number.isFinite(Number(place?.rating))?Number(place.rating):null,
     cleanliness_pct:Number.isFinite(Number(place?.cleanliness_pct))?Number(place.cleanliness_pct):null,
     freshness_label:freshnessLabel(place),
@@ -120,7 +116,7 @@ export async function organicPlaceSummary(place:any,reviews:any[]=[]){
 export async function organicRouteSummary(route:any,stops:any[],bestStop:any=null){
   const context={
     route:{distance_miles:route?.distanceMiles??null,duration_minutes:route?.durationMinutes??null,provider:text(route?.provider)},
-    stops:stops.slice(0,12).map((row:any,index:number)=>({order:index+1,id:String(row?.id||''),name:text(row?.name),freshness_label:freshnessLabel(row),verification_label:verificationLabel(row)})),
+    stops:stops.slice(0,12).map((row:any,index:number)=>({order:index+1,name:text(row?.name),freshness_label:freshnessLabel(row),verification_label:verificationLabel(row)})),
     best_stop:bestStop?{id:String(bestStop?.id||''),name:text(bestStop?.name)}:null,
   };
   const core=[route?.distanceMiles!=null?`${route.distanceMiles} mi`:null,route?.durationMinutes!=null?`about ${route.durationMinutes} min`:null,`${stops.length} stop${stops.length===1?'':'s'}`].filter(Boolean).join(' · ');
@@ -130,7 +126,6 @@ export async function organicRouteSummary(route:any,stops:any[],bestStop:any=nul
 
 export async function organicMissionSuggestion(candidate:any,progression:any={}){
   const mission={
-    id:String(candidate?.id||candidate?.objective_id||candidate?.location_id||''),
     title:text(candidate?.title||candidate?.name||candidate?.location_name||candidate?.kind||'Useful Kleenest work nearby'),
     kind:text(candidate?.kind),
     location_name:text(candidate?.location_name||candidate?.name),
