@@ -187,7 +187,7 @@ async function openRouterAssist(task: string, context: any, instruction: string,
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method:'POST',
     headers:{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json','X-OpenRouter-Title':'Kleenest','X-Client-Request-Id':traceId},
-    body:JSON.stringify({model,messages:[{role:'system',content:systemPrompt(task)},{role:'user',content:userPrompt(context,instruction)}],max_tokens:700}),
+    body:JSON.stringify({model,messages:[{role:'system',content:systemPrompt(task)},{role:'user',content:userPrompt(context,instruction)}],max_tokens:organicTask(task)?220:700}),
   });
   const requestId = response.headers.get('x-request-id');
   const payload = await response.json().catch(() => ({}));
@@ -235,7 +235,7 @@ async function openAiAssist(task: string, context: any, instruction: string, tra
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'X-Client-Request-Id': traceId},
-    body: JSON.stringify({model,input:[{role:'system',content:[{type:'input_text',text:systemPrompt(task)}]},{role:'user',content:[{type:'input_text',text:userPrompt(context,instruction)}]}],max_output_tokens:700}),
+    body: JSON.stringify({model,input:[{role:'system',content:[{type:'input_text',text:systemPrompt(task)}]},{role:'user',content:[{type:'input_text',text:userPrompt(context,instruction)}]}],max_output_tokens:organicTask(task)?220:700}),
   });
   const requestId = response.headers.get('x-request-id');
   const payload = await response.json().catch(() => ({}));
@@ -248,7 +248,9 @@ async function openAiAssist(task: string, context: any, instruction: string, tra
 
 async function providerAssist(task: string, context: any, instruction: string, traceId: string) {
   const failures: ProviderDiagnostic[] = [];
-  const providers = [cloudflareAssist,groqAssist,openRouterAssist,geminiAssist,openAiAssist];
+  const providers = organicTask(task)
+    ? [cloudflareAssist,groqAssist,openRouterAssist,geminiAssist,openAiAssist]
+    : [openRouterAssist,geminiAssist,openAiAssist,cloudflareAssist,groqAssist];
   for (const run of providers) {
     try { return {generated:await run(task,context,instruction,traceId),failures}; }
     catch (error) {
