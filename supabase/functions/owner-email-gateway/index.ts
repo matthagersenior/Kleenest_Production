@@ -459,25 +459,33 @@ Deno.serve(async(req:Request)=>{
     if(action==='reply'){
       const threadId=requiredText(body?.threadId,'threadId',200);
       const replyBody=requiredText(body?.body,'body',20000);
+      const replyAll=Boolean(body?.replyAll);
       const thread=normalizeThread(await loadThread(connection,threadId,'full'));
       const last=thread.messages[thread.messages.length-1];
-      if(!last)throw new Error('The Gmail thread has no messages.');
-      const target=[...thread.messages].reverse().find((message:any)=>!message.sent&&message.fromEmail)?.fromEmail||last.fromEmail;
+      const source=[...thread.messages].reverse().find((message:any)=>!message.sent&&message.fromEmail)||last;
+      if(!source)throw new Error('The Gmail thread has no messages.');
+      const target=source.fromEmail||last?.fromEmail;
       if(!target)throw new Error('A reply address could not be determined.');
+      const ownerEmail=String(connection.email_address||'').toLowerCase();
+      const additional=replyAll
+        ? [...new Set([...emailsFromHeader(source.to||''),...emailsFromHeader(source.cc||'')])]
+            .filter(email=>email!==ownerEmail&&email!==String(target).toLowerCase())
+        : [];
       const subject=/^re:/i.test(thread.subject)?thread.subject:`Re: ${thread.subject}`;
       const referenceParts=[...thread.messages.map((message:any)=>message.messageId).filter(Boolean)];
-      const references=[last.references,...referenceParts].filter(Boolean).join(' ').trim();
+      const references=[source.references,...referenceParts].filter(Boolean).join(' ').trim();
       const raw=[
         `To: ${target}`,
+        additional.length?`Cc: ${additional.join(', ')}`:'',
         `Subject: ${subject}`,
-        last.messageId?`In-Reply-To: ${last.messageId}`:'',
+        source.messageId?`In-Reply-To: ${source.messageId}`:'',
         references?`References: ${references}`:'',
         'MIME-Version: 1.0',
         'Content-Type: text/plain; charset="UTF-8"',
         'Content-Transfer-Encoding: 8bit',
         '',
         replyBody,
-      ].filter((line,index)=>index>=7||line!=='').join('\r\n');
+      ].filter(Boolean).join('\r\n');
       const sent=await gmailConnected(connection,'/messages/send',{
         method:'POST',
         body:JSON.stringify({raw:encodeBase64Url(raw),threadId}),
@@ -485,10 +493,26 @@ Deno.serve(async(req:Request)=>{
       return json({messageId:String(sent?.id??''),threadId:String(sent?.threadId??threadId)});
     }
 
-    if(action==='send'){
+    if(action==='forward'){
+      const threadId=requiredText(body?.threadId,'threadId',200);
       const to=requiredText(body?.to,'to',1000);
-      const subject=requiredText(body?.subject,'subject',500);
-      const messageBody=requiredText(body?.body,'body',20000);
+      const note=optionalText(body?.body,20000);
+      const thread=normalizeThread(await loadThread(connection,threadId,'full'));
+      const last=thread.messages[thread.messages.length-1];
+      if(!last)throw new Error('The Gmail thread has no messages.');
+      const subject=/^fwd:/i.test(thread.subject)?thread.subject:`Fwd: ${thread.subject}`;
+      const forwarded=[
+        note,
+        note?'':'',
+        '---------- Forwarded message ----------',
+        `From: ${last.from}`,
+        `Date: ${last.date||''}`,
+        `Subject: ${last.subject}`,
+        `To: ${last.to||''}`,
+        last.cc?`Cc: ${last.cc}`:'',
+        '',
+        last.body||last.snippet||'',
+      ].filter((line,index)=>index>=7||line!=='').join('\r\n');
       const raw=[
         `To: ${to}`,
         `Subject: ${subject}`,
@@ -496,8 +520,32 @@ Deno.serve(async(req:Request)=>{
         'Content-Type: text/plain; charset="UTF-8"',
         'Content-Transfer-Encoding: 8bit',
         '',
-        messageBody,
+        forwarded,
       ].join('\r\n');
+      const sent=await gmailConnected(connection,'/messages/send',{
+        method:'POST',
+        body:JSON.stringify({raw:encodeBase64Url(raw)}),
+      });
+      return json({messageId:String(sent?.id??''),threadId:sent?.threadId?String(sent.threadId):null});
+    }
+
+    if(action==='send'){
+      const to=requiredText(body?.to,'to',1000);
+      const cc=optionalText(body?.cc,1000);
+      const bcc=optionalText(body?.bcc,1000);
+      const subject=requiredText(body?.subject,'subject',500);
+      const messageBody=requiredText(body?.body,'body',20000);
+      const raw=[
+        `To: ${to}`,
+        cc?`Cc: ${cc}`:'',
+        bcc?`Bcc: ${bcc}`:'',
+        `Subject: ${subject}`,
+        'MIME-Version: 1.0',
+        'Content-Type: text/plain; charset="UTF-8"',
+        'Content-Transfer-Encoding: 8bit',
+        '',
+        messageBody,
+      ].filter(Boolean).join('\r\n');
       const sent=await gmailConnected(connection,'/messages/send',{
         method:'POST',
         body:JSON.stringify({raw:encodeBase64Url(raw)}),
@@ -528,6 +576,30 @@ Deno.serve(async(req:Request)=>{
       const threadId=requiredText(body?.threadId,'threadId',200);
       await gmailConnected(connection,`/threads/${encodeURIComponent(threadId)}/trash`,{method:'POST',body:'{}'});
       return json({ok:true});
+    }
+
+    if(action==='set_inbox'){
+      const threadId=requiredText(body?.threadId,'threadId',200);
+      const inInbox=Boolean(body?.inInbox);
+      await gmailConnected(connection,`/threads/${encodeURIComponent(threadId)}/modify`,{
+        method:'POST',
+        body:JSON.stringify(inInbox?{addLabelIds:['INBOX']}:{removeLabelIds:['INBOX']}),
+      });
+      return json({ok:true});
+    }
+
+    if(action==='set_label'){
+      const threadId=requiredText(body?.threadId,'threadId',200);
+      const labelName=requiredText(body?.labelName,'labelName',200);
+      const applied=Boolean(body?.applied);
+      const labels=await gmailConnected(connection,'/labels');
+      const label=(Array.isArray(labels?.labels)?labels.labels:[]).find((row:any)=>String(row?.name||'')===labelName);
+      if(!label?.id)throw new Error(`Gmail label "${labelName}" was not found.`);
+      await gmailConnected(connection,`/threads/${encodeURIComponent(threadId)}/modify`,{
+        method:'POST',
+        body:JSON.stringify(applied?{addLabelIds:[String(label.id)]}:{removeLabelIds:[String(label.id)]}),
+      });
+      return json({ok:true,labelId:String(label.id)});
     }
 
     if(action==='set_read'){
