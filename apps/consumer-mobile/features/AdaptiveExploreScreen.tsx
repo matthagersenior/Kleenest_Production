@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   FlatList,
   Modal,
+  Platform,
    Pressable,
    ScrollView,
   StyleSheet,
@@ -31,6 +32,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { listAmenityCatalog, type AmenityCatalogItem } from '../services/amenities';
+import { discoveryPlaceName, discoveryListingReference } from '../services/discoveryPresentation';
 import { visitFreshness } from '../services/evidenceFormatting';
 import { attachLocationNetwork, attachLocationTrust, listLocationNetworkStatuses, listLocationTrustSummaries, networkEvidenceSummary } from '../services/locationTrust';
 import { useConsumerTheme } from '../services/theme';
@@ -139,8 +141,7 @@ function markerClusterCellDegrees(zoom:number){
 }
 function organizeMapMarkers(rows:any[],zoom:number):MapMarkerGroup[]{
   const usable=(rows||[]).filter(hasCoordinates);
-  const cell=markerClusterCellDegrees(zoom);
-  if(!cell)return usable.map(row=>({key:`place:${idOf(row)}`,rows:[row],center:[Number(row.longitude),Number(row.latitude)]}));
+  const cell=markerClusterCellDegrees(zoom)||0.00001;
   const buckets=new globalThis.Map<string,any[]>();
   for(const row of usable){
     const lng=Number(row.longitude),lat=Number(row.latitude);
@@ -359,7 +360,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ selected }}
-        accessibilityLabel={`${item.name || 'Nearby place'}, ${route && ahead != null ? `${ahead.toFixed(ahead < 10 ? 1 : 0)} miles ahead` : distanceLabel(item.distance_meters)}`}
+        accessibilityLabel={`${discoveryPlaceName(item)}, ${route && ahead != null ? `${ahead.toFixed(ahead < 10 ? 1 : 0)} miles ahead` : distanceLabel(item.distance_meters)}`}
         onPress={onSelect}
         style={s.cardMain}
       >
@@ -367,7 +368,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
           <FreshnessHeatRing item={item} size={34} photoUrl={item.consumer_photo_url ? String(item.consumer_photo_url) : undefined} />
           <View style={{ flex: 1 }}>
             <View style={s.cardTitleRow}>
-              <Text style={[s.cardTitle,{color:theme.ink}]}>{item.name || 'Nearby place'}</Text>
+              <Text style={[s.cardTitle,{color:theme.ink}]}>{discoveryPlaceName(item)}</Text>
               {item.discovery_recommended?<View style={[s.recommendedBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.recommendedBadgeText,{color:theme.accent}]}>RECOMMENDED</Text></View>:null}
             </View>
             {item.discovery_recommended?<Text style={[s.recommendedReason,{color:theme.muted}]}>{recommendationReason(item,requestedAmenities)}</Text>:null}
@@ -445,6 +446,7 @@ export default function AdaptiveExploreScreen() {
   const [mapZoom, setMapZoom] = useState(13);
   const [cameraNonce, setCameraNonce] = useState(0);
   const [selectedId, setSelectedId] = useState('');
+  const [clusterChoices,setClusterChoices]=useState<any[]>([]);
   const [destinationCardOpen,setDestinationCardOpen]=useState(false);
   const [search, setSearch] = useState('');
   const [searchAreaOrigin,setSearchAreaOrigin]=useState<[number,number]|null>(null);
@@ -745,7 +747,9 @@ export default function AdaptiveExploreScreen() {
     const permission = await Location.requestForegroundPermissionsAsync();
     if (permission.status !== 'granted') {
       throw new Error(
-        'Location access is needed for nearby discovery. Enable it in phone settings and try again.',
+        Platform.OS==='web'
+          ? 'Location access is unavailable. Allow location in your browser’s site settings, or search an address or city above.'
+          : 'Location access is needed. Enable it in phone settings and try again. You can also search an address or city above.',
       );
     }
     const lastKnown=await Location.getLastKnownPositionAsync().catch(()=>null);
@@ -791,7 +795,8 @@ export default function AdaptiveExploreScreen() {
       areaMatch={origin:[match.longitude,match.latitude],label:match.label||rawQuery};
     }
 
-    const retainedMapOrigin=!rawQuery&&searchAreaLabel==='Map area'&&searchAreaOrigin?searchAreaOrigin:null;
+    // A brand/category filters the selected origin; only Use my location resets it.
+    const retainedMapOrigin=!clearQuery&&!areaMatch?searchAreaOrigin:null;
     const mapAreaOrigin=overrideOrigin||retainedMapOrigin;
     const current=areaMatch||mapAreaOrigin?null:await currentLocation(forceLiveRecenter);
     const livePresence=areaMatch||mapAreaOrigin
@@ -816,9 +821,7 @@ export default function AdaptiveExploreScreen() {
       setSearchAreaLabel('Map area');
       setPendingMapOrigin(null);
     }
-    else if(rawQuery){
-      setSearchAreaOrigin(null);
-      setSearchAreaLabel('');
+    else if(rawQuery&&!retainedMapOrigin){
       setPendingMapOrigin(null);
     }
     if(clearQuery) snapMapToDiscoveryOrigin(nextOrigin);
@@ -1439,6 +1442,18 @@ export default function AdaptiveExploreScreen() {
             </View>
           </View>
         </Modal>
+        <Modal accessibilityViewIsModal visible={clusterChoices.length>0} transparent onRequestClose={()=>setClusterChoices([])}>
+          <View style={{flex:1,justifyContent:'center',padding:20,backgroundColor:'#0008'}}>
+            <View style={[s.advancedModalCard,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+              <Text style={[s.advancedModalTitle,{color:theme.ink}]}>Places at this point</Text>
+              <Pressable accessibilityRole="button" onPress={()=>setClusterChoices([])}><Text style={{color:theme.accent}}>Close</Text></Pressable>
+              <ScrollView>{clusterChoices.map(row=><Pressable key={idOf(row)} accessibilityRole="button" onPress={()=>{setClusterChoices([]);selectRow(row);}} style={{paddingVertical:12,borderBottomWidth:1,borderColor:theme.line}}>
+                <Text style={{color:theme.ink,fontWeight:'700'}}>{discoveryPlaceName(row)}</Text>
+                <Text style={{color:theme.muted}}>{row.address||discoveryListingReference(row)}</Text>
+              </Pressable>)}</ScrollView>
+            </View>
+          </View>
+        </Modal>
 
       </View>
 
@@ -1495,6 +1510,7 @@ export default function AdaptiveExploreScreen() {
                       lngLat={group.center}
                       anchor="center"
                       onPress={()=>{
+                        if(mapZoom>=17){setClusterChoices(group.rows);return;}
                         setSelectedId('');
                         setDestinationCardOpen(false);
                         setPendingMapOrigin(null);
@@ -1505,10 +1521,11 @@ export default function AdaptiveExploreScreen() {
                     >
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel={`${group.rows.length} places in this map cluster. Tap to zoom in.`}
+                        accessibilityLabel={`${group.rows.length} places in this map cluster. ${mapZoom>=17?'Tap to choose a place.':'Tap to zoom in.'}`}
                         hitSlop={12}
                         onPress={(event)=>{
                           event.stopPropagation();
+                          if(mapZoom>=17){setClusterChoices(group.rows);return;}
                           setSelectedId('');
                           setDestinationCardOpen(false);
                           setPendingMapOrigin(null);
@@ -1648,7 +1665,7 @@ export default function AdaptiveExploreScreen() {
                     <FreshnessHeatRing item={selected} size={34} photoUrl={selected.consumer_photo_url ? String(selected.consumer_photo_url) : undefined} />
                     <View style={{ flex: 1 }}>
                       <View style={s.cardTitleRow}>
-                        <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{selected.name || 'Nearby place'}</Text>
+                        <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{discoveryPlaceName(selected)}</Text>
                         {selected.discovery_recommended?<View style={[s.recommendedBadge,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.recommendedBadgeText,{color:theme.accent}]}>RECOMMENDED</Text></View>:null}
                       </View>
                       <Text numberOfLines={1} style={[s.selectedDecisionMeta,{color:theme.muted}]}>

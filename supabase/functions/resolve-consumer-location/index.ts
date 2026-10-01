@@ -17,7 +17,7 @@ type Candidate = {
   category: string | null;
   type: string | null;
   importance: number | null;
-  provider: 'nominatim' | 'census' | 'configured';
+  provider: 'nominatim' | 'census' | 'census_place' | 'photon' | 'configured';
 };
 
 type CacheEntry = {
@@ -103,6 +103,65 @@ function normalizeCensusCandidate(row: any): Candidate | null {
   };
 }
 
+const US_STATES: Record<string, [string, string]> = Object.fromEntries([
+  ['AL','01','Alabama'],['AK','02','Alaska'],['AZ','04','Arizona'],['AR','05','Arkansas'],['CA','06','California'],['CO','08','Colorado'],['CT','09','Connecticut'],['DE','10','Delaware'],['DC','11','District of Columbia'],['FL','12','Florida'],['GA','13','Georgia'],['HI','15','Hawaii'],['ID','16','Idaho'],['IL','17','Illinois'],['IN','18','Indiana'],['IA','19','Iowa'],['KS','20','Kansas'],['KY','21','Kentucky'],['LA','22','Louisiana'],['ME','23','Maine'],['MD','24','Maryland'],['MA','25','Massachusetts'],['MI','26','Michigan'],['MN','27','Minnesota'],['MS','28','Mississippi'],['MO','29','Missouri'],['MT','30','Montana'],['NE','31','Nebraska'],['NV','32','Nevada'],['NH','33','New Hampshire'],['NJ','34','New Jersey'],['NM','35','New Mexico'],['NY','36','New York'],['NC','37','North Carolina'],['ND','38','North Dakota'],['OH','39','Ohio'],['OK','40','Oklahoma'],['OR','41','Oregon'],['PA','42','Pennsylvania'],['RI','44','Rhode Island'],['SC','45','South Carolina'],['SD','46','South Dakota'],['TN','47','Tennessee'],['TX','48','Texas'],['UT','49','Utah'],['VT','50','Vermont'],['VA','51','Virginia'],['WA','53','Washington'],['WV','54','West Virginia'],['WI','55','Wisconsin'],['WY','56','Wyoming']
+].flatMap(([code,fips,name]) => [[code.toLowerCase(),[fips,name]],[name.toLowerCase(),[fips,name]]])) as Record<string,[string,string]>;
+
+function usCityQuery(query: string) {
+  // Do not turn a street address or neighborhood into a city-center result.
+  const parts=query.replace(/,?\s+(USA|United States)$/i,'').split(',').map(part=>part.trim());
+  if(parts.length!==2 || /\d/.test(parts[0]))return null;
+  const state=US_STATES[parts[1].toLowerCase()];
+  if(!state)return null;
+  const city=parts[0].replace(/^St\.?\s+/i,'St. ');
+  return {city,stateFips:state[0],stateName:state[1]};
+}
+
+async function lookupCensusPlace(query: string): Promise<Candidate[]> {
+  const place=usCityQuery(query);
+  if(!place)return [];
+  // Incorporated places and CDPs provide public, authoritative city origins.
+  for(const layer of [4,5]){
+    const url=new URL(`https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer/${layer}/query`);
+    url.searchParams.set('f','json');
+    url.searchParams.set('where',`STATE = '${place.stateFips}' AND UPPER(BASENAME) = '${place.city.toUpperCase().replaceAll("'","''")}'`);
+    url.searchParams.set('outFields','BASENAME,STATE,CENTLAT,CENTLON,INTPTLAT,INTPTLON');
+    url.searchParams.set('returnGeometry','false');
+    const response=await fetch(url,{headers:{Accept:'application/json','User-Agent':USER_AGENT},signal:AbortSignal.timeout(5000)});
+    if(!response.ok)throw new Error(`Census places returned HTTP ${response.status}`);
+    const payload=await response.json();
+    if(payload.error)throw new Error('Census places query failed');
+    const candidates:Candidate[]=(Array.isArray(payload.features)?payload.features:[]).flatMap((feature:any)=>{
+      const row=feature.attributes||{};
+      const latitude=Number(row.INTPTLAT??row.CENTLAT),longitude=Number(row.INTPTLON??row.CENTLON);
+      if(String(row.STATE)!==place.stateFips || String(row.BASENAME).toLowerCase()!==place.city.toLowerCase()
+        || !Number.isFinite(latitude)||!Number.isFinite(longitude)||Math.abs(latitude)>90||Math.abs(longitude)>180)return [];
+      return [{latitude,longitude,label:`${row.BASENAME}, ${place.stateName}`,category:'place',type:'city',importance:0.8,provider:'census_place' as const}];
+    });
+    if(candidates.length)return candidates.slice(0,5);
+  }
+  return [];
+}
+
+async function lookupPhoton(query: string): Promise<Candidate[]> {
+  const release=await waitForProviderSlot();
+  try{
+    const url=new URL(Deno.env.get('KLEENEST_PHOTON_BASE_URL')||'https://photon.komoot.io/api/');
+    url.searchParams.set('q',query);url.searchParams.set('limit','5');url.searchParams.set('lang','en');
+    const response=await fetch(url,{headers:{Accept:'application/json','User-Agent':USER_AGENT},signal:AbortSignal.timeout(7000)});
+    if(!response.ok)throw new Error(`Area geocoder returned HTTP ${response.status}`);
+    const payload=await response.json();
+    return (Array.isArray(payload.features)?payload.features:[]).flatMap((feature:any)=>{
+      const [longitude,latitude]=feature.geometry?.coordinates||[];
+      if(typeof latitude!=='number'||typeof longitude!=='number'||!Number.isFinite(latitude)||!Number.isFinite(longitude)||Math.abs(latitude)>90||Math.abs(longitude)>180)return [];
+      const row=feature.properties||{};
+      const label=[row.name,[row.housenumber,row.street].filter(Boolean).join(' '),row.city,row.state,row.country].filter(Boolean).filter((value,index,array)=>array.indexOf(value)===index).join(', ');
+      if(!label)return [];
+      return [{latitude,longitude,label,category:row.osm_key||'place',type:row.osm_value||row.type||'area',importance:null,provider:'photon' as const}];
+    }).slice(0,5);
+  }finally{release();}
+}
+
 function pruneCache(now: number) {
   for (const [key, entry] of cache) if (entry.expiresAt <= now) cache.delete(key);
   while (cache.size > MAX_CACHE_ENTRIES) {
@@ -183,32 +242,13 @@ async function lookup(query: string): Promise<Candidate[]> {
   let candidates: Candidate[] = [];
   let firstError: unknown = null;
 
-  // Exact U.S. street addresses are what Census is designed for. Try it first
-  // instead of paying the Nominatim queue/throttle cost and then falling back.
-  if (looksLikeUsStreetAddress(query)) {
-    try {
-      candidates = await lookupCensus(query);
-    } catch (error) {
-      firstError = error;
-    }
-  }
-
-  if (!candidates.length) {
-    try {
-      candidates = await lookupPrimary(query);
-    } catch (error) {
-      if (firstError) throw firstError;
-      firstError = error;
-    }
-  }
-
-  if (!candidates.length && !looksLikeUsStreetAddress(query)) {
-    try {
-      candidates = await lookupCensus(query);
-    } catch (error) {
-      if (firstError) throw firstError;
-      firstError = error;
-    }
+  // Independent paths: Census addresses, Census town origins, then area providers.
+  const providers = looksLikeUsStreetAddress(query)
+    ? [lookupCensus, lookupPrimary, lookupPhoton]
+    : [lookupCensusPlace, lookupPrimary, lookupPhoton];
+  for(const providerLookup of providers){
+    try{candidates=await providerLookup(query);}catch(error){firstError=firstError||error;}
+    if(candidates.length)break;
   }
 
   if (!candidates.length && firstError) throw firstError;
@@ -235,7 +275,7 @@ Deno.serve(async (req) => {
       resolved: candidates[0] || null,
       candidates,
       provider,
-      attribution: provider === 'census' ? 'U.S. Census Bureau Geocoder' : '© OpenStreetMap contributors',
+      attribution: provider === 'census' || provider === 'census_place' ? 'U.S. Census Bureau' : '© OpenStreetMap contributors',
     });
   } catch (error) {
     console.error('resolve-consumer-location failed', error instanceof Error ? error.message : 'unknown');
