@@ -15,4 +15,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify user discovery grows canonical locations
-        run: node scripts/user-discovery-canonical-growth-audit.mjs
+        run: node scripts/user-discovery-canonical-growth-audit.mjs && node scripts/federated-place-discovery-audit.mjs
