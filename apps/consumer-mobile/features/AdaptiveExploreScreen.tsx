@@ -173,6 +173,8 @@ const verificationWindowLabel = (value: string | null | undefined) => {
 const radiusLabel = (meters: number) => `${Math.round(meters / 1609.344)} mi`;
 const looksLikeAddressOrArea = (value: string) => {
   const query=value.trim();
+  const conversationalDiscovery=/\b(on my way|along (?:my |the )?route|en route|headed to|going to|find me|i need|need a|looking for|somewhere (?:with|that)|with a (?:clean|family|changing|wheelchair|accessible)|that has|minimal detour|quick stop)\b/i.test(query);
+  if(conversationalDiscovery)return false;
   return Boolean(query) && (
     /\d/.test(query)
     || /,/.test(query)
