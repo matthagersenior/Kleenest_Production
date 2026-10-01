@@ -46,13 +46,10 @@ for(const token of [
   "normalizeCensusCandidate",
   "lookupCensus",
   "looksLikeUsStreetAddress",
-  "if (looksLikeUsStreetAddress(query))",
-  "candidates = await lookupCensus(query);",
-  "candidates = await lookupPrimary(query);",
+  "const providers = looksLikeUsStreetAddress(query)",
+  "[lookupCensus, lookupPrimary, lookupPhoton]",
+  "[lookupCensusPlace, lookupPrimary, lookupPhoton]",
 ])requireToken(locationResolverEdge,token,'Consumer residential geocoder priority');
-const censusIndex=locationResolverEdge.indexOf("candidates = await lookupCensus(query);");
-const primaryIndex=locationResolverEdge.indexOf("candidates = await lookupPrimary(query);");
-if(!(censusIndex>=0&&primaryIndex>censusIndex))throw new Error('Exact U.S. street addresses must try Census before the throttled general geocoder.');
 if(locationResolverEdge.includes("fetch('https://maps.googleapis.com"))throw new Error('Consumer address geocoding must not depend on a client-shipped Google Maps key.');
 
 requireToken(cache,'rows.slice(0,500)','Dense nearby cache must preserve the full 500-row discovery window');

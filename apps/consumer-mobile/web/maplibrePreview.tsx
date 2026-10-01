@@ -96,10 +96,10 @@ function fallbackTiles(viewport: Viewport) {
   const center = worldPoint(viewport.center[0], viewport.center[1], zoom);
   const leftWorld = center.x - viewport.width / 2;
   const topWorld = center.y - viewport.height / 2;
-  const firstX = Math.floor(leftWorld / TILE_SIZE) - 1;
-  const lastX = Math.floor((leftWorld + viewport.width) / TILE_SIZE) + 1;
-  const firstY = Math.max(0, Math.floor(topWorld / TILE_SIZE) - 1);
-  const lastY = Math.min(2 ** zoom - 1, Math.floor((topWorld + viewport.height) / TILE_SIZE) + 1);
+  const firstX = Math.floor(leftWorld / TILE_SIZE);
+  const lastX = Math.floor((leftWorld + viewport.width) / TILE_SIZE);
+  const firstY = Math.max(0, Math.floor(topWorld / TILE_SIZE));
+  const lastY = Math.min(2 ** zoom - 1, Math.floor((topWorld + viewport.height) / TILE_SIZE));
   const n = 2 ** zoom;
   const tiles: Array<{ key: string; url: string; left: number; top: number }> = [];
   for (let x = firstX; x <= lastX; x += 1) {
@@ -140,7 +140,7 @@ function FallbackRaster({ viewport }: { viewport: Viewport }) {
           src={tile.url}
           alt=""
           draggable={false}
-          referrerPolicy="no-referrer"
+          referrerPolicy="strict-origin-when-cross-origin"
           style={{ position: 'absolute', width: TILE_SIZE, height: TILE_SIZE, left: tile.left, top: tile.top, userSelect: 'none' }}
         />
       ))}
