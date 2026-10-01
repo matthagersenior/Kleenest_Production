@@ -15,7 +15,9 @@ import datetime as dt
 import json
 import math
 import os
+import socket
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -41,14 +43,30 @@ def http_json(method: str, url: str, *, key: str | None = None, body: Any = None
     if body is not None:
         headers["Content-Type"] = "application/json"
         data = json.dumps(body, separators=(",", ":")).encode("utf-8")
-    request = urllib.request.Request(url, data=data, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(request, timeout=90) as response:
-            payload = response.read()
-            return json.loads(payload.decode("utf-8")) if payload else None
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")[:1500]
-        raise RuntimeError(f"HTTP {exc.code} for {url}: {detail}") from exc
+
+    normalized_method = method.upper()
+    max_attempts = 3 if normalized_method == "GET" else 1
+    retryable_statuses = {408, 425, 429, 500, 502, 503, 504}
+    for attempt in range(1, max_attempts + 1):
+        request = urllib.request.Request(url, data=data, headers=headers, method=normalized_method)
+        try:
+            with urllib.request.urlopen(request, timeout=45) as response:
+                payload = response.read()
+                return json.loads(payload.decode("utf-8")) if payload else None
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")[:1500]
+            if normalized_method == "GET" and exc.code in retryable_statuses and attempt < max_attempts:
+                time.sleep(min(8, 2 ** (attempt - 1)))
+                continue
+            raise RuntimeError(f"HTTP {exc.code} for {url}: {detail}") from exc
+        except (TimeoutError, socket.timeout, urllib.error.URLError) as exc:
+            if normalized_method == "GET" and attempt < max_attempts:
+                time.sleep(min(8, 2 ** (attempt - 1)))
+                continue
+            raise RuntimeError(
+                f"{normalized_method} {url} failed after {attempt} attempt(s): {exc}"
+            ) from exc
+    raise RuntimeError(f"{normalized_method} {url} failed after {max_attempts} attempts.")
 
 
 def latest_release() -> str:
