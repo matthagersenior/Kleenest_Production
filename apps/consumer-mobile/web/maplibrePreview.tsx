@@ -99,32 +99,6 @@ function projectedOffset(lng: number, lat: number, viewport: Viewport) {
   };
 }
 
-function fallbackTiles(viewport: Viewport) {
-  if (!viewport.width || !viewport.height) return [] as Array<{ key: string; url: string; left: number; top: number }>;
-  const zoom = Math.max(1, Math.min(18, Math.round(viewport.zoom)));
-  const center = worldPoint(viewport.center[0], viewport.center[1], zoom);
-  const leftWorld = center.x - viewport.width / 2;
-  const topWorld = center.y - viewport.height / 2;
-  const firstX = Math.floor(leftWorld / TILE_SIZE);
-  const lastX = Math.floor((leftWorld + viewport.width) / TILE_SIZE);
-  const firstY = Math.max(0, Math.floor(topWorld / TILE_SIZE));
-  const lastY = Math.min(2 ** zoom - 1, Math.floor((topWorld + viewport.height) / TILE_SIZE));
-  const n = 2 ** zoom;
-  const tiles: Array<{ key: string; url: string; left: number; top: number }> = [];
-  for (let x = firstX; x <= lastX; x += 1) {
-    const wrappedX = ((x % n) + n) % n;
-    for (let y = firstY; y <= lastY; y += 1) {
-      tiles.push({
-        key: `${zoom}/${x}/${y}`,
-        url: `https://tile.openstreetmap.org/${zoom}/${wrappedX}/${y}.png`,
-        left: x * TILE_SIZE - leftWorld,
-        top: y * TILE_SIZE - topWorld,
-      });
-    }
-  }
-  return tiles;
-}
-
 function zoomForBounds(bounds: [number, number, number, number], width: number, height: number) {
   const [west, south, east, north] = bounds;
   if (!width || !height) return DEFAULT_ZOOM;
@@ -139,25 +113,11 @@ function zoomForBounds(bounds: [number, number, number, number], width: number, 
   return 1;
 }
 
-function FallbackRaster({ viewport }: { viewport: Viewport }) {
-  const tiles = useMemo(() => fallbackTiles(viewport), [viewport.center[0], viewport.center[1], viewport.zoom, viewport.width, viewport.height]);
+function FallbackMapNotice() {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      {tiles.map((tile) => (
-        <img
-          key={tile.key}
-          src={tile.url}
-          alt=""
-          draggable={false}
-          referrerPolicy="strict-origin-when-cross-origin"
-          style={{ position: 'absolute', width: TILE_SIZE, height: TILE_SIZE, left: tile.left, top: tile.top, userSelect: 'none' }}
-        />
-      ))}
       <View style={styles.fallbackBanner}>
-        <Text style={styles.fallbackText}>MapLibre unavailable · OpenStreetMap fallback</Text>
-      </View>
-      <View style={styles.fallbackAttribution}>
-        <Text style={styles.attributionText}>© OpenStreetMap contributors</Text>
+        <Text style={styles.fallbackText}>Basemap unavailable · pins, drag and search still work</Text>
       </View>
     </View>
   );
@@ -298,7 +258,7 @@ export function Map({ children, style, mapStyle, onRegionDidChange }: any) {
         onLostPointerCapture={finishFallbackGesture}
       />:null}
       <MapContext.Provider value={{ map, fallback, viewport, setViewport, reportRegionChange }}>
-        {fallback ? <FallbackRaster viewport={viewport} /> : null}
+        {fallback ? <FallbackMapNotice /> : null}
         {children}
       </MapContext.Provider>
     </View>
