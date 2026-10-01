@@ -10,7 +10,7 @@ export function auditFeatureLifecycle({parity,registry,exists=()=>true}){
   const byId=new Map();
 
   if(registry?.version!==1)fail('feature lifecycle: unsupported registry version');
-  for(const state of ['legacy-unverified','idea','data','backend','wired','discoverable','usable','persistent','verified','live','internal']){
+  for(const state of ['legacy-unverified','idea','data','backend','wired','discoverable','understandable','usable','persistent','verified','live','internal']){
     if(!allowed.has(state))fail(`feature lifecycle: missing state ${state}`);
   }
 
@@ -27,7 +27,12 @@ export function auditFeatureLifecycle({parity,registry,exists=()=>true}){
       if(feature.kind!=='user')fail(`${id}: live features must be kind=user`);
       if(!nonEmpty(feature.userJourney?.actor))fail(`${id}: live feature requires userJourney.actor`);
       if(!nonEmpty(feature.userJourney?.entryPoint))fail(`${id}: live feature requires userJourney.entryPoint`);
+      if(!nonEmpty(feature.userJourney?.valuePromise))fail(`${id}: live feature requires userJourney.valuePromise`);
+      if(!nonEmpty(feature.userJourney?.primaryAction))fail(`${id}: live feature requires userJourney.primaryAction`);
       if(!nonEmpty(feature.userJourney?.successOutcome))fail(`${id}: live feature requires userJourney.successOutcome`);
+      if(!nonEmpty(feature.userJourney?.successCue))fail(`${id}: live feature requires userJourney.successCue`);
+      if(!Number.isInteger(feature.userJourney?.firstValueSteps)||feature.userJourney.firstValueSteps<1||feature.userJourney.firstValueSteps>7)fail(`${id}: live feature requires userJourney.firstValueSteps of 7 or fewer`);
+      if(!nonEmptyArray(feature.evidence?.comprehension?.plainLanguage))fail(`${id}: live feature requires plain-language comprehension evidence`);
       if(!nonEmptyArray(feature.evidence?.ui))fail(`${id}: live feature requires UI evidence`);
       if(!nonEmptyArray(feature.evidence?.logic))fail(`${id}: live feature requires service/local logic evidence`);
       if(!nonEmptyArray(feature.evidence?.discoverability))fail(`${id}: live feature requires discoverability evidence`);
