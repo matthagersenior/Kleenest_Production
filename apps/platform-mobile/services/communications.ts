@@ -23,12 +23,20 @@ export type OwnerMailThreadSummary={
   messageCount:number;
 };
 
+export type OwnerMailAttachment={
+  filename:string;
+  mimeType:string;
+  size:number;
+  attachmentId:string|null;
+};
+
 export type OwnerMailMessage={
   id:string;
   threadId:string;
   from:string;
   fromEmail:string|null;
   to:string;
+  cc:string;
   subject:string;
   date:string|null;
   messageId:string|null;
@@ -37,6 +45,7 @@ export type OwnerMailMessage={
   body:string;
   unread:boolean;
   sent:boolean;
+  attachments:OwnerMailAttachment[];
 };
 
 export type OwnerMailThread={
@@ -46,6 +55,7 @@ export type OwnerMailThread={
   participants:string[];
   unread:boolean;
   inInbox:boolean;
+  labelIds:string[];
   messages:OwnerMailMessage[];
 };
 
@@ -109,11 +119,21 @@ export function getOwnerMailThread(threadId:string){
   return invoke<{thread:OwnerMailThread}>({action:'get_thread',threadId});
 }
 
-export function replyOwnerMailThread(input:{threadId:string;body:string}){
+export function replyOwnerMailThread(input:{threadId:string;body:string;replyAll?:boolean}){
   return invoke<{messageId:string;threadId:string}>({
     action:'reply',
     threadId:input.threadId,
     body:input.body.trim(),
+    replyAll:Boolean(input.replyAll),
+  });
+}
+
+export function forwardOwnerMailThread(input:{threadId:string;to:string;body?:string}){
+  return invoke<{messageId:string;threadId:string|null}>({
+    action:'forward',
+    threadId:input.threadId,
+    to:input.to.trim(),
+    body:input.body?.trim()||'',
   });
 }
 
@@ -126,10 +146,12 @@ export function setOwnerMailThreadRead(threadId:string,read:boolean){
 }
 
 
-export function sendOwnerMail(input:{to:string;subject:string;body:string}){
+export function sendOwnerMail(input:{to:string;cc?:string;bcc?:string;subject:string;body:string}){
   return invoke<{messageId:string;threadId:string|null}>({
     action:'send',
     to:input.to.trim(),
+    cc:input.cc?.trim()||'',
+    bcc:input.bcc?.trim()||'',
     subject:input.subject.trim(),
     body:input.body.trim(),
   });
@@ -141,4 +163,12 @@ export function setOwnerMailThreadStarred(threadId:string,starred:boolean){
 
 export function trashOwnerMailThread(threadId:string){
   return invoke<{ok:true}>({action:'trash',threadId});
+}
+
+export function setOwnerMailThreadInbox(threadId:string,inInbox:boolean){
+  return invoke<{ok:true}>({action:'set_inbox',threadId,inInbox});
+}
+
+export function setOwnerMailThreadLabel(threadId:string,labelName:string,applied:boolean){
+  return invoke<{ok:true;labelId:string}>({action:'set_label',threadId,labelName:labelName.trim(),applied});
 }
