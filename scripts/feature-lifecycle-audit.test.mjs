@@ -5,7 +5,7 @@ import { auditFeatureLifecycle } from './feature-lifecycle-lib.mjs';
 const parity={apps:{consumer:{requiredCapabilities:['discovery','new-feature']}}};
 const registry={
   version:1,
-  states:['legacy-unverified','idea','data','backend','wired','discoverable','usable','persistent','verified','live','internal'],
+  states:['legacy-unverified','idea','data','backend','wired','discoverable','understandable','usable','persistent','verified','live','internal'],
   grandfatheredUnverified:['consumer.discovery'],
   features:[
     {id:'consumer.discovery',product:'consumer',capability:'discovery',status:'legacy-unverified',kind:'user',gap:'Needs end-to-end certification.'},
