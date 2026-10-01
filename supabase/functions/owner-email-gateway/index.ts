@@ -250,6 +250,7 @@ async function gmailConnected(connection:OwnerGmailConnection,path:string,init:R
 function summarizeThread(thread:any){
   const messages=Array.isArray(thread?.messages)?thread.messages:[];
   const latest=messages[messages.length-1]??{};
+  const latestLabels=new Set<string>(Array.isArray(latest?.labelIds)?latest.labelIds:[]);
   const h=headersOf(latest);
   const from=h.get('from')||'Unknown sender';
   return{
@@ -262,6 +263,8 @@ function summarizeThread(thread:any){
     date:h.get('date')||null,
     unread:messages.some((message:any)=>Array.isArray(message?.labelIds)&&message.labelIds.includes('UNREAD')),
     inInbox:messages.some((message:any)=>Array.isArray(message?.labelIds)&&message.labelIds.includes('INBOX')),
+    latestSent:latestLabels.has('SENT'),
+    starred:messages.some((message:any)=>Array.isArray(message?.labelIds)&&message.labelIds.includes('STARRED')),
     messageCount:messages.length,
   };
 }
@@ -399,15 +402,23 @@ Deno.serve(async(req:Request)=>{
     }
 
     if(action==='list_threads'){
-      const maxResults=Math.min(Math.max(Number(body?.maxResults)||30,1),50);
-      const query=optionalText(body?.query,500);
+      const maxResults=Math.min(Math.max(Number(body?.maxResults)||50,1),100);
+      const query=optionalText(body?.query,900);
       const unreadOnly=Boolean(body?.unreadOnly);
+      const mailbox=String(body?.mailbox||'inbox');
+      const direction=String(body?.direction||'any');
+      if(!['inbox','sent','all'].includes(mailbox))throw new Error('Unsupported mailbox view.');
+      if(!['any','incoming','outgoing'].includes(direction))throw new Error('Unsupported message direction.');
       const q=[query,unreadOnly?'is:unread':''].filter(Boolean).join(' ');
-      const params=new URLSearchParams({maxResults:String(maxResults),labelIds:'INBOX'});
+      const params=new URLSearchParams({maxResults:String(maxResults)});
+      if(mailbox==='inbox')params.set('labelIds','INBOX');
+      if(mailbox==='sent')params.set('labelIds','SENT');
       if(q)params.set('q',q);
       const page=await gmailConnected(connection,`/threads?${params.toString()}`);
       const refs=Array.isArray(page?.threads)?page.threads:[];
-      const threads=await Promise.all(refs.map((row:any)=>loadThread(connection,String(row.id),'metadata').then(summarizeThread)));
+      let threads=await Promise.all(refs.map((row:any)=>loadThread(connection,String(row.id),'metadata').then(summarizeThread)));
+      if(direction==='incoming')threads=threads.filter((thread:any)=>!thread.latestSent);
+      if(direction==='outgoing')threads=threads.filter((thread:any)=>thread.latestSent);
       threads.sort((a:any,b:any)=>new Date(b.date||0).getTime()-new Date(a.date||0).getTime());
       return json({threads,nextPageToken:page?.nextPageToken??null});
     }
@@ -447,12 +458,48 @@ Deno.serve(async(req:Request)=>{
       return json({messageId:String(sent?.id??''),threadId:String(sent?.threadId??threadId)});
     }
 
+    if(action==='send'){
+      const to=requiredText(body?.to,'to',1000);
+      const subject=requiredText(body?.subject,'subject',500);
+      const messageBody=requiredText(body?.body,'body',20000);
+      const raw=[
+        `To: ${to}`,
+        `Subject: ${subject}`,
+        'MIME-Version: 1.0',
+        'Content-Type: text/plain; charset="UTF-8"',
+        'Content-Transfer-Encoding: 8bit',
+        '',
+        messageBody,
+      ].join('\r\n');
+      const sent=await gmailConnected(connection,'/messages/send',{
+        method:'POST',
+        body:JSON.stringify({raw:encodeBase64Url(raw)}),
+      });
+      return json({messageId:String(sent?.id??''),threadId:sent?.threadId?String(sent.threadId):null});
+    }
+
     if(action==='archive'){
       const threadId=requiredText(body?.threadId,'threadId',200);
       await gmailConnected(connection,`/threads/${encodeURIComponent(threadId)}/modify`,{
         method:'POST',
         body:JSON.stringify({removeLabelIds:['INBOX']}),
       });
+      return json({ok:true});
+    }
+
+    if(action==='star'){
+      const threadId=requiredText(body?.threadId,'threadId',200);
+      const starred=Boolean(body?.starred);
+      await gmailConnected(connection,`/threads/${encodeURIComponent(threadId)}/modify`,{
+        method:'POST',
+        body:JSON.stringify(starred?{addLabelIds:['STARRED']}:{removeLabelIds:['STARRED']}),
+      });
+      return json({ok:true});
+    }
+
+    if(action==='trash'){
+      const threadId=requiredText(body?.threadId,'threadId',200);
+      await gmailConnected(connection,`/threads/${encodeURIComponent(threadId)}/trash`,{method:'POST',body:'{}'});
       return json({ok:true});
     }
 
