@@ -11,7 +11,7 @@ parallel safe
 set search_path = ''
 as $$
   with value as (
-    select pg_catalog.lower(pg_catalog.btrim(pg_catalog.coalesce(p_app_id,''))) as app_id
+    select pg_catalog.lower(pg_catalog.btrim(coalesce(p_app_id,''))) as app_id
   )
   select case
     when app_id='' then null
