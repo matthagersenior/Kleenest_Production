@@ -120,9 +120,11 @@ if(screen.includes('refreshControl={<RefreshControl'))throw new Error('Explore p
 for(const token of [
   'destinationCardOpen',
   'Select destination marker',
-  'Discover places near destination',
+  'Refresh discovery near destination',
+  'Refresh nearby',
   'Add searched destination to route',
-])requireToken(screen,token,'Selectable destination marker/card');
+  'destinationPanel',
+])requireToken(screen,token,'Selectable compact destination marker/card');
 
 for(const token of [
   'const SEARCH_DESTINATION_GEOFENCE_RADIUS_M=150;',
