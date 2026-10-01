@@ -132,7 +132,7 @@ export default function Layout() {
     <Tabs.Screen name="demo" options={{href:null,title:'Guided Demo'}}/>
     <Tabs.Screen name="profile" options={{href:null,title:'Profile'}}/>
     <Tabs.Screen name="members" options={{href:null,title:'People & Roles'}}/>
-    <Tabs.Screen name="assistant" options={{href:null,title:'Kleenest AI'}}/>
+    <Tabs.Screen name="assistant" options={{href:null,title:'Decision Support'}}/>
     <Tabs.Screen name="reviews" options={{href:null,title:'Reviews'}}/>
     <Tabs.Screen name="qr-studio" options={{href:null,title:'QR Studio'}}/>
     <Tabs.Screen name="qr-designer" options={{href:null,title:'QR Designer'}}/>
