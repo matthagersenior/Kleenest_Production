@@ -1088,6 +1088,9 @@ export default function AdaptiveExploreScreen() {
     const id = idOf(row);
     if (!id) return;
     captureConsumerRouteIntent(id);
+    const routeStart=mode==='route'&&Array.isArray(route?.originCoordinates)
+      ? route.originCoordinates
+      : searchAreaOrigin||origin;
     router.push({
       pathname: '/route',
       params: {
@@ -1096,6 +1099,11 @@ export default function AdaptiveExploreScreen() {
         addAddress: String(row?.address || ''),
         addCity: String(row?.city || ''),
         addState: String(row?.state || ''),
+        ...(routeStart?{
+          startLng:String(routeStart[0]),
+          startLat:String(routeStart[1]),
+          startLabel:mode==='route'?'Route start':searchAreaLabel||'Selected discovery area',
+        }:{}),
       },
     });
   }
