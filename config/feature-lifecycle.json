@@ -1011,6 +1011,14 @@
       "kind": "user",
       "status": "legacy-unverified",
       "gap": "Fleet nearby/relief discovery exists in product surfaces, but the complete operational flow is not yet lifecycle-certified."
+    },
+    {
+      "id": "consumer.ambient-intelligence",
+      "product": "consumer",
+      "capability": "ambient-intelligence",
+      "kind": "user",
+      "status": "wired",
+      "gap": "Natural-language intent is being wired into existing Explore, route, match explanation, and review flows. It is not live until the full user journey, graceful fallback, production deployment, and production-equivalent verification are complete."
     }
   ]
 }
