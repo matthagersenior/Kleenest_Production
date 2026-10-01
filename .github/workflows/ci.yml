@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Require PR branch current with main
+      - name: Report PR/main divergence
         if: github.event_name == 'pull_request'
         env:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -31,11 +32,11 @@ jobs:
           git fetch --no-tags origin main:refs/remotes/origin/main
           git fetch --no-tags origin "$PR_HEAD_SHA"
           MAIN_SHA="$(git rev-parse origin/main)"
-          if ! git merge-base --is-ancestor "$MAIN_SHA" "$PR_HEAD_SHA"; then
-            echo "::error title=PR branch behind main::Update this PR branch onto current main before merge. main=$MAIN_SHA head=$PR_HEAD_SHA"
-            exit 1
+          if git merge-base --is-ancestor "$MAIN_SHA" "$PR_HEAD_SHA"; then
+            echo "PR head contains current main: $MAIN_SHA"
+          else
+            echo "::notice title=PR branch behind main::main advanced after this branch was created. CI will validate the PR as-is; the completion guard will update the branch only if GitHub requires it for merge."
           fi
-          echo "PR head contains current main: $MAIN_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: 22

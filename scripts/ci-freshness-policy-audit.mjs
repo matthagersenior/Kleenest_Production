@@ -45,8 +45,9 @@ const ci = read('ci.yml');
 requireText(ci, 'node scripts/npm-security-advisory-audit.mjs moderate', 'Production CI must reject every published moderate-or-higher dependency advisory through the fail-closed npm/OSV advisory check.');
 requireText(ci, 'node scripts/ci-freshness-policy-audit.mjs', 'Production CI must enforce its own freshness policy.');
 requireText(ci, 'fetch-depth: 0', 'Production CI must fetch enough history to prove PR ancestry.');
-requireText(ci, 'Require PR branch current with main', 'Production CI must reject PR branches that drift behind main.');
-requireText(ci, 'git merge-base --is-ancestor', 'Production CI must prove the PR head contains current main before merge.');
+requireText(ci, 'Report PR/main divergence', 'Production CI must expose PR/main divergence without duplicating the repository merge-rule gate.');
+requireText(ci, 'git merge-base --is-ancestor', 'Production CI must detect whether the PR head contains current main.');
+if (ci.includes('exit 1') && ci.includes('PR branch behind main')) throw new Error('Production CI must not fail solely because main advanced; repository rules and the completion guard own branch freshness.');
 
 const branchHygiene = read('branch-hygiene.yml');
 for (const token of ['pull_request:','types: [closed]','push:','branches: [main]','contents: write','Delete merged pull-request branch','Remove historical branches still pinned to merged PR heads','github.event.pull_request.merged == true']) {
