@@ -12,6 +12,12 @@ const webAi=read('src/services/aiAssist.js');
 const webExplore=read('src/runtime/ExplorePage.jsx');
 const webRoute=read('src/runtime/RoutePage.jsx');
 const webLocation=read('src/runtime/LocationPage.jsx');
+const progress=read('apps/consumer-mobile/app/progress.tsx');
+const week=read('apps/consumer-mobile/app/week-in-review.tsx');
+const webWeek=read('src/runtime/WeekInReviewPage.jsx');
+const businessAi=read('apps/business-mobile/services/ai.ts');
+const businessHome=read('apps/business-mobile/app/index.tsx');
+const webBusiness=read('src/runtime/BusinessWorkspacePage.jsx');
 
 for(const provider of ['cloudflare','groq','openrouter','gemini','openai']){
   assert.match(edge,new RegExp(provider,'i'),`ai-assist must support ${provider}`);
@@ -30,5 +36,11 @@ assert.match(webAi,/invokeOrganicAi/,'web consumer service must expose guest-saf
 assert.match(webExplore,/organicExploreReason/,'web Explore must surface organic decision context');
 assert.match(webRoute,/organicRouteSummary/,'web Route must surface organic route guidance');
 assert.match(webLocation,/organicPlaceSummary/,'web location details must surface organic place summary');
+assert.match(progress,/organicMissionSuggestion/,'Progress must surface an organic next-move explanation');
+assert.match(week,/organicWeeklyRecap/,'native Week in Review must surface an organic recap');
+assert.match(webWeek,/organicWeeklyRecap/,'web Week in Review must surface an organic recap');
+assert.match(businessAi,/business_insight/,'business AI contract must include business_insight');
+assert.match(businessHome,/runOrganicBusinessInsight/,'Business home must surface an organic business signal');
+assert.match(webBusiness,/organicBusinessInsight/,'web Business workspace must surface an organic business signal');
 
 console.log('organic-ai-assist-audit: ok');
