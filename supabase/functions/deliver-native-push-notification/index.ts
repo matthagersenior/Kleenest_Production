@@ -133,9 +133,9 @@ Deno.serve(async(req)=>{
     const message=error instanceof Error?error.message:String(error);
     if(notificationId&&pending.length){
       const now=new Date().toISOString();
-      await Promise.all(pending.map(claim=>supabase.from('notification_native_push_deliveries')
+      await Promise.all(pending.map(token=>supabase.from('notification_native_push_deliveries')
         .update({status:'failed',last_error:message.slice(0,1000),updated_at:now})
-        .eq('id',claim.id)));
+        .eq('id',token.id)));
     }
     return json({error:message},500);
   }
