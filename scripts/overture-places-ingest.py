@@ -16,6 +16,7 @@ import json
 import math
 import os
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -32,7 +33,20 @@ def utc_now() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def http_json(method: str, url: str, *, key: str | None = None, body: Any = None) -> Any:
+def http_retry_attempts(method: str, retries: int) -> int:
+    return 1 + max(0, int(retries)) if method.upper() == "GET" else 1
+
+
+def http_json(
+    method: str,
+    url: str,
+    *,
+    key: str | None = None,
+    body: Any = None,
+    retries: int = 0,
+    timeout: int = 90,
+    backoff_seconds: float = 1.0,
+) -> Any:
     headers = {"Accept": "application/json", "User-Agent": "Kleenest/1.0 Overture ingestion"}
     if key:
         headers["apikey"] = key
@@ -41,14 +55,30 @@ def http_json(method: str, url: str, *, key: str | None = None, body: Any = None
     if body is not None:
         headers["Content-Type"] = "application/json"
         data = json.dumps(body, separators=(",", ":")).encode("utf-8")
-    request = urllib.request.Request(url, data=data, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(request, timeout=90) as response:
-            payload = response.read()
-            return json.loads(payload.decode("utf-8")) if payload else None
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")[:1500]
-        raise RuntimeError(f"HTTP {exc.code} for {url}: {detail}") from exc
+
+    attempts = http_retry_attempts(method, retries)
+    for attempt in range(attempts):
+        request = urllib.request.Request(url, data=data, headers=headers, method=method)
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                payload = response.read()
+                return json.loads(payload.decode("utf-8")) if payload else None
+        except urllib.error.HTTPError as exc:
+            retryable = method.upper() == "GET" and (exc.code == 429 or exc.code >= 500)
+            if retryable and attempt + 1 < attempts:
+                if backoff_seconds > 0:
+                    time.sleep(backoff_seconds * (2 ** attempt))
+                continue
+            detail = exc.read().decode("utf-8", errors="replace")[:1500]
+            raise RuntimeError(f"HTTP {exc.code} for {url}: {detail}") from exc
+        except (TimeoutError, urllib.error.URLError) as exc:
+            if method.upper() == "GET" and attempt + 1 < attempts:
+                if backoff_seconds > 0:
+                    time.sleep(backoff_seconds * (2 ** attempt))
+                continue
+            raise RuntimeError(f"{method.upper()} request failed for {url}: {exc}") from exc
+
+    raise RuntimeError(f"{method.upper()} request exhausted retries for {url}")
 
 
 def latest_release() -> str:
@@ -252,7 +282,7 @@ def queue_rows(url: str, key: str, limit: int) -> list[dict[str, Any]]:
         safe="(),.",
     )
     endpoint = f"{url.rstrip('/')}/rest/v1/place_discovery_hydration_queue?{query}"
-    data = http_json("GET", endpoint, key=key)
+    data = http_json("GET", endpoint, key=key, retries=2, timeout=30, backoff_seconds=1.0)
     return data if isinstance(data, list) else []
 
 
