@@ -226,6 +226,7 @@ console.log('Consumer adaptive nearby and route-aware discovered-place authority
 // Consumer searches must expose live-discovered places in the same search session,
 // while discovery itself teaches Kleenest about those places for future searches.
 const allPlacesFn=core.slice(core.indexOf('export async function findAdaptiveNearbyPlaces'),core.indexOf("export type RouteDiscoveryCategory"));
-for(const token of ['mergeDiscoveredPlaceRows','canonical_pending','harvest?.locations'])requireToken(allPlacesFn,token,'Same-search live place discovery');
+for(const token of ['mergeDiscoveredPlaceRows','harvest?.locations'])requireToken(allPlacesFn,token,'Same-search live place discovery');
+for(const token of ['canonical_pending','discovered_unverified'])requireToken(core,token,'Live-discovered place trust state');
 if(allPlacesFn.includes('if(harvestPromise)void harvestPromise.catch(()=>{});'))throw new Error('All-place consumer discovery must not hide live-discovered places behind a later search.');
 for(const token of ['EdgeRuntime.waitUntil','persist(allLocations)','canonical_persistence: "background"'])requireToken(liveDiscoveryEdge,token,'Background canonicalization of discovered places');
