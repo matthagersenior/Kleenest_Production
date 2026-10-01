@@ -104,12 +104,12 @@ function zoomForBounds(bounds: [number, number, number, number], width: number, 
   return 1;
 }
 
-function FallbackRaster() {
+function FallbackMapNotice() {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <View style={styles.fallbackBanner}>
         <Text style={styles.fallbackTitle}>Map preview unavailable</Text>
-        <Text style={styles.fallbackText}>The nearby place list is still available below.</Text>
+        <Text style={styles.fallbackText}>Map controls and search remain available.</Text>
       </View>
     </View>
   );
@@ -220,7 +220,7 @@ export function Map({ children, style, mapStyle }: any) {
     >
       <div ref={hostRef} style={{ position: 'absolute', inset: 0, display: fallback ? 'none' : 'block' }} />
       <MapContext.Provider value={{ map, fallback, viewport, setViewport }}>
-        {fallback ? <FallbackRaster /> : null}
+        {fallback ? <FallbackMapNotice /> : null}
         {children}
       </MapContext.Provider>
     </View>
