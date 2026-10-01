@@ -73,6 +73,43 @@ function knownRestroomNegative(row:any){
 }
 function evidenceRow(row:any){return {...row,restroom_candidate_status:'restroom_evidence',needs_restroom_verification:false}}
 function candidateRow(row:any){return {...row,restroom_candidate_status:'needs_verification',needs_restroom_verification:true}}
+function normalizedPlaceName(value:any){return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ')}
+function placeDiscoveryKeys(row:any){
+  const keys:string[]=[];
+  const external=String(row?.source_external_id||row?.source_id||'').trim();
+  if(external)keys.push('external:'+external);
+  const latitude=Number(row?.latitude),longitude=Number(row?.longitude);
+  const name=normalizedPlaceName(row?.name||row?.brand||row?.brand_name);
+  if(name&&Number.isFinite(latitude)&&Number.isFinite(longitude))keys.push(`geo:${name}:${latitude.toFixed(4)}:${longitude.toFixed(4)}`);
+  return keys;
+}
+function discoveryDistanceMeters(latitude:number,longitude:number,row:any){
+  const rowLatitude=Number(row?.latitude),rowLongitude=Number(row?.longitude);
+  if(!Number.isFinite(rowLatitude)||!Number.isFinite(rowLongitude))return Number.POSITIVE_INFINITY;
+  const toRadians=(value:number)=>value*Math.PI/180;
+  const dLat=toRadians(rowLatitude-latitude),dLng=toRadians(rowLongitude-longitude);
+  const a=Math.sin(dLat/2)**2+Math.cos(toRadians(latitude))*Math.cos(toRadians(rowLatitude))*Math.sin(dLng/2)**2;
+  return 6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+export function mergeDiscoveredPlaceRows(canonicalRows:any[],liveRows:any[],limit=2000,origin?:{latitude:number;longitude:number}){
+  const max=Math.max(1,Math.min(2000,Math.round(limit||2000)));
+  const selected:any[]=[];
+  const seen=new Set<string>();
+  for(const row of canonicalRows||[]){
+    selected.push({...row,canonical_pending:false});
+    for(const key of placeDiscoveryKeys(row))seen.add(key);
+  }
+  for(const row of liveRows||[]){
+    const keys=placeDiscoveryKeys(row);
+    if(keys.some(key=>seen.has(key)))continue;
+    const existingDistance=Number(row?.distance_meters);
+    const distanceMeters=Number.isFinite(existingDistance)?existingDistance:(origin?discoveryDistanceMeters(origin.latitude,origin.longitude,row):Number.POSITIVE_INFINITY);
+    const pending={...row,distance_meters:distanceMeters,canonical_pending:true,discovery_state:'discovered_unverified'};
+    selected.push(pending);
+    for(const key of keys)seen.add(key);
+  }
+  return selected.sort((a,b)=>distanceOf(a)-distanceOf(b)).slice(0,max);
+}
 
 export function mergeNearbyDiscoveryRows(restroomRows:any[],candidateRows:any[],limit=500){
   const max=Math.max(1,Math.min(500,Math.round(limit||500)));
@@ -272,6 +309,24 @@ export async function findAdaptiveNearbyPlaces(input:{latitude:number;longitude:
     densityClass,
     resultCount:rows.length,
   };
+}
+
+export async function refreshNearbyPlaceInventory(input:{latitude:number;longitude:number;radiusMeters:number;search?:string;limit?:number}){
+  const latitude=Number(input.latitude),longitude=Number(input.longitude);
+  boundedCoordinate(latitude,longitude);
+  const radiusMeters=boundedRadius(input.radiusMeters);
+  const limit=Math.max(1,Math.min(2000,Math.round(input.limit||2000)));
+  const liveRadiusMeters=Math.min(radiusMeters,LIVE_DISCOVERY_RADIUS_METERS);
+  const [canonicalRows,harvest]=await Promise.all([
+    listNearbyMapCandidates({latitude,longitude,radiusMeters,search:input.search,limit}),
+    harvestNearbyMapCandidates({latitude,longitude,radiusMeters:liveRadiusMeters,amenityNames:[]}).catch(()=>null),
+  ]);
+  return mergeDiscoveredPlaceRows(
+    canonicalRows,
+    Array.isArray(harvest?.locations)?harvest.locations:[],
+    limit,
+    {latitude,longitude},
+  );
 }
 
 export type RouteDiscoveryCategory='restroom'|'all';
