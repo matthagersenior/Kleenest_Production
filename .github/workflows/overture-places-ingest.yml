@@ -16,6 +16,9 @@ on:
         required: false
         default: '4'
         type: string
+  workflow_run:
+    workflows: ["Production CI"]
+    types: [completed]
   schedule:
     - cron: '*/15 * * * *'
 
@@ -28,6 +31,7 @@ concurrency:
 
 jobs:
   ingest:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
