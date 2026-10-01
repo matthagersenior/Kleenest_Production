@@ -34,6 +34,10 @@ def utc_now() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def http_retry_attempts(method: str, *, retries: int = 2) -> int:
+    return 1 + max(0, int(retries)) if method.upper() == "GET" else 1
+
+
 def http_json(method: str, url: str, *, key: str | None = None, body: Any = None) -> Any:
     headers = {"Accept": "application/json", "User-Agent": "Kleenest/1.0 Overture ingestion"}
     if key:
@@ -45,7 +49,7 @@ def http_json(method: str, url: str, *, key: str | None = None, body: Any = None
         data = json.dumps(body, separators=(",", ":")).encode("utf-8")
 
     normalized_method = method.upper()
-    max_attempts = 3 if normalized_method == "GET" else 1
+    max_attempts = http_retry_attempts(normalized_method, retries=2)
     retryable_statuses = {408, 425, 429, 500, 502, 503, 504}
     for attempt in range(1, max_attempts + 1):
         request = urllib.request.Request(url, data=data, headers=headers, method=normalized_method)
@@ -378,6 +382,8 @@ def self_test() -> None:
     assert row and row["source_id"] == "overture:gers-1"
     assert row["place_type"] == "restaurant"
     assert row["state"] == "MO"
+    assert http_retry_attempts("GET", retries=2) == 3
+    assert http_retry_attempts("POST", retries=2) == 1
     print("Overture ingestion self-test passed.")
 
 
