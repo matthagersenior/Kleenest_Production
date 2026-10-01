@@ -64,7 +64,7 @@ requireAll('Owner Gmail native callback relay',oauthRelay,[
   'OPERATOR_OAUTH_MAX_AGE_MS',
 ]);
 requireAll('Owner email workflow UI',screen,[
-  'Search mail',
+  'Search this Kleenest view',
   'Unread',
   'Refresh',
   'Reply',
@@ -86,6 +86,16 @@ requireAll('Owner email workflow UI',screen,[
   'setOwnerMailThreadStarred',
   'trashOwnerMailThread',
   'sendOwnerMail',
+  'Reply all',
+  'Forward',
+  'Move to inbox',
+  'Cc (optional)',
+  'Bcc (optional)',
+  'Attachments',
+  'Kleenest labels',
+  'setOwnerMailThreadInbox',
+  'setOwnerMailThreadLabel',
+  'forwardOwnerMailThread',
 ]);
 requireAll('Owner email client boundary',service,[
   "functions.invoke('owner-email-gateway'",
@@ -104,6 +114,12 @@ requireAll('Owner email client boundary',service,[
   "action:'trash'",
   'mailbox:input.mailbox',
   'direction:input.direction',
+  "action:'forward'",
+  "action:'set_inbox'",
+  "action:'set_label'",
+  'replyAll:Boolean(input.replyAll)',
+  'cc:input.cc',
+  'bcc:input.bcc',
 ]);
 must(!service.includes('gmail.googleapis.com'),'Owner mobile client must not call Gmail directly; Gmail access stays behind the server gateway.');
 must(!service.toLowerCase().includes('service_role'),'Owner mobile client must never contain a Supabase service role key.');
@@ -146,6 +162,13 @@ requireAll('Owner email gateway capabilities',gateway,[
   '/trash',
   "mailbox==='sent'",
   "direction==='outgoing'",
+  "action==='forward'",
+  "action==='set_inbox'",
+  "action==='set_label'",
+  'attachmentsOf',
+  "emailsFromHeader",
+  "Cc: ${additional.join(', ')}",
+  "gmailConnected(connection,'/labels')",
 ]);
 requireAll('Owner Gmail persistence migration',gmailPersistence,[
   'create table if not exists public.owner_gmail_connections',
