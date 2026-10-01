@@ -14,7 +14,8 @@ const workflow='.github/workflows/overture-places-ingest.yml';
 const core='packages/mobile-core/src/adaptiveDiscovery.ts';
 
 for(const token of [
-  "source_key,'overture'",
+  'insert into public.external_data_sources',
+  "'overture'",
   'Overture Maps Places',
   'national_ingestion_source_policies',
   'place_discovery_hydration_queue',
