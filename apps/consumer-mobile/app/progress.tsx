@@ -11,6 +11,7 @@ import { SponsoredSlot } from '../components/SponsoredSlot';
 import { AdMobNativeSlot } from '../components/AdMobNativeSlot';
 import { badgeCollectionTier,divisionForXp,divisionProgress,nextDivisionForXp } from '../services/engagementMetaGame';
 import { useConsumerTheme } from '../services/theme';
+import { organicMissionSuggestion } from '../services/aiAssist';
 
 const KINDS=['quest','mission','challenge','journey','campaign','contest'] as const;
 const KIND_LABEL:Record<string,string>={quest:'Quests',mission:'Missions',challenge:'Challenges',journey:'Journeys',campaign:'Campaigns',contest:'Contests'};
@@ -76,7 +77,7 @@ export default function ProgressScreen(){
  const systemScheme=useColorScheme();
  const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
  const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','progress');
- const[overview,setOverview]=useState<any>({}),[world,setWorld]=useState<any>({}),[dashboard,setDashboard]=useState<any>({}),[rewards,setRewards]=useState<any[]>([]),[objectives,setObjectives]=useState<any[]>([]),[rankings,setRankings]=useState<any[]>([]),[opportunities,setOpportunities]=useState<any[]>([]),[activeMission,setActiveMission]=useState<TrustMission|null>(null),[rankScope,setRankScope]=useState('global'),[loading,setLoading]=useState(false),[message,setMessage]=useState('');
+ const[overview,setOverview]=useState<any>({}),[world,setWorld]=useState<any>({}),[dashboard,setDashboard]=useState<any>({}),[rewards,setRewards]=useState<any[]>([]),[objectives,setObjectives]=useState<any[]>([]),[rankings,setRankings]=useState<any[]>([]),[opportunities,setOpportunities]=useState<any[]>([]),[activeMission,setActiveMission]=useState<TrustMission|null>(null),[rankScope,setRankScope]=useState('global'),[loading,setLoading]=useState(false),[message,setMessage]=useState(''),[nextMoveBrief,setNextMoveBrief]=useState('');
  const[openSection,setOpenSection]=useState<ProgressSectionKey>('next');
  async function load(scope=rankScope){
   setLoading(true);setMessage('');
@@ -96,6 +97,7 @@ export default function ProgressScreen(){
  useEffect(()=>{let active=true;void loadKleenestThemeMode().then(mode=>{if(active)setThemeMode(mode)});const unsubscribe=subscribeKleenestTheme(mode=>{if(active)setThemeMode(mode)});return()=>{active=false;unsubscribe()}},[]);
  useEffect(()=>{let active=true;void AsyncStorage.getItem(PROGRESSION_SECTIONS_KEY).then(value=>{if(active&&['next','missions','season','rewards','rankings'].includes(String(value)))setOpenSection(value as ProgressSectionKey)}).catch(()=>{});return()=>{active=false}},[]);
  useEffect(()=>{void load()},[]);
+ useEffect(()=>{let active=true;const candidate=opportunities[0]||objectives[0]||null;if(!candidate){setNextMoveBrief('');return()=>{active=false}};void organicMissionSuggestion(candidate,{lifetime_xp:Number(overview?.lifetime_xp||0),global_level:overview?.global_level,contributor_trust:world?.contributor_trust}).then(answer=>{if(active)setNextMoveBrief(answer)}).catch(()=>{});return()=>{active=false}},[opportunities,objectives,overview?.lifetime_xp,overview?.global_level?.level,world?.contributor_trust?.rank]);
  function selectSection(section:ProgressSectionKey){setOpenSection(section);void AsyncStorage.setItem(PROGRESSION_SECTIONS_KEY,section).catch(()=>{})}
  async function changeScope(scope:string){setRankScope(scope);await load(scope)}
  async function clearActiveMission(){try{await clearTrustMission();setActiveMission(null);setMessage('Trust mission cleared.')}catch(error:any){setMessage(error?.message||'Trust mission could not be cleared.')}}
@@ -156,7 +158,7 @@ export default function ProgressScreen(){
    <Text style={s.heroMeta}>{nextThreshold>totalXp?(nextThreshold-totalXp).toLocaleString()+' XP to Level '+Number((level.level||1)+1):'Current top threshold reached'}{level.unlock_text?' · '+level.unlock_text:''}</Text>
   </View>
 
-  
+  {nextMoveBrief?<View style={[s.worldPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.worldKicker,{color:theme.accent}]}>GOOD NEXT MOVE</Text><Text style={[s.body,{color:theme.ink,fontWeight:'800'}]}>{nextMoveBrief}</Text><Text style={[s.meta,{color:theme.muted}]}>Based on an opportunity Kleenest already selected from your live progression state; rewards and eligibility are not changed by this explanation.</Text></View>:null}
 
   <View style={s.actions}><Pressable accessibilityRole="button" accessibilityLabel="Find useful work nearby" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>router.push('/discover')}><Text style={[s.primaryText,{color:theme.accentText}]}>Find useful work nearby</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open Game Center" style={[s.secondary,s.topActionSecondary,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/games')}><Text style={[s.secondaryText,{color:theme.accent}]}>Game Center</Text></Pressable></View>
   <View style={s.rewardToolsRow}><Pressable accessibilityRole="button" accessibilityLabel="Open progression reward toolkit" style={[s.secondary,s.rewardToolsButton,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/reward-tools')}><Text style={[s.secondaryText,{color:theme.accent}]}>Reward Toolkit</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open Kleenest Passport" style={[s.secondary,s.rewardToolsButton,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push('/passport')}><Text style={[s.secondaryText,{color:theme.accent}]}>Kleenest Passport</Text></Pressable></View>
