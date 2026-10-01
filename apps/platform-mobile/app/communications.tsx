@@ -10,11 +10,14 @@ import { getOwnerAuthorization } from '../services/ownerAdmin';
 import {
   archiveOwnerMailThread,
   connectOwnerMail,
+  forwardOwnerMailThread,
   getOwnerMailStatus,
   getOwnerMailThread,
   listOwnerMailThreads,
   replyOwnerMailThread,
   sendOwnerMail,
+  setOwnerMailThreadInbox,
+  setOwnerMailThreadLabel,
   setOwnerMailThreadRead,
   setOwnerMailThreadStarred,
   trashOwnerMailThread,
@@ -87,8 +90,13 @@ export default function Communications(){
   const[replyBody,setReplyBody]=useState('');
   const[composeOpen,setComposeOpen]=useState(false);
   const[composeTo,setComposeTo]=useState('');
+  const[composeCc,setComposeCc]=useState('');
+  const[composeBcc,setComposeBcc]=useState('');
   const[composeSubject,setComposeSubject]=useState('');
   const[composeBody,setComposeBody]=useState('');
+  const[forwardOpen,setForwardOpen]=useState(false);
+  const[forwardTo,setForwardTo]=useState('');
+  const[forwardBody,setForwardBody]=useState('');
   const[busy,setBusy]=useState(false);
   const[notice,setNotice]=useState('');
   const[searching,setSearching]=useState(false);
@@ -246,15 +254,15 @@ export default function Communications(){
     finally{setBusy(false)}
   }
 
-  async function sendReply(){
+  async function sendReply(replyAll=false){
     if(!selected||!replyBody.trim())return;
     setBusy(true);
     try{
-      await replyOwnerMailThread({threadId:selected.id,body:replyBody});
+      await replyOwnerMailThread({threadId:selected.id,body:replyBody,replyAll});
       setReplyBody('');
       const result=await getOwnerMailThread(selected.id);
       setSelected(result.thread);
-      setNotice('Reply sent from Gmail.');
+      setNotice(replyAll?'Reply all sent from Gmail.':'Reply sent from Gmail.');
       await load();
     }catch(error:any){setNotice(String(error?.message||'Reply could not be sent.'))}
     finally{setBusy(false)}
@@ -308,14 +316,47 @@ export default function Communications(){
     if(!composeTo.trim()||!composeSubject.trim()||!composeBody.trim())return;
     setBusy(true);
     try{
-      await sendOwnerMail({to:composeTo,subject:composeSubject,body:composeBody});
-      setComposeTo('');setComposeSubject('');setComposeBody('');setComposeOpen(false);
+      await sendOwnerMail({to:composeTo,cc:composeCc,bcc:composeBcc,subject:composeSubject,body:composeBody});
+      setComposeTo('');setComposeCc('');setComposeBcc('');setComposeSubject('');setComposeBody('');setComposeOpen(false);
       setNotice('Email sent from Gmail.');
       await load();
     }catch(error:any){setNotice(String(error?.message||'Email could not be sent.'))}
     finally{setBusy(false)}
   }
 
+  async function sendForward(){
+    if(!selected||!forwardTo.trim())return;
+    setBusy(true);
+    try{
+      await forwardOwnerMailThread({threadId:selected.id,to:forwardTo,body:forwardBody});
+      setForwardOpen(false);setForwardTo('');setForwardBody('');
+      setNotice('Message forwarded from Gmail. Attachments remain available through Open Gmail.');
+      await load();
+    }catch(error:any){setNotice(String(error?.message||'Forward could not be sent.'))}
+    finally{setBusy(false)}
+  }
+
+  async function setInboxState(threadId:string,inInbox:boolean){
+    setBusy(true);
+    try{
+      await setOwnerMailThreadInbox(threadId,inInbox);
+      setThreads(current=>current.map(item=>item.id===threadId?{...item,inInbox}:item));
+      if(selected?.id===threadId)setSelected(current=>current?{...current,inInbox}:current);
+      setNotice(inInbox?'Conversation moved to Inbox.':'Conversation archived in Gmail.');
+    }catch(error:any){setNotice(String(error?.message||'Inbox state could not be updated.'))}
+    finally{setBusy(false)}
+  }
+
+  async function setThreadLabel(labelName:string,applied:boolean){
+    if(!selected)return;
+    setBusy(true);
+    try{
+      await setOwnerMailThreadLabel(selected.id,labelName,applied);
+      setSelected(current=>current?{...current,labelNames:applied?[...new Set([...current.labelNames,labelName])]:current.labelNames.filter(name=>name!==labelName)}:current);
+      setNotice(applied?'Gmail label added.':'Gmail label removed.');
+    }catch(error:any){setNotice(String(error?.message||'Label could not be updated.'))}
+    finally{setBusy(false)}
+  }
   function openInGmail(threadId:string){
     const account=status?.emailAddress?'?authuser='+encodeURIComponent(status.emailAddress):'';
     void Linking.openURL('https://mail.google.com/mail/u/'+account+'#all/'+encodeURIComponent(threadId));
