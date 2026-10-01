@@ -51,6 +51,8 @@ jobs:
       - name: Dependency advisory gate
         timeout-minutes: 5
         run: node scripts/npm-security-advisory-audit.mjs moderate
+      - name: Overture ingestion self-test
+        run: python3 scripts/overture-places-ingest.py --self-test
       - name: Resolve latest Consumer APK baseline
         id: consumer-apk-baseline
         continue-on-error: true
