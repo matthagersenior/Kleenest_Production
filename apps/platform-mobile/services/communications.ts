@@ -18,6 +18,8 @@ export type OwnerMailThreadSummary={
   date:string|null;
   unread:boolean;
   inInbox:boolean;
+  latestSent:boolean;
+  starred:boolean;
   messageCount:number;
 };
 
@@ -86,12 +88,20 @@ export function getOwnerMailStatus(){
   return invoke<OwnerMailConnectionStatus>({action:'status'});
 }
 
-export function listOwnerMailThreads(input:{query?:string;unreadOnly?:boolean;maxResults?:number}={}){
+export function listOwnerMailThreads(input:{
+  query?:string;
+  unreadOnly?:boolean;
+  maxResults?:number;
+  mailbox?:'inbox'|'sent'|'all';
+  direction?:'any'|'incoming'|'outgoing';
+}={}){
   return invoke<{threads:OwnerMailThreadSummary[];nextPageToken:string|null}>({
     action:'list_threads',
     query:input.query?.trim()||'',
     unreadOnly:Boolean(input.unreadOnly),
-    maxResults:Math.min(Math.max(input.maxResults||30,1),50),
+    maxResults:Math.min(Math.max(input.maxResults||50,1),100),
+    mailbox:input.mailbox||'inbox',
+    direction:input.direction||'any',
   });
 }
 
@@ -113,4 +123,22 @@ export function archiveOwnerMailThread(threadId:string){
 
 export function setOwnerMailThreadRead(threadId:string,read:boolean){
   return invoke<{ok:true}>({action:'set_read',threadId,read});
+}
+
+
+export function sendOwnerMail(input:{to:string;subject:string;body:string}){
+  return invoke<{messageId:string;threadId:string|null}>({
+    action:'send',
+    to:input.to.trim(),
+    subject:input.subject.trim(),
+    body:input.body.trim(),
+  });
+}
+
+export function setOwnerMailThreadStarred(threadId:string,starred:boolean){
+  return invoke<{ok:true}>({action:'star',threadId,starred});
+}
+
+export function trashOwnerMailThread(threadId:string){
+  return invoke<{ok:true}>({action:'trash',threadId});
 }
