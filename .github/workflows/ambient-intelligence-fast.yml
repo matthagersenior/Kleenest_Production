@@ -1,0 +1,37 @@
+name: Ambient Intelligence Fast
+
+on:
+  pull_request:
+    paths:
+      - 'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx'
+      - 'apps/consumer-mobile/services/discoveryIntent.ts'
+      - 'apps/consumer-mobile/services/aiAssist.ts'
+      - 'apps/consumer-mobile/app/location/**'
+      - 'supabase/functions/consumer-search-intent/**'
+      - 'scripts/consumer-qa-regressions.test.mjs'\n      - 'scripts/ambient-discovery-intent.test.mjs'
+      - 'scripts/ambient-intelligence-product-audit.mjs'
+      - '.github/workflows/ambient-intelligence-fast.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Consumer discovery regression
+        run: node --test scripts/consumer-qa-regressions.test.mjs
+      - name: Discovery intent unit contract\n        run: node --test scripts/ambient-discovery-intent.test.mjs\n      - name: Ambient product-shape audit
+        run: |
+          if [ -f scripts/ambient-intelligence-product-audit.mjs ]; then
+            node scripts/ambient-intelligence-product-audit.mjs
+          fi
+      - name: Consumer native typecheck
+        run: npm run native:typecheck

@@ -6,6 +6,7 @@ import { useConsumerTheme } from '../services/theme';
 import { getWeekInReview,type WeekInReviewSummary,type WeekInReviewVisit } from '../services/weekInReview';
 import { chooseReviewPhotos,uploadReviewPhotos } from '../services/reviewPhotos';
 import { getProgressionWorld } from '../services/discoveryProgression';
+import { organicWeeklyRecap } from '../services/aiAssist';
 
 function visitState(item:WeekInReviewVisit){
   if(item.reviewId&&item.photoOpen){const remaining=Math.max(1,3-item.reviewPhotoCount);return{label:'REVIEWED · PHOTO OPTIONAL',detail:`Your review is complete. You can still add ${remaining} photo${remaining===1?'':'s'} from this visit, and verified photo evidence can advance progression.`};}
@@ -19,8 +20,8 @@ function when(value:string){const time=new Date(value);return Number.isNaN(time.
 
 export default function WeekInReviewScreen(){
   const theme=useConsumerTheme();
-  const[summary,setSummary]=useState<WeekInReviewSummary|null>(null),[message,setMessage]=useState('Loading your week…'),[loading,setLoading]=useState(false),[photoBusy,setPhotoBusy]=useState('');
-  async function load(){if(loading)return;setLoading(true);try{const next=await getWeekInReview(7);setSummary(next);setMessage(next.visits.length?'':'No Kleenest visits in the last 7 days yet.')}catch(error:any){setMessage(error?.message||'Your week could not be loaded.')}finally{setLoading(false)}}
+  const[summary,setSummary]=useState<WeekInReviewSummary|null>(null),[message,setMessage]=useState('Loading your week…'),[loading,setLoading]=useState(false),[photoBusy,setPhotoBusy]=useState(''),[weekBrief,setWeekBrief]=useState('');
+  async function load(){if(loading)return;setLoading(true);try{const next=await getWeekInReview(7);setSummary(next);setMessage(next.visits.length?'':'No Kleenest visits in the last 7 days yet.');void organicWeeklyRecap(next).then(setWeekBrief).catch(()=>{})}catch(error:any){setMessage(error?.message||'Your week could not be loaded.')}finally{setLoading(false)}}
   useEffect(()=>{void load()},[]);
   async function addPreviousVisitPhotos(item:WeekInReviewVisit){
     if(!item.reviewId||photoBusy)return;
@@ -42,6 +43,7 @@ export default function WeekInReviewScreen(){
   const rows=summary?.visits||[];
   return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><FlatList data={rows} refreshControl={<RefreshControl refreshing={loading} onRefresh={load}/>} keyExtractor={item=>item.visitId} contentContainerStyle={s.list} ListHeaderComponent={<>
     <View style={[s.hero,{backgroundColor:theme.accent}]}><Text style={[s.eyebrow,{color:theme.accentText}]}>YOUR WEEK IN REVIEW</Text><Text style={[s.heroTitle,{color:theme.accentText}]}>Turn recent stops into fresh evidence.</Text><Text style={[s.heroBody,{color:theme.accentText}]}>Presence, verified check-ins and published reviews stay distinct. This recap shows what happened and what you can still contribute.</Text><TrustStrip items={['7-day recap','Photos can be added later','Visit proof stays attached']}/><View style={s.stats}><Stat value={summary?.placeCount||0} label="places" theme={theme}/><Stat value={summary?.reviewReadyCount||0} label="review ready" theme={theme}/><Stat value={summary?.photoOpenCount||0} label="photo ready" theme={theme}/></View></View>
+    {weekBrief?<View style={[s.boundary,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.eyebrow,{color:theme.accent}]}>YOUR RECAP</Text><Text style={[s.body,{color:theme.ink,fontWeight:'800'}]}>{weekBrief}</Text></View>:null}
     <View style={[s.boundary,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.boundaryTitle,{color:theme.ink}]}>Add photos after you leave.</Text><Text style={[s.body,{color:theme.muted}]}>If you already reviewed a verified visit, choose saved photos here without going back to the location. If a verified visit still needs its review, open it below, add the photos you already took, finish the two required scores, and publish when you have time.</Text></View>
     {message?<Text accessibilityLiveRegion="polite" style={[s.message,{color:theme.muted}]}>{message}</Text>:null}
   </>} ListEmptyComponent={<View style={[s.empty,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.cardTitle,{color:theme.ink}]}>{loading?'Refreshing your week…':'Nothing to review yet.'}</Text><Text style={[s.body,{color:theme.muted}]}>Explore nearby restrooms and Kleenest will build this recap from your own account-scoped visit history.</Text>{!loading?<Pressable accessibilityRole="button" accessibilityLabel="Explore bathrooms" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>router.push('/explore')}><Text style={[s.primaryText,{color:theme.accentText}]}>Explore bathrooms</Text></Pressable>:null}</View>} renderItem={({item})=>{

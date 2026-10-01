@@ -27,6 +27,7 @@ import { submitPriorKnowledgePhotos, type PriorKnowledgeRecency } from '../../se
 import { getRewardCapabilities } from '../../services/rewardRuntime';
 import { listProgressionIdentities } from '../../services/progressionIdentity';
 import { isPreciseLocationPermission, selectBestLocationFix } from '../../services/checkInLocationQuality.js';
+import { invokeConsumerAi, organicPlaceSummary } from '../../services/aiAssist';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, Platform, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -40,6 +41,11 @@ type CommunityPhoto=ReviewPhoto&{reviewId:string;reviewCreatedAt:string;helpfulC
 const RATING_CHOICES=[{score:1,label:'Poor'},{score:2,label:'Fair'},{score:3,label:'Good'},{score:4,label:'Very good'},{score:5,label:'Excellent'}] as const;
 const CLEANLINESS_CHOICES=[{score:0,label:'Unusable'},{score:25,label:'Needs work'},{score:50,label:'Average'},{score:75,label:'Clean'},{score:100,label:'Spotless'}] as const;
 
+function restroomIdentityLabel(place:any,facilities:any[]=[]){
+  const status=String(place?.bathroom_verification_status||place?.restroom_verification_status||'').trim().toLowerCase();
+  const verified=Boolean(place?.restroom_verified||place?.has_bathroom)||['has_bathroom','verified'].includes(status)||facilities.length>0;
+  return verified?'KLEENEST RESTROOM':'PLACE DETAILS · RESTROOM UNVERIFIED';
+}
 function ScoreTile({value,label,detail}:{value:string;label:string;detail?:string}){return <View style={s.scoreTile}><Text style={s.scoreValue}>{value}</Text><Text style={s.scoreLabel}>{label}</Text>{detail?<Text style={s.scoreDetail}>{detail}</Text>:null}</View>}
 const rich=StyleSheet.create({locationFacts:{backgroundColor:'#fff',padding:17,borderRadius:22,borderWidth:1,borderColor:palette.line,gap:11},identityRow:{flexDirection:'row',alignItems:'center',gap:12},businessLogo:{width:58,height:58,borderRadius:12,backgroundColor:'#f4f7f5'},factTitle:{fontSize:21,fontWeight:'900',color:palette.ink,marginTop:2},freshnessMeta:{fontSize:10,lineHeight:15,fontWeight:'800',marginTop:2},factBody:{fontSize:13,lineHeight:20,color:palette.muted,fontWeight:'700'},factGrid:{flexDirection:'row',gap:8,flexWrap:'wrap'},factAction:{flexGrow:1,minHeight:54,backgroundColor:'#edf3ef',padding:11,borderRadius:13},factActionLabel:{fontSize:8,fontWeight:'900',letterSpacing:1,color:'#557060'},factActionValue:{fontSize:12,fontWeight:'900',color:palette.green,marginTop:3},factSection:{borderTopWidth:1,borderTopColor:'#e6ece8',paddingTop:10,gap:3},factLabel:{fontSize:8,fontWeight:'900',letterSpacing:1.2,color:'#557060'},promotion:{backgroundColor:'#edf7f0',borderRadius:14,padding:12,gap:3},promotionTitle:{fontSize:16,fontWeight:'900',color:palette.green}});
 
@@ -50,7 +56,9 @@ export default function LocationDetailScreen(){
   const [place,setPlace]=useState<any>(null),[reviews,setReviews]=useState<any[]>([]),[communityPhotos,setCommunityPhotos]=useState<CommunityPhoto[]>([]),[message,setMessage]=useState(''),[checkInId,setCheckInId]=useState<string|null>(null),[checkInAt,setCheckInAt]=useState<string|null>(null),[presence,setPresence]=useState<ConsumerPresence|null>(null),[stars,setStars]=useState(''),[cleanliness,setCleanliness]=useState(''),[comment,setComment]=useState(''),[amenities,setAmenities]=useState<AmenityCatalogItem[]>([]),[amenityDraft,setAmenityDraft]=useState<Record<string,AmenityDraft>>({}),[reviewPhotos,setReviewPhotos]=useState<ReviewPhotoDraft[]>([]),[submitting,setSubmitting]=useState(false),[amenityRefresh,setAmenityRefresh]=useState(0),[photoRefresh,setPhotoRefresh]=useState(0),[activeMission,setActiveMission]=useState<TrustMission|null>(null),[draftHydrated,setDraftHydrated]=useState(false),[currentUserId,setCurrentUserId]=useState(''),[photoBusy,setPhotoBusy]=useState(''),[priorPhotoBusy,setPriorPhotoBusy]=useState(false),[previousVisitPhotoRecency,setPreviousVisitPhotoRecency]=useState<PriorKnowledgeRecency>('unknown'),[network,setNetwork]=useState<LocationNetworkStatus|null>(null);
   const [showEvidence,setShowEvidence]=useState(false),[submittedReviewId,setSubmittedReviewId]=useState<string|null>(null),[showMoreActions,setShowMoreActions]=useState(false),[showPlaceDetails,setShowPlaceDetails]=useState(false),[showAmenities,setShowAmenities]=useState(false),[showContribution,setShowContribution]=useState(reviewMode||missionMode),[showAllReviews,setShowAllReviews]=useState(false);
   const [facilities,setFacilities]=useState<RestroomFacility[]>([]),[selectedFacilityId,setSelectedFacilityId]=useState('');
+  const [phraseBusy,setPhraseBusy]=useState(false);
   const [rewardCapabilities,setRewardCapabilities]=useState<any>({});
+  const [placeBrief,setPlaceBrief]=useState('');
   const reviewListRef=useRef<FlatList<any>>(null),reviewScrollDone=useRef(false);
   const missionMatches=missionMode&&activeMission?.status==='active'&&activeMission.locationId===locationId;
   const missionRequirement=missionMatches?missionEvidenceRequirement(activeMission):null;
@@ -60,6 +68,7 @@ export default function LocationDetailScreen(){
   const checkInAnimation=String(rewardCapabilities?.equipped?.checkin_animation?.reward_key||'');
   async function refresh(){
     setMessage('');
+    setPlaceBrief('');
     recordBetaBreadcrumb('location_refresh',`/location/${locationId}`,'Loading live restroom details');
     try{
       const nextPlace=await getMobileLocation(locationId);
@@ -76,6 +85,8 @@ export default function LocationDetailScreen(){
       setPlace(nextNetwork?{...presented,network:nextNetwork,network_verified:nextNetwork.network_verified,business_claimed:nextNetwork.business_claimed,network_state:nextNetwork.network_state}:presented);
       const reviewerIdentities=await listProgressionIdentities(nextReviews.map((review:any)=>String(review.user_id||''))).catch(()=>({}));
       const enrichedReviews=nextReviews.map((review:any)=>({...review,progressionIdentity:(reviewerIdentities as any)[String(review.user_id)]||null,contributor:review.contributor?{...review.contributor,progressionIdentity:(reviewerIdentities as any)[String(review.user_id)]||null}:review.contributor}));
+      const organicPlace=nextNetwork?{...presented,network:nextNetwork,network_verified:nextNetwork.network_verified,business_claimed:nextNetwork.business_claimed,network_state:nextNetwork.network_state}:presented;
+      void organicPlaceSummary(organicPlace,enrichedReviews).then(setPlaceBrief).catch(()=>{});
       setCheckInId(eligible?.id||null);
       setCheckInAt(eligible?.checked_in_at||nextPresence?.entered_at||null);
       setPresence(nextPresence);
@@ -125,6 +136,36 @@ export default function LocationDetailScreen(){
   const selectedFacility=useMemo(()=>facilities.find(facility=>facility.id===selectedFacilityId)||null,[facilities,selectedFacilityId]);
   const facilityRequired=facilities.length>1&&!selectedFacilityId;
   const selectedAmenities=useMemo(()=>amenities.flatMap(amenity=>{const draft=amenityDraft[amenity.id];if(!draft?.selected)return[];return[{amenity_id:amenity.id,quantity:draft.quantity.trim()===''?null:Number(draft.quantity),sentiment:draft.sentiment}] as const}),[amenities,amenityDraft]);
+  async function phraseReview(){
+    if(!checkInId||!reviewScoresValid||phraseBusy)return;
+    const facility=selectedFacility?restroomFacilityLabel(selectedFacility):'';
+    const observedAmenities=selectedAmenities.flatMap(entry=>{
+      const amenity=amenities.find(item=>item.id===entry.amenity_id);
+      if(!amenity)return[];
+      const quantity=entry.quantity==null?'':' ('+String(entry.quantity)+')';
+      const condition=entry.sentiment==='needs_attention'?' — needs attention':'';
+      return[amenity.name+quantity+condition];
+    });
+    const previous=comment;
+    setPhraseBusy(true);
+    try{
+      const result=await invokeConsumerAi('visit_review',{
+        stars:Number(stars),
+        cleanliness:Number(cleanliness),
+        observation:[facility,...observedAmenities].filter(Boolean).join('; '),
+        note:comment,
+      },'Write a concise first-person review using only the visit details supplied. Do not add facts, assumptions, marketing language, or conditions the visitor did not enter.');
+      const draft=String(result.answer||'').trim();
+      if(draft)setComment(draft);
+      setMessage('Drafted from the visit details you entered. Edit anything you want before publishing.');
+    }catch{
+      setComment(previous);
+      setMessage('Could not help phrase this right now. Your review text is unchanged.');
+    }finally{
+      setPhraseBusy(false);
+    }
+  }
+
   const deferredPhotoReview=useMemo(()=>{
     const owned=reviews.filter((item:any)=>currentUserId&&String(item.user_id)===currentUserId&&Number(item.reviewPhotoCount||0)<3);
     if(photoReviewId)return owned.find((item:any)=>String(item.id)===photoReviewId)||null;
@@ -253,7 +294,7 @@ export default function LocationDetailScreen(){
   return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><FlatList ref={reviewListRef} data={showAllReviews?reviews:reviews.slice(0,2)} keyExtractor={(item)=>String(item.id)} contentContainerStyle={s.list} ListHeaderComponent={<>
     {place.consumer_photo_url?<View style={[s.officialPhotoCard,{backgroundColor:theme.surface,borderColor:theme.line}]}><Image source={{uri:String(place.consumer_photo_url)}} style={[s.officialPhoto,{backgroundColor:theme.surfaceRaised}]}/><View style={s.photoLabel}><Text style={s.photoLabelText}>COMMUNITY TRUST PHOTO</Text></View><Text style={[s.officialCaption,{color:theme.muted}]}>TRUSTED + FRESH · selected from recent community evidence by contributor trust.</Text></View>:null}
     <View style={[s.hero,{backgroundColor:theme.resolved==='dark'?theme.surfaceRaised:'#173d2b',borderColor:theme.resolved==='dark'?theme.line:'#173d2b',borderWidth:1}]}>
-      <View style={s.heroTop}><Pressable accessibilityRole="button" accessibilityLabel="Back" style={[s.backChip,{backgroundColor:theme.surface}]} onPress={()=>router.back()}><Text style={[s.backChipText,{color:theme.accent}]}>‹ BACK</Text></Pressable><Text style={s.heroEyebrow}>KLEENEST RESTROOM</Text></View>
+      <View style={s.heroTop}><Pressable accessibilityRole="button" accessibilityLabel="Back" style={[s.backChip,{backgroundColor:theme.surface}]} onPress={()=>router.back()}><Text style={[s.backChipText,{color:theme.accent}]}>‹ BACK</Text></Pressable><Text style={s.heroEyebrow}>{restroomIdentityLabel(place,facilities)}</Text></View>
       <Text style={s.heroTitle}>{place.name||'Restroom location'}</Text><Text style={s.heroAddress}>{address||'Address unavailable'}</Text>
       <TrustStrip items={[network?.network_verified?'Kleenest Network verified':network?.business_claimed?'Claimed business':place.is_verified?'Verified location':'Community location',freshness.label,checkInId?'Visit verified':visitAvailable?'Visit detected':'Ready when you are']}/>
       <View style={s.heroScores}><ScoreTile value={ratingValue} label="RATING"/><ScoreTile value={cleanValue} label="CLEAN"/><ScoreTile value={accessValue==='Confirmed'?'YES':'—'} label="ACCESSIBLE"/></View>
@@ -270,6 +311,7 @@ export default function LocationDetailScreen(){
         <Pressable accessibilityRole="button" accessibilityLabel="Scan QR code" style={[s.utility,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={()=>router.push('/qr')}><Text style={[s.utilityText,{color:theme.accent}]}>⌁ Scan QR</Text></Pressable>
       </View>:null}
     </View>
+    {placeBrief?<View style={[s.networkBuildingCard,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.sectionEyebrow,{color:theme.accent}]}>USEFUL RIGHT NOW</Text><Text style={[s.networkVerificationBody,{color:theme.ink}]}>{placeBrief}</Text><Text style={[s.meta,{color:theme.muted}]}>Generated from the Kleenest facts shown on this page; live trust and freshness remain authoritative.</Text></View>:null}
     {deferredPhotoReview?<View style={[s.ownReviewPhotoActions,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.sectionEyebrow,{color:theme.accent}]}>{photoReviewId?'ADD PHOTOS FROM THIS VISIT':'ADD PHOTOS FROM A PREVIOUS VISIT'}</Text><Text style={[s.ownReviewPhotoTitle,{color:theme.ink}]}>Your verified review can still take photo evidence.</Text><Text style={[s.sectionBody,{color:theme.muted}]}>Choose photos you already took at this location. They stay attached to the original verified visit, and eligible photo evidence can still advance progression after you leave.</Text><View style={s.photoActionRow}><Pressable accessibilityRole="button" accessibilityLabel="Choose saved photos for review" accessibilityState={{disabled:photoBusy===String(deferredPhotoReview.id)}} disabled={photoBusy===String(deferredPhotoReview.id)} style={[s.secondary,{backgroundColor:theme.accent,borderColor:theme.line}]} onPress={()=>void addPhotosToPublishedReview(String(deferredPhotoReview.id),'library')}><Text style={[s.secondaryText,{color:theme.accentText}]}>{photoBusy===String(deferredPhotoReview.id)?'Adding…':'▧ Choose saved photos'}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Take another review photo" accessibilityState={{disabled:photoBusy===String(deferredPhotoReview.id)}} disabled={photoBusy===String(deferredPhotoReview.id)} style={[s.secondary,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>void addPhotosToPublishedReview(String(deferredPhotoReview.id),'camera')}><Text style={[s.secondaryText,{color:theme.accent}]}>📷 Take another</Text></Pressable></View></View>:null}
 
 
@@ -331,6 +373,10 @@ export default function LocationDetailScreen(){
           <View style={s.ratingGuide}><Text style={[s.fieldLabel,{color:theme.ink}]}>CLEANLINESS · REQUIRED</Text><Text style={[s.helperText,{color:theme.muted}]}>Tap the closest description—no number entry needed.</Text><View style={s.ratingChoices}>{CLEANLINESS_CHOICES.map(choice=>{const selected=cleanliness===String(choice.score);return <Pressable key={choice.score} accessibilityRole="button" accessibilityState={{selected}} accessibilityLabel={`${choice.label}, cleanliness ${choice.score} out of 100`} style={[s.ratingChoice,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},selected&&{backgroundColor:theme.accent,borderColor:theme.accent}]} onPress={()=>setCleanliness(String(choice.score))}><Text style={[s.ratingChoiceScore,{color:theme.ink},selected&&{color:theme.accentText}]}>{choice.score}</Text><Text style={[s.ratingChoiceLabel,{color:theme.muted},selected&&s.ratingChoiceTextSelected]}>{choice.label}</Text></Pressable>})}</View></View>
           <Text style={[s.fieldLabel,{color:theme.ink}]}>ANYTHING THE NEXT PERSON SHOULD KNOW? · OPTIONAL</Text>
           <TextInput style={[s.input,s.quickTextarea,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} placeholderTextColor={theme.muted} value={comment} onChangeText={setComment} multiline placeholder="Access, privacy, wait, supplies…"/>
+          <View style={s.photoActionRow}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Help me phrase this review" accessibilityState={{disabled:!checkInId||!reviewScoresValid||phraseBusy||submitting}} disabled={!checkInId||!reviewScoresValid||phraseBusy||submitting} style={[s.secondary,{backgroundColor:theme.accentSoft,borderColor:theme.line},(!checkInId||!reviewScoresValid||phraseBusy||submitting)&&s.disabled]} onPress={()=>void phraseReview()}><Text style={[s.secondaryText,{color:theme.accent}]}>{phraseBusy?'Phrasing…':'Help me phrase this'}</Text></Pressable>
+            <Text style={[s.helperText,{color:theme.muted,flex:1}]}>Uses only the visit details above. You review and edit before publishing.</Text>
+          </View>
         </View>
 
         <View style={[s.photoFastPath,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
