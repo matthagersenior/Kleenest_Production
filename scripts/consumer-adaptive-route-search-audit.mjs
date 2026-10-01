@@ -175,7 +175,7 @@ for(const token of [
   'onDetails={() => router.push',
   'selectedRoutePosition',
   'RequestedAmenityMatches',
-  'requestedAmenities={selectedAmenityNames}',
+  'requestedAmenities={rankingAmenityNames}',
 ])requireToken(screen,token,'Consumer compact-filter Explore composition');
 
 if(screen.includes('Scroll results · map stays fixed'))throw new Error('Consumer Explore must not describe or implement a fixed-map/separate-results scrolling model.');
