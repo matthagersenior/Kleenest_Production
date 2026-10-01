@@ -805,7 +805,7 @@ export default function AdaptiveExploreScreen() {
     }
 
     let areaMatch:{origin:[number,number];label:string}|null=null;
-    if(rawQuery&&looksLikeAddressOrArea(rawQuery)){
+    if(!overrideOrigin&&rawQuery&&looksLikeAddressOrArea(rawQuery)){
       const match=await resolveConsumerSearchLocation(rawQuery);
       if(!match)throw new Error(`Kleenest could not locate “${rawQuery}”. Try the street number plus city/state or ZIP.`);
       areaMatch={origin:[match.longitude,match.latitude],label:match.label||rawQuery};
@@ -1599,7 +1599,7 @@ export default function AdaptiveExploreScreen() {
                 <Text style={[s.mapControlText,{color:theme.accent}]}>↔</Text>
               </Pressable>:null}
             </View>
-            {pendingMapOrigin&&mode==='nearby'?(
+            {pendingMapOrigin&&mode==='nearby'&&!destinationCardOpen?(
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Search this map area"
@@ -1651,7 +1651,15 @@ export default function AdaptiveExploreScreen() {
                   >
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
                   </Pressable>
-                  {mode==='nearby'?<Pressable
+                  {mode==='nearby'&&pendingMapOrigin?<Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Search this map area"
+                    style={[s.secondarySmall,s.destinationAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
+                    disabled={loading}
+                    onPress={()=>void load({mapOrigin:pendingMapOrigin})}
+                  >
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>{loading?'Searching…':'Search here'}</Text>
+                  </Pressable>:mode==='nearby'?<Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Refresh discovery near destination"
                     style={[s.secondarySmall,s.destinationAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
