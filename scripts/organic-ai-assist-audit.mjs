@@ -44,5 +44,7 @@ assert.match(webWeek,/organicWeeklyRecap/,'web Week in Review must surface an or
 assert.match(businessAi,/business_insight/,'business AI contract must include business_insight');
 assert.match(businessHome,/organicBusinessInsight/,'Business home must surface an organic business signal');
 assert.match(webBusiness,/organicBusinessInsight/,'web Business workspace must surface an organic business signal');
+assert.doesNotMatch(businessHome,/organicBusinessInsight\(signals,\{business_id/,'native Business organic prompt context must omit internal business IDs');
+assert.doesNotMatch(webBusiness,/organicBusinessInsight\(signals,\{business_id/,'web Business organic prompt context must omit internal business IDs');
 
 console.log('organic-ai-assist-audit: ok');
