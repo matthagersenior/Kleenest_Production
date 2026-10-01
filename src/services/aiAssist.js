@@ -70,3 +70,24 @@ export async function organicRouteSummary(route,stops=[]){
   const core=[route?.distanceMiles!=null?`${route.distanceMiles} mi`:null,route?.durationMinutes!=null?`${route.durationMinutes} min`:null,`${stops.length} stop${stops.length===1?'':'s'}`].filter(Boolean).join(' · ');
   return (await invokeOrganicAi('route_summary',context,'Summarize this built route without changing the chosen order.',`Route brief: ${core}. Your stop order stays under your control.`)).answer;
 }
+
+
+export async function organicWeeklyRecap(summary){
+  const context={week:{
+    period_days:Number(summary?.periodDays||7),
+    visits:Number(summary?.visitCount||0),
+    places:Number(summary?.placeCount||0),
+    verified_contributions:Number(summary?.verifiedVisitCount||0),
+    reviews:Number(summary?.reviewedCount||0),
+    review_ready:Number(summary?.reviewReadyCount||0),
+    verification_available:Number(summary?.verificationAvailableCount||0),
+  }};
+  const w=context.week;
+  return (await invokeOrganicAi('weekly_recap',context,'Summarize this account-scoped Kleenest week in one or two useful sentences. Mention unfinished contributions only when supported by the counts.',`Your last ${w.period_days} days: ${w.visits} visit${w.visits===1?'':'s'} across ${w.places} place${w.places===1?'':'s'}, with ${w.verified_contributions} verified visit${w.verified_contributions===1?'':'s'} and ${w.reviews} review${w.reviews===1?'':'s'}.`)).answer;
+}
+
+export async function organicBusinessInsight(signals=[],context={}){
+  const clean=signals.map(value=>String(value||'').trim()).filter(Boolean).slice(0,6);
+  const fallback=clean.length?`Current business signals: ${clean.slice(0,3).join(' · ')}.`:'No strong operational exception is visible in the current Kleenest metrics.';
+  return (await invokeOrganicAi('business_insight',{signals:clean,...context},'Summarize the most actionable current business signal in one or two sentences. Use only supplied Kleenest metrics and do not invent causality.',fallback)).answer;
+}
