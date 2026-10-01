@@ -31,13 +31,22 @@ test('accepts a live feature only with discoverable usable persistent verified e
   const good=structuredClone(registry);
   good.features[1]={
     id:'consumer.new-feature',product:'consumer',capability:'new-feature',status:'live',kind:'user',gap:'',
-    userJourney:{actor:'consumer',entryPoint:'Explore > New feature',successOutcome:'User completes the intended action'},
+    userJourney:{
+      actor:'consumer',
+      entryPoint:'Explore > New feature',
+      valuePromise:'Find a useful place you can count on.',
+      primaryAction:'Search or choose a nearby result.',
+      successOutcome:'User completes the intended action',
+      successCue:'The result clearly shows why it matches.',
+      firstValueSteps:3
+    },
     evidence:{
       ui:['apps/consumer-mobile/app/new-feature.tsx'],
       logic:['apps/consumer-mobile/services/newFeature.ts'],
       discoverability:['apps/consumer-mobile/app/_layout.tsx'],
       state:{mode:'persistent',proof:['apps/consumer-mobile/services/newFeature.ts']},
       states:['loading','empty','error','success'],
+      comprehension:{plainLanguage:['Core value is stated before advanced controls']},
       verification:{automated:['scripts/new-feature-audit.mjs'],production:['Production smoke test documented in PR']}
     }
   };
