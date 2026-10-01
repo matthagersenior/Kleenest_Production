@@ -360,6 +360,8 @@ def self_test() -> None:
     assert row and row["source_id"] == "overture:gers-1"
     assert row["place_type"] == "restaurant"
     assert row["state"] == "MO"
+    assert http_retry_attempts("GET", retries=2) == 3
+    assert http_retry_attempts("POST", retries=2) == 1
     print("Overture ingestion self-test passed.")
 
 
