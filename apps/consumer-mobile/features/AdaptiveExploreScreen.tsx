@@ -874,7 +874,8 @@ export default function AdaptiveExploreScreen() {
       void writeNearbyCache(displayRows,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
     }
 
-    // Trust, network, photos and live-source discovery are enhancements, not blockers.
+    // Trust, network, photos and progression are enhancements, not blockers.
+    // Live-source discovery is also an enhancement, never a first-paint blocker.
     // Paint canonical results immediately, then merge newly discovered places into
     // this same search session before enrichment and ranking.
     void (async()=>{
