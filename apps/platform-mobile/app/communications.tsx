@@ -14,7 +14,10 @@ import {
   getOwnerMailThread,
   listOwnerMailThreads,
   replyOwnerMailThread,
+  sendOwnerMail,
   setOwnerMailThreadRead,
+  setOwnerMailThreadStarred,
+  trashOwnerMailThread,
   type OwnerMailConnectionStatus,
   type OwnerMailThread,
   type OwnerMailThreadSummary,
@@ -58,6 +61,17 @@ function excerpt(value:string,max=220){
   return clean.length>max?`${clean.slice(0,max-1)}…`:clean;
 }
 
+type MailboxView='action'|'active'|'waiting'|'sent'|'all';
+
+const kleenestMailQuery='{label:"Kleenest Outreach" label:"Kleenest Outreach - Consumer First v2" Kleenest} -in:spam -in:trash';
+
+const mailboxViews:Record<MailboxView,{label:string;description:string;mailbox:'inbox'|'sent'|'all';direction:'any'|'incoming'|'outgoing'}>={
+  action:{label:'Needs reply',description:'Kleenest conversations where the latest message came from them.',mailbox:'inbox',direction:'incoming'},
+  active:{label:'Active',description:'Current Kleenest conversations still in your Gmail inbox.',mailbox:'inbox',direction:'any'},
+  waiting:{label:'Waiting',description:'Kleenest conversations where you sent the latest message.',mailbox:'all',direction:'outgoing'},
+  sent:{label:'Sent outreach',description:'Outbound Kleenest prospect and partnership threads.',mailbox:'sent',direction:'any'},
+  all:{label:'All Kleenest',description:'Every Kleenest-related thread Gmail can find, excluding spam and trash.',mailbox:'all',direction:'any'},
+};
 export default function Communications(){
   const theme=usePlatformTheme();
   const card=useOSCardStyle();
@@ -69,14 +83,21 @@ export default function Communications(){
   const[selected,setSelected]=useState<OwnerMailThread|null>(null);
   const[query,setQuery]=useState('');
   const[unreadOnly,setUnreadOnly]=useState(false);
+  const[mailboxView,setMailboxView]=useState<MailboxView>('action');
   const[replyBody,setReplyBody]=useState('');
+  const[composeOpen,setComposeOpen]=useState(false);
+  const[composeTo,setComposeTo]=useState('');
+  const[composeSubject,setComposeSubject]=useState('');
+  const[composeBody,setComposeBody]=useState('');
   const[busy,setBusy]=useState(false);
   const[notice,setNotice]=useState('');
   const[searching,setSearching]=useState(false);
 
   const unreadCount=useMemo(()=>threads.filter(thread=>thread.unread).length,[threads]);
+  const selectedSummary=useMemo(()=>selected?threads.find(thread=>thread.id===selected.id)||null:null,[selected,threads]);
+  const currentView=mailboxViews[mailboxView];
 
-  async function load(options:{query?:string;unreadOnly?:boolean}={}){
+  async function load(options:{query?:string;unreadOnly?:boolean;view?:MailboxView}={}){
     setBusy(true);
     try{
       const auth=await getOwnerAuthorization();
@@ -89,7 +110,18 @@ export default function Communications(){
         setNotice('');
         return;
       }
-      const nextThreads=await listOwnerMailThreads({query:options.query??query,unreadOnly:options.unreadOnly??unreadOnly,maxResults:30});
+      const nextView=options.view??mailboxView;
+      const view=mailboxViews[nextView];
+      const typedQuery=(options.query??query).trim();
+      const gmailQuery=[kleenestMailQuery,typedQuery].filter(Boolean).join(' ');
+      const nextThreads=await listOwnerMailThreads({
+        query:gmailQuery,
+        unreadOnly:options.unreadOnly??unreadOnly,
+        maxResults:75,
+        mailbox:view.mailbox,
+        direction:view.direction,
+      });
+      setMailboxView(nextView);
       setThreads(nextThreads.threads);
       setNotice('');
     }catch(error:any){
@@ -251,6 +283,43 @@ export default function Communications(){
     finally{setBusy(false)}
   }
 
+  async function setThreadStarred(threadId:string,starred:boolean){
+    setBusy(true);
+    try{
+      await setOwnerMailThreadStarred(threadId,starred);
+      setThreads(current=>current.map(item=>item.id===threadId?{...item,starred}:item));
+      setNotice(starred?'Conversation starred in Gmail.':'Star removed in Gmail.');
+    }catch(error:any){setNotice(String(error?.message||'Star state could not be updated.'))}
+    finally{setBusy(false)}
+  }
+
+  async function trash(threadId:string){
+    setBusy(true);
+    try{
+      await trashOwnerMailThread(threadId);
+      setThreads(current=>current.filter(item=>item.id!==threadId));
+      if(selected?.id===threadId)setSelected(null);
+      setNotice('Conversation moved to Gmail Trash.');
+    }catch(error:any){setNotice(String(error?.message||'Conversation could not be moved to Trash.'))}
+    finally{setBusy(false)}
+  }
+
+  async function sendNewMail(){
+    if(!composeTo.trim()||!composeSubject.trim()||!composeBody.trim())return;
+    setBusy(true);
+    try{
+      await sendOwnerMail({to:composeTo,subject:composeSubject,body:composeBody});
+      setComposeTo('');setComposeSubject('');setComposeBody('');setComposeOpen(false);
+      setNotice('Email sent from Gmail.');
+      await load();
+    }catch(error:any){setNotice(String(error?.message||'Email could not be sent.'))}
+    finally{setBusy(false)}
+  }
+
+  function openInGmail(threadId:string){
+    const account=status?.emailAddress?'?authuser='+encodeURIComponent(status.emailAddress):'';
+    void Linking.openURL('https://mail.google.com/mail/u/'+account+'#all/'+encodeURIComponent(threadId));
+  }
   if(!status?.connected){
     return <ScrollView contentContainerStyle={{padding:16,gap:16,paddingBottom:70,backgroundColor:theme.canvas}}>
       <OSHero eyebrow="KLEENESTOS · COMMUNICATIONS" title="Email inbox" body="Read and respond to Kleenest outreach, partnership and prospect email without leaving the Owner app. Gmail access is granted explicitly and stays behind Owner authorization."/>
