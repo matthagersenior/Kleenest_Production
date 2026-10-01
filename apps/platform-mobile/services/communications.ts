@@ -56,6 +56,7 @@ export type OwnerMailThread={
   unread:boolean;
   inInbox:boolean;
   labelIds:string[];
+  labelNames:string[];
   messages:OwnerMailMessage[];
 };
 
