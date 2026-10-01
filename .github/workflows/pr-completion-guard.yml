@@ -5,10 +5,20 @@ on:
     branches: [main]
     types: [opened, reopened, synchronize, ready_for_review]
   workflow_run:
-    workflows: ["Production CI"]
+    workflows:
+      - "Production CI"
+      - "Validate Kleenest Consumer Web Preview"
+      - "App Family Product Parity"
+      - "Security Gate"
+      - "Business Enterprise Truth Gate"
+      - "Native Secret Hygiene"
+      - "Expo Push Token Validation"
+      - "User Discovery Canonical Growth"
+      - "Discovery Claim Closed Loop"
+      - "Progression Reward Arcade Contract"
     types: [completed]
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -63,37 +73,62 @@ jobs:
                 per_page: 100,
               });
 
-              const ciRuns = runsResponse.data.workflow_runs
-                .filter((run) => run.name === 'Production CI')
-                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+              const latestRuns = new Map();
+              for (const run of runsResponse.data.workflow_runs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))) {
+                if (!latestRuns.has(run.name)) latestRuns.set(run.name, run);
+              }
 
-              if (ciRuns.length === 0) {
+              const ci = latestRuns.get('Production CI');
+              if (!ci) {
                 core.info('  skip: Production CI has not started for current head');
                 continue;
               }
 
-              const ci = ciRuns[0];
-              if (ci.status !== 'completed') {
-                core.info(`  skip: Production CI is ${ci.status}`);
+              const unfinishedRuns = [...latestRuns.values()].filter((run) => run.status !== 'completed');
+              if (unfinishedRuns.length) {
+                core.info(`  skip: checks still running: ${unfinishedRuns.map((run) => run.name).join(', ')}`);
                 continue;
               }
 
-              if (ci.conclusion !== 'success') {
-                const retryable = new Set(['failure', 'cancelled', 'timed_out']);
-                if (retryable.has(ci.conclusion) && (ci.run_attempt || 1) < 2) {
-                  core.warning(`  Production CI ended ${ci.conclusion}; retrying failed jobs once (run ${ci.id})`);
-                  try {
-                    await github.rest.actions.reRunWorkflowFailedJobs({
-                      owner,
-                      repo,
-                      run_id: ci.id,
-                    });
-                  } catch (error) {
-                    core.warning(`  retry failed: ${error.message}`);
-                  }
-                } else {
-                  core.warning(`  blocked: Production CI conclusion is ${ci.conclusion}; source fix required`);
+              const retryable = new Set(['failure', 'cancelled', 'timed_out']);
+              let retried = false;
+              for (const run of latestRuns.values()) {
+                if (!retryable.has(run.conclusion) || (run.run_attempt || 1) >= 2) continue;
+                core.warning(`  ${run.name} ended ${run.conclusion}; retrying failed jobs once (run ${run.id})`);
+                try {
+                  await github.rest.actions.reRunWorkflowFailedJobs({ owner, repo, run_id: run.id });
+                  retried = true;
+                } catch (error) {
+                  core.warning(`  retry failed for ${run.name}: ${error.message}`);
                 }
+              }
+              if (retried) continue;
+
+              const badRuns = [...latestRuns.values()].filter((run) =>
+                !['success', 'neutral', 'skipped'].includes(String(run.conclusion || ''))
+              );
+              if (badRuns.length) {
+                core.warning(`  blocked: workflow source fix required: ${badRuns.map((run) => `${run.name}=${run.conclusion}`).join(', ')}`);
+                continue;
+              }
+
+              const checksResponse = await github.rest.checks.listForRef({
+                owner,
+                repo,
+                ref: pr.head.sha,
+                per_page: 100,
+              });
+              const relevantChecks = checksResponse.data.check_runs.filter((check) => check.name !== 'completion');
+              const pendingChecks = relevantChecks.filter((check) => check.status !== 'completed');
+              if (pendingChecks.length) {
+                core.info(`  skip: check runs still pending: ${pendingChecks.map((check) => check.name).join(', ')}`);
+                continue;
+              }
+              const badChecks = relevantChecks.filter((check) =>
+                !['success', 'neutral', 'skipped'].includes(String(check.conclusion || ''))
+              );
+              if (badChecks.length) {
+                core.warning(`  blocked: check source fix required: ${badChecks.map((check) => `${check.name}=${check.conclusion}`).join(', ')}`);
                 continue;
               }
 
