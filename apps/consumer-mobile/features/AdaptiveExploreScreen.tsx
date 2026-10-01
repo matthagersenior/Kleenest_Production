@@ -707,9 +707,11 @@ export default function AdaptiveExploreScreen() {
     const viewState=event?.nativeEvent;
     const observedZoom=Number(viewState?.zoom??viewState?.zoomLevel);
     if(Number.isFinite(observedZoom))setMapZoom(Math.min(18,Math.max(7,observedZoom)));
-    if(mode!=='nearby'||!viewState?.userInteraction||!Array.isArray(viewState.center))return;
+    if(!viewState?.userInteraction||!Array.isArray(viewState.center))return;
     const next:[number,number]=[Number(viewState.center[0]),Number(viewState.center[1])];
     if(!Number.isFinite(next[0])||!Number.isFinite(next[1]))return;
+    setMapCenter(next);
+    if(mode!=='nearby')return;
     const activeOrigin=searchAreaOrigin||origin;
     if(activeOrigin&&Math.abs(next[0]-activeOrigin[0])+Math.abs(next[1]-activeOrigin[1])<0.002)return;
     setPendingMapOrigin(next);

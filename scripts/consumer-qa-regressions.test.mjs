@@ -93,3 +93,10 @@ test('raster map dragging updates the discovery center in the drag direction',()
   assert.ok(Math.abs(next.center[0]-(viewport.center[0]+200*360/(256*2**13)))<0.00001);assert.ok(Math.abs(next.center[1]-viewport.center[1])<0.00001);
   assert.deepEqual(pan(viewport,0,0).center,viewport.center);
 });
+
+test('user map movement keeps the camera center for the next zoom',()=>{
+  let cameraCenter,pending;
+  const handler=compile(declaration(screenPath,'handleMapRegionDidChange'),{setMapInteracting:()=>{},setMapZoom:()=>{},setMapCenter:center=>{cameraCenter=center;},setPendingMapOrigin:center=>{pending=center;},mode:'nearby',searchAreaOrigin:[-90.26,38.65],origin:null},'handleMapRegionDidChange');
+  handler({nativeEvent:{center:[-90.22,38.65],zoom:13,userInteraction:true}});
+  assert.deepEqual(cameraCenter,[-90.22,38.65]);assert.deepEqual(pending,cameraCenter);
+});
