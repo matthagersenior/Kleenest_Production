@@ -156,6 +156,11 @@ function organizeMapMarkers(rows:any[],zoom:number):MapMarkerGroup[]{
     return {key:`cluster:${key}`,rows:bucket,center:[longitude,latitude]};
   });
 }
+function exploreCameraViewState(bounds:any,fitRoute:boolean,center:any,zoom:number){
+  return bounds&&fitRoute
+    ? {bounds,padding:{top:28,right:28,bottom:28,left:28}}
+    : {center,zoom};
+}
 const verificationWindowLabel = (value: string | null | undefined) => {
   if (!value) return '';
   const expires = new Date(value).getTime();
@@ -447,6 +452,7 @@ export default function AdaptiveExploreScreen() {
   const [cameraNonce, setCameraNonce] = useState(0);
   const [selectedId, setSelectedId] = useState('');
   const [clusterChoices,setClusterChoices]=useState<any[]>([]);
+  const [fitRouteCamera,setFitRouteCamera]=useState(true);
   const [destinationCardOpen,setDestinationCardOpen]=useState(false);
   const [search, setSearch] = useState('');
   const [searchAreaOrigin,setSearchAreaOrigin]=useState<[number,number]|null>(null);
@@ -599,6 +605,7 @@ export default function AdaptiveExploreScreen() {
   }
 
   function selectRow(row: any) {
+    setFitRouteCamera(false);
     setDestinationCardOpen(false);
     const id = idOf(row);
     if(id)captureConsumerCoreLoopEvent('place_selected',id,{source:'explore'});
@@ -612,6 +619,7 @@ export default function AdaptiveExploreScreen() {
   }
 
   function selectDestinationMarker(){
+    setFitRouteCamera(false);
     if(!searchAreaOrigin)return;
     setSelectedId('');
     setDestinationCardOpen(true);
@@ -650,6 +658,7 @@ export default function AdaptiveExploreScreen() {
   }
 
   function snapMapToDiscoveryOrigin(target:[number,number],openDestinationCard=false) {
+    setFitRouteCamera(false);
     setSelectedId('');
     setDestinationCardOpen(openDestinationCard);
     setPendingMapOrigin(null);
@@ -686,6 +695,7 @@ export default function AdaptiveExploreScreen() {
   function recenterMap() {
     const target=searchAreaOrigin||origin;
     if (!target) return;
+    setFitRouteCamera(false);
     setSelectedId('');
     setPendingMapOrigin(null);
     setMapCenter(target);
@@ -696,6 +706,7 @@ export default function AdaptiveExploreScreen() {
 
   function fitRouteMap() {
     if(!route?.geometry?.coordinates?.length)return;
+    setFitRouteCamera(true);
     setSelectedId('');
     setDestinationCardOpen(false);
     setPendingMapOrigin(null);
@@ -707,10 +718,12 @@ export default function AdaptiveExploreScreen() {
     const viewState=event?.nativeEvent;
     const observedZoom=Number(viewState?.zoom??viewState?.zoomLevel);
     if(Number.isFinite(observedZoom))setMapZoom(Math.min(18,Math.max(7,observedZoom)));
-    if(!viewState?.userInteraction||!Array.isArray(viewState.center))return;
+    if(!Array.isArray(viewState?.center))return;
     const next:[number,number]=[Number(viewState.center[0]),Number(viewState.center[1])];
     if(!Number.isFinite(next[0])||!Number.isFinite(next[1]))return;
     setMapCenter(next);
+    if(!viewState.userInteraction)return;
+    setFitRouteCamera(false);
     if(mode!=='nearby')return;
     const activeOrigin=searchAreaOrigin||origin;
     if(activeOrigin&&Math.abs(next[0]-activeOrigin[0])+Math.abs(next[1]-activeOrigin[1])<0.002)return;
@@ -718,6 +731,7 @@ export default function AdaptiveExploreScreen() {
   }
 
   function changeMapZoom(delta: number) {
+    setFitRouteCamera(false);
     setMapZoom((current) => Math.min(18, Math.max(7, current + delta)));
     setCameraNonce((value) => value + 1);
   }
@@ -1011,6 +1025,7 @@ export default function AdaptiveExploreScreen() {
     );
     setRows(enriched);
     setRoute(built);
+    setFitRouteCamera(true);
     setSelectedId('');
     setDestinationCardOpen(Boolean(destinationLabel));
     setCached(false);
@@ -1188,9 +1203,7 @@ export default function AdaptiveExploreScreen() {
     return () => { active = false; };
   }, []);
 
-  const cameraViewState: any = routeBounds
-    ? { bounds: routeBounds, padding: { top: 28, right: 28, bottom: 28, left: 28 } }
-    : { center: mapCenter || searchAreaOrigin || origin || [0, 0], zoom: mapZoom };
+  const cameraViewState: any = exploreCameraViewState(routeBounds,fitRouteCamera,mapCenter || searchAreaOrigin || origin || [0, 0],mapZoom);
 
   return (
     <SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.canvas}]}>
@@ -1516,6 +1529,7 @@ export default function AdaptiveExploreScreen() {
                         setSelectedId('');
                         setDestinationCardOpen(false);
                         setPendingMapOrigin(null);
+                        setFitRouteCamera(false);
                         setMapCenter(group.center);
                         setMapZoom(current=>Math.min(18,Math.max(14,current+2)));
                         setCameraNonce(value=>value+1);
@@ -1531,6 +1545,7 @@ export default function AdaptiveExploreScreen() {
                           setSelectedId('');
                           setDestinationCardOpen(false);
                           setPendingMapOrigin(null);
+                          setFitRouteCamera(false);
                           setMapCenter(group.center);
                           setMapZoom(current=>Math.min(18,Math.max(14,current+2)));
                           setCameraNonce(value=>value+1);

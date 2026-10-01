@@ -96,7 +96,51 @@ test('raster map dragging updates the discovery center in the drag direction',()
 
 test('user map movement keeps the camera center for the next zoom',()=>{
   let cameraCenter,pending;
-  const handler=compile(declaration(screenPath,'handleMapRegionDidChange'),{setMapInteracting:()=>{},setMapZoom:()=>{},setMapCenter:center=>{cameraCenter=center;},setPendingMapOrigin:center=>{pending=center;},mode:'nearby',searchAreaOrigin:[-90.26,38.65],origin:null},'handleMapRegionDidChange');
+  const handler=compile(declaration(screenPath,'handleMapRegionDidChange'),{setMapInteracting:()=>{},setMapZoom:()=>{},setMapCenter:center=>{cameraCenter=center;},setFitRouteCamera:()=>{},setPendingMapOrigin:center=>{pending=center;},mode:'nearby',searchAreaOrigin:[-90.26,38.65],origin:null},'handleMapRegionDidChange');
   handler({nativeEvent:{center:[-90.22,38.65],zoom:13,userInteraction:true}});
   assert.deepEqual(cameraCenter,[-90.22,38.65]);assert.deepEqual(pending,cameraCenter);
+});
+
+test('fallback dragging ignores a second pointer and commits the active center',()=>{
+  const path='apps/consumer-mobile/web/maplibrePreview.tsx';
+  const updates=[],regions=[];
+  const React={createElement:(type,props,...children)=>({type,props,children})};
+  const pan=compile(declaration(path,'clampLatitude')+'\n'+declaration(path,'worldPoint')+'\n'+declaration(path,'panFallbackViewport'),{TILE_SIZE:256},'panFallbackViewport');
+  const component=compile(declaration(path,'Map'),{React,View:'View',FallbackRaster:'Raster',MapContext:{Provider:'Provider'},styles:{map:{}},DEFAULT_CENTER:[-90.26,38.65],DEFAULT_ZOOM:13,useRef:initial=>({current:initial}),useEffect:()=>{},useState:initial=>[initial===false?true:initial,next=>{if(next?.center)updates.push(next);} ],panFallbackViewport:pan},'Map');
+  const node=component({onRegionDidChange:event=>regions.push(event)});
+  const drag=node.children.flat(Infinity).find(child=>child?.props?.['aria-label']==='Drag map to explore another area');assert.ok(drag);
+  const target={setPointerCapture:()=>{},releasePointerCapture:()=>{},hasPointerCapture:()=>true};
+  const event=(pointerId,x)=>({pointerId,button:0,clientX:x,clientY:0,currentTarget:target});
+  drag.props.onPointerDown(event(1,0));drag.props.onPointerMove(event(1,100));
+  drag.props.onPointerDown(event(2,0));drag.props.onPointerMove(event(2,500));drag.props.onPointerUp(event(2,500));
+  assert.equal(updates.length,1);assert.equal(regions.length,0);
+  drag.props.onPointerMove(event(1,150));drag.props.onPointerUp(event(1,150));
+  assert.equal(updates.length,2);assert.equal(regions.length,1);assert.deepEqual(regions[0].nativeEvent.center,updates[1].center);
+  drag.props.onPointerDown(event(3,0));drag.props.onPointerMove(event(3,1));drag.props.onPointerCancel(event(3,1));
+  assert.equal(regions.length,2);assert.deepEqual(regions[1].nativeEvent.center,updates[2].center);
+});
+
+test('route fitting is explicit and manual camera actions keep their center',()=>{
+  const camera=compile(declaration(screenPath,'exploreCameraViewState'),{},'exploreCameraViewState');
+  const bounds=[-91,38,-89,39],center=[-90.2,38.7];
+  assert.deepEqual(camera(bounds,true,center,13).bounds,bounds);
+  assert.deepEqual(camera(bounds,false,center,15),{center,zoom:15});
+});
+
+
+test('programmatic route fitting retains the displayed center without proposing discovery',()=>{
+  let center,fitChanges=0,pendingChanges=0;
+  const handler=compile(declaration(screenPath,'handleMapRegionDidChange'),{setMapInteracting:()=>{},setMapZoom:()=>{},setMapCenter:value=>{center=value;},setFitRouteCamera:()=>{fitChanges++;},setPendingMapOrigin:()=>{pendingChanges++;},mode:'nearby',searchAreaOrigin:[-89,38],origin:null},'handleMapRegionDidChange');
+  handler({nativeEvent:{center:[-90,38.5],zoom:9,userInteraction:false}});
+  assert.deepEqual(center,[-90,38.5]);assert.equal(fitChanges,0);assert.equal(pendingChanges,0);
+  const camera=compile(declaration(screenPath,'exploreCameraViewState'),{},'exploreCameraViewState');
+  assert.deepEqual(camera([-91,38,-89,39],false,center,10),{center:[-90,38.5],zoom:10});
+});
+
+test('fallback route fitting reports its actual viewport for subsequent zoom',()=>{
+  const path='apps/consumer-mobile/web/maplibrePreview.tsx';let applied,reported;const effects=[];
+  const context={map:null,fallback:true,viewport:{center:[-89,38],zoom:13,width:600,height:400},setViewport:value=>{applied=value;},reportRegionChange:(value,userInteraction)=>{reported={value,userInteraction};}};
+  const camera=compile(declaration(path,'Camera'),{useContext:()=>context,MapContext:{},useMemo:fn=>fn(),useEffect:fn=>effects.push(fn),zoomForBounds:()=>9},'Camera');
+  camera({initialViewState:{bounds:[-91,38,-89,39]}});effects[0]();
+  assert.deepEqual(applied.center,[-90,38.5]);assert.equal(applied.zoom,9);assert.deepEqual(reported,{value:applied,userInteraction:false});
 });

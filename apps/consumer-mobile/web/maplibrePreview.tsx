@@ -31,6 +31,7 @@ type WebMapContext = {
   fallback: boolean;
   viewport: Viewport;
   setViewport: React.Dispatch<React.SetStateAction<Viewport>>;
+  reportRegionChange: (viewport: Viewport, userInteraction: boolean) => void;
 };
 
 const MapContext = createContext<WebMapContext | null>(null);
@@ -169,7 +170,17 @@ export function Map({ children, style, mapStyle, onRegionDidChange }: any) {
   const [viewport, setViewport] = useState<Viewport>({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, width: 0, height: 0 });
   const regionCallback=useRef(onRegionDidChange);
   regionCallback.current=onRegionDidChange;
-  const dragRef=useRef<{x:number;y:number;viewport:Viewport;next:Viewport}|null>(null);
+  const dragRef=useRef<{pointerId:number;x:number;y:number;viewport:Viewport;next:Viewport}|null>(null);
+  function reportRegionChange(view:Viewport,userInteraction:boolean){
+    regionCallback.current?.({nativeEvent:{center:view.center,zoom:view.zoom,userInteraction}});
+  }
+  function finishFallbackGesture(event:React.PointerEvent<HTMLDivElement>){
+    const drag=dragRef.current;
+    if(!drag||drag.pointerId!==event.pointerId)return;
+    dragRef.current=null;
+    if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
+    if(drag.next!==drag.viewport)regionCallback.current?.({nativeEvent:{center:drag.next.center,zoom:drag.next.zoom,userInteraction:true}});
+  }
   useEffect(()=>{
     if(!map)return;
     const onMoveEnd=(event:any)=>{
@@ -280,12 +291,13 @@ export function Map({ children, style, mapStyle, onRegionDidChange }: any) {
     >
       <div ref={hostRef} style={{ position: 'absolute', inset: 0, display: fallback ? 'none' : 'block' }} />
       {fallback?<div aria-label="Drag map to explore another area" style={{position:'absolute',inset:0,touchAction:'none',cursor:'grab'}}
-        onPointerDown={event=>{if(event.button!==0)return;event.currentTarget.setPointerCapture(event.pointerId);dragRef.current={x:event.clientX,y:event.clientY,viewport,next:viewport};}}
-        onPointerMove={event=>{const drag=dragRef.current;if(!drag)return;drag.next=panFallbackViewport(drag.viewport,event.clientX-drag.x,event.clientY-drag.y);setViewport(drag.next);}}
-        onPointerUp={event=>{const drag=dragRef.current;dragRef.current=null;if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);if(drag&&Math.abs(event.clientX-drag.x)+Math.abs(event.clientY-drag.y)>5)regionCallback.current?.({nativeEvent:{center:drag.next.center,zoom:drag.next.zoom,userInteraction:true}});}}
-        onPointerCancel={()=>{dragRef.current=null;}}
+        onPointerDown={event=>{if(event.button!==0||dragRef.current)return;event.currentTarget.setPointerCapture(event.pointerId);dragRef.current={pointerId:event.pointerId,x:event.clientX,y:event.clientY,viewport,next:viewport};}}
+        onPointerMove={event=>{const drag=dragRef.current;if(!drag||drag.pointerId!==event.pointerId)return;drag.next=panFallbackViewport(drag.viewport,event.clientX-drag.x,event.clientY-drag.y);setViewport(drag.next);}}
+        onPointerUp={finishFallbackGesture}
+        onPointerCancel={finishFallbackGesture}
+        onLostPointerCapture={finishFallbackGesture}
       />:null}
-      <MapContext.Provider value={{ map, fallback, viewport, setViewport }}>
+      <MapContext.Provider value={{ map, fallback, viewport, setViewport, reportRegionChange }}>
         {fallback ? <FallbackRaster viewport={viewport} /> : null}
         {children}
       </MapContext.Provider>
@@ -305,11 +317,9 @@ export function Camera({ initialViewState }: any) {
       if (Array.isArray(bounds) && bounds.length === 4) {
         const [west, south, east, north] = bounds.map(Number);
         if ([west, south, east, north].every(Number.isFinite)) {
-          setViewport((current) => ({
-            ...current,
-            center: [(west + east) / 2, (south + north) / 2],
-            zoom: zoomForBounds([west, south, east, north], current.width, current.height),
-          }));
+          const next:Viewport={...viewport,center:[(west+east)/2,(south+north)/2],zoom:zoomForBounds([west,south,east,north],viewport.width,viewport.height)};
+          setViewport(next);
+          context.reportRegionChange(next,false);
           return;
         }
       }
@@ -319,7 +329,9 @@ export function Camera({ initialViewState }: any) {
         const lat = Number(center[1]);
         const zoom = Number(initialViewState.zoom);
         if (Number.isFinite(lng) && Number.isFinite(lat)) {
-          setViewport((current) => ({ ...current, center: [lng, lat], zoom: Number.isFinite(zoom) ? zoom : current.zoom }));
+          const next:Viewport={...viewport,center:[lng,lat],zoom:Number.isFinite(zoom)?zoom:viewport.zoom};
+          setViewport(next);
+          context.reportRegionChange(next,false);
         }
       }
       return;
