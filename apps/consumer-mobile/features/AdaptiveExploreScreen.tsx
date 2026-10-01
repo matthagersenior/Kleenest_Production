@@ -8,6 +8,7 @@ import {
   buildMobileRoute,
   buildMobileRouteToDestination,
   findAdaptiveNearbyPlaces,
+  refreshNearbyPlaceInventory,
   findAdaptiveNearbyRestrooms,
   listNearbyMapCandidates,
   listNearbyRestrooms,
@@ -873,11 +874,21 @@ export default function AdaptiveExploreScreen() {
       void writeNearbyCache(displayRows,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
     }
 
-    // Trust, network, photos and progression are enhancements, not blockers.
-    // Paint the complete canonical map first, then enrich the same rows in place.
+    // Trust, network, photos and live-source discovery are enhancements, not blockers.
+    // Paint canonical results immediately, then merge newly discovered places into
+    // this same search session before enrichment and ranking.
     void (async()=>{
       try{
-        const enrichedBase=await enrich(discoveryRows);
+        const completeRows=!selectedAmenityNames.length
+          ? await refreshNearbyPlaceInventory({
+              latitude,
+              longitude,
+              radiusMeters:result.effectiveRadiusMeters,
+              search:query,
+              limit:2000,
+            })
+          : discoveryRows;
+        const enrichedBase=await enrich(completeRows);
         const enriched=organizeDiscoveryRows(
           attachPresence(await enrichProgression(enrichedBase,latitude,longitude,result.effectiveRadiusMeters),livePresence),
           selectedAmenityNames,
