@@ -14,6 +14,7 @@ on:
       - scripts/prepare-consumer-web-pwa.mjs
       - scripts/pages-deployment-convergence-audit.mjs
       - scripts/business-web-browser-smoke.spec.ts
+      - scripts/consumer-real-world-browser-stress.spec.ts
       - .github/workflows/pages.yml
   workflow_run:
     workflows: ["Production CI"]
@@ -108,6 +109,23 @@ jobs:
           test -s apps/consumer-mobile/dist/app-icon.png
           test -s apps/consumer-mobile/dist/app-icon-512.svg
           test -s apps/consumer-mobile/dist/profile/index.html
+      - name: Browser-stress Kleenest Consumer Web
+        env:
+          CONSUMER_WEB_BASE: http://127.0.0.1:4174/Kleenest_Production/
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/kleenest-consumer-web"
+          mkdir -p "$RUNNER_TEMP/kleenest-consumer-web/Kleenest_Production"
+          cp -R apps/consumer-mobile/dist/. "$RUNNER_TEMP/kleenest-consumer-web/Kleenest_Production/"
+          python3 -m http.server 4174 --directory "$RUNNER_TEMP/kleenest-consumer-web" >"$RUNNER_TEMP/consumer-web-http.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent "$CONSUMER_WEB_BASE" >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent "$CONSUMER_WEB_BASE" >/dev/null
+          npx playwright test scripts/consumer-real-world-browser-stress.spec.ts --reporter=line --workers=1
       - name: Validate SPA fallback
         run: |
           cp apps/consumer-mobile/dist/index.html apps/consumer-mobile/dist/404.html
@@ -115,6 +133,7 @@ jobs:
           test -s apps/consumer-mobile/dist/index.html
           test -s apps/consumer-mobile/dist/404.html
       - name: Preserve web preview validation artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Kleenest-Consumer-Web-Preview
@@ -123,5 +142,6 @@ jobs:
             apps/platform-mobile/dist
             apps/business-mobile/dist
             apps/fleet-mobile/dist
+            test-results/consumer-stress
           retention-days: 3
           if-no-files-found: error
