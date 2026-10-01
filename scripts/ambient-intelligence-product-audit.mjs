@@ -35,7 +35,7 @@ expect(!/Ask .*AI|Kleenest AI|AI ASSIST/i.test(review),'Review writing help must
 if(exists(edgePath)){
   const edge=read(edgePath);
   expect(!/SUPABASE_SERVICE_ROLE_KEY|service_role/i.test(edge),'Guest search interpreter must not use service-role credentials.');
-  expect(!/\.from\(|\.rpc\(/.test(edge),'Guest search interpreter must not query or mutate Kleenest data.');
+  expect(!/createClient\s*\(|\bsupabase\w*\.from\s*\(|\bclient\w*\.from\s*\(|\b(?:supabase|client)\w*\.rpc\s*\(/i.test(edge),'Guest search interpreter must not create a Supabase client or query/mutate Kleenest data.');
   expect(/deterministic|fallback/i.test(edge),'Guest search interpreter must have deterministic fallback behavior.');
 }
 
