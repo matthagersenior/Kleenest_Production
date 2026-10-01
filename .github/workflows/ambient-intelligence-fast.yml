@@ -8,7 +8,8 @@ on:
       - 'apps/consumer-mobile/services/aiAssist.ts'
       - 'apps/consumer-mobile/app/location/**'
       - 'supabase/functions/consumer-search-intent/**'
-      - 'scripts/consumer-qa-regressions.test.mjs'\n      - 'scripts/ambient-discovery-intent.test.mjs'
+      - 'scripts/consumer-qa-regressions.test.mjs'
+      - 'scripts/ambient-discovery-intent.test.mjs'
       - 'scripts/ambient-intelligence-product-audit.mjs'
       - '.github/workflows/ambient-intelligence-fast.yml'
 
@@ -28,7 +29,9 @@ jobs:
       - run: npm ci
       - name: Consumer discovery regression
         run: node --test scripts/consumer-qa-regressions.test.mjs
-      - name: Discovery intent unit contract\n        run: node --test scripts/ambient-discovery-intent.test.mjs\n      - name: Ambient product-shape audit
+      - name: Discovery intent unit contract
+        run: node --test scripts/ambient-discovery-intent.test.mjs
+      - name: Ambient product-shape audit
         run: |
           if [ -f scripts/ambient-intelligence-product-audit.mjs ]; then
             node scripts/ambient-intelligence-product-audit.mjs
