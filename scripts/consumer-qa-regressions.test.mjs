@@ -164,3 +164,11 @@ test('Explore core filters use user language instead of implementation language'
     assert.ok(!source.includes(retired),`Implementation-shaped copy remains: ${retired}`);
   }
 });
+
+
+test('natural discovery request is not mistaken for a literal address search',()=>{
+  const looksLikeAddressOrArea=compile(declaration(screenPath,'looksLikeAddressOrArea'),{},'looksLikeAddressOrArea');
+  assert.equal(looksLikeAddressOrArea('123 Main St, Sparta, IL 62286'),true);
+  assert.equal(looksLikeAddressOrArea('Pizza Hut'),false);
+  assert.equal(looksLikeAddressOrArea('clean restroom with a changing table on my way to St. Louis'),false);
+});
