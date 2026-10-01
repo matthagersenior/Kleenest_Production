@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+// Contract: natural language becomes bounded Kleenest discovery intent, never authoritative place data.\nimport assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
