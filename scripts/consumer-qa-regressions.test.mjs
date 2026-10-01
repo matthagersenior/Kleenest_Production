@@ -32,6 +32,28 @@ test('brand search retains the chosen Sparta origin without requesting GPS',asyn
   assert.equal(gpsCalls,0);assert.deepEqual(result.nextOrigin,[-89.701,38.123]);assert.equal(result.query,'Pizza Hut');assert.equal(cleared,false);
 });
 
+test('map-area search overrides a retained typed address',async()=>{
+  let gpsCalls=0,geocodeCalls=0;
+  let source=declaration(screenPath,'loadNearby');
+  source=source.slice(0,source.indexOf('    let result:'))+'return {nextOrigin,query};}';
+  const noop=()=>{};
+  const dragged=[-90.31,38.66];
+  const context={nearbyEnrichmentRunRef:{current:0},search:'4500 Maryland Ave, St Louis, MO',searchAreaOrigin:[-90.24897,38.65415],searchAreaLabel:'4500 Maryland Ave',
+    looksLikeAddressOrArea:()=>true,resolveConsumerSearchLocation:async()=>{geocodeCalls++;return {longitude:-90.24897,latitude:38.65415,label:'4500 Maryland Ave'};},
+    currentLocation:async()=>{gpsCalls++;return {coords:{longitude:-90,latitude:39}};},
+    recordConsumerPresenceAt:async()=>null,refreshConsumerPresence:async()=>null,
+    setSearch:noop,setSearchAreaOrigin:noop,setSearchAreaLabel:noop,setPendingMapOrigin:noop,setDestinationCardOpen:noop,setRoute:noop,snapMapToDiscoveryOrigin:noop};
+  const result=await compile(source,context,'loadNearby')(false,false,dragged,false);
+  assert.equal(gpsCalls,0);assert.equal(geocodeCalls,0);assert.deepEqual(result.nextOrigin,dragged);assert.equal(result.query,'');
+});
+
+test('destination card keeps map-area search reachable after a drag',()=>{
+  const source=fs.readFileSync(screenPath,'utf8');
+  assert.ok(source.includes("pendingMapOrigin&&mode==='nearby'&&!destinationCardOpen"));
+  assert.ok(source.includes("mode==='nearby'&&pendingMapOrigin?<Pressable"));
+  assert.ok(source.includes('accessibilityLabel="Search this map area"'));
+});
+
 for(const value of [null,undefined,'',0,75])test(`cleanliness ${JSON.stringify(value)} preserves unknown versus observed zero`,()=>{
   const path='apps/consumer-mobile/components/RestroomSignals.tsx';
   const React={createElement:(type,props,...children)=>({type,props,children})};
@@ -40,6 +62,49 @@ for(const value of [null,undefined,'',0,75])test(`cleanliness ${JSON.stringify(v
   const actual=labels(component({item:{cleanliness_pct:value}}));
   if(value==null||value==='')assert.ok(!actual.some(label=>/0 percent clean/.test(label)),actual.join(', '));
   else assert.ok(actual.includes(`${value} percent clean`));
+});
+
+test('manual route start builds without GPS',async()=>{
+  const path='apps/consumer-mobile/app/route.tsx';
+  let gpsCalls=0,builtOrigin=null;
+  const build=compile(declaration(path,'build'),{
+    building:false,stopIds:['stop-1'],setBuilding:()=>{},setMessage:()=>{},
+    routeStartOrigin:[-89.70,38.12],routeStartLabel:'Sparta, Illinois',
+    Location:{requestForegroundPermissionsAsync:async()=>{gpsCalls++;return{status:'granted'};},getCurrentPositionAsync:async()=>{gpsCalls++;return{coords:{longitude:-90,latitude:39}}},Accuracy:{Balanced:1}},
+    buildMobileRoute:async(origin)=>{builtOrigin=origin;return{distanceMiles:10,durationMinutes:20};},setBuilt:()=>{}
+  },'build');
+  await build();
+  assert.equal(gpsCalls,0);assert.deepEqual(builtOrigin,[-89.70,38.12]);
+});
+
+test('Explore carries its discovery origin into route planning',()=>{
+  const source=fs.readFileSync(screenPath,'utf8');
+  assert.ok(source.includes("startLng:String(routeStart[0])"));
+  assert.ok(source.includes("startLat:String(routeStart[1])"));
+  assert.ok(source.includes("searchAreaOrigin||origin"));
+});
+
+test('external directions preserve an Explore return snapshot',()=>{
+  const source=fs.readFileSync(screenPath,'utf8');
+  assert.ok(source.includes('await preserveExploreReturnState();\n    await Linking.openURL'));
+  const cache=fs.readFileSync('apps/consumer-mobile/services/nearbyCache.ts','utf8');
+  assert.ok(cache.includes('EXPLORE_RETURN_MAX_AGE_MS=30*60*1000'));
+  assert.ok(cache.includes('takeExploreReturnState'));
+});
+
+test('unverified businesses are not labeled as verified Kleenest restrooms',()=>{
+  const path='apps/consumer-mobile/app/location/[id].tsx';
+  const label=compile(declaration(path,'restroomIdentityLabel'),{},'restroomIdentityLabel');
+  assert.equal(label({},[]),'PLACE DETAILS · RESTROOM UNVERIFIED');
+  assert.equal(label({bathroom_verification_status:'verified'},[]),'KLEENEST RESTROOM');
+  assert.equal(label({},[{id:'facility'}]),'KLEENEST RESTROOM');
+});
+
+test('Explore sponsored placement requests the compact creative',()=>{
+  const source=fs.readFileSync(screenPath,'utf8');
+  assert.ok(source.includes('contextClass="maps_between_results" compact'));
+  const slot=fs.readFileSync('apps/consumer-mobile/components/SponsoredSlot.tsx','utf8');
+  assert.ok(slot.includes('compact&&s.imageCompact'));assert.ok(slot.includes('numberOfLines={compact?2:undefined}'));
 });
 
 test('town search recovers when the primary geocoder is unavailable',async()=>{
@@ -52,12 +117,13 @@ test('town search recovers when the primary geocoder is unavailable',async()=>{
   const data=await response.json();assert.equal(response.status,200);assert.equal(data.resolved.latitude,38.1275);assert.equal(data.resolved.longitude,-89.7061);assert.match(data.resolved.label,/Sparta/);
 });
 
-test('raster fallback sends an origin referrer to the tile provider',()=>{
+test('web fallback avoids direct raster tile requests while keeping map affordances',()=>{
   const path='apps/consumer-mobile/web/maplibrePreview.tsx';
   const React={createElement:(type,props,...children)=>({type,props,children})};
-  const component=compile(declaration(path,'FallbackRaster'),{React,View:'View',Text:'Text',StyleSheet:{absoluteFill:{}},styles:{},TILE_SIZE:256,useMemo:fn=>fn(),fallbackTiles:()=>[{key:'1',url:'https://tile.openstreetmap.org/13/2054/3157.png',left:0,top:0}]},'FallbackRaster');
-  const node=component({viewport:{center:[-89.7,38.1],zoom:13,width:400,height:400}});
-  const img=node.children.flat(Infinity).find(child=>child?.type==='img');assert.ok(img);assert.notEqual(img.props.referrerPolicy,'no-referrer');
+  const component=compile(declaration(path,'FallbackMapNotice'),{React,View:'View',Text:'Text',StyleSheet:{absoluteFill:{}},styles:{fallbackBanner:{},fallbackText:{}}},'FallbackMapNotice');
+  const node=component();
+  assert.ok(labels(node).some(label=>/Basemap unavailable/i.test(label))||JSON.stringify(node).includes('Basemap unavailable'));
+  assert.ok(!declaration(path,'FallbackMapNotice').includes('<img'));
 });
 
 test('different unnamed listings remain distinct without losing records',()=>{
@@ -106,7 +172,7 @@ test('fallback dragging ignores a second pointer and commits the active center',
   const updates=[],regions=[];
   const React={createElement:(type,props,...children)=>({type,props,children})};
   const pan=compile(declaration(path,'clampLatitude')+'\n'+declaration(path,'worldPoint')+'\n'+declaration(path,'panFallbackViewport'),{TILE_SIZE:256},'panFallbackViewport');
-  const component=compile(declaration(path,'Map'),{React,View:'View',FallbackRaster:'Raster',MapContext:{Provider:'Provider'},styles:{map:{}},DEFAULT_CENTER:[-90.26,38.65],DEFAULT_ZOOM:13,useRef:initial=>({current:initial}),useEffect:()=>{},useState:initial=>[initial===false?true:initial,next=>{if(next?.center)updates.push(next);} ],panFallbackViewport:pan},'Map');
+  const component=compile(declaration(path,'Map'),{React,View:'View',FallbackMapNotice:'Notice',MapContext:{Provider:'Provider'},styles:{map:{}},DEFAULT_CENTER:[-90.26,38.65],DEFAULT_ZOOM:13,useRef:initial=>({current:initial}),useEffect:()=>{},useState:initial=>[initial===false?true:initial,next=>{if(next?.center)updates.push(next);} ],panFallbackViewport:pan},'Map');
   const node=component({onRegionDidChange:event=>regions.push(event)});
   const drag=node.children.flat(Infinity).find(child=>child?.props?.['aria-label']==='Drag map to explore another area');assert.ok(drag);
   const target={setPointerCapture:()=>{},releasePointerCapture:()=>{},hasPointerCapture:()=>true};
