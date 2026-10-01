@@ -9,6 +9,27 @@ export const MODERATE_LOCAL_RESULT_COUNT=25;
 export const MAX_NEARBY_RADIUS_METERS=402336;
 export const LIVE_DISCOVERY_RADIUS_METERS=40234;
 const liveDiscoveryRequests=new Map<string,Promise<any>>();
+const overtureHydrationRequests=new Map<string,number>();
+
+export async function queueOvertureHydration(input:{latitude:number;longitude:number;radiusMeters:number}){
+  const latitude=Number(input.latitude),longitude=Number(input.longitude);
+  boundedCoordinate(latitude,longitude);
+  const radiusMeters=Math.min(40234,Math.max(1609,boundedRadius(input.radiusMeters)));
+  const key=[latitude.toFixed(2),longitude.toFixed(2),radiusMeters].join(':');
+  const last=overtureHydrationRequests.get(key)||0;
+  if(Date.now()-last<5*60_000)return null;
+  overtureHydrationRequests.set(key,Date.now());
+  const {data,error}=await getKleenestSupabaseClient().rpc('enqueue_place_discovery_hydration',{
+    p_latitude:latitude,
+    p_longitude:longitude,
+    p_radius_meters:radiusMeters,
+  });
+  if(error){
+    overtureHydrationRequests.delete(key);
+    throw error;
+  }
+  return data||null;
+}
 
 export async function harvestNearbyMapCandidates(input:{latitude:number;longitude:number;radiusMeters:number;amenityNames?:string[]}){
   const latitude=Number(input.latitude),longitude=Number(input.longitude);
@@ -299,6 +320,7 @@ export async function findAdaptiveNearbyPlaces(input:{latitude:number;longitude:
       break;
     }
   }
+  void queueOvertureHydration({latitude:input.latitude,longitude:input.longitude,radiusMeters:effectiveRadiusMeters}).catch(()=>{});
   return {
     rows,
     requestedRadiusMeters,
@@ -317,6 +339,7 @@ export async function refreshNearbyPlaceInventory(input:{latitude:number;longitu
   const radiusMeters=boundedRadius(input.radiusMeters);
   const limit=Math.max(1,Math.min(2000,Math.round(input.limit||2000)));
   const liveRadiusMeters=Math.min(radiusMeters,LIVE_DISCOVERY_RADIUS_METERS);
+  void queueOvertureHydration({latitude,longitude,radiusMeters}).catch(()=>{});
   const [canonicalRows,harvest]=await Promise.all([
     listNearbyMapCandidates({latitude,longitude,radiusMeters,search:input.search,limit}),
     harvestNearbyMapCandidates({latitude,longitude,radiusMeters:liveRadiusMeters,amenityNames:[]}).catch(()=>null),
