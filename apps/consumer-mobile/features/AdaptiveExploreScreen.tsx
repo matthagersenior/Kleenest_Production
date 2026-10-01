@@ -975,7 +975,7 @@ export default function AdaptiveExploreScreen() {
         relaxedAmenityFallback=true;
       }
     }
-    const displayRows=organizeDiscoveryRows(attachPresence(discoveryRows,livePresence),rankingAmenities);
+    const displayRows=organizeDiscoveryRows(attachPresence(discoveryRows,livePresence),rankingAmenityNames);
     if (!areaMatch&&!displayRows.length && preserveCacheOnEmpty && !query && !activeAmenityNames.length) {
       const fallback = await readNearbyCache();
       if (fallback?.rows?.length) {
@@ -1020,7 +1020,7 @@ export default function AdaptiveExploreScreen() {
         const enrichedBase=await enrich(completeRows);
         const enriched=organizeDiscoveryRows(
           attachPresence(await enrichProgression(enrichedBase,latitude,longitude,result.effectiveRadiusMeters),livePresence),
-          rankingAmenities,
+          rankingAmenityNames,
         );
         if(nearbyEnrichmentRunRef.current!==enrichmentRun)return;
         setRows(enriched);
