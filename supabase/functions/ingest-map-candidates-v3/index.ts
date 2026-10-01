@@ -291,26 +291,26 @@ Deno.serve(async request => {
     ? allLocations.filter((row: any) => requested.every(name => Boolean(row.amenities?.[name])))
     : allLocations;
   const shouldPersist = body.collect !== false;
-  const persistence = shouldPersist ? await persist(allLocations) : { ok: true, skipped: true };
-  const persistenceWarning = shouldPersist && persistence.ok === false
-    ? { code: "PERSISTENCE_DEFERRED", stage: "persistence", message: "Live places are available, but some canonical persistence could not be completed or durably queued. The map can continue using the live result." }
-    : shouldPersist && Number((persistence as any).queued_repairs || 0) > 0
-      ? { code: "PERSISTENCE_REPAIR_QUEUED", stage: "persistence", message: "Live places are available. Some canonical rows were durably queued for automatic retry." }
-      : null;
+  if (shouldPersist) {
+    EdgeRuntime.waitUntil(
+      persist(allLocations).then(result => {
+        if (result.ok === false) console.error("ingest-map-candidates-v3 background persistence deferred", result.code || "unknown");
+      }).catch(error => {
+        console.error("ingest-map-candidates-v3 background persistence exception", error instanceof Error ? error.message : "unknown");
+      }),
+    );
+  }
+  const persistence = shouldPersist
+    ? { ok: true, background: true, scheduled: true, canonicalization_complete: false }
+    : { ok: true, skipped: true };
 
   return json({
     ok: true,
-    degraded: Boolean(persistenceWarning),
+    degraded: false,
     contract: "interactive-discovery-plus-canonical-persistence",
-    canonical_persistence: shouldPersist
-      ? ((persistence as any).canonicalization_complete
-          ? "ingest_external_locations"
-          : (persistence as any).queued_for_repair
-            ? "queued_for_repair"
-            : "partial")
-      : "skipped",
-    canonicalization_complete: shouldPersist ? Boolean((persistence as any).canonicalization_complete) : null,
-    queued_for_repair: shouldPersist ? Boolean((persistence as any).queued_for_repair) : false,
+    ...(shouldPersist ? { canonical_persistence: "background" } : { canonical_persistence: "skipped" }),
+    canonicalization_complete: shouldPersist ? false : null,
+    queued_for_repair: false,
     acquisition_status: visibleLocations.length ? "success" : "empty",
     cached: false,
     discovered: visibleLocations.length,
@@ -321,7 +321,7 @@ Deno.serve(async request => {
     providers_attempted: acquired.providers_attempted,
     provider_failures: acquired.failures,
     persistence,
-    warning: persistenceWarning,
+    warning: null,
     locations: visibleLocations,
   });
 });
