@@ -90,32 +90,6 @@ function projectedOffset(lng: number, lat: number, viewport: Viewport) {
   };
 }
 
-function fallbackTiles(viewport: Viewport) {
-  if (!viewport.width || !viewport.height) return [] as Array<{ key: string; url: string; left: number; top: number }>;
-  const zoom = Math.max(1, Math.min(18, Math.round(viewport.zoom)));
-  const center = worldPoint(viewport.center[0], viewport.center[1], zoom);
-  const leftWorld = center.x - viewport.width / 2;
-  const topWorld = center.y - viewport.height / 2;
-  const firstX = Math.floor(leftWorld / TILE_SIZE);
-  const lastX = Math.floor((leftWorld + viewport.width) / TILE_SIZE);
-  const firstY = Math.max(0, Math.floor(topWorld / TILE_SIZE));
-  const lastY = Math.min(2 ** zoom - 1, Math.floor((topWorld + viewport.height) / TILE_SIZE));
-  const n = 2 ** zoom;
-  const tiles: Array<{ key: string; url: string; left: number; top: number }> = [];
-  for (let x = firstX; x <= lastX; x += 1) {
-    const wrappedX = ((x % n) + n) % n;
-    for (let y = firstY; y <= lastY; y += 1) {
-      tiles.push({
-        key: `${zoom}/${x}/${y}`,
-        url: `https://tile.openstreetmap.org/${zoom}/${wrappedX}/${y}.png`,
-        left: x * TILE_SIZE - leftWorld,
-        top: y * TILE_SIZE - topWorld,
-      });
-    }
-  }
-  return tiles;
-}
-
 function zoomForBounds(bounds: [number, number, number, number], width: number, height: number) {
   const [west, south, east, north] = bounds;
   if (!width || !height) return DEFAULT_ZOOM;
@@ -130,25 +104,12 @@ function zoomForBounds(bounds: [number, number, number, number], width: number, 
   return 1;
 }
 
-function FallbackRaster({ viewport }: { viewport: Viewport }) {
-  const tiles = useMemo(() => fallbackTiles(viewport), [viewport.center[0], viewport.center[1], viewport.zoom, viewport.width, viewport.height]);
+function FallbackRaster() {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      {tiles.map((tile) => (
-        <img
-          key={tile.key}
-          src={tile.url}
-          alt=""
-          draggable={false}
-          referrerPolicy="strict-origin-when-cross-origin"
-          style={{ position: 'absolute', width: TILE_SIZE, height: TILE_SIZE, left: tile.left, top: tile.top, userSelect: 'none' }}
-        />
-      ))}
       <View style={styles.fallbackBanner}>
-        <Text style={styles.fallbackText}>MapLibre unavailable · OpenStreetMap fallback</Text>
-      </View>
-      <View style={styles.fallbackAttribution}>
-        <Text style={styles.attributionText}>© OpenStreetMap contributors</Text>
+        <Text style={styles.fallbackTitle}>Map preview unavailable</Text>
+        <Text style={styles.fallbackText}>The nearby place list is still available below.</Text>
       </View>
     </View>
   );
@@ -259,7 +220,7 @@ export function Map({ children, style, mapStyle }: any) {
     >
       <div ref={hostRef} style={{ position: 'absolute', inset: 0, display: fallback ? 'none' : 'block' }} />
       <MapContext.Provider value={{ map, fallback, viewport, setViewport }}>
-        {fallback ? <FallbackRaster viewport={viewport} /> : null}
+        {fallback ? <FallbackRaster /> : null}
         {children}
       </MapContext.Provider>
     </View>
@@ -444,23 +405,18 @@ const styles = StyleSheet.create({
   },
   fallbackBanner: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    borderRadius: 999,
+    left: 12,
+    right: 12,
+    bottom: 12,
+    alignItems: 'center',
+    gap: 3,
+    borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,.94)',
     borderWidth: 1,
     borderColor: '#cbd9d0',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
   },
-  fallbackText: { fontSize: 8, fontWeight: '900', color: '#173d2b' },
-  fallbackAttribution: {
-    position: 'absolute',
-    right: 4,
-    bottom: 3,
-    backgroundColor: 'rgba(255,255,255,.82)',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-  },
-  attributionText: { fontSize: 7, color: '#365445' },
+  fallbackTitle: { fontSize: 12, fontWeight: '900', color: '#173d2b' },
+  fallbackText: { fontSize: 10, fontWeight: '600', color: '#365445', textAlign: 'center' },
 });
