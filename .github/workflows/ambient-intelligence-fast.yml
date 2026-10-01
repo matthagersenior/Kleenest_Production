@@ -5,11 +5,15 @@ on:
     paths:
       - 'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx'
       - 'apps/consumer-mobile/services/discoveryIntent.ts'
+      - 'apps/consumer-mobile/services/discoveryIntentCore.js'
       - 'apps/consumer-mobile/services/aiAssist.ts'
       - 'apps/consumer-mobile/app/location/**'
       - 'supabase/functions/consumer-search-intent/**'
-      - 'scripts/consumer-qa-regressions.test.mjs'\n      - 'scripts/ambient-discovery-intent.test.mjs'
+      - 'supabase/functions/ai-assist/**'
+      - 'scripts/consumer-qa-regressions.test.mjs'
+      - 'scripts/ambient-discovery-intent.test.mjs'
       - 'scripts/ambient-intelligence-product-audit.mjs'
+      - 'scripts/organic-ai-assist-audit.mjs'
       - '.github/workflows/ambient-intelligence-fast.yml'
 
 permissions:
@@ -28,10 +32,11 @@ jobs:
       - run: npm ci
       - name: Consumer discovery regression
         run: node --test scripts/consumer-qa-regressions.test.mjs
-      - name: Discovery intent unit contract\n        run: node --test scripts/ambient-discovery-intent.test.mjs\n      - name: Ambient product-shape audit
-        run: |
-          if [ -f scripts/ambient-intelligence-product-audit.mjs ]; then
-            node scripts/ambient-intelligence-product-audit.mjs
-          fi
+      - name: Discovery intent unit contract
+        run: node --test scripts/ambient-discovery-intent.test.mjs
+      - name: Ambient product-shape audit
+        run: node scripts/ambient-intelligence-product-audit.mjs
+      - name: Organic intelligence audit
+        run: node scripts/organic-ai-assist-audit.mjs
       - name: Consumer native typecheck
         run: npm run native:typecheck
