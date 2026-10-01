@@ -1151,7 +1151,6 @@ export default function AdaptiveExploreScreen() {
           const meters=Math.max(402,Math.min(40234,Math.round(intent.maxDetourMiles*1609.344)));
           setCorridor(meters);
         }
-        captureConsumerCoreLoopEvent('discovery_intent_applied',null,{mode:intent.mode,amenityCount:intentAmenities.length,restroomRequired:intent.restroomRequired,source:intent.source});
       }else{
         activeIntentRef.current=null;
         activeIntentAmenitiesRef.current=null;
