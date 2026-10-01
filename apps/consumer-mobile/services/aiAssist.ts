@@ -9,10 +9,10 @@ export async function invokeConsumerAi(task:ConsumerAiTask,context:Record<string
   const client=getKleenestSupabaseClient();
   const {data:{user},error:userError}=await client.auth.getUser();
   if(userError)throw userError;
-  if(!user)throw new Error('Sign in to use Kleenest AI.');
+  if(!user)throw new Error('Sign in to use writing and evidence guidance.');
   const {data,error}=await client.functions.invoke('ai-assist',{body:{task,context,instruction:instruction.trim()}});
   if(error)throw error;
-  if(!data?.answer)throw new Error(data?.error||'Kleenest AI returned no answer.');
+  if(!data?.answer)throw new Error(data?.error||'Guidance returned no response.');
   return data as AiAssistResult;
 }
 
