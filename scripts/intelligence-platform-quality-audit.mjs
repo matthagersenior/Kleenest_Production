@@ -1,4 +1,5 @@
-import fs from 'node:fs';\nimport { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 
 const failures=[];
 const read=(path)=>fs.existsSync(path)?fs.readFileSync(path,'utf8'):'';
