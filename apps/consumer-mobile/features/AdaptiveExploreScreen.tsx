@@ -44,6 +44,8 @@ import {
   cachedAgeLabel,
   readNearbyCache,
   readNearbyContinuity,
+  takeExploreReturnState,
+  writeExploreReturnState,
   writeNearbyCache,
   writeNearbyContinuity,
 } from '../services/nearbyCache';
@@ -63,6 +65,7 @@ import {
 import { palette } from '../components/ConsumerUI';
 import { SponsoredSlot } from '../components/SponsoredSlot';
 import { AdMobNativeSlot } from '../components/AdMobNativeSlot';
+import { organicExploreReason } from '../services/aiAssist';
 
 const DRAFT_KEY = 'kleenest.native.route.draft';
 const SEARCH_DESTINATION_GEOFENCE_RADIUS_M=150;
@@ -513,6 +516,7 @@ export default function AdaptiveExploreScreen() {
   const [route, setRoute] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [organicInsight,setOrganicInsight]=useState('');
   const [checkInFeedback,setCheckInFeedback]=useState<Record<string,CheckInActionFeedback>>({});
   const [cached, setCached] = useState(false);
   const [mapInteracting,setMapInteracting]=useState(false);
@@ -606,6 +610,7 @@ export default function AdaptiveExploreScreen() {
     return()=>{active=false};
   },[amenities]);
   const rankingAmenityNames=selectedAmenityNames.length?selectedAmenityNames:preferenceAmenityNames;
+  useEffect(()=>{let active=true;setOrganicInsight('');if(!selected)return()=>{active=false};void organicExploreReason(selected,rankingAmenityNames,mode==='route'?route:null).then(answer=>{if(active)setOrganicInsight(answer)}).catch(()=>{});return()=>{active=false}},[selected,rankingAmenityNames,mode,route]);
   const routeBounds = useMemo(() => {
     if (!route?.geometry?.coordinates?.length || selected || destinationCardOpen) return null;
     const points = route.geometry.coordinates as [number, number][];
@@ -682,8 +687,17 @@ export default function AdaptiveExploreScreen() {
     setCameraNonce((value)=>value+1);
   }
 
+  async function preserveExploreReturnState(){
+    await writeExploreReturnState({
+      mode,search,rows,origin,mapCenter,mapZoom,selectedId,searchAreaOrigin,searchAreaLabel,destinationCardOpen,
+      radiusMeters:radius,maxRadiusMeters:maxRadius,effectiveRadiusMeters,attemptedRadiiMeters,corridorMeters:corridor,
+      selectedAmenityNames,matchRule,autoExpand,route,
+    });
+  }
+
   async function goToSearchDestination(){
     if(!searchedDestination||!hasCoordinates(searchedDestination))return;
+    await preserveExploreReturnState();
     await Linking.openURL(navigateUrl(searchedDestination));
   }
 
@@ -849,7 +863,7 @@ export default function AdaptiveExploreScreen() {
   async function loadNearby(clearQuery = false, preserveCacheOnEmpty = false, overrideOrigin:[number,number]|null=null, forceLiveRecenter=false) {
     const enrichmentRun=++nearbyEnrichmentRunRef.current;
     const intent=activeIntentRef.current;
-    const activeAmenityNames=activeIntentAmenitiesRef.current??activeAmenityNames;
+    const activeAmenityNames=activeIntentAmenitiesRef.current??selectedAmenityNames;
     const requiresRestroom=Boolean(intent?.restroomRequired)||activeAmenityNames.length>0;
     const originalQuery=clearQuery?'':search.trim();
     const rawQuery=intent?intent.placeQuery:originalQuery;
@@ -867,7 +881,7 @@ export default function AdaptiveExploreScreen() {
     }
 
     let areaMatch:{origin:[number,number];label:string}|null=null;
-    const areaQuery=intent?.originText||(!intent&&rawQuery&&looksLikeAddressOrArea(rawQuery)?rawQuery:'');
+    const areaQuery=!overrideOrigin?(intent?.originText||(!intent&&rawQuery&&looksLikeAddressOrArea(rawQuery)?rawQuery:'')):'';
     if(areaQuery){
       const match=await resolveConsumerSearchLocation(areaQuery);
       if(!match)throw new Error('Kleenest could not locate “'+areaQuery+'”. Try the street number plus city/state or ZIP.');
@@ -888,7 +902,7 @@ export default function AdaptiveExploreScreen() {
         ? mapAreaOrigin
         : [Number(current!.coords.longitude),Number(current!.coords.latitude)];
     const latitude=nextOrigin[1],longitude=nextOrigin[0];
-    const query=areaMatch?'':rawQuery;
+    const query=areaMatch||overrideOrigin?'':rawQuery;
     if(areaMatch){
       setSearchAreaOrigin(areaMatch.origin);
       setSearchAreaLabel(areaMatch.label);
@@ -1190,6 +1204,9 @@ export default function AdaptiveExploreScreen() {
     const id = idOf(row);
     if (!id) return;
     captureConsumerRouteIntent(id);
+    const routeStart=mode==='route'&&Array.isArray(route?.originCoordinates)
+      ? route.originCoordinates
+      : searchAreaOrigin||origin;
     router.push({
       pathname: '/route',
       params: {
@@ -1198,6 +1215,11 @@ export default function AdaptiveExploreScreen() {
         addAddress: String(row?.address || ''),
         addCity: String(row?.city || ''),
         addState: String(row?.state || ''),
+        ...(routeStart?{
+          startLng:String(routeStart[0]),
+          startLat:String(routeStart[1]),
+          startLabel:mode==='route'?'Route start':searchAreaLabel||'Selected discovery area',
+        }:{}),
       },
     });
   }
@@ -1215,6 +1237,7 @@ export default function AdaptiveExploreScreen() {
       captureConsumerRouteIntent(id);
       captureConsumerCoreLoopEvent('navigation_started',id,{source:'explore'});
     }
+    await preserveExploreReturnState();
     await Linking.openURL(navigateUrl(row,route));
   }
 
@@ -1267,9 +1290,35 @@ export default function AdaptiveExploreScreen() {
     listAmenityCatalog().then(setAmenities).catch(() => {});
     getRewardCapabilities().then(setRewardCapabilities).catch(()=>setRewardCapabilities({}));
     let active = true;
-    Promise.all([readNearbyCache(), readNearbyContinuity()])
-      .then(([cache, continuity]) => {
+    let restoredExternalReturn=false;
+    Promise.all([readNearbyCache(), readNearbyContinuity(), takeExploreReturnState()])
+      .then(([cache, continuity, externalReturn]) => {
         if (!active) return;
+        if(externalReturn){
+          restoredExternalReturn=true;
+          setMode(externalReturn.mode);
+          setSearch(externalReturn.search||'');
+          setRows(externalReturn.rows||[]);
+          setOrigin(externalReturn.origin||null);
+          setMapCenter(externalReturn.mapCenter||externalReturn.searchAreaOrigin||externalReturn.origin||null);
+          if(Number.isFinite(externalReturn.mapZoom))setMapZoom(Number(externalReturn.mapZoom));
+          setSelectedId(externalReturn.selectedId||'');
+          setSearchAreaOrigin(externalReturn.searchAreaOrigin||null);
+          setSearchAreaLabel(externalReturn.searchAreaLabel||'');
+          setDestinationCardOpen(Boolean(externalReturn.destinationCardOpen));
+          if(Number.isFinite(externalReturn.radiusMeters))setRadius(Number(externalReturn.radiusMeters));
+          if(Number.isFinite(externalReturn.maxRadiusMeters))setMaxRadius(Number(externalReturn.maxRadiusMeters));
+          if(Number.isFinite(externalReturn.effectiveRadiusMeters))setEffectiveRadiusMeters(Number(externalReturn.effectiveRadiusMeters));
+          setAttemptedRadiiMeters(Array.isArray(externalReturn.attemptedRadiiMeters)?externalReturn.attemptedRadiiMeters:[]);
+          if(Number.isFinite(externalReturn.corridorMeters))setCorridor(Number(externalReturn.corridorMeters));
+          setSelectedAmenityNames(Array.isArray(externalReturn.selectedAmenityNames)?externalReturn.selectedAmenityNames:[]);
+          setMatchRule(externalReturn.matchRule==='any'?'any':'all');
+          setAutoExpand(externalReturn.autoExpand!==false);
+          setRoute(externalReturn.route||null);
+          setCached(false);
+          setMessage('Restored your Explore search after directions.');
+          return;
+        }
         if (
           continuity?.radiusMeters &&
           radiusChoices.some((choice) => choice.meters === continuity.radiusMeters)
@@ -1300,7 +1349,7 @@ export default function AdaptiveExploreScreen() {
         }
       })
       .finally(() => {
-        if (active) void load({ preserveCacheOnEmpty: true, recenterOnLiveLocation: true });
+        if (active&&!restoredExternalReturn) void load({ preserveCacheOnEmpty: true, recenterOnLiveLocation: true });
       });
     return () => { active = false; };
   }, []);
@@ -1336,7 +1385,7 @@ export default function AdaptiveExploreScreen() {
             onChangeText={(value)=>{setSearch(value);setInterpretedIntent(null);}}
             onSubmitEditing={() => void load()}
             returnKeyType="search"
-            placeholder={mode==='route'?"Try “clean restroom on my way to St. Louis”":"Try “clean restroom with a changing table nearby”"}
+            placeholder={mode==='route'?"Where are you going? Enter an address or place":"Address, school, workplace, city or brand"}
             placeholderTextColor={theme.muted}
           />
           <Pressable
@@ -1712,7 +1761,7 @@ export default function AdaptiveExploreScreen() {
                 <Text style={[s.mapControlText,{color:theme.accent}]}>↔</Text>
               </Pressable>:null}
             </View>
-            {pendingMapOrigin&&mode==='nearby'?(
+            {pendingMapOrigin&&mode==='nearby'&&!destinationCardOpen?(
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Search this map area"
@@ -1764,7 +1813,15 @@ export default function AdaptiveExploreScreen() {
                   >
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
                   </Pressable>
-                  {mode==='nearby'?<Pressable
+                  {mode==='nearby'&&pendingMapOrigin?<Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Search this map area"
+                    style={[s.secondarySmall,s.destinationAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
+                    disabled={loading}
+                    onPress={()=>void load({mapOrigin:pendingMapOrigin})}
+                  >
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>{loading?'Searching…':'Search here'}</Text>
+                  </Pressable>:mode==='nearby'?<Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Refresh discovery near destination"
                     style={[s.secondarySmall,s.destinationAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
@@ -1801,6 +1858,7 @@ export default function AdaptiveExploreScreen() {
                       <Text numberOfLines={1} style={[s.selectedDecisionMeta,{color:theme.muted}]}>
                         {[selected.discovery_recommended?recommendationReason(selected,rankingAmenityNames):null,selectedRoutePosition || distanceLabel(selected.distance_meters)].filter(Boolean).join(' · ')}
                       </Text>
+                      {organicInsight?<Text numberOfLines={2} style={[s.meta,{color:theme.ink,fontWeight:'800'}]}>{organicInsight}</Text>:null}
                       <Text numberOfLines={1} style={[s.meta,{color:theme.muted}]}>{[selected.address, selected.city].filter(Boolean).join(', ') || 'Address unavailable'}</Text>
                     </View>
                   </View>
@@ -1871,7 +1929,7 @@ export default function AdaptiveExploreScreen() {
               </View>
             ) : null}
 
-            <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results"/>
+            <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results" compact/>
 
             <View style={s.listHeading}>
               <View style={s.listHeadingMain}>
@@ -1896,7 +1954,7 @@ export default function AdaptiveExploreScreen() {
                 onDetails={() => router.push(`/location/${idOf(item)}`)}
                 onReview={() => router.push({pathname:'/location/[id]',params:{id:idOf(item),review:'1'}})}
                 route={mode === 'route' ? route : null}
-                requestedAmenities={rankingAmenityNames}
+                requestedAmenities={selectedAmenityNames}
                 checkInFeedback={checkInFeedback[idOf(item)]}
               />
             </View>
