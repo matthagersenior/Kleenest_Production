@@ -52,7 +52,10 @@ for(const token of [
   'Math.min(40234',
 ])need(core,token,'Consumer-triggered Overture hydration');
 
-if(read(ingest).toLowerCase().includes('google places'))failures.push('Overture ingestion must not depend on Google Places.');
+const ingestSource=read(ingest).toLowerCase();
+for(const forbidden of ['places.googleapis.com','maps.googleapis.com/maps/api/place','@googlemaps/places']){
+  if(ingestSource.includes(forbidden))failures.push('Overture ingestion must not depend on Google Places endpoint/import '+forbidden);
+}
 
 if(failures.length){
   console.error('Federated place discovery audit failed:');
