@@ -5,7 +5,7 @@ export async function runBusinessAi(task:BusinessAiTask,context:Record<string,un
 
 
 const organicBusinessCache=new Map<string,BusinessAiResponse>();
-export async function runOrganicBusinessInsight(signals:string[],context:Record<string,unknown>={}){
+export async function organicBusinessInsight(signals:string[],context:Record<string,unknown>={}){
  const cleanSignals=signals.map(value=>String(value||'').trim()).filter(Boolean).slice(0,6);
  const fallback=cleanSignals.length?`Current business signals: ${cleanSignals.slice(0,3).join(' · ')}.`:'No strong operational exception is visible in the current Kleenest metrics.';
  const key=JSON.stringify([cleanSignals,context]);
