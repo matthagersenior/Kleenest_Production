@@ -78,6 +78,14 @@ function worldPoint(lng: number, lat: number, zoom: number) {
   };
 }
 
+function panFallbackViewport(viewport:Viewport,dx:number,dy:number):Viewport {
+  if(!dx&&!dy)return viewport;
+  const point=worldPoint(viewport.center[0],viewport.center[1],viewport.zoom);
+  const longitude=(((point.x-dx)/point.scale*360)%360+360)%360-180;
+  const latitude=clampLatitude(Math.atan(Math.sinh(Math.PI*(1-2*(point.y-dy)/point.scale)))*180/Math.PI);
+  return {...viewport,center:[longitude,latitude]};
+}
+
 function projectedOffset(lng: number, lat: number, viewport: Viewport) {
   const center = worldPoint(viewport.center[0], viewport.center[1], viewport.zoom);
   const point = worldPoint(lng, lat, viewport.zoom);
@@ -154,11 +162,24 @@ function FallbackRaster({ viewport }: { viewport: Viewport }) {
   );
 }
 
-export function Map({ children, style, mapStyle }: any) {
+export function Map({ children, style, mapStyle, onRegionDidChange }: any) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
   const [fallback, setFallback] = useState(false);
   const [viewport, setViewport] = useState<Viewport>({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, width: 0, height: 0 });
+  const regionCallback=useRef(onRegionDidChange);
+  regionCallback.current=onRegionDidChange;
+  const dragRef=useRef<{x:number;y:number;viewport:Viewport;next:Viewport}|null>(null);
+  useEffect(()=>{
+    if(!map)return;
+    const onMoveEnd=(event:any)=>{
+      const center=map.getCenter();
+      regionCallback.current?.({nativeEvent:{center:[center.lng,center.lat],zoom:map.getZoom(),userInteraction:Boolean(event.originalEvent)}});
+    };
+    map.on('moveend',onMoveEnd);
+    return()=>{map.off('moveend',onMoveEnd);};
+  },[map]);
+
 
   useEffect(() => {
     if (!hostRef.current || typeof window === 'undefined') return;
@@ -258,6 +279,12 @@ export function Map({ children, style, mapStyle }: any) {
       }}
     >
       <div ref={hostRef} style={{ position: 'absolute', inset: 0, display: fallback ? 'none' : 'block' }} />
+      {fallback?<div aria-label="Drag map to explore another area" style={{position:'absolute',inset:0,touchAction:'none',cursor:'grab'}}
+        onPointerDown={event=>{if(event.button!==0)return;event.currentTarget.setPointerCapture(event.pointerId);dragRef.current={x:event.clientX,y:event.clientY,viewport,next:viewport};}}
+        onPointerMove={event=>{const drag=dragRef.current;if(!drag)return;drag.next=panFallbackViewport(drag.viewport,event.clientX-drag.x,event.clientY-drag.y);setViewport(drag.next);}}
+        onPointerUp={event=>{const drag=dragRef.current;dragRef.current=null;if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);if(drag&&Math.abs(event.clientX-drag.x)+Math.abs(event.clientY-drag.y)>5)regionCallback.current?.({nativeEvent:{center:drag.next.center,zoom:drag.next.zoom,userInteraction:true}});}}
+        onPointerCancel={()=>{dragRef.current=null;}}
+      />:null}
       <MapContext.Provider value={{ map, fallback, viewport, setViewport }}>
         {fallback ? <FallbackRaster viewport={viewport} /> : null}
         {children}

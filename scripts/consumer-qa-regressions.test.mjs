@@ -83,3 +83,13 @@ test('sports-center category is distinct from park',()=>{
   assert.equal(helpers.discoveryPlaceCategory({category:'park',osm_tags:{leisure:'sports_centre'}}),'fitness');
   assert.equal(helpers.discoveryPlaceCategory({category:'park',osm_tags:{leisure:'park'}}),'park');
 });
+
+test('raster map dragging updates the discovery center in the drag direction',()=>{
+  const path='apps/consumer-mobile/web/maplibrePreview.tsx';
+  const source=declaration(path,'clampLatitude')+'\n'+declaration(path,'worldPoint')+'\n'+declaration(path,'panFallbackViewport');
+  const pan=compile(source,{TILE_SIZE:256},'panFallbackViewport');
+  const viewport={center:[-90.26,38.65],zoom:13,width:400,height:400};
+  const next=pan(viewport,-200,0);
+  assert.ok(Math.abs(next.center[0]-(viewport.center[0]+200*360/(256*2**13)))<0.00001);assert.ok(Math.abs(next.center[1]-viewport.center[1])<0.00001);
+  assert.deepEqual(pan(viewport,0,0).center,viewport.center);
+});
