@@ -280,14 +280,11 @@ export async function findAdaptiveNearbyPlaces(input:{latitude:number;longitude:
       search:input.search,
       limit,
     });
-    const canonicalRows=await loadCanonical();
-    const harvest=harvestPromise?await harvestPromise.catch(()=>null):null;
-    rows=mergeDiscoveredPlaceRows(
-      canonicalRows,
-      Array.isArray(harvest?.locations)?harvest.locations:[],
-      limit,
-      {latitude:input.latitude,longitude:input.longitude},
-    );
+    rows=await loadCanonical();
+
+    // Canonical discovery is the interactive path. Live harvesting updates the
+    // shared inventory in the background and must never block the map/results.
+    if(harvestPromise)void harvestPromise.catch(()=>{});
 
     if(radiusMeters<=1609&&rows.length>=DENSE_LOCAL_RESULT_COUNT){
       densityClass='dense';
@@ -312,6 +309,24 @@ export async function findAdaptiveNearbyPlaces(input:{latitude:number;longitude:
     densityClass,
     resultCount:rows.length,
   };
+}
+
+export async function refreshNearbyPlaceInventory(input:{latitude:number;longitude:number;radiusMeters:number;search?:string;limit?:number}){
+  const latitude=Number(input.latitude),longitude=Number(input.longitude);
+  boundedCoordinate(latitude,longitude);
+  const radiusMeters=boundedRadius(input.radiusMeters);
+  const limit=Math.max(1,Math.min(2000,Math.round(input.limit||2000)));
+  const liveRadiusMeters=Math.min(radiusMeters,LIVE_DISCOVERY_RADIUS_METERS);
+  const [canonicalRows,harvest]=await Promise.all([
+    listNearbyMapCandidates({latitude,longitude,radiusMeters,search:input.search,limit}),
+    harvestNearbyMapCandidates({latitude,longitude,radiusMeters:liveRadiusMeters,amenityNames:[]}).catch(()=>null),
+  ]);
+  return mergeDiscoveredPlaceRows(
+    canonicalRows,
+    Array.isArray(harvest?.locations)?harvest.locations:[],
+    limit,
+    {latitude,longitude},
+  );
 }
 
 export type RouteDiscoveryCategory='restroom'|'all';
