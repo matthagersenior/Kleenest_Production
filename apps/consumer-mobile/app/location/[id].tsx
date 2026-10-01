@@ -19,6 +19,7 @@ import { assignCheckInRestroomFacility, identifyRestroomFacility, listRestroomFa
 import ReviewReportAction from '../../components/ReviewReportAction';
 import { completeTrustMission, missionEvidenceRequirement, readTrustMission, type TrustMission } from '../../services/trustMissions';
 import { useConsumerTheme } from '../../services/theme';
+import { organicPlaceSummary } from '../../services/aiAssist';
 import { cachedAgeLabel,readNearbyCache } from '../../services/nearbyCache';
 import { captureBetaError,friendlyConsumerError,recordBetaBreadcrumb } from '../../services/betaReporting';
 import { captureConsumerCoreLoopEvent } from '../../services/consumerTelemetry';
@@ -51,6 +52,7 @@ export default function LocationDetailScreen(){
   const [showEvidence,setShowEvidence]=useState(false),[submittedReviewId,setSubmittedReviewId]=useState<string|null>(null),[showMoreActions,setShowMoreActions]=useState(false),[showPlaceDetails,setShowPlaceDetails]=useState(false),[showAmenities,setShowAmenities]=useState(false),[showContribution,setShowContribution]=useState(reviewMode||missionMode),[showAllReviews,setShowAllReviews]=useState(false);
   const [facilities,setFacilities]=useState<RestroomFacility[]>([]),[selectedFacilityId,setSelectedFacilityId]=useState('');
   const [rewardCapabilities,setRewardCapabilities]=useState<any>({});
+  const [placeBrief,setPlaceBrief]=useState('');
   const reviewListRef=useRef<FlatList<any>>(null),reviewScrollDone=useRef(false);
   const missionMatches=missionMode&&activeMission?.status==='active'&&activeMission.locationId===locationId;
   const missionRequirement=missionMatches?missionEvidenceRequirement(activeMission):null;
@@ -60,6 +62,7 @@ export default function LocationDetailScreen(){
   const checkInAnimation=String(rewardCapabilities?.equipped?.checkin_animation?.reward_key||'');
   async function refresh(){
     setMessage('');
+    setPlaceBrief('');
     recordBetaBreadcrumb('location_refresh',`/location/${locationId}`,'Loading live restroom details');
     try{
       const nextPlace=await getMobileLocation(locationId);
@@ -76,6 +79,8 @@ export default function LocationDetailScreen(){
       setPlace(nextNetwork?{...presented,network:nextNetwork,network_verified:nextNetwork.network_verified,business_claimed:nextNetwork.business_claimed,network_state:nextNetwork.network_state}:presented);
       const reviewerIdentities=await listProgressionIdentities(nextReviews.map((review:any)=>String(review.user_id||''))).catch(()=>({}));
       const enrichedReviews=nextReviews.map((review:any)=>({...review,progressionIdentity:(reviewerIdentities as any)[String(review.user_id)]||null,contributor:review.contributor?{...review.contributor,progressionIdentity:(reviewerIdentities as any)[String(review.user_id)]||null}:review.contributor}));
+      const organicPlace=nextNetwork?{...presented,network:nextNetwork,network_verified:nextNetwork.network_verified,business_claimed:nextNetwork.business_claimed,network_state:nextNetwork.network_state}:presented;
+      void organicPlaceSummary(organicPlace,enrichedReviews).then(setPlaceBrief).catch(()=>{});
       setCheckInId(eligible?.id||null);
       setCheckInAt(eligible?.checked_in_at||nextPresence?.entered_at||null);
       setPresence(nextPresence);
@@ -270,6 +275,7 @@ export default function LocationDetailScreen(){
         <Pressable accessibilityRole="button" accessibilityLabel="Scan QR code" style={[s.utility,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={()=>router.push('/qr')}><Text style={[s.utilityText,{color:theme.accent}]}>⌁ Scan QR</Text></Pressable>
       </View>:null}
     </View>
+    {placeBrief?<View style={[s.networkBuildingCard,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.sectionEyebrow,{color:theme.accent}]}>USEFUL RIGHT NOW</Text><Text style={[s.networkVerificationBody,{color:theme.ink}]}>{placeBrief}</Text><Text style={[s.meta,{color:theme.muted}]}>Generated from the Kleenest facts shown on this page; live trust and freshness remain authoritative.</Text></View>:null}
     {deferredPhotoReview?<View style={[s.ownReviewPhotoActions,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.sectionEyebrow,{color:theme.accent}]}>{photoReviewId?'ADD PHOTOS FROM THIS VISIT':'ADD PHOTOS FROM A PREVIOUS VISIT'}</Text><Text style={[s.ownReviewPhotoTitle,{color:theme.ink}]}>Your verified review can still take photo evidence.</Text><Text style={[s.sectionBody,{color:theme.muted}]}>Choose photos you already took at this location. They stay attached to the original verified visit, and eligible photo evidence can still advance progression after you leave.</Text><View style={s.photoActionRow}><Pressable accessibilityRole="button" accessibilityLabel="Choose saved photos for review" accessibilityState={{disabled:photoBusy===String(deferredPhotoReview.id)}} disabled={photoBusy===String(deferredPhotoReview.id)} style={[s.secondary,{backgroundColor:theme.accent,borderColor:theme.line}]} onPress={()=>void addPhotosToPublishedReview(String(deferredPhotoReview.id),'library')}><Text style={[s.secondaryText,{color:theme.accentText}]}>{photoBusy===String(deferredPhotoReview.id)?'Adding…':'▧ Choose saved photos'}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Take another review photo" accessibilityState={{disabled:photoBusy===String(deferredPhotoReview.id)}} disabled={photoBusy===String(deferredPhotoReview.id)} style={[s.secondary,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>void addPhotosToPublishedReview(String(deferredPhotoReview.id),'camera')}><Text style={[s.secondaryText,{color:theme.accent}]}>📷 Take another</Text></Pressable></View></View>:null}
 
 
