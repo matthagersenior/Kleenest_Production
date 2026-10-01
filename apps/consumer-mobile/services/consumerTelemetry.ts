@@ -58,6 +58,7 @@ const coreLoopSessionId='core-'+Date.now().toString(36)+'-'+Math.random().toStri
 export type ConsumerCoreLoopEvent=
   |'app_open'
   |'nearby_results_shown'
+  |'discovery_intent_applied'
   |'place_selected'
   |'navigation_started'
   |'arrival_detected'
