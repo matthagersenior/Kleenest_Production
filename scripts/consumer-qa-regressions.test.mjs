@@ -144,3 +144,23 @@ test('fallback route fitting reports its actual viewport for subsequent zoom',()
   camera({initialViewState:{bounds:[-91,38,-89,39]}});effects[0]();
   assert.deepEqual(applied.center,[-90,38.5]);assert.equal(applied.zoom,9);assert.deepEqual(reported,{value:applied,userInteraction:false});
 });
+
+
+test('Explore explains Kleenest value before exposing advanced discovery controls',()=>{
+  const source=fs.readFileSync(screenPath,'utf8');
+  assert.match(source,/Find a place you can count on\./);
+  assert.match(source,/what it offers, and how recently the information was confirmed/i);
+  assert.match(source,/Find a useful stop on the way\./);
+  assert.match(source,/looks along the route for places that match what you need/i);
+  assert.ok(source.indexOf('Find a place you can count on.')<source.indexOf('Filter places'),'Core value must appear before advanced filters');
+});
+
+test('Explore core filters use user language instead of implementation language',()=>{
+  const source=fs.readFileSync(screenPath,'utf8');
+  for(const required of ['Kleenest partners','Earn rewards','Recently confirmed','Needs an update','Rewards first','How recent?','How far off route?']){
+    assert.ok(source.includes(required),`Missing plain-language label: ${required}`);
+  }
+  for(const retired of ['Paying Kleenest business locations','>Progression<','>Verified evidence<','>Evidence gaps<','>Progression first<','>Freshness<','>Route corridor<']){
+    assert.ok(!source.includes(retired),`Implementation-shaped copy remains: ${retired}`);
+  }
+});
