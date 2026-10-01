@@ -6,7 +6,7 @@ A table, migration, RPC, service, route, component, hidden screen, or feature fl
 
 ## Lifecycle
 
-`legacy-unverified → idea → data → backend → wired → discoverable → usable → persistent → verified → live`
+`legacy-unverified → idea → data → backend → wired → discoverable → understandable → usable → persistent → verified → live`
 
 `internal` is reserved for intentionally non-user-facing infrastructure.
 
@@ -16,7 +16,9 @@ Only **live** means the feature may be described as implemented, complete, shipp
 
 A live user-facing feature must document all of the following in `config/feature-lifecycle.json`:
 
-- the intended actor, discoverable entry point, and successful outcome;
+- the intended actor, discoverable entry point, plain-language value promise, primary action, successful outcome, and visible success cue;
+- a reasonable path to first value of seven user steps or fewer;
+- plain-language comprehension evidence showing the feature can be understood without implementation terminology;
 - UI evidence and service/local-logic evidence;
 - discoverability/navigation evidence;
 - loading, empty, error, and success states;
@@ -61,8 +63,24 @@ When discussing Kleenest status:
 - schema/data only → say **data**;
 - service/API only → say **backend**;
 - connected code without proven UX → say **wired**;
-- reachable but not fully proven → say **discoverable/usable/persistent** as appropriate;
+- reachable but not yet clear to an ordinary user → say **discoverable**;
+- clear enough that the intended user can understand the promise and next action → say **understandable**;
+- usable/persistent but not fully verified → say **usable/persistent** as appropriate;
 - tested but not production-certified → say **verified**;
 - only a fully evidenced production feature → say **live**.
 
 This contract exists so hidden capability work cannot be mistaken for a finished product feature.
+
+
+## Product comprehension rule
+
+Kleenest exists to reduce a real-world decision to something a normal person can understand and act on quickly.
+
+For every user-facing feature, verify:
+
+1. **What do I get?** The value promise is visible before advanced controls.
+2. **What do I do?** The primary action is obvious in ordinary language.
+3. **What happened?** Success is visible without interpreting internal status.
+4. **Was Kleenest worth using?** The user reaches useful value in seven actions or fewer unless the workflow is inherently multi-stage.
+
+Terms such as canonicalization, ingestion, RPC, evidence gaps, progression, corridor, and internal trust mechanics must not be required vocabulary for an ordinary Consumer or Business user. Those concepts can remain in KleenestOS or supporting explanations where appropriate.
