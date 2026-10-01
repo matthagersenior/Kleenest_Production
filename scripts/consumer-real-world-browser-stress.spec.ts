@@ -25,16 +25,40 @@ function clean(value:string){
 }
 
 async function readySearch(page:Page,timeout=45000){
-  await page.getByRole('button',{name:'SEARCH'}).first().waitFor({state:'visible',timeout});
+  const started=Date.now();
+  while(Date.now()-started<timeout){
+    const button=page.getByRole('button',{name:'SEARCH'}).first();
+    const working=page.getByText('WORKING…',{exact:true}).first();
+    const ready=await button.isVisible().catch(()=>false)
+      && await button.isEnabled().catch(()=>false)
+      && !(await working.isVisible().catch(()=>false));
+    if(ready){
+      // Initial Explore discovery starts asynchronously just after mount. Require
+      // a short stable idle window so a test search cannot race that first load.
+      await page.waitForTimeout(500);
+      const stillReady=await button.isVisible().catch(()=>false)
+        && await button.isEnabled().catch(()=>false)
+        && !(await working.isVisible().catch(()=>false));
+      if(stillReady)return;
+    }
+    await page.waitForTimeout(200);
+  }
+  throw new Error(`Explore search did not become idle within ${timeout}ms`);
 }
 
 async function search(page:Page,query:string,timeout=45000){
   const box=page.locator('input[aria-label="Discover nearby places"], input[aria-label="Search places along route"]').first();
   await expect(box).toBeVisible({timeout:20000});
-  await box.fill(query);
-  await page.getByRole('button',{name:'SEARCH'}).first().click();
   await readySearch(page,timeout);
-  await page.waitForTimeout(1200);
+  await box.fill(query);
+  const button=page.getByRole('button',{name:'SEARCH'}).first();
+
+  // Arm the busy-state observation before clicking so a fast render cannot make
+  // the test mistake the pre-click SEARCH button for a completed search.
+  const busy=page.getByText('WORKING…',{exact:true}).first().waitFor({state:'visible',timeout:10000});
+  await button.click();
+  await busy;
+  await readySearch(page,timeout);
 }
 
 async function collect(page:Page,stage:string,network:{failed:string[];bad:string[];errors:string[]},extra:Record<string,unknown>={}):Promise<Observation>{
