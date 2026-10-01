@@ -145,8 +145,9 @@ tokens('mobile-core domain facade',mobileIndex,[
 
 try{
   execFileSync(process.execPath,['--test','scripts/ambient-discovery-intent.test.mjs'],{stdio:'inherit'});
+  execFileSync(process.execPath,['scripts/ambient-intelligence-product-audit.mjs'],{stdio:'inherit'});
 }catch{
-  failures.push('ambient discovery intent unit contract failed');
+  failures.push('ambient discovery intent or product-shape contract failed');
 }
 
 if(failures.length){
