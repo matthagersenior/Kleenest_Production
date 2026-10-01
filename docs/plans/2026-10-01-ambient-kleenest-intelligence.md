@@ -33,12 +33,12 @@
 - Consumes: raw query, current mode, amenity catalog labels.
 - Produces: `DiscoveryIntent` with mode, origin text, place query, amenity terms, restroom requirement, freshness/rating/trust preferences, route detour preference, and a short plain-language summary.
 
-- [ ] **Step 1: Add the focused failing test**
+- [x] **Step 1: Add the focused failing test**
   - Natural route request is not treated as a literal address.
   - Plain addresses and brand names remain deterministic.
   - Deterministic fallback recognizes route phrases and common restroom/amenity intent.
 
-- [ ] **Step 2: Verify the relevant failure**
+- [x] **Step 2: Verify the relevant failure**
   - Run `node --test scripts/consumer-qa-regressions.test.mjs`.
   - Expected: natural-language intent assertions fail on current main behavior.
 
