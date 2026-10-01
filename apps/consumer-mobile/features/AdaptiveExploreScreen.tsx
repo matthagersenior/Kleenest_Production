@@ -1766,7 +1766,7 @@ export default function AdaptiveExploreScreen() {
               </View>
             ) : null}
 
-            <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results"/>
+            <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results" compact/>
 
             <View style={s.listHeading}>
               <View style={s.listHeadingMain}>
