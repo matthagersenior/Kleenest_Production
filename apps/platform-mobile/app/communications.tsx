@@ -10,11 +10,17 @@ import { getOwnerAuthorization } from '../services/ownerAdmin';
 import {
   archiveOwnerMailThread,
   connectOwnerMail,
+  forwardOwnerMailThread,
   getOwnerMailStatus,
   getOwnerMailThread,
   listOwnerMailThreads,
   replyOwnerMailThread,
+  sendOwnerMail,
+  setOwnerMailThreadInbox,
+  setOwnerMailThreadLabel,
   setOwnerMailThreadRead,
+  setOwnerMailThreadStarred,
+  trashOwnerMailThread,
   type OwnerMailConnectionStatus,
   type OwnerMailThread,
   type OwnerMailThreadSummary,
@@ -58,6 +64,17 @@ function excerpt(value:string,max=220){
   return clean.length>max?`${clean.slice(0,max-1)}…`:clean;
 }
 
+type MailboxView='action'|'active'|'waiting'|'sent'|'all';
+
+const kleenestMailQuery='{label:"Kleenest Outreach" label:"Kleenest Outreach - Consumer First v2" Kleenest} -in:spam -in:trash';
+
+const mailboxViews:Record<MailboxView,{label:string;description:string;mailbox:'inbox'|'sent'|'all';direction:'any'|'incoming'|'outgoing'}>={
+  action:{label:'Needs reply',description:'Kleenest conversations where the latest message came from them.',mailbox:'inbox',direction:'incoming'},
+  active:{label:'Active',description:'Current Kleenest conversations still in your Gmail inbox.',mailbox:'inbox',direction:'any'},
+  waiting:{label:'Waiting',description:'Kleenest conversations where you sent the latest message.',mailbox:'all',direction:'outgoing'},
+  sent:{label:'Sent outreach',description:'Outbound Kleenest prospect and partnership threads.',mailbox:'sent',direction:'any'},
+  all:{label:'All Kleenest',description:'Every Kleenest-related thread Gmail can find, excluding spam and trash.',mailbox:'all',direction:'any'},
+};
 export default function Communications(){
   const theme=usePlatformTheme();
   const card=useOSCardStyle();
@@ -69,14 +86,26 @@ export default function Communications(){
   const[selected,setSelected]=useState<OwnerMailThread|null>(null);
   const[query,setQuery]=useState('');
   const[unreadOnly,setUnreadOnly]=useState(false);
+  const[mailboxView,setMailboxView]=useState<MailboxView>('action');
   const[replyBody,setReplyBody]=useState('');
+  const[composeOpen,setComposeOpen]=useState(false);
+  const[composeTo,setComposeTo]=useState('');
+  const[composeCc,setComposeCc]=useState('');
+  const[composeBcc,setComposeBcc]=useState('');
+  const[composeSubject,setComposeSubject]=useState('');
+  const[composeBody,setComposeBody]=useState('');
+  const[forwardOpen,setForwardOpen]=useState(false);
+  const[forwardTo,setForwardTo]=useState('');
+  const[forwardBody,setForwardBody]=useState('');
   const[busy,setBusy]=useState(false);
   const[notice,setNotice]=useState('');
   const[searching,setSearching]=useState(false);
 
   const unreadCount=useMemo(()=>threads.filter(thread=>thread.unread).length,[threads]);
+  const selectedSummary=useMemo(()=>selected?threads.find(thread=>thread.id===selected.id)||null:null,[selected,threads]);
+  const currentView=mailboxViews[mailboxView];
 
-  async function load(options:{query?:string;unreadOnly?:boolean}={}){
+  async function load(options:{query?:string;unreadOnly?:boolean;view?:MailboxView}={}){
     setBusy(true);
     try{
       const auth=await getOwnerAuthorization();
@@ -89,7 +118,18 @@ export default function Communications(){
         setNotice('');
         return;
       }
-      const nextThreads=await listOwnerMailThreads({query:options.query??query,unreadOnly:options.unreadOnly??unreadOnly,maxResults:30});
+      const nextView=options.view??mailboxView;
+      const view=mailboxViews[nextView];
+      const typedQuery=(options.query??query).trim();
+      const gmailQuery=[kleenestMailQuery,typedQuery].filter(Boolean).join(' ');
+      const nextThreads=await listOwnerMailThreads({
+        query:gmailQuery,
+        unreadOnly:options.unreadOnly??unreadOnly,
+        maxResults:75,
+        mailbox:view.mailbox,
+        direction:view.direction,
+      });
+      setMailboxView(nextView);
       setThreads(nextThreads.threads);
       setNotice('');
     }catch(error:any){
@@ -214,15 +254,15 @@ export default function Communications(){
     finally{setBusy(false)}
   }
 
-  async function sendReply(){
+  async function sendReply(replyAll=false){
     if(!selected||!replyBody.trim())return;
     setBusy(true);
     try{
-      await replyOwnerMailThread({threadId:selected.id,body:replyBody});
+      await replyOwnerMailThread({threadId:selected.id,body:replyBody,replyAll});
       setReplyBody('');
       const result=await getOwnerMailThread(selected.id);
       setSelected(result.thread);
-      setNotice('Reply sent from Gmail.');
+      setNotice(replyAll?'Reply all sent from Gmail.':'Reply sent from Gmail.');
       await load();
     }catch(error:any){setNotice(String(error?.message||'Reply could not be sent.'))}
     finally{setBusy(false)}
@@ -251,6 +291,76 @@ export default function Communications(){
     finally{setBusy(false)}
   }
 
+  async function setThreadStarred(threadId:string,starred:boolean){
+    setBusy(true);
+    try{
+      await setOwnerMailThreadStarred(threadId,starred);
+      setThreads(current=>current.map(item=>item.id===threadId?{...item,starred}:item));
+      setNotice(starred?'Conversation starred in Gmail.':'Star removed in Gmail.');
+    }catch(error:any){setNotice(String(error?.message||'Star state could not be updated.'))}
+    finally{setBusy(false)}
+  }
+
+  async function trash(threadId:string){
+    setBusy(true);
+    try{
+      await trashOwnerMailThread(threadId);
+      setThreads(current=>current.filter(item=>item.id!==threadId));
+      if(selected?.id===threadId)setSelected(null);
+      setNotice('Conversation moved to Gmail Trash.');
+    }catch(error:any){setNotice(String(error?.message||'Conversation could not be moved to Trash.'))}
+    finally{setBusy(false)}
+  }
+
+  async function sendNewMail(){
+    if(!composeTo.trim()||!composeSubject.trim()||!composeBody.trim())return;
+    setBusy(true);
+    try{
+      await sendOwnerMail({to:composeTo,cc:composeCc,bcc:composeBcc,subject:composeSubject,body:composeBody});
+      setComposeTo('');setComposeCc('');setComposeBcc('');setComposeSubject('');setComposeBody('');setComposeOpen(false);
+      setNotice('Email sent from Gmail.');
+      await load();
+    }catch(error:any){setNotice(String(error?.message||'Email could not be sent.'))}
+    finally{setBusy(false)}
+  }
+
+  async function sendForward(){
+    if(!selected||!forwardTo.trim())return;
+    setBusy(true);
+    try{
+      await forwardOwnerMailThread({threadId:selected.id,to:forwardTo,body:forwardBody});
+      setForwardOpen(false);setForwardTo('');setForwardBody('');
+      setNotice('Message forwarded from Gmail. Attachments remain available through Open Gmail.');
+      await load();
+    }catch(error:any){setNotice(String(error?.message||'Forward could not be sent.'))}
+    finally{setBusy(false)}
+  }
+
+  async function setInboxState(threadId:string,inInbox:boolean){
+    setBusy(true);
+    try{
+      await setOwnerMailThreadInbox(threadId,inInbox);
+      setThreads(current=>current.map(item=>item.id===threadId?{...item,inInbox}:item));
+      if(selected?.id===threadId)setSelected(current=>current?{...current,inInbox}:current);
+      setNotice(inInbox?'Conversation moved to Inbox.':'Conversation archived in Gmail.');
+    }catch(error:any){setNotice(String(error?.message||'Inbox state could not be updated.'))}
+    finally{setBusy(false)}
+  }
+
+  async function setThreadLabel(labelName:string,applied:boolean){
+    if(!selected)return;
+    setBusy(true);
+    try{
+      await setOwnerMailThreadLabel(selected.id,labelName,applied);
+      setSelected(current=>current?{...current,labelNames:applied?[...new Set([...current.labelNames,labelName])]:current.labelNames.filter(name=>name!==labelName)}:current);
+      setNotice(applied?'Gmail label added.':'Gmail label removed.');
+    }catch(error:any){setNotice(String(error?.message||'Label could not be updated.'))}
+    finally{setBusy(false)}
+  }
+  function openInGmail(threadId:string){
+    const account=status?.emailAddress?'?authuser='+encodeURIComponent(status.emailAddress):'';
+    void Linking.openURL('https://mail.google.com/mail/u/'+account+'#all/'+encodeURIComponent(threadId));
+  }
   if(!status?.connected){
     return <ScrollView contentContainerStyle={{padding:16,gap:16,paddingBottom:70,backgroundColor:theme.canvas}}>
       <OSHero eyebrow="KLEENESTOS · COMMUNICATIONS" title="Email inbox" body="Read and respond to Kleenest outreach, partnership and prospect email without leaving the Owner app. Gmail access is granted explicitly and stays behind Owner authorization."/>
@@ -266,7 +376,7 @@ export default function Communications(){
   }
 
   return <ScrollView refreshControl={<RefreshControl refreshing={busy&&!searching} onRefresh={()=>void load()}/>} contentContainerStyle={{padding:16,gap:14,paddingBottom:80,backgroundColor:theme.canvas}}>
-    <OSHero eyebrow="KLEENESTOS · COMMUNICATIONS" title="Communications & Email" body="Inbox, prospect context, and replies in one Owner workflow.">
+    <OSHero eyebrow="KLEENESTOS · COMMUNICATIONS" title="Kleenest Smart Inbox" body="Gmail conversations filtered around Kleenest and grouped by what needs your attention.">
       <StatusPill label={status.emailAddress||'GMAIL CONNECTED'} tone="good"/>
       {unreadCount?<StatusPill label={`${unreadCount} UNREAD`} tone="warning"/>:null}
     </OSHero>
@@ -274,7 +384,41 @@ export default function Communications(){
     {notice?<View style={{...card,borderColor:theme.warning}}><Text style={{fontWeight:'800',color:theme.warning}}>{notice}</Text></View>:null}
 
     <View style={{...card,gap:10}}>
-      <Text style={{fontWeight:'900',color:theme.ink}}>Search mail</Text>
+      <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10}}>
+        <View style={{flex:1}}>
+          <Text style={{fontWeight:'900',color:theme.ink}}>Smart views</Text>
+          <Text style={{fontSize:12,lineHeight:18,color:theme.muted,marginTop:2}}>{currentView.description}</Text>
+        </View>
+        <Pressable onPress={()=>setComposeOpen(value=>!value)} style={{paddingHorizontal:13,paddingVertical:10,borderRadius:12,backgroundColor:theme.accent}}>
+          <Text style={{fontWeight:'900',color:theme.accentText}}>{composeOpen?'Close compose':'Compose'}</Text>
+        </Pressable>
+      </View>
+      <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+        {(Object.keys(mailboxViews) as MailboxView[]).map(view=>{
+          const active=view===mailboxView;
+          return <Pressable key={view} onPress={()=>void load({view})} style={{paddingHorizontal:12,paddingVertical:9,borderRadius:999,backgroundColor:active?theme.accent:theme.accentSoft}}>
+            <Text style={{fontWeight:'900',color:active?theme.accentText:theme.accent}}>{mailboxViews[view].label}</Text>
+          </Pressable>;
+        })}
+      </View>
+    </View>
+
+    {composeOpen?<View style={{...card,gap:9,borderColor:theme.accent}}>
+      <SectionHeader title='New email' body='Send from your connected Gmail account without leaving KleenestOS.'/>
+      <TextInput value={composeTo} onChangeText={setComposeTo} autoCapitalize='none' keyboardType='email-address' placeholder='To' placeholderTextColor={theme.muted} style={{borderWidth:1,borderColor:theme.line,borderRadius:12,paddingHorizontal:12,paddingVertical:10,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
+      <View style={{flexDirection:'row',gap:8}}>
+        <TextInput value={composeCc} onChangeText={setComposeCc} autoCapitalize='none' keyboardType='email-address' placeholder='Cc (optional)' placeholderTextColor={theme.muted} style={{flex:1,borderWidth:1,borderColor:theme.line,borderRadius:12,paddingHorizontal:12,paddingVertical:10,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
+        <TextInput value={composeBcc} onChangeText={setComposeBcc} autoCapitalize='none' keyboardType='email-address' placeholder='Bcc (optional)' placeholderTextColor={theme.muted} style={{flex:1,borderWidth:1,borderColor:theme.line,borderRadius:12,paddingHorizontal:12,paddingVertical:10,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
+      </View>
+      <TextInput value={composeSubject} onChangeText={setComposeSubject} placeholder='Subject' placeholderTextColor={theme.muted} style={{borderWidth:1,borderColor:theme.line,borderRadius:12,paddingHorizontal:12,paddingVertical:10,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
+      <TextInput value={composeBody} onChangeText={setComposeBody} multiline placeholder='Write your message…' placeholderTextColor={theme.muted} style={{minHeight:140,textAlignVertical:'top',borderWidth:1,borderColor:theme.line,borderRadius:12,padding:12,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
+      <View style={{flexDirection:'row',gap:8}}>
+        <Pressable disabled={busy||!composeTo.trim()||!composeSubject.trim()||!composeBody.trim()} onPress={()=>void sendNewMail()} style={{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:theme.accent,opacity:(busy||!composeTo.trim()||!composeSubject.trim()||!composeBody.trim())?0.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>Send</Text></Pressable>
+        <Pressable onPress={()=>setComposeOpen(false)} style={{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.ink}}>Cancel</Text></Pressable>
+      </View>
+    </View>:null}
+    <View style={{...card,gap:10}}>
+      <Text style={{fontWeight:'900',color:theme.ink}}>Search this Kleenest view</Text>
       <View style={{flexDirection:'row',gap:8}}>
         <TextInput value={query} onChangeText={setQuery} onSubmitEditing={()=>void search()} placeholder="Sender, company, subject, keywords…" placeholderTextColor={theme.muted} style={{flex:1,borderWidth:1,borderColor:theme.line,borderRadius:12,paddingHorizontal:12,paddingVertical:10,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
         <Pressable onPress={()=>void search()} style={{justifyContent:'center',paddingHorizontal:14,borderRadius:12,backgroundColor:theme.accent}}><Text style={{fontWeight:'900',color:theme.accentText}}>{searching?'…':'Search'}</Text></Pressable>
@@ -297,32 +441,69 @@ export default function Communications(){
       {selected.messages.map(message=><View key={message.id} style={{padding:12,borderRadius:13,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line,gap:6}}>
         <Text style={{fontWeight:'900',color:theme.ink}}>{message.sent?'You':message.from}</Text>
         <Text style={{fontSize:11,color:theme.muted}}>{formatDate(message.date)}</Text>
+        <Text style={{fontSize:11,color:theme.muted}}>To: {message.to||'—'}{message.cc?` · Cc: ${message.cc}`:''}</Text>
         <Text selectable style={{lineHeight:20,color:theme.ink}}>{message.body||message.snippet}</Text>
+        {message.attachments.length?<View style={{gap:5,marginTop:4}}>
+          <Text style={{fontSize:11,fontWeight:'900',color:theme.ink}}>Attachments</Text>
+          {message.attachments.map((attachment,index)=><View key={`${message.id}-${index}`} style={{paddingHorizontal:10,paddingVertical:7,borderRadius:10,backgroundColor:theme.accentSoft}}>
+            <Text numberOfLines={1} style={{fontSize:12,fontWeight:'800',color:theme.accent}}>📎 {attachment.filename}</Text>
+          </View>)}
+          <Text style={{fontSize:11,color:theme.muted}}>Use Open Gmail to preview, download, or forward attachments.</Text>
+        </View>:null}
       </View>)}
       <View style={{gap:7}}>
         <Text style={{fontWeight:'900',color:theme.ink}}>Reply</Text>
         <TextInput value={replyBody} onChangeText={setReplyBody} multiline placeholder="Write your reply…" placeholderTextColor={theme.muted} style={{minHeight:120,textAlignVertical:'top',borderWidth:1,borderColor:theme.line,borderRadius:13,padding:12,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
         <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
-          <Pressable disabled={!replyBody.trim()||busy} onPress={()=>void sendReply()} style={{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:theme.accent,opacity:(!replyBody.trim()||busy)?0.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>Reply</Text></Pressable>
+          <Pressable disabled={!replyBody.trim()||busy} onPress={()=>void sendReply(false)} style={{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:theme.accent,opacity:(!replyBody.trim()||busy)?0.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>Reply</Text></Pressable>
+          <Pressable disabled={!replyBody.trim()||busy} onPress={()=>void sendReply(true)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.accentSoft,opacity:(!replyBody.trim()||busy)?0.5:1}}><Text style={{fontWeight:'900',color:theme.accent}}>Reply all</Text></Pressable>
+          <Pressable onPress={()=>setForwardOpen(value=>!value)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Forward</Text></Pressable>
           <Pressable onPress={()=>void setThreadReadState(selected.id,selected.unread)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>{selected.unread?'Mark read':'Mark unread'}</Text></Pressable>
-          <Pressable onPress={()=>void archive(selected.id)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.ink}}>Archive</Text></Pressable>
+          <Pressable onPress={()=>void setThreadStarred(selected.id,!Boolean(selectedSummary?.starred))} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>{selectedSummary?.starred?'Unstar':'Star'}</Text></Pressable>
+          <Pressable onPress={()=>void setInboxState(selected.id,!selected.inInbox)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.ink}}>{selected.inInbox?'Archive':'Move to inbox'}</Text></Pressable>
+          <Pressable onPress={()=>openInGmail(selected.id)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.ink}}>Open Gmail</Text></Pressable>
+          <Pressable onPress={()=>void trash(selected.id)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.warning}}>Trash</Text></Pressable>
+        </View>
+        {forwardOpen?<View style={{gap:7,paddingTop:4}}>
+          <Text style={{fontWeight:'900',color:theme.ink}}>Forward</Text>
+          <TextInput value={forwardTo} onChangeText={setForwardTo} autoCapitalize='none' keyboardType='email-address' placeholder='Forward to' placeholderTextColor={theme.muted} style={{borderWidth:1,borderColor:theme.line,borderRadius:12,paddingHorizontal:12,paddingVertical:10,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
+          <TextInput value={forwardBody} onChangeText={setForwardBody} multiline placeholder='Optional note…' placeholderTextColor={theme.muted} style={{minHeight:90,textAlignVertical:'top',borderWidth:1,borderColor:theme.line,borderRadius:12,padding:12,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
+          <View style={{flexDirection:'row',gap:8}}>
+            <Pressable disabled={!forwardTo.trim()||busy} onPress={()=>void sendForward()} style={{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:theme.accent,opacity:(!forwardTo.trim()||busy)?0.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>Send forward</Text></Pressable>
+            <Pressable onPress={()=>setForwardOpen(false)} style={{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.ink}}>Cancel</Text></Pressable>
+          </View>
+        </View>:null}
+        <View style={{gap:7,paddingTop:4}}>
+          <Text style={{fontWeight:'900',color:theme.ink}}>Kleenest labels</Text>
+          <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+            {['Kleenest Outreach','Kleenest Outreach - Consumer First v2'].map(labelName=>{
+              const applied=selected.labelNames.includes(labelName);
+              return <Pressable key={labelName} onPress={()=>void setThreadLabel(labelName,!applied)} style={{paddingHorizontal:10,paddingVertical:8,borderRadius:999,backgroundColor:applied?theme.accent:theme.accentSoft}}>
+                <Text style={{fontSize:11,fontWeight:'900',color:applied?theme.accentText:theme.accent}}>{applied?'✓ ':''}{labelName}</Text>
+              </Pressable>;
+            })}
+          </View>
         </View>
       </View>
     </View>:null}
 
     <View style={{gap:9}}>
-      <SectionHeader title="Inbox" body={threads.length?`${threads.length} recent conversation${threads.length===1?'':'s'} · tap one to read and respond.`:'No matching inbox conversations.'}/>
+      <SectionHeader title={currentView.label} body={threads.length?`${threads.length} Kleenest conversation${threads.length===1?'':'s'} · tap one to read and respond.`:'No matching Kleenest conversations in this view.'}/>
       {threads.map(thread=><Pressable key={thread.id} onPress={()=>void openThread(thread)} style={{...card,gap:8,borderColor:thread.unread?theme.accent:theme.line,overflow:'hidden'}}>
         <View style={{flexDirection:'row',alignItems:'center',gap:8,minWidth:0}}>
           <View style={{flex:1,minWidth:0}}>
             <Text numberOfLines={1} ellipsizeMode="tail" style={{fontWeight:thread.unread?'900':'800',color:theme.ink,flexShrink:1}}>{thread.from}</Text>
           </View>
-          {thread.unread?<View style={{flexShrink:0}}><StatusPill label="UNREAD" tone="warning"/></View>:null}
+          {thread.starred?<Text style={{fontSize:16,color:theme.warning}}>★</Text>:null}
+          {!thread.latestSent&&thread.inInbox?<View style={{flexShrink:0}}><StatusPill label='NEEDS REPLY' tone='warning'/></View>:null}
+          {thread.latestSent?<View style={{flexShrink:0}}><StatusPill label='WAITING' tone='good'/></View>:null}
+          {thread.unread?<View style={{flexShrink:0}}><StatusPill label='UNREAD' tone='warning'/></View>:null}
         </View>
         <Text numberOfLines={2} ellipsizeMode="tail" style={{fontSize:16,fontWeight:'900',color:theme.ink,flexShrink:1}}>{thread.subject}</Text>
         <Text numberOfLines={2} ellipsizeMode="tail" style={{lineHeight:18,color:theme.muted,flexShrink:1}}>{excerpt(thread.snippet)}</Text>
         <Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:11,color:theme.muted,flexShrink:1}}>{formatDate(thread.date)} · {thread.messageCount} message{thread.messageCount===1?'':'s'}</Text>
         <View style={{flexDirection:'row',flexWrap:'wrap',justifyContent:'flex-end',gap:12}}>
+          <Pressable onPress={event=>{event.stopPropagation();void setThreadStarred(thread.id,!thread.starred)}} style={{flexShrink:0}}><Text style={{fontWeight:'900',color:thread.starred?theme.warning:theme.accent}}>{thread.starred?'Unstar':'Star'}</Text></Pressable>
           <Pressable onPress={event=>{event.stopPropagation();void setThreadReadState(thread.id,thread.unread)}} style={{flexShrink:0}}><Text style={{fontWeight:'900',color:theme.accent}}>{thread.unread?'Mark read':'Mark unread'}</Text></Pressable>
           <Pressable onPress={event=>{event.stopPropagation();void archive(thread.id)}} style={{flexShrink:0}}><Text style={{fontWeight:'900',color:theme.muted}}>Archive</Text></Pressable>
         </View>
