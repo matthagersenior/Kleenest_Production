@@ -406,6 +406,10 @@ export default function Communications(){
     {composeOpen?<View style={{...card,gap:9,borderColor:theme.accent}}>
       <SectionHeader title='New email' body='Send from your connected Gmail account without leaving KleenestOS.'/>
       <TextInput value={composeTo} onChangeText={setComposeTo} autoCapitalize='none' keyboardType='email-address' placeholder='To' placeholderTextColor={theme.muted} style={{borderWidth:1,borderColor:theme.line,borderRadius:12,paddingHorizontal:12,paddingVertical:10,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
+      <View style={{flexDirection:'row',gap:8}}>
+        <TextInput value={composeCc} onChangeText={setComposeCc} autoCapitalize='none' keyboardType='email-address' placeholder='Cc (optional)' placeholderTextColor={theme.muted} style={{flex:1,borderWidth:1,borderColor:theme.line,borderRadius:12,paddingHorizontal:12,paddingVertical:10,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
+        <TextInput value={composeBcc} onChangeText={setComposeBcc} autoCapitalize='none' keyboardType='email-address' placeholder='Bcc (optional)' placeholderTextColor={theme.muted} style={{flex:1,borderWidth:1,borderColor:theme.line,borderRadius:12,paddingHorizontal:12,paddingVertical:10,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
+      </View>
       <TextInput value={composeSubject} onChangeText={setComposeSubject} placeholder='Subject' placeholderTextColor={theme.muted} style={{borderWidth:1,borderColor:theme.line,borderRadius:12,paddingHorizontal:12,paddingVertical:10,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
       <TextInput value={composeBody} onChangeText={setComposeBody} multiline placeholder='Write your message…' placeholderTextColor={theme.muted} style={{minHeight:140,textAlignVertical:'top',borderWidth:1,borderColor:theme.line,borderRadius:12,padding:12,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
       <View style={{flexDirection:'row',gap:8}}>
@@ -437,18 +441,48 @@ export default function Communications(){
       {selected.messages.map(message=><View key={message.id} style={{padding:12,borderRadius:13,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line,gap:6}}>
         <Text style={{fontWeight:'900',color:theme.ink}}>{message.sent?'You':message.from}</Text>
         <Text style={{fontSize:11,color:theme.muted}}>{formatDate(message.date)}</Text>
+        <Text style={{fontSize:11,color:theme.muted}}>To: {message.to||'—'}{message.cc?` · Cc: ${message.cc}`:''}</Text>
         <Text selectable style={{lineHeight:20,color:theme.ink}}>{message.body||message.snippet}</Text>
+        {message.attachments.length?<View style={{gap:5,marginTop:4}}>
+          <Text style={{fontSize:11,fontWeight:'900',color:theme.ink}}>Attachments</Text>
+          {message.attachments.map((attachment,index)=><View key={`${message.id}-${index}`} style={{paddingHorizontal:10,paddingVertical:7,borderRadius:10,backgroundColor:theme.accentSoft}}>
+            <Text numberOfLines={1} style={{fontSize:12,fontWeight:'800',color:theme.accent}}>📎 {attachment.filename}</Text>
+          </View>)}
+          <Text style={{fontSize:11,color:theme.muted}}>Use Open Gmail to preview, download, or forward attachments.</Text>
+        </View>:null}
       </View>)}
       <View style={{gap:7}}>
         <Text style={{fontWeight:'900',color:theme.ink}}>Reply</Text>
         <TextInput value={replyBody} onChangeText={setReplyBody} multiline placeholder="Write your reply…" placeholderTextColor={theme.muted} style={{minHeight:120,textAlignVertical:'top',borderWidth:1,borderColor:theme.line,borderRadius:13,padding:12,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
         <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
-          <Pressable disabled={!replyBody.trim()||busy} onPress={()=>void sendReply()} style={{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:theme.accent,opacity:(!replyBody.trim()||busy)?0.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>Reply</Text></Pressable>
+          <Pressable disabled={!replyBody.trim()||busy} onPress={()=>void sendReply(false)} style={{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:theme.accent,opacity:(!replyBody.trim()||busy)?0.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>Reply</Text></Pressable>
+          <Pressable disabled={!replyBody.trim()||busy} onPress={()=>void sendReply(true)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.accentSoft,opacity:(!replyBody.trim()||busy)?0.5:1}}><Text style={{fontWeight:'900',color:theme.accent}}>Reply all</Text></Pressable>
+          <Pressable onPress={()=>setForwardOpen(value=>!value)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Forward</Text></Pressable>
           <Pressable onPress={()=>void setThreadReadState(selected.id,selected.unread)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>{selected.unread?'Mark read':'Mark unread'}</Text></Pressable>
           <Pressable onPress={()=>void setThreadStarred(selected.id,!Boolean(selectedSummary?.starred))} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>{selectedSummary?.starred?'Unstar':'Star'}</Text></Pressable>
-          <Pressable onPress={()=>void archive(selected.id)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.ink}}>Archive</Text></Pressable>
+          <Pressable onPress={()=>void setInboxState(selected.id,!selected.inInbox)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.ink}}>{selected.inInbox?'Archive':'Move to inbox'}</Text></Pressable>
           <Pressable onPress={()=>openInGmail(selected.id)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.ink}}>Open Gmail</Text></Pressable>
           <Pressable onPress={()=>void trash(selected.id)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:12,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.warning}}>Trash</Text></Pressable>
+        </View>
+        {forwardOpen?<View style={{gap:7,paddingTop:4}}>
+          <Text style={{fontWeight:'900',color:theme.ink}}>Forward</Text>
+          <TextInput value={forwardTo} onChangeText={setForwardTo} autoCapitalize='none' keyboardType='email-address' placeholder='Forward to' placeholderTextColor={theme.muted} style={{borderWidth:1,borderColor:theme.line,borderRadius:12,paddingHorizontal:12,paddingVertical:10,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
+          <TextInput value={forwardBody} onChangeText={setForwardBody} multiline placeholder='Optional note…' placeholderTextColor={theme.muted} style={{minHeight:90,textAlignVertical:'top',borderWidth:1,borderColor:theme.line,borderRadius:12,padding:12,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
+          <View style={{flexDirection:'row',gap:8}}>
+            <Pressable disabled={!forwardTo.trim()||busy} onPress={()=>void sendForward()} style={{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:theme.accent,opacity:(!forwardTo.trim()||busy)?0.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>Send forward</Text></Pressable>
+            <Pressable onPress={()=>setForwardOpen(false)} style={{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}}><Text style={{fontWeight:'900',color:theme.ink}}>Cancel</Text></Pressable>
+          </View>
+        </View>:null}
+        <View style={{gap:7,paddingTop:4}}>
+          <Text style={{fontWeight:'900',color:theme.ink}}>Kleenest labels</Text>
+          <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+            {['Kleenest Outreach','Kleenest Outreach - Consumer First v2'].map(labelName=>{
+              const applied=selected.labelNames.includes(labelName);
+              return <Pressable key={labelName} onPress={()=>void setThreadLabel(labelName,!applied)} style={{paddingHorizontal:10,paddingVertical:8,borderRadius:999,backgroundColor:applied?theme.accent:theme.accentSoft}}>
+                <Text style={{fontSize:11,fontWeight:'900',color:applied?theme.accentText:theme.accent}}>{applied?'✓ ':''}{labelName}</Text>
+              </Pressable>;
+            })}
+          </View>
         </View>
       </View>
     </View>:null}
