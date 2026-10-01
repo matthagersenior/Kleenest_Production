@@ -37,6 +37,7 @@ import { visitFreshness } from '../services/evidenceFormatting';
 import { attachLocationNetwork, attachLocationTrust, listLocationNetworkStatuses, listLocationTrustSummaries, networkEvidenceSummary } from '../services/locationTrust';
 import { useConsumerTheme } from '../services/theme';
 import { resolveConsumerSearchLocation } from '../services/locationResolver';
+import { interpretDiscoveryIntent, resolveIntentAmenityNames, shouldInterpretDiscoveryQuery, type DiscoveryIntent } from '../services/discoveryIntent';
 import {
   cachedAgeLabel,
   readNearbyCache,
@@ -173,8 +174,7 @@ const verificationWindowLabel = (value: string | null | undefined) => {
 const radiusLabel = (meters: number) => `${Math.round(meters / 1609.344)} mi`;
 const looksLikeAddressOrArea = (value: string) => {
   const query=value.trim();
-  const conversationalDiscovery=/\b(on my way|along (?:my |the )?route|en route|headed to|going to|find me|i need|need a|looking for|somewhere (?:with|that)|with a (?:clean|family|changing|wheelchair|accessible)|that has|minimal detour|quick stop)\b/i.test(query);
-  if(conversationalDiscovery)return false;
+  if(shouldInterpretDiscoveryQuery(query))return false;
   return Boolean(query) && (
     /\d/.test(query)
     || /,/.test(query)
@@ -279,6 +279,22 @@ function matchedRequestedAmenities(item: any, requested: string[]) {
   return requested.filter((name) => available.has(String(name).trim().toLowerCase()));
 }
 
+function matchExplanationLines(item:any,requested:string[],route:any){
+  const lines:string[]=[];
+  const matches=matchedRequestedAmenities(item,requested);
+  if(matches.length)lines.push('Matches '+matches.slice(0,3).join(', '));
+  const fresh=visitFreshness(item?.trust?.latest_verified_at||item?.network?.latest_evidence_at||item?.updated_at);
+  if(fresh)lines.push('Evidence '+fresh.toLowerCase());
+  const confirmations=Math.max(Number(item?.trust?.verified_visit_count||0),Number(item?.network?.verified_visits||0));
+  if(confirmations>0)lines.push(String(confirmations)+' verified visit'+(confirmations===1?'':'s'));
+  if(item?.network?.network_verified)lines.push('Kleenest Network verified');
+  const clean=Number(item?.cleanliness_pct);
+  if(Number.isFinite(clean)&&clean>0)lines.push(Math.round(clean)+'% cleanliness from recorded evidence');
+  if(route&&Number.isFinite(Number(item?.distance_to_route_meters)))lines.push(distanceLabel(item.distance_to_route_meters)+' off route');
+  else if(Number.isFinite(Number(item?.distance_meters)))lines.push(distanceLabel(item.distance_meters)+' away');
+  return Array.from(new Set(lines)).slice(0,4);
+}
+
 function RequestedAmenityMatches({ item, requested, compact = false }: {
   item: any;
   requested: string[];
@@ -362,6 +378,8 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
   const reviewCount = Number(item.review_count || 0);
   const checkInBusy=checkInFeedback?.status==='checking';
   const [showTrustEvidence,setShowTrustEvidence]=useState(false);
+  const [showMatchEvidence,setShowMatchEvidence]=useState(false);
+  const matchLines=matchExplanationLines(item,requestedAmenities,route);
   return (
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}, selected && s.cardActive]}>
       <Pressable
@@ -397,6 +415,15 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         ) : null}
         <CompactRestroomSignals item={item} />
         <RequestedAmenityMatches item={item} requested={requestedAmenities} />
+        {matchLines.length?<View style={s.trustSummaryRow}>
+          <Text style={[s.trustLine,{color:theme.muted}]}>{matchLines[0]}</Text>
+          <Pressable accessibilityRole="button" accessibilityState={{expanded:showMatchEvidence}} onPress={()=>setShowMatchEvidence(value=>!value)} hitSlop={8}>
+            <Text style={[s.trustWhy,{color:theme.accent}]}>{showMatchEvidence?'Hide match details':'Why this match?'}</Text>
+          </Pressable>
+        </View>:null}
+        {showMatchEvidence&&matchLines.length?<View style={[s.trustEvidenceBox,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+          {matchLines.map((line,index)=><Text key={line+String(index)} style={[s.trustEvidenceText,{color:theme.ink}]}>• {line}</Text>)}
+        </View>:null}
         <View style={s.trustSummaryRow}>
           <Text style={[s.trustLine,{color:theme.ink}]}>{trustSummaryLine(item)}</Text>
           <Pressable accessibilityRole="button" accessibilityState={{expanded:showTrustEvidence}} onPress={()=>setShowTrustEvidence(value=>!value)} hitSlop={8}>
@@ -457,6 +484,7 @@ export default function AdaptiveExploreScreen() {
   const [fitRouteCamera,setFitRouteCamera]=useState(true);
   const [destinationCardOpen,setDestinationCardOpen]=useState(false);
   const [search, setSearch] = useState('');
+  const [interpretedIntent,setInterpretedIntent]=useState<DiscoveryIntent|null>(null);
   const [searchAreaOrigin,setSearchAreaOrigin]=useState<[number,number]|null>(null);
   const [searchAreaLabel,setSearchAreaLabel]=useState('');
   const [pendingMapOrigin,setPendingMapOrigin]=useState<[number,number]|null>(null);
@@ -1233,10 +1261,10 @@ export default function AdaptiveExploreScreen() {
             style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}
             maxFontSizeMultiplier={1.2}
             value={search}
-            onChangeText={setSearch}
+            onChangeText={(value)=>{setSearch(value);setInterpretedIntent(null);}}
             onSubmitEditing={() => void load()}
             returnKeyType="search"
-            placeholder={mode==='route'?"Where are you going? Enter an address or place":"Address, school, workplace, city or brand"}
+            placeholder={mode==='route'?"Try “clean restroom on my way to St. Louis”":"Try “clean restroom with a changing table nearby”"}
             placeholderTextColor={theme.muted}
           />
           <Pressable
@@ -1248,6 +1276,11 @@ export default function AdaptiveExploreScreen() {
             <Text maxFontSizeMultiplier={1.15} style={[s.searchButtonText,{color:theme.accentText}]}>{loading ? 'WORKING…' : 'SEARCH'}</Text>
           </Pressable>
         </View>
+
+        {interpretedIntent?.summary?<View style={[s.searchAreaChip,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+          <Text style={[s.searchAreaText,{color:theme.ink}]}>Searching for {interpretedIntent.summary}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Clear interpreted search" onPress={()=>{setInterpretedIntent(null);setSearch('');}}><Text style={[s.searchAreaAction,{color:theme.accent}]}>Clear</Text></Pressable>
+        </View>:null}
 
         {searchAreaLabel?<View style={[s.searchAreaChip,{backgroundColor:theme.accentSoft}]}><Text style={[s.searchAreaText,{color:theme.ink}]}>{mode==='route'?'Destination':'Searching near'} {searchAreaLabel}</Text><Pressable accessibilityRole="button" accessibilityLabel={mode==='route'?'Clear route destination':'Use my location instead'} onPress={()=>{setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');setDestinationCardOpen(false);setRoute(null);if(mode==='nearby')void load({clearQuery:true});else{setRows([]);setSelectedId('');setMessage('Enter a destination address above, or use your saved route draft.');}}}><Text style={[s.searchAreaAction,{color:theme.accent}]}>{mode==='route'?'Clear destination':'Use my location'}</Text></Pressable></View>:null}
 
