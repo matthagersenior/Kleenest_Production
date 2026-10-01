@@ -126,3 +126,37 @@ export async function organicRouteSummary(route:any,stops:any[],bestStop:any=nul
   const core=[route?.distanceMiles!=null?`${route.distanceMiles} mi`:null,route?.durationMinutes!=null?`about ${route.durationMinutes} min`:null,`${stops.length} stop${stops.length===1?'':'s'}`].filter(Boolean).join(' · ');
   return (await invokeOrganicConsumerAi('route_summary',context,'Summarize this built route in one or two short sentences without changing the stop order.',`Route brief: ${core}. Your stop order stays under your control.`)).answer;
 }
+
+
+export async function organicMissionSuggestion(candidate:any,progression:any={}){
+  const mission={
+    id:String(candidate?.id||candidate?.objective_id||candidate?.location_id||''),
+    title:text(candidate?.title||candidate?.name||candidate?.location_name||candidate?.kind||'Useful Kleenest work nearby'),
+    kind:text(candidate?.kind),
+    location_name:text(candidate?.location_name||candidate?.name),
+    reason:text(candidate?.reason||candidate?.description||candidate?.rationale),
+  };
+  const context={mission,progression:{
+    lifetime_xp:Number(progression?.lifetime_xp||0),
+    level:Number(progression?.level||progression?.global_level?.level||1),
+    trust_rank:text(progression?.trust_rank||progression?.contributor_trust?.rank),
+  }};
+  const fallback=`A useful next move: ${mission.title}.${mission.reason?` ${mission.reason}`:''}`;
+  return (await invokeOrganicConsumerAi('mission_suggestion',context,'Explain this already-selected Kleenest opportunity as one concise next move. Do not invent rewards or eligibility.',fallback)).answer;
+}
+
+export async function organicWeeklyRecap(summary:any){
+  const context={week:{
+    period_days:Number(summary?.periodDays||7),
+    visits:Number(summary?.visitCount||0),
+    places:Number(summary?.placeCount||0),
+    verified_contributions:Number(summary?.verifiedVisitCount||0),
+    reviews:Number(summary?.reviewedCount||0),
+    review_ready:Number(summary?.reviewReadyCount||0),
+    verification_available:Number(summary?.verificationAvailableCount||0),
+    photo_ready:Number(summary?.photoOpenCount||0),
+  }};
+  const week=context.week;
+  const fallback=`Your last ${week.period_days} days: ${week.visits} visit${week.visits===1?'':'s'} across ${week.places} place${week.places===1?'':'s'}, with ${week.verified_contributions} verified visit${week.verified_contributions===1?'':'s'} and ${week.reviews} review${week.reviews===1?'':'s'}.`;
+  return (await invokeOrganicConsumerAi('weekly_recap',context,'Summarize this account-scoped Kleenest week in one or two useful sentences. Mention an unfinished contribution only if the supplied counts show one.',fallback)).answer;
+}
