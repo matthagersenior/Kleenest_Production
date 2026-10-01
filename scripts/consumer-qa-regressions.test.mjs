@@ -12,6 +12,13 @@ function declaration(path,name){
   visit(source);assert.ok(found,`Production function ${name} exists`);
   return found.getText(source).replace(/^export /,'');
 }
+function variableDeclaration(path,name){
+  const source=ts.createSourceFile(path,fs.readFileSync(path,'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+  let found;
+  function visit(node){if(ts.isVariableDeclaration(node)&&node.name?.getText(source)===name)found=node;ts.forEachChild(node,visit);}
+  visit(source);assert.ok(found,`Production variable ${name} exists`);
+  return `const ${name}=${found.initializer?.getText(source)};`;
+}
 function compile(source,context,name){
   const js=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.React,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   return new Function(...Object.keys(context),`${js};return ${name};`)(...Object.values(context));
@@ -167,7 +174,7 @@ test('Explore core filters use user language instead of implementation language'
 
 
 test('natural discovery request is not mistaken for a literal address search',()=>{
-  const looksLikeAddressOrArea=compile(declaration(screenPath,'looksLikeAddressOrArea'),{},'looksLikeAddressOrArea');
+  const looksLikeAddressOrArea=compile(variableDeclaration(screenPath,'looksLikeAddressOrArea'),{},'looksLikeAddressOrArea');
   assert.equal(looksLikeAddressOrArea('123 Main St, Sparta, IL 62286'),true);
   assert.equal(looksLikeAddressOrArea('Pizza Hut'),false);
   assert.equal(looksLikeAddressOrArea('clean restroom with a changing table on my way to St. Louis'),false);
