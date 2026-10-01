@@ -7,7 +7,7 @@ import { currentBusinessId,listBusinessWorkspaceOptions } from '../services/capa
 import { getBusinessProductAccess,getBusinessServiceEntitlement } from '../services/productAccess';
 import { getBusinessOnboardingGate,getBusinessOnboardingState } from '../services/onboarding';
 import { useBusinessTheme } from '../services/theme';
-import { runOrganicBusinessInsight } from '../services/ai';
+import { organicBusinessInsight } from '../services/ai';
 
 function count(value:any){
  if(Array.isArray(value))return value.length;
@@ -74,7 +74,7 @@ export default function BusinessHome(){
    const attentionCount=count(operations?.remediation)+count(operations?.reverification)+count(operations?.preventive);
    const portfolioSummary=portfolio?.summary||{};
    const signals=[attentionCount?`${attentionCount} operation item${attentionCount===1?'':'s'} need attention`:null,dashboard?.trust?.score!=null?`Trust quality ${dashboard.trust.score}`:dashboard?.trust?.overall_score!=null?`Trust quality ${dashboard.trust.overall_score}`:null,dashboard?.health?.score!=null?`Restroom health ${dashboard.health.score}`:dashboard?.health?.overall_score!=null?`Restroom health ${dashboard.health.overall_score}`:null,portfolioSummary?.portfolio_location_count!=null?`${portfolioSummary.portfolio_location_count} portfolio locations`:null,(analytics as any)?.occupancy?.check_ins!=null?`${(analytics as any).occupancy.check_ins} check-ins in the current analytics window`:null].filter(Boolean) as string[];
-   void runOrganicBusinessInsight(signals,{business_id:businessId,analytics_window:'current_dashboard'}).then(setBusinessBrief).catch(()=>{});
+   void organicBusinessInsight(signals,{business_id:businessId,analytics_window:'current_dashboard'}).then(setBusinessBrief).catch(()=>{});
    const degraded=Array.isArray(operations.degradedServices)?operations.degradedServices.filter(Boolean):[];
    setMessage(degraded.length?((degraded.length===1?degraded[0]:degraded.join(', '))+' temporarily unavailable. Other Business controls remain active.'):'');
   }catch(e:any){
