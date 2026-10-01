@@ -1,0 +1,153 @@
+name: PR Completion Guard
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_run:
+    workflows: ["Production CI"]
+    types: [completed]
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  checks: read
+  contents: write
+  pull-requests: write
+  statuses: read
+
+concurrency:
+  group: pr-completion-guard
+  cancel-in-progress: false
+
+jobs:
+  completion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Refresh, retry, and merge eligible PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const repoFullName = `${owner}/${repo}`;
+
+            const prs = await github.paginate(github.rest.pulls.list, {
+              owner,
+              repo,
+              state: 'open',
+              base: 'main',
+              per_page: 100,
+            });
+
+            for (const pr of prs) {
+              core.info(`PR #${pr.number}: ${pr.title}`);
+
+              if (pr.draft) {
+                core.info('  skip: draft');
+                continue;
+              }
+
+              if (!pr.head.repo || pr.head.repo.full_name !== repoFullName) {
+                core.info('  skip: fork/external head');
+                continue;
+              }
+
+              const runsResponse = await github.rest.actions.listWorkflowRunsForRepo({
+                owner,
+                repo,
+                head_sha: pr.head.sha,
+                event: 'pull_request',
+                per_page: 100,
+              });
+
+              const ciRuns = runsResponse.data.workflow_runs
+                .filter((run) => run.name === 'Production CI')
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+              if (ciRuns.length === 0) {
+                core.info('  skip: Production CI has not started for current head');
+                continue;
+              }
+
+              const ci = ciRuns[0];
+              if (ci.status !== 'completed') {
+                core.info(`  skip: Production CI is ${ci.status}`);
+                continue;
+              }
+
+              if (ci.conclusion !== 'success') {
+                const retryable = new Set(['failure', 'cancelled', 'timed_out']);
+                if (retryable.has(ci.conclusion) && (ci.run_attempt || 1) < 2) {
+                  core.warning(`  Production CI ended ${ci.conclusion}; retrying failed jobs once (run ${ci.id})`);
+                  try {
+                    await github.rest.actions.reRunWorkflowFailedJobs({
+                      owner,
+                      repo,
+                      run_id: ci.id,
+                    });
+                  } catch (error) {
+                    core.warning(`  retry failed: ${error.message}`);
+                  }
+                } else {
+                  core.warning(`  blocked: Production CI conclusion is ${ci.conclusion}; source fix required`);
+                }
+                continue;
+              }
+
+              const fresh = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: pr.number,
+              });
+
+              if (fresh.data.mergeable_state === 'behind') {
+                core.info('  branch is behind main; requesting GitHub branch refresh');
+                try {
+                  await github.rest.pulls.updateBranch({
+                    owner,
+                    repo,
+                    pull_number: pr.number,
+                    expected_head_sha: pr.head.sha,
+                  });
+                  core.info('  branch refresh requested; CI will run again');
+                } catch (error) {
+                  core.warning(`  branch refresh failed: ${error.message}`);
+                }
+                continue;
+              }
+
+              try {
+                const result = await github.rest.pulls.merge({
+                  owner,
+                  repo,
+                  pull_number: pr.number,
+                  merge_method: 'squash',
+                  sha: pr.head.sha,
+                });
+
+                if (!result.data.merged) {
+                  core.info(`  not mergeable yet: ${result.data.message || 'repository rules still blocking'}`);
+                  continue;
+                }
+
+                core.info(`  merged PR #${pr.number}: ${result.data.sha}`);
+
+                if (pr.head.ref !== 'main') {
+                  try {
+                    await github.rest.git.deleteRef({
+                      owner,
+                      repo,
+                      ref: `heads/${pr.head.ref}`,
+                    });
+                    core.info(`  deleted branch ${pr.head.ref}`);
+                  } catch (error) {
+                    core.warning(`  merged, but branch cleanup failed: ${error.message}`);
+                  }
+                }
+              } catch (error) {
+                core.info(`  merge deferred: ${error.message}`);
+              }
+            }
