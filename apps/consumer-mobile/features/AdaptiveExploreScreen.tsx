@@ -1544,7 +1544,7 @@ export default function AdaptiveExploreScreen() {
                       }}
                       style={[s.marker,active&&s.markerActive,equippedMapFlair==='freshness-halo'&&{borderWidth:3,borderColor:theme.accent,backgroundColor:theme.accentSoft},equippedMapFlair==='gold-ring'&&{borderWidth:3,borderColor:'#e7c45d',backgroundColor:'#3b3216'}]}
                     >
-                      <FreshnessHeatRing item={row} size={22} active={active} />
+                      <FreshnessHeatRing item={row} size={22} />
                     </Pressable>
                   </Marker>
                 );
