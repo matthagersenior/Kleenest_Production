@@ -41,6 +41,10 @@ for(const token of [
 for(const token of [
   "cron: '*/15 * * * *'",
   'workflow_dispatch:',
+  'workflow_run:',
+  'workflows: ["Production CI"]',
+  "github.event.workflow_run.conclusion == 'success'",
+  "github.event.workflow_run.head_branch == 'main'",
   'KLEENEST_PROD_SERVICE_ROLE_KEY',
   'pip install duckdb',
   'scripts/overture-places-ingest.py',
