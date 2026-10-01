@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { auditPullRequestFeatureMetadata } from './pr-feature-lifecycle-lib.mjs';
 
 const registry={
-  states:['legacy-unverified','idea','data','backend','wired','discoverable','usable','persistent','verified','live','internal'],
+  states:['legacy-unverified','idea','data','backend','wired','discoverable','understandable','usable','persistent','verified','live','internal'],
   enforcement:{afterPullRequest:319},
   features:[{id:'consumer.discovery',status:'legacy-unverified'}]
 };

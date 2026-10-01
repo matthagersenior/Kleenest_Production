@@ -29,7 +29,7 @@ const read=path=>fs.readFileSync(path,'utf8');
 const requireToken=(text,token,label)=>{if(!text.includes(token))throw new Error(`${label} missing ${token}`)};
 const screen=read(paths.screen), entry=read(paths.entry), signals=read(paths.signals), core=read(paths.core), publicEntry=read(paths.publicEntry), cache=read(paths.cache), locationResolver=read(paths.locationResolver), locationResolverEdge=read(paths.locationResolverEdge), migration=read(paths.migration), densityMigration=read(paths.densityMigration), densityCompatMigration=read(paths.densityCompatMigration), densitySafeMigration=read(paths.densitySafeMigration), routePermissionRepair=read(paths.routePermissionRepair), routeAllPlacesMigration=read(paths.routeAllPlacesMigration), routeSpatialMigration=read(paths.routeSpatialMigration), fastNearbyMigration=read(paths.fastNearbyMigration), locationTrust=read(paths.locationTrust), locationPresentation=read(paths.locationPresentation), restroomFacilities=read(paths.restroomFacilities), betaButton=read(paths.betaButton), liveDiscoveryEdge=read(paths.liveDiscoveryEdge);
 
-for(const token of ['1 mi','2 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Expand for required amenities','Maximum distance','Nearby','Along route','findAdaptiveNearbyRestrooms','listPlacesAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route','Start navigation'])requireToken(screen,token,'Consumer adaptive Explore');
+for(const token of ['1 mi','2 mi','5 mi','10 mi','25 mi','50 mi','100 mi','250 mi','Must include all','Include any','Search farther when needed','Search up to','Nearby','Along route','findAdaptiveNearbyRestrooms','listPlacesAlongRoute','buildMobileRoute','kleenest.native.route.draft','distance_to_route_meters','route_fraction','Full details','Add to route','Start navigation'])requireToken(screen,token,'Consumer adaptive Explore');
 for(const token of ['AdaptiveExploreScreen'])requireToken(entry,token,'Consumer Explore entry');
 for(const token of ['CompactRestroomSignals','RestroomSignals'])requireToken(signals,token,'Consumer restroom signal presentation');
 for(const token of ['map_network_nearby_v3','map_network_along_route_v1','AmenityMatchRule','findAdaptiveNearbyRestrooms','listPlacesAlongRoute','listRestroomsAlongRoute','402336','DENSE_LOCAL_RESULT_COUNT','MODERATE_LOCAL_RESULT_COUNT','hardRadius','Math.min(500'])requireToken(core,token,'Mobile discovery core');
@@ -156,8 +156,8 @@ for(const token of [
   'accessibilityLabel="Filter places"',
   'Filter places',
   'Everything',
-  'Kleenest places',
-  'Progression',
+  'Kleenest partners',
+  'Earn rewards',
   'minimumStars',
   'freshnessDays',
   'listNearbyProgressionOpportunities',
@@ -192,7 +192,7 @@ if(!(listHeaderIndex>0&&modeIndex>listHeaderIndex&&filterButtonIndex>modeIndex&&
 const filterModalStart=screen.indexOf('<Modal');
 const filterModalEnd=screen.indexOf('</Modal>',filterModalStart);
 const filterModal=screen.slice(filterModalStart,filterModalEnd);
-for(const token of ['Starting radius','What matters on this stop?','Expand for required amenities','Maximum distance','Route corridor','Must include all','Include any','Kleenest places','Progression','Stars','Freshness']){
+for(const token of ['Starting radius','What matters on this stop?','Search farther when needed','Search up to','How far off route?','Must include all','Include any','Kleenest partners','Earn rewards','Stars','How recent?']){
   if(!filterModal.includes(token))throw new Error(`Consumer Explore must keep ${token} inside the filter modal disclosure.`);
 }
 if(!filterModal.includes('filterAmenities.map'))throw new Error('Amenity chips must move into the filter modal so the map rises on the page.');

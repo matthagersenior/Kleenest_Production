@@ -1219,6 +1219,12 @@ export default function AdaptiveExploreScreen() {
         ListHeaderComponent={
           <View style={s.exploreCanvas}>
       <View style={[s.searchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
+        <View style={s.valuePromise}>
+          <Text style={[s.valuePromiseTitle,{color:theme.ink}]}>{mode==='route'?'Find a useful stop on the way.':'Find a place you can count on.'}</Text>
+          <Text style={[s.valuePromiseBody,{color:theme.muted}]}>{mode==='route'
+            ? 'Set where you’re going. Kleenest looks along the route for places that match what you need.'
+            : 'See what’s nearby, what it offers, and how recently the information was confirmed.'}</Text>
+        </View>
         <View style={s.searchRow}>
           <TextInput
             accessibilityLabel={mode==='route'?'Search places along route':'Discover nearby places'}
@@ -1228,7 +1234,7 @@ export default function AdaptiveExploreScreen() {
             onChangeText={setSearch}
             onSubmitEditing={() => void load()}
             returnKeyType="search"
-            placeholder={mode==='route'?"Destination address/place, or bathroom brand":"Address, school, workplace, city or brand"}
+            placeholder={mode==='route'?"Where are you going? Enter an address or place":"Address, school, workplace, city or brand"}
             placeholderTextColor={theme.muted}
           />
           <Pressable
@@ -1318,24 +1324,24 @@ export default function AdaptiveExploreScreen() {
                   </View>
                   <View style={s.quickFilterGrid}>
                     <Pressable accessibilityRole="checkbox" accessibilityState={{checked:kleenestOnly}} style={[s.quickFilterCard,{backgroundColor:kleenestOnly?theme.accent:theme.surfaceRaised,borderColor:kleenestOnly?theme.accent:theme.line}]} onPress={()=>setKleenestOnly(value=>!value)}>
-                      <Text style={[s.quickFilterTitle,{color:kleenestOnly?theme.accentText:theme.ink}]}>Kleenest places</Text>
-                      <Text style={[s.quickFilterBody,{color:kleenestOnly?theme.accentText:theme.muted}]}>Paying Kleenest business locations</Text>
+                      <Text style={[s.quickFilterTitle,{color:kleenestOnly?theme.accentText:theme.ink}]}>Kleenest partners</Text>
+                      <Text style={[s.quickFilterBody,{color:kleenestOnly?theme.accentText:theme.muted}]}>Businesses that actively keep their Kleenest information current</Text>
                     </Pressable>
                     <Pressable accessibilityRole="checkbox" accessibilityState={{checked:progressionOnly}} style={[s.quickFilterCard,{backgroundColor:progressionOnly?theme.accent:theme.surfaceRaised,borderColor:progressionOnly?theme.accent:theme.line}]} onPress={()=>setProgressionOnly(value=>!value)}>
-                      <Text style={[s.quickFilterTitle,{color:progressionOnly?theme.accentText:theme.ink}]}>Progression</Text>
-                      <Text style={[s.quickFilterBody,{color:progressionOnly?theme.accentText:theme.muted}]}>Places with XP / evidence opportunities</Text>
+                      <Text style={[s.quickFilterTitle,{color:progressionOnly?theme.accentText:theme.ink}]}>Earn rewards</Text>
+                      <Text style={[s.quickFilterBody,{color:progressionOnly?theme.accentText:theme.muted}]}>Places where your visit can help confirm details and earn rewards</Text>
                     </Pressable>
                     {precisionFilterUnlocked?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:verifiedEvidenceOnly}} style={[s.quickFilterCard,{backgroundColor:verifiedEvidenceOnly?theme.accent:theme.surfaceRaised,borderColor:verifiedEvidenceOnly?theme.accent:theme.line}]} onPress={()=>setVerifiedEvidenceOnly(value=>!value)}>
-                      <Text style={[s.quickFilterTitle,{color:verifiedEvidenceOnly?theme.accentText:theme.ink}]}>Verified evidence</Text>
-                      <Text style={[s.quickFilterBody,{color:verifiedEvidenceOnly?theme.accentText:theme.muted}]}>Permanent Precision reward · current evidence-backed places only</Text>
+                      <Text style={[s.quickFilterTitle,{color:verifiedEvidenceOnly?theme.accentText:theme.ink}]}>Recently confirmed</Text>
+                      <Text style={[s.quickFilterBody,{color:verifiedEvidenceOnly?theme.accentText:theme.muted}]}>Places with recent community or business confirmation</Text>
                     </Pressable>:null}
                     {(precisionFilterUnlocked||evidenceGapRadar)?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:evidenceGapOnly}} style={[s.quickFilterCard,{backgroundColor:evidenceGapOnly?theme.accent:theme.surfaceRaised,borderColor:evidenceGapOnly?theme.accent:theme.line}]} onPress={()=>setEvidenceGapOnly(value=>!value)}>
-                      <Text style={[s.quickFilterTitle,{color:evidenceGapOnly?theme.accentText:theme.ink}]}>Evidence gaps</Text>
-                      <Text style={[s.quickFilterBody,{color:evidenceGapOnly?theme.accentText:theme.muted}]}>{evidenceGapRadar?'Labs Radar · weak or stale evidence':'Permanent Precision reward · weak or stale evidence'}</Text>
+                      <Text style={[s.quickFilterTitle,{color:evidenceGapOnly?theme.accentText:theme.ink}]}>Needs an update</Text>
+                      <Text style={[s.quickFilterBody,{color:evidenceGapOnly?theme.accentText:theme.muted}]}>{evidenceGapRadar?'Some useful details are missing or getting old':'Some useful details are missing or getting old'}</Text>
                     </Pressable>:null}
                     {progressionFilterUnlocked?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:progressionPriority}} style={[s.quickFilterCard,{backgroundColor:progressionPriority?theme.accent:theme.surfaceRaised,borderColor:progressionPriority?theme.accent:theme.line}]} onPress={()=>setProgressionPriority(value=>!value)}>
-                      <Text style={[s.quickFilterTitle,{color:progressionPriority?theme.accentText:theme.ink}]}>Progression first</Text>
-                      <Text style={[s.quickFilterBody,{color:progressionPriority?theme.accentText:theme.muted}]}>Permanent Progression reward · move nearby progression opportunities to the top</Text>
+                      <Text style={[s.quickFilterTitle,{color:progressionPriority?theme.accentText:theme.ink}]}>Rewards first</Text>
+                      <Text style={[s.quickFilterBody,{color:progressionPriority?theme.accentText:theme.muted}]}>Show places where your visit can help first</Text>
                     </Pressable>:null}
                   </View>
                 </View>
@@ -1348,9 +1354,9 @@ export default function AdaptiveExploreScreen() {
                 </View>
 
                 <View style={s.filterSection}>
-                  <Text style={[s.filterSectionTitle,{color:theme.ink}]}>Freshness</Text>
+                  <Text style={[s.filterSectionTitle,{color:theme.ink}]}>How recent?</Text>
                   <View style={s.choiceRow}>
-                    {[{label:'Any',value:null},{label:'24h',value:1},{label:'7d',value:7},{label:'30d',value:30}].map(choice=><Pressable accessibilityRole="radio" accessibilityLabel={'Freshness '+choice.label} accessibilityState={{selected:freshnessDays===choice.value}} key={choice.label} style={[s.choice,{backgroundColor:freshnessDays===choice.value?theme.accent:theme.surfaceRaised,borderColor:freshnessDays===choice.value?theme.accent:theme.line}]} onPress={()=>setFreshnessDays(choice.value)}><Text style={[s.choiceText,{color:freshnessDays===choice.value?theme.accentText:theme.ink}]}>{choice.label}</Text></Pressable>)}
+                    {[{label:'Any',value:null},{label:'24h',value:1},{label:'7d',value:7},{label:'30d',value:30}].map(choice=><Pressable accessibilityRole="radio" accessibilityLabel={'How recent '+choice.label} accessibilityState={{selected:freshnessDays===choice.value}} key={choice.label} style={[s.choice,{backgroundColor:freshnessDays===choice.value?theme.accent:theme.surfaceRaised,borderColor:freshnessDays===choice.value?theme.accent:theme.line}]} onPress={()=>setFreshnessDays(choice.value)}><Text style={[s.choiceText,{color:freshnessDays===choice.value?theme.accentText:theme.ink}]}>{choice.label}</Text></Pressable>)}
                   </View>
                 </View>
 
@@ -1370,9 +1376,9 @@ export default function AdaptiveExploreScreen() {
                 {mode === 'nearby' ? (
                   <>
                     <View style={s.rowHeading}>
-                      <Text style={[s.filterTitle,{color:theme.ink}]}>Adaptive amenity search</Text>
+                      <Text style={[s.filterTitle,{color:theme.ink}]}>Keep looking for what I need</Text>
                       <View style={s.autoRow}>
-                        <Text style={[s.autoLabel,{color:theme.muted}]}>Expand for required amenities</Text>
+                        <Text style={[s.autoLabel,{color:theme.muted}]}>Search farther when needed</Text>
                         <Switch
                           disabled={!selectedAmenityNames.length}
                           value={selectedAmenityNames.length > 0 && autoExpand}
@@ -1382,7 +1388,7 @@ export default function AdaptiveExploreScreen() {
                     </View>
                     {selectedAmenityNames.length > 0 && autoExpand ? (
                       <View style={[s.inlineBlock,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
-                        <Text style={[s.filterTitle,{color:theme.ink}]}>Maximum distance</Text>
+                        <Text style={[s.filterTitle,{color:theme.ink}]}>Search up to</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
                           {maxChoices.map((choice) => {
                             const enabledValue = Math.max(radius, choice.meters);
@@ -1406,7 +1412,7 @@ export default function AdaptiveExploreScreen() {
                 ) : (
                   <View style={[s.inlineBlock,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
                     <View style={s.rowHeading}>
-                      <Text style={[s.filterTitle,{color:theme.ink}]}>Route corridor</Text>
+                      <Text style={[s.filterTitle,{color:theme.ink}]}>How far off route?</Text>
                       <Pressable accessibilityRole="button" accessibilityLabel="Open Route planner" onPress={() => { setShowAdvanced(false); router.push('/route'); }}>
                         <Text style={[s.linkText,{color:theme.accent}]}>Open Route planner</Text>
                       </Pressable>
@@ -1415,7 +1421,7 @@ export default function AdaptiveExploreScreen() {
                       {corridorChoices.map((choice) => (
                         <Pressable
                           accessibilityRole="radio"
-                          accessibilityLabel={'Route corridor '+choice.label}
+                          accessibilityLabel={'How far off route '+choice.label}
                           accessibilityState={{selected:corridor===choice.meters}}
                           key={choice.meters}
                           style={[s.choice,{backgroundColor:corridor===choice.meters?theme.accent:theme.surfaceRaised,borderColor:corridor===choice.meters?theme.accent:theme.line}]}
@@ -1763,7 +1769,7 @@ export default function AdaptiveExploreScreen() {
             <View style={s.listHeading}>
               <View style={s.listHeadingMain}>
                 <Text style={[s.listEyebrow,{color:theme.accent}]}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
-                <Text style={[s.listTitle,{color:theme.ink}]}>{mode === 'route' ? 'Discovered places ahead' : 'Nearby businesses & bathrooms'}</Text>
+                <Text style={[s.listTitle,{color:theme.ink}]}>{mode === 'route' ? 'Useful stops ahead' : 'Useful places nearby'}</Text>
               </View>
               <Text numberOfLines={1} style={[s.listNote,{color:theme.muted}]}>{activeFilterCount?filterSummary:(cached ? 'Cached' : mode==='route'? `${radiusLabel(corridor)} corridor` : 'Distance + actions')}</Text>
             </View>
@@ -1853,7 +1859,10 @@ const s = StyleSheet.create({
   },
   locateIcon: { fontSize: 16, fontWeight: '900', color: palette.green },
   locateText: { fontSize: 8, fontWeight: '900', color: palette.green },
-  searchPanel:{position:'relative',marginHorizontal:10,zIndex:60,elevation:20,paddingHorizontal:9,paddingTop:7,paddingBottom:7,gap:5,borderRadius:15,borderWidth:1},
+  searchPanel:{position:'relative',marginHorizontal:10,zIndex:60,elevation:20,paddingHorizontal:9,paddingTop:9,paddingBottom:7,gap:6,borderRadius:15,borderWidth:1},
+  valuePromise:{paddingHorizontal:2,paddingBottom:2,gap:2},
+  valuePromiseTitle:{fontSize:15,lineHeight:19,fontWeight:'900',letterSpacing:-.2},
+  valuePromiseBody:{fontSize:10,lineHeight:15,fontWeight:'700'},
   searchAreaChip:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,backgroundColor:'#e8f1eb',borderRadius:11,paddingHorizontal:10,paddingVertical:7},
   searchAreaText:{flex:1,fontSize:10,fontWeight:'900',color:palette.green},searchAreaAction:{fontSize:9,fontWeight:'900',color:palette.green,textDecorationLine:'underline'},
   segment: { flexDirection: 'row', padding: 3, borderRadius: 12, backgroundColor: '#e8efea' },
