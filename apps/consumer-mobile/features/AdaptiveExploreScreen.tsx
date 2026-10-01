@@ -1580,7 +1580,7 @@ export default function AdaptiveExploreScreen() {
               <MapLegend />
             </View>
             {destinationCardOpen&&searchAreaOrigin&&!selected ? (
-              <View pointerEvents="auto" style={[s.selectedPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+              <View pointerEvents="auto" style={[s.selectedPanel,s.destinationPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
                 <View style={s.selectedHead}>
                   <Text style={[s.selectedLabel,{color:theme.accent}]}>DESTINATION</Text>
                   <Pressable
@@ -1594,44 +1594,38 @@ export default function AdaptiveExploreScreen() {
                     <Text style={[s.closeLabel,{color:theme.muted}]}>Close</Text>
                   </Pressable>
                 </View>
-                <ScrollView style={s.selectedBodyScroll} contentContainerStyle={s.selectedBodyContent} showsVerticalScrollIndicator={false}>
-                  <Text numberOfLines={2} style={[s.selectedTitle,{color:theme.ink}]}>{searchAreaLabel||'Destination'}</Text>
-                  <Text style={[s.help,{color:theme.muted}]}>
-                    {mode==='route'?'This is your active route destination. Search its corridor or switch to discovery around the destination.':'This searched address is now the center of discovery, as if you were there. Nearby businesses, places, and restroom signals are discovered around it.'}
-                  </Text>
-                  <Text style={[s.meta,{color:theme.muted}]}>
-                    {searchedDestination?`${Number(searchedDestination.latitude).toFixed(5)}, ${Number(searchedDestination.longitude).toFixed(5)} · ${SEARCH_DESTINATION_GEOFENCE_RADIUS_M} m destination geofence`:''}
-                  </Text>
-                  <View style={s.actionRow}>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Start directions to searched destination"
-                      style={[s.primarySmall,{backgroundColor:theme.accent}]}
-                      onPress={()=>void goToSearchDestination()}
-                    >
-                      <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Add searched destination to route"
-                      style={[s.secondarySmall,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
-                      onPress={addSearchDestinationToRoute}
-                    >
-                      <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
-                    </Pressable>
-                  </View>
-                  <View style={s.selectedMoreRow}>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Discover places near destination"
-                      style={[s.secondarySmall,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,flex:1}]}
-                      onPress={searchNearDestination}
-                    >
-                      <Text style={[s.secondaryText,{color:theme.accent}]}>Search nearby</Text>
-                    </Pressable>
-                  </View>
-                  {route?.distanceMiles?<Text style={[s.meta,{color:theme.muted}]}>{Number(route.distanceMiles).toFixed(0)} mi route · about {Math.round(Number(route.durationMinutes||0))} min</Text>:null}
-                </ScrollView>
+                <Text numberOfLines={2} style={[s.selectedTitle,{color:theme.ink}]}>{searchAreaLabel||'Destination'}</Text>
+                <Text numberOfLines={1} style={[s.destinationSummary,{color:theme.muted}]}>
+                  {mode==='route'
+                    ? (route?.distanceMiles?`${Number(route.distanceMiles).toFixed(0)} mi route · ~${Math.round(Number(route.durationMinutes||0))} min`:'Route destination')
+                    : `${visibleRows.length} nearby · ${radiusLabel(effectiveRadiusMeters)}`}
+                </Text>
+                <View style={s.actionRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Start directions to searched destination"
+                    style={[s.primarySmall,s.destinationAction,{backgroundColor:theme.accent}]}
+                    onPress={()=>void goToSearchDestination()}
+                  >
+                    <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Add searched destination to route"
+                    style={[s.secondarySmall,s.destinationAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
+                    onPress={addSearchDestinationToRoute}
+                  >
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
+                  </Pressable>
+                  {mode==='nearby'?<Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Refresh discovery near destination"
+                    style={[s.secondarySmall,s.destinationAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
+                    onPress={searchNearDestination}
+                  >
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>Refresh nearby</Text>
+                  </Pressable>:null}
+                </View>
               </View>
             ) : null}
             {selected ? (
@@ -1907,6 +1901,9 @@ const s = StyleSheet.create({
   resultsHandoffText:{flex:1,fontSize:10,fontWeight:'900'},
   resultsHandoffAction:{fontSize:10,fontWeight:'900'},
   selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
+  destinationPanel:{height:154,justifyContent:'flex-start'},
+  destinationSummary:{fontSize:9,lineHeight:12,fontWeight:'800'},
+  destinationAction:{flex:1,alignItems:'center',minWidth:78},
   selectedBodyScroll:{flex:1},
   selectedBodyContent:{gap:4,paddingBottom:0},
   selectedHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
