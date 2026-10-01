@@ -16,6 +16,7 @@ import json
 import math
 import os
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -240,6 +241,10 @@ def patch_queue(url: str, key: str, request_id: str, payload: dict[str, Any]) ->
     http_json("PATCH", endpoint, key=key, body=payload)
 
 
+def http_retry_attempts(method: str, retries: int) -> int:
+    return 1 + max(0, int(retries)) if method.upper() == "GET" else 1
+
+
 def queue_rows(url: str, key: str, limit: int) -> list[dict[str, Any]]:
     query = urllib.parse.urlencode(
         {
@@ -252,8 +257,16 @@ def queue_rows(url: str, key: str, limit: int) -> list[dict[str, Any]]:
         safe="(),.",
     )
     endpoint = f"{url.rstrip('/')}/rest/v1/place_discovery_hydration_queue?{query}"
-    data = http_json("GET", endpoint, key=key)
-    return data if isinstance(data, list) else []
+    attempts = http_retry_attempts("GET", retries=2)
+    for attempt in range(attempts):
+        try:
+            data = http_json("GET", endpoint, key=key)
+            return data if isinstance(data, list) else []
+        except (TimeoutError, urllib.error.URLError):
+            if attempt + 1 >= attempts:
+                raise
+            time.sleep(1.0 * (2 ** attempt))
+    return []
 
 
 def ingest_bbox(
