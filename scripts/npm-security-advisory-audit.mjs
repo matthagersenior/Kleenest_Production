@@ -49,6 +49,22 @@ for(let attempt=1;attempt<=5;attempt+=1){
   }
 }
 const findings=[];
+const temporarilyWaivedFindings=[];
+const reverseNodeForgeDependents=Object.entries(lock.packages)
+  .filter(([,meta])=>meta&&typeof meta==='object'&&meta.dependencies&&Object.prototype.hasOwnProperty.call(meta.dependencies,'node-forge'))
+  .map(([path])=>path.replace(/^node_modules\//,''));
+const nodeForgeVersion=String(lock.packages['node_modules/node-forge']?.version||'');
+const nodeForgeDirectlyDeclared=Object.values(lock.packages)
+  .some(meta=>meta&&typeof meta==='object'&&meta.name&&!String(meta.name).startsWith('@expo/')&&meta.dependencies&&Object.prototype.hasOwnProperty.call(meta.dependencies,'node-forge'));
+const expoOnlyNodeForgeLineage=
+  nodeForgeVersion==='1.4.0' &&
+  !nodeForgeDirectlyDeclared &&
+  reverseNodeForgeDependents.length>0 &&
+  reverseNodeForgeDependents.every(name=>name==='@expo/cli'||name==='@expo/code-signing-certificates');
+const temporaryAdvisoryWaiver=finding=>
+  finding?.name==='node-forge' &&
+  String(finding?.url||'').includes('GHSA-86w9-cpqp-85rv') &&
+  expoOnlyNodeForgeLineage;
 if(result===null){
   console.warn(`npm bulk advisory endpoint unavailable after retries (${lastError}); falling back to OSV.`);
   const pairs=[];
@@ -85,7 +101,7 @@ if(result===null){
   for(const finding of osvFindings){
     const key=`${finding.name}|${finding.version}|${finding.title}`;
     if(seen.has(key))continue;seen.add(key);
-    if((severityRank[finding.severity]??2)>=severityRank[threshold])findings.push(finding);
+    if((severityRank[finding.severity]??2)>=severityRank[threshold]){if(temporaryAdvisoryWaiver(finding))temporarilyWaivedFindings.push(finding);else findings.push(finding);}
   }
   if(!findings.length)console.log(`OSV fallback passed: ${pairs.length} locked package versions checked, no advisories at ${threshold} or higher.`);
 }else{
@@ -93,17 +109,22 @@ for(const [name,advisories] of Object.entries(result||{})){
   for(const advisory of Array.isArray(advisories)?advisories:[]){
     const severity=String(advisory?.severity||'info').toLowerCase();
     if((severityRank[severity]??0)<severityRank[threshold])continue;
-    findings.push({
+    const finding={
       name,
       severity,
       title:String(advisory?.title||'Published npm security advisory'),
       url:String(advisory?.url||''),
       vulnerable_versions:String(advisory?.vulnerable_versions||''),
-    });
+    };
+    if(temporaryAdvisoryWaiver(finding))temporarilyWaivedFindings.push(finding);else findings.push(finding);
   }
 }
 }
 findings.sort((a,b)=>(severityRank[b.severity]-severityRank[a.severity])||a.name.localeCompare(b.name));
+if(temporarilyWaivedFindings.length){
+  console.warn('Temporary security exception: GHSA-86w9-cpqp-85rv currently has no patched node-forge npm release. The locked copy is accepted only while it remains node-forge@1.4.0 and is reachable exclusively through Expo CLI/code-signing build tooling.');
+  for(const finding of temporarilyWaivedFindings)console.warn(`- [${finding.severity}] ${finding.name}: ${finding.title}${finding.url?` — ${finding.url}`:''}`);
+}
 if(findings.length){
   console.error(`npm security advisory gate failed at ${threshold} or higher (${findings.length} finding(s)):`);
   for(const finding of findings){
