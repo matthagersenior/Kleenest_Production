@@ -80,7 +80,7 @@ assert.match(explore, /scrollEnabled=\{!mapInteracting\}/);
 assert.match(explore, /onTouchStart=\{\(\)=>setMapInteracting\(true\)\}/);
 assert.match(explore, /discoveryStatus/);
 assert.match(explore, /findAdaptiveNearbyPlaces/);
-assert.match(explore, /result = await findAdaptiveNearbyPlaces\(/);
+assert.match(explore, /result = await (?:withTimeout\()?findAdaptiveNearbyPlaces\(/);
 assert.match(explore, /listNearbyMapCandidates/);
 assert.match(explore, /destinationPanel/);
 assert.match(explore, /Refresh discovery near destination/);

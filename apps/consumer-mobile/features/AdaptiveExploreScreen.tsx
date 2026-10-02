@@ -69,6 +69,19 @@ import { organicExploreReason } from '../services/aiAssist';
 
 const DRAFT_KEY = 'kleenest.native.route.draft';
 const SEARCH_DESTINATION_GEOFENCE_RADIUS_M=150;
+const LIVE_LOOKUP_TIMEOUT_MS=9000;
+const PRESENCE_LOOKUP_TIMEOUT_MS=4000;
+const LOCATION_LOOKUP_TIMEOUT_MS=7000;
+
+function withTimeout<T>(promise:Promise<T>,timeoutMs:number,message:string):Promise<T>{
+  return new Promise<T>((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(new Error(message)),timeoutMs);
+    promise.then(
+      value=>{clearTimeout(timer);resolve(value);},
+      error=>{clearTimeout(timer);reject(error);},
+    );
+  });
+}
 const OSM_STYLE: any = {
   version: 8,
   sources: {
@@ -838,9 +851,11 @@ export default function AdaptiveExploreScreen() {
     }
     const lastKnown=await Location.getLastKnownPositionAsync().catch(()=>null);
     const recentLastKnown=lastKnown&&Date.now()-Number(lastKnown.timestamp||0)<=15*60*1000?lastKnown:null;
-    const current = recentLastKnown || await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    }).catch(async (freshLocationError) => {
+    const current = recentLastKnown || await withTimeout(
+      Location.getCurrentPositionAsync({accuracy: Location.Accuracy.Balanced}),
+      LOCATION_LOOKUP_TIMEOUT_MS,
+      'Location lookup took too long. Pull down to retry, or search an address or city.',
+    ).catch(async (freshLocationError) => {
       if (!lastKnown) throw freshLocationError;
       return lastKnown;
     });
@@ -883,7 +898,11 @@ export default function AdaptiveExploreScreen() {
     let areaMatch:{origin:[number,number];label:string}|null=null;
     const areaQuery=!overrideOrigin?(intent?.originText||(!intent&&rawQuery&&looksLikeAddressOrArea(rawQuery)?rawQuery:'')):'';
     if(areaQuery){
-      const match=await resolveConsumerSearchLocation(areaQuery);
+      const match=await withTimeout(
+        resolveConsumerSearchLocation(areaQuery),
+        LIVE_LOOKUP_TIMEOUT_MS,
+        'Location search took too long. Pull down to retry.',
+      );
       if(!match)throw new Error('Kleenest could not locate “'+areaQuery+'”. Try the street number plus city/state or ZIP.');
       areaMatch={origin:[match.longitude,match.latitude],label:match.label||areaQuery};
     }
@@ -894,7 +913,11 @@ export default function AdaptiveExploreScreen() {
     const current=areaMatch||mapAreaOrigin?null:await currentLocation(forceLiveRecenter);
     const livePresence=areaMatch||mapAreaOrigin
       ? null
-      : await recordConsumerPresenceAt(Number(current!.coords.latitude),Number(current!.coords.longitude)).catch(()=>null);
+      : await withTimeout(
+          recordConsumerPresenceAt(Number(current!.coords.latitude),Number(current!.coords.longitude)),
+          PRESENCE_LOOKUP_TIMEOUT_MS,
+          'Presence refresh timed out.',
+        ).catch(()=>null);
     if(areaMatch||mapAreaOrigin)void refreshConsumerPresence().catch(()=>null);
     const nextOrigin:[number,number]=areaMatch
       ? areaMatch.origin
@@ -923,7 +946,7 @@ export default function AdaptiveExploreScreen() {
     let usedMatureFallback = false;
     try {
       if(requiresRestroom){
-        result = await findAdaptiveNearbyRestrooms({
+        result = await withTimeout(findAdaptiveNearbyRestrooms({
           latitude,
           longitude,
           requestedRadiusMeters,
@@ -934,9 +957,9 @@ export default function AdaptiveExploreScreen() {
           autoExpand:activeAutoExpand,
           hardRadius: !activeAutoExpand,
           limit: 500,
-        });
+        }),LIVE_LOOKUP_TIMEOUT_MS,'Live restroom discovery took too long. Pull down to retry.');
       }else{
-        result = await findAdaptiveNearbyPlaces({
+        result = await withTimeout(findAdaptiveNearbyPlaces({
           latitude,
           longitude,
           requestedRadiusMeters,
@@ -945,13 +968,17 @@ export default function AdaptiveExploreScreen() {
           autoExpand: true,
           hardRadius: false,
           limit: 2000,
-        });
+        }),LIVE_LOOKUP_TIMEOUT_MS,'Live nearby discovery took too long. Pull down to retry.');
       }
     } catch (error) {
       if (matchRule !== 'all') throw error;
-      const legacyRows = activeAmenityNames.length
-        ? await listNearbyRestrooms(latitude,longitude,radius,query,activeAmenityNames)
-        : await listNearbyMapCandidates({latitude,longitude,radiusMeters:radius,search:query,limit:2000});
+      const legacyRows = await withTimeout(
+        activeAmenityNames.length
+          ? listNearbyRestrooms(latitude,longitude,radius,query,activeAmenityNames)
+          : listNearbyMapCandidates({latitude,longitude,radiusMeters:radius,search:query,limit:2000}),
+        LIVE_LOOKUP_TIMEOUT_MS,
+        'Fallback nearby discovery took too long. Pull down to retry.',
+      );
       result = { rows: legacyRows, requestedRadiusMeters, effectiveRadiusMeters: radius, attemptedRadiiMeters: [radius], expanded: false };
       usedMatureFallback = true;
     }
@@ -959,7 +986,7 @@ export default function AdaptiveExploreScreen() {
     let discoveryRows=result.rows;
     let relaxedAmenityFallback=false;
     if(!discoveryRows.length&&activeAmenityNames.length&&activeAutoExpand&&!query){
-      const fallbackResult=await findAdaptiveNearbyPlaces({
+      const fallbackResult=await withTimeout(findAdaptiveNearbyPlaces({
         latitude,
         longitude,
         requestedRadiusMeters:1609,
@@ -968,7 +995,7 @@ export default function AdaptiveExploreScreen() {
         autoExpand:true,
         hardRadius:false,
         limit:2000,
-      });
+      }),LIVE_LOOKUP_TIMEOUT_MS,'Nearby fallback discovery took too long. Pull down to retry.');
       discoveryRows=fallbackResult.rows;
       if(discoveryRows.length){
         result={...fallbackResult,requestedAmenityFallback:true};
@@ -1063,7 +1090,11 @@ export default function AdaptiveExploreScreen() {
     let destinationLabel='';
 
     if(destinationQuery){
-      const match=await resolveConsumerSearchLocation(destinationQuery);
+      const match=await withTimeout(
+        resolveConsumerSearchLocation(destinationQuery),
+        LIVE_LOOKUP_TIMEOUT_MS,
+        'Destination lookup took too long. Pull down to retry.',
+      );
       if(!match)throw new Error('Kleenest could not locate “'+destinationQuery+'”. Try the street number plus city/state or ZIP.');
       const destination:[number,number]=[match.longitude,match.latitude];
       destinationLabel=match.label||destinationQuery;
@@ -1130,7 +1161,13 @@ export default function AdaptiveExploreScreen() {
     let intent:DiscoveryIntent|null=null;
     let intentAmenities:string[]|null=null;
     try{
-      intent=originalQuery?await interpretDiscoveryIntent(originalQuery,mode,amenities.map(item=>item.name)):null;
+      intent=originalQuery
+        ? await withTimeout(
+            interpretDiscoveryIntent(originalQuery,mode,amenities.map(item=>item.name)),
+            4500,
+            'Search interpretation timed out.',
+          ).catch(()=>null)
+        : null;
       if(intent){
         targetMode=intent.mode;
         intentAmenities=resolveIntentAmenityNames(intent,amenities.map(item=>item.name));
@@ -1366,6 +1403,11 @@ export default function AdaptiveExploreScreen() {
         keyExtractor={idOf}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshing={loading}
+        onRefresh={()=>void load({
+          preserveCacheOnEmpty:true,
+          recenterOnLiveLocation:mode==='nearby'&&!searchAreaOrigin,
+        })}
         ListHeaderComponent={
           <View style={s.exploreCanvas}>
       <View style={[s.searchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
@@ -1924,7 +1966,20 @@ export default function AdaptiveExploreScreen() {
                     Requested {radiusLabel(radius)} · effective {radiusLabel(effectiveRadiusMeters)} · searched {attemptedRadiiMeters.map(radiusLabel).join(' → ')}
                   </Text>
                 ) : null}
-                {cached ? <Text style={[s.provenance,{color:theme.muted}]}>Offline continuity result — tap Search for live qualification.</Text> : null}
+                {cached ? <Text style={[s.provenance,{color:theme.muted}]}>Offline continuity result — refresh for live qualification.</Text> : null}
+                {!loading ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Refresh live nearby results"
+                    accessibilityHint="Retries live discovery without discarding cached results"
+                    onPress={()=>void load({
+                      preserveCacheOnEmpty:true,
+                      recenterOnLiveLocation:mode==='nearby'&&!searchAreaOrigin,
+                    })}
+                  >
+                    <Text style={[s.searchAreaAction,{color:theme.accent}]}>Refresh live</Text>
+                  </Pressable>
+                ) : null}
               </View>
             ) : null}
 

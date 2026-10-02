@@ -94,7 +94,7 @@ for(const token of [
   "accessibilityLabel={mode==='route'?'Select destination marker':'Select searched destination marker'}",
 ])requireToken(screen,token,'Searched-address Explore origin parity');
 if(!screen.includes("const query=areaMatch||overrideOrigin?'':rawQuery;"))throw new Error('Resolved address and dragged-map searches must discover the full nearby network instead of text-filtering results by stale address text.');
-if(!screen.includes('result = await findAdaptiveNearbyPlaces({'))throw new Error('Everything-mode address discovery must use the same adaptive all-place engine as app-open nearby discovery.');
+if(!screen.includes('result = await findAdaptiveNearbyPlaces({')&&!screen.includes('result = await withTimeout(findAdaptiveNearbyPlaces({'))throw new Error('Everything-mode address discovery must use the same adaptive all-place engine as app-open nearby discovery.');
 for(const token of [
   'const cameraRef=useRef<any>(null);',
   'cameraRef.current?.jumpTo({center:target,zoom:13})',
