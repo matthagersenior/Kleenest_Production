@@ -8,32 +8,78 @@ Official policy reference: https://support.google.com/googleplay/android-develop
 
 ## Consumer — `com.kleenest.app`
 
-### Feature
+### Feature to declare
 
-**Consumer Live Network nearby-restroom alerts**
+**Consumer Live Network restroom geofence presence**
 
-### Proposed declaration summary
+Declare this as one background-location feature. Visit/check-in verification and nearby-restroom alerts are user-visible outcomes of the same geofence-presence feature, not separate declaration features.
 
-Kleenest uses background location only when the user explicitly enables Consumer Live Network. The feature lets Android monitor nearby restroom geofence regions while Kleenest is closed or not in use so the app can create eligible nearby-restroom alerts when the user enters a monitored restroom region. The user can use normal Kleenest discovery without enabling Live Network and can turn Live Network off at any time.
+### Play Console — main purpose of the app
+
+Kleenest helps people find useful nearby places and bathrooms, understand what they offer, and judge how recently their information was confirmed. Signed-in users can optionally enable Live Network so Kleenest can recognize eligible entry to and exit from known restroom regions when the app is not open.
+
+### Play Console — why background location is required
+
+**Ready-to-paste declaration:**
+
+Kleenest uses background location only when a signed-in user explicitly enables Consumer Live Network restroom geofence presence. Live Network registers a limited set of nearby known restroom regions with the operating system. While Kleenest is closed or not in use, Android can report entry to or exit from those registered regions so Kleenest can maintain the user's eligible restroom-presence state, support the visit and check-in verification lifecycle, and provide a nearby-restroom alert when appropriate. Foreground-only location cannot provide the same experience because the relevant geofence entry or exit may occur while Kleenest is not visible. Normal map discovery and search remain available without Live Network, users can disable Live Network at any time, and Kleenest does not use background location for advertising.
 
 ### Why foreground-only is insufficient
 
-The user-facing value is an alert triggered when the device enters a monitored restroom region while the user is not actively viewing Kleenest. Restricting location to foreground use would remove the feature's background geofence behavior rather than merely reduce its precision.
+The declared feature is specifically designed to recognize registered restroom-region entry and exit while Kleenest is not visible. Foreground-only access would stop that geofence-presence behavior when the user leaves the app, so the visit/check-in verification lifecycle and eligible entry alert could not continue as designed.
+
+### Data minimization evidence
+
+- Live Network is off until the user explicitly enables it.
+- Normal map discovery and search do not require background location.
+- The app registers only nearby known restroom regions rather than starting unrestricted continuous background tracking.
+- Android registers at most 100 nearby regions; iOS registers at most 20.
+- A geofence event records an eligible presence heartbeat; an entry event may create a nearby-restroom notification.
+- Background location is not used for advertising.
+- The user can turn Live Network off from the same user-facing screen and can revoke device permission in system settings.
 
 ### Prominent disclosure text implemented in app
 
-“Kleenest collects location data to enable Live Network nearby-restroom alerts even when the app is closed or not in use. When you enable this feature, Android can monitor nearby restroom regions in the background and notify you when you enter one. Kleenest does not use this background location for advertising, and you can turn Live Network off at any time.”
+“Kleenest collects location data to enable Live Network restroom geofencing even when the app is closed or not in use. When you enable this feature, Android can monitor nearby restroom regions in the background so Kleenest can recognize eligible restroom-region entry or exit, support your visit and check-in verification flow, and send nearby-restroom alerts. Kleenest does not use this background location for advertising, and you can turn Live Network off at any time.”
 
-### Review video storyboard
+This dialogue appears when the user taps **Enable Live Network**, before Kleenest attempts the location-permission flow.
 
-1. Launch Consumer and navigate to Live Network.
-2. Show Live Network in the disabled state and the feature explanation.
+### Play reviewer access instructions
+
+1. Sign in with the supplied Consumer reviewer account.
+2. Open **Live Network**.
+3. Confirm the screen initially shows Live Network off unless the reviewer account/device has already enabled it.
+4. Tap **Enable Live Network**.
+5. Read the complete Kleenest background-location disclosure and tap **Continue**.
+6. Complete Android location permission/settings as prompted.
+7. Return to Live Network and confirm it reports enabled status and a nearby-region count when qualifying restroom regions are available.
+8. The reviewer can tap **Turn off** to stop registered geofencing.
+
+If the review device is not physically near a seeded restroom region, the declaration video should demonstrate the resulting entry behavior on a device/location where it can be reproduced.
+
+### Required declaration video
+
+Keep the final submitted video approximately 30 seconds where practical and make the declared feature unmistakable.
+
+1. Start from Kleenest on an Android device and show the signed-in Consumer experience.
+2. Open **Live Network** and show it off.
 3. Tap **Enable Live Network**.
-4. Record the Kleenest prominent disclosure dialog in full.
-5. Tap **Continue**.
-6. Record the Android foreground/background location permission flow.
-7. Return to Live Network and show the enabled state/registered regions.
-8. Tap **Turn off** and show the disabled state.
+4. Hold on the full prominent disclosure long enough to read the complete text.
+5. Tap **Continue** and show the Android runtime/settings permission flow.
+6. Return to Live Network and show enabled state plus registered nearby regions.
+7. Demonstrate the declared feature operating while Kleenest is not in use: show a registered restroom-region entry producing the user-visible nearby-restroom effect and/or the resulting eligible presence/check-in state.
+8. Reopen Live Network and show **Turn off**.
+9. Also capture a denial/re-entry flow as supporting evidence. If the 30-second declaration video cannot show both consent and denial clearly, retain the longer evidence recording for resubmission/support.
+
+### Store-listing sentence
+
+Use a concise description that makes the feature discoverable without overstating it:
+
+**Optional Live Network can recognize eligible entry to and exit from nearby restroom regions while Kleenest is not in use, supporting visit verification and timely nearby-restroom alerts.**
+
+### Privacy-policy alignment
+
+The in-app privacy policy and public privacy URL must state that Consumer Live Network is optional, can use background location while the app is closed or not in use for registered restroom geofences, supports eligible visit/check-in verification and alerts, is not used for advertising, and can be disabled.
 
 ## Business — `com.kleenest.business`
 

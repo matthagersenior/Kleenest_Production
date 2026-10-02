@@ -1,6 +1,6 @@
 # Kleenest release readiness
 
-**Policy baseline:** 2026-09-05
+**Policy baseline:** 2026-10-02
 
 This is the engineering release ledger for the four Android applications. It separates code/build readiness from Play Console policy/reviewer work so a green CI run is not mistaken for store approval.
 
@@ -29,7 +29,7 @@ That evidence proves installability/startup for those exact APKs. It does not re
 
 | App | Package | Native APK smoke | Production EAS AAB profile | Major Play review items |
 | --- | --- | --- | --- | --- |
-| Consumer | `com.kleenest.app` | Passed | Configured | Data Safety, account deletion, UGC/moderation, background location, store listing, reviewer access |
+| Consumer | `com.kleenest.app` | Passed | Configured | Final Data Safety reconciliation, store listing, reviewer account, background-location video/upload, final AAB |
 | Business | `com.kleenest.business` | Passed | Configured | Data Safety, background location, business reviewer access, billing/entitlement declarations, store listing |
 | Fleet | `com.kleenest.fleet` | Passed | Configured | Data Safety, background location, restricted/operator reviewer access, store listing |
 | KleenestOS | `com.kleenest.platform` | Passed | Configured | Data Safety if Play-distributed, restricted/operator reviewer access, store listing/distribution decision |
@@ -71,7 +71,7 @@ These URLs must be verified publicly after the cleanup branch is merged/deployed
 
 ## Background location gate
 
-Consumer, Business and Fleet request `ACCESS_BACKGROUND_LOCATION`. Google Play treats background location as sensitive and requires a core-functionality justification plus review evidence.
+Consumer, Business and Fleet request `ACCESS_BACKGROUND_LOCATION`. Google Play treats background location as sensitive and requires a core-functionality justification plus review evidence. The Consumer declaration packet is now written around one declared feature: **Live Network restroom geofence presence**, with visit/check-in verification and nearby-restroom alerts documented as outcomes of that same feature.
 
 Per affected package, submission is blocked until all of the following are complete:
 
