@@ -68,7 +68,8 @@ function query(b:number[]){const[s,w,n,e]=b;return `[out:json][timeout:18];(nwr[
 function rows(es:any[],m:any){const at=now(),dedup=new Map<string,any>();for(const e of es){const t=e.tags||{},lat=Number(e.lat??e.center?.lat),lng=Number(e.lon??e.center?.lon);if(!Number.isFinite(lat)||!Number.isFinite(lng))continue;const pt=t.amenity==='toilets'||t.building==='toilets'?'restroom':t.amenity==='fuel'?'gas_station':['restaurant','fast_food'].includes(t.amenity)?'restaurant':t.amenity==='cafe'?'cafe':t.shop?'retail':t.tourism?'lodging':t.highway==='rest_area'||t.highway==='services'?'road_service':t.leisure?'park':'service';const source_id=`osm:${e.type}:${e.id}`;dedup.set(source_id,{source_id,latitude:lat,longitude:lng,name:t.name||t.brand||t.operator||(pt==='restroom'?'Public Restroom':`Unnamed ${pt}`),place_type:pt,address:[t['addr:housenumber'],t['addr:street']].filter(Boolean).join(' ')||t['addr:full']||null,city:t['addr:city']||null,state:t['addr:state']||null,postal_code:t['addr:postcode']||null,brand:t.brand||null,operator_name:t.operator||null,source_metadata:{tags:t,provider:'overpass',captured_at:at,market_key:m.market_key,query_version:QUERY_VERSION,coverage_classes:COVERAGE_CLASSES,corridor:'kc_to_chicago'}});}
   return [...dedup.values()];
 }
-async function persist(all:any[]){let imported=0,updated=0;for(let i=0;i<all.length;i+=400){const r=await db.rpc('ingest_external_locations',{p_source_key:'osm',p_rows:all.slice(i,i+400)});if(r.error)throw r.error;imported+=Number(r.data?.imported_locations||0);updated+=Number(r.data?.updated_locations||0);}return{imported,updated};}
+const BACKGROUND_CANONICAL_BATCH=100;
+async function persist(all:any[]){let imported=0,updated=0;for(let i=0;i<all.length;i+=BACKGROUND_CANONICAL_BATCH){const r=await db.rpc('ingest_external_locations_background',{p_source_key:'osm',p_rows:all.slice(i,i+BACKGROUND_CANONICAL_BATCH)});if(r.error)throw r.error;if(r.data?.deferred)return{imported,updated,deferred:true,reason:String(r.data?.reason||'background_ingestion_busy')};imported+=Number(r.data?.imported_locations||0);updated+=Number(r.data?.updated_locations||0);}return{imported,updated,deferred:false,reason:null};}
 
 async function lane(m:any,laneNo:number,h:any,endpoint:string){
   const p={...(m.source_progress||{})},s=sp(m),list=tiles(m),cursor=Math.max(0,Number(s.tile_cursor||0));
@@ -84,6 +85,19 @@ async function lane(m:any,laneNo:number,h:any,endpoint:string){
     let parsed:any;try{parsed=JSON.parse(text);}catch{throw Error('invalid_json_response');}
     if(!Array.isArray(parsed?.elements))throw Error('invalid_overpass_payload');
     const all=rows(parsed.elements,m),saved=await persist(all);
+    if(saved.deferred){
+      await db.from('national_ingestion_runs').update({
+        status:'completed',
+        requests_used:1,
+        bytes_downloaded:bytes,
+        records_seen:all.length,
+        records_imported:saved.imported,
+        records_updated:saved.updated,
+        finished_at:now(),
+        detail:{lane:laneNo,corridor:'kc_to_chicago',endpoint,bbox:target,query_version:QUERY_VERSION,grid_version:GRID_VERSION,coverage_classes:COVERAGE_CLASSES,endpoint_health:h[endpoint],deferred:true,reason:saved.reason}
+      }).eq('id',rid);
+      return{market:m.market_key,ok:true,status:'background_ingestion_busy',seen:all.length,imported:saved.imported,updated:saved.updated,endpoint,cursor,tile_count:list.length};
+    }
     let nc=cursor,ns:any=sub;
     if(sub){const ni=Number(sub.index)+1;if(ni>=sub.cells.length){nc++;ns=null}else ns={...sub,index:ni};} else nc++;
     p.osm={...s,completed:nc>=list.length,tile_cursor:nc,tile_count:list.length,grid_version:GRID_VERSION,query_version:QUERY_VERSION,coverage_classes:COVERAGE_CLASSES,subdivision:ns,consecutive_failures:0,last_error:null,last_success_at:now(),last_attempt_at:now(),records_seen:Number(s.records_seen||0)+all.length,records_imported:Number(s.records_imported||0)+saved.imported,records_updated:Number(s.records_updated||0)+saved.updated};
@@ -121,7 +135,7 @@ async function cycle(){
   const lanes=Math.min(slots,available.length,2),ms=await choose(lanes);
   if(!ms.length)return{ok:true,status:'corridor_complete_or_backoff',endpoint_health:health};
   const results=await Promise.all(ms.map((m:any,i:number)=>lane(m,i,health,available[i%available.length])));
-  return{ok:results.some((x:any)=>x.ok),status:'kc_to_chicago_coverage_v24',query_version:QUERY_VERSION,grid_version:GRID_VERSION,provider_pool_version:PROVIDER_POOL_VERSION,logical_lanes:results.length,endpoint_health:health,results,quota_before:{daily_used:d,hourly_used:hour}};
+  return{ok:results.some((x:any)=>x.ok),status:'kc_to_chicago_coverage_v25',query_version:QUERY_VERSION,grid_version:GRID_VERSION,provider_pool_version:PROVIDER_POOL_VERSION,logical_lanes:results.length,endpoint_health:health,results,quota_before:{daily_used:d,hourly_used:hour}};
 }
 
 Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response(null,{status:204,headers:H});if(req.method!=='POST')return out({ok:false,error:'POST required'},405);try{await guard(req);return out(await cycle());}catch(e){return out({ok:false,error:msg(e)},500);}});
