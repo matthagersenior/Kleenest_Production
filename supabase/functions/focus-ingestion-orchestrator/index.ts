@@ -13,7 +13,7 @@ const H={'content-type':'application/json','Access-Control-Allow-Origin':'*','Ac
 const QUERY_VERSION='corridor_osm_v2_coverage';
 const GRID_VERSION='corridor_0.24_frontier_v2_coverage';
 const COVERAGE_CLASSES=['amenity','toilets','building_toilets','leisure','railway_station','shop_high_yield','tourism_lodging','highway_services'];
-const PROVIDER_POOL_VERSION='overpass_pool_v3_four_endpoint_breaker';
+const PROVIDER_POOL_VERSION='overpass_pool_v4_failure_rate_breaker';
 const now=()=>new Date().toISOString();
 const msg=(e:any)=>e instanceof Error?e.message:String(e?.message||e);
 const out=(v:any,s=200)=>new Response(JSON.stringify(v),{status:s,headers:H});
@@ -46,16 +46,18 @@ async function endpointHealth(){
     const badRows=rows.filter((x:any)=>x.status==='failed'&&/(406|429|502|503|504|timed out|timeout|AbortError)/i.test(String(x.error||'')));
     const lastBad=badRows[0]?.started_at?Date.parse(badRows[0].started_at):0;
     const lastErr=String(badRows[0]?.error||'');
+    const failureRate=rows.length?badRows.length/rows.length:0;
     let cooldown=0;
     if(/406/.test(lastErr)) cooldown=120;
-    else if(/429/.test(lastErr)) cooldown=30;
-    else if(/502|503/.test(lastErr)) cooldown=15;
-    else if(/504|timed out|timeout|AbortError/.test(lastErr)) cooldown=10;
-    else if(consecutiveBad>=2) cooldown=15;
+    else if(/429/.test(lastErr)) cooldown=60;
+    else if(/502|503/.test(lastErr)) cooldown=30;
+    else if(/504|timed out|timeout|AbortError/.test(lastErr)) cooldown=30;
+    if(rows.length>=3&&failureRate>=0.80) cooldown=Math.max(cooldown,60);
+    else if(consecutiveBad>=2) cooldown=Math.max(cooldown,30);
     const suppressed=cooldown>0&&Number.isFinite(lastBad)&&Date.now()-lastBad<cooldown*60000;
     const req=rows.reduce((n:number,x:any)=>n+Number(x.requests_used||0),0);
     const yielded=rows.reduce((n:number,x:any)=>n+Number(x.records_imported||0)+0.15*Number(x.records_updated||0),0);
-    result[ep]={samples:rows.length,bad:badRows.length,consecutive_bad:consecutiveBad,suppressed,cooldown_minutes:cooldown,yield_per_request:req?yielded/req:0,breaker:'single_transient_failure_cooldown'};
+    result[ep]={samples:rows.length,bad:badRows.length,failure_rate:failureRate,consecutive_bad:consecutiveBad,suppressed,cooldown_minutes:cooldown,yield_per_request:req?yielded/req:0,breaker:'failure_rate_cooldown'};
   }
   return result;
 }
@@ -112,12 +114,14 @@ async function cycle(){
   const p=await policy();if(!p.enabled)return{ok:true,status:'osm_disabled'};
   const[d,hour]=await Promise.all([usage(24),usage(1)]),dailyLeft=p.daily_request_limit?Math.max(0,Number(p.daily_request_limit)-d):2,hourlyLeft=p.hourly_request_limit?Math.max(0,Number(p.hourly_request_limit)-hour):2,slots=Math.min(Math.max(1,Math.min(2,Number(p.max_requests_per_cycle||2))),dailyLeft,hourlyLeft);
   if(slots<=0)return{ok:true,status:'quota_wait'};
-  const health=await endpointHealth(),available=OSM.filter(ep=>!health[ep]?.suppressed).sort((a,b)=>(health[b]?.yield_per_request||0)-(health[a]?.yield_per_request||0));
+  const health=await endpointHealth();
+  const endpointScore=(ep:string)=>{const h=health[ep]||{},samples=Number(h.samples||0);if(!samples)return 100;return(1-Number(h.failure_rate||0))*50+Math.min(10,Number(h.yield_per_request||0))-Number(h.consecutive_bad||0)*5;};
+  const available=OSM.filter(ep=>!health[ep]?.suppressed).sort((a,b)=>endpointScore(b)-endpointScore(a));
   if(!available.length)return{ok:true,status:'endpoint_backoff',endpoint_health:health};
   const lanes=Math.min(slots,available.length,2),ms=await choose(lanes);
   if(!ms.length)return{ok:true,status:'corridor_complete_or_backoff',endpoint_health:health};
   const results=await Promise.all(ms.map((m:any,i:number)=>lane(m,i,health,available[i%available.length])));
-  return{ok:results.some((x:any)=>x.ok),status:'kc_to_chicago_coverage_v23',query_version:QUERY_VERSION,grid_version:GRID_VERSION,provider_pool_version:PROVIDER_POOL_VERSION,logical_lanes:results.length,endpoint_health:health,results,quota_before:{daily_used:d,hourly_used:hour}};
+  return{ok:results.some((x:any)=>x.ok),status:'kc_to_chicago_coverage_v24',query_version:QUERY_VERSION,grid_version:GRID_VERSION,provider_pool_version:PROVIDER_POOL_VERSION,logical_lanes:results.length,endpoint_health:health,results,quota_before:{daily_used:d,hourly_used:hour}};
 }
 
 Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response(null,{status:204,headers:H});if(req.method!=='POST')return out({ok:false,error:'POST required'},405);try{await guard(req);return out(await cycle());}catch(e){return out({ok:false,error:msg(e)},500);}});
