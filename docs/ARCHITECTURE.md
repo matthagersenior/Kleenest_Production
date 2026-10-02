@@ -50,6 +50,24 @@ Known live/source drift is tracked in `config/capability-parity-ledger.json`. Cl
 
 Kleenest distinguishes a place/location identity from observations, evidence, provenance, confidence, freshness, verification and contradictions. Product UI may present a simplified location record, but ingestion and trust systems should retain provenance and auditability without storing redundant copies of the same facts.
 
+## Ingestion architecture
+
+All place acquisition paths converge on `public.ingest_external_locations`. Acquisition code must not write canonical `locations` rows directly.
+
+The ingestion layers are:
+
+1. **Official Overture Places — primary broad POI backbone.** `.github/workflows/overture-places-ingest.yml` and `scripts/overture-places-ingest.py` read bounded Overture GeoParquet windows and use the canonical source key `overture`. Consumer/search hydration requests use `place_discovery_hydration_queue`.
+2. **Civic/open data — authoritative local enrichment.** `corridor-open-data-ingestor` processes enabled source-specific adapters such as Chicago and Kansas City Socrata datasets. Overture must not be acquired through this adapter layer.
+3. **OpenStreetMap — secondary discovery/enrichment.** `focus-ingestion-orchestrator` runs bounded Overpass work with source quotas, provider health breakers, a storage guard and overlap leases. Public Overpass availability is not a reason to raise concurrency.
+4. **Interactive discovery.** `ingest-map-candidates-v3` may query live providers for latency-sensitive consumer discovery, but successful results still persist through `ingest_external_locations`.
+5. **Cold provenance/archive.** `cold-provenance-offloader` and `geo-catalog-exporter` transfer verified immutable batches to Kleenest_Data object storage before eligible hot provenance rows are acknowledged/deleted.
+
+`public.locations` is the hot canonical place registry. `external_location_records` is the hot source-identity/dedup map, not a raw payload warehouse. Historical/raw provenance belongs in the verified Kleenest_Data object archive.
+
+A transport adapter and a canonical source identity are different concepts. Do not create alternate canonical source keys for the same provider merely because a different transport is used. In particular, legacy `overture_places` / Fused Overture acquisition is retired; existing rows are retained for coverage/provenance while new Overture acquisition uses `overture`.
+
+Internal ingestion control tables remain in `public` only for compatibility with existing Edge Functions/RPCs. Future schema hardening should move control-plane state behind internal/service-only interfaces incrementally, with compatibility RPCs, rather than bulk schema moves that break deployed clients.
+
 ## Release and CI ownership
 
 - `.github/workflows/ci.yml` — production/source authority gate.
