@@ -66,6 +66,8 @@ const STORAGE_KEY='kleenest.theme.mode.v1';
 const MODES=new Set<KleenestThemeMode>(KLEENEST_THEME_OPTIONS.map(option=>option.value));
 const listeners=new Set<(mode:KleenestThemeMode)=>void>();
 let currentMode:KleenestThemeMode='default';
+let themeGeneration=0;
+let themeLoadInFlight:Promise<KleenestThemeMode>|null=null;
 
 const earlyAccessAccents:Record<KleenestThemeContext,{accent:string;soft:string}>={
   consumer:{accent:'#5de2c2',soft:'#153b38'},
@@ -124,27 +126,42 @@ function browserStorage(){
 export function getKleenestThemeMode(){return currentMode}
 
 export async function loadKleenestThemeMode():Promise<KleenestThemeMode>{
-  let stored:string|null=null;
-  const local=browserStorage();
-  if(local){
-    try{stored=local.getItem(STORAGE_KEY)}catch{}
-  }else{
-    try{stored=await SecureStore.getItemAsync(STORAGE_KEY)}catch{}
-  }
-  currentMode=validMode(stored)?stored:'default';
-  return currentMode;
+  if(themeLoadInFlight)return themeLoadInFlight;
+  const generationAtStart=themeGeneration;
+  themeLoadInFlight=(async()=>{
+    let stored:string|null=null;
+    const local=browserStorage();
+    if(local){
+      try{stored=local.getItem(STORAGE_KEY)}catch{}
+    }else{
+      try{stored=await SecureStore.getItemAsync(STORAGE_KEY)}catch{}
+    }
+    const storedMode=validMode(stored)?stored:'default';
+    // A theme choice made while storage was still loading must win. Without
+    // this guard, a late SecureStore read can visibly snap the app back to the
+    // previous theme after the user has already selected a new one.
+    if(generationAtStart===themeGeneration)currentMode=storedMode;
+    return currentMode;
+  })();
+  try{return await themeLoadInFlight}
+  finally{themeLoadInFlight=null}
 }
 
 export async function setKleenestThemeMode(mode:KleenestThemeMode){
   if(!validMode(mode))throw new Error('Unsupported Kleenest theme mode.');
+  const previous=currentMode;
+  themeGeneration+=1;
   currentMode=mode;
-  const local=browserStorage();
-  if(local){
-    try{local.setItem(STORAGE_KEY,mode)}catch{}
-  }else{
-    try{await SecureStore.setItemAsync(STORAGE_KEY,mode)}catch{}
-  }
   for(const listener of listeners)listener(mode);
+  try{
+    const local=browserStorage();
+    if(local)local.setItem(STORAGE_KEY,mode);
+    else await SecureStore.setItemAsync(STORAGE_KEY,mode);
+  }catch(error){
+    currentMode=previous;
+    for(const listener of listeners)listener(previous);
+    throw error;
+  }
   return mode;
 }
 

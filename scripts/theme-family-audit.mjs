@@ -3,7 +3,7 @@ import fs from 'node:fs';
 const failures=[];
 const read=path=>fs.readFileSync(path,'utf8');
 const theme=read('packages/mobile-core/src/theme.ts');
-for(const token of ["'default'","'light'","'dark'","'system'","consumer:","progress:","game:","community:","business:","fleet:","platform:","resolveKleenestTheme","setKleenestThemeMode","subscribeKleenestTheme"]){
+for(const token of ["'default'","'light'","'dark'","'system'","consumer:","progress:","game:","community:","business:","fleet:","platform:","resolveKleenestTheme","setKleenestThemeMode","subscribeKleenestTheme","themeGeneration","themeLoadInFlight","generationAtStart===themeGeneration"]){
   if(!theme.includes(token))failures.push('Shared theme contract missing '+token);
 }
 for(const [label,path,context] of [
