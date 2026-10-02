@@ -25,14 +25,14 @@ function clean(value:string){
 }
 
 async function readySearch(page:Page,timeout=45000){
-  await page.getByRole('button',{name:'SEARCH'}).first().waitFor({state:'visible',timeout});
+  await page.getByRole('button',{name:'SEARCH',exact:true}).first().waitFor({state:'visible',timeout});
 }
 
 async function search(page:Page,query:string,timeout=45000){
   const box=page.locator('input[aria-label="Discover nearby places"], input[aria-label="Search places along route"]').first();
   await expect(box).toBeVisible({timeout:20000});
   await box.fill(query);
-  await page.getByRole('button',{name:'SEARCH'}).first().click();
+  await page.getByRole('button',{name:'SEARCH',exact:true}).first().click();
   // Give React Native Web one paint to flip SEARCH -> WORKING before waiting
   // for SEARCH to return. Without this, the assertion can race the state update
   // and sample the page while the live lookup is still running.
