@@ -1971,6 +1971,7 @@ export default function AdaptiveExploreScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Refresh live nearby results"
+                    accessibilityHint="Retries live discovery without discarding cached results"
                     onPress={()=>void load({
                       preserveCacheOnEmpty:true,
                       recenterOnLiveLocation:mode==='nearby'&&!searchAreaOrigin,
