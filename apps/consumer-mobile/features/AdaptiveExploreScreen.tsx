@@ -861,6 +861,8 @@ export default function AdaptiveExploreScreen() {
           : 'Location access is needed. Enable it in phone settings and try again. You can also search an address or city above.',
       );
     }
+    // A cached fix is continuity only; a normal Explore launch and the locate
+    // control must attempt live GPS before falling back to it.
     const lastKnown=await Location.getLastKnownPositionAsync().catch(()=>null);
     let freshLocationError:unknown=null;
     const fresh=await withTimeout(
