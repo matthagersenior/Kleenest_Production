@@ -84,6 +84,10 @@ requireText(ingestionAuthority, "source_key='overture_places'", 'Legacy Fused Ov
 requireText(ingestionAuthority, "adapter_kind = any (array['socrata'::text,'arcgis'::text,'geojson'::text,'bulk'::text])", 'Open-data adapter kinds must exclude retired Fused Overture.');
 requireText(ingestionAuthority, "last_error='STALE_WORKER_RECOVERED'", 'Hydration migration must preserve stale-job recovery.');
 
+const canonicalNoopGuard = requireFile('supabase/migrations/20261002195508_avoid_noop_canonical_location_updates.sql');
+requireText(canonicalNoopGuard, 'is distinct from row(', 'Canonical ingestion must suppress no-op location rewrites.');
+requireText(canonicalNoopGuard, 'get diagnostics v_changed=row_count', 'Canonical ingestion must report only material location updates.');
+
 const geo = requireFile('supabase/functions/geo-catalog-exporter/index.ts');
 requireText(geo, 'sxgymblzmwdqnaidbbuq.supabase.co/functions/v1/archive-object-ingest', 'Geo catalog exporter must target the verified Kleenest_Data object archive.');
 requireText(geo, "geo_catalog_export_ack", 'Geo catalog exporter must acknowledge its watermark after transfer.');
