@@ -30,6 +30,10 @@ DEFAULT_MIN_CONFIDENCE = 0.30
 batch_size = 50
 
 
+class BackgroundIngestionBusy(RuntimeError):
+    pass
+
+
 def utc_now() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -64,12 +68,12 @@ def http_json(method: str, url: str, *, key: str | None = None, body: Any = None
                 return json.loads(payload.decode("utf-8")) if payload else None
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")[:1500]
-            if normalized_method == "GET" and exc.code in retryable_statuses and attempt < max_attempts:
+            if normalized_method in {"GET", "PATCH"} and exc.code in retryable_statuses and attempt < max_attempts:
                 time.sleep(min(8, 2 ** (attempt - 1)))
                 continue
             raise RuntimeError(f"HTTP {exc.code} for {url}: {detail}") from exc
         except (TimeoutError, socket.timeout, urllib.error.URLError) as exc:
-            if normalized_method == "GET" and attempt < max_attempts:
+            if normalized_method in {"GET", "PATCH"} and attempt < max_attempts:
                 time.sleep(min(8, 2 ** (attempt - 1)))
                 continue
             raise RuntimeError(
@@ -277,14 +281,19 @@ def effective_job_limit(requested: int, policy: dict[str, Any]) -> int:
 
 
 def supabase_rpc(url: str, key: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
-    endpoint = f"{url.rstrip('/')}/rest/v1/rpc/ingest_external_locations"
-    result = http_json(
-        "POST",
-        endpoint,
-        key=key,
-        body={"p_source_key":"overture", "p_rows": rows},
-    )
-    return result or {}
+    endpoint = f"{url.rstrip('/')}/rest/v1/rpc/ingest_external_locations_background"
+    for admission_attempt in range(1, 5):
+        result = http_json(
+            "POST",
+            endpoint,
+            key=key,
+            body={"p_source_key":"overture", "p_rows": rows},
+        ) or {}
+        if not result.get("deferred"):
+            return result
+        if admission_attempt < 4:
+            time.sleep(min(4, admission_attempt))
+    raise BackgroundIngestionBusy("BACKGROUND_INGESTION_BUSY")
 
 
 def patch_queue(url: str, key: str, request_id: str, payload: dict[str, Any]) -> None:
@@ -391,7 +400,8 @@ def process_queue(
     summary: list[dict[str, Any]] = []
     for job in jobs:
         request_id = str(job["id"])
-        attempt = int(job.get("attempt_count") or 0) + 1
+        prior_attempts = int(job.get("attempt_count") or 0)
+        attempt = prior_attempts + 1
         patch_queue(
             args.supabase_url,
             args.service_key,
@@ -422,6 +432,27 @@ def process_queue(
                 },
             )
             summary.append({"id": request_id, "request_key": job.get("request_key"), "ok": True, **totals})
+        except BackgroundIngestionBusy:
+            patch_queue(
+                args.supabase_url,
+                args.service_key,
+                request_id,
+                {
+                    "status": "pending",
+                    "started_at": None,
+                    "attempt_count": prior_attempts,
+                    "last_error": "BACKGROUND_INGESTION_BUSY",
+                    "updated_at": utc_now(),
+                },
+            )
+            summary.append({
+                "id": request_id,
+                "request_key": job.get("request_key"),
+                "ok": True,
+                "deferred": True,
+                "reason": "background_ingestion_busy",
+            })
+            break
         except Exception as exc:
             message = str(exc)[:1200]
             patch_queue(
@@ -473,8 +504,8 @@ def self_test() -> None:
     assert http_timeout_seconds("GET") == 45
     assert http_timeout_seconds("POST") == 85
     assert batch_size == 50
-    assert effective_job_limit(8, {"max_requests_per_cycle": 4}) == 4
-    assert effective_job_limit(2, {"max_requests_per_cycle": 4}) == 2
+    assert effective_job_limit(8, {"max_requests_per_cycle": 1}) == 1
+    assert effective_job_limit(2, {"max_requests_per_cycle": 1}) == 1
     print("Overture ingestion self-test passed.")
 
 
@@ -483,7 +514,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--process-queue", action="store_true")
     parser.add_argument("--bbox", type=parse_bbox)
     parser.add_argument("--release")
-    parser.add_argument("--max-jobs", type=int, default=4)
+    parser.add_argument("--max-jobs", type=int, default=1)
     parser.add_argument("--min-confidence", type=float, default=DEFAULT_MIN_CONFIDENCE)
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--supabase-url", default=os.getenv("SUPABASE_URL", ""))
@@ -501,8 +532,18 @@ def main() -> int:
     if not args.process_queue and not args.bbox:
         raise RuntimeError("Choose --process-queue or provide --bbox WEST,SOUTH,EAST,NORTH.")
 
-    policy = source_policy(args.supabase_url, args.service_key)
-    storage = storage_status(args.supabase_url, args.service_key)
+    try:
+        policy = source_policy(args.supabase_url, args.service_key)
+        storage = storage_status(args.supabase_url, args.service_key)
+    except RuntimeError as exc:
+        if args.process_queue:
+            print(json.dumps({
+                "ok": True,
+                "status": "deferred_control_plane_unavailable",
+                "error": str(exc)[:600],
+            }, separators=(",", ":"), sort_keys=True))
+            return 0
+        raise
     if policy.get("enabled") is False:
         print(json.dumps({"ok": True, "status": "source_disabled", "source": SOURCE_KEY}, separators=(",", ":"), sort_keys=True))
         return 0

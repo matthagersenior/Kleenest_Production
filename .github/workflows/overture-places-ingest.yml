@@ -14,13 +14,13 @@ on:
       max_jobs:
         description: 'Maximum queued search/market hydration jobs to process.'
         required: false
-        default: '4'
+        default: '1'
         type: string
   workflow_run:
     workflows: ["Production CI"]
     types: [completed]
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/10 * * * *'
 
 permissions:
   contents: read
@@ -73,6 +73,6 @@ jobs:
           if [ -n "${INPUT_BBOX:-}" ]; then
             args+=(--bbox "$INPUT_BBOX")
           else
-            args+=(--process-queue --max-jobs "${INPUT_MAX_JOBS:-4}")
+            args+=(--process-queue --max-jobs "${INPUT_MAX_JOBS:-1}")
           fi
           python3 scripts/overture-places-ingest.py "${args[@]}"

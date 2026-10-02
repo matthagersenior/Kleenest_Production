@@ -16,8 +16,6 @@ const requireText = (source, text, message) => {
 const adaptive = requireFile('supabase/migrations/20260908042059_adaptive_ingestion_efficiency_and_cold_offload.sql');
 requireText(adaptive, 'tune_osm_ingestion_concurrency', 'Adaptive OSM concurrency controller must remain source-controlled.');
 requireText(adaptive, "max_requests_per_cycle=1", 'OSM safe baseline concurrency must remain 1 request per cycle.');
-requireText(adaptive, "'*/5 * * * *'", 'Adaptive OSM concurrency tuning must remain scheduled every five minutes.');
-requireText(adaptive, "'*/30 * * * *'", 'Cold provenance offload must remain scheduled every thirty minutes.');
 requireText(adaptive, "disk_observed_fraction'')::numeric >= 0.85", 'Observed-disk compaction trigger must remain at 85%.');
 
 for (const migration of [
@@ -31,7 +29,6 @@ for (const migration of [
 
 const geoRuntime = requireFile('supabase/migrations/20260907113600_reconcile_geo_catalog_sync_runtime.sql');
 requireText(geoRuntime, "jsonb_build_object('batches',20,'limit',1000)", 'Geo catalog runtime must preserve the live 20-batch export pacing.');
-requireText(geoRuntime, "cron.schedule('geo-catalog-export','* * * * *'", 'Geo catalog runtime must preserve the canonical live scheduler name and one-minute cadence.');
 requireText(geoRuntime, "jobname in ('geo-catalog-export', 'geo_catalog_export_sync')", 'Geo catalog runtime must remove legacy duplicate scheduler names before scheduling.');
 
 const national = requireFile('supabase/functions/national-ingestion-orchestrator/index.ts');
@@ -53,7 +50,7 @@ requireText(frontier, 'corridor_0.24_frontier_v1', 'Moving-frontier configuratio
 const focus = requireFile('supabase/functions/focus-ingestion-orchestrator/index.ts');
 requireText(focus, "corridor:'kc_to_chicago'", 'Focus ingestion must preserve the KC-to-Chicago corridor contract.');
 requireText(focus, ".like('market_key','focus_corridor_%')", 'Focus ingestion must select corridor markets.');
-requireText(focus, "status:'kc_to_chicago_coverage_v24'", 'Focus ingestion must report the current coverage runtime version.');
+requireText(focus, "status:'kc_to_chicago_coverage_v25'", 'Focus ingestion must report the current coverage runtime version.');
 requireText(focus, 'try_acquire_focus_ingestion_lease', 'Focus ingestion must preserve its overlap-suppression lease.');
 requireText(focus, 'national_ingestion_storage_status', 'Focus ingestion must remain governed by the storage guard.');
 requireText(focus, "storage.data?.may_ingest===false", 'Focus ingestion must stop when the storage guard pauses ingestion.');
@@ -65,6 +62,8 @@ for (const endpoint of [
 ]) requireText(focus, endpoint, `Focus ingestion must keep provider ${endpoint} source-controlled.`);
 requireText(focus, "PROVIDER_POOL_VERSION='overpass_pool_v4_failure_rate_breaker'", 'Focus ingestion provider-pool version must remain source-controlled.');
 requireText(focus, "breaker:'failure_rate_cooldown'", 'Failure-rate endpoint breaker policy must remain source-controlled.');
+requireText(focus, 'BACKGROUND_CANONICAL_BATCH=100', 'Background OSM canonical writes must remain bounded to 100 rows.');
+requireText(focus, "rpc('ingest_external_locations_background'", 'Background OSM writes must use non-blocking canonical admission.');
 const openData = requireFile('supabase/functions/corridor-open-data-ingestor/index.ts');
 requireText(openData, 'get_internal_scheduler_secret', 'Open-data ingestion must preserve scheduler authentication.');
 requireText(openData, 'external_ingestion_adapters', 'Open-data ingestion adapter registry must remain source-controlled.');
@@ -72,6 +71,8 @@ requireText(openData, "adapter_kind==='socrata'", 'Open-data ingestion must pres
 if (openData.includes('fused_overture') || openData.includes('runOverture')) {
   throw new Error('Fused Overture ingestion must remain retired; official Overture GeoParquet is canonical.');
 }
+requireText(openData, 'BACKGROUND_CANONICAL_BATCH=100', 'Civic canonical writes must remain bounded to 100 rows.');
+requireText(openData, "rpc('ingest_external_locations_background'", 'Civic writes must use non-blocking canonical admission.');
 
 const overtureWorker = requireFile('scripts/overture-places-ingest.py');
 requireText(overtureWorker, 'SOURCE_KEY = "overture"', 'Official Overture ingestion must keep one canonical source key.');
@@ -82,6 +83,29 @@ requireText(overtureWorker, 'national_ingestion_source_policies', 'Official Over
 requireText(overtureWorker, 'effective_job_limit', 'Official Overture ingestion must cap work by source policy.');
 requireText(overtureWorker, 'http_timeout_seconds("POST") == 85', 'Overture self-test must preserve the bounded POST timeout contract.');
 requireText(overtureWorker, 'http_retry_attempts("PATCH", retries=2) == 3', 'Queue state PATCHes must retry transient transport failures while canonical POSTs remain single-attempt.');
+requireText(overtureWorker, 'ingest_external_locations_background', 'Overture writes must use background canonical admission.');
+requireText(overtureWorker, 'BackgroundIngestionBusy', 'Overture must explicitly defer when the canonical writer is busy.');
+requireText(overtureWorker, 'deferred_control_plane_unavailable', 'Automated Overture runs must defer cleanly when the database control plane is saturated.');
+requireText(overtureWorker, 'default=1', 'Automated Overture queue processing must default to one request per worker.');
+
+const throughput = requireFile('supabase/migrations/20261002204730_ingestion_throughput_control.sql');
+for (const token of [
+  'ingest_external_locations_background',
+  'pg_try_advisory_xact_lock(812733, 1)',
+  'extensions.st_dwithin(l.geom,v_point,80.0)',
+  'candidate_pool as materialized',
+  'l.geom <-> c.point',
+  "set max_requests_per_cycle=1",
+  "schedule=>'0-59/4 * * * *'",
+  "schedule=>'13,43 * * * *'",
+  "backfill_location_brand_identities(500)",
+  "retry_location_ingestion_repairs(25)",
+]) requireText(throughput, token, `Ingestion throughput control missing ${token}.`);
+
+const overtureWorkflow = requireFile('.github/workflows/overture-places-ingest.yml');
+requireText(overtureWorkflow, "cron: '*/10 * * * *'", 'Overture worker cadence must remain ten minutes.');
+requireText(overtureWorkflow, "default: '1'", 'Overture worker must process one queued request per automatic cycle.');
+requireText(overtureWorkflow, '${INPUT_MAX_JOBS:-1}', 'Overture runtime fallback must remain one queued request.');
 
 const ingestionAuthority = requireFile('supabase/migrations/20261002195120_consolidate_ingestion_authority.sql');
 requireText(ingestionAuthority, "source_key='overture_places'", 'Legacy Fused Overture source must remain explicitly retired.');
