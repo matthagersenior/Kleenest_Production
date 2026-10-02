@@ -32,7 +32,9 @@ for(const token of [
   'taxonomy.primary',
   'operating_status',
   'confidence',
-  'ingest_external_locations',
+  'ingest_external_locations_background',
+  'BackgroundIngestionBusy',
+  'deferred_control_plane_unavailable',
   '"p_source_key":"overture"',
   'place_discovery_hydration_queue',
   'batch_size = 50',
@@ -45,7 +47,7 @@ for(const token of [
 ])need(ingest,token,'Overture ingestion worker');
 
 for(const token of [
-  "cron: '*/15 * * * *'",
+  "cron: '*/10 * * * *'",
   'workflow_dispatch:',
   'workflow_run:',
   'workflows: ["Production CI"]',
@@ -54,6 +56,8 @@ for(const token of [
   'KLEENEST_PROD_SERVICE_ROLE_KEY',
   'pip install duckdb',
   'scripts/overture-places-ingest.py',
+  "default: '1'",
+  '${INPUT_MAX_JOBS:-1}',
 ])need(workflow,token,'Overture ingestion workflow');
 
 for(const token of [
