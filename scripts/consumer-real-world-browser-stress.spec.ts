@@ -33,8 +33,12 @@ async function search(page:Page,query:string,timeout=45000){
   await expect(box).toBeVisible({timeout:20000});
   await box.fill(query);
   await page.getByRole('button',{name:'SEARCH'}).first().click();
+  // Give React Native Web one paint to flip SEARCH -> WORKING before waiting
+  // for SEARCH to return. Without this, the assertion can race the state update
+  // and sample the page while the live lookup is still running.
+  await page.waitForTimeout(250);
   await readySearch(page,timeout);
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(500);
 }
 
 async function collect(page:Page,stage:string,network:{failed:string[];bad:string[];errors:string[]},extra:Record<string,unknown>={}):Promise<Observation>{
