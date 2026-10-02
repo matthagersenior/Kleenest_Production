@@ -69,9 +69,10 @@ import { organicExploreReason } from '../services/aiAssist';
 
 const DRAFT_KEY = 'kleenest.native.route.draft';
 const SEARCH_DESTINATION_GEOFENCE_RADIUS_M=150;
-const LIVE_LOOKUP_TIMEOUT_MS=9000;
-const PRESENCE_LOOKUP_TIMEOUT_MS=4000;
-const LOCATION_LOOKUP_TIMEOUT_MS=7000;
+const LIVE_LOOKUP_TIMEOUT_MS=8000;
+const LIVE_FALLBACK_TIMEOUT_MS=4500;
+const PRESENCE_LOOKUP_TIMEOUT_MS=3000;
+const LOCATION_LOOKUP_TIMEOUT_MS=6000;
 
 function withTimeout<T>(promise:Promise<T>,timeoutMs:number,message:string):Promise<T>{
   return new Promise<T>((resolve,reject)=>{
@@ -81,6 +82,9 @@ function withTimeout<T>(promise:Promise<T>,timeoutMs:number,message:string):Prom
       error=>{clearTimeout(timer);reject(error);},
     );
   });
+}
+function isLookupTimeout(error:unknown){
+  return /took too long|timed out|timeout/i.test(String((error as any)?.message||error||''));
 }
 const OSM_STYLE: any = {
   version: 8,
@@ -773,16 +777,24 @@ export default function AdaptiveExploreScreen() {
     );
   }
 
-  function recenterMap() {
-    const target=searchAreaOrigin||origin;
-    if (!target) return;
-    setFitRouteCamera(false);
-    setSelectedId('');
-    setPendingMapOrigin(null);
-    setMapCenter(target);
-    setMapZoom(13);
-    cameraRef.current?.jumpTo({center:target,zoom:13});
-    setCameraNonce((value) => value + 1);
+  async function recenterMap() {
+    if(searchAreaOrigin){
+      const target=searchAreaOrigin;
+      setFitRouteCamera(false);
+      setSelectedId('');
+      setPendingMapOrigin(null);
+      setMapCenter(target);
+      setMapZoom(13);
+      cameraRef.current?.jumpTo({center:target,zoom:13});
+      setCameraNonce((value) => value + 1);
+      return;
+    }
+    try{
+      setMessage('Updating your current location…');
+      await currentLocation(true);
+    }catch(error:any){
+      setMessage(error?.message||'Kleenest could not refresh your current location.');
+    }
   }
 
   function fitRouteMap() {
@@ -850,15 +862,22 @@ export default function AdaptiveExploreScreen() {
       );
     }
     const lastKnown=await Location.getLastKnownPositionAsync().catch(()=>null);
-    const recentLastKnown=lastKnown&&Date.now()-Number(lastKnown.timestamp||0)<=15*60*1000?lastKnown:null;
-    const current = recentLastKnown || await withTimeout(
-      Location.getCurrentPositionAsync({accuracy: Location.Accuracy.Balanced}),
+    let freshLocationError:unknown=null;
+    const fresh=await withTimeout(
+      Location.getCurrentPositionAsync({
+        accuracy: forceMapRecenter ? Location.Accuracy.High : Location.Accuracy.Balanced,
+      }),
       LOCATION_LOOKUP_TIMEOUT_MS,
-      'Location lookup took too long. Pull down to retry, or search an address or city.',
-    ).catch(async (freshLocationError) => {
-      if (!lastKnown) throw freshLocationError;
-      return lastKnown;
+      'Fresh location lookup took too long. Pull down to retry, or search an address or city.',
+    ).catch((error)=>{
+      freshLocationError=error;
+      return null;
     });
+    const current=fresh||lastKnown;
+    if(!current)throw freshLocationError||new Error('Kleenest could not determine your current location.');
+    if(!fresh&&forceMapRecenter){
+      setMessage('Fresh GPS was unavailable, so Kleenest is showing your last known position. Try the locate button again when GPS has a clearer fix.');
+    }
     const point: [number, number] = [current.coords.longitude, current.coords.latitude];
     setOrigin(point);
     if (forceMapRecenter) {
@@ -911,14 +930,21 @@ export default function AdaptiveExploreScreen() {
     const retainedMapOrigin=!clearQuery&&!areaMatch?searchAreaOrigin:null;
     const mapAreaOrigin=overrideOrigin||retainedMapOrigin;
     const current=areaMatch||mapAreaOrigin?null:await currentLocation(forceLiveRecenter);
-    const livePresence=areaMatch||mapAreaOrigin
-      ? null
-      : await withTimeout(
-          recordConsumerPresenceAt(Number(current!.coords.latitude),Number(current!.coords.longitude)),
-          PRESENCE_LOOKUP_TIMEOUT_MS,
-          'Presence refresh timed out.',
-        ).catch(()=>null);
-    if(areaMatch||mapAreaOrigin)void refreshConsumerPresence().catch(()=>null);
+    let livePresence:ConsumerPresence|null=null;
+    if(areaMatch||mapAreaOrigin){
+      void refreshConsumerPresence().catch(()=>null);
+    }else{
+      void withTimeout(
+        recordConsumerPresenceAt(Number(current!.coords.latitude),Number(current!.coords.longitude)),
+        PRESENCE_LOOKUP_TIMEOUT_MS,
+        'Presence refresh timed out.',
+      ).then((presence)=>{
+        livePresence=presence;
+        if(presence&&nearbyEnrichmentRunRef.current===enrichmentRun){
+          setRows(currentRows=>attachPresence(currentRows,presence));
+        }
+      }).catch(()=>{});
+    }
     const nextOrigin:[number,number]=areaMatch
       ? areaMatch.origin
       : mapAreaOrigin
@@ -971,12 +997,12 @@ export default function AdaptiveExploreScreen() {
         }),LIVE_LOOKUP_TIMEOUT_MS,'Live nearby discovery took too long. Pull down to retry.');
       }
     } catch (error) {
-      if (matchRule !== 'all') throw error;
+      if (matchRule !== 'all'||isLookupTimeout(error)) throw error;
       const legacyRows = await withTimeout(
         activeAmenityNames.length
           ? listNearbyRestrooms(latitude,longitude,radius,query,activeAmenityNames)
           : listNearbyMapCandidates({latitude,longitude,radiusMeters:radius,search:query,limit:2000}),
-        LIVE_LOOKUP_TIMEOUT_MS,
+        LIVE_FALLBACK_TIMEOUT_MS,
         'Fallback nearby discovery took too long. Pull down to retry.',
       );
       result = { rows: legacyRows, requestedRadiusMeters, effectiveRadiusMeters: radius, attemptedRadiiMeters: [radius], expanded: false };
@@ -1219,7 +1245,7 @@ export default function AdaptiveExploreScreen() {
           if (fallback.radiusMeters) setRadius(fallback.radiusMeters);
           setCached(true);
           setMessage(
-            `Live lookup failed. Showing cached nearby places from ${cachedAgeLabel(fallback.savedAt)}; tap Search for a live result.`,
+            `Live lookup failed. Showing cached nearby places from ${cachedAgeLabel(fallback.savedAt)}; tap Refresh live or Search to retry.`,
           );
           setLoading(false);
           return;
@@ -1680,9 +1706,11 @@ export default function AdaptiveExploreScreen() {
           <View style={[s.mapFrame,{height:exploreMapHeight}]}>
             <View
               style={s.mapGestureSurface}
+              onStartShouldSetResponderCapture={()=>{setMapInteracting(true);return false}}
+              onMoveShouldSetResponderCapture={()=>{if(!mapInteracting)setMapInteracting(true);return false}}
               onTouchStart={()=>setMapInteracting(true)}
               onTouchMove={()=>{if(!mapInteracting)setMapInteracting(true)}}
-              onTouchEnd={()=>setTimeout(()=>setMapInteracting(false),80)}
+              onTouchEnd={()=>setTimeout(()=>setMapInteracting(false),120)}
               onTouchCancel={()=>setMapInteracting(false)}
             >
             <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE} onRegionDidChange={handleMapRegionDidChange}>
@@ -1795,7 +1823,7 @@ export default function AdaptiveExploreScreen() {
               <Pressable accessibilityRole="button" accessibilityLabel="Zoom map out" style={[s.mapControl,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={() => changeMapZoom(-1)}>
                 <Text style={[s.mapControlText,{color:theme.accent}]}>−</Text>
               </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel={searchAreaOrigin?'Center map on searched area':'Center map on my location'} style={[s.mapControl,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={recenterMap}>
+              <Pressable accessibilityRole="button" accessibilityLabel={searchAreaOrigin?'Center map on searched area':'Center map on my location'} style={[s.mapControl,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>void recenterMap()}>
                 <Text style={[s.mapControlText,{color:theme.accent}]}>⌖</Text>
               </Pressable>
               {mode==='route'&&route?.geometry?<Pressable accessibilityRole="button" accessibilityLabel="Fit full route on map" style={[s.mapControl,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={fitRouteMap}>
