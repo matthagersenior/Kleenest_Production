@@ -1247,7 +1247,7 @@ export default function AdaptiveExploreScreen() {
           if (fallback.radiusMeters) setRadius(fallback.radiusMeters);
           setCached(true);
           setMessage(
-            `Live lookup failed. Showing cached nearby places from ${cachedAgeLabel(fallback.savedAt)}; tap Refresh live or Search to retry.`,
+            `Live lookup failed. Showing cached nearby places from ${cachedAgeLabel(fallback.savedAt)}; tap Search for a live result or Refresh live to retry.`,
           );
           setLoading(false);
           return;
