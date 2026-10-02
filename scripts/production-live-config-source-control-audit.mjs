@@ -75,12 +75,13 @@ if (openData.includes('fused_overture') || openData.includes('runOverture')) {
 
 const overtureWorker = requireFile('scripts/overture-places-ingest.py');
 requireText(overtureWorker, 'SOURCE_KEY = "overture"', 'Official Overture ingestion must keep one canonical source key.');
-requireText(overtureWorker, 'batch_size = 200', 'Overture canonical writes must remain bounded to 200-row batches.');
+requireText(overtureWorker, 'batch_size = 50', 'Overture canonical writes must remain bounded to 50-row batches.');
 requireText(overtureWorker, 'recover_stale_queue', 'Overture hydration must recover abandoned running jobs.');
 requireText(overtureWorker, 'national_ingestion_storage_status', 'Official Overture ingestion must honor the shared storage guard.');
 requireText(overtureWorker, 'national_ingestion_source_policies', 'Official Overture ingestion must honor the shared source policy.');
 requireText(overtureWorker, 'effective_job_limit', 'Official Overture ingestion must cap work by source policy.');
 requireText(overtureWorker, 'http_timeout_seconds("POST") == 85', 'Overture self-test must preserve the bounded POST timeout contract.');
+requireText(overtureWorker, 'http_retry_attempts("PATCH", retries=2) == 3', 'Queue state PATCHes must retry transient transport failures while canonical POSTs remain single-attempt.');
 
 const ingestionAuthority = requireFile('supabase/migrations/20261002195120_consolidate_ingestion_authority.sql');
 requireText(ingestionAuthority, "source_key='overture_places'", 'Legacy Fused Overture source must remain explicitly retired.');
