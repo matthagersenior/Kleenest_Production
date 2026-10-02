@@ -166,3 +166,12 @@ Before uploading to production, all must be true:
 - UGC reporting/blocking verified;
 - billing/license test and restore verified;
 - Play Console shows no unresolved blocking warnings.
+
+
+## Official Google references
+
+- Background location: https://support.google.com/googleplay/android-developer/answer/9799150
+- Sensitive permissions declarations: https://support.google.com/googleplay/android-developer/answer/9214102
+- Prominent disclosure and consent: https://support.google.com/googleplay/android-developer/answer/11150561
+- Data Safety: https://support.google.com/googleplay/android-developer/answer/10787469
+- Account deletion: https://support.google.com/googleplay/android-developer/answer/13327111
