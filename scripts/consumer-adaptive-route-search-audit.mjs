@@ -144,7 +144,11 @@ for(const token of [
 ])requireToken(screen,token,'Along-route map framing and compact result summary');
 if(screen.includes('useSafeAreaInsets'))throw new Error('Explore must use the safe-area-context SafeAreaView boundary without inset-driven search padding.');
 if(signals.includes('>＋</Text>'))throw new Error('Map legend control must not look like a second zoom-in button.');
-for(const token of ["const compactFab=route==='/explore';","compactFab?'✦':'✦ Tell Kleenest'",'fabCompact'])requireToken(betaButton,token,'Compact Explore beta feedback control');
+for(const token of ['accessibilityLabel="Tell Kleenest what you think"','✦ Tell Kleenest'])requireToken(betaButton,token,'Labeled Tell Kleenest feedback control');
+if(betaButton.includes("const compactFab=route==='/explore';"))throw new Error('Explore feedback control must stay labeled instead of collapsing to an unlabeled sparkle-only FAB.');
+if(!screen.includes('setMapZoom((current) => Math.max(current, 14));'))throw new Error('Selecting a place from a grouped pin must preserve the detailed map zoom.');
+if(/key=\{`explore-camera-\$\{cameraNonce\}-\$\{selectedId\}-/.test(screen))throw new Error('Opening or closing a selected location must not remount the map camera.');
+if(!/key=\{`explore-camera-\$\{cameraNonce\}-\$\{mode\}-/.test(screen))throw new Error('Explore map camera must remain keyed to intentional camera changes, not selected-card visibility.');
 
 
 // Explore is one continuous consumer page: compact search controls → map → results.
