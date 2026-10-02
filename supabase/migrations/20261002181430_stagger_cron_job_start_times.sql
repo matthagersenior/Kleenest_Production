@@ -1,0 +1,26 @@
+-- Stagger recurring jobs to avoid pg_cron startup bursts while preserving cadence.
+select cron.alter_job(job_id := 9,  schedule := '0-59/5 * * * *');
+select cron.alter_job(job_id := 33, schedule := '4-59/5 * * * *');
+select cron.alter_job(job_id := 4,  schedule := '0-59/5 * * * *');
+select cron.alter_job(job_id := 18, schedule := '0-59/5 * * * *');
+select cron.alter_job(job_id := 21, schedule := '1-59/5 * * * *');
+select cron.alter_job(job_id := 22, schedule := '1-59/5 * * * *');
+select cron.alter_job(job_id := 24, schedule := '2-59/5 * * * *');
+select cron.alter_job(job_id := 26, schedule := '2-59/5 * * * *');
+select cron.alter_job(job_id := 31, schedule := '3-59/5 * * * *');
+select cron.alter_job(job_id := 48, schedule := '3-59/5 * * * *');
+select cron.alter_job(job_id := 52, schedule := '4-59/5 * * * *');
+select cron.alter_job(job_id := 6,  schedule := '5-59/15 * * * *');
+select cron.alter_job(job_id := 10, schedule := '2-59/15 * * * *');
+select cron.alter_job(job_id := 11, schedule := '7-59/15 * * * *');
+select cron.alter_job(job_id := 17, schedule := '3-59/15 * * * *');
+select cron.alter_job(job_id := 27, schedule := '8-59/15 * * * *');
+select cron.alter_job(job_id := 54, schedule := '4-59/15 * * * *');
+select cron.alter_job(job_id := 35, schedule := '9-59/10 * * * *');
+select cron.alter_job(job_id := 5,  schedule := '14 * * * *');
+select cron.alter_job(job_id := 12, schedule := '24 * * * *');
+select cron.alter_job(job_id := 20, schedule := '44 * * * *');
+select cron.alter_job(job_id := 15, schedule := '44 5 * * *');
+select cron.alter_job(job_id := 29, schedule := '14 3 * * *');
+select cron.alter_job(job_id := 47, schedule := '24 3 * * *');
+select cron.alter_job(job_id := 34, schedule := '54 15 * * 1');
