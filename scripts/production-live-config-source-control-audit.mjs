@@ -73,6 +73,17 @@ if (openData.includes('fused_overture') || openData.includes('runOverture')) {
   throw new Error('Fused Overture ingestion must remain retired; official Overture GeoParquet is canonical.');
 }
 
+const overtureWorker = requireFile('scripts/overture-places-ingest.py');
+requireText(overtureWorker, 'SOURCE_KEY = "overture"', 'Official Overture ingestion must keep one canonical source key.');
+requireText(overtureWorker, 'batch_size = 200', 'Overture canonical writes must remain bounded to 200-row batches.');
+requireText(overtureWorker, 'recover_stale_queue', 'Overture hydration must recover abandoned running jobs.');
+requireText(overtureWorker, 'http_timeout_seconds("POST") == 85', 'Overture self-test must preserve the bounded POST timeout contract.');
+
+const ingestionAuthority = requireFile('supabase/migrations/20261002195120_consolidate_ingestion_authority.sql');
+requireText(ingestionAuthority, "source_key='overture_places'", 'Legacy Fused Overture source must remain explicitly retired.');
+requireText(ingestionAuthority, "adapter_kind = any (array['socrata'::text,'arcgis'::text,'geojson'::text,'bulk'::text])", 'Open-data adapter kinds must exclude retired Fused Overture.');
+requireText(ingestionAuthority, "last_error='STALE_WORKER_RECOVERED'", 'Hydration migration must preserve stale-job recovery.');
+
 const geo = requireFile('supabase/functions/geo-catalog-exporter/index.ts');
 requireText(geo, 'sxgymblzmwdqnaidbbuq.supabase.co/functions/v1/archive-object-ingest', 'Geo catalog exporter must target the verified Kleenest_Data object archive.');
 requireText(geo, "geo_catalog_export_ack", 'Geo catalog exporter must acknowledge its watermark after transfer.');
