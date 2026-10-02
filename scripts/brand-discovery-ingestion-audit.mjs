@@ -17,15 +17,13 @@ for(const token of [
   'operator_name=coalesce(v_operator',
 ])if(!migration.includes(token))failures.push('Brand ingestion migration missing '+token);
 
-for(const path of [
-  'supabase/functions/national-ingestion-orchestrator/index.ts',
-  'supabase/functions/focus-ingestion-orchestrator/index.ts',
-]){
-  const source=read(path);
-  for(const token of ['brand:t.brand||null','operator_name:t.operator||null']){
-    if(!source.includes(token))failures.push(`${path} must pass ${token} into canonical ingestion.`);
-  }
+const focusPath='supabase/functions/focus-ingestion-orchestrator/index.ts';
+const focusSource=read(focusPath);
+for(const token of ['brand:t.brand||null','operator_name:t.operator||null']){
+  if(!focusSource.includes(token))failures.push(`${focusPath} must pass ${token} into canonical ingestion.`);
 }
+const retiredNational=read('supabase/functions/national-ingestion-orchestrator/index.ts');
+if(!retiredNational.includes('INGESTION_PATH_RETIRED')) failures.push('Legacy national ingestion must remain explicitly retired.');
 
 if(failures.length){
   console.error('Brand discovery ingestion audit failed:');

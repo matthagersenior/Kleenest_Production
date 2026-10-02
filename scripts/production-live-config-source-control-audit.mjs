@@ -35,15 +35,9 @@ requireText(geoRuntime, "cron.schedule('geo-catalog-export','* * * * *'", 'Geo c
 requireText(geoRuntime, "jobname in ('geo-catalog-export', 'geo_catalog_export_sync')", 'Geo catalog runtime must remove legacy duplicate scheduler names before scheduling.');
 
 const national = requireFile('supabase/functions/national-ingestion-orchestrator/index.ts');
-requireText(national, "get_internal_scheduler_secret',{p_name:'kleenest_maps_scheduler'}", 'National ingestion must preserve scheduler authentication.');
-requireText(national, "Number(c.count||0)<4", 'National ingestion must preserve the live four-market running cap.');
-requireText(national, '0.05_city_0.12_state_adaptive_v6', 'National ingestion must preserve the live adaptive OSM grid.');
-requireText(national, 'national_ingestion_storage_status', 'National ingestion must remain governed by the storage guard.');
-requireText(national, "storage.data?.may_ingest===false", 'National ingestion must stop when the storage guard pauses ingestion.');
-requireText(national, 'https://overpass-api.de/api/interpreter', 'National ingestion primary Overpass endpoint must remain source-controlled.');
-requireText(national, 'https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'National ingestion fallback Overpass endpoint must remain source-controlled.');
-requireText(national, 'for(let i=0;i<2;i++)', 'National ingestion endpoint attempts must remain bounded to the live two-attempt policy.');
-requireText(national, "api:'v4_spatial_semantic_v5'", 'National Data.gov ingestion mode must remain source-controlled.');
+requireText(national, 'INGESTION_PATH_RETIRED', 'Legacy national ingestion must remain explicitly retired.');
+requireText(national, 'focus-ingestion-orchestrator + corridor-open-data-ingestor', 'Legacy national ingestion must point operators to the canonical split ingestion paths.');
+requireText(national, 'status:410', 'Legacy national ingestion must return Gone instead of resuming bulk writes.');
 
 const frontier = requireFile('supabase/operational-config/kc_chicago_moving_frontier.sql');
 for (const market of [
@@ -54,16 +48,23 @@ for (const market of [
   'focus_corridor_chicago',
   'focus_corridor_springfield_mo_branch',
 ]) requireText(frontier, market, `Moving-frontier configuration must preserve ${market}.`);
-requireText(frontier, 'corridor_0.24_frontier_v1', 'Moving-frontier configuration must preserve its grid contract.');
+requireText(frontier, 'corridor_0.24_frontier_v1', 'Moving-frontier configuration must preserve its source-controlled seed contract.');
 
 const focus = requireFile('supabase/functions/focus-ingestion-orchestrator/index.ts');
-requireText(focus, "corridor:'kc_to_chicago_moving_frontier'", 'Focus ingestion must preserve the KC-to-Chicago moving-frontier contract.');
-requireText(focus, "market_key.like.focus_corridor_%", 'Focus ingestion must select moving-frontier markets.');
-requireText(focus, "status:'kc_to_chicago_moving_frontier_v18'", 'Focus ingestion must report the current moving-frontier runtime version.');
-requireText(focus, 'https://overpass-api.de/api/interpreter', 'Primary Overpass endpoint must remain source-controlled.');
-requireText(focus, 'https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'Fallback Overpass endpoint must remain source-controlled.');
-requireText(focus, "breaker:'single_429_15m_or_2_consecutive_or_legacy_rate'", 'Endpoint breaker policy must remain source-controlled.');
-
+requireText(focus, "corridor:'kc_to_chicago'", 'Focus ingestion must preserve the KC-to-Chicago corridor contract.');
+requireText(focus, ".like('market_key','focus_corridor_%')", 'Focus ingestion must select corridor markets.');
+requireText(focus, "status:'kc_to_chicago_coverage_v23'", 'Focus ingestion must report the current coverage runtime version.');
+requireText(focus, 'try_acquire_focus_ingestion_lease', 'Focus ingestion must preserve its overlap-suppression lease.');
+requireText(focus, 'national_ingestion_storage_status', 'Focus ingestion must remain governed by the storage guard.');
+requireText(focus, "storage.data?.may_ingest===false", 'Focus ingestion must stop when the storage guard pauses ingestion.');
+for (const endpoint of [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+]) requireText(focus, endpoint, `Focus ingestion must keep provider ${endpoint} source-controlled.`);
+requireText(focus, "PROVIDER_POOL_VERSION='overpass_pool_v3_four_endpoint_breaker'", 'Focus ingestion provider-pool version must remain source-controlled.');
+requireText(focus, "breaker:'single_transient_failure_cooldown'", 'Transient endpoint breaker policy must remain source-controlled.');
 const geo = requireFile('supabase/functions/geo-catalog-exporter/index.ts');
 requireText(geo, 'sxgymblzmwdqnaidbbuq.supabase.co/functions/v1/archive-object-ingest', 'Geo catalog exporter must target the verified Kleenest_Data object archive.');
 requireText(geo, "geo_catalog_export_ack", 'Geo catalog exporter must acknowledge its watermark after transfer.');
