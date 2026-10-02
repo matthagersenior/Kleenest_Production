@@ -27,7 +27,7 @@ STAC_URL = "https://stac.overturemaps.org/catalog.json"
 S3_ROOT = "s3://overturemaps-us-west-2/release"
 SOURCE_KEY = "overture"
 DEFAULT_MIN_CONFIDENCE = 0.30
-batch_size = 200
+batch_size = 50
 
 
 def utc_now() -> str:
@@ -35,7 +35,8 @@ def utc_now() -> str:
 
 
 def http_retry_attempts(method: str, *, retries: int = 2) -> int:
-    return 1 + max(0, int(retries)) if method.upper() == "GET" else 1
+    normalized = method.upper()
+    return 1 + max(0, int(retries)) if normalized in {"GET", "PATCH"} else 1
 
 
 def http_timeout_seconds(method: str) -> int:
@@ -467,10 +468,11 @@ def self_test() -> None:
     assert row["place_type"] == "restaurant"
     assert row["state"] == "MO"
     assert http_retry_attempts("GET", retries=2) == 3
+    assert http_retry_attempts("PATCH", retries=2) == 3
     assert http_retry_attempts("POST", retries=2) == 1
     assert http_timeout_seconds("GET") == 45
     assert http_timeout_seconds("POST") == 85
-    assert batch_size == 200
+    assert batch_size == 50
     assert effective_job_limit(8, {"max_requests_per_cycle": 4}) == 4
     assert effective_job_limit(2, {"max_requests_per_cycle": 4}) == 2
     print("Overture ingestion self-test passed.")
