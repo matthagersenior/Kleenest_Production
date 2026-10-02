@@ -66,6 +66,12 @@ The ingestion layers are:
 
 A transport adapter and a canonical source identity are different concepts. Do not create alternate canonical source keys for the same provider merely because a different transport is used. In particular, legacy `overture_places` / Fused Overture acquisition is retired; existing rows are retained for coverage/provenance while new Overture acquisition uses `overture`.
 
+Background ingestion writes are admitted through `public.ingest_external_locations_background`, which uses a non-blocking transaction-level advisory lock. Overture, scheduled OSM, and civic/open-data ingestion therefore cannot run expensive canonicalization batches concurrently. Consumer-triggered interactive discovery continues to use the normal canonical RPC so background work cannot hold the interactive path hostage.
+
+Background batch sizes are deliberately small (Overture 50 rows; scheduled OSM and civic adapters 100 rows). Higher throughput comes from cheaper indexed matching, bounded work, and repeated cycles—not from oversized database transactions. When the background writer is busy, acquisition progress must remain unchanged and the work is deferred rather than counted as a source failure.
+
+Recurring database work is scheduled as a coordinated workload. High-frequency workers are offset across the minute and heavy ingestion/export/backfill tasks are separated; maintenance cadence must be changed through a source-controlled migration rather than ad-hoc cron edits.
+
 Internal ingestion control tables remain in `public` only for compatibility with existing Edge Functions/RPCs. Future schema hardening should move control-plane state behind internal/service-only interfaces incrementally, with compatibility RPCs, rather than bulk schema moves that break deployed clients.
 
 ## Release and CI ownership
