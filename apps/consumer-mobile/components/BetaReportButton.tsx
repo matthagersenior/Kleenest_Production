@@ -24,7 +24,6 @@ const KINDS:{key:FeedbackKind;label:string;category:BetaReportCategory;placehold
 
 export default function BetaReportButton({route}:{route:string}){
   const theme=useConsumerTheme();
-  const compactFab=route==='/explore';
   const[visible,setVisible]=useState(false);
   const[sentiment,setSentiment]=useState<Sentiment|null>(null);
   const[kind,setKind]=useState<FeedbackKind>('bug');
@@ -110,9 +109,9 @@ export default function BetaReportButton({route}:{route:string}){
       accessibilityRole="button"
       accessibilityLabel="Tell Kleenest what you think"
       onPress={open}
-      style={[s.fab,compactFab&&s.fabCompact,{backgroundColor:theme.accent,borderColor:theme.line}]}
+      style={[s.fab,{backgroundColor:theme.accent,borderColor:theme.line}]}
     >
-      <Text style={[s.fabText,compactFab&&s.fabTextCompact,{color:theme.accentText}]}>{compactFab?'✦':'✦ Tell Kleenest'}</Text>
+      <Text style={[s.fabText,{color:theme.accentText}]}>✦ Tell Kleenest</Text>
     </Pressable>
     <Modal transparent visible={visible} animationType="slide" accessibilityViewIsModal onRequestClose={()=>setVisible(false)}>
       <View style={s.overlay}>
