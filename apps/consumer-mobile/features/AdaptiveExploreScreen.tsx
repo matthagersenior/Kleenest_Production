@@ -688,7 +688,10 @@ export default function AdaptiveExploreScreen() {
     setSelectedId(id);
     if (hasCoordinates(row)) {
       setMapCenter([Number(row.longitude), Number(row.latitude)]);
-      setMapZoom(14);
+      // Selecting a place from an expanded cluster must not collapse the map back
+      // to the default place zoom. Keep the user's current detail level and only
+      // enforce a minimum useful zoom for selections made from farther out.
+      setMapZoom((current) => Math.max(current, 14));
       setCameraNonce((value) => value + 1);
     }
     if (mode === 'nearby' && id) void writeNearbyContinuity(id, radius);
@@ -1718,7 +1721,7 @@ export default function AdaptiveExploreScreen() {
             <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE} onRegionDidChange={handleMapRegionDidChange}>
               <Camera
                 ref={cameraRef}
-                key={`explore-camera-${cameraNonce}-${selectedId}-${mode}-${route?.geometry?.coordinates?.length||0}-${route?.destinationCoordinates?.join(',')||''}`}
+                key={`explore-camera-${cameraNonce}-${mode}-${route?.geometry?.coordinates?.length||0}-${route?.destinationCoordinates?.join(',')||''}`}
                 initialViewState={cameraViewState}
               />
               {route?.geometry ? (
