@@ -27,7 +27,7 @@ STAC_URL = "https://stac.overturemaps.org/catalog.json"
 S3_ROOT = "s3://overturemaps-us-west-2/release"
 SOURCE_KEY = "overture"
 DEFAULT_MIN_CONFIDENCE = 0.30
-batch_size=500
+batch_size = 200
 
 
 def utc_now() -> str:
@@ -36,6 +36,10 @@ def utc_now() -> str:
 
 def http_retry_attempts(method: str, *, retries: int = 2) -> int:
     return 1 + max(0, int(retries)) if method.upper() == "GET" else 1
+
+
+def http_timeout_seconds(method: str) -> int:
+    return 85 if method.upper() == "POST" else 45
 
 
 def http_json(method: str, url: str, *, key: str | None = None, body: Any = None) -> Any:
@@ -54,7 +58,7 @@ def http_json(method: str, url: str, *, key: str | None = None, body: Any = None
     for attempt in range(1, max_attempts + 1):
         request = urllib.request.Request(url, data=data, headers=headers, method=normalized_method)
         try:
-            with urllib.request.urlopen(request, timeout=45) as response:
+            with urllib.request.urlopen(request, timeout=http_timeout_seconds(normalized_method)) as response:
                 payload = response.read()
                 return json.loads(payload.decode("utf-8")) if payload else None
         except urllib.error.HTTPError as exc:
@@ -278,6 +282,45 @@ def queue_rows(url: str, key: str, limit: int) -> list[dict[str, Any]]:
     return data if isinstance(data, list) else []
 
 
+def stale_queue_rows(url: str, key: str, stale_minutes: int = 90) -> list[dict[str, Any]]:
+    cutoff = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=max(15, stale_minutes))).isoformat().replace("+00:00", "Z")
+    query = urllib.parse.urlencode(
+        {
+            "select": "id,request_key,status,attempt_count,started_at",
+            "status": "eq.running",
+            "started_at": f"lt.{cutoff}",
+            "attempt_count": "lt.5",
+            "order": "started_at.asc",
+            "limit": "8",
+        },
+        safe="(),.:-",
+    )
+    endpoint = f"{url.rstrip('/')}/rest/v1/place_discovery_hydration_queue?{query}"
+    data = http_json("GET", endpoint, key=key)
+    return data if isinstance(data, list) else []
+
+
+def recover_stale_queue(url: str, key: str, stale_minutes: int = 90) -> int:
+    stale = stale_queue_rows(url, key, stale_minutes)
+    recovered = 0
+    for job in stale:
+        request_id = str(job.get("id") or "")
+        if not request_id:
+            continue
+        patch_queue(
+            url,
+            key,
+            request_id,
+            {
+                "status": "failed",
+                "last_error": "STALE_WORKER_RECOVERED",
+                "updated_at": utc_now(),
+            },
+        )
+        recovered += 1
+    return recovered
+
+
 def ingest_bbox(
     con: Any,
     *,
@@ -309,6 +352,7 @@ def ingest_bbox(
 
 
 def process_queue(args: argparse.Namespace, con: Any, release: str) -> dict[str, Any]:
+    recovered_stale_jobs = recover_stale_queue(args.supabase_url, args.service_key)
     jobs = queue_rows(args.supabase_url, args.service_key, args.max_jobs)
     summary: list[dict[str, Any]] = []
     for job in jobs:
@@ -353,7 +397,12 @@ def process_queue(args: argparse.Namespace, con: Any, release: str) -> dict[str,
                 {"status": "failed", "last_error": message, "updated_at": utc_now()},
             )
             summary.append({"id": request_id, "request_key": job.get("request_key"), "ok": False, "error": message})
-    return {"release": release, "jobs": summary, "job_count": len(summary)}
+    return {
+        "release": release,
+        "jobs": summary,
+        "job_count": len(summary),
+        "recovered_stale_jobs": recovered_stale_jobs,
+    }
 
 
 def parse_bbox(value: str) -> list[float]:
@@ -384,6 +433,9 @@ def self_test() -> None:
     assert row["state"] == "MO"
     assert http_retry_attempts("GET", retries=2) == 3
     assert http_retry_attempts("POST", retries=2) == 1
+    assert http_timeout_seconds("GET") == 45
+    assert http_timeout_seconds("POST") == 85
+    assert batch_size == 200
     print("Overture ingestion self-test passed.")
 
 
