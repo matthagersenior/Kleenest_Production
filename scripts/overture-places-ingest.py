@@ -27,7 +27,7 @@ STAC_URL = "https://stac.overturemaps.org/catalog.json"
 S3_ROOT = "s3://overturemaps-us-west-2/release"
 SOURCE_KEY = "overture"
 DEFAULT_MIN_CONFIDENCE = 0.30
-batch_size=500
+batch_size = 200
 
 
 def utc_now() -> str:
@@ -36,6 +36,10 @@ def utc_now() -> str:
 
 def http_retry_attempts(method: str, *, retries: int = 2) -> int:
     return 1 + max(0, int(retries)) if method.upper() == "GET" else 1
+
+
+def http_timeout_seconds(method: str) -> int:
+    return 85 if method.upper() == "POST" else 45
 
 
 def http_json(method: str, url: str, *, key: str | None = None, body: Any = None) -> Any:
@@ -54,7 +58,7 @@ def http_json(method: str, url: str, *, key: str | None = None, body: Any = None
     for attempt in range(1, max_attempts + 1):
         request = urllib.request.Request(url, data=data, headers=headers, method=normalized_method)
         try:
-            with urllib.request.urlopen(request, timeout=45) as response:
+            with urllib.request.urlopen(request, timeout=http_timeout_seconds(normalized_method)) as response:
                 payload = response.read()
                 return json.loads(payload.decode("utf-8")) if payload else None
         except urllib.error.HTTPError as exc:
@@ -246,6 +250,31 @@ def query_places(con: Any, release: str, bbox: list[float], min_confidence: floa
     return con.execute(sql, [source, west, east, south, north, min_confidence])
 
 
+def source_policy(url: str, key: str) -> dict[str, Any]:
+    query = urllib.parse.urlencode(
+        {
+            "select": "source_key,enabled,max_requests_per_cycle",
+            "source_key": f"eq.{SOURCE_KEY}",
+            "limit": "1",
+        },
+        safe="(),.",
+    )
+    endpoint = f"{url.rstrip('/')}/rest/v1/national_ingestion_source_policies?{query}"
+    data = http_json("GET", endpoint, key=key)
+    return data[0] if isinstance(data, list) and data else {}
+
+
+def storage_status(url: str, key: str) -> dict[str, Any]:
+    endpoint = f"{url.rstrip('/')}/rest/v1/rpc/national_ingestion_storage_status"
+    data = http_json("POST", endpoint, key=key, body={})
+    return data if isinstance(data, dict) else {}
+
+
+def effective_job_limit(requested: int, policy: dict[str, Any]) -> int:
+    configured = int(policy.get("max_requests_per_cycle") or requested or 1)
+    return max(1, min(max(1, int(requested)), configured, 8))
+
+
 def supabase_rpc(url: str, key: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     endpoint = f"{url.rstrip('/')}/rest/v1/rpc/ingest_external_locations"
     result = http_json(
@@ -278,6 +307,45 @@ def queue_rows(url: str, key: str, limit: int) -> list[dict[str, Any]]:
     return data if isinstance(data, list) else []
 
 
+def stale_queue_rows(url: str, key: str, stale_minutes: int = 90) -> list[dict[str, Any]]:
+    cutoff = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=max(15, stale_minutes))).isoformat().replace("+00:00", "Z")
+    query = urllib.parse.urlencode(
+        {
+            "select": "id,request_key,status,attempt_count,started_at",
+            "status": "eq.running",
+            "started_at": f"lt.{cutoff}",
+            "attempt_count": "lt.5",
+            "order": "started_at.asc",
+            "limit": "8",
+        },
+        safe="(),.:-",
+    )
+    endpoint = f"{url.rstrip('/')}/rest/v1/place_discovery_hydration_queue?{query}"
+    data = http_json("GET", endpoint, key=key)
+    return data if isinstance(data, list) else []
+
+
+def recover_stale_queue(url: str, key: str, stale_minutes: int = 90) -> int:
+    stale = stale_queue_rows(url, key, stale_minutes)
+    recovered = 0
+    for job in stale:
+        request_id = str(job.get("id") or "")
+        if not request_id:
+            continue
+        patch_queue(
+            url,
+            key,
+            request_id,
+            {
+                "status": "failed",
+                "last_error": "STALE_WORKER_RECOVERED",
+                "updated_at": utc_now(),
+            },
+        )
+        recovered += 1
+    return recovered
+
+
 def ingest_bbox(
     con: Any,
     *,
@@ -308,8 +376,17 @@ def ingest_bbox(
     return totals
 
 
-def process_queue(args: argparse.Namespace, con: Any, release: str) -> dict[str, Any]:
-    jobs = queue_rows(args.supabase_url, args.service_key, args.max_jobs)
+def process_queue(
+    args: argparse.Namespace,
+    con: Any,
+    release: str,
+    *,
+    policy: dict[str, Any],
+    storage: dict[str, Any],
+) -> dict[str, Any]:
+    recovered_stale_jobs = recover_stale_queue(args.supabase_url, args.service_key)
+    limit = effective_job_limit(args.max_jobs, policy)
+    jobs = queue_rows(args.supabase_url, args.service_key, limit)
     summary: list[dict[str, Any]] = []
     for job in jobs:
         request_id = str(job["id"])
@@ -353,7 +430,14 @@ def process_queue(args: argparse.Namespace, con: Any, release: str) -> dict[str,
                 {"status": "failed", "last_error": message, "updated_at": utc_now()},
             )
             summary.append({"id": request_id, "request_key": job.get("request_key"), "ok": False, "error": message})
-    return {"release": release, "jobs": summary, "job_count": len(summary)}
+    return {
+        "release": release,
+        "jobs": summary,
+        "job_count": len(summary),
+        "recovered_stale_jobs": recovered_stale_jobs,
+        "effective_job_limit": limit,
+        "storage": storage,
+    }
 
 
 def parse_bbox(value: str) -> list[float]:
@@ -384,6 +468,11 @@ def self_test() -> None:
     assert row["state"] == "MO"
     assert http_retry_attempts("GET", retries=2) == 3
     assert http_retry_attempts("POST", retries=2) == 1
+    assert http_timeout_seconds("GET") == 45
+    assert http_timeout_seconds("POST") == 85
+    assert batch_size == 200
+    assert effective_job_limit(8, {"max_requests_per_cycle": 4}) == 4
+    assert effective_job_limit(2, {"max_requests_per_cycle": 4}) == 2
     print("Overture ingestion self-test passed.")
 
 
@@ -410,10 +499,19 @@ def main() -> int:
     if not args.process_queue and not args.bbox:
         raise RuntimeError("Choose --process-queue or provide --bbox WEST,SOUTH,EAST,NORTH.")
 
+    policy = source_policy(args.supabase_url, args.service_key)
+    storage = storage_status(args.supabase_url, args.service_key)
+    if policy.get("enabled") is False:
+        print(json.dumps({"ok": True, "status": "source_disabled", "source": SOURCE_KEY}, separators=(",", ":"), sort_keys=True))
+        return 0
+    if storage.get("may_ingest") is False or storage.get("paused") is True or storage.get("hard_stop") is True:
+        print(json.dumps({"ok": True, "status": "storage_paused", "storage": storage}, separators=(",", ":"), sort_keys=True))
+        return 0
+
     release = str(args.release or latest_release()).strip().strip("/")
     con = connect_duckdb()
     if args.process_queue:
-        result = process_queue(args, con, release)
+        result = process_queue(args, con, release, policy=policy, storage=storage)
     else:
         totals = ingest_bbox(
             con,
@@ -423,7 +521,7 @@ def main() -> int:
             service_key=args.service_key,
             min_confidence=args.min_confidence,
         )
-        result = {"release": release, "bbox": args.bbox, **totals}
+        result = {"release": release, "bbox": args.bbox, "storage": storage, **totals}
     print(json.dumps(result, separators=(",", ":"), sort_keys=True))
     return 0
 

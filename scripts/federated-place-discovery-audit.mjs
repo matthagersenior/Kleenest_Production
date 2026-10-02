@@ -35,7 +35,12 @@ for(const token of [
   'ingest_external_locations',
   '"p_source_key":"overture"',
   'place_discovery_hydration_queue',
-  'batch_size=500',
+  'batch_size = 200',
+  'recover_stale_queue',
+  'http_timeout_seconds',
+  'national_ingestion_storage_status',
+  'national_ingestion_source_policies',
+  'effective_job_limit',
 ])need(ingest,token,'Overture ingestion worker');
 
 for(const token of [
