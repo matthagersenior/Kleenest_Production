@@ -250,6 +250,31 @@ def query_places(con: Any, release: str, bbox: list[float], min_confidence: floa
     return con.execute(sql, [source, west, east, south, north, min_confidence])
 
 
+def source_policy(url: str, key: str) -> dict[str, Any]:
+    query = urllib.parse.urlencode(
+        {
+            "select": "source_key,enabled,max_requests_per_cycle",
+            "source_key": f"eq.{SOURCE_KEY}",
+            "limit": "1",
+        },
+        safe="(),.",
+    )
+    endpoint = f"{url.rstrip('/')}/rest/v1/national_ingestion_source_policies?{query}"
+    data = http_json("GET", endpoint, key=key)
+    return data[0] if isinstance(data, list) and data else {}
+
+
+def storage_status(url: str, key: str) -> dict[str, Any]:
+    endpoint = f"{url.rstrip('/')}/rest/v1/rpc/national_ingestion_storage_status"
+    data = http_json("POST", endpoint, key=key, body={})
+    return data if isinstance(data, dict) else {}
+
+
+def effective_job_limit(requested: int, policy: dict[str, Any]) -> int:
+    configured = int(policy.get("max_requests_per_cycle") or requested or 1)
+    return max(1, min(max(1, int(requested)), configured, 8))
+
+
 def supabase_rpc(url: str, key: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     endpoint = f"{url.rstrip('/')}/rest/v1/rpc/ingest_external_locations"
     result = http_json(
@@ -351,9 +376,17 @@ def ingest_bbox(
     return totals
 
 
-def process_queue(args: argparse.Namespace, con: Any, release: str) -> dict[str, Any]:
+def process_queue(
+    args: argparse.Namespace,
+    con: Any,
+    release: str,
+    *,
+    policy: dict[str, Any],
+    storage: dict[str, Any],
+) -> dict[str, Any]:
     recovered_stale_jobs = recover_stale_queue(args.supabase_url, args.service_key)
-    jobs = queue_rows(args.supabase_url, args.service_key, args.max_jobs)
+    limit = effective_job_limit(args.max_jobs, policy)
+    jobs = queue_rows(args.supabase_url, args.service_key, limit)
     summary: list[dict[str, Any]] = []
     for job in jobs:
         request_id = str(job["id"])
@@ -402,6 +435,8 @@ def process_queue(args: argparse.Namespace, con: Any, release: str) -> dict[str,
         "jobs": summary,
         "job_count": len(summary),
         "recovered_stale_jobs": recovered_stale_jobs,
+        "effective_job_limit": limit,
+        "storage": storage,
     }
 
 
@@ -436,6 +471,8 @@ def self_test() -> None:
     assert http_timeout_seconds("GET") == 45
     assert http_timeout_seconds("POST") == 85
     assert batch_size == 200
+    assert effective_job_limit(8, {"max_requests_per_cycle": 4}) == 4
+    assert effective_job_limit(2, {"max_requests_per_cycle": 4}) == 2
     print("Overture ingestion self-test passed.")
 
 
@@ -462,10 +499,19 @@ def main() -> int:
     if not args.process_queue and not args.bbox:
         raise RuntimeError("Choose --process-queue or provide --bbox WEST,SOUTH,EAST,NORTH.")
 
+    policy = source_policy(args.supabase_url, args.service_key)
+    storage = storage_status(args.supabase_url, args.service_key)
+    if policy.get("enabled") is False:
+        print(json.dumps({"ok": True, "status": "source_disabled", "source": SOURCE_KEY}, separators=(",", ":"), sort_keys=True))
+        return 0
+    if storage.get("may_ingest") is False or storage.get("paused") is True or storage.get("hard_stop") is True:
+        print(json.dumps({"ok": True, "status": "storage_paused", "storage": storage}, separators=(",", ":"), sort_keys=True))
+        return 0
+
     release = str(args.release or latest_release()).strip().strip("/")
     con = connect_duckdb()
     if args.process_queue:
-        result = process_queue(args, con, release)
+        result = process_queue(args, con, release, policy=policy, storage=storage)
     else:
         totals = ingest_bbox(
             con,
@@ -475,7 +521,7 @@ def main() -> int:
             service_key=args.service_key,
             min_confidence=args.min_confidence,
         )
-        result = {"release": release, "bbox": args.bbox, **totals}
+        result = {"release": release, "bbox": args.bbox, "storage": storage, **totals}
     print(json.dumps(result, separators=(",", ":"), sort_keys=True))
     return 0
 
