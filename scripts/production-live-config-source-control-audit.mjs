@@ -107,6 +107,18 @@ requireText(overtureWorkflow, "cron: '*/10 * * * *'", 'Overture worker cadence m
 requireText(overtureWorkflow, "default: '1'", 'Overture worker must process one queued request per automatic cycle.');
 requireText(overtureWorkflow, '${INPUT_MAX_JOBS:-1}', 'Overture runtime fallback must remain one queued request.');
 
+const brandRepair = requireFile('supabase/migrations/20261002212000_target_brand_identity_repair.sql');
+for (const token of [
+  'locations_brand_identity_repair_candidate_idx',
+  'explicit_brand_evidence_only',
+  "'locations_updated',0",
+  "schedule=>'43 * * * *'",
+  'backfill_location_brand_identities(100)',
+]) requireText(brandRepair, token, `Targeted brand identity repair missing ${token}.`);
+if (brandRepair.includes('set brand_name=') || brandRepair.includes('updated_at=now() from public.location_brand_identities')) {
+  throw new Error('Historical brand repair must not rewrite canonical location rows.');
+}
+
 const ingestionAuthority = requireFile('supabase/migrations/20261002195120_consolidate_ingestion_authority.sql');
 requireText(ingestionAuthority, "source_key='overture_places'", 'Legacy Fused Overture source must remain explicitly retired.');
 requireText(ingestionAuthority, "adapter_kind = any (array['socrata'::text,'arcgis'::text,'geojson'::text,'bulk'::text])", 'Open-data adapter kinds must exclude retired Fused Overture.');
