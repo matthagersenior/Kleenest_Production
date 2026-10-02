@@ -218,9 +218,7 @@ export default function BetaReportButton({route}:{route:string}){
 
 const s=StyleSheet.create({
   fab:{position:'absolute',right:14,bottom:78,zIndex:1000,elevation:12,borderWidth:1,borderRadius:999,paddingHorizontal:13,paddingVertical:10,shadowColor:'#000',shadowOpacity:.18,shadowRadius:10,shadowOffset:{width:0,height:5}},
-  fabCompact:{width:44,height:44,right:10,bottom:82,paddingHorizontal:0,paddingVertical:0,alignItems:'center',justifyContent:'center'},
   fabText:{fontSize:11,fontWeight:'900',letterSpacing:.15},
-  fabTextCompact:{fontSize:18,lineHeight:20},
   overlay:{flex:1,backgroundColor:'rgba(0,0,0,.46)',justifyContent:'flex-end'},
   sheet:{borderTopLeftRadius:26,borderTopRightRadius:26,borderWidth:1,padding:18,paddingBottom:28,gap:13,maxHeight:'86%'},
   head:{flexDirection:'row',gap:12,alignItems:'flex-start'},
