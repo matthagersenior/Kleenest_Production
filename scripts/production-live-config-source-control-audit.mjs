@@ -53,7 +53,7 @@ requireText(frontier, 'corridor_0.24_frontier_v1', 'Moving-frontier configuratio
 const focus = requireFile('supabase/functions/focus-ingestion-orchestrator/index.ts');
 requireText(focus, "corridor:'kc_to_chicago'", 'Focus ingestion must preserve the KC-to-Chicago corridor contract.');
 requireText(focus, ".like('market_key','focus_corridor_%')", 'Focus ingestion must select corridor markets.');
-requireText(focus, "status:'kc_to_chicago_coverage_v23'", 'Focus ingestion must report the current coverage runtime version.');
+requireText(focus, "status:'kc_to_chicago_coverage_v24'", 'Focus ingestion must report the current coverage runtime version.');
 requireText(focus, 'try_acquire_focus_ingestion_lease', 'Focus ingestion must preserve its overlap-suppression lease.');
 requireText(focus, 'national_ingestion_storage_status', 'Focus ingestion must remain governed by the storage guard.');
 requireText(focus, "storage.data?.may_ingest===false", 'Focus ingestion must stop when the storage guard pauses ingestion.');
@@ -63,8 +63,16 @@ for (const endpoint of [
   'https://overpass.private.coffee/api/interpreter',
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
 ]) requireText(focus, endpoint, `Focus ingestion must keep provider ${endpoint} source-controlled.`);
-requireText(focus, "PROVIDER_POOL_VERSION='overpass_pool_v3_four_endpoint_breaker'", 'Focus ingestion provider-pool version must remain source-controlled.');
-requireText(focus, "breaker:'single_transient_failure_cooldown'", 'Transient endpoint breaker policy must remain source-controlled.');
+requireText(focus, "PROVIDER_POOL_VERSION='overpass_pool_v4_failure_rate_breaker'", 'Focus ingestion provider-pool version must remain source-controlled.');
+requireText(focus, "breaker:'failure_rate_cooldown'", 'Failure-rate endpoint breaker policy must remain source-controlled.');
+const openData = requireFile('supabase/functions/corridor-open-data-ingestor/index.ts');
+requireText(openData, 'get_internal_scheduler_secret', 'Open-data ingestion must preserve scheduler authentication.');
+requireText(openData, 'external_ingestion_adapters', 'Open-data ingestion adapter registry must remain source-controlled.');
+requireText(openData, "adapter_kind==='socrata'", 'Open-data ingestion must preserve supported civic Socrata adapters.');
+if (openData.includes('fused_overture') || openData.includes('runOverture')) {
+  throw new Error('Fused Overture ingestion must remain retired; official Overture GeoParquet is canonical.');
+}
+
 const geo = requireFile('supabase/functions/geo-catalog-exporter/index.ts');
 requireText(geo, 'sxgymblzmwdqnaidbbuq.supabase.co/functions/v1/archive-object-ingest', 'Geo catalog exporter must target the verified Kleenest_Data object archive.');
 requireText(geo, "geo_catalog_export_ack", 'Geo catalog exporter must acknowledge its watermark after transfer.');
