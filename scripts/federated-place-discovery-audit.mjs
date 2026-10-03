@@ -80,6 +80,26 @@ for(const token of [
   'external_location_records.last_seen_at < now()-interval',
 ])need(writeAmp,token,'Repeat-write amplification guard');
 
+const archiveWorkflow='.github/workflows/sync-kleenest-data.yml';
+for(const token of [
+  'actions: read',
+  'LAST_SUCCESS',
+  'fetch_incremental',
+  'order=$time_col.asc,id.asc',
+  'github_incremental_overlap',
+])need(archiveWorkflow,token,'Incremental data archive sync');
+if(read(archiveWorkflow).includes("\n          SINCE=\"$(date -u -d '24 hours ago'"))failures.push('Data archive sync must not rescan a fixed 24-hour window every hour.');
+
+const archiveIndexMigration='supabase/migrations/20261003084000_archive_sync_query_indexes.sql';
+for(const token of [
+  'external_location_records_archive_sync_idx',
+  'last_seen_at,id',
+  'external_observations_archive_sync_idx',
+  'imported_at,id',
+  'national_ingestion_runs_archive_sync_idx',
+  'started_at,id',
+])need(archiveIndexMigration,token,'Archive sync query indexes');
+
 const ingestSource=read(ingest).toLowerCase();
 for(const forbidden of ['places.googleapis.com','maps.googleapis.com/maps/api/place','@googlemaps/places']){
   if(ingestSource.includes(forbidden))failures.push('Overture ingestion must not depend on Google Places endpoint/import '+forbidden);
