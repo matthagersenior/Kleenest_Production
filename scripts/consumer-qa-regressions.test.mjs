@@ -149,9 +149,9 @@ test('fallback route fitting reports its actual viewport for subsequent zoom',()
 test('Explore explains Kleenest value before exposing advanced discovery controls',()=>{
   const source=fs.readFileSync(screenPath,'utf8');
   assert.match(source,/Find a place you can count on\./);
-  assert.match(source,/what it offers, and how recently the information was confirmed/i);
+  assert.match(source,/Search a place or address, then tap a result to go\./i);
   assert.match(source,/Find a useful stop on the way\./);
-  assert.match(source,/looks along the route for places that match what you need/i);
+  assert.match(source,/Enter where you’re going\. We’ll show useful stops on the way\./i);
   assert.ok(source.indexOf('Find a place you can count on.')<source.indexOf('Filter places'),'Core value must appear before advanced filters');
 });
 
