@@ -1119,8 +1119,8 @@ export default function AdaptiveExploreScreen() {
 
     if(areaMatch){
       setMessage(displayRows.length
-        ? `${displayRows.length} place${displayRows.length===1?'':'s'} discovered around ${areaMatch.label} within ${radiusLabel(result.effectiveRadiusMeters)}${result.expanded?' after adaptive expansion':''}.`
-        : `No discovered places were found around ${areaMatch.label} through ${radiusLabel(result.effectiveRadiusMeters)}.`);
+        ? `Places near ${areaMatch.label} are ready${result.expanded?' after searching farther':''}.`
+        : `No places were found near ${areaMatch.label} through ${radiusLabel(result.effectiveRadiusMeters)}.`);
     } else if (usedMatureFallback) {
       setMessage(displayRows.length?`${displayRows.length} nearby place${displayRows.length===1?'':'s'} found using the fallback discovery path while adaptive discovery recovers.`:'No places matched the current nearby search.');
     } else if (relaxedAmenityFallback) {
@@ -1208,8 +1208,8 @@ export default function AdaptiveExploreScreen() {
     const routeName=destinationLabel?` to ${destinationLabel}`:'';
     setMessage(
       enriched.length
-        ? `${enriched.length} discovered place${enriched.length === 1 ? '' : 's'} along your ${Number(built.distanceMiles || 0).toFixed(0)} mi route${routeName}, within ${radiusLabel(activeCorridor)} of the route.`
-        : `No discovered places matched within ${radiusLabel(activeCorridor)} of the route${routeName}.`,
+        ? `Useful stops along your ${Number(built.distanceMiles || 0).toFixed(0)} mi route${routeName} are ready.`
+        : `No useful stops matched within ${radiusLabel(activeCorridor)} of the route${routeName}.`,
     );
   }
 
@@ -1288,7 +1288,7 @@ export default function AdaptiveExploreScreen() {
       setRows([]);
       setSelectedId('');
       setRoute(null);
-      setMessage(friendlyExploreError(error));
+      setMessage(friendlyExploreError(error,targetMode==='route'?'Kleenest could not finish the route search in time. Please try again.':'Kleenest could not finish that search. Please try again.'));
     } finally {
       activeIntentRef.current=null;
       activeIntentAmenitiesRef.current=null;
@@ -1909,7 +1909,7 @@ export default function AdaptiveExploreScreen() {
                 <Text numberOfLines={1} style={[s.destinationSummary,{color:theme.muted}]}>
                   {mode==='route'
                     ? (route?.distanceMiles?`${Number(route.distanceMiles).toFixed(0)} mi route · ~${Math.round(Number(route.durationMinutes||0))} min`:'Route destination')
-                    : `${visibleRows.length} nearby · ${radiusLabel(effectiveRadiusMeters)}`}
+                    : `Nearby places ready · ${radiusLabel(effectiveRadiusMeters)}`}
                 </Text>
                 <View style={s.actionRow}>
                   <Pressable
@@ -2000,7 +2000,7 @@ export default function AdaptiveExploreScreen() {
               style={[s.resultsHandoff,{backgroundColor:theme.surface,borderColor:theme.line}]}
             >
               <Text numberOfLines={1} style={[s.resultsHandoffText,{color:theme.ink}]}>
-                {mode==='route'? `${visibleRows.length} along route · ${radiusLabel(corridor)} corridor` : `${visibleRows.length} nearby · ${radiusLabel(effectiveRadiusMeters)}${freshNearbyCount?` · ${freshNearbyCount} fresh`:''}${kleenestNearbyCount?` · ${kleenestNearbyCount} Kleenest`:''}`}
+                {mode==='route'? `Stops along route · ${radiusLabel(corridor)} corridor` : `Nearby places · ${radiusLabel(effectiveRadiusMeters)}`}
               </Text>
               <Text style={[s.resultsHandoffAction,{color:theme.accent}]}>Results ↓</Text>
             </Pressable>
@@ -2018,7 +2018,7 @@ export default function AdaptiveExploreScreen() {
                 {message ? <Text numberOfLines={3} accessibilityLiveRegion="polite" style={[s.message,{color:theme.muted}]}>{message}</Text> : null}
                 {mode === 'nearby' && attemptedRadiiMeters.length > 1 ? (
                   <Text style={[s.provenance,{color:theme.muted}]}>
-                    Requested {radiusLabel(radius)} · effective {radiusLabel(effectiveRadiusMeters)} · searched {attemptedRadiiMeters.map(radiusLabel).join(' → ')}
+                    Searched farther to {radiusLabel(effectiveRadiusMeters)} to find useful matches.
                   </Text>
                 ) : null}
                 {cached ? <Text style={[s.provenance,{color:theme.muted}]}>Offline continuity result — refresh for live qualification.</Text> : null}
