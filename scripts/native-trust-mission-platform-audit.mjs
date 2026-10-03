@@ -54,7 +54,7 @@ if(!failures.length){
   const bathroomFirst=[
     ['nearby search',explore.includes('findAdaptiveNearbyRestrooms')&&explore.includes('listNearbyRestrooms')],
     ['trust summaries',explore.includes('listLocationTrustSummaries')&&explore.includes('attachLocationTrust')],
-    ['full details action',explore.includes('Full details')&&explore.includes('router.push(`/location/${idOf(selected)}`)')],
+    ['full details action',explore.includes('Full details')&&explore.includes('function openLocationDetails(row:any)')&&explore.includes('openLocationDetails(selected)')],
     ['directions action',directionsAction],
     ['route handoff',routeHandoff],
   ];
