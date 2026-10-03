@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION public.kleenest_map_check_in_v2(p_location_id uuid, p
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public', 'auth', 'extensions', 'pg_temp'
-AS $function$;
+AS $function$
 declare
   uid uuid := auth.uid();
   loc record;
@@ -178,7 +178,7 @@ CREATE OR REPLACE FUNCTION public.owner_review_sponsored_campaign(p_campaign_id 
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$;
+AS $function$
 declare v_before jsonb; v_after jsonb;
 begin
   if not public.is_platform_owner_session() then raise exception 'platform owner access required' using errcode='42501'; end if;
@@ -207,7 +207,7 @@ CREATE OR REPLACE FUNCTION public.owner_set_sponsorship_enabled(p_enabled boolea
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$;
+AS $function$
 declare v_before jsonb; v_after jsonb;
 begin
   if not public.is_platform_owner_session() then raise exception 'platform owner access required' using errcode='42501'; end if;
@@ -255,7 +255,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path=''
-as $function$;
+as $function$
 declare v_delta bigint;
 begin
   select count(*)::bigint into v_delta from new_rows where is_active=true;
@@ -273,7 +273,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path=''
-as $function$;
+as $function$
 declare v_delta bigint;
 begin
   select count(*)::bigint into v_delta from old_rows where is_active=true;
@@ -291,7 +291,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path=''
-as $function$;
+as $function$
 declare v_before bigint; v_after bigint; v_delta bigint;
 begin
   select count(*)::bigint into v_before from old_rows where is_active=true;
@@ -330,7 +330,7 @@ language plpgsql
 stable
 security definer
 set search_path=''
-as $function$;
+as $function$
 declare v_row internal.platform_metrics;
 begin
   if not public.is_platform_owner_session() then
