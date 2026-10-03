@@ -128,8 +128,17 @@ const canonicalNoopGuard = requireFile('supabase/migrations/20261002195508_avoid
 requireText(canonicalNoopGuard, 'is distinct from row(', 'Canonical ingestion must suppress no-op location rewrites.');
 requireText(canonicalNoopGuard, 'get diagnostics v_changed=row_count', 'Canonical ingestion must report only material location updates.');
 
+const dataWorker = requireFile('supabase/kleenest-data/migrations/20261003185511_enable_worker_geo_and_cron.sql');
+requireText(dataWorker, 'create extension if not exists postgis', 'Kleenest_Data worker must retain PostGIS for shared geo processing.');
+requireText(dataWorker, 'create extension if not exists pg_cron', 'Kleenest_Data worker must retain pg_cron for shared scheduled processing.');
+
+const localArchiveManifest = requireFile('supabase/migrations/20261003185321_add_local_verified_archive_manifest.sql');
+requireText(localArchiveManifest, 'archive.object_manifests', 'Production must retain verified local archive manifest support.');
+requireText(localArchiveManifest, 'register_archive_object_manifest', 'Production must retain service-role archive manifest registration.');
+
 const geo = requireFile('supabase/functions/geo-catalog-exporter/index.ts');
-requireText(geo, 'sxgymblzmwdqnaidbbuq.supabase.co/functions/v1/archive-object-ingest', 'Geo catalog exporter must target the verified Kleenest_Data object archive.');
+requireText(geo, 'sxgymblzmwdqnaidbbuq.supabase.co/functions/v1/geo-catalog-receiver', 'Geo catalog exporter must hand shared geo worker load to Kleenest_Data.');
+requireText(geo, "storage:'hot_worker_mirror'", 'Geo catalog exporter must identify the Kleenest_Data hot worker mirror path.');
 requireText(geo, "geo_catalog_export_ack", 'Geo catalog exporter must acknowledge its watermark after transfer.');
 
 const cold = requireFile('supabase/functions/cold-provenance-offloader/index.ts');
