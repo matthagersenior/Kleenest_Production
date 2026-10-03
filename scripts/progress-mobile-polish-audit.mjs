@@ -15,10 +15,11 @@ for(const token of ['const tabLabel=',"tabBarItemStyle:{minWidth:0,paddingHorizo
 for(const token of [
   'accessibilityLabel="Tell Kleenest what you think"',
   '✦ Tell Kleenest',
-  "right:14,bottom:78",
+  "right:10,bottom:78",
   "borderRadius:999",
-  "paddingHorizontal:13,paddingVertical:10",
-  "fabText:{fontSize:11"
+  "minHeight:44",
+  "paddingHorizontal:10,paddingVertical:8",
+  "fabText:{fontSize:10"
 ]){
   if(!beta.includes(token))failures.push('Beta feedback labeled-pill contract missing '+token);
 }
