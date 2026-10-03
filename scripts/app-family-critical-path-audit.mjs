@@ -60,7 +60,7 @@ requireFile(ownerOs,'owner');
 requireTokens(ownerOs,'owner',['OSHero','HealthCard','StatusPill','SectionHeader','DiagnosticDisclosure']);
 requireAny(ownerHome,'owner command hero',['OSHero','style={s.hero}']);
 requireAny(ownerHome,'owner health surface',['HealthCard','<Health label=']);
-requireTokens(ownerHome,'owner',['Needs attention','ECONOMY PULSE','People & Access','Businesses & Network','Trust & Moderation','Operations']);
+requireTokens(ownerHome,'owner',['Needs attention','ECONOMY PULSE','People & Access','Businesses & Network','Trust & Moderation','Platform Health','label="Discovery"']);
 requireTokens(ownerBusinesses,'owner',['Fleet enabled','Enterprise enabled','Add member','Remove member','claim.location_name','claim.location_address','placeholder="Business name"']);
 if(exists(ownerBusinesses)&&read(ownerBusinesses).includes("String(claim.location_id||'').slice(0,8)"))failures.push('owner: location claims must show human-readable location identity instead of truncated UUIDs');
 requireTokens('supabase/migrations/20260907091728_owner_business_claim_location_labels.sql','owner',['location_name','location_address','left join public.locations']);
