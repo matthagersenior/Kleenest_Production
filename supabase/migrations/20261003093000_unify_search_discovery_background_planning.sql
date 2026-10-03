@@ -1,4 +1,5 @@
 -- Unify acquisition authority around interactive discovery + queued hydration.
+-- CI refresh: lifecycle metadata is carried on the pull request.
 -- Keep user-facing discovery fast and nonblocking while retiring duplicate
 -- continuous OSM corridor acquisition that competes for database connections.
 
