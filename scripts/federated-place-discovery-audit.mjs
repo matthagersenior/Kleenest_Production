@@ -87,6 +87,8 @@ for(const token of [
   'fetch_incremental',
   'order=$time_col.asc,id.asc',
   'github_incremental_overlap',
+  'deferred_production_unhealthy',
+  '--max-time 10',
 ])need(archiveWorkflow,token,'Incremental data archive sync');
 if(read(archiveWorkflow).includes("\n          SINCE=\"$(date -u -d '24 hours ago'"))failures.push('Data archive sync must not rescan a fixed 24-hour window every hour.');
 
