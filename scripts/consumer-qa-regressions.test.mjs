@@ -243,7 +243,9 @@ test('Explore sponsored placement requests the compact creative',()=>{
   const source=fs.readFileSync(screenPath,'utf8');
   assert.ok(source.includes('contextClass="maps_between_results" compact'));
   const slot=fs.readFileSync('apps/consumer-mobile/components/SponsoredSlot.tsx','utf8');
-  assert.ok(slot.includes('compact&&s.imageCompact'));assert.ok(slot.includes('numberOfLines={compact?2:undefined}'));
+  assert.ok(slot.includes('compact?<View style={s.compactCreative}>'));
+  assert.ok(slot.includes("imageCompact:{width:104,height:74"));
+  assert.ok(slot.includes('numberOfLines={compact?2:undefined}'));
 });
 
 
