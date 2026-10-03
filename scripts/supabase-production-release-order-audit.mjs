@@ -20,7 +20,7 @@ expect(deploy,'id-token: write','GitHub OIDC permission');
 expect(deploy,'SUPABASE_READINESS_AUDIENCE: kleenest-supabase-production-readiness','OIDC readiness audience');
 expect(deploy,'RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}','OIDC release SHA binding');
 expect(deploy,'GitHub main is the schema authority','GitHub main schema authority');
-expect(deploy,'Supabase deploys it','native Supabase deployment ownership');
+expect(deploy,'Supabase GitHub Integration owns production migration deployment','native Supabase deployment ownership');
 expect(deploy,'node scripts/supabase-production-ledger-readiness.mjs','fail-closed production ledger verification');
 reject(deploy,'SUPABASE_ACCESS_TOKEN','legacy CLI access-token deployment path');
 reject(deploy,'SUPABASE_DB_PASSWORD','database-password deployment path');
