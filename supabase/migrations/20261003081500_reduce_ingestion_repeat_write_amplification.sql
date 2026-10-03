@@ -1,7 +1,7 @@
 -- Reduce repeat-write amplification during rediscovery and background hydration.
 -- Canonical locations already avoid no-op updates; this extends the same principle
 -- to brand sidecars and external provenance rows so unchanged observations do not
--- generate WAL/index churn on every ingestion cycle.
+-- generate WAL/index churn on every ingestion cycle. A 24-hour provenance heartbeat is retained.
 
 CREATE OR REPLACE FUNCTION public.ingest_external_locations(p_source_key text, p_rows jsonb)
  RETURNS jsonb
