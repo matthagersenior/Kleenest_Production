@@ -1326,6 +1326,31 @@ export default function AdaptiveExploreScreen() {
     router.push({ pathname: '/knowledge', params: { locationId: id, name: String(row?.name || '') } });
   }
 
+  function openLocationDetails(row:any) {
+    const id=idOf(row);
+    if(!id)return;
+    router.push({
+      pathname:'/location/[id]',
+      params:{
+        id,
+        preview:'1',
+        previewName:String(discoveryPlaceName(row)||row?.name||'Location'),
+        previewAddress:String(row?.address||''),
+        previewCity:String(row?.city||''),
+        previewState:String(row?.state||''),
+        previewPostalCode:String(row?.postal_code||row?.zip||''),
+        previewLat:String(row?.latitude??row?.lat??''),
+        previewLng:String(row?.longitude??row?.lng??''),
+        previewBusinessName:String(row?.business_name||''),
+        previewPlaceType:String(row?.place_type||row?.category||''),
+        previewRating:row?.rating==null?'':String(row.rating),
+        previewCleanliness:row?.cleanliness_pct==null?'':String(row.cleanliness_pct),
+        previewAccessible:Boolean(row?.accessible)?'1':'0',
+        previewRestroomVerified:Boolean(row?.restroom_verified||row?.has_bathroom||row?.is_verified)?'1':'0',
+      },
+    });
+  }
+
   async function directions(row: any) {
     if (!hasCoordinates(row)) return;
     const id = idOf(row);
@@ -1976,7 +2001,7 @@ export default function AdaptiveExploreScreen() {
                     <Pressable accessibilityRole="button" accessibilityLabel="Start directions to this location" accessibilityHint="Start navigation" style={[s.primarySmall,s.selectedAction,{backgroundColor:theme.accent},!hasCoordinates(selected)&&s.disabled]} disabled={!hasCoordinates(selected)} onPress={() => void directions(selected)}>
                       <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
                     </Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel="Open full selected location details" style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => router.push('/location/'+idOf(selected))}>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Open full selected location details" style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => openLocationDetails(selected)}>
                       <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
                     </Pressable>
                     <Pressable accessibilityRole="button" accessibilityLabel={showSelectedMore?'Hide more selected-location actions':'Show more selected-location actions'} accessibilityState={{expanded:showSelectedMore}} style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>setShowSelectedMore(value=>!value)}>
@@ -2068,7 +2093,7 @@ export default function AdaptiveExploreScreen() {
                 onCheckIn={() => void checkIn(item)}
                 onAddToRoute={() => addToRoute(item)}
                 onKnow={() => contributeKnowledge(item)}
-                onDetails={() => router.push(`/location/${idOf(item)}`)}
+                onDetails={() => openLocationDetails(item)}
                 onReview={() => router.push({pathname:'/location/[id]',params:{id:idOf(item),review:'1'}})}
                 route={mode === 'route' ? route : null}
                 requestedAmenities={selectedAmenityNames}
