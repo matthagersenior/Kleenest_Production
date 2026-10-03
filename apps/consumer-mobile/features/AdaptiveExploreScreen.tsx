@@ -412,7 +412,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         style={s.cardMain}
       >
         <View style={s.cardTop}>
-          <FreshnessHeatRing item={item} size={34} photoUrl={item.consumer_photo_url ? String(item.consumer_photo_url) : undefined} />
+          <FreshnessHeatRing item={item} size={34} active={selected} photoUrl={item.consumer_photo_url ? String(item.consumer_photo_url) : undefined} />
           <View style={{ flex: 1 }}>
             <View style={s.cardTitleRow}>
               <Text style={[s.cardTitle,{color:theme.ink}]}>{discoveryPlaceName(item)}</Text>
@@ -493,6 +493,7 @@ export default function AdaptiveExploreScreen() {
   const exploreMapHeight=Math.max(360,Math.min(480,Math.round(windowHeight*0.44)));
   const listRef=useRef<any>(null);
   const cameraRef=useRef<any>(null);
+  const mapGestureReleaseRef=useRef<ReturnType<typeof setTimeout>|null>(null);
   const nearbyEnrichmentRunRef=useRef(0);
   const activeIntentRef=useRef<DiscoveryIntent|null>(null);
   const activeIntentAmenitiesRef=useRef<string[]|null>(null);
@@ -537,6 +538,24 @@ export default function AdaptiveExploreScreen() {
   const [checkInFeedback,setCheckInFeedback]=useState<Record<string,CheckInActionFeedback>>({});
   const [cached, setCached] = useState(false);
   const [mapInteracting,setMapInteracting]=useState(false);
+  function setMapGestureLock(locked:boolean){
+    if(mapGestureReleaseRef.current){
+      clearTimeout(mapGestureReleaseRef.current);
+      mapGestureReleaseRef.current=null;
+    }
+    setMapInteracting(locked);
+    listRef.current?.setNativeProps?.({scrollEnabled:!locked});
+  }
+  function beginMapGesture(){setMapGestureLock(true);}
+  function endMapGesture(){
+    if(mapGestureReleaseRef.current)clearTimeout(mapGestureReleaseRef.current);
+    mapGestureReleaseRef.current=setTimeout(()=>{
+      setMapInteracting(false);
+      listRef.current?.setNativeProps?.({scrollEnabled:true});
+      mapGestureReleaseRef.current=null;
+    },180);
+  }
+  useEffect(()=>()=>{if(mapGestureReleaseRef.current)clearTimeout(mapGestureReleaseRef.current);},[]);
   const searchedDestination=useMemo(()=>searchAreaOrigin?{
     id:'searched-destination',
     name:searchAreaLabel||'Searched destination',
@@ -1711,12 +1730,12 @@ export default function AdaptiveExploreScreen() {
           <View style={[s.mapFrame,{height:exploreMapHeight}]}>
             <View
               style={s.mapGestureSurface}
-              onStartShouldSetResponderCapture={()=>{setMapInteracting(true);return false}}
-              onMoveShouldSetResponderCapture={()=>{if(!mapInteracting)setMapInteracting(true);return false}}
-              onTouchStart={()=>setMapInteracting(true)}
-              onTouchMove={()=>{if(!mapInteracting)setMapInteracting(true)}}
-              onTouchEnd={()=>setTimeout(()=>setMapInteracting(false),120)}
-              onTouchCancel={()=>setMapInteracting(false)}
+              onStartShouldSetResponderCapture={()=>{beginMapGesture();return false}}
+              onMoveShouldSetResponderCapture={()=>{beginMapGesture();return false}}
+              onTouchStart={beginMapGesture}
+              onTouchMove={beginMapGesture}
+              onTouchEnd={endMapGesture}
+              onTouchCancel={()=>setMapGestureLock(false)}
             >
             <Map androidView="texture" style={s.map} mapStyle={OSM_STYLE} onRegionDidChange={handleMapRegionDidChange}>
               <Camera
@@ -1786,9 +1805,9 @@ export default function AdaptiveExploreScreen() {
                           setMapZoom(current=>Math.min(18,Math.max(14,current+2)));
                           setCameraNonce(value=>value+1);
                         }}
-                        style={[s.clusterMarker,{backgroundColor:theme.surface,borderColor:theme.accent}]}
+                        style={[s.clusterMarker,{backgroundColor:theme.surface,borderColor:theme.line}]}
                       >
-                        <Text adjustsFontSizeToFit numberOfLines={1} style={[s.clusterMarkerCount,{color:theme.accent}]}>{group.rows.length}</Text>
+                        <Text adjustsFontSizeToFit numberOfLines={1} style={[s.clusterMarkerCount,{color:theme.ink}]}>{group.rows.length}</Text>
                       </Pressable>
                     </Marker>
                   );
@@ -1812,9 +1831,21 @@ export default function AdaptiveExploreScreen() {
                         event.stopPropagation();
                         selectRow(row);
                       }}
-                      style={[s.marker,active&&s.markerActive,equippedMapFlair==='freshness-halo'&&{borderWidth:3,borderColor:theme.accent,backgroundColor:theme.accentSoft},equippedMapFlair==='gold-ring'&&{borderWidth:3,borderColor:'#e7c45d',backgroundColor:'#3b3216'}]}
+                      style={[s.marker,active&&s.markerActive]}
                     >
-                      <FreshnessHeatRing item={row} size={22} />
+                      <FreshnessHeatRing item={row} size={26} active={active} />
+                      {equippedMapFlair==='freshness-halo'||equippedMapFlair==='gold-ring'?(
+                        <View
+                          pointerEvents="none"
+                          accessibilityLabel={equippedMapFlair==='gold-ring'?'Equipped Gold Ring map flair':'Equipped Freshness Halo map flair'}
+                          style={[s.mapFlairBadge,{
+                            backgroundColor:theme.surface,
+                            borderColor:equippedMapFlair==='gold-ring'?'#e7c45d':theme.accent,
+                          }]}
+                        >
+                          <Text style={[s.mapFlairBadgeText,{color:equippedMapFlair==='gold-ring'?'#a77808':theme.accent}]}>{equippedMapFlair==='gold-ring'?'◆':'◌'}</Text>
+                        </View>
+                      ):null}
                     </Pressable>
                   </Marker>
                 );
@@ -1923,7 +1954,7 @@ export default function AdaptiveExploreScreen() {
                 </View>
                 <ScrollView style={s.selectedBodyScroll} contentContainerStyle={s.selectedBodyContent} showsVerticalScrollIndicator={false}>
                   <View style={s.selectedRow}>
-                    <FreshnessHeatRing item={selected} size={34} photoUrl={selected.consumer_photo_url ? String(selected.consumer_photo_url) : undefined} />
+                    <FreshnessHeatRing item={selected} size={34} active photoUrl={selected.consumer_photo_url ? String(selected.consumer_photo_url) : undefined} />
                     <View style={{ flex: 1 }}>
                       <View style={s.cardTitleRow}>
                         <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{discoveryPlaceName(selected)}</Text>
@@ -2180,9 +2211,11 @@ const s = StyleSheet.create({
   userLocationRing: { width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(32,106,69,.2)', alignItems: 'center', justifyContent: 'center' },
   userLocationDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: palette.green, borderWidth: 2, borderColor: '#fff' },
   searchedAreaMarker:{width:30,height:30,borderRadius:15,backgroundColor:'#fff',borderWidth:3,borderColor:'#986c20',alignItems:'center',justifyContent:'center'},searchedAreaMarkerText:{fontSize:18,fontWeight:'900',color:'#986c20'},
-  marker: { minWidth: 44, minHeight: 44, borderRadius: 22, backgroundColor: 'transparent', borderWidth: 0, alignItems: 'center', justifyContent: 'center', padding: 2 },
+  marker: { minWidth: 44, minHeight: 44, borderRadius: 22, backgroundColor: 'transparent', borderWidth: 0, alignItems: 'center', justifyContent: 'center', padding: 2, position:'relative' },
   markerActive: { transform: [{ scale: 1.08 }] },
-  clusterMarker:{minWidth:42,height:42,borderRadius:21,borderWidth:3,alignItems:'center',justifyContent:'center',paddingHorizontal:6,elevation:8},
+  mapFlairBadge:{position:'absolute',top:-1,right:-1,width:14,height:14,borderRadius:7,borderWidth:1,alignItems:'center',justifyContent:'center',zIndex:2,elevation:10},
+  mapFlairBadgeText:{fontSize:8,lineHeight:10,fontWeight:'900'},
+  clusterMarker:{minWidth:42,height:42,borderRadius:21,borderWidth:2,alignItems:'center',justifyContent:'center',paddingHorizontal:6,elevation:8},
   clusterMarkerCount:{fontSize:13,fontWeight:'900',letterSpacing:-.4},
   markerPhoto:{width:34,height:34,borderRadius:17,backgroundColor:'#e7eee9'},
   markerPhotoActive:{width:42,height:42,borderRadius:21},
