@@ -88,7 +88,7 @@ for(const token of [
   'order=$time_col.asc,id.asc',
   'github_incremental_overlap',
 ])need(archiveWorkflow,token,'Incremental data archive sync');
-if(read(archiveWorkflow).includes("SINCE=\"$(date -u -d '24 hours ago'"))failures.push('Data archive sync must not rescan a fixed 24-hour window every hour.');
+if(read(archiveWorkflow).includes("\n          SINCE=\"$(date -u -d '24 hours ago'"))failures.push('Data archive sync must not rescan a fixed 24-hour window every hour.');
 
 const archiveIndexMigration='supabase/migrations/20261003084000_archive_sync_query_indexes.sql';
 for(const token of [
