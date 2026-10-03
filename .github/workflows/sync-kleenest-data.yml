@@ -6,11 +6,13 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/sync-kleenest-data.yml'
+      - 'supabase/migrations/*archive_sync*.sql'
   schedule:
     - cron: '17 * * * *'
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: kleenest-data-archive-sync
@@ -38,13 +40,24 @@ jobs:
         env:
           PROD_KEY: ${{ secrets.KLEENEST_PROD_SERVICE_ROLE_KEY }}
           DATA_KEY: ${{ secrets.KLEENEST_DATA_SERVICE_ROLE_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
         shell: bash
         run: |
           set -euo pipefail
 
-          # Wide idempotent overlap ensures queued/delayed runners cannot miss fresh ingestion.
-          # archive-object-ingest uses content-addressed paths, so repeats do not grow Postgres.
-          SINCE="$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          # Resume from the most recent successful archive run, with a small idempotent overlap.
+          # This preserves completeness across delayed/failed schedules without rescanning a fixed day.
+          FALLBACK_SINCE="$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          LAST_SUCCESS="$(
+            curl --fail-with-body --silent --show-error               -H "Authorization: Bearer $GH_TOKEN"               -H 'Accept: application/vnd.github+json'               "https://api.github.com/repos/$REPOSITORY/actions/workflows/sync-kleenest-data.yml/runs?status=success&per_page=1"               | jq -r '.workflow_runs[0].run_started_at // empty'
+          )"
+          if [ -n "$LAST_SUCCESS" ]; then
+            SINCE="$(date -u -d "$LAST_SUCCESS - 15 minutes" +%Y-%m-%dT%H:%M:%SZ)"
+          else
+            SINCE="$FALLBACK_SINCE"
+          fi
+          echo "Archive resume watermark: $SINCE"
           BATCH=500
 
           post_archive() {
@@ -54,20 +67,37 @@ jobs:
             count="$(jq 'length' "$file")"
             [ "$count" -eq 0 ] && return 0
 
-            jq -n --arg kind "$kind" --slurpfile rows "$file"               '{kind:$kind,rows:$rows[0],source:"github_hourly_overlap"}' > payload.json
+            jq -n --arg kind "$kind" --slurpfile rows "$file"               '{kind:$kind,rows:$rows[0],source:"github_incremental_overlap"}' > payload.json
             curl --fail-with-body --silent --show-error               -X POST "$DATA_SUPABASE_URL/functions/v1/archive-object-ingest"               -H "apikey: $DATA_KEY"               -H "Authorization: Bearer $DATA_KEY"               -H 'Content-Type: application/json'               --data-binary @payload.json >/dev/null
           }
 
-          fetch_pages() {
+          fetch_static_sources() {
+            local code
+            code="$(
+              curl --silent --show-error --get                 -o rows.json -w '%{http_code}'                 "$PROD_SUPABASE_URL/rest/v1/external_data_sources"                 -H "apikey: $PROD_KEY"                 -H "Authorization: Bearer $PROD_KEY"                 --data-urlencode 'select=*'                 --data-urlencode 'active=eq.true'                 --data-urlencode 'order=id.asc'                 --data-urlencode 'limit=500'
+            )"
+            [ "$code" = "200" ] || [ "$code" = "206" ] || { cat rows.json; exit 1; }
+            post_archive external_data_sources rows.json
+          }
+
+          fetch_incremental() {
             local table="$1"
             local kind="$2"
-            local filter="$3"
-            local offset=0
+            local time_col="$3"
+            local cursor_ts=""
+            local cursor_id=""
 
             while true; do
-              local end=$((offset + BATCH - 1))
               local code
-              code="$(curl --silent --show-error                 -o rows.json -w '%{http_code}'                 "$PROD_SUPABASE_URL/rest/v1/$table?select=*&$filter&order=id.asc"                 -H "apikey: $PROD_KEY"                 -H "Authorization: Bearer $PROD_KEY"                 -H "Range: $offset-$end"                 -H 'Range-Unit: items')"
+              if [ -z "$cursor_id" ]; then
+                code="$(
+                  curl --silent --show-error --get                     -o rows.json -w '%{http_code}'                     "$PROD_SUPABASE_URL/rest/v1/$table"                     -H "apikey: $PROD_KEY"                     -H "Authorization: Bearer $PROD_KEY"                     --data-urlencode 'select=*'                     --data-urlencode "$time_col=gte.$SINCE"                     --data-urlencode "order=$time_col.asc,id.asc"                     --data-urlencode "limit=$BATCH"
+                )"
+              else
+                code="$(
+                  curl --silent --show-error --get                     -o rows.json -w '%{http_code}'                     "$PROD_SUPABASE_URL/rest/v1/$table"                     -H "apikey: $PROD_KEY"                     -H "Authorization: Bearer $PROD_KEY"                     --data-urlencode 'select=*'                     --data-urlencode "or=($time_col.gt.$cursor_ts,and($time_col.eq.$cursor_ts,id.gt.$cursor_id))"                     --data-urlencode "order=$time_col.asc,id.asc"                     --data-urlencode "limit=$BATCH"
+                )"
+              fi
               [ "$code" = "200" ] || [ "$code" = "206" ] || { cat rows.json; exit 1; }
 
               local count
@@ -75,14 +105,20 @@ jobs:
               [ "$count" -eq 0 ] && break
               post_archive "$kind" rows.json
               [ "$count" -lt "$BATCH" ] && break
-              offset=$((offset + BATCH))
+
+              cursor_ts="$(jq -r --arg col "$time_col" '.[-1][$col] // empty' rows.json)"
+              cursor_id="$(jq -r '.[-1].id // empty' rows.json)"
+              [ -n "$cursor_ts" ] && [ -n "$cursor_id" ] || {
+                echo "Unable to advance archive cursor for $table" >&2
+                exit 1
+              }
             done
           }
 
-          fetch_pages external_data_sources external_data_sources 'active=eq.true'
-          fetch_pages external_location_records external_location_records "last_seen_at=gte.$SINCE"
-          fetch_pages external_observations external_observations "imported_at=gte.$SINCE"
-          fetch_pages national_ingestion_runs national_ingestion_runs "started_at=gte.$SINCE"
+          fetch_static_sources
+          fetch_incremental external_location_records external_location_records last_seen_at
+          fetch_incremental external_observations external_observations imported_at
+          fetch_incremental national_ingestion_runs national_ingestion_runs started_at
 
           rm -f rows.json payload.json
 
