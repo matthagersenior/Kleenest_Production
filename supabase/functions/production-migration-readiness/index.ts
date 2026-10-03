@@ -90,6 +90,28 @@ async function isMigrationApplied(version: string): Promise<boolean> {
   return Boolean(await response.json());
 }
 
+async function productionMigrationVersions(floor: string): Promise<string[]> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceRoleKey) throw new Error("Supabase runtime credentials unavailable");
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/production_migration_versions`, {
+    method: "POST",
+    headers: {
+      apikey: serviceRoleKey,
+      authorization: `Bearer ${serviceRoleKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ p_floor: floor }),
+  });
+  if (!response.ok) throw new Error(`Migration ledger projection failed (${response.status})`);
+  const payload = await response.json();
+  if (!Array.isArray(payload) || payload.some((v) => typeof v !== "string" || !/^\\d{14}$/.test(v))) {
+    throw new Error("Migration ledger projection returned invalid data");
+  }
+  return payload;
+}
+
 Deno.serve(async (request) => {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -112,17 +134,23 @@ Deno.serve(async (request) => {
     }
     if (body.expected_sha !== claims.sha) return json({ error: "Workflow SHA does not match OIDC claim" }, 403);
 
-    const unique = [...new Set(versions as string[])];
+    const unique = [...new Set(versions as string[])].sort();
     const results: Record<string, boolean> = {};
     for (const version of unique) results[version] = await isMigrationApplied(version);
     const missing = unique.filter((version) => !results[version]);
+    const productionVersions = await productionMigrationVersions(unique[0]);
+    const sourceSet = new Set(unique);
+    const productionOnly = productionVersions.filter((version) => !sourceSet.has(version));
+    const ready = missing.length === 0 && productionOnly.length === 0 && productionVersions.length === unique.length;
 
     return json({
-      ready: missing.length === 0,
+      ready,
       checked: unique.length,
+      production_checked: productionVersions.length,
       missing,
+      production_only: productionOnly,
       sha: claims.sha,
-    }, missing.length === 0 ? 200 : 409);
+    }, ready ? 200 : 409);
   } catch (error) {
     console.error("production-migration-readiness dependency failure", error);
     return json({ error: "Production migration readiness temporarily unavailable" }, 503);

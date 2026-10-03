@@ -19,6 +19,7 @@ expect(deploy,'SUPABASE_PROJECT_ID: ssgesjzdvdsqacdtasje','production project re
 expect(deploy,'id-token: write','GitHub OIDC permission');
 expect(deploy,'SUPABASE_READINESS_AUDIENCE: kleenest-supabase-production-readiness','OIDC readiness audience');
 expect(deploy,'RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}','OIDC release SHA binding');
+expect(deploy,'GitHub main is the schema authority','GitHub main schema authority');
 expect(deploy,'Supabase GitHub Integration owns production migration deployment','native Supabase deployment ownership');
 expect(deploy,'node scripts/supabase-production-ledger-readiness.mjs','fail-closed production ledger verification');
 reject(deploy,'SUPABASE_ACCESS_TOKEN','legacy CLI access-token deployment path');
@@ -35,12 +36,11 @@ expect(readiness,'/functions/v1/production-migration-readiness','OIDC-protected 
 expect(readiness,'expected_sha:releaseSha','OIDC SHA binding');
 expect(readiness,'response.status===409','missing migration fail-closed guard');
 expect(readiness,'Waiting for native Supabase GitHub deployment','bounded native deployment convergence wait');
-expect(readiness,'Native Supabase GitHub deployment did not converge; OTA remains blocked.','native deployment fail-closed message');
+expect(readiness,'Production/source migration ledgers are not identical','bidirectional convergence fail-closed message');
+expect(readiness,'production_only','Production-only migration drift detection');
+expect(readiness,'production_checked','live ledger cardinality verification');
 expect(readiness,'const maxAttempts=36','bounded retry count');
 expect(readiness,'const retryDelayMs=5000','bounded retry delay');
-expect(readiness,"['20260923221800','20260924151211']",'explicit obsolete route-migration supersession');
-expect(readiness,'const sourceVersionSet=new Set(sourceVersions)','supersession must be source-controlled on both sides');
-expect(readiness,'verifying the authoritative successor instead of replaying the obsolete function definition','supersession audit trail');
 reject(readiness,'/rest/v1/rpc/production_migration_applied','direct public RPC readiness access');
 reject(readiness,'SUPABASE_PUBLISHABLE_KEY','publishable key in readiness verifier');
 
@@ -54,7 +54,10 @@ expect(edge,'workflow_run','workflow-run event binding');
 expect(edge,'workflow_dispatch','manual database verification event binding');
 expect(edge,'crypto.subtle.verify','OIDC signature verification');
 expect(edge,'SUPABASE_SERVICE_ROLE_KEY','service-role internal RPC call');
-expect(edge,'production_migration_applied','internal migration-ledger probe');
+expect(edge,'production_migration_applied','source-version migration-ledger probe');
+expect(edge,'production_migration_versions','full Production migration-ledger projection');
+expect(edge,'productionOnly','Production-only migration detection');
+expect(edge,'production_checked','Production ledger cardinality response');
 expect(edge,'body.expected_sha !== claims.sha','release SHA enforcement');
 
 const ota='.github/workflows/ota-family.yml';
@@ -90,4 +93,4 @@ if(failures.length){
   for(const failure of failures)console.error(` - ${failure}`);
   process.exit(1);
 }
-console.log('Supabase production release-order audit passed: Supabase GitHub Integration owns migration deployment, GitHub OIDC verifies the exact production ledger with bounded convergence retries, DB readiness gates OTA, and no database password is required in GitHub.');
+console.log('Supabase production release-order audit passed: GitHub main is schema authority, Supabase owns deployment, GitHub OIDC verifies bidirectional source/Production ledger equality with bounded retries, DB readiness gates OTA, and no database password is required in GitHub.');

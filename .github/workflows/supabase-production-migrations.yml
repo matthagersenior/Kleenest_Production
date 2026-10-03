@@ -32,5 +32,5 @@ jobs:
           fetch-depth: 0
       - name: Verify native Supabase production deployment
         run: |
-          echo "Supabase GitHub Integration owns production migration deployment; GitHub verifies the exact production ledger before OTA."
+          echo "Supabase GitHub Integration owns production migration deployment; GitHub main is the schema authority, and this gate requires exact bidirectional source/Production ledger convergence before OTA."
           node scripts/supabase-production-ledger-readiness.mjs
