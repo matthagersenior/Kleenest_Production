@@ -240,7 +240,7 @@ for(const token of [
   "cardActionRow: { flexDirection: 'row', gap: 5",
   "primarySmall: { minHeight: 44",
   "secondarySmall: { minHeight: 44",
-  "close: { minWidth: 38, minHeight: 38",
+  "close: { minWidth: 44, minHeight: 44",
   "selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228",
   "selectedBodyContent:{gap:4,paddingBottom:0}",
   "Why trusted?",
