@@ -117,11 +117,11 @@ if(screen.includes('refreshControl={<RefreshControl'))throw new Error('Explore p
 for(const token of [
   'destinationCardOpen',
   'Select destination marker',
-  'Refresh discovery near destination',
-  'Refresh nearby',
+  'Start directions to searched destination',
   'Add searched destination to route',
   'destinationPanel',
 ])requireToken(screen,token,'Selectable compact destination marker/card');
+if(screen.includes('Refresh discovery near destination')||screen.includes('>Refresh nearby</Text>'))throw new Error('Destination card must keep only the two primary decisions instead of stacking redundant refresh actions.');
 
 for(const token of [
   'const SEARCH_DESTINATION_GEOFENCE_RADIUS_M=150;',
@@ -138,7 +138,7 @@ for(const token of [
 if(screen.includes("onPress={mode==='route'?selectDestinationMarker:recenterMap}"))throw new Error('Searched-address marker must open its destination card in both Nearby and Along route modes.');
 
 for(const token of [
-  "mode==='route'? \`${visibleRows.length} along route · ${radiusLabel(corridor)} corridor\`",
+  "mode==='route'? \`Stops along route · ${radiusLabel(corridor)} corridor\`",
   'Longest stretch between qualifying bathrooms:',
   "from 'react-native-safe-area-context'",
 ])requireToken(screen,token,'Along-route map framing and compact result summary');
