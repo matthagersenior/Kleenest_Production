@@ -60,6 +60,19 @@ jobs:
           echo "Archive resume watermark: $SINCE"
           BATCH=500
 
+          # Fail open for the archive lane when Production cannot serve even a tiny read.
+          # This prevents a background archival task from adding pressure to an unhealthy DB.
+          if ! curl --fail --silent --show-error --get \
+            --connect-timeout 5 --max-time 10 \
+            "$PROD_SUPABASE_URL/rest/v1/external_data_sources" \
+            -H "apikey: $PROD_KEY" \
+            -H "Authorization: Bearer $PROD_KEY" \
+            --data-urlencode 'select=id' \
+            --data-urlencode 'limit=1' >/dev/null; then
+            echo '{"ok":true,"status":"deferred_production_unhealthy"}'
+            exit 0
+          fi
+
           post_archive() {
             local kind="$1"
             local file="$2"
