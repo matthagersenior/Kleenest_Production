@@ -106,7 +106,7 @@ async function productionMigrationVersions(floor: string): Promise<string[]> {
   });
   if (!response.ok) throw new Error(`Migration ledger projection failed (${response.status})`);
   const payload = await response.json();
-  if (!Array.isArray(payload) || payload.some((v) => typeof v !== "string" || !/^\\d{14}$/.test(v))) {
+  if (!Array.isArray(payload) || payload.some((v) => typeof v !== "string" || !/^\d{14}$/.test(v))) {
     throw new Error("Migration ledger projection returned invalid data");
   }
   return payload;
