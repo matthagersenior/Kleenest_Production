@@ -9,3 +9,5 @@ select cron.alter_job(
  );
  $cmd$
 );
+
+-- Consumer hydration remains scheduler-only; public clients enqueue work through the discovery RPC.
