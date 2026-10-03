@@ -14,17 +14,9 @@ export type NotificationRule={
 };
 
 export type NotificationControlSnapshot={rules:NotificationRule[];recent_runs:any[];outcomes:{delivered:number;opened:number;acted:number;redeemed:number};delivery_health:any;generated_at:string};
-export type IngestionControlSnapshot={status:any;sources:any[];markets:any[];storage_guard:any;history:any[];generated_at:string};
 
 export const getNotificationControlSnapshot=(limit=100)=>rpc<NotificationControlSnapshot>('owner_notification_control_snapshot',{p_limit:limit});
 export const saveNotificationRule=(rule:Partial<NotificationRule>&Record<string,unknown>,reason='KleenestOS notification studio update')=>rpc<NotificationRule>('owner_upsert_platform_notification_rule',{p_rule:rule,p_reason:reason});
 export const deleteNotificationRule=(ruleId:string,reason='KleenestOS notification studio delete')=>rpc<boolean>('owner_delete_platform_notification_rule',{p_rule_id:ruleId,p_reason:reason});
 export const publishNotificationRule=(ruleId:string,locationId:string|null=null,payload:Record<string,unknown>={},forceDryRun:boolean|null=null,bypassFrequencyCap=false)=>rpc('owner_publish_platform_notification_rule',{p_rule_id:ruleId,p_location_id:locationId,p_payload:payload,p_force_dry_run:forceDryRun,p_bypass_frequency_cap:bypassFrequencyCap});
 
-export const getIngestionControlSnapshot=(limit=100)=>rpc<IngestionControlSnapshot>('owner_ingestion_control_snapshot',{p_limit:limit});
-export const updateIngestionSourcePolicy=(sourceKey:string,patch:Record<string,unknown>,reason='KleenestOS ingestion source update')=>rpc('owner_update_ingestion_source_policy',{p_source_key:sourceKey,p_patch:patch,p_reason:reason});
-export const updateIngestionStorageGuard=(patch:Record<string,unknown>,reason='KleenestOS ingestion storage guard update')=>rpc('owner_update_ingestion_storage_guard',{p_patch:patch,p_reason:reason});
-export const updateIngestionMarket=(marketId:string,priority:number|null,enabled:boolean|null,reason='KleenestOS ingestion market update')=>rpc('owner_update_ingestion_market',{p_market_id:marketId,p_priority:priority,p_enabled:enabled,p_reason:reason});
-export const runIngestionCycle=(reason='KleenestOS manual ingestion cycle')=>rpc('owner_run_ingestion_cycle',{p_reason:reason});
-export const repairIngestionCells=(reason='KleenestOS stalled-cell repair')=>rpc('owner_repair_ingestion_cells',{p_reason:reason});
-export const authorizeIngestionResume=(authorized:boolean)=>rpc('admin_set_national_ingestion_resume_authorization',{p_authorized:authorized});
