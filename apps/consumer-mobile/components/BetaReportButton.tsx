@@ -24,7 +24,6 @@ const KINDS:{key:FeedbackKind;label:string;category:BetaReportCategory;placehold
 
 export default function BetaReportButton({route}:{route:string}){
   const theme=useConsumerTheme();
-  const compact=route==='/explore';
   const[visible,setVisible]=useState(false);
   const[sentiment,setSentiment]=useState<Sentiment|null>(null);
   const[kind,setKind]=useState<FeedbackKind>('bug');
@@ -110,9 +109,9 @@ export default function BetaReportButton({route}:{route:string}){
       accessibilityRole="button"
       accessibilityLabel="Tell Kleenest what you think"
       onPress={open}
-      style={[s.fab,{backgroundColor:theme.accent,borderColor:theme.line},compact&&s.fabCompact]}
+      style={[s.fab,{backgroundColor:theme.accent,borderColor:theme.line}]}
     >
-      <Text accessibilityElementsHidden style={[s.fabText,{color:theme.accentText},compact&&s.fabTextCompact]}>{compact?'✦':'✦ Tell Kleenest'}</Text>
+      <Text style={[s.fabText,{color:theme.accentText}]}>✦ Tell Kleenest</Text>
     </Pressable>
     <Modal transparent visible={visible} animationType="slide" accessibilityViewIsModal onRequestClose={()=>setVisible(false)}>
       <View style={s.overlay}>
@@ -218,10 +217,8 @@ export default function BetaReportButton({route}:{route:string}){
 }
 
 const s=StyleSheet.create({
-  fab:{position:'absolute',right:14,bottom:78,zIndex:1000,elevation:12,borderWidth:1,borderRadius:999,paddingHorizontal:13,paddingVertical:10,shadowColor:'#000',shadowOpacity:.18,shadowRadius:10,shadowOffset:{width:0,height:5}},
-  fabCompact:{width:48,height:48,borderRadius:24,paddingHorizontal:0,paddingVertical:0,alignItems:'center',justifyContent:'center'},
-  fabText:{fontSize:11,fontWeight:'900',letterSpacing:.15},
-  fabTextCompact:{fontSize:20,lineHeight:22},
+  fab:{position:'absolute',right:10,bottom:78,zIndex:1000,elevation:12,minHeight:44,borderWidth:1,borderRadius:999,paddingHorizontal:10,paddingVertical:8,alignItems:'center',justifyContent:'center',shadowColor:'#000',shadowOpacity:.14,shadowRadius:8,shadowOffset:{width:0,height:4}},
+  fabText:{fontSize:10,fontWeight:'900',letterSpacing:.1},
   overlay:{flex:1,backgroundColor:'rgba(0,0,0,.46)',justifyContent:'flex-end'},
   sheet:{borderTopLeftRadius:26,borderTopRightRadius:26,borderWidth:1,padding:18,paddingBottom:28,gap:13,maxHeight:'86%'},
   head:{flexDirection:'row',gap:12,alignItems:'flex-start'},
