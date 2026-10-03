@@ -766,12 +766,14 @@ export default function AdaptiveExploreScreen() {
 
   function useDestinationForRoute(){
     if(!searchAreaOrigin)return;
+    const destination:[number,number]=[searchAreaOrigin[0],searchAreaOrigin[1]];
+    const label=searchAreaLabel||search.trim()||'Destination';
     setMode('route');
     setRows([]);
     setSelectedId('');
     setDestinationCardOpen(false);
     setRoute(null);
-    setTimeout(()=>void loadRoute(),0);
+    void loadRoute({destination,label});
   }
 
   function snapMapToDiscoveryOrigin(target:[number,number],openDestinationCard=false) {
@@ -1136,7 +1138,7 @@ export default function AdaptiveExploreScreen() {
     }
   }
 
-  async function loadRoute() {
+  async function loadRoute(options?:{destination?:[number,number];label?:string}) {
     const current = await currentLocation();
     const intent=activeIntentRef.current;
     const activeAmenityNames=activeIntentAmenitiesRef.current??selectedAmenityNames;
@@ -1149,15 +1151,21 @@ export default function AdaptiveExploreScreen() {
     let routeSearch=rawQuery;
     let destinationLabel='';
 
-    if(destinationQuery){
-      const match=await withTimeout(
-        resolveConsumerSearchLocation(destinationQuery),
-        LIVE_LOOKUP_TIMEOUT_MS,
-        'Destination lookup took too long. Pull down to retry.',
-      );
-      if(!match)throw new Error('Kleenest could not locate “'+destinationQuery+'”. Try the street number plus city/state or ZIP.');
-      const destination:[number,number]=[match.longitude,match.latitude];
-      destinationLabel=match.label||destinationQuery;
+    if(options?.destination||destinationQuery){
+      let destination:[number,number];
+      if(options?.destination){
+        destination=[Number(options.destination[0]),Number(options.destination[1])];
+        destinationLabel=String(options.label||searchAreaLabel||destinationQuery||'Destination');
+      }else{
+        const match=await withTimeout(
+          resolveConsumerSearchLocation(destinationQuery),
+          LIVE_LOOKUP_TIMEOUT_MS,
+          'Destination lookup took too long. Pull down to retry.',
+        );
+        if(!match)throw new Error('Kleenest could not locate “'+destinationQuery+'”. Try the street number plus city/state or ZIP.');
+        destination=[match.longitude,match.latitude];
+        destinationLabel=match.label||destinationQuery;
+      }
       built=await buildMobileRouteToDestination(currentOrigin,destination,destinationLabel);
       built={...built,destinationGeofenceRadiusMeters:SEARCH_DESTINATION_GEOFENCE_RADIUS_M};
       routeSearch='';

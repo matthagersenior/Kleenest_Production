@@ -199,6 +199,15 @@ test('destination card keeps map-area search reachable after a drag',()=>{
 });
 
 
+test('searched destination add-to-route uses the exact resolved destination without re-geocoding',async()=>{
+  const source=fs.readFileSync(screenPath,'utf8');
+  assert.match(source,/const destination:\[number,number\]=\[searchAreaOrigin\[0\],searchAreaOrigin\[1\]\]/);
+  assert.match(source,/void loadRoute\(\{destination,label\}\)/);
+  assert.match(source,/if\(options\?\.destination\|\|destinationQuery\)/);
+  assert.match(source,/destination=\[Number\(options\.destination\[0\]\),Number\(options\.destination\[1\]\)\]/);
+  assert.match(source,/buildMobileRouteToDestination\(currentOrigin,destination,destinationLabel\)/);
+});
+
 test('manual route start builds without GPS',async()=>{
   const path='apps/consumer-mobile/app/route.tsx';
   let gpsCalls=0,builtOrigin=null;
