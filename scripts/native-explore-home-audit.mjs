@@ -92,7 +92,7 @@ assert.match(explore, /onTouchEnd=\{endMapGesture\}/);
 assert.match(explore, /onTouchCancel=\{\(\)=>setMapGestureLock\(false\)\}/);
 assert.doesNotMatch(explore, /mapControls:\s*\{[^}]*top:\s*174/s);
 assert.match(explore, /scrollEnabled=\{!mapInteracting\}/);
-assert.match(explore, /<FreshnessHeatRing item=\{row\} size=\{26\} active=\{active\} \/>/);
+assert.match(explore, /<FreshnessHeatRing item=\{row\} size=\{22\} \/>/);
 assert.match(explore, /mapFlairBadge/);
 assert.doesNotMatch(explore, /equippedMapFlair==='gold-ring'&&\{borderWidth:3/);
 assert.match(explore, /clusterMarker:\{[^}]*borderWidth:2/s);
