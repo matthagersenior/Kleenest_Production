@@ -163,12 +163,12 @@ for(const token of [
   'onTouchCancel={()=>setMapGestureLock(false)}',
 ])requireToken(screen,token,'Immediate native map gesture ownership');
 for(const token of [
-  '<FreshnessHeatRing item={row} size={26} active={active} />',
+  '<FreshnessHeatRing item={row} size={22} />',
   'mapFlairBadge',
   "borderColor:equippedMapFlair==='gold-ring'?'#e7c45d':theme.accent",
   'style={[s.clusterMarker,{backgroundColor:theme.surface,borderColor:theme.line}]}',
-  '<FreshnessHeatRing item={selected} size={34} active',
-  '<FreshnessHeatRing item={item} size={34} active={selected}',
+  '<FreshnessHeatRing item={selected} size={34} photoUrl=',
+  '<FreshnessHeatRing item={item} size={34} photoUrl=',
 ])requireToken(screen,token,'Map freshness-ring semantics');
 if(screen.includes("equippedMapFlair==='gold-ring'&&{borderWidth:3"))throw new Error('Equipped map flair must not replace or visually masquerade as the freshness heat ring.');
 for(const token of [
