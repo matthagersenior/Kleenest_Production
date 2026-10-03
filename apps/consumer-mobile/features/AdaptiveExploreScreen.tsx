@@ -1920,14 +1920,22 @@ export default function AdaptiveExploreScreen() {
                   >
                     <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
                   </Pressable>
-                  <Pressable
+                  {mode==='nearby'&&pendingMapOrigin?<Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Search this map area"
+                    style={[s.secondarySmall,s.destinationAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
+                    disabled={loading}
+                    onPress={()=>void load({mapOrigin:pendingMapOrigin})}
+                  >
+                    <Text style={[s.secondaryText,{color:theme.accent}]}>{loading?'Searching…':'Search here'}</Text>
+                  </Pressable>:<Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Add searched destination to route"
                     style={[s.secondarySmall,s.destinationAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
                     onPress={addSearchDestinationToRoute}
                   >
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
-                  </Pressable>
+                  </Pressable>}
 
                 </View>
               </View>
