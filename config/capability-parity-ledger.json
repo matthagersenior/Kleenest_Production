@@ -728,7 +728,8 @@
               "People & Access",
               "Businesses & Network",
               "Trust & Moderation",
-              "Database observed",
+              "Platform Health",
+              "label=\"Discovery\"",
               "getOwnerAuthorization"
             ]
           }

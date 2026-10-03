@@ -58,7 +58,6 @@ for(const [label,path] of [
   ['Fleet Dispatch forms','apps/fleet-mobile/app/dispatch.tsx'],
   ['Fleet Nearby forms','apps/fleet-mobile/app/nearby.tsx'],
   ['KleenestOS Business forms','apps/platform-mobile/app/businesses.tsx'],
-  ['KleenestOS Operations forms','apps/platform-mobile/app/operations.tsx'],
 ]){
   requireTokens(label,path,['theme.surfaceRaised','theme.line','theme.ink']);
 }
@@ -281,7 +280,7 @@ for(const route of platformThemeRoutes){
 }
 requireTokens('KleenestOS Developer seasonal hero','apps/platform-mobile/app/developers.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','theme.surface','theme.surfaceRaised','theme.accentText','theme.line']);
 requireTokens('KleenestOS Pilots seasonal hero','apps/platform-mobile/app/pilots.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','theme.surface','theme.surfaceRaised','theme.accentText','theme.line','OSSwitch']);
-requireTokens('KleenestOS Operations seasonal coverage','apps/platform-mobile/app/operations.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','color:theme.accentText','OSSwitch']);
+requireTokens('KleenestOS Platform Health seasonal coverage','apps/platform-mobile/app/operations.tsx',['OSHero','HealthCard','theme.canvas','theme.surface','theme.danger']);
 requireTokens('KleenestOS command pulse theme','apps/platform-mobile/app/index.tsx',['backgroundColor:theme.accent,borderColor:theme.accent','color:theme.accentText','backgroundColor:theme.surface','color:theme.ink']);
 const controlThemeSource=read('apps/platform-mobile/app/control.tsx');
 if(controlThemeSource.includes('style={osCard}'))failures.push('KleenestOS Control must not render hard-coded osCard surfaces inside themed capability cards.');
