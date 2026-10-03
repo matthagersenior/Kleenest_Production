@@ -17,7 +17,7 @@ if(fs.existsSync('supabase/migrations/20261002204730_ingestion_throughput_contro
   failures.push('stale pre-ledger ingestion throughput timestamp 20261002204730 is still active');
 }
 if(!failures.length){
-  const converge=fs.readFileSync(required.at(-1),'utf8');
+  const converge=fs.readFileSync(required[5],'utf8');
   for(const token of [
     'kleenest_map_check_in_v2',
     'sponsorship_runtime_settings',
