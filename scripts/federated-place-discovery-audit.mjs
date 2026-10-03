@@ -72,6 +72,14 @@ for(const token of [
   'Math.min(40234',
 ])need(core,token,'Consumer-triggered Overture hydration');
 
+const writeAmp='supabase/migrations/20261003081500_reduce_ingestion_repeat_write_amplification.sql';
+for(const token of [
+  "interval '24 hours'",
+  'location_brand_identities.canonical_brand is distinct from',
+  'external_location_records.last_seen_at is null',
+  'external_location_records.last_seen_at < now()-interval',
+])need(writeAmp,token,'Repeat-write amplification guard');
+
 const ingestSource=read(ingest).toLowerCase();
 for(const forbidden of ['places.googleapis.com','maps.googleapis.com/maps/api/place','@googlemaps/places']){
   if(ingestSource.includes(forbidden))failures.push('Overture ingestion must not depend on Google Places endpoint/import '+forbidden);
