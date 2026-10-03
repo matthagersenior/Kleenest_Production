@@ -61,10 +61,35 @@ const expoOnlyNodeForgeLineage=
   !nodeForgeDirectlyDeclared &&
   reverseNodeForgeDependents.length>0 &&
   reverseNodeForgeDependents.every(name=>name==='@expo/cli'||name==='@expo/code-signing-certificates');
-const temporaryAdvisoryWaiver=finding=>
+const bracesVersion=String(lock.packages['node_modules/braces']?.version||'');
+const reverseBracesDependents=Object.entries(lock.packages)
+  .filter(([,meta])=>meta&&typeof meta==='object'&&meta.dependencies&&Object.prototype.hasOwnProperty.call(meta.dependencies,'braces'))
+  .map(([path])=>path.replace(/^node_modules\//,''));
+const reverseMicromatchDependents=Object.entries(lock.packages)
+  .filter(([,meta])=>meta&&typeof meta==='object'&&meta.dependencies&&Object.prototype.hasOwnProperty.call(meta.dependencies,'micromatch'))
+  .map(([path])=>path.replace(/^node_modules\//,''));
+const bracesDirectlyDeclared=Object.values(lock.packages)
+  .some(meta=>meta&&typeof meta==='object'&&meta.name&&!String(meta.name).startsWith('@expo/')&&meta.dependencies&&Object.prototype.hasOwnProperty.call(meta.dependencies,'braces'));
+const metroOnlyBracesLineage=
+  bracesVersion==='3.0.3' &&
+  !bracesDirectlyDeclared &&
+  reverseBracesDependents.length===1 &&
+  reverseBracesDependents[0]==='micromatch' &&
+  reverseMicromatchDependents.length>0 &&
+  reverseMicromatchDependents.every(name=>
+    name==='@expo/metro-file-map' ||
+    name==='metro-file-map' ||
+    name==='metro-config/node_modules/metro-file-map'
+  );
+const temporaryAdvisoryWaiver=finding=>(
   finding?.name==='node-forge' &&
   String(finding?.url||'').includes('GHSA-86w9-cpqp-85rv') &&
-  expoOnlyNodeForgeLineage;
+  expoOnlyNodeForgeLineage
+) || (
+  finding?.name==='braces' &&
+  String(finding?.url||'').includes('GHSA-vfj7-8cjw-p6xm') &&
+  metroOnlyBracesLineage
+);
 if(result===null){
   console.warn(`npm bulk advisory endpoint unavailable after retries (${lastError}); falling back to OSV.`);
   const pairs=[];
@@ -122,7 +147,12 @@ for(const [name,advisories] of Object.entries(result||{})){
 }
 findings.sort((a,b)=>(severityRank[b.severity]-severityRank[a.severity])||a.name.localeCompare(b.name));
 if(temporarilyWaivedFindings.length){
-  console.warn('Temporary security exception: GHSA-86w9-cpqp-85rv currently has no patched node-forge npm release. The locked copy is accepted only while it remains node-forge@1.4.0 and is reachable exclusively through Expo CLI/code-signing build tooling.');
+  if(temporarilyWaivedFindings.some(finding=>finding.name==='node-forge')){
+    console.warn('Temporary security exception: GHSA-86w9-cpqp-85rv currently has no patched node-forge npm release. The locked copy is accepted only while it remains node-forge@1.4.0 and is reachable exclusively through Expo CLI/code-signing build tooling.');
+  }
+  if(temporarilyWaivedFindings.some(finding=>finding.name==='braces')){
+    console.warn('Temporary security exception: GHSA-vfj7-8cjw-p6xm currently has no patched braces npm release. The locked copy is accepted only while it remains braces@3.0.3 and is reachable exclusively through Metro/Expo file-map build tooling.');
+  }
   for(const finding of temporarilyWaivedFindings)console.warn(`- [${finding.severity}] ${finding.name}: ${finding.title}${finding.url?` — ${finding.url}`:''}`);
 }
 if(findings.length){
