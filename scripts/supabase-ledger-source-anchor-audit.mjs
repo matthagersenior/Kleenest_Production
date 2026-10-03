@@ -7,6 +7,7 @@ const required=[
   'supabase/migrations/20260922111227_fix_storage_guard_disk_denominator.sql',
   'supabase/migrations/20261002211143_ingestion_throughput_control.sql',
   'supabase/migrations/20261003102000_reconcile_live_schema_and_canonical_metric.sql',
+  'supabase/migrations/20261003161245_optimize_consumer_presence_geospatial_lookup.sql',
 ];
 const failures=[];
 for(const file of required){
@@ -30,6 +31,18 @@ if(!failures.length){
   ]){
     if(!converge.includes(token))failures.push(`live-schema convergence migration missing ${token}`);
   }
+  const recovery=fs.readFileSync(required.at(-1),'utf8');
+  for(const token of [
+    'consumer_presence_heartbeat',
+    'extensions.st_dwithin',
+    'production_migration_versions',
+    'supabase_migrations.schema_migrations',
+    'REVOKE ALL ON FUNCTION public.production_migration_versions(text) FROM PUBLIC, anon, authenticated',
+  ]){
+    if(!recovery.includes(token))failures.push(`consumer presence recovery migration missing ${token}`);
+  }
+  if(/select\s+1\s*;/i.test(recovery)&&!recovery.includes('consumer_presence_heartbeat'))failures.push('latest Production recovery migration is still only a no-op ledger marker');
+
   const throughput=fs.readFileSync(required[4],'utf8');
   for(const token of [
     'ingest_external_locations_background',
