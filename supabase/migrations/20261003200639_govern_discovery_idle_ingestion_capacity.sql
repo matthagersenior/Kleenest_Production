@@ -113,4 +113,4 @@ begin
 end
 $$;
 
-select cron.alter_job(job_id:=24,schedule:='7-59/10 * * * *');
+update public.external_ingestion_adapters\nset page_size=least(page_size,25),updated_at=now()\nwhere source_key in ('chicago_business_licenses','kcmo_business_licenses');\n\nselect cron.alter_job(job_id:=24,schedule:='7-59/10 * * * *');
