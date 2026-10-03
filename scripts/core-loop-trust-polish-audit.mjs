@@ -25,7 +25,7 @@ for(const token of [
   "card: { borderRadius: 16, padding: 10",
   "cardMain: { gap: 4 }",
   "cardActionRow: { flexDirection: 'row', gap: 5",
-  "close: { minWidth: 38, minHeight: 38",
+  "close: { minWidth: 44, minHeight: 44",
   'Add a missing bathroom',
   'Name + address is enough to start.',
 ])requireToken(explore,token,'Explore core loop');

@@ -117,11 +117,11 @@ if(screen.includes('refreshControl={<RefreshControl'))throw new Error('Explore p
 for(const token of [
   'destinationCardOpen',
   'Select destination marker',
-  'Refresh discovery near destination',
-  'Refresh nearby',
+  'Start directions to searched destination',
   'Add searched destination to route',
   'destinationPanel',
 ])requireToken(screen,token,'Selectable compact destination marker/card');
+if(screen.includes('Refresh discovery near destination')||screen.includes('>Refresh nearby</Text>'))throw new Error('Destination card must keep only the two primary decisions instead of stacking redundant refresh actions.');
 
 for(const token of [
   'const SEARCH_DESTINATION_GEOFENCE_RADIUS_M=150;',
@@ -138,7 +138,7 @@ for(const token of [
 if(screen.includes("onPress={mode==='route'?selectDestinationMarker:recenterMap}"))throw new Error('Searched-address marker must open its destination card in both Nearby and Along route modes.');
 
 for(const token of [
-  "mode==='route'? \`${visibleRows.length} along route · ${radiusLabel(corridor)} corridor\`",
+  "mode==='route'? \`Stops along route · ${radiusLabel(corridor)} corridor\`",
   'Longest stretch between qualifying bathrooms:',
   "from 'react-native-safe-area-context'",
 ])requireToken(screen,token,'Along-route map framing and compact result summary');
@@ -149,6 +149,33 @@ if(betaButton.includes("const compactFab=route==='/explore';"))throw new Error('
 if(!screen.includes('setMapZoom((current) => Math.max(current, 14));'))throw new Error('Selecting a place from a grouped pin must preserve the detailed map zoom.');
 if(/key=\{`explore-camera-\$\{cameraNonce\}-\$\{selectedId\}-/.test(screen))throw new Error('Opening or closing a selected location must not remount the map camera.');
 if(!/key=\{`explore-camera-\$\{cameraNonce\}-\$\{mode\}-/.test(screen))throw new Error('Explore map camera must remain keyed to intentional camera changes, not selected-card visibility.');
+
+for(const token of [
+  'function setMapGestureLock(locked:boolean)',
+  'listRef.current?.setNativeProps?.({scrollEnabled:!locked})',
+  'function beginMapGesture(){setMapGestureLock(true);}',
+  'function endMapGesture()',
+  'onStartShouldSetResponderCapture={()=>{beginMapGesture();return false}}',
+  'onMoveShouldSetResponderCapture={()=>{beginMapGesture();return false}}',
+  'onTouchStart={beginMapGesture}',
+  'onTouchMove={beginMapGesture}',
+  'onTouchEnd={endMapGesture}',
+  'onTouchCancel={()=>setMapGestureLock(false)}',
+])requireToken(screen,token,'Immediate native map gesture ownership');
+for(const token of [
+  '<FreshnessHeatRing item={row} size={22} />',
+  'mapFlairBadge',
+  "borderColor:equippedMapFlair==='gold-ring'?'#e7c45d':theme.accent",
+  'style={[s.clusterMarker,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  '<FreshnessHeatRing item={selected} size={34} photoUrl=',
+  '<FreshnessHeatRing item={item} size={34} photoUrl=',
+])requireToken(screen,token,'Map freshness-ring semantics');
+if(screen.includes("equippedMapFlair==='gold-ring'&&{borderWidth:3"))throw new Error('Equipped map flair must not replace or visually masquerade as the freshness heat ring.');
+for(const token of [
+  "borderStyle:heat.ageDays==null?'dashed':'solid'",
+  "Cluster count · zoom in for each place's freshness",
+  'Corner badge = equipped map flair, not freshness',
+])requireToken(signals,token,'Freshness legend and unknown-state semantics');
 
 
 // Explore is one continuous consumer page: compact search controls → map → results.
@@ -176,7 +203,8 @@ for(const token of [
   'accessibilityLabel="Fit full route on map"',
   'onDirections={() => void directions(item)}',
   'onAddToRoute={() => addToRoute(item)}',
-  'onDetails={() => router.push',
+  'function openLocationDetails(row:any)',
+  'onDetails={() => openLocationDetails(item)}',
   'selectedRoutePosition',
   'RequestedAmenityMatches',
   'requestedAmenities={selectedAmenityNames}',
@@ -203,7 +231,7 @@ if(!filterModal.includes('filterAmenities.map'))throw new Error('Amenity chips m
 if(!filterModal.includes('radiusChoices.map'))throw new Error('Radius controls must move into the filter modal so the map rises on the page.');
 if(!screen.includes('<View pointerEvents="auto" style={[s.selectedPanel'))throw new Error('Selected map-pin panel must own touch events so its close control works above the native map.');
 if(!screen.includes("selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12"))throw new Error('Selected map-pin panel must stay compact and bottom-anchored so the map remains visible.');
-if(!screen.includes("close: { minWidth: 38, minHeight: 38, zIndex: 41, elevation: 13"))throw new Error('Selected map-pin close control must stay compact while preserving stacking order; hitSlop supplies the forgiving touch target.');
+if(!screen.includes("close: { minWidth: 44, minHeight: 44, zIndex: 41, elevation: 13"))throw new Error('Selected map-pin close control must stay compact while preserving stacking order; hitSlop supplies the forgiving touch target.');
 if(!screen.includes('hitSlop={12}'))throw new Error('Selected map-pin close control must preserve forgiving hit slop.');
 if(screen.includes('<RestroomSignals item={item} compact />'))throw new Error('Result cards must use compact icon/value signals instead of tall labeled signal pills.');
 for(const token of [
@@ -211,9 +239,9 @@ for(const token of [
   "card: { borderRadius: 16, padding: 10",
   "cardMain: { gap: 4 }",
   "cardActionRow: { flexDirection: 'row', gap: 5",
-  "primarySmall: { minHeight: 30",
-  "secondarySmall: { minHeight: 30",
-  "close: { minWidth: 38, minHeight: 38",
+  "primarySmall: { minHeight: 44",
+  "secondarySmall: { minHeight: 44",
+  "close: { minWidth: 44, minHeight: 44",
   "selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228",
   "selectedBodyContent:{gap:4,paddingBottom:0}",
   "Why trusted?",
