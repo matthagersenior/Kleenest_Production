@@ -86,6 +86,15 @@ function withTimeout<T>(promise:Promise<T>,timeoutMs:number,message:string):Prom
 function isLookupTimeout(error:unknown){
   return /took too long|timed out|timeout/i.test(String((error as any)?.message||error||''));
 }
+function friendlyExploreError(error:unknown,fallback='Kleenest could not finish that search. Please try again.'){
+  const detail=String((error as any)?.message||error||'').trim();
+  if(!detail)return fallback;
+  if(/statement timeout|cancel(?:l)?ing statement|PGRST|SQLSTATE|schema cache|relation .* does not exist|column .* does not exist|permission denied|fetch failed|network request failed|failed to fetch|internal server error|500\b/i.test(detail)){
+    return /route|corridor/i.test(detail)?'Kleenest could not finish the route search in time. Try again, or narrow the route filters.':fallback;
+  }
+  if(isLookupTimeout(error))return /route|corridor/i.test(detail)?'Kleenest could not finish the route search in time. Try again, or narrow the route filters.':'Kleenest is taking too long to search right now. Please try again.';
+  return detail.length<=140?detail:fallback;
+}
 const OSM_STYLE: any = {
   version: 8,
   sources: {
@@ -401,6 +410,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
   const checkInBusy=checkInFeedback?.status==='checking';
   const [showTrustEvidence,setShowTrustEvidence]=useState(false);
   const [showMatchEvidence,setShowMatchEvidence]=useState(false);
+  const [showMoreActions,setShowMoreActions]=useState(false);
   const matchLines=matchExplanationLines(item,requestedAmenities,route);
   return (
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}, selected && s.cardActive]}>
@@ -459,29 +469,27 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         {reviewCount > 0 ? <Text style={[s.meta,{color:theme.muted}]}>{reviewCount} review{reviewCount === 1 ? '' : 's'}</Text> : null}
       </Pressable>
       <View style={s.cardActionRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Start directions to this location"
-          accessibilityHint="Start navigation"
-          disabled={!hasCoordinates(item)}
-          style={[s.primarySmall,s.cardAction,{backgroundColor:theme.accent},!hasCoordinates(item)&&s.disabled]}
-          onPress={onDirections}
-        >
+        <Pressable accessibilityRole="button" accessibilityLabel="Start directions to this location" accessibilityHint="Start navigation" disabled={!hasCoordinates(item)} style={[s.primarySmall,s.cardAction,{backgroundColor:theme.accent},!hasCoordinates(item)&&s.disabled]} onPress={onDirections}>
           <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel={item.active_check_in?'Already checked in at this location':checkInBusy?'Checking your location':item.visit_verification_available?'Verify your detected visit at this location':'Verify that I am at this location'} accessibilityHint="Check in" accessibilityState={{disabled:Boolean(item.active_check_in)||checkInBusy,busy:checkInBusy}} disabled={Boolean(item.active_check_in)||checkInBusy} style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},(item.active_check_in||checkInBusy)&&s.disabled]} onPress={onCheckIn}>
-          <Text style={[s.secondaryText,{color:theme.accent}]}>{item.active_check_in?'Checked in ✓':checkInBusy?'Checking location…':item.visit_verification_available?'Verify visit':"I'm here"}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Open full location details" style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={onDetails}>
+          <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={onAddToRoute}>
+        <Pressable accessibilityRole="button" accessibilityLabel={showMoreActions?'Hide more actions':'Show more actions'} accessibilityState={{expanded:showMoreActions}} style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>setShowMoreActions(value=>!value)}>
+          <Text style={[s.secondaryText,{color:theme.accent}]}>{showMoreActions?'Less':'More •••'}</Text>
+        </Pressable>
+      </View>
+      {showMoreActions?<View style={s.cardActionRow}>
+        <Pressable accessibilityRole="button" accessibilityLabel={item.active_check_in?'Already checked in at this location':checkInBusy?'Checking your location':item.visit_verification_available?'Verify your detected visit at this location':'Verify that I am at this location'} accessibilityHint="Check in" accessibilityState={{disabled:Boolean(item.active_check_in)||checkInBusy,busy:checkInBusy}} disabled={Boolean(item.active_check_in)||checkInBusy} style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},(item.active_check_in||checkInBusy)&&s.disabled]} onPress={onCheckIn}>
+          <Text style={[s.secondaryText,{color:theme.accent}]}>{item.active_check_in?'Checked in ✓':checkInBusy?'Checking…':item.visit_verification_available?'Verify visit':"I'm here"}</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Add this location to my route" style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={onAddToRoute}>
           <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Share what I already know about this location" style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={onKnow}>
           <Text style={[s.secondaryText,{color:theme.accent}]}>I know this place</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" style={[s.secondarySmall,s.cardAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={onDetails}>
-          <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
-        </Pressable>
-      </View>
+      </View>:null}
       <CheckInStatus feedback={checkInFeedback} onReview={onReview} />
     </View>
   );
@@ -538,6 +546,7 @@ export default function AdaptiveExploreScreen() {
   const [checkInFeedback,setCheckInFeedback]=useState<Record<string,CheckInActionFeedback>>({});
   const [cached, setCached] = useState(false);
   const [mapInteracting,setMapInteracting]=useState(false);
+  const [showSelectedMore,setShowSelectedMore]=useState(false);
   function setMapGestureLock(locked:boolean){
     if(mapGestureReleaseRef.current){
       clearTimeout(mapGestureReleaseRef.current);
@@ -610,6 +619,7 @@ export default function AdaptiveExploreScreen() {
     return parts.length?parts.join(' · '):'Everything';
   },[kleenestOnly,progressionOnly,minimumStars,freshnessDays,verifiedEvidenceOnly,evidenceGapOnly,progressionPriority,selectedAmenityNames.length]);
 
+  useEffect(()=>{setShowSelectedMore(false);},[selectedId]);
   const selected = useMemo(
     () => visibleRows.find((row) => idOf(row) === selectedId) || null,
     [visibleRows, selectedId],
@@ -815,7 +825,7 @@ export default function AdaptiveExploreScreen() {
       setMessage('Updating your current location…');
       await currentLocation(true);
     }catch(error:any){
-      setMessage(error?.message||'Kleenest could not refresh your current location.');
+      setMessage(friendlyExploreError(error,'Kleenest could not refresh your current location.'));
     }
   }
 
@@ -1278,7 +1288,7 @@ export default function AdaptiveExploreScreen() {
       setRows([]);
       setSelectedId('');
       setRoute(null);
-      setMessage(error?.message || 'Nearby discovery failed.');
+      setMessage(friendlyExploreError(error));
     } finally {
       activeIntentRef.current=null;
       activeIntentAmenitiesRef.current=null;
@@ -1464,8 +1474,8 @@ export default function AdaptiveExploreScreen() {
         <View style={s.valuePromise}>
           <Text style={[s.valuePromiseTitle,{color:theme.ink}]}>{mode==='route'?'Find a useful stop on the way.':'Find a place you can count on.'}</Text>
           <Text style={[s.valuePromiseBody,{color:theme.muted}]}>{mode==='route'
-            ? 'Set where you’re going. Kleenest looks along the route for places that match what you need.'
-            : 'See what’s nearby, what it offers, and how recently the information was confirmed.'}</Text>
+            ? 'Enter where you’re going. We’ll show useful stops on the way.'
+            : 'Search a place or address, then tap a result to go.'}</Text>
         </View>
         <View style={s.searchRow}>
           <TextInput
@@ -1525,10 +1535,9 @@ export default function AdaptiveExploreScreen() {
           style={[s.filterLauncher,{backgroundColor:theme.surface,borderColor:theme.line}]}
         >
           <View style={s.filterLauncherMain}>
-            <Text maxFontSizeMultiplier={1.1} style={[s.filterLauncherKicker,{color:theme.muted}]}>FILTER</Text>
-            <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[s.filterLauncherTitle,{color:theme.ink}]}>{filterSummary}</Text>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[s.filterLauncherTitle,{color:theme.ink}]}>{activeFilterCount?filterSummary:'Filters'}</Text>
           </View>
-          <View style={[s.filterLauncherBadge,{backgroundColor:theme.accentSoft}]}><Text numberOfLines={1} maxFontSizeMultiplier={1.1} style={[s.filterLauncherBadgeText,{color:theme.accent}]}>{activeFilterCount?`${activeFilterCount} active`:'Everything'} ▾</Text></View>
+          <View style={[s.filterLauncherBadge,{backgroundColor:theme.accentSoft}]}><Text numberOfLines={1} maxFontSizeMultiplier={1.1} style={[s.filterLauncherBadgeText,{color:theme.accent}]}>{activeFilterCount?String(activeFilterCount)+' on':'Optional'} ▾</Text></View>
         </Pressable>
         <Modal
           accessibilityViewIsModal
@@ -1919,22 +1928,7 @@ export default function AdaptiveExploreScreen() {
                   >
                     <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
                   </Pressable>
-                  {mode==='nearby'&&pendingMapOrigin?<Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Search this map area"
-                    style={[s.secondarySmall,s.destinationAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
-                    disabled={loading}
-                    onPress={()=>void load({mapOrigin:pendingMapOrigin})}
-                  >
-                    <Text style={[s.secondaryText,{color:theme.accent}]}>{loading?'Searching…':'Search here'}</Text>
-                  </Pressable>:mode==='nearby'?<Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Refresh discovery near destination"
-                    style={[s.secondarySmall,s.destinationAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}
-                    onPress={searchNearDestination}
-                  >
-                    <Text style={[s.secondaryText,{color:theme.accent}]}>Refresh nearby</Text>
-                  </Pressable>:null}
+
                 </View>
               </View>
             ) : null}
@@ -1971,31 +1965,27 @@ export default function AdaptiveExploreScreen() {
                   <DecisionRestroomSignals item={selected} />
                   <RequestedAmenityMatches item={selected} requested={rankingAmenityNames} compact />
                   <View style={s.actionRow}>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Start directions to this location"
-                      accessibilityHint="Start navigation"
-                      style={[s.primarySmall,s.selectedAction,{backgroundColor:theme.accent},!hasCoordinates(selected)&&s.disabled]}
-                      disabled={!hasCoordinates(selected)}
-                      onPress={() => void directions(selected)}
-                    >
+                    <Pressable accessibilityRole="button" accessibilityLabel="Start directions to this location" accessibilityHint="Start navigation" style={[s.primarySmall,s.selectedAction,{backgroundColor:theme.accent},!hasCoordinates(selected)&&s.disabled]} disabled={!hasCoordinates(selected)} onPress={() => void directions(selected)}>
                       <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
                     </Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking your location':selected.visit_verification_available?'Verify your detected visit at selected location':'Verify that I am at selected location'} accessibilityHint="Check in" accessibilityState={{disabled:Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking',busy:checkInFeedback[idOf(selected)]?.status==='checking'}} disabled={Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking'} style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},(selected.active_check_in||checkInFeedback[idOf(selected)]?.status==='checking')&&s.disabled]} onPress={() => void checkIn(selected)}>
-                      <Text style={[s.secondaryText,{color:theme.accent}]}>{selected.active_check_in?'Checked in ✓':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking location…':selected.visit_verification_available?'Verify visit':"I'm here"}</Text>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Open full selected location details" style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => router.push('/location/'+idOf(selected))}>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
                     </Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel="Add selected location to route" style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => addToRoute(selected)}>
-                      <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
+                    <Pressable accessibilityRole="button" accessibilityLabel={showSelectedMore?'Hide more selected-location actions':'Show more selected-location actions'} accessibilityState={{expanded:showSelectedMore}} style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>setShowSelectedMore(value=>!value)}>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>{showSelectedMore?'Less':'More •••'}</Text>
                     </Pressable>
                   </View>
-                  <View style={s.selectedMoreRow}>
+                  {showSelectedMore?<View style={s.selectedMoreRow}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking your location':selected.visit_verification_available?'Verify your detected visit at selected location':'Verify that I am at selected location'} accessibilityHint="Check in" accessibilityState={{disabled:Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking',busy:checkInFeedback[idOf(selected)]?.status==='checking'}} disabled={Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking'} style={[s.selectedMoreAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},(selected.active_check_in||checkInFeedback[idOf(selected)]?.status==='checking')&&s.disabled]} onPress={() => void checkIn(selected)}>
+                      <Text style={[s.selectedMoreText,{color:theme.accent}]}>{selected.active_check_in?'Checked in ✓':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking…':selected.visit_verification_available?'Verify visit':"I'm here"}</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Add selected location to route" style={[s.selectedMoreAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => addToRoute(selected)}>
+                      <Text style={[s.selectedMoreText,{color:theme.accent}]}>Add to route</Text>
+                    </Pressable>
                     <Pressable accessibilityRole="button" accessibilityLabel="Share what I know about selected location" style={[s.selectedMoreAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => contributeKnowledge(selected)}>
                       <Text style={[s.selectedMoreText,{color:theme.accent}]}>I know this place</Text>
                     </Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel="Open full selected location details" style={[s.selectedMoreAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => router.push(`/location/${idOf(selected)}`)}>
-                      <Text style={[s.selectedMoreText,{color:theme.accent}]}>Full details →</Text>
-                    </Pressable>
-                  </View>
+                  </View>:null}
                   <CheckInStatus feedback={checkInFeedback[idOf(selected)]} onReview={() => router.push({pathname:'/location/[id]',params:{id:idOf(selected),review:'1'}})} />
                 </ScrollView>
               </View>
@@ -2145,29 +2135,29 @@ const s = StyleSheet.create({
   locateText: { fontSize: 8, fontWeight: '900', color: palette.green },
   searchPanel:{position:'relative',marginHorizontal:10,zIndex:60,elevation:20,paddingHorizontal:9,paddingTop:9,paddingBottom:7,gap:6,borderRadius:15,borderWidth:1},
   valuePromise:{paddingHorizontal:2,paddingBottom:2,gap:2},
-  valuePromiseTitle:{fontSize:15,lineHeight:19,fontWeight:'900',letterSpacing:-.2},
-  valuePromiseBody:{fontSize:10,lineHeight:15,fontWeight:'700'},
+  valuePromiseTitle:{fontSize:19,lineHeight:23,fontWeight:'900',letterSpacing:-.25},
+  valuePromiseBody:{fontSize:13,lineHeight:18,fontWeight:'700'},
   searchAreaChip:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,backgroundColor:'#e8f1eb',borderRadius:11,paddingHorizontal:10,paddingVertical:7},
-  searchAreaText:{flex:1,fontSize:10,fontWeight:'900',color:palette.green},searchAreaAction:{fontSize:9,fontWeight:'900',color:palette.green,textDecorationLine:'underline'},
+  searchAreaText:{flex:1,fontSize:13,lineHeight:18,fontWeight:'900',color:palette.green},searchAreaAction:{fontSize:12,fontWeight:'900',color:palette.green,textDecorationLine:'underline'},
   segment: { flexDirection: 'row', padding: 3, borderRadius: 12, backgroundColor: '#e8efea' },
-  segmentButton: { flex: 1, minHeight: 30, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  segmentButton: { flex: 1, minHeight: 44, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   segmentActive: { backgroundColor: palette.green },
-  segmentText: { fontSize: 10, fontWeight: '900', color: palette.green },
+  segmentText: { fontSize: 14, fontWeight: '900', color: palette.green },
   segmentTextActive: { color: '#fff' },
   searchRow: { flexDirection: 'row', gap: 7 },
   input: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 48,
     borderWidth: 1,
     borderColor: '#d6e2da',
     borderRadius: 12,
     backgroundColor: '#fff',
     paddingHorizontal: 11,
-    fontSize: 13,
+    fontSize: 16,
     color: palette.ink,
   },
-  searchButton: { minHeight: 40, borderRadius: 12, backgroundColor: palette.green, paddingHorizontal: 11, justifyContent: 'center' },
-  searchButtonText: { fontSize: 9, fontWeight: '900', color: '#fff' },
+  searchButton: { minHeight: 48, borderRadius: 12, backgroundColor: palette.green, paddingHorizontal: 14, justifyContent: 'center' },
+  searchButtonText: { fontSize: 13, fontWeight: '900', color: '#fff' },
   rowHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   autoRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   autoLabel: { fontSize: 9, fontWeight: '800', color: '#5f7468' },
@@ -2226,12 +2216,12 @@ const s = StyleSheet.create({
   searchThisArea:{position:'absolute',left:92,right:58,zIndex:52,elevation:16,minHeight:38,borderRadius:999,borderWidth:1,alignItems:'center',justifyContent:'center',paddingHorizontal:12},
   searchThisAreaText:{fontSize:10,fontWeight:'900'},
   legendWrap: { position: 'absolute', left: 10, right: 56, zIndex:48 },
-  resultsHandoff:{minHeight:38,borderTopWidth:1,borderBottomWidth:1,paddingHorizontal:14,paddingVertical:7,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
-  resultsHandoffText:{flex:1,fontSize:10,fontWeight:'900'},
-  resultsHandoffAction:{fontSize:10,fontWeight:'900'},
+  resultsHandoff:{minHeight:48,borderTopWidth:1,borderBottomWidth:1,paddingHorizontal:14,paddingVertical:7,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
+  resultsHandoffText:{flex:1,fontSize:13,fontWeight:'900'},
+  resultsHandoffAction:{fontSize:13,fontWeight:'900'},
   selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
-  destinationPanel:{height:154,justifyContent:'flex-start'},
-  destinationSummary:{fontSize:9,lineHeight:12,fontWeight:'800'},
+  destinationPanel:{height:146,justifyContent:'flex-start'},
+  destinationSummary:{fontSize:12,lineHeight:16,fontWeight:'800'},
   destinationAction:{flex:1,alignItems:'center',minWidth:78},
   selectedBodyScroll:{flex:1},
   selectedBodyContent:{gap:4,paddingBottom:0},
@@ -2242,23 +2232,23 @@ const s = StyleSheet.create({
   closeLabel: { color: '#fff', fontSize: 9, fontWeight: '900' },
   selectedRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   selectedPhoto:{width:48,height:48,borderRadius:12,backgroundColor:'#e7eee9'},
-  selectedTitle: { fontSize: 14, fontWeight: '900', color: palette.ink },
-  selectedDecisionMeta:{fontSize:8,lineHeight:12,fontWeight:'900'},
+  selectedTitle: { fontSize: 17, lineHeight:22, fontWeight: '900', color: palette.ink },
+  selectedDecisionMeta:{fontSize:11,lineHeight:15,fontWeight:'900'},
   actionRow: { flexDirection: 'row', gap: 6 },
   selectedAction: { flex: 1, alignItems: 'center' },
   selectedMoreRow:{flexDirection:'row',gap:6},
-  selectedMoreAction:{flex:1,minHeight:27,borderWidth:1,borderRadius:9,alignItems:'center',justifyContent:'center',paddingHorizontal:8},
-  selectedMoreText:{fontSize:8,fontWeight:'900'},
-  primarySmall: { minHeight: 30, borderRadius: 9, backgroundColor: palette.green, paddingHorizontal: 9, paddingVertical: 6, justifyContent: 'center' },
-  secondarySmall: { minHeight: 30, borderRadius: 9, backgroundColor: '#e8efea', paddingHorizontal: 9, paddingVertical: 6, justifyContent: 'center' },
-  primaryText: { fontSize: 9, fontWeight: '900', color: '#fff' },
-  secondaryText: { fontSize: 9, fontWeight: '900', color: palette.green },
-  filterLauncher:{minHeight:40,borderRadius:12,borderWidth:1,borderColor:'#cbd9d0',backgroundColor:'#fff',paddingHorizontal:10,paddingVertical:6,flexDirection:'row',alignItems:'center',gap:8},
+  selectedMoreAction:{flex:1,minHeight:44,borderWidth:1,borderRadius:9,alignItems:'center',justifyContent:'center',paddingHorizontal:8},
+  selectedMoreText:{fontSize:11,fontWeight:'900'},
+  primarySmall: { minHeight: 44, borderRadius: 9, backgroundColor: palette.green, paddingHorizontal: 9, paddingVertical: 6, justifyContent: 'center' },
+  secondarySmall: { minHeight: 44, borderRadius: 9, backgroundColor: '#e8efea', paddingHorizontal: 9, paddingVertical: 6, justifyContent: 'center' },
+  primaryText: { fontSize: 12, fontWeight: '900', color: '#fff' },
+  secondaryText: { fontSize: 12, fontWeight: '900', color: palette.green },
+  filterLauncher:{minHeight:48,borderRadius:12,borderWidth:1,borderColor:'#cbd9d0',backgroundColor:'#fff',paddingHorizontal:10,paddingVertical:6,flexDirection:'row',alignItems:'center',gap:8},
   filterLauncherMain:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:7},
   filterLauncherKicker:{fontSize:7,fontWeight:'900',letterSpacing:.8,color:palette.green},
-  filterLauncherTitle:{flex:1,fontSize:11,fontWeight:'900',color:palette.ink},
+  filterLauncherTitle:{flex:1,fontSize:14,fontWeight:'900',color:palette.ink},
   filterLauncherBadge:{maxWidth:'38%',backgroundColor:'#e8f1eb',borderRadius:999,paddingHorizontal:9,paddingVertical:6},
-  filterLauncherBadgeText:{fontSize:8,fontWeight:'900',color:palette.green},
+  filterLauncherBadgeText:{fontSize:11,fontWeight:'900',color:palette.green},
   filterSection:{gap:8,paddingBottom:12,borderBottomWidth:1,borderBottomColor:'#edf1ee'},
   filterSectionTitle:{fontSize:12,fontWeight:'900',color:palette.ink},
   quickFilterGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},
@@ -2286,7 +2276,7 @@ const s = StyleSheet.create({
   resultItem: { paddingHorizontal: 14, paddingBottom: 8 },
   listFooter: { paddingHorizontal: 14, paddingBottom: 34 },
   listEyebrow: { fontSize: 8, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
-  listTitle: { fontSize: 17, fontWeight: '900', color: palette.ink },
+  listTitle: { fontSize: 19, lineHeight:24, fontWeight: '900', color: palette.ink },
   listNote: { maxWidth:'34%', fontSize: 8, fontWeight: '800', color: '#718077', textAlign:'right' },
   card: { borderRadius: 16, padding: 10, backgroundColor: '#fff', borderWidth: 1, borderColor: '#dce6df', gap: 5 },
   cardActive: { borderColor: palette.green, borderWidth: 2 },
@@ -2305,16 +2295,16 @@ const s = StyleSheet.create({
   cardTop: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   cardPhoto:{width:68,height:68,borderRadius:14,backgroundColor:'#e7eee9'},
   cardTitleRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6},
-  cardTitle: { fontSize: 15, fontWeight: '900', color: palette.ink, flexShrink:1 },
+  cardTitle: { fontSize: 17, lineHeight:22, fontWeight: '900', color: palette.ink, flexShrink:1 },
   recommendedBadge:{borderWidth:1,borderRadius:999,paddingHorizontal:7,paddingVertical:3},
   recommendedBadgeText:{fontSize:7,fontWeight:'900',letterSpacing:0.7},
   recommendedReason:{fontSize:8,lineHeight:12,fontWeight:'800'},
-  meta: { fontSize: 9, lineHeight: 13, color: '#66776d' },
-  distance: { fontSize: 9, fontWeight: '900', color: palette.green },
+  meta: { fontSize: 11, lineHeight: 16, color: '#66776d' },
+  distance: { fontSize: 11, fontWeight: '900', color: palette.green },
   routeLine: { fontSize: 10, fontWeight: '900', color: '#365445' },
   trustSummaryRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
-  trustLine: { flex:1,fontSize: 9, lineHeight: 13, color: '#52675b', fontWeight: '700' },
-  trustWhy:{fontSize:8,fontWeight:'900',textDecorationLine:'underline'},
+  trustLine: { flex:1,fontSize: 11, lineHeight: 16, color: '#52675b', fontWeight: '700' },
+  trustWhy:{fontSize:11,fontWeight:'900',textDecorationLine:'underline'},
   trustEvidenceBox:{borderWidth:1,borderRadius:10,paddingHorizontal:9,paddingVertical:7,gap:3},
   trustEvidenceText:{fontSize:9,lineHeight:13,fontWeight:'700'},
   networkCallout:{borderWidth:1,borderRadius:12,padding:10,gap:3,marginTop:7},
