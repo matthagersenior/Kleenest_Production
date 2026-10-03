@@ -88,7 +88,7 @@ requireText(overtureWorker, 'BackgroundIngestionBusy', 'Overture must explicitly
 requireText(overtureWorker, 'deferred_control_plane_unavailable', 'Automated Overture runs must defer cleanly when the database control plane is saturated.');
 requireText(overtureWorker, 'default=1', 'Automated Overture queue processing must default to one request per worker.');
 
-const throughput = requireFile('supabase/migrations/20261002204730_ingestion_throughput_control.sql');
+const throughput = requireFile('supabase/migrations/20261002211143_ingestion_throughput_control.sql');
 for (const token of [
   'ingest_external_locations_background',
   'pg_try_advisory_xact_lock(812733, 1)',
