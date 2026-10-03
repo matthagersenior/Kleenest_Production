@@ -131,7 +131,7 @@ begin
     'verified_from',case when assisted then 'explicit_live_geofence_accuracy_envelope' else coalesce(result->>'verified_from','explicit_live_geofence') end
   );
 end;
-$function$
+$function$;
 
 
 revoke all on function public.kleenest_map_check_in_v2(uuid,double precision,double precision,double precision)
@@ -199,7 +199,7 @@ begin
   values(auth.uid(),p_decision,'sponsored_campaign',p_campaign_id::text,v_before,v_after,p_reason);
   return v_after;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.owner_set_sponsorship_enabled(p_enabled boolean, p_reason text DEFAULT 'KleenestOS global sponsored serving update'::text)
@@ -220,7 +220,7 @@ begin
   values(auth.uid(),'global_serving','sponsorship_runtime','global',v_before,v_after,p_reason);
   return v_after;
 end;
-$function$
+$function$;
 
 
 revoke all on function public.owner_set_sponsorship_enabled(boolean,text) from public,anon;
