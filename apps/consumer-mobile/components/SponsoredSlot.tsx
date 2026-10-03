@@ -18,7 +18,7 @@ export function SponsoredSlot({surface,context={},contextClass,compact=false}:{s
   const showText=card.creative_mode!=='image_only'||imageFailed;
   const cta=<Pressable accessibilityRole="button" accessibilityLabel={`${card.cta_label} from ${card.sponsor_name}`} style={[s.cta,compact&&s.ctaCompact,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={()=>void open(card)}><Text style={[s.ctaText,{color:theme.accent}]}>{card.cta_label} →</Text></Pressable>;
   return <View style={[s.card,compact&&s.cardCompact,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-    <View style={s.top}><View style={s.brand}>{card.logo_url?<Image source={{uri:card.logo_url}} accessibilityLabel={`${card.sponsor_name} logo`} resizeMode="contain" style={s.logo}/>:null}<Text style={[s.label,{color:theme.muted}]}>{card.label.toUpperCase()} · {card.sponsor_name}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Hide sponsored card" onPress={()=>dismiss(card)}><Text style={[s.close,{color:theme.muted}]}>×</Text></Pressable></View>
+    <View style={s.top}><View style={s.brand}>{card.logo_url?<Image source={{uri:card.logo_url}} accessibilityLabel={`${card.sponsor_name} logo`} resizeMode="contain" style={s.logo}/>:null}<Text style={[s.label,compact&&s.labelCompact,{color:theme.muted}]}>{card.label.toUpperCase()} · {card.sponsor_name}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Hide sponsored card" onPress={()=>dismiss(card)}><Text style={[s.close,{color:theme.muted}]}>×</Text></Pressable></View>
     {compact?<View style={s.compactCreative}>
       {hasImage?<Image source={{uri:card.image_url!}} accessibilityLabel={card.image_alt||`${card.sponsor_name} sponsored image`} resizeMode="cover" style={s.imageCompact} onError={()=>setImageFailed(true)}/>:null}
       <View style={s.compactCopy}>
@@ -45,6 +45,7 @@ const s=StyleSheet.create({
   brand:{flexDirection:'row',alignItems:'center',gap:7,flex:1},
   logo:{width:26,height:26,borderRadius:6},
   label:{fontSize:8,fontWeight:'900',letterSpacing:1.2},
+  labelCompact:{fontSize:9,letterSpacing:0.9},
   close:{fontSize:22,lineHeight:22,fontWeight:'700'},
   image:{width:'100%',aspectRatio:16/9,borderRadius:12,marginBottom:3},
   title:{fontSize:16,fontWeight:'900'},
