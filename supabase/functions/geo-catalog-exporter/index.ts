@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 const URL=Deno.env.get('SUPABASE_URL')!,KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(URL,KEY,{auth:{persistSession:false}});
+// Kleenest_Data is the shared-load geo worker; Production coordinates and serves the app.
 const DEST='https://sxgymblzmwdqnaidbbuq.supabase.co/functions/v1/geo-catalog-receiver';
 const H={'content-type':'application/json'};
 const msg=(e:any)=>e instanceof Error?e.message:String(e?.message||e);
