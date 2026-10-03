@@ -1,4 +1,4 @@
-create or replace function public.acquisition_capacity_status()
+-- Discovery-first capacity governor: background acquisition only consumes verified spare Production capacity.\ncreate or replace function public.acquisition_capacity_status()
 returns jsonb
 language plpgsql
 security definer
