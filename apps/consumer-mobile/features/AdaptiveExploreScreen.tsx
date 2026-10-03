@@ -1834,6 +1834,7 @@ export default function AdaptiveExploreScreen() {
                       style={[s.marker,active&&s.markerActive]}
                     >
                       <FreshnessHeatRing item={row} size={22} />
+                      {/* Earned flair stays separate so the ring color always means freshness. */}
                       {equippedMapFlair==='freshness-halo'||equippedMapFlair==='gold-ring'?(
                         <View
                           pointerEvents="none"
