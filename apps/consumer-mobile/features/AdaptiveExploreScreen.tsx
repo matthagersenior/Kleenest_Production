@@ -412,7 +412,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
         style={s.cardMain}
       >
         <View style={s.cardTop}>
-          <FreshnessHeatRing item={item} size={34} active={selected} photoUrl={item.consumer_photo_url ? String(item.consumer_photo_url) : undefined} />
+          <FreshnessHeatRing item={item} size={34} photoUrl={item.consumer_photo_url ? String(item.consumer_photo_url) : undefined} />
           <View style={{ flex: 1 }}>
             <View style={s.cardTitleRow}>
               <Text style={[s.cardTitle,{color:theme.ink}]}>{discoveryPlaceName(item)}</Text>
@@ -1833,7 +1833,7 @@ export default function AdaptiveExploreScreen() {
                       }}
                       style={[s.marker,active&&s.markerActive]}
                     >
-                      <FreshnessHeatRing item={row} size={26} active={active} />
+                      <FreshnessHeatRing item={row} size={22} />
                       {equippedMapFlair==='freshness-halo'||equippedMapFlair==='gold-ring'?(
                         <View
                           pointerEvents="none"
@@ -1954,7 +1954,7 @@ export default function AdaptiveExploreScreen() {
                 </View>
                 <ScrollView style={s.selectedBodyScroll} contentContainerStyle={s.selectedBodyContent} showsVerticalScrollIndicator={false}>
                   <View style={s.selectedRow}>
-                    <FreshnessHeatRing item={selected} size={34} active photoUrl={selected.consumer_photo_url ? String(selected.consumer_photo_url) : undefined} />
+                    <FreshnessHeatRing item={selected} size={34} photoUrl={selected.consumer_photo_url ? String(selected.consumer_photo_url) : undefined} />
                     <View style={{ flex: 1 }}>
                       <View style={s.cardTitleRow}>
                         <Text numberOfLines={1} style={[s.selectedTitle,{color:theme.ink,flexShrink:1}]}>{discoveryPlaceName(selected)}</Text>
