@@ -28,6 +28,7 @@ S3_ROOT = "s3://overturemaps-us-west-2/release"
 SOURCE_KEY = "overture"
 DEFAULT_MIN_CONFIDENCE = 0.30
 batch_size = 50
+MAX_RECORDS_PER_CYCLE = 50
 
 
 class BackgroundIngestionBusy(RuntimeError):
@@ -220,7 +221,15 @@ def connect_duckdb() -> Any:
     return con
 
 
-def query_places(con: Any, release: str, bbox: list[float], min_confidence: float) -> Any:
+def query_places(
+    con: Any,
+    release: str,
+    bbox: list[float],
+    min_confidence: float,
+    *,
+    offset: int = 0,
+    limit: int | None = None,
+) -> Any:
     west, south, east, north = bbox
     if not (-180 <= west < east <= 180 and -90 <= south < north <= 90):
         raise ValueError("bbox must be WEST,SOUTH,EAST,NORTH within valid coordinate ranges")
@@ -252,7 +261,11 @@ def query_places(con: Any, release: str, bbox: list[float], min_confidence: floa
           and (operating_status is null or operating_status <> 'permanently_closed')
           and (confidence is null or confidence >= ?)
     """
-    return con.execute(sql, [source, west, east, south, north, min_confidence])
+    params: list[Any] = [source, west, east, south, north, min_confidence]
+    if limit is not None:
+        sql += "\n order by id limit ? offset ?"
+        params.extend([max(1, int(limit)), max(0, int(offset))])
+    return con.execute(sql, params)
 
 
 def source_policy(url: str, key: str) -> dict[str, Any]:
@@ -280,6 +293,12 @@ def effective_job_limit(requested: int, policy: dict[str, Any]) -> int:
     return max(1, min(max(1, int(requested)), configured, 8))
 
 
+def page_state(records_seen: int, fetched: int, page_size: int) -> tuple[int, bool]:
+    next_records_seen = max(0, int(records_seen)) + max(0, int(fetched))
+    has_more = int(fetched) >= max(1, int(page_size))
+    return next_records_seen, has_more
+
+
 def supabase_rpc(url: str, key: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     endpoint = f"{url.rstrip('/')}/rest/v1/rpc/ingest_external_locations_background"
     for admission_attempt in range(1, 5):
@@ -304,7 +323,7 @@ def patch_queue(url: str, key: str, request_id: str, payload: dict[str, Any]) ->
 def queue_rows(url: str, key: str, limit: int) -> list[dict[str, Any]]:
     query = urllib.parse.urlencode(
         {
-            "select": "id,request_key,market_key,latitude,longitude,radius_meters,bbox,priority,status,attempt_count",
+            "select": "id,request_key,market_key,latitude,longitude,radius_meters,bbox,priority,status,attempt_count,records_seen,records_imported,records_updated,skipped_rows",
             "status": "in.(pending,failed)",
             "attempt_count": "lt.5",
             "order": "priority.asc,requested_at.asc",
@@ -386,6 +405,48 @@ def ingest_bbox(
     return totals
 
 
+def ingest_bbox_page(
+    con: Any,
+    *,
+    release: str,
+    bbox: list[float],
+    supabase_url: str,
+    service_key: str,
+    min_confidence: float,
+    offset: int,
+    max_records: int = MAX_RECORDS_PER_CYCLE,
+) -> dict[str, Any]:
+    page_size = max(1, min(int(max_records), MAX_RECORDS_PER_CYCLE))
+    cursor = query_places(
+        con,
+        release,
+        bbox,
+        min_confidence,
+        offset=max(0, int(offset)),
+        limit=page_size,
+    )
+    captured_at = utc_now()
+    records = cursor.fetchmany(page_size)
+    rows = [row for record in records if (row := overture_row(record, release, captured_at)) is not None]
+    totals: dict[str, Any] = {
+        "fetched_records": len(records),
+        "records_imported": 0,
+        "records_updated": 0,
+        "skipped_rows": len(records) - len(rows),
+    }
+    if rows:
+        result = supabase_rpc(supabase_url, service_key, rows)
+        totals["records_imported"] += int(result.get("imported_locations") or 0)
+        totals["records_updated"] += int(result.get("updated_locations") or 0)
+        totals["skipped_rows"] += int(result.get("skipped_rows") or 0)
+        if result.get("durably_accounted") is False:
+            raise RuntimeError("Canonical ingestion did not durably account for every Overture row.")
+    next_seen, has_more = page_state(offset, len(records), page_size)
+    totals["records_seen"] = next_seen
+    totals["has_more"] = has_more
+    return totals
+
+
 def process_queue(
     args: argparse.Namespace,
     con: Any,
@@ -402,6 +463,10 @@ def process_queue(
         request_id = str(job["id"])
         prior_attempts = int(job.get("attempt_count") or 0)
         attempt = prior_attempts + 1
+        prior_seen = int(job.get("records_seen") or 0)
+        prior_imported = int(job.get("records_imported") or 0)
+        prior_updated = int(job.get("records_updated") or 0)
+        prior_skipped = int(job.get("skipped_rows") or 0)
         patch_queue(
             args.supabase_url,
             args.service_key,
@@ -410,28 +475,72 @@ def process_queue(
         )
         try:
             bbox = [float(v) for v in job["bbox"]]
-            totals = ingest_bbox(
+            page = ingest_bbox_page(
                 con,
                 release=release,
                 bbox=bbox,
                 supabase_url=args.supabase_url,
                 service_key=args.service_key,
                 min_confidence=args.min_confidence,
+                offset=prior_seen,
             )
+            cumulative = {
+                "records_seen": int(page["records_seen"]),
+                "records_imported": prior_imported + int(page["records_imported"]),
+                "records_updated": prior_updated + int(page["records_updated"]),
+                "skipped_rows": prior_skipped + int(page["skipped_rows"]),
+            }
+            if page["has_more"]:
+                patch_queue(
+                    args.supabase_url,
+                    args.service_key,
+                    request_id,
+                    {
+                        "status": "pending",
+                        "started_at": None,
+                        "attempt_count": prior_attempts,
+                        "release": release,
+                        "last_error": None,
+                        "updated_at": utc_now(),
+                        **cumulative,
+                    },
+                )
+                summary.append({
+                    "id": request_id,
+                    "request_key": job.get("request_key"),
+                    "ok": True,
+                    "partial": True,
+                    "partial_progress": True,
+                    "has_more": True,
+                    "fetched_records": int(page["fetched_records"]),
+                    **cumulative,
+                })
+                break
+
             patch_queue(
                 args.supabase_url,
                 args.service_key,
                 request_id,
                 {
                     "status": "completed",
+                    "started_at": None,
+                    "attempt_count": prior_attempts,
                     "release": release,
                     "completed_at": utc_now(),
                     "last_error": None,
                     "updated_at": utc_now(),
-                    **totals,
+                    **cumulative,
                 },
             )
-            summary.append({"id": request_id, "request_key": job.get("request_key"), "ok": True, **totals})
+            summary.append({
+                "id": request_id,
+                "request_key": job.get("request_key"),
+                "ok": True,
+                "partial": False,
+                "has_more": False,
+                "fetched_records": int(page["fetched_records"]),
+                **cumulative,
+            })
         except BackgroundIngestionBusy:
             patch_queue(
                 args.supabase_url,
@@ -462,15 +571,17 @@ def process_queue(
                 {"status": "failed", "last_error": message, "updated_at": utc_now()},
             )
             summary.append({"id": request_id, "request_key": job.get("request_key"), "ok": False, "error": message})
+    failed_jobs = sum(1 for job in summary if not job.get("ok", False))
     return {
         "release": release,
         "jobs": summary,
         "job_count": len(summary),
+        "failed_jobs": failed_jobs,
+        "partial_progress": any(bool(job.get("partial_progress")) for job in summary),
         "recovered_stale_jobs": recovered_stale_jobs,
         "effective_job_limit": limit,
         "storage": storage,
     }
-
 
 def parse_bbox(value: str) -> list[float]:
     parts = [part.strip() for part in value.split(",")]
@@ -504,6 +615,9 @@ def self_test() -> None:
     assert http_timeout_seconds("GET") == 45
     assert http_timeout_seconds("POST") == 85
     assert batch_size == 50
+    assert MAX_RECORDS_PER_CYCLE == 50
+    assert page_state(0, 50, 50) == (50, True)
+    assert page_state(50, 12, 50) == (62, False)
     assert effective_job_limit(8, {"max_requests_per_cycle": 1}) == 1
     assert effective_job_limit(2, {"max_requests_per_cycle": 1}) == 1
     print("Overture ingestion self-test passed.")
@@ -566,6 +680,8 @@ def main() -> int:
         )
         result = {"release": release, "bbox": args.bbox, "storage": storage, **totals}
     print(json.dumps(result, separators=(",", ":"), sort_keys=True))
+    if args.process_queue and int(result.get("failed_jobs") or 0) > 0:
+        return 2
     return 0
 
 

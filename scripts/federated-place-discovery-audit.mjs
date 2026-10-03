@@ -44,6 +44,12 @@ for(const token of [
   'national_ingestion_storage_status',
   'national_ingestion_source_policies',
   'effective_job_limit',
+  'MAX_RECORDS_PER_CYCLE = 50',
+  'def page_state(',
+  'records_seen',
+  'partial_progress',
+  'has_more',
+  'failed_jobs',
 ])need(ingest,token,'Overture ingestion worker');
 
 for(const token of [
