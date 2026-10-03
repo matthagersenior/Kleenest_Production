@@ -57,6 +57,7 @@ if(!failures.length){
  if(explore.includes('.slice(0, 100)'))failures.push('Explore map must not silently discard nearby businesses after the first 100 rows.');
  if(!signals.includes('restroom_candidate_status')||!signals.includes('Needs verification'))failures.push('Map and result signals must visibly distinguish consumer-verification candidates from verified restroom evidence.');
  if(!signals.includes('restroomMarkerLabel'))failures.push('Map markers must retain accessible semantic labels.');
+ if(!adaptiveExplore.includes('mapFlairBadge')||adaptiveExplore.includes("equippedMapFlair==='gold-ring'&&{borderWidth:3"))failures.push('Map flair must remain separate from the freshness heat ring.');
  if(!explore.includes('listLocationTrustSummaries')||!explore.includes('captureConsumerDiscovery')||!explore.includes('captureConsumerRouteIntent'))failures.push('Rich Explore must preserve batched trust context and lightweight backend data production.');
  if(!route.includes('GeoJSONSource')||!route.includes('type="line"')||!route.includes('stopCoordinates'))failures.push('Route must render canonical geometry and ordered stops.');
  const stateInvalidation=route.includes('setBuilt(null)')&&route.includes('[stopIds,hydrated]')&&route.includes('if(!hydrated)return;');
