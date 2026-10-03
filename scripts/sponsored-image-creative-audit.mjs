@@ -22,9 +22,9 @@ assert.match(migration,/'image_url',c\.image_url/);
 assert.match(consumer,/import \{ Image,/);
 assert.match(consumer,/card\.image_url&&card\.creative_mode!=='text_only'/);
 assert.match(consumer,/aspectRatio:16\/9/);
-assert.match(consumer,/compactCreative:\\{flexDirection:'row'/);
-assert.match(consumer,/imageCompact:\\{width:104,height:74/);
-assert.match(consumer,/Paid placement\\. Sponsorship does not change Kleenest trust, freshness, verification or ranking/);
+assert.match(consumer,/compactCreative:\{flexDirection:'row'/);
+assert.match(consumer,/imageCompact:\{width:104,height:74/);
+assert.match(consumer,/Paid placement\. Sponsorship does not change Kleenest trust, freshness, verification or ranking/);
 assert.match(consumerService,/creative_mode:'text_only'\|'image_text'\|'image_only'/);
 
 assert.match(business,/Choose & crop image/);
