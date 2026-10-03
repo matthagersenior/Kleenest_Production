@@ -16,7 +16,7 @@ export function SponsoredSlot({surface,context={},contextClass,compact=false}:{s
   function dismiss(current:SponsoredCard){void recordSponsoredEvent(current,'dismiss',contextClass||surface);setCard(null)}
   const hasImage=Boolean(card.image_url&&card.creative_mode!=='text_only'&&!imageFailed);
   const showText=card.creative_mode!=='image_only'||imageFailed;
-  const cta=<Pressable accessibilityRole="button" accessibilityLabel={`${card.cta_label} from ${card.sponsor_name}`} style={[s.cta,compact&&s.ctaCompact,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={()=>void open(card)}><Text style={[s.ctaText,{color:theme.accent}]}>{card.cta_label} →</Text></Pressable>;
+  const cta=<Pressable accessibilityRole="button" accessibilityLabel={`${card.cta_label} from ${card.sponsor_name}`} style={[s.cta,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={()=>void open(card)}><Text style={[s.ctaText,{color:theme.accent}]}>{card.cta_label} →</Text></Pressable>;
   return <View style={[s.card,compact&&s.cardCompact,{backgroundColor:theme.surface,borderColor:theme.line}]}>
     <View style={s.top}><View style={s.brand}>{card.logo_url?<Image source={{uri:card.logo_url}} accessibilityLabel={`${card.sponsor_name} logo`} resizeMode="contain" style={s.logo}/>:null}<Text style={[s.label,compact&&s.labelCompact,{color:theme.muted}]}>{card.label.toUpperCase()} · {card.sponsor_name}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Hide sponsored card" onPress={()=>dismiss(card)}><Text style={[s.close,{color:theme.muted}]}>×</Text></Pressable></View>
     {compact?<View style={s.compactCreative}>
@@ -32,7 +32,7 @@ export function SponsoredSlot({surface,context={},contextClass,compact=false}:{s
       {showText&&card.body?<Text style={[s.body,{color:theme.muted}]}>{card.body}</Text>:null}
       {cta}
     </>}
-    <Text numberOfLines={compact?2:undefined} style={[s.note,compact&&s.noteCompact,{color:theme.muted}]}>Paid placement. Sponsorship does not change Kleenest trust, freshness, verification or ranking.</Text>
+    <Text numberOfLines={compact?2:undefined} style={[s.note,{color:theme.muted}]}>Paid placement. Sponsorship does not change Kleenest trust, freshness, verification or ranking.</Text>
   </View>;
 }
 const s=StyleSheet.create({
@@ -53,8 +53,6 @@ const s=StyleSheet.create({
   body:{fontSize:12,lineHeight:18},
   bodyCompact:{fontSize:11,lineHeight:15},
   cta:{alignSelf:'flex-start',borderWidth:1,borderRadius:11,paddingHorizontal:11,paddingVertical:8,marginTop:3},
-  ctaCompact:{paddingHorizontal:10,paddingVertical:6,marginTop:1},
   ctaText:{fontSize:10,fontWeight:'900'},
   note:{fontSize:9,lineHeight:13,fontWeight:'700',marginTop:2},
-  noteCompact:{fontSize:8,lineHeight:11,marginTop:0},
 });
