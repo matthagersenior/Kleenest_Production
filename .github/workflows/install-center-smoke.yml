@@ -48,3 +48,11 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Click through live Installation Center
         run: npx playwright test scripts/install-center-browser-smoke.spec.ts --reporter=line --workers=1
+      - name: Upload mobile Installation Center evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kleenest-install-center-mobile-evidence
+          path: test-results/kleenest-install-center-mobile.png
+          if-no-files-found: warn
+          retention-days: 7

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 const BASE='https://matthagersenior.github.io/Kleenest_Production/';
 const EXPECTED_SHA=process.env.EXPECTED_SHA||'';
 
-test('Installation Center click-through and release assets',async({page,request})=>{
+test('Installation Center click-through and release assets',async({page,request,browser})=>{
   await page.goto(BASE,{waitUntil:'domcontentloaded'});
   await expect(page.getByText('Find clean bathrooms you can actually trust.')).toBeVisible({timeout:30000});
   await expect(page.getByText('FOR YOU',{exact:true})).toBeVisible();
@@ -28,6 +28,27 @@ test('Installation Center click-through and release assets',async({page,request}
   await expect(page.locator('body')).toContainText('Allow from this source');
   await expect(page.locator('body')).toContainText('https://matthagersenior.github.io/Kleenest_Production/Kleenest-Consumer.apk');
 
+  const mobileContext=await browser.newContext({
+    viewport:{width:390,height:844},
+    userAgent:'Mozilla/5.0 (Linux; Android 16; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36',
+    isMobile:true,
+    hasTouch:true,
+  });
+  const mobilePage=await mobileContext.newPage();
+  await mobilePage.goto(BASE+'install/',{waitUntil:'domcontentloaded'});
+  await expect(mobilePage.getByText('KLEENEST · UNIVERSAL INSTALLATION CENTER')).toBeVisible({timeout:30000});
+  const mobileMetrics=await mobilePage.evaluate(()=>({innerWidth:window.innerWidth,scrollWidth:document.documentElement.scrollWidth}));
+  expect(mobileMetrics.scrollWidth).toBeLessThanOrEqual(mobileMetrics.innerWidth+1);
+  await expect(mobilePage.getByRole('button',{name:/Continue to Kleenest as a guest/i})).toBeVisible();
+  await mobilePage.screenshot({path:'test-results/kleenest-install-center-mobile.png',fullPage:false});
+  await mobileContext.close();
+
+  await page.getByRole('button',{name:/Continue to Kleenest as a guest/i}).click();
+  await expect(page).toHaveURL(/\/Kleenest_Production\/\?app=1$/);
+  await expect(page.locator('body')).toContainText(/Find a place you can count on|Nearby options|Address, school, workplace, city or brand|Search this area/i,{timeout:30000});
+  await page.goto(BASE+'install/',{waitUntil:'domcontentloaded'});
+  await expect(page.getByText('KLEENEST · UNIVERSAL INSTALLATION CENTER')).toBeVisible({timeout:30000});
+
   await page.getByRole('button',{name:'INSTALL WEB APP',exact:true}).click();
   await expect(page.locator('body')).toContainText(/Install app|Add to Home Screen|automatic prompt|browser menu/i);
 
@@ -35,7 +56,8 @@ test('Installation Center click-through and release assets',async({page,request}
   await page.getByRole('button',{name:'SHARE INSTALL LINK',exact:true}).click();
   await expect(page.locator('body')).toContainText(/Install link copied|Share this install link|Install link shared/i);
 
-  await page.goto(BASE+'?app=1',{waitUntil:'domcontentloaded'});
+  await page.getByRole('link',{name:'OPEN KLEENEST',exact:true}).click();
+  await expect(page).toHaveURL(/\/Kleenest_Production\/\?app=1$/);
   await expect(page.locator('body')).toContainText(/Find a place you can count on|Nearby options|Address, school, workplace, city or brand|Search this area/i,{timeout:30000});
 
   for(const route of ['install/','for-you/','for-business/','trust/']){
