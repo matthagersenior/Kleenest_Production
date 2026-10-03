@@ -158,43 +158,52 @@ function query(latitude: number, longitude: number, radiusMeters: number, reques
   return `[out:json][timeout:15];(${clauses.join(";")};);out center tags;`;
 }
 
-async function one(endpoint: string, overpassQuery: string) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 16000);
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "content-type": "text/plain", "user-agent": "KleenestApp/1.0" },
-      body: overpassQuery,
-      signal: controller.signal,
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const payload = await response.json();
-    return Array.isArray(payload.elements) ? payload.elements : [];
-  } finally {
-    clearTimeout(timer);
-  }
+async function one(endpoint: string, overpassQuery: string, signal: AbortSignal) {
+  const timeout = AbortSignal.timeout(16000);
+  const combined = AbortSignal.any([signal, timeout]);
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "content-type": "text/plain", "user-agent": "KleenestApp/1.0" },
+    body: overpassQuery,
+    signal: combined,
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const payload = await response.json();
+  return Array.isArray(payload.elements) ? payload.elements : [];
 }
 
 async function live(overpassQuery: string) {
-  const results = await Promise.allSettled(ENDPOINTS.map(endpoint => one(endpoint, overpassQuery)));
-  const successes = results.filter((result): result is PromiseFulfilledResult<any[]> => result.status === "fulfilled");
-  const failures = results.map((result, index) => {
-    if (result.status !== "rejected") return null;
-    console.warn("ingest-map-candidates-v3 provider failure", ENDPOINTS[index], result.reason instanceof Error ? result.reason.message : "unknown");
-    return { endpoint: ENDPOINTS[index], code: "PROVIDER_REQUEST_FAILED" };
-  }).filter(Boolean);
-  if (!successes.length) return { ok: false as const, elements: [], providers_succeeded: 0, providers_attempted: ENDPOINTS.length, failures };
-  const seen = new Set<string>();
-  const merged = successes.flatMap(result => result.value).filter(element => {
-    const id = `${element.type}:${element.id}`;
-    if (seen.has(id)) return false;
-    seen.add(id);
-    return true;
-  });
-  return { ok: true as const, elements: merged, providers_succeeded: successes.length, providers_attempted: ENDPOINTS.length, failures };
+  const controllers = ENDPOINTS.map(() => new AbortController());
+  const attempts = ENDPOINTS.map((endpoint, index) =>
+    one(endpoint, overpassQuery, controllers[index].signal)
+      .then(elements => ({ endpoint, index, elements }))
+      .catch(error => {
+        console.warn("ingest-map-candidates-v3 provider failure", endpoint, error instanceof Error ? error.message : "unknown");
+        throw { endpoint, index, error };
+      })
+  );
+  try {
+    const winner = await Promise.any(attempts);
+    controllers.forEach((controller, index) => {
+      if (index !== winner.index) controller.abort();
+    });
+    return {
+      ok: true as const,
+      elements: winner.elements,
+      providers_succeeded: 1,
+      providers_attempted: ENDPOINTS.length,
+      failures: [],
+      provider_selected: winner.endpoint,
+      acquisition_strategy: "first_success",
+    };
+  } catch (aggregate) {
+    controllers.forEach(controller => controller.abort());
+    const failures = aggregate instanceof AggregateError
+      ? aggregate.errors.map((item: any) => ({ endpoint: item?.endpoint || "unknown", code: "PROVIDER_REQUEST_FAILED" }))
+      : ENDPOINTS.map(endpoint => ({ endpoint, code: "PROVIDER_REQUEST_FAILED" }));
+    return { ok: false as const, elements: [], providers_succeeded: 0, providers_attempted: ENDPOINTS.length, failures };
+  }
 }
-
 async function persist(locations: any[]) {
   if (!locations.length) return { ok: true, imported_locations: 0, updated_locations: 0, skipped_rows: 0, row_errors_count: 0, queued_repairs: 0, queued_for_repair: false, canonicalization_complete: true, durably_accounted: true };
   const url = Deno.env.get("SUPABASE_URL");
