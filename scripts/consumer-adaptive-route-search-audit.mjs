@@ -150,6 +150,33 @@ if(!screen.includes('setMapZoom((current) => Math.max(current, 14));'))throw new
 if(/key=\{`explore-camera-\$\{cameraNonce\}-\$\{selectedId\}-/.test(screen))throw new Error('Opening or closing a selected location must not remount the map camera.');
 if(!/key=\{`explore-camera-\$\{cameraNonce\}-\$\{mode\}-/.test(screen))throw new Error('Explore map camera must remain keyed to intentional camera changes, not selected-card visibility.');
 
+for(const token of [
+  'function setMapGestureLock(locked:boolean)',
+  'listRef.current?.setNativeProps?.({scrollEnabled:!locked})',
+  'function beginMapGesture(){setMapGestureLock(true);}',
+  'function endMapGesture()',
+  'onStartShouldSetResponderCapture={()=>{beginMapGesture();return false}}',
+  'onMoveShouldSetResponderCapture={()=>{beginMapGesture();return false}}',
+  'onTouchStart={beginMapGesture}',
+  'onTouchMove={beginMapGesture}',
+  'onTouchEnd={endMapGesture}',
+  'onTouchCancel={()=>setMapGestureLock(false)}',
+])requireToken(screen,token,'Immediate native map gesture ownership');
+for(const token of [
+  '<FreshnessHeatRing item={row} size={26} active={active} />',
+  'mapFlairBadge',
+  "borderColor:equippedMapFlair==='gold-ring'?'#e7c45d':theme.accent",
+  'style={[s.clusterMarker,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  '<FreshnessHeatRing item={selected} size={34} active',
+  '<FreshnessHeatRing item={item} size={34} active={selected}',
+])requireToken(screen,token,'Map freshness-ring semantics');
+if(screen.includes("equippedMapFlair==='gold-ring'&&{borderWidth:3"))throw new Error('Equipped map flair must not replace or visually masquerade as the freshness heat ring.');
+for(const token of [
+  "borderStyle:heat.ageDays==null?'dashed':'solid'",
+  "Cluster count · zoom in for each place's freshness",
+  'Corner badge = equipped map flair, not freshness',
+])requireToken(signals,token,'Freshness legend and unknown-state semantics');
+
 
 // Explore is one continuous consumer page: compact search controls → map → results.
 // Detailed qualification controls live in a dismissible filter menu so the map stays high.
