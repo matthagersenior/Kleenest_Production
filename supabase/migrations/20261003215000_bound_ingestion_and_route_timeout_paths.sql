@@ -139,3 +139,4 @@ END
 $function$;
 
 -- Verification touch: no runtime behavior change; retriggers required GitHub checks.
+-- Final verification touch after branch synchronization; no runtime behavior change.
