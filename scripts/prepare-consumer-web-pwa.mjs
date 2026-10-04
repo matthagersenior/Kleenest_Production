@@ -12,7 +12,7 @@ function normalizePagesBasePath(value){
   if(value===undefined)return '/Kleenest_Production';
   const trimmed=String(value).trim();
   if(!trimmed||trimmed==='/')return '';
-  return `/${trimmed.replace(/^\\/+|\\/+$/g,'')}`;
+  return `/${trimmed.replace(/^\/+|\/+$/g,'')}`;
 }
 const pagesBasePath=normalizePagesBasePath(process.env.EXPO_PUBLIC_PAGES_BASE_PATH);
 const pagesScope=`${pagesBasePath}/`||'/';
