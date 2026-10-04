@@ -22,12 +22,13 @@ type ReleaseState={
   checkedAt?:string;
 };
 
-const ROOT_PATH='/Kleenest_Production/';
-const INSTALL_PATH='/Kleenest_Production/install';
-const APP_PATH='/Kleenest_Production/?app=1';
-const APK_PATH='/Kleenest_Production/Kleenest-Consumer.apk';
-const CHECKSUM_PATH='/Kleenest_Production/Kleenest-Consumer.apk.sha256';
-const RELEASE_STATE_PATH='/Kleenest_Production/Kleenest-release-state.json';
+const WEB_BASE_PATH=Platform.OS==='web'&&typeof window!=='undefined'&&window.location.pathname.startsWith('/Kleenest_Production')?'/Kleenest_Production':'';
+const ROOT_PATH=`${WEB_BASE_PATH}/`;
+const INSTALL_PATH=`${WEB_BASE_PATH}/install`;
+const APP_PATH=`${WEB_BASE_PATH}/?app=1`;
+const APK_PATH=`${WEB_BASE_PATH}/Kleenest-Consumer.apk`;
+const CHECKSUM_PATH=`${WEB_BASE_PATH}/Kleenest-Consumer.apk.sha256`;
+const RELEASE_STATE_PATH=`${WEB_BASE_PATH}/Kleenest-release-state.json`;
 
 function browserUrl(path:string){
   if(typeof window==='undefined')return `https://matthagersenior.github.io${path}`;
@@ -126,7 +127,7 @@ function AndroidApkInstallSteps(){
     <Text style={[s.guidanceIntro,{color:theme.ink}]}>The APK is the native Android installer. These steps are for an Android phone or tablet. iPhone, iPad, Windows, and Mac cannot install an Android APK directly.</Text>
     <View style={s.steps}>
       <InstallStep number="1" title="Tap DOWNLOAD ANDROID APK" body="Your browser downloads the file named Kleenest-Consumer.apk directly from this Installation Center."/>
-      <InstallStep number="2" title="Accept the browser download warning if Android shows one" body="Android may warn that APK files can be harmful because this installer is outside Google Play. Continue only when the address is matthagersenior.github.io/Kleenest_Production and the file name is Kleenest-Consumer.apk."/>
+      <InstallStep number="2" title="Accept the browser download warning if Android shows one" body="Android may warn that APK files can be harmful because this installer is outside Google Play. Continue only from the official Kleenest Installation Center and when the file name is Kleenest-Consumer.apk."/>
       <InstallStep number="3" title="Open the downloaded APK" body="When the download finishes, tap the download notification. If you dismissed it, open your browser’s Downloads list or the Files app, open Downloads, and tap Kleenest-Consumer.apk."/>
       <InstallStep number="4" title="Allow this source if Android asks" body="If Android says your browser or Files app is not allowed to install unknown apps, tap Settings, turn on Allow from this source for the app you used to open the APK, then go back to the installer."/>
       <InstallStep number="5" title="Tap Install, then Open" body="Android will show the Kleenest install screen. Tap Install. When it finishes, tap Open or find Kleenest in your app drawer."/>
@@ -378,7 +379,7 @@ export default function InstallKleenest(){
       </View>
       <View style={s.buttonRow}>
         <Pressable accessibilityRole="button" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void refreshDiagnostics()}><Text style={[s.secondaryText,{color:theme.accent}]}>CHECK INSTALLATION AGAIN</Text></Pressable>
-        <Pressable accessibilityRole="link" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void Linking.openURL(browserUrl('/Kleenest_Production/support'))}><Text style={[s.secondaryText,{color:theme.accent}]}>OPEN SUPPORT</Text></Pressable>
+        <Pressable accessibilityRole="link" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void Linking.openURL(browserUrl(`${WEB_BASE_PATH}/support`))}><Text style={[s.secondaryText,{color:theme.accent}]}>OPEN SUPPORT</Text></Pressable>
       </View>
     </View>
 
