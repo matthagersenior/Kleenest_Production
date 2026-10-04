@@ -70,3 +70,5 @@ begin
   );
 end
 $$;
+
+-- Verification touch: no runtime behavior change; retriggers required GitHub checks.
