@@ -71,7 +71,7 @@ requireText(openData, "adapter_kind==='socrata'", 'Open-data ingestion must pres
 if (openData.includes('fused_overture') || openData.includes('runOverture')) {
   throw new Error('Fused Overture ingestion must remain retired; official Overture GeoParquet is canonical.');
 }
-requireText(openData, 'BACKGROUND_CANONICAL_BATCH=100', 'Civic canonical writes must remain bounded to 100 rows.');
+requireText(openData, 'BACKGROUND_CANONICAL_BATCH=5', 'Civic canonical writes must remain bounded to the verified 5-row Production timeout envelope.');
 requireText(openData, "rpc('ingest_external_locations_background'", 'Civic writes must use non-blocking canonical admission.');
 
 const overtureWorker = requireFile('scripts/overture-places-ingest.py');
