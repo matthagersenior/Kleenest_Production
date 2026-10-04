@@ -71,7 +71,7 @@ if (/^\s{2}pull_request:/m.test(android)) throw new Error('Android family builds
 const publisher = read('publish-standalone-installer.yml');
 requireText(publisher, 'workflows: ["Validate Kleenest Consumer Web Preview"]', 'Consumer Pages publishing must follow successful canonical web validation rather than the whole Android family matrix.');
 requireText(publisher, "github.event.workflow_run.conclusion == 'success'", 'Consumer Pages publishing must require successful canonical web validation.');
-requireText(publisher, 'ref: ${{ github.event.workflow_run.head_sha }}', 'Consumer Pages publishing must export the exact web-validated commit.');
+requireText(publisher, 'ref: ${{ inputs.source_sha || github.event.workflow_run.head_sha || github.sha }}', 'Consumer Pages publishing must export the exact web-validated commit, including explicit SHA handoffs.');
 requireText(publisher, 'resolve-consumer-apk-baseline.mjs', 'Consumer Pages publishing must preserve the freshest independently verified Consumer APK.');
 requireText(publisher, 'consumer-release-drift-audit.mjs', 'Consumer Pages publishing must expose native/OTA drift against the installed APK baseline.');
 requireText(publisher, 'run-id: ${{ steps.apk.outputs.run_id }}', 'Consumer Pages publishing must download the resolved verified Consumer APK artifact rather than depend on an unrelated family conclusion.');
@@ -80,7 +80,7 @@ requireText(publisher, 'Preserve deployed release state', 'Consumer Pages publis
 requireText(publisher, 'Kleenest-deployed-release-state', 'Consumer Pages publishing must upload the exact deployed release-state artifact.');
 
 const installSmoke = read('install-center-smoke.yml');
-for (const token of ['actions: read','Kleenest-deployed-release-state','run-id: ${{ github.event.workflow_run.id }}','EXPECTED_SHA=$SOURCE_SHA','steps.deployed.outputs.source_sha || github.sha']) {
+for (const token of ['actions: read','Kleenest-deployed-release-state','run-id: ${{ github.event.workflow_run.id }}','EXPECTED_SHA=$SOURCE_SHA','steps.deployed.outputs.source_sha || steps.dispatched.outputs.source_sha || github.sha']) {
   requireText(installSmoke, token, 'Installation Center smoke deployed-SHA contract missing '+token);
 }
 if (installSmoke.includes('EXPECTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}')) {
