@@ -44,12 +44,17 @@ requireTokens('Business photo governance',businessReviews,['Helpful ·','Not hel
 requireTokens('Owner photo queue service',ownerAdmin,['admin_list_review_photo_reports','resolveOwnerReviewPhotoReport','review-photos']);
 requireTokens('Owner photo moderation UI',ownerModeration,['Photo flags','Photo reports','Hide photo','Restore photo','Mark reviewing']);
 
-for(const [label,text,path] of [
- ['Business OAuth',businessAuth,'/Kleenest_Production/business/auth/'],
- ['Fleet OAuth',fleetAuth,'/Kleenest_Production/fleet/auth/'],
- ['Owner OAuth',ownerAuth,'/Kleenest_Production/owner/auth/']
+for(const [label,text,callback] of [
+ ['Business OAuth',businessAuth,'business/auth/'],
+ ['Fleet OAuth',fleetAuth,'fleet/auth/'],
+ ['Owner OAuth',ownerAuth,'owner/auth/']
 ]){
- requireTokens(label,text,[path,"Platform.OS==='web'"]);
+ requireTokens(label,text,[
+  "Platform.OS==='web'",
+  "window.location.pathname.startsWith('/Kleenest_Production')",
+  'const webBasePath=',
+  '${window.location.origin}${webBasePath}/'+callback
+ ]);
 }
 requireTokens('Fleet operator tabs',fleetLayout,[
  "workspaceRole==='operator'",
