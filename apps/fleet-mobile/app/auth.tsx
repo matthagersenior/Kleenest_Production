@@ -7,8 +7,9 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { currentFleetBusinessId } from '../services/control';
 
 const operatorOAuthReturnKey='kleenest.operator.oauth.return';
-const webSiteOAuthRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/` : '';
-const authRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/fleet/auth/` : Linking.createURL('auth', { scheme: 'kleenest-fleet', isTripleSlashed: false });
+const webBasePath=Platform.OS==='web'&&typeof window!=='undefined'&&window.location.pathname.startsWith('/Kleenest_Production')?'/Kleenest_Production':'';
+const webSiteOAuthRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}${webBasePath}/` : '';
+const authRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}${webBasePath}/fleet/auth/` : Linking.createURL('auth', { scheme: 'kleenest-fleet', isTripleSlashed: false });
 type Mode = 'signin' | 'signup';
 function authParam(url: string, key: string) {
   try {
@@ -47,7 +48,7 @@ async function hasFleetAccess() { try { await currentFleetBusinessId(); return t
 
 async function openBusinessSetup() {
   if (Platform.OS==='web'&&typeof window!=='undefined') {
-    window.location.assign('/Kleenest_Production/business/get-started/?intent=fleet');
+    window.location.assign(`${webBasePath}/business/get-started/?intent=fleet`);
     return;
   }
   await Linking.openURL('https://matthagersenior.github.io/Kleenest_Production/business/auth/?mode=signin&intent=fleet');
