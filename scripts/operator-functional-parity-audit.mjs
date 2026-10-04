@@ -103,3 +103,4 @@ for(const [name,source] of Object.entries({ownerAccess,ownerBusinesses,ownerProg
 if(failures.length){console.error(`Operator functional parity audit failed with ${failures.length} gap(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
 console.log('Operator functional parity audit passed: Business, Fleet and KleenestOS canonical mutable domains expose wired operating controls without obsolete duplicate-route requirements.');
 // Verification touch after synchronized main; no audit behavior change.
+// Sync trigger after main advanced; no audit behavior change.
