@@ -95,9 +95,14 @@ mutationSurface({label:'Owner business administration',service:ownerService,ui:o
 mutationSurface({label:'Owner progression economy',service:ownerService,ui:ownerProgression,authority:['owner_progression_xp_action_catalog','owner_update_progression_xp_action','owner_progression_objective_list','owner_progression_objective_upsert','owner_progression_objective_set_status','owner_progression_objective_delete','owner_progression_supply_status','owner_maintain_progression_supply'],controls:['Economy & Progression Studio','Create objective','Edit XP','Activate objective','Pause objective','Archive objective','Delete objective','Refresh progression supply']});
 mutationSurface({label:'Owner data CRUD gateway',service:ownerService,ui:ownerData,authority:['admin_crud_capability_catalog','admin_crud_gateway'],controls:['Create record','Edit record','Delete record','PROTECTED']});
 requireAll('Owner moderation decisions',ownerModeration,['Resolve','Dismiss','Mark reviewing']);
-requireAll('Owner ingestion controls',ownerOperations,['Run one cycle','Repair stalled cells','Save storage guard','Save source policy']);
+requireAll('Owner Discovery-first platform health',ownerOperations,['Platform Health','Discovery is the acquisition authority','Interactive Discovery is the canonical acquisition path']);
+must(!['Run one cycle','Repair stalled cells','Save storage guard','Save source policy'].some(token=>ownerOperations.includes(token)),'Owner Operations still exposes retired ingestion controls');
 requireAll('Owner capability governance',ownerCapabilities,['Run live audit','Active canonical domain','Requires app surface','Open owning workflow']);
 for(const [name,source] of Object.entries({ownerAccess,ownerBusinesses,ownerProgression,ownerData,ownerModeration,ownerOperations,ownerCapabilities}))noRawDump(name,source);
 
 if(failures.length){console.error(`Operator functional parity audit failed with ${failures.length} gap(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
 console.log('Operator functional parity audit passed: Business, Fleet and KleenestOS canonical mutable domains expose wired operating controls without obsolete duplicate-route requirements.');
+// Verification touch after synchronized main; no audit behavior change.
+// Sync trigger after main advanced; no audit behavior change.
+// Final sync trigger after timeout PR merge; no audit behavior change.
+// Final human verification trigger on synchronized head; no behavior change.

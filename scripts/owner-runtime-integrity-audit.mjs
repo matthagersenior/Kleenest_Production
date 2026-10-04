@@ -11,6 +11,8 @@ const push=requireFile('apps/platform-mobile/services/push.ts');
 const appConfig=requireFile('apps/platform-mobile/app.config.ts');
 const androidFamily=requireFile('.github/workflows/android-family.yml');
 const home=requireFile('apps/platform-mobile/app/index.tsx');
+const operations=requireFile('apps/platform-mobile/app/operations.tsx');
+const controlPlane=requireFile('apps/platform-mobile/services/controlPlane.ts');
 const capabilities=requireFile('apps/platform-mobile/app/capabilities.tsx');
 const auth=requireFile('apps/platform-mobile/app/auth.tsx');
 const history=requireFile('apps/platform-mobile/app/history.tsx');
@@ -63,18 +65,29 @@ requireAll('Owner Firebase CI wiring',androidFamily,[
   'KLEENEST_NATIVE_PUSH_CONFIGURED=0',
 ]);
 
-requireAll('Owner telemetry presentation',home,[
-  'getIngestionControlSnapshot',
-  'storage_guard',
-  'observed_percent',
-  'disk_observed_percent',
-  'wal_bytes',
-  'marked_running',
-  'stale_running',
-  'LIVE RUNS',
-  'Telemetry unavailable',
-  "'UNKNOWN'",
+requireAll('Owner Discovery-first presentation',home,[
+  'label="Discovery"',
+  'live Discovery grows canonical locations',
+  'Platform Health',
+  'canonical discoveries',
 ]);
+for(const token of ['getIngestionControlSnapshot','storage_guard','label="Ingestion"','LIVE RUNS','Ingestion scheduler inactive']){
+  must(!home.includes(token),`Owner home must not restore retired ingestion telemetry: ${token}`);
+}
+requireAll('Owner Platform Health',operations,[
+  'getOwnerOperationsBundle',
+  'Interactive Discovery is the canonical acquisition path',
+  'legacy national-ingestion controls are retired',
+  'label="Integrity"',
+  'label="Activity"',
+  'label="Resources"',
+]);
+for(const token of ['National ingestion control','Run one cycle','Repair stalled cells','Authorize resume','Source policies & quotas','Priority & coverage queue']){
+  must(!operations.includes(token),`Owner Platform Health must not restore retired ingestion controls: ${token}`);
+}
+for(const token of ['getIngestionControlSnapshot','updateIngestionSourcePolicy','updateIngestionStorageGuard','updateIngestionMarket','runIngestionCycle','repairIngestionCells','authorizeIngestionResume']){
+  must(!controlPlane.includes(token),`Owner control-plane client must not expose retired ingestion command: ${token}`);
+}
 requireAll('Owner capability execution semantics',capabilities,[
   'executionNeedsReview',
   "release_state==='enabled'&&c.exposure_state==='surface'&&!c.authenticated_execute",
@@ -151,4 +164,4 @@ requireAll('Owner Android route smoke',smoke,[
 ]);
 
 if(failures.length){console.error(`Owner runtime integrity audit failed with ${failures.length} gap(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
-console.log('Owner runtime integrity audit passed: live telemetry, structured platform history, audit RPC compatibility, capability execution semantics, password recovery, web-to-native OAuth handoff, Messaging crash containment, native push safety and Android route smoke are protected.');
+console.log('Owner runtime integrity audit passed: Discovery-first Platform Health, structured platform history, audit RPC compatibility, capability execution semantics, password recovery, web-to-native OAuth handoff, Messaging crash containment, native push safety and Android route smoke are protected.');
