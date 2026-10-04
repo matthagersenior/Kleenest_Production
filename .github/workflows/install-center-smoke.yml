@@ -2,6 +2,15 @@ name: Verify Kleenest Installation Center
 
 on:
   workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact deployed source SHA
+        required: false
+        type: string
+      pages_base_url:
+        description: Exact deployed Pages base URL
+        required: false
+        type: string
   workflow_run:
     workflows: ["Publish Consumer Standalone Installer"]
     types: [completed]
@@ -42,9 +51,23 @@ jobs:
           echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
           echo "EXPECTED_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
           echo "KLEENEST_LIVE_WEB_BASE=$PAGES_BASE_URL" >> "$GITHUB_ENV"
+      - name: Resolve dispatched deployment target
+        id: dispatched
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha || github.sha }}
+          PAGES_BASE_URL: ${{ inputs.pages_base_url || 'https://matthagersenior.github.io/Kleenest_Production' }}
+        run: |
+          set -euo pipefail
+          BASE_URL="${PAGES_BASE_URL%/}/"
+          test -n "$SOURCE_SHA"
+          test -n "$BASE_URL"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "EXPECTED_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
+          echo "KLEENEST_LIVE_WEB_BASE=$BASE_URL" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
-          ref: ${{ steps.deployed.outputs.source_sha || github.sha }}
+          ref: ${{ steps.deployed.outputs.source_sha || steps.dispatched.outputs.source_sha || github.sha }}
       - name: Install Playwright test runner
         run: npm install --no-save --no-package-lock @playwright/test@1.55.0
       - name: Install Chromium
