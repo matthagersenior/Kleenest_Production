@@ -81,6 +81,8 @@ jobs:
         run: node scripts/app-family-release-plan.mjs --baseline "${{ steps.family-apk-baseline.outputs.source_sha }}" --json-out "$RUNNER_TEMP/family-release-plan.json"
       - name: CI freshness policy
         run: node scripts/ci-freshness-policy-audit.mjs
+      - name: Post-merge main CI dispatch
+        run: node scripts/post-merge-main-ci-dispatch-audit.mjs
       - name: Production environment contract
         run: node scripts/production-environment-contract-audit.mjs
       - name: Production live configuration source control
