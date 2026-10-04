@@ -137,3 +137,5 @@ BEGIN
   FROM filtered ORDER BY route_pos,route_dist;
 END
 $function$;
+
+-- Verification touch: no runtime behavior change; retriggers required GitHub checks.
