@@ -36,9 +36,12 @@ jobs:
         if: github.event_name == 'workflow_run'
         run: |
           SOURCE_SHA="$(node -e "const fs=require('fs');const state=JSON.parse(fs.readFileSync('deployed-release/Kleenest-release-state.json','utf8'));process.stdout.write(String(state.currentSha||''))")"
+          PAGES_BASE_URL="$(node -e "const fs=require('fs');const state=JSON.parse(fs.readFileSync('deployed-release/Kleenest-release-state.json','utf8'));process.stdout.write(String(state.pagesBaseUrl||''))")"
           test -n "$SOURCE_SHA"
+          test -n "$PAGES_BASE_URL"
           echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
           echo "EXPECTED_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
+          echo "KLEENEST_LIVE_WEB_BASE=$PAGES_BASE_URL" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.deployed.outputs.source_sha || github.sha }}
