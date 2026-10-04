@@ -1,5 +1,5 @@
 const CACHE='kleenest-developer-portal-v2';
-const SCOPE='/Kleenest_Production/developer/';
+const SCOPE=new URL(self.registration.scope).pathname.replace(/\/?$/, '/');
 const SHELL=[SCOPE,`${SCOPE}manifest.webmanifest`];
 
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
