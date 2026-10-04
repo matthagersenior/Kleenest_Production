@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-const BASE='https://matthagersenior.github.io/Kleenest_Production/';
+const BASE=(process.env.KLEENEST_LIVE_WEB_BASE||'https://matthagersenior.github.io/Kleenest_Production/').replace(/\/?$/,'/');
 const EXPECTED_SHA=process.env.EXPECTED_SHA||'';
+const BASE_PATH=new URL(BASE).pathname.replace(/\/$/,'');
+const routePath=(route='')=>`${BASE_PATH}/${route}`.replace(/\/+/g,'/');
 
 test('Installation Center click-through and release assets',async({page,request,browser})=>{
   await page.goto(BASE,{waitUntil:'domcontentloaded'});
@@ -10,7 +12,21 @@ test('Installation Center click-through and release assets',async({page,request,
   await expect(page.getByText('FOR BUSINESS',{exact:true})).toBeVisible();
   await expect(page.getByText('TRUST + FRESHNESS',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:/Install Kleenest/i}).first().click();
-  await expect(page).toHaveURL(/\/Kleenest_Production\/install\/?$/);
+  await expect(page).toHaveURL(new RegExp(`${routePath('install')}/?import { test, expect } from '@playwright/test';
+
+const BASE=(process.env.KLEENEST_LIVE_WEB_BASE||'https://matthagersenior.github.io/Kleenest_Production/').replace(/\/?$/,'/');
+const EXPECTED_SHA=process.env.EXPECTED_SHA||'';
+const BASE_PATH=new URL(BASE).pathname.replace(/\/$/,'');
+const routePath=(route='')=>`${BASE_PATH}/${route}`.replace(/\/+/g,'/');
+
+test('Installation Center click-through and release assets',async({page,request,browser})=>{
+  await page.goto(BASE,{waitUntil:'domcontentloaded'});
+  await expect(page.getByText('Find clean bathrooms you can actually trust.')).toBeVisible({timeout:30000});
+  await expect(page.getByText('FOR YOU',{exact:true})).toBeVisible();
+  await expect(page.getByText('FOR BUSINESS',{exact:true})).toBeVisible();
+  await expect(page.getByText('TRUST + FRESHNESS',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:/Install Kleenest/i}).first().click();
+));
   await expect(page.getByText('KLEENEST · UNIVERSAL INSTALLATION CENTER')).toBeVisible();
   await expect(page.getByText('INSTALL HEALTH',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'INSTALL WEB APP',exact:true})).toBeVisible();
@@ -26,7 +42,7 @@ test('Installation Center click-through and release assets',async({page,request,
   await expect(page.locator('body')).toContainText('If you have never installed a web app before');
   await expect(page.locator('body')).toContainText('Find Kleenest after installation');
   await expect(page.locator('body')).toContainText('Allow from this source');
-  await expect(page.locator('body')).toContainText('https://matthagersenior.github.io/Kleenest_Production/Kleenest-Consumer.apk');
+  await expect(page.locator('body')).toContainText(new URL('Kleenest-Consumer.apk',BASE).toString());
 
   const mobileContext=await browser.newContext({
     viewport:{width:390,height:844},
@@ -44,7 +60,7 @@ test('Installation Center click-through and release assets',async({page,request,
   await mobileContext.close();
 
   await page.getByRole('button',{name:/Continue to Kleenest as a guest/i}).click();
-  await expect(page).toHaveURL(/\/Kleenest_Production\/\?app=1$/);
+  await expect(page).toHaveURL(new RegExp(`${routePath('')}\\?app=1$`));
   await expect(page.locator('body')).toContainText(/Find a place you can count on|Nearby options|Address, school, workplace, city or brand|Search this area/i,{timeout:30000});
   await page.goto(BASE+'install/',{waitUntil:'domcontentloaded'});
   await expect(page.getByText('KLEENEST · UNIVERSAL INSTALLATION CENTER')).toBeVisible({timeout:30000});
@@ -57,7 +73,7 @@ test('Installation Center click-through and release assets',async({page,request,
   await expect(page.locator('body')).toContainText(/Install link copied|Share this install link|Install link shared/i);
 
   await page.getByRole('link',{name:'OPEN KLEENEST',exact:true}).click();
-  await expect(page).toHaveURL(/\/Kleenest_Production\/\?app=1$/);
+  await expect(page).toHaveURL(new RegExp(`${routePath('')}\\?app=1$`));
   await expect(page.locator('body')).toContainText(/Find a place you can count on|Nearby options|Address, school, workplace, city or brand|Search this area/i,{timeout:30000});
 
   for(const route of ['install/','for-you/','for-business/','trust/']){
@@ -69,9 +85,10 @@ test('Installation Center click-through and release assets',async({page,request,
   expect(manifestResponse.ok()).toBeTruthy();
   const manifest=await manifestResponse.json();
   expect(manifest.display).toBe('standalone');
-  expect(manifest.scope).toBe('/Kleenest_Production/');
-  expect(manifest.start_url).toBe('/Kleenest_Production/?app=1');
-  expect(manifest.shortcuts.some((x:any)=>x.url==='/Kleenest_Production/install')).toBeTruthy();
+  const expectedScope=new URL(BASE).pathname;
+  expect(manifest.scope).toBe(expectedScope);
+  expect(manifest.start_url).toBe(`${expectedScope}?app=1`);
+  expect(manifest.shortcuts.some((x:any)=>x.url===`${expectedScope}install`)).toBeTruthy();
 
   const stateResponse=await request.get(BASE+'Kleenest-release-state.json');
   expect(stateResponse.ok()).toBeTruthy();
