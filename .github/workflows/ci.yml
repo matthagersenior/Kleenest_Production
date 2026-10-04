@@ -282,6 +282,8 @@ jobs:
         run: node scripts/preventive-work-lifecycle-convergence-audit.mjs
       - name: GitHub Pages deployment convergence
         run: node scripts/pages-deployment-convergence-audit.mjs
+      - name: Explicit Pages deploy chain
+        run: node scripts/pages-explicit-deploy-chain-audit.mjs
       - name: Installation Center beginner guidance
         run: node scripts/install-center-guidance-audit.mjs
       - name: Business health convergence
