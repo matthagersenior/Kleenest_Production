@@ -21,6 +21,7 @@ for(const token of [
 ]){
   must(source.includes(token),`Installation Center beginner guidance is missing: ${token}`);
 }
+must(!source.includes("const APK_PATH='/Kleenest_Production/Kleenest-Consumer.apk'"),'Installation Center APK path must not be hard-coded to the legacy GitHub Pages project path.');
 must(source.includes("browserKind==='safari'"),'Mac Safari must have explicit browser-specific installation guidance.');
 must(source.includes('async function downloadApk(){await Linking.openURL(browserUrl(APK_PATH))}'),'APK download control must open the exact hosted APK path.');
 
