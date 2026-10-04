@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  actions: read
+  actions: write
   contents: read
 
 jobs:
@@ -282,6 +282,8 @@ jobs:
         run: node scripts/preventive-work-lifecycle-convergence-audit.mjs
       - name: GitHub Pages deployment convergence
         run: node scripts/pages-deployment-convergence-audit.mjs
+      - name: Explicit Pages deploy chain
+        run: node scripts/pages-explicit-deploy-chain-audit.mjs
       - name: Installation Center beginner guidance
         run: node scripts/install-center-guidance-audit.mjs
       - name: Business health convergence
@@ -300,3 +302,17 @@ jobs:
         run: npm run operator:typecheck
       - name: Production web build
         run: npm run build
+      - name: Dispatch Pages validation after bot-launched main CI
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id: 'pages.yml',
+              ref: 'main',
+              inputs: { source_sha: context.sha },
+            });
+            core.info(`Dispatched Pages validation for ${context.sha}`);
