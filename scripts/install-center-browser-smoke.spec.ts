@@ -12,21 +12,7 @@ test('Installation Center click-through and release assets',async({page,request,
   await expect(page.getByText('FOR BUSINESS',{exact:true})).toBeVisible();
   await expect(page.getByText('TRUST + FRESHNESS',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:/Install Kleenest/i}).first().click();
-  await expect(page).toHaveURL(new RegExp(`${routePath('install')}/?import { test, expect } from '@playwright/test';
-
-const BASE=(process.env.KLEENEST_LIVE_WEB_BASE||'https://matthagersenior.github.io/Kleenest_Production/').replace(/\/?$/,'/');
-const EXPECTED_SHA=process.env.EXPECTED_SHA||'';
-const BASE_PATH=new URL(BASE).pathname.replace(/\/$/,'');
-const routePath=(route='')=>`${BASE_PATH}/${route}`.replace(/\/+/g,'/');
-
-test('Installation Center click-through and release assets',async({page,request,browser})=>{
-  await page.goto(BASE,{waitUntil:'domcontentloaded'});
-  await expect(page.getByText('Find clean bathrooms you can actually trust.')).toBeVisible({timeout:30000});
-  await expect(page.getByText('FOR YOU',{exact:true})).toBeVisible();
-  await expect(page.getByText('FOR BUSINESS',{exact:true})).toBeVisible();
-  await expect(page.getByText('TRUST + FRESHNESS',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:/Install Kleenest/i}).first().click();
-));
+  await expect(page).toHaveURL(new RegExp(`${routePath('install')}/?$`));
   await expect(page.getByText('KLEENEST · UNIVERSAL INSTALLATION CENTER')).toBeVisible();
   await expect(page.getByText('INSTALL HEALTH',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'INSTALL WEB APP',exact:true})).toBeVisible();
