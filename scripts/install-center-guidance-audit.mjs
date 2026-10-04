@@ -33,3 +33,5 @@ if(failures.length){
 console.log('Installation Center beginner guidance audit passed.');
 // Sync trigger after main advanced; no audit behavior change.
 // Final sync trigger after timeout PR merge; no audit behavior change.
+
+// Current synchronized cutover verification trigger; no runtime behavior change.
