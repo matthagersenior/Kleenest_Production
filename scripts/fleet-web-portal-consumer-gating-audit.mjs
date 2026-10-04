@@ -36,7 +36,9 @@ requireTokens('Fleet dispatcher authority',migration,[
 requireTokens('Fleet web config',fleetConfig,[
   "output:'single'",
   "bundler:'metro'",
-  "baseUrl:'/Kleenest_Production/fleet'",
+  'normalizePagesBasePath',
+  'const pagesBasePath=normalizePagesBasePath',
+  'baseUrl:`${pagesBasePath}/fleet`',
   "Kleenest Fleet Web"
 ]);
 requireTokens('Fleet web package',fleetPkg,['"web:export":"expo export --platform web"']);
@@ -80,12 +82,14 @@ requireTokens('Business-integrated Fleet suite',businessFleet,[
   'kleenest-fleet://'
 ]);
 requireTokens('Business web OAuth callback',businessAuth,[
-  '/Kleenest_Production/business/auth/',
+  "window.location.pathname.startsWith('/Kleenest_Production')",
+  '${window.location.origin}${webBasePath}/business/auth/',
   "skipBrowserRedirect: Platform.OS!=='web'",
   'window.location.assign(data.url)'
 ]);
 requireTokens('Fleet web OAuth callback',fleetAuth,[
-  '/Kleenest_Production/fleet/auth/',
+  "window.location.pathname.startsWith('/Kleenest_Production')",
+  '${window.location.origin}${webBasePath}/fleet/auth/',
   "skipBrowserRedirect: Platform.OS!=='web'",
   'window.location.assign(data.url)'
 ]);
@@ -137,7 +141,8 @@ requireTokens('Marketing suppression',marketing,[
   "const autoOpenApp=pathname==='/'&&appActive",
   "router.replace('/?app=1'",
   'OPEN FLEET PORTAL',
-  "/Kleenest_Production/fleet/"
+  'const pagesBasePath=()=>',
+  'window.location.assign(`${pagesBasePath()}/fleet/`)'
 ]);
 if(marketing.includes("ready&&appActive)router.replace('/?app=1'"))failures.push('Marketing subpages are still hijacked by the Consumer app-active redirect.');
 requireTokens('Public website no-install entry',marketing,[
