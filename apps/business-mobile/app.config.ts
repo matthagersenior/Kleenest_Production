@@ -8,6 +8,13 @@ if(configuredEasProjectId&&configuredEasProjectId!==EXPECTED_EAS_PROJECT_ID){
 }
 const EAS_PROJECT_ID=configuredEasProjectId||EXPECTED_EAS_PROJECT_ID;
 const otaChannel=process.env.EXPO_PUBLIC_OTA_CHANNEL||'business-production';
+function normalizePagesBasePath(value:string|undefined){
+  if(value===undefined)return '/Kleenest_Production';
+  const trimmed=value.trim();
+  if(!trimmed||trimmed==='/')return '';
+  return `/${trimmed.replace(/^\\/+|\\/+$/g,'')}`;
+}
+const pagesBasePath=normalizePagesBasePath(process.env.EXPO_PUBLIC_PAGES_BASE_PATH);
 const nativeRuntimeId=String(process.env.KLEENEST_NATIVE_RUNTIME_ID||'').trim();
 if(nativeRuntimeId&&!/^[a-f0-9]{40}$/i.test(nativeRuntimeId))throw new Error('KLEENEST_NATIVE_RUNTIME_ID must be a full Git commit SHA.');
 const runtimeVersion=nativeRuntimeId?`kleenest-business-native-${nativeRuntimeId}`:'kleenest-business-1.0.0';
@@ -41,7 +48,7 @@ const config:ExpoConfig={
     ['expo-image-picker',{photosPermission:'Kleenest Business uses your photo library only when you choose business branding or other media to upload.',microphonePermission:false}],
   ],
   web:{output:'single',bundler:'metro',name:'Kleenest Business Web',shortName:'Kleenest Business'},
-  experiments:{typedRoutes:true,baseUrl:'/Kleenest_Production/business'},
+  experiments:{typedRoutes:true,baseUrl:`${pagesBasePath}/business`},
   extra:{appRole:'business',webPortalName:'Kleenest Business Web',otaChannel,productionEnvironment:{supabaseProjectRef:'ssgesjzdvdsqacdtasje'},eas:{projectId:EAS_PROJECT_ID}},
 };
 export default config;
