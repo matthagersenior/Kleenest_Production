@@ -41,13 +41,14 @@ const go = (route: string) => () => {
   const destination=route==='/signup'?'/signup?mode=signup':route==='/profile'?'/signup?mode=signin':route;
   router.push(destination as any);
 };
+const pagesBasePath=()=>Platform.OS==='web'&&typeof window!=='undefined'&&window.location.pathname.startsWith('/Kleenest_Production')?'/Kleenest_Production':'';
 const marketingAsset=(name:string)=>Platform.OS==='web'
-  ? `/Kleenest_Production/marketing/${name}`
+  ? `${pagesBasePath()}/marketing/${name}`
   : `https://matthagersenior.github.io/Kleenest_Production/marketing/${name}`;
 
 const openFleetPortal=()=>{
   if(Platform.OS==='web'&&typeof window!=='undefined'){
-    window.location.assign('/Kleenest_Production/fleet/');
+    window.location.assign(`${pagesBasePath()}/fleet/`);
     return;
   }
   router.push('/for-business' as any);
@@ -55,7 +56,7 @@ const openFleetPortal=()=>{
 const openBusinessPortal=(mode:'signin'|'signup'='signin',intent='')=>()=>{
   if(Platform.OS==='web'&&typeof window!=='undefined'){
     const query=[mode==='signup'?'mode=signup':'',intent?`intent=${encodeURIComponent(intent)}`:''].filter(Boolean).join('&');
-    window.location.assign(`/Kleenest_Production/business/auth/${query?`?${query}`:''}`);
+    window.location.assign(`${pagesBasePath()}/business/auth/${query?`?${query}`:''}`);
     return;
   }
   router.push('/for-business' as any);
