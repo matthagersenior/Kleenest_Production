@@ -135,6 +135,14 @@ jobs:
 
                 core.info(`  merged PR #${pr.number}: ${result.data.sha}`);
 
+                await github.rest.actions.createWorkflowDispatch({
+                  owner,
+                  repo,
+                  workflow_id: 'ci.yml',
+                  ref: 'main',
+                });
+                core.info('  dispatched Production CI on main');
+
                 if (pr.head.ref !== 'main') {
                   try {
                     await github.rest.git.deleteRef({
