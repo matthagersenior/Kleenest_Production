@@ -7,6 +7,13 @@ if(configuredEasProjectId&&configuredEasProjectId!==EXPECTED_EAS_PROJECT_ID){
 }
 const EAS_PROJECT_ID=configuredEasProjectId||EXPECTED_EAS_PROJECT_ID;
 const otaChannel=process.env.EXPO_PUBLIC_OTA_CHANNEL||'owner-production';
+function normalizePagesBasePath(value:string|undefined){
+  if(value===undefined)return '/Kleenest_Production';
+  const trimmed=value.trim();
+  if(!trimmed||trimmed==='/')return '';
+  return `/${trimmed.replace(/^\\/+|\\/+$/g,'')}`;
+}
+const pagesBasePath=normalizePagesBasePath(process.env.EXPO_PUBLIC_PAGES_BASE_PATH);
 const nativeRuntimeId=String(process.env.KLEENEST_NATIVE_RUNTIME_ID||'').trim();
 if(nativeRuntimeId&&!/^[a-f0-9]{40}$/i.test(nativeRuntimeId))throw new Error('KLEENEST_NATIVE_RUNTIME_ID must be a full Git commit SHA.');
 const runtimeVersion=nativeRuntimeId?`kleenest-owner-native-${nativeRuntimeId}`:'kleenest-owner-1.0.0';
@@ -20,7 +27,7 @@ const config:ExpoConfig={
   android:{package:'com.kleenest.platform',icon:'./assets/app-icon.png',...(nativePushConfigured?{googleServicesFile:'./google-services.json'}:{}),blockedPermissions:['android.permission.ACCESS_BACKGROUND_LOCATION','android.permission.RECORD_AUDIO','android.permission.SYSTEM_ALERT_WINDOW']},
   plugins:['expo-router','expo-secure-store',['expo-notifications',{defaultChannel:'kleenestos-operations'}]],
   web:{output:'single',bundler:'metro',name:'KleenestOS Web',shortName:'KleenestOS'},
-  experiments:{typedRoutes:true,baseUrl:'/Kleenest_Production/owner'},
+  experiments:{typedRoutes:true,baseUrl:`${pagesBasePath}/owner`},
   extra:{appRole:'owner',webPortalName:'KleenestOS Web',otaChannel,nativePushConfigured,productionEnvironment:{supabaseProjectRef:'ssgesjzdvdsqacdtasje'},eas:{projectId:EAS_PROJECT_ID}},
 };
 export default config;
