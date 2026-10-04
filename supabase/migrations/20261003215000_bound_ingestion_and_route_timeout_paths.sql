@@ -140,3 +140,4 @@ $function$;
 
 -- Verification touch: no runtime behavior change; retriggers required GitHub checks.
 -- Final verification touch after branch synchronization; no runtime behavior change.
+-- Sync trigger after main advanced; no runtime behavior change.
