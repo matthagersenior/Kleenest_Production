@@ -1,3 +1,4 @@
+-- Internal maintenance: smooth Production -> Kleenest_Data write pressure without reducing hourly export capacity.
 create or replace function public.run_geo_catalog_exporter()
 returns bigint language plpgsql security definer set search_path='' as $$
 declare v_secret text; v_id bigint;
