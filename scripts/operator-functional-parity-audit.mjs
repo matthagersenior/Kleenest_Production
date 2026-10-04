@@ -105,3 +105,4 @@ console.log('Operator functional parity audit passed: Business, Fleet and Kleene
 // Verification touch after synchronized main; no audit behavior change.
 // Sync trigger after main advanced; no audit behavior change.
 // Final sync trigger after timeout PR merge; no audit behavior change.
+// Final human verification trigger on synchronized head; no behavior change.
