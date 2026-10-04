@@ -1,5 +1,5 @@
 const CACHE='kleenest-shell-v4';
-const SCOPE='/Kleenest_Production/';
+const SCOPE=new URL(self.registration.scope).pathname.replace(/\/?$/, '/');
 const SHELL=[SCOPE,`${SCOPE}manifest.webmanifest`,`${SCOPE}app-icon.png`,`${SCOPE}app-icon-512.svg`];
 
 self.addEventListener('install',event=>{
