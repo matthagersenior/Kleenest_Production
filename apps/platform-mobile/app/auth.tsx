@@ -8,8 +8,9 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { getOwnerAuthorization } from '../services/ownerAdmin';
 
 const operatorOAuthReturnKey='kleenest.operator.oauth.return';
-const webSiteOAuthRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/` : '';
-const ownerRedirect = Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/owner/auth/` : Linking.createURL('auth', { scheme: 'kleenest-owner', isTripleSlashed: false });
+const webBasePath=Platform.OS==='web'&&typeof window!=='undefined'&&window.location.pathname.startsWith('/Kleenest_Production')?'/Kleenest_Production':'';
+const webSiteOAuthRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}${webBasePath}/` : '';
+const ownerRedirect = Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}${webBasePath}/owner/auth/` : Linking.createURL('auth', { scheme: 'kleenest-owner', isTripleSlashed: false });
 type Mode = 'signin' | 'signup' | 'forgot' | 'recovery';
 
 function rememberOwnerOAuthReturn() {
