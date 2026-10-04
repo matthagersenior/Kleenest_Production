@@ -7,8 +7,9 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { listBusinessWorkspaceOptions } from '../services/capabilityWorkflows';
 
 const operatorOAuthReturnKey='kleenest.operator.oauth.return';
-const webSiteOAuthRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/` : '';
-const authRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}/Kleenest_Production/business/auth/` : Linking.createURL('auth', { scheme: 'kleenest-business', isTripleSlashed: false });
+const webBasePath=Platform.OS==='web'&&typeof window!=='undefined'&&window.location.pathname.startsWith('/Kleenest_Production')?'/Kleenest_Production':'';
+const webSiteOAuthRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}${webBasePath}/` : '';
+const authRedirect=Platform.OS==='web'&&typeof window!=='undefined' ? `${window.location.origin}${webBasePath}/business/auth/` : Linking.createURL('auth', { scheme: 'kleenest-business', isTripleSlashed: false });
 type Mode = 'signin' | 'signup';
 function authParam(url: string, key: string) {
   try {
