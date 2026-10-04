@@ -19,7 +19,7 @@ for(const token of [
   'source_sha:',
   'actions: write',
   "workflow_id: 'publish-standalone-installer.yml'",
-  "source_sha: ${{ inputs.source_sha || github.event.workflow_run.head_sha || github.sha }}",
+  "SOURCE_SHA: ${{ inputs.source_sha || github.event.workflow_run.head_sha || github.sha }}",
 ]) requireToken(pages,token,'Pages validation handoff');
 
 for(const token of [
