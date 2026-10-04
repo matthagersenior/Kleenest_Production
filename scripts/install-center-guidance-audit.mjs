@@ -30,3 +30,4 @@ if(failures.length){
   process.exit(1);
 }
 console.log('Installation Center beginner guidance audit passed.');
+// Sync trigger after main advanced; no audit behavior change.
