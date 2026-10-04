@@ -108,7 +108,8 @@ export function relayOperatorOAuthCallback(){
 
   clearRelayState();
   const query=search.toString();
-  const destination=location.origin+'/Kleenest_Production/'+portal+'/auth/'+(query?'?'+query:'')+(location.hash||'');
+  const pagesBasePath=location.pathname.startsWith('/Kleenest_Production')?'/Kleenest_Production':'';
+  const destination=location.origin+pagesBasePath+'/'+portal+'/auth/'+(query?'?'+query:'')+(location.hash||'');
   window.location.replace(destination);
   return true;
 }

@@ -59,8 +59,9 @@ if(!installer.includes("github.event.workflow_run.conclusion == 'success'"))thro
 if(installer.includes('workflows: ["Build Kleenest App Family Android APKs"]'))throw new Error('Consumer web publishing must not wait on the Android family matrix.');
 if(installer.includes("github.event.workflow_run.conclusion != 'cancelled'"))throw new Error('Consumer installer deployment must not publish from failed or skipped validation runs.');
 for(const token of ["group: kleenest-consumer-preview-pages-${{ github.event.workflow_run.head_branch }}","cancel-in-progress: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}"])requireToken(installer,token,'Consumer Pages publisher concurrency policy');
+for(const token of ['id: pages','steps.pages.outputs.base_path','steps.pages.outputs.base_url','EXPO_PUBLIC_PAGES_BASE_PATH','pagesBaseUrl'])requireToken(installer,token,'Custom-domain-aware Pages deployment');
 
-for(const token of ["output: 'single'","bundler: 'metro'","baseUrl: '/Kleenest_Production'","previewRole: 'non-blocking-web-preview'"])requireToken(appConfig,token,'Expo consumer preview config');
+for(const token of ["output: 'single'","bundler: 'metro'","EXPO_PUBLIC_PAGES_BASE_PATH","pagesBasePath","baseUrl: pagesBasePath || '/'","previewRole: 'non-blocking-web-preview'"])requireToken(appConfig,token,'Expo consumer preview config');
 const consumerInstall=read('apps/consumer-mobile/app/install.tsx');
 for(const token of ['Install Kleenest','beforeinstallprompt','Kleenest-Consumer.apk','INSTALL WEB APP','DOWNLOAD ANDROID APK','iPhone','iPad','Add to Home Screen','Open as Web App','deviceKind','isIOS','isAndroid','Kleenest-release-state.json','INSTALL HEALTH','SHARE INSTALL LINK','OPEN KLEENEST','CHECK INSTALLATION','browserKind','serviceWorkerReady'])requireToken(consumerInstall,token,'Consumer Installation Center');
 const consumerAuth=read('apps/consumer-mobile/app/profile.tsx');
@@ -68,23 +69,23 @@ const consumerHome=read('apps/consumer-mobile/app/index.tsx');
 for(const token of ['Redirect','/explore','MarketingHome','useConsumerWebExperience'])requireToken(consumerHome,token,'Consumer app entry + public marketing split');
 for(const token of ['/Kleenest_Production/profile/',"Linking.createURL('profile'","isTripleSlashed:false","skipBrowserRedirect:Platform.OS!=='web'","router.replace('/home')"])requireToken(consumerAuth,token,'Consumer web/native OAuth callback and signed-in Home handoff');
 const marketingSite=read('apps/consumer-mobile/components/MarketingSitePro.tsx');
-for(const token of ['Find clean bathrooms you can actually trust.','For You','For Business','TRUST + FRESHNESS','INSTALL KLEENEST','KLEENEST ANYWHERE','useConsumerWebExperience','appActive','OPEN FLEET PORTAL','/Kleenest_Production/fleet/'])requireToken(marketingSite,token,'Public Kleenest marketing site');
+for(const token of ['Find clean bathrooms you can actually trust.','For You','For Business','TRUST + FRESHNESS','INSTALL KLEENEST','KLEENEST ANYWHERE','useConsumerWebExperience','appActive','OPEN FLEET PORTAL','pagesBasePath()'])requireToken(marketingSite,token,'Public Kleenest marketing site');
 for(const token of ['APP_PRESENCE_KEY','display-mode: standalone','getInstalledRelatedApps','signedIn','appActive','markConsumerAppPresence'])requireToken(webExperience,token,'Consumer website/app presence gate');
 for(const token of ['relayOperatorOAuthCallback','operatorOAuthRelaying'])requireToken(consumerLayout,token,'Deployed Consumer OAuth relay bootstrap');
-for(const token of ['kleenest.operator.oauth.return','OPERATOR_OAUTH_MAX_AGE_MS','createdAt','/Kleenest_Production/','/auth/','window.location.replace'])requireToken(operatorOAuthRelay,token,'Operator OAuth root relay');
+for(const token of ['kleenest.operator.oauth.return','OPERATOR_OAUTH_MAX_AGE_MS','createdAt','pagesBasePath','/auth/','window.location.replace'])requireToken(operatorOAuthRelay,token,'Operator OAuth root relay');
 const installSmoke=read('.github/workflows/install-center-smoke.yml');
-for(const token of ['Verify Kleenest Installation Center','Publish Consumer Standalone Installer','@playwright/test','EXPECTED_SHA','install-center-browser-smoke.spec.ts'])requireToken(installSmoke,token,'Installation Center post-deploy browser smoke workflow');
+for(const token of ['Verify Kleenest Installation Center','Publish Consumer Standalone Installer','@playwright/test','EXPECTED_SHA','KLEENEST_LIVE_WEB_BASE','install-center-browser-smoke.spec.ts'])requireToken(installSmoke,token,'Installation Center post-deploy browser smoke workflow');
 for(const token of ['group: kleenest-install-center-smoke',"cancel-in-progress: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}"])requireToken(installSmoke,token,'Installation Center smoke concurrency policy');
 const installSpec=read('scripts/install-center-browser-smoke.spec.ts');
-for(const token of ['Install Kleenest','INSTALL WEB APP','SHARE INSTALL LINK','Kleenest-release-state.json','Kleenest-Consumer.apk.sha256','manifest.webmanifest','EXPECTED_SHA'])requireToken(installSpec,token,'Installation Center browser journey');
+for(const token of ['Install Kleenest','INSTALL WEB APP','SHARE INSTALL LINK','Kleenest-release-state.json','Kleenest-Consumer.apk.sha256','manifest.webmanifest','EXPECTED_SHA','KLEENEST_LIVE_WEB_BASE'])requireToken(installSpec,token,'Installation Center browser journey');
 for(const token of ['public_routes="install for-you for-business trust"','cp apps/consumer-mobile/dist/index.html "apps/consumer-mobile/dist/$route/index.html"'])requireToken(installer,token,'Public marketing route materialization');
 if(!manifest.shortcuts?.some(shortcut=>shortcut.url==='/Kleenest_Production/install'))throw new Error('Consumer PWA manifest must expose the Installation Center as an app shortcut.');
-for(const token of ["output:'single'","bundler:'metro'","baseUrl:'/Kleenest_Production/business'","Kleenest Business Web"])requireToken(businessConfig,token,'Kleenest Business web config');
+for(const token of ["output:'single'","bundler:'metro'","EXPO_PUBLIC_PAGES_BASE_PATH","pagesBasePath","/business","Kleenest Business Web"])requireToken(businessConfig,token,'Kleenest Business web config');
 if(businessPkg.scripts?.['web:export']!=='expo export --platform web')throw new Error('Kleenest Business must expose canonical Expo web export script.');
-for(const token of ['/Kleenest_Production/business/auth/',"skipBrowserRedirect: Platform.OS!=='web'"])requireToken(businessAuth,token,'Kleenest Business web OAuth callback');
-for(const token of ["output:'single'","bundler:'metro'","baseUrl:'/Kleenest_Production/fleet'","Kleenest Fleet Web"])requireToken(fleetConfig,token,'Kleenest Fleet web config');
+for(const token of ['webBasePath','/business/auth/',"skipBrowserRedirect: Platform.OS!=='web'"])requireToken(businessAuth,token,'Kleenest Business web OAuth callback');
+for(const token of ["output:'single'","bundler:'metro'","EXPO_PUBLIC_PAGES_BASE_PATH","pagesBasePath","/fleet","Kleenest Fleet Web"])requireToken(fleetConfig,token,'Kleenest Fleet web config');
 if(fleetPkg.scripts?.['web:export']!=='expo export --platform web')throw new Error('Kleenest Fleet must expose canonical Expo web export script.');
-for(const token of ['/Kleenest_Production/fleet/auth/',"skipBrowserRedirect: Platform.OS!=='web'"])requireToken(fleetAuth,token,'Kleenest Fleet web OAuth callback');
+for(const token of ['webBasePath','/fleet/auth/',"skipBrowserRedirect: Platform.OS!=='web'"])requireToken(fleetAuth,token,'Kleenest Fleet web OAuth callback');
 for(const token of ["platform==='web'","'@maplibre/maplibre-react-native'","'expo-secure-store'","'expo-notifications'","'expo-task-manager'","../consumer-mobile/web/maplibrePreview.tsx"])requireToken(fleetMetro,token,'Kleenest Fleet web compatibility resolver');
 for(const token of ['window.localStorage','kleenest.fleet.web.secure.'])requireToken(fleetSecurePreview,token,'Fleet SecureStore web adapter');
 for(const token of ['getLastNotificationResponseAsync','addNotificationResponseReceivedListener','requestPermissionsAsync'])requireToken(fleetNotificationsPreview,token,'Fleet notifications web adapter');
@@ -96,9 +97,9 @@ for(const token of ['Business actions missing UI registry coverage','servicesDir
 const ownerConfig=read('apps/platform-mobile/app.config.ts');
 const ownerPkg=JSON.parse(read('apps/platform-mobile/package.json'));
 const ownerMetro=read('apps/platform-mobile/metro.config.js');
-for(const token of ["output:'single'","bundler:'metro'","baseUrl:'/Kleenest_Production/owner'","KleenestOS Web"])requireToken(ownerConfig,token,'KleenestOS web config');
+for(const token of ["output:'single'","bundler:'metro'","EXPO_PUBLIC_PAGES_BASE_PATH","pagesBasePath","/owner","KleenestOS Web"])requireToken(ownerConfig,token,'KleenestOS web config');
 if(ownerPkg.scripts?.['web:export']!=='expo export --platform web')throw new Error('KleenestOS must expose canonical Expo web export script.');
-requireToken(ownerAuth,'/Kleenest_Production/owner/auth/','KleenestOS web OAuth callback');
+for(const token of ['webBasePath','/owner/auth/'])requireToken(ownerAuth,token,'KleenestOS web OAuth callback');
 for(const dep of ['react-dom','react-native-web'])if(!ownerPkg.dependencies?.[dep])throw new Error(`KleenestOS web dependency missing ${dep}.`);
 for(const token of ["platform==='web'","'expo-secure-store'",'secureStorePreview.ts'])requireToken(ownerMetro,token,'KleenestOS web compatibility resolver');
 if(pkg.scripts?.['web:export']!=='expo export --platform web')throw new Error('Consumer app must expose canonical Expo web export script.');
@@ -110,11 +111,11 @@ for(const token of ['window.localStorage','kleenest.preview.secure.'])requireTok
 for(const token of ['getLastNotificationResponseAsync','clearLastNotificationResponseAsync','addNotificationResponseReceivedListener'])requireToken(notificationsPreview,token,'Notifications preview adapter');
 if(/platform\s*!==\s*['"]web['"]/.test(metro))throw new Error('Metro preview aliases must be positively scoped to web only.');
 
-for(const token of ['manifest.webmanifest','navigator.serviceWorker.register','apps/consumer-mobile/dist/index.html','apps/consumer-mobile/assets/app-icon.png','authCallbackDir',"path.join(dist,'profile')",'index.html'])requireToken(pwaPrep,token,'Consumer PWA preparation script');
+for(const token of ['manifest.webmanifest','navigator.serviceWorker.register','EXPO_PUBLIC_PAGES_BASE_PATH','pagesScope','pagesAsset','apps/consumer-mobile/dist/index.html','apps/consumer-mobile/assets/app-icon.png','authCallbackDir',"path.join(dist,'profile')",'index.html'])requireToken(pwaPrep,token,'Consumer PWA preparation script');
 if(manifest.display!=='standalone'||manifest.start_url!=='/Kleenest_Production/?app=1'||manifest.scope!=='/Kleenest_Production/')throw new Error('Consumer PWA manifest must remain standalone, launch into the app Home experience, and stay scoped to the GitHub Pages app path.');
 if(!Array.isArray(manifest.icons)||manifest.icons.length<2)throw new Error('Consumer PWA manifest must provide installable app icons.');
 if(!manifest.icons.some(icon=>icon.src==='/Kleenest_Production/app-icon.png'&&icon.sizes==='192x192')||!manifest.icons.some(icon=>icon.src==='/Kleenest_Production/app-icon-512.svg'&&icon.sizes==='512x512'))throw new Error('Consumer PWA manifest must publish truthful 192px and 512px install icon metadata.');
-for(const token of ['kleenest-shell','showNotification','notificationclick','isVersionedAsset','networkFirst'])requireToken(serviceWorker,token,'Consumer web service worker');
+for(const token of ['kleenest-shell','self.registration.scope','showNotification','notificationclick','isVersionedAsset','networkFirst'])requireToken(serviceWorker,token,'Consumer web service worker');
 if(/cached\|\|fetch\(event\.request\)/.test(serviceWorker))throw new Error('Consumer service worker must not keep versioned JS/CSS on a cache-first path across deployments.');
 
 const familyOta=read('.github/workflows/ota-family.yml');

@@ -8,11 +8,30 @@ const workerSource=path.resolve('public/sw.js');
 const iconSource=path.resolve('apps/consumer-mobile/assets/app-icon.png');
 const icon512Source=path.resolve('public/app-icon-512.svg');
 
+function normalizePagesBasePath(value){
+  if(value===undefined)return '/Kleenest_Production';
+  const trimmed=String(value).trim();
+  if(!trimmed||trimmed==='/')return '';
+  return `/${trimmed.replace(/^\/+|\/+$/g,'')}`;
+}
+const pagesBasePath=normalizePagesBasePath(process.env.EXPO_PUBLIC_PAGES_BASE_PATH);
+const pagesScope=`${pagesBasePath}/`||'/';
+const pagesAsset=name=>`${pagesBasePath}/${name}`;
+
 for(const required of [indexPath,manifestSource,workerSource,iconSource,icon512Source]){
   if(!fs.existsSync(required))throw new Error(`Consumer PWA input missing: ${required}`);
 }
 
-fs.copyFileSync(manifestSource,path.join(dist,'manifest.webmanifest'));
+const manifest=JSON.parse(fs.readFileSync(manifestSource,'utf8'));
+manifest.id=pagesScope;
+manifest.start_url=`${pagesScope}?app=1`;
+manifest.scope=pagesScope;
+manifest.icons=(manifest.icons||[]).map(icon=>({...icon,src:pagesAsset(String(icon.src||'').split('/').filter(Boolean).pop()||'')}));
+manifest.shortcuts=(manifest.shortcuts||[]).map(shortcut=>{
+  const leaf=String(shortcut.url||'').split('/').filter(Boolean).pop()||'';
+  return {...shortcut,url:pagesAsset(leaf)};
+});
+fs.writeFileSync(path.join(dist,'manifest.webmanifest'),JSON.stringify(manifest,null,2)+'\n');
 fs.copyFileSync(workerSource,path.join(dist,'sw.js'));
 fs.copyFileSync(iconSource,path.join(dist,'app-icon.png'));
 fs.copyFileSync(icon512Source,path.join(dist,'app-icon-512.svg'));
@@ -29,9 +48,9 @@ if(!html.includes(headMarker)){
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<link rel="manifest" href="/Kleenest_Production/manifest.webmanifest" />
-<link rel="icon" type="image/png" href="/Kleenest_Production/app-icon.png" />
-<link rel="apple-touch-icon" href="/Kleenest_Production/app-icon.png" />`;
+<link rel="manifest" href="${pagesAsset('manifest.webmanifest')}" />
+<link rel="icon" type="image/png" href="${pagesAsset('app-icon.png')}" />
+<link rel="apple-touch-icon" href="${pagesAsset('app-icon.png')}" />`;
   if(!html.includes('</head>'))throw new Error('Consumer web export is missing </head>.');
   html=html.replace('</head>',`${pwaHead}\n</head>`);
 }
@@ -49,7 +68,7 @@ if(!html.includes(bodyMarker)){
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('/Kleenest_Production/sw.js', { scope: '/Kleenest_Production/' })
+    navigator.serviceWorker.register('${pagesAsset('sw.js')}', { scope: '${pagesScope}' })
       .catch(function (error) { console.warn('Kleenest service worker registration failed.', error); });
   }, { once: true });
 }

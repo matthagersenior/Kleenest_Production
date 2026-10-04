@@ -15,6 +15,14 @@ if (configuredEasProjectId && configuredEasProjectId !== PRODUCTION_EAS_PROJECT_
 
 const easProjectId = configuredEasProjectId || PRODUCTION_EAS_PROJECT_ID;
 const otaChannel = process.env.EXPO_PUBLIC_OTA_CHANNEL || 'consumer-production';
+function normalizePagesBasePath(value:string|undefined){
+  if(value===undefined)return '/Kleenest_Production';
+  const trimmed=value.trim();
+  if(!trimmed||trimmed==='/')return '';
+  const normalized=trimmed.split('/').filter(Boolean).join('/');
+  return normalized?`/${normalized}`:'';
+}
+const pagesBasePath=normalizePagesBasePath(process.env.EXPO_PUBLIC_PAGES_BASE_PATH);
 const nativeRuntimeId=String(process.env.KLEENEST_NATIVE_RUNTIME_ID||'').trim();
 if(nativeRuntimeId&&!/^[a-f0-9]{40}$/i.test(nativeRuntimeId))throw new Error('KLEENEST_NATIVE_RUNTIME_ID must be a full Git commit SHA.');
 const runtimeVersion=nativeRuntimeId?`kleenest-consumer-native-${nativeRuntimeId}`:'kleenest-consumer-1.0.0';
@@ -91,7 +99,7 @@ const config: ExpoConfig = {
       optimizeAdLoading: true,
     }],
   ],
-  experiments: { typedRoutes: true, baseUrl: '/Kleenest_Production' },
+  experiments: { typedRoutes: true, baseUrl: pagesBasePath || '/' },
   extra: {
     appRole: 'consumer',
     otaChannel,

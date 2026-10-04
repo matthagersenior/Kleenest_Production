@@ -11,7 +11,8 @@ for(const token of [
   'Recommended for most Android users',
   'Share → Add to Dock → Add',
   'Edit Actions',
-  "const APK_PATH='/Kleenest_Production/Kleenest-Consumer.apk'",
+  "const WEB_BASE_PATH=Platform.OS==='web'",
+  'const APK_PATH=`${WEB_BASE_PATH}/Kleenest-Consumer.apk`',
   'Kleenest-Consumer.apk',
   'DOWNLOAD ANDROID APK',
   'COPY APK LINK',
@@ -20,6 +21,7 @@ for(const token of [
 ]){
   must(source.includes(token),`Installation Center beginner guidance is missing: ${token}`);
 }
+must(!source.includes("const APK_PATH='/Kleenest_Production/Kleenest-Consumer.apk'"),'Installation Center APK path must not be hard-coded to the legacy GitHub Pages project path.');
 must(source.includes("browserKind==='safari'"),'Mac Safari must have explicit browser-specific installation guidance.');
 must(source.includes('async function downloadApk(){await Linking.openURL(browserUrl(APK_PATH))}'),'APK download control must open the exact hosted APK path.');
 
@@ -29,3 +31,7 @@ if(failures.length){
   process.exit(1);
 }
 console.log('Installation Center beginner guidance audit passed.');
+// Sync trigger after main advanced; no audit behavior change.
+// Final sync trigger after timeout PR merge; no audit behavior change.
+
+// Current synchronized cutover verification trigger; no runtime behavior change.

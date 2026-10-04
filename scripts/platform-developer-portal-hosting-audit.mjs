@@ -34,7 +34,10 @@ for (const phrase of [
 }
 if (!/Content-Security-Policy/i.test(html)) throw new Error('Static portal must include a CSP.');
 for (const token of ['manifest.webmanifest','navigator.serviceWorker.register','Install Developer Portal']) if (!html.includes(token)) throw new Error(`Developer Portal PWA missing: ${token}`);
-for (const token of ['Kleenest Developer Portal','/Kleenest_Production/developer/','standalone']) if (!manifest.includes(token)) throw new Error(`Developer Portal manifest missing: ${token}`);
+const manifestJson=JSON.parse(manifest);
+if(manifestJson.name!=='Kleenest Developer Portal'||manifestJson.id!=='./'||manifestJson.start_url!=='./'||manifestJson.scope!=='./'||manifestJson.display!=='standalone') {
+  throw new Error('Developer Portal manifest must remain installable with deployment-relative URLs.');
+}
 for (const token of ['kleenest-developer-portal','networkFirst']) if (!worker.includes(token)) throw new Error(`Developer Portal service worker missing: ${token}`);
 if (!/data:image\/svg\+xml/i.test(html)) throw new Error('Static portal must carry a self-contained branded SVG favicon.');
 if (!/class="section-icon"/.test(html)) throw new Error('Developer Portal must use branded section iconography, not text-only cards.');
