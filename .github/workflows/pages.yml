@@ -2,6 +2,11 @@ name: Validate Kleenest Consumer Web Preview
 
 on:
   workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact main SHA validated by Production CI
+        required: false
+        type: string
   pull_request:
     branches: [main]
     paths:
@@ -21,6 +26,7 @@ on:
     types: [completed]
 
 permissions:
+  actions: write
   contents: read
 
 concurrency:
@@ -34,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ inputs.source_sha || github.event.pull_request.head.sha || github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -145,3 +151,21 @@ jobs:
             test-results/consumer-stress
           retention-days: 3
           if-no-files-found: error
+      - name: Dispatch Pages publisher after explicit main validation
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha || github.event.workflow_run.head_sha || github.sha }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const sourceSha = process.env.SOURCE_SHA;
+            if (!sourceSha) throw new Error('Validated source SHA is unavailable.');
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id: 'publish-standalone-installer.yml',
+              ref: 'main',
+              inputs: { source_sha: sourceSha },
+            });
+            core.info(`Dispatched Pages publisher for ${sourceSha}`);
