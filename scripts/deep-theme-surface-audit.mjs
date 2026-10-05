@@ -149,11 +149,12 @@ requireTokens('Consumer app entry dark handoff','apps/consumer-mobile/app/index.
   '/explore',
 ]);
 requireTokens('Consumer Explore functional-home dark surfaces','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',[
-  'style={[s.searchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}',
-  'style={[s.resultsHandoff,{backgroundColor:theme.surface,borderColor:theme.line}]}',
-  'style={[s.listEyebrow,{color:theme.accent}]}',
-  'style={[s.listTitle,{color:theme.ink}]}',
-  'style={[s.listNote,{color:theme.muted}]}',
+  'style={[s.floatingSearchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}',
+  's.resultsSheet,',
+  'style={[s.resultsSheetEyebrow,{color:theme.accent}]}',
+  'style={[s.resultsSheetTitle,{color:theme.ink}]}',
+  'style={[s.sheetStatusText,{color:theme.muted}]}',
+  'style={[s.sheetResultRow,{borderColor:theme.line,backgroundColor:idOf(item)===selectedId?theme.accentSoft:theme.surface}]}',
 ]);
 requireTokens('Consumer shared hero contrast','apps/consumer-mobile/components/ConsumerUI.tsx',[
   'heroBackground=dark?theme.surfaceRaised:theme.accent',
