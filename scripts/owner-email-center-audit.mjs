@@ -48,7 +48,7 @@ requireAll('Email Center navigation',layout,[
 must(!layout.includes('name="communications" options={{href:null'),'Owner Email Center must remain visible in bottom navigation.');
 
 requireAll('Email Center mobile service',service,[
-  "functions.invoke('owner-email-center'",
+  "invokeFunction<T>('owner-email-center'",
   "action:'status'",
   "action:'list_threads'",
   "action:'get_thread'",

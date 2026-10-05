@@ -52,7 +52,7 @@ must(!screen.includes('signInWithOAuth'),'Owner Email Center must not contain a 
 must(!screen.includes('gmail.modify'),'Owner Email Center must not request Gmail scopes.');
 
 requireAll('Owner Email Center service boundary',service,[
-  "functions.invoke('owner-email-center'",
+  "invokeFunction<T>('owner-email-center'",
   "action:'status'",
   "action:'list_threads'",
   "action:'get_thread'",
