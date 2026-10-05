@@ -336,24 +336,27 @@ Deno.serve(async(req:Request)=>{
       const subject=optionalText(body?.subject,500)||'(draft)';
       const text=optionalText(body?.body,50000);
       if(!to.length&&!cc.length&&!bcc.length&&subject==='(draft)'&&!text)throw new Error('Draft is empty.');
-      const settings=await loadSettings(userId);
-      const from=parseMailbox(String(settings.inbox_address||'support@kleenest.us'));
+      let mailbox:any;
       let threadId=draftId;
       if(threadId){
-        const current=await admin.from('owner_email_center_threads').select('id,folder').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
+        const current=await admin.from('owner_email_center_threads').select('id,folder,mailbox_id').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
         if(current.error)throw current.error;
         if(current.data.folder!=='drafts')throw new Error('Only draft conversations can be updated as drafts.');
+        mailbox=await loadMailbox(current.data.mailbox_id||null);
         const updated=await admin.from('owner_email_center_threads').update({
           subject,normalized_subject:normalizeSubject(subject),folder:'drafts',unread:false,
           participants:[...new Set([...to,...cc])],snippet:excerpt(text),latest_direction:'outbound',
+          mailbox_id:mailbox.id,recipient_address:mailbox.address,
           last_message_at:new Date().toISOString(),updated_at:new Date().toISOString(),
         }).eq('id',threadId);
         if(updated.error)throw updated.error;
         const cleared=await admin.from('owner_email_center_messages').delete().eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId);
         if(cleared.error)throw cleared.error;
       }else{
+        mailbox=await loadMailbox(optionalText(body?.mailboxId,100)||null);
         const created=await admin.from('owner_email_center_threads').insert({
-          owner_user_id:storageOwnerUserId,subject,normalized_subject:normalizeSubject(subject),folder:'drafts',unread:false,
+          owner_user_id:storageOwnerUserId,mailbox_id:mailbox.id,recipient_address:mailbox.address,
+          subject,normalized_subject:normalizeSubject(subject),folder:'drafts',unread:false,
           participants:[...new Set([...to,...cc])],snippet:excerpt(text),latest_direction:'outbound',
           message_count:0,last_message_at:new Date().toISOString(),
         }).select('id').single();
@@ -361,38 +364,36 @@ Deno.serve(async(req:Request)=>{
         threadId=String(created.data.id);
       }
       const inserted=await admin.from('owner_email_center_messages').insert({
-        thread_id:threadId,owner_user_id:storageOwnerUserId,direction:'outbound',from_address:from.address,
-        from_name:settings.from_name||'Kleenest',to_addresses:to,cc_addresses:cc,bcc_addresses:bcc,
+        thread_id:threadId,owner_user_id:storageOwnerUserId,mailbox_id:mailbox.id,direction:'outbound',from_address:mailbox.address,
+        from_name:mailbox.display_name||'Kleenest',to_addresses:to,cc_addresses:cc,bcc_addresses:bcc,
         subject,text_body:text,headers:{draft:true},attachments:[],delivery_status:'draft',
       }).select('id').single();
       if(inserted.error)throw inserted.error;
       await refreshThread(threadId);
       await admin.from('owner_email_center_threads').update({folder:'drafts',unread:false}).eq('id',threadId);
-      await audit(storageOwnerUserId,threadId,'save_draft',{to,subject});
+      await audit(storageOwnerUserId,threadId,'save_draft',{to,subject,mailbox:mailbox.address});
       return json({ok:true,threadId,messageId:String(inserted.data.id)});
     }
 
     if(action==='send'){
-      const ready=await requireReady(userId);
+      const mailbox=await loadMailbox(optionalText(body?.mailboxId,100)||null);
+      const ready=await requireReady(storageOwnerUserId);
       const to=emailList(requiredText(body?.to,'to',2000));
       const cc=emailList(body?.cc);
       const bcc=emailList(body?.bcc);
       if(!to.length)throw new Error('At least one valid recipient is required.');
+      if(!mailbox.send_enabled)throw Object.assign(new Error('Sending is disabled for this mailbox.'),{status:403});
       const subject=requiredText(body?.subject,'subject',500);
       const text=requiredText(body?.body,'body',50000);
       const created=await admin.from('owner_email_center_threads').insert({
-        owner_user_id:storageOwnerUserId,
-        subject,
-        normalized_subject:normalizeSubject(subject),
-        folder:'sent',
-        unread:false,
-        participants:[...new Set([...to,...cc])],
-        snippet:excerpt(text),
-        latest_direction:'outbound',
+        owner_user_id:storageOwnerUserId,mailbox_id:mailbox.id,recipient_address:mailbox.address,
+        subject,normalized_subject:normalizeSubject(subject),folder:'sent',unread:false,
+        participants:[...new Set([...to,...cc])],snippet:excerpt(text),latest_direction:'outbound',
         last_message_at:new Date().toISOString(),
       }).select('id').single();
       if(created.error)throw created.error;
-      return json(await sendAndStore({ownerUserId:userId,threadId:created.data.id,from:ready.from,to,cc,bcc,subject,body:text,auditAction:'send'}));
+      const from=String(mailbox.display_name||'Kleenest')+' <'+String(mailbox.address)+'>';
+      return json(await sendAndStore({ownerUserId:storageOwnerUserId,threadId:created.data.id,from,to,cc,bcc,subject,body:text,auditAction:'send'}));
     }
 
     if(action==='reply'){
