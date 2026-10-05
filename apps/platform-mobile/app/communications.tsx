@@ -1,12 +1,13 @@
 import { useEffect,useMemo,useState } from 'react';
+import { router } from 'expo-router';
 import { Pressable,RefreshControl,ScrollView,Text,TextInput,View } from 'react-native';
 import { OSHero,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
 import {
   archiveOwnerMailThread,blockOwnerMailSender,forwardOwnerMailThread,getOwnerMailStatus,getOwnerMailThread,listOwnerMailThreads,
   markOwnerMailThreadSpam,replyOwnerMailThread,saveOwnerMailDraft,sendOwnerMail,setOwnerMailThreadInbox,setOwnerMailThreadLabel,setOwnerMailThreadRead,
-  setOwnerMailThreadStarred,trashOwnerMailThread,
-  type OwnerMailConnectionStatus,type OwnerMailThread,type OwnerMailThreadSummary,
+  setOwnerMailThreadStarred,trashOwnerMailThread,listOwnerMailboxes,
+  type OwnerMailConnectionStatus,type OwnerMailThread,type OwnerMailThreadSummary,type OwnerMailbox,
 } from '../services/communications';
 
 type ViewKey='action'|'active'|'waiting'|'sent'|'drafts'|'spam'|'all';
@@ -28,6 +29,8 @@ const date=(v:DateValue)=>{
 export default function Communications(){
   const theme=usePlatformTheme(); const card=useOSCardStyle();
   const[status,setStatus]=useState<OwnerMailConnectionStatus|null>(null);
+  const[mailboxes,setMailboxes]=useState<OwnerMailbox[]>([]);
+  const[selectedMailboxId,setSelectedMailboxId]=useState<string>('');
   const[threads,setThreads]=useState<OwnerMailThreadSummary[]>([]);
   const[selected,setSelected]=useState<OwnerMailThread|null>(null);
   const[view,setView]=useState<ViewKey>('action'); const[query,setQuery]=useState(''); const[unread,setUnread]=useState(false);
@@ -42,11 +45,12 @@ export default function Communications(){
   async function load(nextView=view){
     setBusy(true);
     try{
-      const [s,r]=await Promise.all([
+      const [s,r,m]=await Promise.all([
         getOwnerMailStatus(),
-        listOwnerMailThreads({query,unreadOnly:unread,maxResults:75,mailbox:views[nextView].mailbox,direction:views[nextView].direction}),
+        listOwnerMailThreads({query,unreadOnly:unread,maxResults:75,mailbox:views[nextView].mailbox,mailboxId:selectedMailboxId||null,direction:views[nextView].direction}),
+        listOwnerMailboxes(),
       ]);
-      setStatus(s); setThreads(r.threads); setView(nextView); setNotice('');
+      setStatus(s); setThreads(r.threads); setMailboxes(m.mailboxes); setView(nextView); setNotice('');
     }catch(e:any){setNotice(String(e?.message||'Email Center could not be loaded.'))}
     finally{setBusy(false)}
   }
@@ -65,18 +69,18 @@ export default function Communications(){
   async function saveDraft(){
     if(!to.trim()&&!cc.trim()&&!bcc.trim()&&!subject.trim()&&!body.trim())return;
     setBusy(true);
-    try{const saved=await saveOwnerMailDraft({draftId:draftThreadId,to,cc,bcc,subject,body});setDraftThreadId(saved.threadId);setCompose(false);setNotice('Draft saved.');await load('drafts')}
+    try{const saved=await saveOwnerMailDraft({mailboxId:selectedMailboxId||null,draftId:draftThreadId,to,cc,bcc,subject,body});setDraftThreadId(saved.threadId);setCompose(false);setNotice('Draft saved.');await load('drafts')}
     catch(e:any){setNotice(String(e?.message||'Draft could not be saved.'))}finally{setBusy(false)}
   }
   async function openDraft(t:OwnerMailThreadSummary){
     setBusy(true);
-    try{const r=await getOwnerMailThread(t.id);const m=r.thread.messages[r.thread.messages.length-1];setDraftThreadId(r.thread.id);setTo(m?.to||'');setCc(m?.cc||'');setBcc('');setSubject(r.thread.subject==='(draft)'?'':r.thread.subject);setBody(m?.body||'');setCompose(true);setSelected(null);setNotice('Draft loaded into composer.')}
+    try{const r=await getOwnerMailThread(t.id);const m=r.thread.messages[r.thread.messages.length-1];setDraftThreadId(r.thread.id);setTo(m?.to||'');setCc(m?.cc||'');setBcc('');setSubject(r.thread.subject==='(draft)'?'':r.thread.subject);setBody(m?.body||'');setSelectedMailboxId(r.thread.mailboxId||selectedMailboxId);setCompose(true);setSelected(null);setNotice('Draft loaded into composer.')}
     catch(e:any){setNotice(String(e?.message||'Draft could not be opened.'))}finally{setBusy(false)}
   }
   async function sendNew(){
     if(!to.trim()||!subject.trim()||!body.trim())return;
     setBusy(true);
-    try{await sendOwnerMail({to,cc,bcc,subject,body});if(draftThreadId)await trashOwnerMailThread(draftThreadId);clearComposer();setNotice('Email sent from Kleenest.');await load('sent')}
+    try{await sendOwnerMail({mailboxId:selectedMailboxId||null,to,cc,bcc,subject,body});if(draftThreadId)await trashOwnerMailThread(draftThreadId);clearComposer();setNotice('Email sent from Kleenest.');await load('sent')}
     catch(e:any){setNotice(String(e?.message||'Email could not be sent.'))}finally{setBusy(false)}
   }
   async function sendReply(all=false){
