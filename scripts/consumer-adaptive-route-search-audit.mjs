@@ -170,7 +170,8 @@ if(!/key=\{`explore-camera-\$\{cameraNonce\}-\$\{mode\}-/.test(screen))throw new
 
 for(const token of [
   'function setMapGestureLock(locked:boolean)',
-  'listRef.current?.setNativeProps?.({scrollEnabled:!locked})',
+  'scrollEnabled={false}',
+  'style={s.resultsSheetList}',
   'function beginMapGesture(){setMapGestureLock(true);}',
   'function endMapGesture()',
   'onStartShouldSetResponderCapture={()=>{beginMapGesture();return false}}',
@@ -185,7 +186,7 @@ for(const token of [
   'mapFlairBadge',
   "borderColor:equippedMapFlair==='gold-ring'?'#e7c45d':theme.accent",
   'style={[s.clusterMarker,{backgroundColor:theme.surface,borderColor:theme.line}]}',
-  '<FreshnessHeatRing item={selected} size={34} photoUrl=',
+  '<FreshnessHeatRing item={selected} size={38} photoUrl=',
   '<FreshnessHeatRing item={item} size={34} photoUrl=',
 ])requireToken(screen,token,'Map freshness-ring semantics');
 if(screen.includes("equippedMapFlair==='gold-ring'&&{borderWidth:3"))throw new Error('Equipped map flair must not replace or visually masquerade as the freshness heat ring.');
