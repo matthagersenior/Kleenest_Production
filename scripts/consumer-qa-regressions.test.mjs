@@ -31,7 +31,7 @@ test('brand search retains the chosen Sparta origin without requesting GPS',asyn
   let source=declaration(screenPath,'loadNearby');
   source=source.slice(0,source.indexOf('    let result:'))+'return {nextOrigin,query};}';
   const noop=()=>{};
-  const context={nearbyEnrichmentRunRef:{current:0},activeIntentRef:{current:null},activeIntentAmenitiesRef:{current:null},selectedAmenityNames:[],radius:1609,maxRadius:402336,autoExpand:true,search:'Pizza Hut',searchAreaOrigin:[-89.701,38.123],searchAreaLabel:'Sparta, Illinois',
+  const context={nearbyEnrichmentRunRef:{current:0},cameraInteractionVersionRef:{current:0},activeIntentRef:{current:null},activeIntentAmenitiesRef:{current:null},selectedAmenityNames:[],radius:1609,maxRadius:402336,autoExpand:true,search:'Pizza Hut',searchAreaOrigin:[-89.701,38.123],searchAreaLabel:'Sparta, Illinois',
     looksLikeAddressOrArea:()=>false,currentLocation:async()=>{gpsCalls++;return {coords:{longitude:-90,latitude:39}};},
     recordConsumerPresenceAt:async()=>null,refreshConsumerPresence:async()=>null,
     setSearch:noop,setSearchAreaOrigin:value=>{if(value===null)cleared=true;},setSearchAreaLabel:noop,setPendingMapOrigin:noop,setDestinationCardOpen:noop,setRoute:noop,snapMapToDiscoveryOrigin:noop};
@@ -96,7 +96,7 @@ test('raster map dragging updates the discovery center in the drag direction',()
 
 test('user map movement keeps the camera center for the next zoom',()=>{
   let cameraCenter,pending;
-  const handler=compile(declaration(screenPath,'handleMapRegionDidChange'),{setMapInteracting:()=>{},setMapZoom:()=>{},setMapCenter:center=>{cameraCenter=center;},setFitRouteCamera:()=>{},setPendingMapOrigin:center=>{pending=center;},mode:'nearby',searchAreaOrigin:[-90.26,38.65],origin:null},'handleMapRegionDidChange');
+  const handler=compile(declaration(screenPath,'handleMapRegionDidChange'),{cameraInteractionVersionRef:{current:0},setMapInteracting:()=>{},setMapZoom:()=>{},setMapCenter:center=>{cameraCenter=center;},setFitRouteCamera:()=>{},setPendingMapOrigin:center=>{pending=center;},mode:'nearby',searchAreaOrigin:[-90.26,38.65],origin:null},'handleMapRegionDidChange');
   handler({nativeEvent:{center:[-90.22,38.65],zoom:13,userInteraction:true}});
   assert.deepEqual(cameraCenter,[-90.22,38.65]);assert.deepEqual(pending,cameraCenter);
 });
@@ -181,7 +181,7 @@ test('map-area search overrides a retained typed address',async()=>{
   source=source.slice(0,source.indexOf('    let result:'))+'return {nextOrigin,query};}';
   const noop=()=>{};
   const dragged=[-90.31,38.66];
-  const context={nearbyEnrichmentRunRef:{current:0},activeIntentRef:{current:null},activeIntentAmenitiesRef:{current:null},selectedAmenityNames:[],radius:1609,maxRadius:402336,autoExpand:true,search:'4500 Maryland Ave, St Louis, MO',searchAreaOrigin:[-90.24897,38.65415],searchAreaLabel:'4500 Maryland Ave',
+  const context={nearbyEnrichmentRunRef:{current:0},cameraInteractionVersionRef:{current:0},activeIntentRef:{current:null},activeIntentAmenitiesRef:{current:null},selectedAmenityNames:[],radius:1609,maxRadius:402336,autoExpand:true,search:'4500 Maryland Ave, St Louis, MO',searchAreaOrigin:[-90.24897,38.65415],searchAreaLabel:'4500 Maryland Ave',
     looksLikeAddressOrArea:()=>true,resolveConsumerSearchLocation:async()=>{geocodeCalls++;return {longitude:-90.24897,latitude:38.65415,label:'4500 Maryland Ave'};},
     currentLocation:async()=>{gpsCalls++;return {coords:{longitude:-90,latitude:39}};},
     recordConsumerPresenceAt:async()=>null,refreshConsumerPresence:async()=>null,
