@@ -148,7 +148,8 @@ for(const token of ['accessibilityLabel="Tell Kleenest what you think"','✦ Tel
 if(betaButton.includes("const compactFab=route==='/explore';"))throw new Error('Explore feedback control must stay labeled instead of collapsing to an unlabeled sparkle-only FAB.');
 if(!screen.includes('setMapZoom((current) => Math.max(current, 14));'))throw new Error('Selecting a place from a grouped pin must preserve the detailed map zoom.');
 for(const token of [
-  'function densityAwareInitialZoom(rows:any[],origin:[number,number],fallback=13)',
+  'const DENSITY_CAMERA_FALLBACK_ZOOM=13;',
+  'function densityAwareInitialZoom(rows:any[],origin:[number,number],fallback=DENSITY_CAMERA_FALLBACK_ZOOM)',
   'if(withinHalfMile>=80)return 16;',
   'if(withinHalfMile>=40||withinMile>=120)return 15.5;',
   'if(withinMile>=60)return 15;',
