@@ -133,9 +133,14 @@ test('Consumer production-equivalent real-world stress test',async({browser})=>{
   await launch.page.screenshot({path:path.join(OUTPUT,'03-pizza-hut.png'),fullPage:false});
   if(!retainedOrigin)failures.push('Brand search lost the selected address origin and reverted discovery context.');
 
-  // 4. Open a real result when available and inspect the consumer decision surface.
-  const details=launch.page.getByText('Full details',{exact:true}).first();
-  if(await details.count()){
+  // 4. Select a visible result from the unified results sheet, then inspect details.
+  const expandResults=launch.page.getByRole('button',{name:'Expand results'}).first();
+  if(await expandResults.isVisible().catch(()=>false))await expandResults.click();
+  const selectableResult=launch.page.getByRole('button',{name:/^Select /}).first();
+  if(await selectableResult.isVisible().catch(()=>false)){
+    await selectableResult.click();
+    const details=launch.page.getByText('Full details',{exact:true}).first();
+    await expect(details).toBeVisible({timeout:10000});
     await details.click();
     await launch.page.waitForTimeout(1500);
     const detailText=clean(await launch.page.locator('body').innerText());
@@ -149,7 +154,7 @@ test('Consumer production-equivalent real-world stress test',async({browser})=>{
     await launch.page.screenshot({path:path.join(OUTPUT,'04-full-details.png'),fullPage:false});
     if(!detailSignals.hasDirections)failures.push('Full Details did not expose the primary directions action.');
   }else{
-    observations.push(await collect(launch.page,'full_details_surface_skipped',launch.network,{reason:'No rendered result card after Pizza Hut search'}));
+    observations.push(await collect(launch.page,'full_details_surface_skipped',launch.network,{reason:'No visible unified-sheet result after Pizza Hut search'}));
   }
   await launch.page.close();
 
