@@ -235,10 +235,10 @@ if((screen.match(/<FlatList/g)||[]).length!==1)throw new Error('Consumer Explore
 const modeIndex=screen.indexOf('accessibilityLabel="Nearby search"');
 const filterButtonIndex=screen.indexOf('accessibilityLabel="Filter places"');
 const mapIndex=screen.indexOf('<View style={s.mapSection}>');
-const listHeaderIndex=screen.indexOf('ListHeaderComponent={');
-const resultsIndex=screen.indexOf('NEARBY OPTIONS');
-const renderItemIndex=screen.indexOf('renderItem={({ item })');
-if(!(listHeaderIndex>0&&modeIndex>listHeaderIndex&&filterButtonIndex>modeIndex&&mapIndex>filterButtonIndex&&resultsIndex>mapIndex&&renderItemIndex>resultsIndex))throw new Error('Consumer Explore must preserve compact controls → map → results ordering inside the single virtualized scroll surface.');
+const sheetIndex=screen.indexOf('s.resultsSheet,');
+if(!(modeIndex>0&&filterButtonIndex>modeIndex&&mapIndex>filterButtonIndex&&sheetIndex>mapIndex))throw new Error('Consumer Explore must preserve floating controls → full-screen map → overlay results-sheet ordering.');
+if(!screen.includes('scrollEnabled={false}'))throw new Error('The outer Explore list must stay fixed so map gestures do not fight page scrolling.');
+if(!screen.includes('style={s.resultsSheetList}'))throw new Error('Search results must scroll inside the map-overlay results sheet.');
 
 const filterModalStart=screen.indexOf('<Modal');
 const filterModalEnd=screen.indexOf('</Modal>',filterModalStart);
@@ -248,26 +248,27 @@ for(const token of ['Starting radius','What matters on this stop?','Search farth
 }
 if(!filterModal.includes('filterAmenities.map'))throw new Error('Amenity chips must move into the filter modal so the map rises on the page.');
 if(!filterModal.includes('radiusChoices.map'))throw new Error('Radius controls must move into the filter modal so the map rises on the page.');
-if(!screen.includes('<View pointerEvents="auto" style={[s.selectedPanel'))throw new Error('Selected map-pin panel must own touch events so its close control works above the native map.');
-if(!screen.includes("selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12"))throw new Error('Selected map-pin panel must stay compact and bottom-anchored so the map remains visible.');
-if(!screen.includes("close: { minWidth: 44, minHeight: 44, zIndex: 41, elevation: 13"))throw new Error('Selected map-pin close control must stay compact while preserving stacking order; hitSlop supplies the forgiving touch target.');
-if(!screen.includes('hitSlop={12}'))throw new Error('Selected map-pin close control must preserve forgiving hit slop.');
+if(!screen.includes('pointerEvents="auto"')||!screen.includes('s.resultsSheet,'))throw new Error('Results sheet must own touch events above the native map.');
+if(!screen.includes("resultsSheet:{position:'absolute',left:8,right:8,bottom:8"))throw new Error('Results sheet must stay bottom-anchored over the full-screen map.');
+if(!screen.includes("sheetClose:{width:36,height:36"))throw new Error('Selected-place close control must remain visible inside the overlay sheet.');
+if(!screen.includes('hitSlop={12}'))throw new Error('Selected-place close control must preserve forgiving hit slop.');
+const selectedActionsIndex=screen.indexOf('style={s.selectedSheetActions}');
+const selectedScrollIndex=screen.indexOf('<ScrollView style={s.selectedSheetScroll}');
+if(!(selectedActionsIndex>0&&selectedScrollIndex>selectedActionsIndex))throw new Error('Go, Add to route, and Full details must remain fixed above the selected-place detail scroll.');
 if(screen.includes('<RestroomSignals item={item} compact />'))throw new Error('Result cards must use compact icon/value signals instead of tall labeled signal pills.');
 for(const token of [
   '<CompactRestroomSignals item={item} />',
-  "card: { borderRadius: 16, padding: 10",
-  "cardMain: { gap: 4 }",
-  "cardActionRow: { flexDirection: 'row', gap: 5",
+  "sheetResultRow:{minHeight:76",
+  "resultsSheet:{position:'absolute'",
+  "selectedSheetActions:{flexDirection:'row',gap:6}",
+  "selectedSheetScroll:{flex:1,minHeight:0}",
   "primarySmall: { minHeight: 44",
   "secondarySmall: { minHeight: 44",
-  "close: { minWidth: 44, minHeight: 44",
-  "selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228",
-  "selectedBodyContent:{gap:4,paddingBottom:0}",
   "Why trusted?",
   "trustEvidenceLine(item)",
   "<DecisionRestroomSignals item={selected} />",
   "selectedMoreRow:{flexDirection:'row',gap:6}",
-])requireToken(screen,token,'Consumer compact Explore card density and trust transparency');
+])requireToken(screen,token,'Consumer compact Explore sheet density and trust transparency');
 if(screen.includes("{selected ? 'Selected on map' : 'Tap this card to focus its map pin'}"))throw new Error('Result cards must not spend vertical space on redundant map-selection hint copy.');
 if(screen.includes('Road trip / advanced')||screen.includes('showAdvanced ? ('))throw new Error('Detailed controls must stay in the dismissible filter modal.');
 
