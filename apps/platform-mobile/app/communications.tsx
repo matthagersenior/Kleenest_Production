@@ -10,6 +10,7 @@ import {
 } from '../services/communications';
 
 type ViewKey='action'|'active'|'waiting'|'sent'|'all';
+type DateValue=string|number|Date|null|undefined;
 const views:Record<ViewKey,{label:string;description:string;mailbox:'inbox'|'sent'|'all';direction:'any'|'incoming'|'outgoing'}>={
   action:{label:'Needs reply',description:'Latest message came into Kleenest.',mailbox:'inbox',direction:'incoming'},
   active:{label:'Active',description:'Current Kleenest inbox conversations.',mailbox:'inbox',direction:'any'},
@@ -17,7 +18,7 @@ const views:Record<ViewKey,{label:string;description:string;mailbox:'inbox'|'sen
   sent:{label:'Sent',description:'Outbound Kleenest conversations.',mailbox:'sent',direction:'any'},
   all:{label:'All mail',description:'Every conversation except Trash.',mailbox:'all',direction:'any'},
 };
-const date=(v:string|number|Date|null|undefined)=>{const d=new Date(v||'');return Number.isFinite(d.getTime())?d.toLocaleString():''};
+const date=(v:DateValue)=>{const d=new Date(v||'');return Number.isFinite(d.getTime())?d.toLocaleString():''};
 
 export default function Communications(){
   const theme=usePlatformTheme(); const card=useOSCardStyle();
