@@ -287,9 +287,13 @@ Deno.serve(async(req:Request)=>{
       const mailbox=String(body?.mailbox||'inbox');
       const direction=String(body?.direction||'any');
       const mailboxId=optionalText(body?.mailboxId,100);
+      const accessibleIds=await accessibleMailboxIds(userId,authorization);
+      if(mailboxId&&!accessibleIds.includes(mailboxId))throw Object.assign(new Error('Mailbox access is required.'),{status:403});
+      if(!accessibleIds.length)return json({threads:[],nextPageToken:null});
       let q=admin.from('owner_email_center_threads')
         .select('id,subject,snippet,participants,last_message_at,unread,folder,latest_direction,starred,message_count,has_attachment,labels,priority,support_request_id,source_app,mailbox_id,recipient_address')
         .eq('owner_user_id',storageOwnerUserId)
+        .in('mailbox_id',mailboxId?[mailboxId]:accessibleIds)
         .order('last_message_at',{ascending:false})
         .limit(maxResults);
       if(mailboxId)q=q.eq('mailbox_id',mailboxId);
@@ -332,7 +336,8 @@ Deno.serve(async(req:Request)=>{
       const threadResult=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
       if(threadResult.error)throw threadResult.error;
       const row=threadResult.data;
-      const mailboxRow=row.mailbox_id?await loadMailbox(String(row.mailbox_id)):null;
+      if(!row.mailbox_id)throw Object.assign(new Error('Thread mailbox is unavailable.'),{status:409});
+      const mailboxRow=await requireMailboxAccess(userId,authorization,String(row.mailbox_id),false);
       const messageResult=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).order('created_at',{ascending:true});
       if(messageResult.error)throw messageResult.error;
       const messages=(messageResult.data||[]).map((message:any)=>({
@@ -368,7 +373,8 @@ Deno.serve(async(req:Request)=>{
         const current=await admin.from('owner_email_center_threads').select('id,folder,mailbox_id').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
         if(current.error)throw current.error;
         if(current.data.folder!=='drafts')throw new Error('Only draft conversations can be updated as drafts.');
-        mailbox=await loadMailbox(current.data.mailbox_id||null);
+        if(!current.data.mailbox_id)throw Object.assign(new Error('Draft mailbox is unavailable.'),{status:409});
+        mailbox=await requireMailboxAccess(userId,authorization,String(current.data.mailbox_id),true);
         const updated=await admin.from('owner_email_center_threads').update({
           subject,normalized_subject:normalizeSubject(subject),folder:'drafts',unread:false,
           participants:[...new Set([...to,...cc])],snippet:excerpt(text),latest_direction:'outbound',
@@ -379,7 +385,9 @@ Deno.serve(async(req:Request)=>{
         const cleared=await admin.from('owner_email_center_messages').delete().eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId);
         if(cleared.error)throw cleared.error;
       }else{
-        mailbox=await loadMailbox(optionalText(body?.mailboxId,100)||null);
+        const requestedMailboxId=optionalText(body?.mailboxId,100);
+        const requestedMailbox=requestedMailboxId?await loadMailbox(requestedMailboxId):await loadMailbox(null);
+        mailbox=await requireMailboxAccess(userId,authorization,String(requestedMailbox.id),true);
         const created=await admin.from('owner_email_center_threads').insert({
           owner_user_id:storageOwnerUserId,mailbox_id:mailbox.id,recipient_address:mailbox.address,
           subject,normalized_subject:normalizeSubject(subject),folder:'drafts',unread:false,
@@ -402,7 +410,9 @@ Deno.serve(async(req:Request)=>{
     }
 
     if(action==='send'){
-      const mailbox=await loadMailbox(optionalText(body?.mailboxId,100)||null);
+      const requestedMailboxId=optionalText(body?.mailboxId,100);
+      const requestedMailbox=requestedMailboxId?await loadMailbox(requestedMailboxId):await loadMailbox(null);
+      const mailbox=await requireMailboxAccess(userId,authorization,String(requestedMailbox.id),true);
       const ready=await requireReady(storageOwnerUserId);
       const to=emailList(requiredText(body?.to,'to',2000));
       const cc=emailList(body?.cc);
@@ -428,7 +438,8 @@ Deno.serve(async(req:Request)=>{
       const replyAll=Boolean(body?.replyAll);
       const thread=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
       if(thread.error)throw thread.error;
-      const mailbox=await loadMailbox(thread.data.mailbox_id||null);
+      if(!thread.data.mailbox_id)throw Object.assign(new Error('Thread mailbox is unavailable.'),{status:409});
+      const mailbox=await requireMailboxAccess(userId,authorization,String(thread.data.mailbox_id),true);
 
       if(thread.data.support_request_id){
         const support=await admin.from('support_requests').select('id,user_id,status,source_app,subject').eq('id',thread.data.support_request_id).single();
@@ -480,7 +491,8 @@ Deno.serve(async(req:Request)=>{
       const note=optionalText(body?.body,50000);
       const thread=await admin.from('owner_email_center_threads').select('subject,mailbox_id').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
       if(thread.error)throw thread.error;
-      const mailbox=await loadMailbox(thread.data.mailbox_id||null);
+      if(!thread.data.mailbox_id)throw Object.assign(new Error('Thread mailbox is unavailable.'),{status:409});
+      const mailbox=await requireMailboxAccess(userId,authorization,String(thread.data.mailbox_id),true);
       await requireReady(storageOwnerUserId);
       if(!mailbox.send_enabled)throw Object.assign(new Error('Sending is disabled for this mailbox.'),{status:403});
       const last=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).order('created_at',{ascending:false}).limit(1).maybeSingle();
@@ -495,6 +507,8 @@ Deno.serve(async(req:Request)=>{
       const threadId=requiredText(body?.threadId,'threadId',100);
       const current=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
       if(current.error)throw current.error;
+      if(!current.data.mailbox_id)throw Object.assign(new Error('Thread mailbox is unavailable.'),{status:409});
+      await requireMailboxAccess(userId,authorization,String(current.data.mailbox_id),false);
       const latest=await admin.from('owner_email_center_messages').select('from_address,direction').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).eq('direction','inbound').order('created_at',{ascending:false}).limit(1).maybeSingle();
       if(latest.error)throw latest.error;
       const sender=String(latest.data?.from_address||'').toLowerCase();
@@ -513,6 +527,8 @@ Deno.serve(async(req:Request)=>{
       const threadId=requiredText(body?.threadId,'threadId',100);
       const current=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
       if(current.error)throw current.error;
+      if(!current.data.mailbox_id)throw Object.assign(new Error('Thread mailbox is unavailable.'),{status:409});
+      await requireMailboxAccess(userId,authorization,String(current.data.mailbox_id),false);
       const patch:any={updated_at:new Date().toISOString()};
       if(action==='archive')patch.folder='archive';
       if(action==='trash')patch.folder='trash';
