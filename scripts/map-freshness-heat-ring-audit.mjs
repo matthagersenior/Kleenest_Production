@@ -34,19 +34,24 @@ if(!failures.length){
     if(!explore.includes(token))failures.push('Native Explore heat-ring wiring missing '+token);
   if(!explore.includes('<FreshnessHeatRing item={item} size={34} photoUrl={item.consumer_photo_url ? String(item.consumer_photo_url) : undefined} />'))
     failures.push('Native Explore search-result cards must keep the freshness heat ring even when a community photo is available.');
-  if(!explore.includes('<FreshnessHeatRing item={selected} size={34} photoUrl={selected.consumer_photo_url ? String(selected.consumer_photo_url) : undefined} />'))
-    failures.push('Native Explore selected map-pin card must keep the freshness heat ring even when a community photo is available.');
+  if(!explore.includes('<FreshnessHeatRing item={selected} size={38} photoUrl={selected.consumer_photo_url ? String(selected.consumer_photo_url) : undefined} />'))
+    failures.push('Native Explore selected results sheet must keep the freshness heat ring even when a community photo is available.');
   if(!explore.includes('<FreshnessHeatRing item={row} size={22} />'))
     failures.push('Native map markers must keep one freshness-ring geometry; selection belongs to the marker wrapper.');
   if(signals.includes('active?5:4')||signals.includes('active?16:12')||explore.includes('active={active}')||explore.includes('size={active ? 28 : 22}'))
     failures.push('Freshness ring geometry must not change for selected/active state.');
   for(const token of [
-    '<ScrollView style={s.selectedBodyScroll}',
+    'style={s.selectedSheetBody}',
+    'style={s.selectedSheetActions}',
+    '<ScrollView style={s.selectedSheetScroll}',
     'showsVerticalScrollIndicator={false}',
-    "selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228",
-    'selectedBodyScroll:{flex:1}',
-    'selectedBodyContent:{gap:4,paddingBottom:0}',
-  ])if(!explore.includes(token))failures.push('Native selected map card containment missing '+token);
+    "resultsSheet:{position:'absolute'",
+    'selectedSheetScroll:{flex:1,minHeight:0}',
+    'selectedSheetScrollContent:{gap:7,paddingBottom:8}',
+  ])if(!explore.includes(token))failures.push('Native selected results-sheet containment missing '+token);
+  const actionIndex=explore.indexOf('style={s.selectedSheetActions}');
+  const scrollIndex=explore.indexOf('<ScrollView style={s.selectedSheetScroll}');
+  if(actionIndex<0||scrollIndex<0||actionIndex>scrollIndex)failures.push('Selected-place primary actions must remain outside and above the scrolling detail region.');
   if(explore.includes("style={[s.marker,{backgroundColor:theme.surface,borderColor:theme.line}"))
     failures.push('Native map marker wrapper must not replace the freshness ring with a generic border.');
 
