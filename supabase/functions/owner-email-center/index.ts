@@ -120,6 +120,47 @@ async function loadMailbox(mailboxId?:string|null){
   if(!result.data)throw new Error('Kleenest mailbox is unavailable.');
   return result.data;
 }
+async function mailboxMembership(userId:string,mailboxId:string){
+  const result=await adminClient().from('owner_email_mailbox_members')
+    .select('access_role,can_send')
+    .eq('mailbox_id',mailboxId)
+    .eq('user_id',userId)
+    .maybeSingle();
+  if(result.error)throw result.error;
+  return result.data;
+}
+async function requireMailboxAccess(userId:string,authorization:Record<string,unknown>,mailboxId:string,requireSend=false){
+  const mailbox=await loadMailbox(mailboxId);
+  const platformOwner=Boolean(authorization.is_platform_owner);
+  const admin=Boolean(authorization.authorized||authorization.is_admin||authorization.is_platform_owner);
+  const member=await mailboxMembership(userId,mailboxId);
+  const owns=String(mailbox.owner_user_id||'')===userId;
+  const personal=mailbox.mailbox_type==='personal';
+  const canRead=platformOwner||owns||Boolean(member)||(admin&&!personal);
+  if(!canRead)throw Object.assign(new Error('Mailbox access is required.'),{status:403});
+  if(requireSend){
+    const canSend=platformOwner||owns||Boolean(member?.can_send)||(admin&&!personal);
+    if(!mailbox.send_enabled||!canSend)throw Object.assign(new Error('Send permission is required for this mailbox.'),{status:403});
+  }
+  return mailbox;
+}
+async function accessibleMailboxIds(userId:string,authorization:Record<string,unknown>){
+  const admin=adminClient();
+  if(Boolean(authorization.is_platform_owner)){
+    const all=await admin.from('owner_email_mailboxes').select('id').eq('active',true);
+    if(all.error)throw all.error;
+    return (all.data||[]).map((row:any)=>String(row.id));
+  }
+  const membership=await admin.from('owner_email_mailbox_members').select('mailbox_id').eq('user_id',userId);
+  if(membership.error)throw membership.error;
+  const memberIds=(membership.data||[]).map((row:any)=>String(row.mailbox_id));
+  const mailboxes=await admin.from('owner_email_mailboxes').select('id,mailbox_type,owner_user_id').eq('active',true);
+  if(mailboxes.error)throw mailboxes.error;
+  const isAdmin=Boolean(authorization.authorized||authorization.is_admin);
+  return (mailboxes.data||[])
+    .filter((row:any)=>String(row.owner_user_id||'')===userId||memberIds.includes(String(row.id))||(isAdmin&&row.mailbox_type!=='personal'))
+    .map((row:any)=>String(row.id));
+}
 async function requireReady(ownerUserId:string){
   const[provider,settings]=await Promise.all([providerConfig(),loadSettings(ownerUserId)]);
   if(!provider.configured||!provider.api_key)throw Object.assign(new Error('Email provider is not configured.'),{status:503});
