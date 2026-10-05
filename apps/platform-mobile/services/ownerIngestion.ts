@@ -15,10 +15,18 @@ export type IngestionControlSnapshot={
   markets?:Record<string,unknown>[];
   storage_guard?:Record<string,unknown>;
   history?:Record<string,unknown>[];
+  discovery_signals?:Record<string,unknown>[];
   generated_at?:string;
 };
 
-export const getOwnerIngestionControl=(limit=80)=>rpc<IngestionControlSnapshot>('owner_ingestion_control_snapshot',{p_limit:Math.min(Math.max(limit,1),200)});
+export const getOwnerIngestionControl=async(limit=80):Promise<IngestionControlSnapshot>=>{
+  const bounded=Math.min(Math.max(limit,1),200);
+  const [snapshot,discoverySignals]=await Promise.all([
+    rpc<IngestionControlSnapshot>('owner_ingestion_control_snapshot',{p_limit:bounded}),
+    rpc<Record<string,unknown>[]>('owner_discovery_growth_signals',{p_limit:Math.min(bounded,100)}),
+  ]);
+  return {...snapshot,discovery_signals:discoverySignals};
+};
 
 export const setGlobalIngestionPaused=(paused:boolean)=>rpc('owner_set_ingestion_global_pause',{
   p_paused:paused,
