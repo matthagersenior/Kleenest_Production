@@ -17,7 +17,7 @@ const views:Record<ViewKey,{label:string;description:string;mailbox:'inbox'|'sen
   sent:{label:'Sent',description:'Outbound Kleenest conversations.',mailbox:'sent',direction:'any'},
   all:{label:'All mail',description:'Every conversation except Trash.',mailbox:'all',direction:'any'},
 };
-const date=v=>{const d=new Date(v||'');return Number.isFinite(d.getTime())?d.toLocaleString():''};
+const date=(v:string|number|Date|null|undefined)=>{const d=new Date(v||'');return Number.isFinite(d.getTime())?d.toLocaleString():''};
 
 export default function Communications(){
   const theme=usePlatformTheme(); const card=useOSCardStyle();
