@@ -12,6 +12,7 @@ function namedKey(plural:string,legacy:string){
 const SUPABASE_PUBLISHABLE_KEY=namedKey('SUPABASE_PUBLISHABLE_KEYS','SUPABASE_ANON_KEY');
 const SUPABASE_SECRET_KEY=namedKey('SUPABASE_SECRET_KEYS','SUPABASE_SERVICE_ROLE_KEY');
 const RESEND_API='https://api.resend.com';
+const RESEND_EMAILS_ENDPOINT='https://api.resend.com/emails';
 
 function json(body:unknown,status=200){
   return new Response(JSON.stringify(body),{
@@ -81,7 +82,8 @@ async function providerConfig(){
   return(data||{}) as {configured?:boolean;api_key?:string;from_address?:string;webhook_configured?:boolean};
 }
 async function resend(path:string,apiKey:string,init:RequestInit={}){
-  const response=await fetch(`${RESEND_API}${path}`,{
+  const endpoint=path==='/emails'?RESEND_EMAILS_ENDPOINT:`${RESEND_API}${path}`;
+  const response=await fetch(endpoint,{
     ...init,
     headers:{
       'authorization':`Bearer ${apiKey}`,
