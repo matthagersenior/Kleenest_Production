@@ -1,4 +1,5 @@
 -- Repair the owner Email Center PostgREST boundary and align ingestion controls with active background workers.
+-- Runtime repair was applied first; this migration keeps production/main authoritative.
 
 create or replace function public.owner_email_center_provider_config()
 returns jsonb
