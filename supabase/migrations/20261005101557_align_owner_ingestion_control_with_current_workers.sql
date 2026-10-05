@@ -1,0 +1,3 @@
+-- Ledger convergence marker for a runtime-first repair already applied to Kleenest Production.
+-- The complete idempotent ingestion-control alignment is consolidated in
+-- 20261005102000_owner_runtime_status_repairs.sql for reproducible environments.
