@@ -10,174 +10,95 @@ const screen=requireFile('apps/platform-mobile/app/communications.tsx');
 const service=requireFile('apps/platform-mobile/services/communications.ts');
 const layout=requireFile('apps/platform-mobile/app/_layout.tsx');
 const home=requireFile('apps/platform-mobile/app/index.tsx');
-const gateway=requireFile('supabase/functions/owner-email-gateway/index.ts');
+const center=requireFile('supabase/functions/owner-email-center/index.ts');
+const inbound=requireFile('supabase/functions/owner-email-inbound/index.ts');
+const migration=requireFile('supabase/migrations/20261005013000_owner_email_center.sql');
 const appSearch=requireFile('packages/mobile-core/src/appSearch.ts');
-const oauthRelay=requireFile('apps/consumer-mobile/services/operatorOAuthRelay.ts');
-const gmailPersistence=requireFile('supabase/migrations/20260923180713_owner_gmail_persistence.sql');
 
-requireAll('Owner communications route',layout,[
-  'name="communications"',
-  "title:'Email'",
-]);
+requireAll('Owner communications route',layout,['name="communications"', "title:'Email'"]);
 must(!layout.includes('name="communications" options={{href:null'),'Owner communications route must stay visible in the Owner bottom navigation.');
-requireAll('Owner communications discoverability',home,[
-  "'/communications'",
-  "'Communications & Email'",
-  'href="/communications"',
-  'Open Email Inbox',
-]);
-requireAll('Owner communications search discoverability',appSearch,[
+requireAll('Owner communications discoverability',home,["'/communications'","'Communications & Email'",'href="/communications"','Open Email Inbox']);
+requireAll('Owner Email Center search discoverability',appSearch,[
   "id:'communications-email'",
+  "title:'Kleenest Email Center'",
   "route:'/communications'",
   "'email'",
-  "'gmail'",
   "'inbox'",
   "'reply'",
-  "'outreach'",
+  "'support'",
+  "'kleenest.us'",
 ]);
-requireAll('Owner Gmail connection UI',screen,[
-  'Connect Gmail',
-  'signInWithOAuth',
-  "provider: 'google'",
-  'https://www.googleapis.com/auth/gmail.modify',
-  'openAuthSessionAsync',
-  "Linking.createURL('communications'",
-  'exchangeCodeForSession',
-  'provider_token',
-  'provider_refresh_token',
-  'connectOwnerMail',
-  "parsed.searchParams.set('scopes',gmailScopes)",
-  "include_granted_scopes:'true'",
-  "prompt:'consent select_account'",
-  'insufficient authentication scopes',
-  "productionOAuthRelay='https://matthagersenior.github.io/Kleenest_Production/'",
-  'kleenest_oauth_start=owner-gmail',
-  'encodeURIComponent(scopedAuthorizeUrl)',
-  'openAuthSessionAsync(relayStart,nativeAppOAuthReturn)',
-]);
-requireAll('Owner Gmail native callback relay',oauthRelay,[
-  "OWNER_GMAIL_OAUTH_RETURN_KEY='kleenest.native.owner.gmail.oauth.return'",
-  "search.get('kleenest_oauth_start')!=='owner-gmail'",
-  "destination.origin!==KLEENEST_SUPABASE_ORIGIN",
-  "destination.pathname!=='/auth/v1/authorize'",
-  "'kleenest-owner://communications'",
-  'OPERATOR_OAUTH_MAX_AGE_MS',
-]);
-requireAll('Owner email workflow UI',screen,[
-  'Search this Kleenest view',
-  'Unread',
-  'Refresh',
-  'Reply',
-  'Archive',
-  'Mark unread',
-  'listOwnerMailThreads',
-  'getOwnerMailThread',
-  'replyOwnerMailThread',
-  'archiveOwnerMailThread',
-  'setOwnerMailThreadRead',
-  'Kleenest Smart Inbox',
+must(!appSearch.includes("keywords:['email','gmail'"),'Owner search should not present Gmail as the primary mail dependency.');
+
+requireAll('Owner Email Center UI',screen,[
+  'Kleenest Email Center',
+  'support@kleenest.us',
+  'Kleenestapp@gmail.com',
   'Needs reply',
   'Waiting',
-  'Sent outreach',
-  'All Kleenest',
+  'Sent',
+  'All mail',
   'Compose',
-  'Open Gmail',
-  'Trash',
-  'setOwnerMailThreadStarred',
-  'trashOwnerMailThread',
-  'sendOwnerMail',
+  'Reply',
   'Reply all',
   'Forward',
-  'Move to inbox',
-  'Cc (optional)',
-  'Bcc (optional)',
-  'Attachments',
+  'Archive',
+  'Trash',
+  'Unread',
   'Kleenest labels',
-  'setOwnerMailThreadInbox',
-  'setOwnerMailThreadLabel',
-  'forwardOwnerMailThread',
 ]);
-requireAll('Owner email client boundary',service,[
-  "functions.invoke('owner-email-gateway'",
-  "auth.getSession()",
-  "headers:{Authorization:`Bearer ${session.access_token}`}",
-  "action:'connect'",
-  'providerRefreshToken',
+must(!screen.includes('Connect Gmail'),'Owner Email Center must not require Gmail OAuth.');
+must(!screen.includes('signInWithOAuth'),'Owner Email Center must not contain a Google OAuth path.');
+must(!screen.includes('gmail.modify'),'Owner Email Center must not request Gmail scopes.');
+
+requireAll('Owner Email Center service boundary',service,[
+  "functions.invoke('owner-email-center'",
   "action:'status'",
   "action:'list_threads'",
   "action:'get_thread'",
   "action:'reply'",
+  "action:'send'",
+  "action:'forward'",
   "action:'archive'",
   "action:'set_read'",
-  "action:'send'",
   "action:'star'",
   "action:'trash'",
-  'mailbox:input.mailbox',
-  'direction:input.direction',
-  "action:'forward'",
   "action:'set_inbox'",
   "action:'set_label'",
-  'replyAll:Boolean(input.replyAll)',
-  'cc:input.cc',
-  'bcc:input.bcc',
 ]);
-must(!service.includes('gmail.googleapis.com'),'Owner mobile client must not call Gmail directly; Gmail access stays behind the server gateway.');
-must(!service.toLowerCase().includes('service_role'),'Owner mobile client must never contain a Supabase service role key.');
-must(!service.includes("action:'list_threads',\n    providerToken"),'Routine Owner Gmail calls must use the persisted server connection instead of transporting provider tokens.');
+must(!service.includes('owner-email-gateway'),'Owner app must no longer route operational mail through the Gmail gateway.');
+must(!service.toLowerCase().includes('gmail'),'Owner mail client must remain provider-neutral.');
 
-requireAll('Owner email gateway authorization',gateway,[
+requireAll('Email Center server authority',center,[
   "rpc('admin_authorization_v1')",
-  "const jwt=authorizationHeader.slice('Bearer '.length).trim()",
   "client.auth.getUser(jwt)",
-  "global:{headers:{Authorization:`Bearer ${jwt}`}}",
-  'authorization',
-  'authorized',
-  'SUPABASE_SECRET_KEYS',
-  "from('owner_gmail_connections')",
-  "const GMAIL='https://gmail.googleapis.com/gmail/v1/users/me'",
-  "'/profile'",
-]);
-requireAll('Owner email gateway capabilities',gateway,[
-  "action==='connect'",
-  'provider_refresh_token',
-  "GOOGLE_TOKEN='https://oauth2.googleapis.com/token'",
-  "grant_type:'refresh_token'",
-  'refreshGoogleAccessToken',
-  'list_threads',
-  'get_thread',
-  'reply',
-  'archive',
-  'set_read',
-  '/threads?',
-  "'/messages/send'",
+  "from('owner_email_center_threads')",
+  "from('owner_email_center_messages')",
+  'https://api.resend.com',
   'In-Reply-To',
   'References',
-  'threadId',
-  'removeLabelIds',
-  "action==='send'",
-  "action==='star'",
-  "action==='trash'",
-  "addLabelIds:['STARRED']",
-  "removeLabelIds:['STARRED']",
-  '/trash',
-  "mailbox==='sent'",
-  "direction==='outgoing'",
-  "action==='forward'",
-  "action==='set_inbox'",
-  "action==='set_label'",
-  'attachmentsOf',
-  "emailsFromHeader",
-  "Cc: ${additional.join(', ')}",
-  "gmailConnected(connection,'/labels')",
+  'support@kleenest.us',
 ]);
-requireAll('Owner Gmail persistence migration',gmailPersistence,[
-  'create table if not exists public.owner_gmail_connections',
-  'provider_refresh_token text not null',
-  'google_client_id text not null',
+requireAll('Signed inbound email handling',inbound,[
+  'resend.webhooks.verify',
+  'resend.emails.receiving.get',
+  "event.type!=='email.received'",
+  "from('owner_email_center_messages')",
+  "from('owner_email_center_threads')",
+]);
+requireAll('Service-owned mail persistence',migration,[
+  'create table if not exists public.owner_email_center_settings',
+  'create table if not exists public.owner_email_center_threads',
+  'create table if not exists public.owner_email_center_messages',
   'enable row level security',
-  'revoke all on table public.owner_gmail_connections from anon, authenticated',
-  'grant select, insert, update, delete on table public.owner_gmail_connections to service_role',
+  'revoke all on table public.owner_email_center_threads from anon, authenticated',
+  'owner_email_center_provider_config',
+  'owner_email_webhook_secret',
 ]);
 
-if(failures.length){console.error(`Owner communications audit failed with ${failures.length} gap(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1);}
-console.log('Owner communications audit passed: Gmail OAuth explicitly carries and validates the active Owner JWT, persists a service-only refresh credential, restores the Owner session, refreshes Gmail access server-side, and keeps inbox actions behind Owner authorization.');
+if(failures.length){
+  console.error(`Owner communications audit failed with ${failures.length} gap(s):`);
+  failures.forEach(f=>console.error(`- ${f}`));
+  process.exit(1);
+}
+console.log('Owner communications audit passed: KleenestOS now owns first-party Resend-backed mail without a Gmail OAuth dependency.');
