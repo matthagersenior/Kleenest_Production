@@ -49,6 +49,7 @@ all('Inbound mailbox routing',inbound,[
   'forwarding_targets',
   'replyTo:from.address',
   "'X-Kleenest-Forwarded':'1'",
+  'wasForwardedByKleenest',
   'sendAutoReply',
   'mailbox_id:mailbox.id',
 ]);
@@ -63,6 +64,9 @@ all('Email Center send-as',center,[
   'recipient_address',
   'mailboxAddress',
   'mailboxDisplayName',
+  'requireMailboxAccess',
+  'accessibleMailboxIds',
+  "mailbox.mailbox_type==='personal'",
 ]);
 all('Owner mail client',service,[
   "owner-email-directory",
