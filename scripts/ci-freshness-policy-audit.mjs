@@ -49,6 +49,11 @@ requireText(ci, 'Report PR/main divergence', 'Production CI must expose PR/main 
 requireText(ci, 'git merge-base --is-ancestor', 'Production CI must detect whether the PR head contains current main.');
 if (ci.includes('exit 1') && ci.includes('PR branch behind main')) throw new Error('Production CI must not fail solely because main advanced; repository rules and the completion guard own branch freshness.');
 
+const completionGuard = read('pr-completion-guard.yml');
+for (const token of ['protectedShas','staleBefore','status: runStatus','cancelWorkflowRun','Stale workflow cleanup']) {
+  requireText(completionGuard, token, 'PR Completion Guard stale workflow cleanup missing '+token);
+}
+
 const branchHygiene = read('branch-hygiene.yml');
 for (const token of ['pull_request:','types: [closed]','push:','branches: [main]','contents: write','Delete merged pull-request branch','Remove historical branches still pinned to merged PR heads','github.event.pull_request.merged == true']) {
   requireText(branchHygiene, token, 'Branch hygiene policy missing '+token);
