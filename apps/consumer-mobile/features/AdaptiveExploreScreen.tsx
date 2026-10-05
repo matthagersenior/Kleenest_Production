@@ -2211,7 +2211,13 @@ export default function AdaptiveExploreScreen() {
                         {mode==='nearby'&&activeFilterCount?<Pressable accessibilityRole="button" style={[s.emptyPrimary,{backgroundColor:theme.accent}]} onPress={()=>{resetFilters();setTimeout(()=>void load(),0)}}><Text style={[s.primaryText,{color:theme.accentText}]}>Show everything nearby</Text></Pressable>:null}
                       </View>
                     )}
-                            {resultsSheetExpanded?<Pressable accessibilityRole="button" accessibilityLabel="Add a missing bathroom" onPress={()=>router.push('/discover')} style={[s.sheetMissingPlace,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+                            {mode==='route'&&routeGap!=null?(
+                      <View style={[s.sheetRouteCoverage,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+                        <Text style={[s.routeCoverageTitle,{color:theme.ink}]}>Longest stretch between qualifying bathrooms: ~{routeGap.toFixed(routeGap<10?1:0)} mi</Text>
+                      </View>
+                    ):null}
+                    <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results" compact/>
+                    {resultsSheetExpanded?<Pressable accessibilityRole="button" accessibilityLabel="Add a missing bathroom" onPress={()=>router.push('/discover')} style={[s.sheetMissingPlace,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
                       <Text style={[s.listEyebrow,{color:theme.accent}]}>MISSING A PLACE?</Text>
                       <Text style={[s.missingTitle,{color:theme.ink}]}>Add a missing bathroom</Text>
                     </Pressable>:null}
@@ -2266,8 +2272,6 @@ export default function AdaptiveExploreScreen() {
                 ) : null}
               </View>
             ) : null}
-
-            <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results" compact/>
 
             <View style={s.listHeading}>
               <View style={s.listHeadingMain}>
@@ -2469,13 +2473,14 @@ const s = StyleSheet.create({
   sheetResultChevron:{fontSize:24,lineHeight:26,fontWeight:'700'},
   sheetEmpty:{borderWidth:1,borderRadius:14,padding:12,gap:6},
   sheetMissingPlace:{borderWidth:1,borderRadius:14,padding:11,gap:2},
-  selectedSheetBody:{flex:1,minHeight:0,paddingHorizontal:10,paddingBottom:10,gap:6},
+  sheetRouteCoverage:{borderWidth:1,borderRadius:12,paddingHorizontal:10,paddingVertical:7},
+  selectedSheetBody:{flex:1,minHeight:0,paddingHorizontal:10,paddingBottom:62,gap:6,position:'relative'},
   selectedSheetSummary:{flexDirection:'row',alignItems:'center',gap:8},
   selectedSheetAddress:{fontSize:11,lineHeight:15,fontWeight:'800'},
-  selectedSheetActions:{flexDirection:'row',gap:6},
+  selectedSheetActions:{flexDirection:'row',gap:6,position:'absolute',left:10,right:10,bottom:10,zIndex:4,elevation:8},
   selectedSheetAction:{flex:1,alignItems:'center',minWidth:0},
   selectedSheetScroll:{flex:1,minHeight:0},
-  selectedSheetScrollContent:{gap:7,paddingBottom:8},
+  selectedSheetScrollContent:{gap:7,paddingBottom:66},
   sheetInsight:{fontSize:11,lineHeight:16,fontWeight:'800'},
   sheetClose:{width:36,height:36,borderRadius:18,borderWidth:1,alignItems:'center',justifyContent:'center'},
   sheetCloseText:{fontSize:22,lineHeight:24,fontWeight:'900'},
