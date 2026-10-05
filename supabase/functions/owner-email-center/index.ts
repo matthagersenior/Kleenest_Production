@@ -343,7 +343,7 @@ Deno.serve(async(req:Request)=>{
       const messages=(messageResult.data||[]).map((message:any)=>({
         id:message.id,threadId,
         from:message.from_name?String(message.from_name)+' <'+String(message.from_address)+'>':message.from_address,
-        fromEmail:message.from_address,to:(message.to_addresses||[]).join(', '),cc:(message.cc_addresses||[]).join(', '),
+        fromEmail:message.from_address,to:(message.to_addresses||[]).join(', '),cc:(message.cc_addresses||[]).join(', '),bcc:(message.bcc_addresses||[]).join(', '),
         subject:message.subject,date:message.received_at||message.sent_at||message.created_at,
         messageId:message.internet_message_id,references:(message.reference_ids||[]).join(' '),
         snippet:excerpt(message.text_body||''),body:message.text_body||'',
@@ -352,7 +352,7 @@ Deno.serve(async(req:Request)=>{
       }));
       return json({thread:{
         id:row.id,historyId:null,subject:row.subject,participants:row.participants||[],unread:Boolean(row.unread),
-        inInbox:row.folder==='inbox',folder:row.folder,priority:row.priority||'normal',
+        inInbox:row.folder==='inbox',folder:row.folder,starred:Boolean(row.starred),priority:row.priority||'normal',
         supportRequestId:row.support_request_id||null,sourceApp:row.source_app||null,
         mailboxId:row.mailbox_id||null,mailboxAddress:mailboxRow?.address||row.recipient_address||null,
         mailboxDisplayName:mailboxRow?.display_name||null,labelIds:row.labels||[],labelNames:row.labels||[],messages,

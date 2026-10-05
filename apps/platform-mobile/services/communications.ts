@@ -88,6 +88,7 @@ export type OwnerMailMessage={
   fromEmail:string|null;
   to:string;
   cc:string;
+  bcc?:string;
   subject:string;
   date:string|null;
   messageId:string|null;
@@ -108,6 +109,7 @@ export type OwnerMailThread={
   unread:boolean;
   inInbox:boolean;
   folder?:'inbox'|'archive'|'sent'|'drafts'|'spam'|'trash'|string;
+  starred?:boolean;
   priority?:string;
   supportRequestId?:string|null;
   sourceApp?:string|null;
@@ -155,7 +157,7 @@ export function listOwnerMailThreads(input:{
   query?:string;
   unreadOnly?:boolean;
   maxResults?:number;
-  mailbox?:'inbox'|'sent'|'drafts'|'spam'|'all';
+  mailbox?:'inbox'|'sent'|'drafts'|'spam'|'trash'|'all';
   mailboxId?:string|null;
   direction?:'any'|'incoming'|'outgoing';
 }={}){

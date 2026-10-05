@@ -57,7 +57,7 @@ requireAll('KleenestOS Email Center service',service,[
   "action:'save_draft'",
   "action:'spam'",
   "action:'block_sender'",
-  "mailbox?:'inbox'|'sent'|'drafts'|'spam'|'all'",
+  "mailbox?:'inbox'|'sent'|'drafts'|'spam'|'trash'|'all'",
 ]);
 requireAll('Consumer support reply visibility',consumerUi,['row.admin_notes','Kleenest Support']);
 requireAll('Business support reply visibility',businessUi,['admin_notes','Recent requests','Kleenest Support','Support request submitted to KleenestOS.']);
