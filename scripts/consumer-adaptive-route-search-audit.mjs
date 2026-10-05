@@ -220,13 +220,13 @@ for(const token of [
   '<FlatList',
   'ListHeaderComponent={',
   'accessibilityLabel="Fit full route on map"',
-  'onDirections={() => void directions(item)}',
-  'onAddToRoute={() => addToRoute(item)}',
+  'onPress={()=>void directions(selected)}',
+  'onPress={()=>addToRoute(selected)}',
   'function openLocationDetails(row:any)',
-  'onDetails={() => openLocationDetails(item)}',
+  'onPress={()=>openLocationDetails(selected)}',
   'selectedRoutePosition',
   'RequestedAmenityMatches',
-  'requestedAmenities={selectedAmenityNames}',
+  'requested={selectedAmenityNames} compact',
 ])requireToken(screen,token,'Consumer compact-filter Explore composition');
 
 if(screen.includes('Scroll results · map stays fixed'))throw new Error('Consumer Explore must not describe or implement a fixed-map/separate-results scrolling model.');
