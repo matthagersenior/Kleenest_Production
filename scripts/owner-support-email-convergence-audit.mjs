@@ -26,6 +26,9 @@ requireAll('Support Email Center schema',migrations,[
   'route_support_request_to_owner_email_center',
   'support_receive',
   "p_source_app text default 'consumer'",
+  'Kleenest Support replied',
+  'after update of status, admin_notes',
+  "'has_reply',v_reply_changed",
 ]);
 requireAll('Support-aware Owner reply',center,[
   'support_request_id',
