@@ -112,6 +112,113 @@ function discoveryDistanceMeters(latitude:number,longitude:number,row:any){
   const a=Math.sin(dLat/2)**2+Math.cos(toRadians(latitude))*Math.cos(toRadians(rowLatitude))*Math.sin(dLng/2)**2;
   return 6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
+
+function normalizedPlaceAddress(row:any){
+  return normalizedPlaceName([row?.address,row?.city,row?.state,row?.postal_code].filter(Boolean).join(' '));
+}
+function genericPlaceIdentity(value:string){
+  return ['public restroom','restroom','bathroom','toilet','toilets','unnamed service','service','store','shop','restaurant','cafe','parking','gas station','fuel','pharmacy','hotel','motel'].includes(value);
+}
+function primaryPlaceIdentity(row:any){
+  const name=normalizedPlaceName(row?.name);
+  if(name&&!genericPlaceIdentity(name))return name;
+  const fallback=normalizedPlaceName(row?.business_name||row?.brand||row?.brand_name||row?.operator_name);
+  return fallback&&!genericPlaceIdentity(fallback)?fallback:'';
+}
+function isUsefulPlaceValue(value:any){
+  if(value==null||value==='')return false;
+  if(Array.isArray(value))return value.length>0;
+  if(typeof value==='object')return Object.keys(value).length>0;
+  return true;
+}
+function placeRowPriority(row:any){
+  let score=row?.canonical_pending===true?0:100;
+  if(/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(rowId(row)))score+=40;
+  if(row?.kleenest_business||row?.business_tier)score+=25;
+  if(row?.is_verified||row?.network?.network_verified)score+=20;
+  if(String(row?.address||'').trim())score+=4;
+  if(String(row?.brand||row?.brand_name||'').trim())score+=3;
+  return score;
+}
+function placeSourceLabels(row:any){
+  const values=[
+    ...(Array.isArray(row?.discovery_sources)?row.discovery_sources:[]),
+    row?.source_dataset,
+    row?.source,
+  ].map((value:any)=>String(value||'').trim()).filter(Boolean);
+  return [...new Set(values)];
+}
+function mergeDuplicatePlaceRows(left:any,right:any){
+  const leftWins=placeRowPriority(left)>=placeRowPriority(right);
+  const primary=leftWins?left:right;
+  const secondary=leftWins?right:left;
+  const merged={...primary};
+  for(const [key,value] of Object.entries(secondary||{})){
+    if(!isUsefulPlaceValue((merged as any)[key])&&isUsefulPlaceValue(value))(merged as any)[key]=value;
+  }
+  const sources=[...new Set([...placeSourceLabels(left),...placeSourceLabels(right)])];
+  if(sources.length)(merged as any).discovery_sources=sources;
+  return merged;
+}
+function samePhysicalPlace(left:any,right:any){
+  const leftId=rowId(left),rightId=rowId(right);
+  if(leftId&&rightId&&leftId===rightId)return true;
+  const leftExternal=String(left?.source_external_id||left?.source_id||'').trim();
+  const rightExternal=String(right?.source_external_id||right?.source_id||'').trim();
+  if(leftExternal&&rightExternal&&leftExternal===rightExternal)return true;
+  const leftIdentity=primaryPlaceIdentity(left),rightIdentity=primaryPlaceIdentity(right);
+  if(!leftIdentity||leftIdentity!==rightIdentity)return false;
+  if(!Number.isFinite(Number(left?.latitude))||!Number.isFinite(Number(left?.longitude))||!Number.isFinite(Number(right?.latitude))||!Number.isFinite(Number(right?.longitude)))return false;
+  const meters=discoveryDistanceMeters(Number(left.latitude),Number(left.longitude),right);
+  const leftAddress=normalizedPlaceAddress(left),rightAddress=normalizedPlaceAddress(right);
+  const sameAddress=Boolean(leftAddress&&rightAddress&&leftAddress===rightAddress);
+  const leftSource=normalizedPlaceName(left?.source||left?.source_dataset);
+  const rightSource=normalizedPlaceName(right?.source||right?.source_dataset);
+  const sameSource=Boolean(leftSource&&rightSource&&leftSource===rightSource);
+  const thresholdMeters=sameAddress?180:sameSource?120:85;
+  return meters<=thresholdMeters;
+}
+export function dedupePhysicalPlaceRows(rows:any[],limit=2000){
+  const max=Math.max(1,Math.min(2000,Math.round(limit||2000)));
+  const selected:any[]=[];
+  const exactIndex=new Map<string,number>();
+  const identityIndex=new Map<string,number[]>();
+  const register=(index:number,row:any)=>{
+    const id=rowId(row);
+    if(id)exactIndex.set('id:'+id,index);
+    const external=String(row?.source_external_id||row?.source_id||'').trim();
+    if(external)exactIndex.set('external:'+external,index);
+    const identity=primaryPlaceIdentity(row);
+    if(identity){
+      const indexes=identityIndex.get(identity)||[];
+      if(!indexes.includes(index))indexes.push(index);
+      identityIndex.set(identity,indexes);
+    }
+  };
+  for(const row of rows||[]){
+    if(!row)continue;
+    let duplicateIndex=-1;
+    const id=rowId(row);
+    if(id&&exactIndex.has('id:'+id))duplicateIndex=exactIndex.get('id:'+id)!;
+    const external=String(row?.source_external_id||row?.source_id||'').trim();
+    if(duplicateIndex<0&&external&&exactIndex.has('external:'+external))duplicateIndex=exactIndex.get('external:'+external)!;
+    const identity=primaryPlaceIdentity(row);
+    if(duplicateIndex<0&&identity){
+      for(const index of identityIndex.get(identity)||[]){
+        if(samePhysicalPlace(selected[index],row)){duplicateIndex=index;break;}
+      }
+    }
+    if(duplicateIndex>=0){
+      selected[duplicateIndex]=mergeDuplicatePlaceRows(selected[duplicateIndex],row);
+      register(duplicateIndex,selected[duplicateIndex]);
+    }else{
+      const index=selected.push({...row})-1;
+      register(index,selected[index]);
+    }
+  }
+  return selected.sort((a,b)=>distanceOf(a)-distanceOf(b)).slice(0,max);
+}
+
 export function mergeDiscoveredPlaceRows(canonicalRows:any[],liveRows:any[],limit=2000,origin?:{latitude:number;longitude:number}){
   const max=Math.max(1,Math.min(2000,Math.round(limit||2000)));
   const selected:any[]=[];
@@ -129,7 +236,7 @@ export function mergeDiscoveredPlaceRows(canonicalRows:any[],liveRows:any[],limi
     selected.push(pending);
     for(const key of keys)seen.add(key);
   }
-  return selected.sort((a,b)=>distanceOf(a)-distanceOf(b)).slice(0,max);
+  return dedupePhysicalPlaceRows(selected,max);
 }
 
 export function mergeNearbyDiscoveryRows(restroomRows:any[],candidateRows:any[],limit=500){
@@ -154,7 +261,7 @@ export function mergeNearbyDiscoveryRows(restroomRows:any[],candidateRows:any[],
   const selected=[...evidence,...candidates]
     .sort((a,b)=>distanceOf(a)-distanceOf(b))
     .slice(0,max);
-  return selected;
+  return dedupePhysicalPlaceRows(selected,max);
 }
 
 export async function listNearbyRestroomsV3(input:{latitude:number;longitude:number;radiusMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;limit?:number}){
@@ -168,7 +275,7 @@ export async function listNearbyRestroomsV3(input:{latitude:number;longitude:num
     p_lat:latitude,p_lng:longitude,p_radius_m:radiusMeters,p_limit:limit,p_category:'restroom',p_search:boundedSearch(input.search||'')||null,p_amenity_names:amenityNames,p_amenity_match:amenityMatch,
   });
   if(error)throw error;
-  return Array.isArray(data)?data:[];
+  return dedupePhysicalPlaceRows(Array.isArray(data)?data:[],limit);
 }
 
 export async function listNearbyMapCandidates(input:{latitude:number;longitude:number;radiusMeters:number;search?:string;limit?:number}){
@@ -186,7 +293,7 @@ export async function listNearbyMapCandidates(input:{latitude:number;longitude:n
     }));
   }
   if(error)throw error;
-  return Array.isArray(data)?data:[];
+  return dedupePhysicalPlaceRows(Array.isArray(data)?data:[],limit);
 }
 
 export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitude:number;requestedRadiusMeters:number;maxRadiusMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;autoExpand?:boolean;hardRadius?:boolean;limit?:number}):Promise<AdaptiveNearbyResult>{
@@ -380,7 +487,7 @@ export async function listPlacesAlongRoute(input:{routeGeoJSON:any;corridorMeter
     ({data,error}=await client.rpc('map_network_along_route_v1',{...params,p_limit:50}));
   }
   if(error)throw error;
-  return Array.isArray(data)?data:[];
+  return dedupePhysicalPlaceRows(Array.isArray(data)?data:[],limit);
 }
 
 export async function listRestroomsAlongRoute(input:{routeGeoJSON:any;corridorMeters:number;search?:string;amenityNames?:string[];amenityMatch?:AmenityMatchRule;limit?:number}){
