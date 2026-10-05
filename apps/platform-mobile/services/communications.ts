@@ -30,6 +30,10 @@ export type OwnerMailThreadSummary={
   messageCount:number;
   hasAttachment?:boolean;
   labelNames?:string[];
+  folder?:'inbox'|'archive'|'sent'|'drafts'|'spam'|'trash'|string;
+  priority?:string;
+  supportRequestId?:string|null;
+  sourceApp?:string|null;
 };
 
 export type OwnerMailAttachment={
@@ -54,6 +58,7 @@ export type OwnerMailMessage={
   body:string;
   unread:boolean;
   sent:boolean;
+  deliveryStatus?:string|null;
   attachments:OwnerMailAttachment[];
 };
 
@@ -64,6 +69,10 @@ export type OwnerMailThread={
   participants:string[];
   unread:boolean;
   inInbox:boolean;
+  folder?:'inbox'|'archive'|'sent'|'drafts'|'spam'|'trash'|string;
+  priority?:string;
+  supportRequestId?:string|null;
+  sourceApp?:string|null;
   labelIds:string[];
   labelNames:string[];
   messages:OwnerMailMessage[];
@@ -104,7 +113,7 @@ export function listOwnerMailThreads(input:{
   query?:string;
   unreadOnly?:boolean;
   maxResults?:number;
-  mailbox?:'inbox'|'sent'|'all';
+  mailbox?:'inbox'|'sent'|'drafts'|'spam'|'all';
   direction?:'any'|'incoming'|'outgoing';
 }={}){
   return invoke<{threads:OwnerMailThreadSummary[];nextPageToken:string|null}>({
@@ -156,6 +165,26 @@ export function sendOwnerMail(input:{to:string;cc?:string;bcc?:string;subject:st
     subject:input.subject.trim(),
     body:input.body.trim(),
   });
+}
+
+export function saveOwnerMailDraft(input:{draftId?:string|null;to?:string;cc?:string;bcc?:string;subject?:string;body?:string}){
+  return invoke<{ok:true;threadId:string;messageId:string}>({
+    action:'save_draft',
+    draftId:input.draftId||'',
+    to:input.to?.trim()||'',
+    cc:input.cc?.trim()||'',
+    bcc:input.bcc?.trim()||'',
+    subject:input.subject?.trim()||'',
+    body:input.body?.trim()||'',
+  });
+}
+
+export function markOwnerMailThreadSpam(threadId:string){
+  return invoke<{ok:true}>({action:'spam',threadId});
+}
+
+export function blockOwnerMailSender(threadId:string){
+  return invoke<{ok:true;sender:string}>({action:'block_sender',threadId});
 }
 
 export function setOwnerMailThreadStarred(threadId:string,starred:boolean){
