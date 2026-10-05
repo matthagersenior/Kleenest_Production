@@ -42,12 +42,12 @@ export default function Communications(){
   const unreadCount=useMemo(()=>threads.filter(t=>t.unread).length,[threads]);
   const ready=Boolean(status?.connected);
 
-  async function load(nextView=view){
+  async function load(nextView=view,mailboxId=selectedMailboxId){
     setBusy(true);
     try{
       const [s,r,m]=await Promise.all([
         getOwnerMailStatus(),
-        listOwnerMailThreads({query,unreadOnly:unread,maxResults:75,mailbox:views[nextView].mailbox,mailboxId:selectedMailboxId||null,direction:views[nextView].direction}),
+        listOwnerMailThreads({query,unreadOnly:unread,maxResults:75,mailbox:views[nextView].mailbox,mailboxId:mailboxId||null,direction:views[nextView].direction}),
         listOwnerMailboxes(),
       ]);
       setStatus(s); setThreads(r.threads); setMailboxes(m.mailboxes); setView(nextView); setNotice('');
@@ -126,8 +126,8 @@ export default function Communications(){
     <View style={{...card,gap:10}}>
       <SectionHeader title="Mailbox" body="View one address or the combined Kleenest inbox. Compose uses the selected address."/>
       <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
-        <Pressable onPress={()=>{setSelectedMailboxId('');setTimeout(()=>void load(),0)}} style={{paddingHorizontal:11,paddingVertical:9,borderRadius:999,backgroundColor:selectedMailboxId?theme.accentSoft:theme.accent}}><Text style={{fontWeight:'900',color:selectedMailboxId?theme.accent:theme.accentText}}>All addresses</Text></Pressable>
-        {mailboxes.filter(m=>m.active).map(m=><Pressable key={m.id} onPress={()=>{setSelectedMailboxId(m.id);setTimeout(()=>void load(),0)}} style={{paddingHorizontal:11,paddingVertical:9,borderRadius:999,backgroundColor:selectedMailboxId===m.id?theme.accent:theme.accentSoft}}><Text style={{fontWeight:'900',color:selectedMailboxId===m.id?theme.accentText:theme.accent}}>{m.address}</Text></Pressable>)}
+        <Pressable onPress={()=>{setSelectedMailboxId('');void load(view,'')}} style={{paddingHorizontal:11,paddingVertical:9,borderRadius:999,backgroundColor:selectedMailboxId?theme.accentSoft:theme.accent}}><Text style={{fontWeight:'900',color:selectedMailboxId?theme.accent:theme.accentText}}>All addresses</Text></Pressable>
+        {mailboxes.filter(m=>m.active).map(m=><Pressable key={m.id} onPress={()=>{setSelectedMailboxId(m.id);void load(view,m.id)}} style={{paddingHorizontal:11,paddingVertical:9,borderRadius:999,backgroundColor:selectedMailboxId===m.id?theme.accent:theme.accentSoft}}><Text style={{fontWeight:'900',color:selectedMailboxId===m.id?theme.accentText:theme.accent}}>{m.address}</Text></Pressable>)}
       </View>
     </View>
 
