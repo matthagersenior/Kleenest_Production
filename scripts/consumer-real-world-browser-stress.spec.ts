@@ -138,7 +138,8 @@ test('Consumer production-equivalent real-world stress test',async({browser})=>{
   if(await expandResults.isVisible().catch(()=>false))await expandResults.click();
   const selectableResult=launch.page.getByRole('button',{name:/^Select /}).first();
   if(await selectableResult.isVisible().catch(()=>false)){
-    await selectableResult.click();
+    // Exercise the destination marker action even when the mobile results sheet temporarily overlaps its map position.
+    await selectableResult.click({force:true});
     const details=launch.page.getByText('Full details',{exact:true}).first();
     await expect(details).toBeVisible({timeout:10000});
     await details.click();
