@@ -188,6 +188,25 @@ function organizeMapMarkers(rows:any[],zoom:number):MapMarkerGroup[]{
     return {key:`cluster:${key}`,rows:bucket,center:[longitude,latitude]};
   });
 }
+function densityAwareNearbyZoom(rows:any[],effectiveRadiusMeters:number){
+  const usable=(rows||[]).filter(hasCoordinates);
+  const radiusMiles=Math.max(0.25,Number(effectiveRadiusMeters||1609)/1609.344);
+  const localCutoffMeters=Math.min(1609.344,Math.max(402,Number(effectiveRadiusMeters||1609)));
+  const knownDistances=usable
+    .map(row=>Number(row?.distance_meters))
+    .filter(distance=>Number.isFinite(distance)&&distance>=0);
+  const localCount=knownDistances.length
+    ? knownDistances.filter(distance=>distance<=localCutoffMeters).length
+    : Math.min(usable.length,80);
+
+  let zoom=radiusMiles<=1.25?13.5:radiusMiles<=2.5?13:radiusMiles<=5?12:radiusMiles<=10?11:10;
+  if(localCount>=80)zoom=Math.max(zoom,16);
+  else if(localCount>=50)zoom=Math.max(zoom,15.5);
+  else if(localCount>=30)zoom=Math.max(zoom,15);
+  else if(localCount>=15)zoom=Math.max(zoom,14.5);
+  else if(localCount>=8)zoom=Math.max(zoom,14);
+  return Math.min(16,Math.max(10,zoom));
+}
 function exploreCameraViewState(bounds:any,fitRoute:boolean,center:any,zoom:number){
   return bounds&&fitRoute
     ? {bounds,padding:{top:28,right:28,bottom:28,left:28}}
@@ -1081,7 +1100,13 @@ export default function AdaptiveExploreScreen() {
     const resetSelectionForOriginChange=Boolean(areaMatch)||clearQuery;
     const preservedId = !resetSelectionForOriginChange && selectedId && displayRows.some((row) => idOf(row) === selectedId) ? selectedId : '';
     setRows(displayRows);setRoute(null);
-    if (!preservedId) setMapCenter(nextOrigin);
+    if (!preservedId) {
+      setMapCenter(nextOrigin);
+      const densityZoom=densityAwareNearbyZoom(displayRows,result.effectiveRadiusMeters);
+      setMapZoom(densityZoom);
+      cameraRef.current?.jumpTo({center:nextOrigin,zoom:densityZoom});
+      setCameraNonce((value)=>value+1);
+    }
     setEffectiveRadiusMeters(result.effectiveRadiusMeters);setAttemptedRadiiMeters(result.attemptedRadiiMeters);setCached(false);setSelectedId(preservedId);
 
     captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:displayRows.length,search:originalQuery,amenityCount:activeAmenityNames.length});
