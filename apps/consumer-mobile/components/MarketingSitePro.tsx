@@ -66,17 +66,41 @@ function useMarketingMeta(title: string, description: string) {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const doc = (globalThis as any).document;
-    if (!doc) return;
+    const win = (globalThis as any).window;
+    if (!doc || !win) return;
     doc.title = title;
-    let meta = doc.querySelector?.('meta[name="description"]');
-    if (!meta) {
-      meta = doc.createElement?.('meta');
-      if (meta) {
-        meta.setAttribute('name', 'description');
-        doc.head?.appendChild(meta);
+
+    const upsertMeta = (selector: string, attributes: Record<string,string>) => {
+      let node = doc.querySelector?.(selector);
+      if (!node) {
+        node = doc.createElement?.('meta');
+        if (node) doc.head?.appendChild(node);
       }
+      if (node) Object.entries(attributes).forEach(([key,value]) => node.setAttribute(key,value));
+      return node;
+    };
+    const rawPath=String(win.location?.pathname||'/').replace(/^\/Kleenest_Production(?=\/|$)/,'')||'/';
+    const firstSegment=rawPath.split('/').filter(Boolean)[0]||'';
+    const canonicalPath=firstSegment?`/${firstSegment}/`:'/';
+    const canonical=`https://kleenest.us${canonicalPath}`;
+
+    upsertMeta('meta[name="description"]',{name:'description',content:description});
+    upsertMeta('meta[property="og:site_name"]',{property:'og:site_name',content:'Kleenest'});
+    upsertMeta('meta[property="og:type"]',{property:'og:type',content:'website'});
+    upsertMeta('meta[property="og:title"]',{property:'og:title',content:title});
+    upsertMeta('meta[property="og:description"]',{property:'og:description',content:description});
+    upsertMeta('meta[property="og:url"]',{property:'og:url',content:canonical});
+    upsertMeta('meta[name="twitter:card"]',{name:'twitter:card',content:'summary'});
+    upsertMeta('meta[name="twitter:title"]',{name:'twitter:title',content:title});
+    upsertMeta('meta[name="twitter:description"]',{name:'twitter:description',content:description});
+
+    let canonicalLink=doc.querySelector?.('link[rel="canonical"]');
+    if(!canonicalLink){
+      canonicalLink=doc.createElement?.('link');
+      canonicalLink?.setAttribute('rel','canonical');
+      if(canonicalLink)doc.head?.appendChild(canonicalLink);
     }
-    meta?.setAttribute('content', description);
+    canonicalLink?.setAttribute('href',canonical);
   }, [description, title]);
 }
 
@@ -155,9 +179,9 @@ function Footer() {
         <Pressable onPress={go('/for-business')}><Text style={s.footerLink}>For Business</Text></Pressable>
         <Pressable onPress={go('/trust')}><Text style={s.footerLink}>Trust + Freshness</Text></Pressable>
         <Pressable onPress={go('/install')}><Text style={s.footerLink}>Install</Text></Pressable>
-        <Pressable onPress={go('/support')}><Text style={s.footerLink}>Support</Text></Pressable>
+        <Pressable onPress={go('/support')}><Text style={s.footerLink}>Support & Contact</Text></Pressable>
       </View>
-      <Text style={s.footerFine}>Kleenest helps people make better restroom decisions with community evidence that can be refreshed over time.</Text>
+      <Text style={s.footerFine}>Kleenest helps people make better restroom decisions with community evidence that can be refreshed over time. Public home: kleenest.us.</Text>
     </View>
   );
 }
