@@ -57,8 +57,8 @@ requireAll('KleenestOS Email Center service',service,[
   "mailbox?:'inbox'|'sent'|'drafts'|'spam'|'all'",
 ]);
 requireAll('Consumer support reply visibility',consumerUi,['row.admin_notes','Kleenest Support']);
-requireAll('Business support reply visibility',businessUi,['admin_notes','Recent requests','Kleenest Support']);
-requireAll('Fleet support reply visibility',fleetUi,['admin_notes','Recent requests','Kleenest Support']);
+requireAll('Business support reply visibility',businessUi,['admin_notes','Recent requests','Kleenest Support','Support request submitted to KleenestOS.']);
+requireAll('Fleet support reply visibility',fleetUi,['admin_notes','Recent requests','Kleenest Support','Support request submitted to KleenestOS.']);
 
 if(failures.length){
   console.error(`Owner support → Email Center audit failed with ${failures.length} gap(s):`);
