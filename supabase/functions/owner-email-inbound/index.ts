@@ -208,6 +208,7 @@ Deno.serve(async(req:Request)=>{
     const owner=await primaryOwner();
     const mailbox=route.mailbox;
     const headers=headerMap(email?.headers);
+    const wasForwardedByKleenest=String(headers.get('x-kleenest-forwarded')||'')==='1';
     const messageId=String(email?.message_id||headers.get('message-id')||event?.data?.message_id||'').trim()||null;
     const inReplyTo=String(headers.get('in-reply-to')||'').trim()||null;
     const refs=messageIds(headers.get('references')||'');
@@ -283,8 +284,8 @@ Deno.serve(async(req:Request)=>{
     const count=await admin.from('owner_email_center_messages').select('id',{count:'exact',head:true}).eq('thread_id',threadId);
     if(!count.error)await admin.from('owner_email_center_threads').update({message_count:count.count||1}).eq('id',threadId);
 
-    const forwardedIds=isBlocked?[]:await forwardReceived(resend,mailbox,from,route.recipientAddress,subject,boundedText,boundedHtml);
-    const autoReplyId=isBlocked?null:await sendAutoReply(resend,mailbox,from,headers,subject);
+    const forwardedIds=(isBlocked||wasForwardedByKleenest)?[]:await forwardReceived(resend,mailbox,from,route.recipientAddress,subject,boundedText,boundedHtml);
+    const autoReplyId=(isBlocked||wasForwardedByKleenest)?null:await sendAutoReply(resend,mailbox,from,headers,subject);
 
     await admin.from('owner_email_center_audit').insert({
       owner_user_id:owner.owner_user_id,
