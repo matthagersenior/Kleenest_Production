@@ -94,7 +94,7 @@ function knownRestroomNegative(row:any){
 }
 function evidenceRow(row:any){return {...row,restroom_candidate_status:'restroom_evidence',needs_restroom_verification:false}}
 function candidateRow(row:any){return {...row,restroom_candidate_status:'needs_verification',needs_restroom_verification:true}}
-function normalizedPlaceName(value:any){return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ')}
+function normalizedPlaceName(value:any){return String(value||'').normalize('NFKD').replace(/[\u2018\u2019'`]/g,'').trim().toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').trim()}
 function placeDiscoveryKeys(row:any){
   const keys:string[]=[];
   const external=String(row?.source_external_id||row?.source_id||'').trim();
@@ -121,7 +121,14 @@ function genericPlaceIdentity(value:string){
 }
 function primaryPlaceIdentity(row:any){
   const name=normalizedPlaceName(row?.name);
-  if(name&&!genericPlaceIdentity(name))return name;
+  const brand=normalizedPlaceName(row?.brand||row?.brand_name);
+  if(name&&!genericPlaceIdentity(name)){
+    if(brand&&!genericPlaceIdentity(brand)&&name.startsWith(brand+' ')){
+      const suffix=name.slice(brand.length).trim();
+      if(/^(?:(?:store|location|shop|station|unit|no|number)\\s*)?\\d+[a-z0-9-]*$/.test(suffix))return brand;
+    }
+    return name;
+  }
   const fallback=normalizedPlaceName(row?.business_name||row?.brand||row?.brand_name||row?.operator_name);
   return fallback&&!genericPlaceIdentity(fallback)?fallback:'';
 }
