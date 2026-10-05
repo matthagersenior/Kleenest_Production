@@ -123,6 +123,7 @@ function primaryPlaceIdentity(row:any){
   const name=normalizedPlaceName(row?.name);
   const brand=normalizedPlaceName(row?.brand||row?.brand_name);
   if(name&&!genericPlaceIdentity(name)){
+    // Cross-source chain feeds commonly append a store/unit number to the same physical brand.
     if(brand&&!genericPlaceIdentity(brand)&&name.startsWith(brand+' ')){
       const suffix=name.slice(brand.length).trim();
       if(/^(?:(?:store|location|shop|station|unit|no|number)\s*)?\d+[a-z0-9-]*$/.test(suffix))return brand;
