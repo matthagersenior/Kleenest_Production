@@ -288,3 +288,26 @@ test('discovery collapses duplicate physical pins without collapsing distinct ne
   assert.ok(actual[0].discovery_sources.includes('openstreetmap_live'));
   assert.ok(actual.some(row=>row.name==='Circle K Car Wash'));
 });
+
+
+test('discovery collapses brand-coded and punctuation variants from multiple sources',()=>{
+  const path='packages/mobile-core/src/adaptiveDiscovery.ts';
+  const source=[
+    'rowId','distanceOf','normalizedPlaceName','discoveryDistanceMeters','normalizedPlaceAddress',
+    'genericPlaceIdentity','primaryPlaceIdentity','isUsefulPlaceValue','placeRowPriority',
+    'placeSourceLabels','mergeDuplicatePlaceRows','samePhysicalPlace','dedupePhysicalPlaceRows',
+  ].map(name=>declaration(path,name)).join('\n');
+  const dedupe=compile(source,{},'dedupePhysicalPlaceRows');
+  const rows=[
+    {location_id:'circle-canonical',name:'Circle K',brand:'Circle K',latitude:38.1374652,longitude:-89.7038434,source:'canonical',canonical_pending:false,address:'1205 N Market St',distance_meters:10},
+    {location_id:'circle-live',source_external_id:'osm:way:4700',name:'Circle K #4700',brand:'Circle K',latitude:38.1374702,longitude:-89.7040202,source:'openstreetmap_live',canonical_pending:true,address:'1205 North Market Street',distance_meters:28},
+    {location_id:'circle-car-wash',name:'Circle K Car Wash',brand:'Circle K',latitude:38.13749,longitude:-89.70399,source:'openstreetmap_live',canonical_pending:true,address:'1205 N Market St',distance_meters:24},
+    {location_id:'mcd-canonical',name:"McDonald's",brand:"McDonald's",latitude:38.1600,longitude:-89.7000,source:'canonical',canonical_pending:false,distance_meters:2500},
+    {location_id:'mcd-live',name:'McDonalds',brand:'McDonalds',latitude:38.16003,longitude:-89.70002,source:'overture_live',canonical_pending:true,distance_meters:2504},
+  ];
+  const actual=dedupe(rows,2000);
+  assert.equal(actual.length,3);
+  assert.ok(actual.some(row=>row.name==='Circle K'));
+  assert.ok(actual.some(row=>row.name==='Circle K Car Wash'));
+  assert.ok(actual.some(row=>String(row.name).startsWith('McDonald')));
+});
