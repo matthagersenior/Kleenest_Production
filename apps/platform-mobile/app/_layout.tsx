@@ -94,6 +94,7 @@ export default function Layout(){
     <Tabs.Screen name="data" options={{href:null,title:'Data'}}/>
     <Tabs.Screen name="notifications" options={{href:null,title:'Live Network Messaging'}}/>
     <Tabs.Screen name="communications" options={{title:'Email'}}/>
+    <Tabs.Screen name="mail-admin" options={{href:null,title:'Mail Admin'}}/>
     <Tabs.Screen name="feedback-inbox" options={{href:null,title:'Tell Kleenest'}}/>
     <Tabs.Screen name="beta-incidents" options={{href:null,title:'Beta Incidents'}}/>
     <Tabs.Screen name="relevance" options={{href:null,title:'Relevance + Sponsorship'}}/>
