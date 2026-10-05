@@ -149,3 +149,53 @@ create trigger support_requests_owner_email_center
 after insert on public.support_requests
 for each row
 execute function internal.route_support_request_to_owner_email_center();
+
+
+-- Notify users once for every Owner reply, including later replies after the request is already in progress.
+create or replace function internal.notify_support_request_status_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_reply_changed boolean := new.admin_notes is distinct from old.admin_notes and pg_catalog.coalesce(new.admin_notes,'') <> '';
+  v_status_changed boolean := new.status is distinct from old.status;
+begin
+  if v_reply_changed or v_status_changed then
+    insert into public.notifications(user_id,type,title,body,data)
+    values(
+      new.user_id,
+      'support_status',
+      case when v_reply_changed then 'Kleenest Support replied' else 'Support request updated' end,
+      case
+        when v_reply_changed then pg_catalog.left(new.admin_notes,240)
+        else pg_catalog.format(
+          'Your support request "%s" is now %s.',
+          pg_catalog.left(new.subject,80),
+          pg_catalog.replace(pg_catalog.coalesce(new.status,'updated'),'_',' ')
+        )
+      end,
+      jsonb_build_object(
+        'support_request_id',new.id,
+        'support_status',new.status,
+        'source_app',new.source_app,
+        'has_reply',v_reply_changed
+      )
+    );
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function internal.notify_support_request_status_change() from public, anon, authenticated;
+
+drop trigger if exists support_requests_notify_status_change on public.support_requests;
+create trigger support_requests_notify_status_change
+after update of status, admin_notes on public.support_requests
+for each row
+when (
+  old.status is distinct from new.status
+  or old.admin_notes is distinct from new.admin_notes
+)
+execute function internal.notify_support_request_status_change();
