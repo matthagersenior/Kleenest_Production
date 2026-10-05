@@ -387,66 +387,67 @@ Deno.serve(async(req:Request)=>{
       const replyAll=Boolean(body?.replyAll);
       const thread=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
       if(thread.error)throw thread.error;
+      const mailbox=await loadMailbox(thread.data.mailbox_id||null);
 
       if(thread.data.support_request_id){
         const support=await admin.from('support_requests').select('id,user_id,status,source_app,subject').eq('id',thread.data.support_request_id).single();
         if(support.error)throw support.error;
-        const settings=await loadSettings(userId);
         const history=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).order('created_at',{ascending:false});
         if(history.error)throw history.error;
         const source=(history.data||[]).find((m:any)=>m.direction==='inbound')||(history.data||[])[0];
-        const target=String(source?.from_address||`app-user+${String(support.data.user_id).replaceAll('-','')}@kleenest.local`).toLowerCase();
+        const target=String(source?.from_address||('app-user+'+String(support.data.user_id).replaceAll('-','')+'@kleenest.local')).toLowerCase();
         const now=new Date().toISOString();
         const stored=await admin.from('owner_email_center_messages').insert({
-          thread_id:threadId,owner_user_id:storageOwnerUserId,direction:'outbound',
-          from_address:String(settings.inbox_address||'support@kleenest.us').toLowerCase(),
-          from_name:settings.from_name||'Kleenest',to_addresses:[target],cc_addresses:[],bcc_addresses:[],
-          subject:/^re:/i.test(thread.data.subject)?thread.data.subject:`Re: ${thread.data.subject}`,
+          thread_id:threadId,owner_user_id:storageOwnerUserId,mailbox_id:mailbox.id,direction:'outbound',
+          from_address:mailbox.address,from_name:mailbox.display_name||'Kleenest',to_addresses:[target],cc_addresses:[],bcc_addresses:[],
+          subject:/^re:/i.test(thread.data.subject)?thread.data.subject:'Re: '+thread.data.subject,
           text_body:replyBody,headers:{channel:'app_support',support_request_id:String(support.data.id),source_app:support.data.source_app||thread.data.source_app||'unknown'},
           attachments:[],delivery_status:'delivered_in_app',sent_at:now,
         }).select('id').single();
         if(stored.error)throw stored.error;
-        const updatedSupport=await admin.from('support_requests').update({
-          status:'in_progress',admin_notes:replyBody,updated_at:now,
-        }).eq('id',support.data.id);
+        const updatedSupport=await admin.from('support_requests').update({status:'in_progress',admin_notes:replyBody,updated_at:now}).eq('id',support.data.id);
         if(updatedSupport.error)throw updatedSupport.error;
         await admin.from('owner_email_center_threads').update({folder:'inbox',unread:false,updated_at:now}).eq('id',threadId);
         await refreshThread(threadId);
-        await audit(storageOwnerUserId,threadId,'support_reply',{support_request_id:support.data.id,status:'in_progress'});
+        await audit(storageOwnerUserId,threadId,'support_reply',{support_request_id:support.data.id,status:'in_progress',mailbox:mailbox.address});
         return json({messageId:String(stored.data.id),threadId,status:'in_progress'});
       }
 
-      const ready=await requireReady(userId);
+      await requireReady(storageOwnerUserId);
+      if(!mailbox.send_enabled)throw Object.assign(new Error('Sending is disabled for this mailbox.'),{status:403});
       const history=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).order('created_at',{ascending:false});
       if(history.error)throw history.error;
       const messages=history.data||[];
       const source=messages.find((m:any)=>m.direction==='inbound')||messages[0];
       if(!source?.from_address)throw new Error('A reply target could not be determined.');
-      const self=String(ready.settings.inbox_address||'support@kleenest.us').toLowerCase();
       const target=String(source.from_address).toLowerCase();
-      const cc=replyAll?[...new Set([...(source.to_addresses||[]),...(source.cc_addresses||[])].map((v:string)=>v.toLowerCase()).filter((v:string)=>v!==self&&v!==target))]:[];
-      const subject=/^re:/i.test(thread.data.subject)?thread.data.subject:`Re: ${thread.data.subject}`;
+      const cc=replyAll?[...new Set([...(source.to_addresses||[]),...(source.cc_addresses||[])].map((v:string)=>v.toLowerCase()).filter((v:string)=>v!==mailbox.address&&v!==target))]:[];
+      const subject=/^re:/i.test(thread.data.subject)?thread.data.subject:'Re: '+thread.data.subject;
       const refs=[...(source.reference_ids||[]),source.internet_message_id].filter(Boolean);
       const headers:Record<string,string>={};
       if(source.internet_message_id)headers['In-Reply-To']=source.internet_message_id;
       if(refs.length)headers.References=[...new Set(refs)].join(' ');
       await admin.from('owner_email_center_threads').update({folder:'inbox',unread:false,updated_at:new Date().toISOString()}).eq('id',threadId);
-      return json(await sendAndStore({ownerUserId:userId,threadId,from:ready.from,to:[target],cc,subject,body:replyBody,headers,auditAction:replyAll?'reply_all':'reply'}));
+      const from=String(mailbox.display_name||'Kleenest')+' <'+String(mailbox.address)+'>';
+      return json(await sendAndStore({ownerUserId:storageOwnerUserId,threadId,from,to:[target],cc,subject,body:replyBody,headers,auditAction:replyAll?'reply_all':'reply'}));
     }
 
     if(action==='forward'){
-      const ready=await requireReady(userId);
       const threadId=requiredText(body?.threadId,'threadId',100);
       const to=emailList(requiredText(body?.to,'to',2000));
       if(!to.length)throw new Error('At least one valid recipient is required.');
       const note=optionalText(body?.body,50000);
-      const thread=await admin.from('owner_email_center_threads').select('subject').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
+      const thread=await admin.from('owner_email_center_threads').select('subject,mailbox_id').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
       if(thread.error)throw thread.error;
+      const mailbox=await loadMailbox(thread.data.mailbox_id||null);
+      await requireReady(storageOwnerUserId);
+      if(!mailbox.send_enabled)throw Object.assign(new Error('Sending is disabled for this mailbox.'),{status:403});
       const last=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).order('created_at',{ascending:false}).limit(1).maybeSingle();
       if(last.error||!last.data)throw last.error||new Error('Thread has no messages.');
-      const subject=/^fwd:/i.test(thread.data.subject)?thread.data.subject:`Fwd: ${thread.data.subject}`;
-      const forwarded=[note,note?'\n':'','---------- Forwarded message ----------',`From: ${last.data.from_address}`,`Subject: ${last.data.subject}`,'',last.data.text_body||''].join('\n');
-      return json(await sendAndStore({ownerUserId:userId,threadId,from:ready.from,to,subject,body:forwarded,auditAction:'forward'}));
+      const subject=/^fwd:/i.test(thread.data.subject)?thread.data.subject:'Fwd: '+thread.data.subject;
+      const forwarded=[note,note?'\n':'','---------- Forwarded message ----------','From: '+last.data.from_address,'Subject: '+last.data.subject,'',last.data.text_body||''].join('\n');
+      const from=String(mailbox.display_name||'Kleenest')+' <'+String(mailbox.address)+'>';
+      return json(await sendAndStore({ownerUserId:storageOwnerUserId,threadId,from,to,subject,body:forwarded,auditAction:'forward'}));
     }
 
     if(action==='block_sender'){
