@@ -17,7 +17,7 @@ const appSearch=requireFile('packages/mobile-core/src/appSearch.ts');
 
 requireAll('Owner communications route',layout,['name="communications"', "title:'Email'"]);
 must(!layout.includes('name="communications" options={{href:null'),'Owner communications route must stay visible in the Owner bottom navigation.');
-requireAll('Owner communications discoverability',home,["'/communications'","'Communications & Email'",'href="/communications"','Open Email Inbox']);
+requireAll('Owner communications discoverability',home,["'/communications'","'Kleenest Email Center'",'support@kleenest.us','href="/communications"','Open Email Inbox']);
 requireAll('Owner Email Center search discoverability',appSearch,[
   "id:'communications-email'",
   "title:'Kleenest Email Center'",
