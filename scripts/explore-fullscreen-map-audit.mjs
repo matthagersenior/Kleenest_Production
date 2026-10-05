@@ -16,6 +16,8 @@ requireToken("style={[s.resultsSheet",'Nearby/route results must live in a map-o
 requireToken("accessibilityLabel={resultsSheetExpanded?'Collapse results':'Expand results'}",'The results sheet must expose an accessible expand/collapse control.');
 requireToken("style={s.resultsSheetList}",'Expanded results must scroll inside the overlay sheet.');
 requireToken("style={s.selectedSheetActions}",'Selected-place primary actions must stay outside the scrolling detail body.');
+requireToken("if(rawQuery&&retainedMapOrigin&&!areaMatch&&!overrideOrigin)setDestinationCardOpen(false);",'A brand/category search from a chosen address must reveal results instead of leaving the destination card open.');
+requireToken("renderItem={() => null}",'Legacy below-map result cards must stay disabled after the unified results-sheet revamp.');
 requireToken("<MapLegend />",'The map legend must remain available on the unified Explore canvas.');
 requireToken(">Nearby</Text>",'Nearby discovery mode must remain available.');
 requireToken(">Along route</Text>",'Along-route discovery mode must remain available.');
