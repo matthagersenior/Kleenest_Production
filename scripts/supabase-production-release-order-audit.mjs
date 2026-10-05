@@ -22,6 +22,11 @@ expect(deploy,'RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha
 expect(deploy,'GitHub main is the schema authority','GitHub main schema authority');
 expect(deploy,'Supabase GitHub Integration owns production migration deployment','native Supabase deployment ownership');
 expect(deploy,'node scripts/supabase-production-ledger-readiness.mjs','fail-closed production ledger verification');
+expect(deploy,"github.event.workflow_run.event != 'pull_request'",'post-merge Production CI event gate that does not depend on unreliable workflow_run head_branch metadata');
+expect(deploy,'Verify release SHA is current main','exact main release identity gate');
+expect(deploy,'git fetch --no-tags origin main:refs/remotes/origin/main','current main ref verification');
+expect(deploy,'test "$RELEASE_SHA" = "$(git rev-parse origin/main)"','release SHA must equal current main before database readiness');
+reject(deploy,"github.event.workflow_run.head_branch == 'main'",'workflow_run head_branch gate that can skip canonical post-merge workflow_dispatch CI');
 reject(deploy,'SUPABASE_ACCESS_TOKEN','legacy CLI access-token deployment path');
 reject(deploy,'SUPABASE_DB_PASSWORD','database-password deployment path');
 reject(deploy,'supabase db push','duplicate GitHub CLI migration deployment');
