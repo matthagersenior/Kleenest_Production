@@ -2281,7 +2281,7 @@ const s = StyleSheet.create({
   resultsHandoff:{minHeight:48,borderTopWidth:1,borderBottomWidth:1,paddingHorizontal:14,paddingVertical:7,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
   resultsHandoffText:{flex:1,fontSize:13,fontWeight:'900'},
   resultsHandoffAction:{fontSize:13,fontWeight:'900'},
-  selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, minHeight: 228, maxHeight: '72%', zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4 },
+  selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
   destinationPanel:{height:146,justifyContent:'flex-start'},
   destinationSummary:{fontSize:12,lineHeight:16,fontWeight:'800'},
   destinationAction:{flex:1,alignItems:'center',minWidth:78},
