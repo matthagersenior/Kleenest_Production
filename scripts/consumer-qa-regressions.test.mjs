@@ -280,9 +280,10 @@ test('discovery collapses duplicate physical pins without collapsing distinct ne
     {location_id:'d1f7669d-c5da-4c7f-b5e4-a4c87878221d',name:'Circle K',brand:'Circle K',latitude:38.1374652,longitude:-89.7038434,source:'osm',source_dataset:'OpenStreetMap',canonical_pending:false,address:'West Doc Lin Drive',distance_meters:10},
     {location_id:'osm:way:999999',source_external_id:'osm:way:999999',name:'Circle K',brand:'Circle K',latitude:38.1374702,longitude:-89.7041702,source:'osm',source_dataset:'openstreetmap_live',canonical_pending:true,address:'1205 N Market St',distance_meters:35},
     {location_id:'separate',name:'Circle K Car Wash',brand:'Circle K',latitude:38.1375,longitude:-89.7040,source:'osm',source_dataset:'openstreetmap_live',canonical_pending:true,distance_meters:25},
+    {location_id:'far-store',name:'Circle K',brand:'Circle K',latitude:38.1395,longitude:-89.7038,source:'osm',source_dataset:'openstreetmap_live',canonical_pending:true,distance_meters:230},
   ];
   const actual=dedupe(rows,2000);
-  assert.equal(actual.length,2);
+  assert.equal(actual.length,3);
   assert.equal(actual[0].location_id,'d1f7669d-c5da-4c7f-b5e4-a4c87878221d');
   assert.ok(actual[0].discovery_sources.includes('openstreetmap_live'));
   assert.ok(actual.some(row=>row.name==='Circle K Car Wash'));
