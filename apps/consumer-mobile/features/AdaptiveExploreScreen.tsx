@@ -996,6 +996,10 @@ export default function AdaptiveExploreScreen() {
     // A brand/category filters the selected origin; only Use my location resets it.
     const retainedMapOrigin=!clearQuery&&!areaMatch?searchAreaOrigin:null;
     const mapAreaOrigin=overrideOrigin||retainedMapOrigin;
+    // When a place/category search reuses a chosen address as its origin, the
+    // results sheet must switch back to results instead of leaving the
+    // destination card covering the matching places.
+    if(rawQuery&&retainedMapOrigin&&!areaMatch&&!overrideOrigin)setDestinationCardOpen(false);
     const current=areaMatch||mapAreaOrigin?null:await currentLocation(forceLiveRecenter);
     let livePresence:ConsumerPresence|null=null;
     if(areaMatch||mapAreaOrigin){
@@ -2282,28 +2286,7 @@ export default function AdaptiveExploreScreen() {
             </View>
           </View>
         }
-        renderItem={({ item }) => (
-          <>
-            <View style={[s.resultItem,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-              <ResultCard
-                item={item}
-                selected={idOf(item) === selectedId}
-                onSelect={() => selectRow(item)}
-                onDirections={() => void directions(item)}
-                onCheckIn={() => void checkIn(item)}
-                onAddToRoute={() => addToRoute(item)}
-                onKnow={() => contributeKnowledge(item)}
-                onDetails={() => openLocationDetails(item)}
-                onReview={() => router.push({pathname:'/location/[id]',params:{id:idOf(item),review:'1'}})}
-                route={mode === 'route' ? route : null}
-                requestedAmenities={selectedAmenityNames}
-                checkInFeedback={checkInFeedback[idOf(item)]}
-              />
-            </View>
-            {Number(item?.discovery_rank)===4?<View style={s.resultItem}><AdMobNativeSlot contextClass="maps_network_after_results_4" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/></View>:null}
-            {Number(item?.discovery_rank)===14?<View style={s.resultItem}><AdMobNativeSlot contextClass="maps_network_after_results_14" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/></View>:null}
-          </>
-        )}
+        renderItem={() => null}
         ListEmptyComponent={!loading ? (
           <View style={[s.resultItem,{backgroundColor:theme.surface,borderColor:theme.line}]}>
             <View style={[s.empty,{backgroundColor:theme.surface,borderColor:theme.line}]}>
