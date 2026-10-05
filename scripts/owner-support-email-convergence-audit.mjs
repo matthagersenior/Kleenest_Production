@@ -12,6 +12,9 @@ const center=read('supabase/functions/owner-email-center/index.ts');
 const inbound=read('supabase/functions/owner-email-inbound/index.ts');
 const ui=read('apps/platform-mobile/app/communications.tsx');
 const service=read('apps/platform-mobile/services/communications.ts');
+const consumerUi=read('apps/consumer-mobile/app/support.tsx');
+const businessUi=read('apps/business-mobile/app/support.tsx');
+const fleetUi=read('apps/fleet-mobile/app/support.tsx');
 const migrations=fs.readdirSync('supabase/migrations').filter(v=>v.endsWith('.sql')).map(v=>read(`supabase/migrations/${v}`)).join('\n');
 
 requireAll('Consumer support source',consumer,["p_source_app:'consumer'"]);
@@ -53,6 +56,9 @@ requireAll('KleenestOS Email Center service',service,[
   "action:'block_sender'",
   "mailbox?:'inbox'|'sent'|'drafts'|'spam'|'all'",
 ]);
+requireAll('Consumer support reply visibility',consumerUi,['row.admin_notes','Kleenest Support']);
+requireAll('Business support reply visibility',businessUi,['admin_notes','Recent requests','Kleenest Support']);
+requireAll('Fleet support reply visibility',fleetUi,['admin_notes','Recent requests','Kleenest Support']);
 
 if(failures.length){
   console.error(`Owner support → Email Center audit failed with ${failures.length} gap(s):`);
