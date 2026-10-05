@@ -52,6 +52,9 @@ all('Inbound mailbox routing',inbound,[
   'sendAutoReply',
   'mailbox_id:mailbox.id',
 ]);
+must(!inbound.includes('eval('),'Inbound mail must never execute message content.');
+must(!inbound.includes('new Function'),'Inbound mail must never compile message content.');
+
 all('Email Center send-as',center,[
   'loadMailbox',
   'mailboxId',
