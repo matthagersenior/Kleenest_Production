@@ -1,6 +1,7 @@
 -- Keep the audited Owner CRUD gateway aligned with the canonical table name.
 -- The live catalog exposes enterprise_partner_campaign_outcomes; the gateway
 -- still referenced the retired enterprise_partner_outcomes name.
+-- Safe to replay when the live repair has already been applied.
 
 do $$
 declare
