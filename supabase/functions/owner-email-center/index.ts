@@ -245,12 +245,14 @@ Deno.serve(async(req:Request)=>{
       const mailbox=String(body?.mailbox||'inbox');
       const direction=String(body?.direction||'any');
       let q=admin.from('owner_email_center_threads')
-        .select('id,subject,snippet,participants,last_message_at,unread,folder,latest_direction,starred,message_count,has_attachment,labels')
+        .select('id,subject,snippet,participants,last_message_at,unread,folder,latest_direction,starred,message_count,has_attachment,labels,priority,support_request_id,source_app')
         .eq('owner_user_id',userId)
         .order('last_message_at',{ascending:false})
         .limit(maxResults);
       if(mailbox==='inbox')q=q.eq('folder','inbox');
-      else if(mailbox==='sent')q=q.neq('folder','trash').eq('latest_direction','outbound');
+      else if(mailbox==='sent')q=q.eq('folder','sent');
+      else if(mailbox==='drafts')q=q.eq('folder','drafts');
+      else if(mailbox==='spam')q=q.eq('folder','spam');
       else if(mailbox==='all')q=q.neq('folder','trash');
       else throw new Error('Unsupported mailbox view.');
       if(direction==='incoming')q=q.eq('latest_direction','inbound');
@@ -275,6 +277,10 @@ Deno.serve(async(req:Request)=>{
         messageCount:Number(row.message_count||0),
         hasAttachment:Boolean(row.has_attachment),
         labelNames:Array.isArray(row.labels)?row.labels:[],
+        folder:row.folder,
+        priority:row.priority||'normal',
+        supportRequestId:row.support_request_id||null,
+        sourceApp:row.source_app||null,
       }));
       return json({threads,nextPageToken:null});
     }
@@ -301,6 +307,7 @@ Deno.serve(async(req:Request)=>{
         body:message.text_body||'',
         unread:Boolean(row.unread)&&message.direction==='inbound',
         sent:message.direction==='outbound',
+        deliveryStatus:message.delivery_status||null,
         attachments:Array.isArray(message.attachments)?message.attachments:[],
       }));
       return json({thread:{
@@ -310,10 +317,58 @@ Deno.serve(async(req:Request)=>{
         participants:row.participants||[],
         unread:Boolean(row.unread),
         inInbox:row.folder==='inbox',
+        folder:row.folder,
+        priority:row.priority||'normal',
+        supportRequestId:row.support_request_id||null,
+        sourceApp:row.source_app||null,
         labelIds:row.labels||[],
         labelNames:row.labels||[],
         messages,
       }});
+    }
+
+    if(action==='save_draft'){
+      const draftId=optionalText(body?.draftId,100);
+      const to=emailList(body?.to);
+      const cc=emailList(body?.cc);
+      const bcc=emailList(body?.bcc);
+      const subject=optionalText(body?.subject,500)||'(draft)';
+      const text=optionalText(body?.body,50000);
+      if(!to.length&&!cc.length&&!bcc.length&&subject==='(draft)'&&!text)throw new Error('Draft is empty.');
+      const settings=await loadSettings(userId);
+      const from=parseMailbox(String(settings.inbox_address||'support@kleenest.us'));
+      let threadId=draftId;
+      if(threadId){
+        const current=await admin.from('owner_email_center_threads').select('id,folder').eq('owner_user_id',userId).eq('id',threadId).single();
+        if(current.error)throw current.error;
+        if(current.data.folder!=='drafts')throw new Error('Only draft conversations can be updated as drafts.');
+        const updated=await admin.from('owner_email_center_threads').update({
+          subject,normalized_subject:normalizeSubject(subject),folder:'drafts',unread:false,
+          participants:[...new Set([...to,...cc])],snippet:excerpt(text),latest_direction:'outbound',
+          last_message_at:new Date().toISOString(),updated_at:new Date().toISOString(),
+        }).eq('id',threadId);
+        if(updated.error)throw updated.error;
+        const cleared=await admin.from('owner_email_center_messages').delete().eq('owner_user_id',userId).eq('thread_id',threadId);
+        if(cleared.error)throw cleared.error;
+      }else{
+        const created=await admin.from('owner_email_center_threads').insert({
+          owner_user_id:userId,subject,normalized_subject:normalizeSubject(subject),folder:'drafts',unread:false,
+          participants:[...new Set([...to,...cc])],snippet:excerpt(text),latest_direction:'outbound',
+          message_count:0,last_message_at:new Date().toISOString(),
+        }).select('id').single();
+        if(created.error)throw created.error;
+        threadId=String(created.data.id);
+      }
+      const inserted=await admin.from('owner_email_center_messages').insert({
+        thread_id:threadId,owner_user_id:userId,direction:'outbound',from_address:from.address,
+        from_name:settings.from_name||'Kleenest',to_addresses:to,cc_addresses:cc,bcc_addresses:bcc,
+        subject,text_body:text,headers:{draft:true},attachments:[],delivery_status:'draft',
+      }).select('id').single();
+      if(inserted.error)throw inserted.error;
+      await refreshThread(threadId);
+      await admin.from('owner_email_center_threads').update({folder:'drafts',unread:false}).eq('id',threadId);
+      await audit(userId,threadId,'save_draft',{to,subject});
+      return json({ok:true,threadId,messageId:String(inserted.data.id)});
     }
 
     if(action==='send'){
@@ -340,12 +395,41 @@ Deno.serve(async(req:Request)=>{
     }
 
     if(action==='reply'){
-      const ready=await requireReady(userId);
       const threadId=requiredText(body?.threadId,'threadId',100);
       const replyBody=requiredText(body?.body,'body',50000);
       const replyAll=Boolean(body?.replyAll);
       const thread=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',userId).eq('id',threadId).single();
       if(thread.error)throw thread.error;
+
+      if(thread.data.support_request_id){
+        const support=await admin.from('support_requests').select('id,user_id,status,source_app,subject').eq('id',thread.data.support_request_id).single();
+        if(support.error)throw support.error;
+        const settings=await loadSettings(userId);
+        const history=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',userId).eq('thread_id',threadId).order('created_at',{ascending:false});
+        if(history.error)throw history.error;
+        const source=(history.data||[]).find((m:any)=>m.direction==='inbound')||(history.data||[])[0];
+        const target=String(source?.from_address||`app-user+${String(support.data.user_id).replaceAll('-','')}@kleenest.local`).toLowerCase();
+        const now=new Date().toISOString();
+        const stored=await admin.from('owner_email_center_messages').insert({
+          thread_id:threadId,owner_user_id:userId,direction:'outbound',
+          from_address:String(settings.inbox_address||'support@kleenest.us').toLowerCase(),
+          from_name:settings.from_name||'Kleenest',to_addresses:[target],cc_addresses:[],bcc_addresses:[],
+          subject:/^re:/i.test(thread.data.subject)?thread.data.subject:`Re: ${thread.data.subject}`,
+          text_body:replyBody,headers:{channel:'app_support',support_request_id:String(support.data.id),source_app:support.data.source_app||thread.data.source_app||'unknown'},
+          attachments:[],delivery_status:'delivered_in_app',sent_at:now,
+        }).select('id').single();
+        if(stored.error)throw stored.error;
+        const updatedSupport=await admin.from('support_requests').update({
+          status:'in_progress',admin_notes:replyBody,updated_at:now,
+        }).eq('id',support.data.id);
+        if(updatedSupport.error)throw updatedSupport.error;
+        await admin.from('owner_email_center_threads').update({folder:'inbox',unread:false,updated_at:now}).eq('id',threadId);
+        await refreshThread(threadId);
+        await audit(userId,threadId,'support_reply',{support_request_id:support.data.id,status:'in_progress'});
+        return json({messageId:String(stored.data.id),threadId,status:'in_progress'});
+      }
+
+      const ready=await requireReady(userId);
       const history=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',userId).eq('thread_id',threadId).order('created_at',{ascending:false});
       if(history.error)throw history.error;
       const messages=history.data||[];
@@ -378,13 +462,32 @@ Deno.serve(async(req:Request)=>{
       return json(await sendAndStore({ownerUserId:userId,threadId,from:ready.from,to,subject,body:forwarded,auditAction:'forward'}));
     }
 
-    if(['archive','set_read','star','trash','set_inbox','set_label'].includes(action)){
+    if(action==='block_sender'){
+      const threadId=requiredText(body?.threadId,'threadId',100);
+      const current=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',userId).eq('id',threadId).single();
+      if(current.error)throw current.error;
+      const latest=await admin.from('owner_email_center_messages').select('from_address,direction').eq('owner_user_id',userId).eq('thread_id',threadId).eq('direction','inbound').order('created_at',{ascending:false}).limit(1).maybeSingle();
+      if(latest.error)throw latest.error;
+      const sender=String(latest.data?.from_address||'').toLowerCase();
+      if(!sender)throw new Error('No inbound sender is available to block.');
+      const settings=await loadSettings(userId);
+      const blocked=[...new Set([...(Array.isArray(settings.blocked_senders)?settings.blocked_senders:[]),sender])];
+      const saved=await admin.from('owner_email_center_settings').update({blocked_senders:blocked,updated_at:new Date().toISOString()}).eq('owner_user_id',userId);
+      if(saved.error)throw saved.error;
+      const moved=await admin.from('owner_email_center_threads').update({folder:'spam',unread:false,updated_at:new Date().toISOString()}).eq('id',threadId);
+      if(moved.error)throw moved.error;
+      await audit(userId,threadId,'block_sender',{sender});
+      return json({ok:true,sender});
+    }
+
+    if(['archive','set_read','star','trash','set_inbox','set_label','spam'].includes(action)){
       const threadId=requiredText(body?.threadId,'threadId',100);
       const current=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',userId).eq('id',threadId).single();
       if(current.error)throw current.error;
       const patch:any={updated_at:new Date().toISOString()};
       if(action==='archive')patch.folder='archive';
       if(action==='trash')patch.folder='trash';
+      if(action==='spam')patch.folder='spam';
       if(action==='set_inbox')patch.folder=Boolean(body?.inInbox)?'inbox':'archive';
       if(action==='set_read')patch.unread=!Boolean(body?.read);
       if(action==='star')patch.starred=Boolean(body?.starred);

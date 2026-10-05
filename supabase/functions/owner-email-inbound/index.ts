@@ -76,7 +76,10 @@ async function findOwnerForRecipients(recipients:string[]){
   const{data,error}=await admin.from('owner_email_center_settings').select('*');
   if(error)throw error;
   const normalized=new Set(recipients.map(v=>v.toLowerCase()));
-  return(data||[]).find((row:any)=>normalized.has(String(row.inbox_address||'').toLowerCase()))||null;
+  return(data||[]).find((row:any)=>[
+    String(row.inbox_address||'').toLowerCase(),
+    ...(Array.isArray(row.aliases)?row.aliases.map((v:string)=>String(v).toLowerCase()):[]),
+  ].some(address=>address&&normalized.has(address)))||null;
 }
 async function resolveThread(ownerUserId:string,subject:string,candidates:string[]){
   const admin=adminClient();
@@ -157,6 +160,8 @@ Deno.serve(async(req:Request)=>{
     const subject=String(email?.subject||event?.data?.subject||'(no subject)').trim()||'(no subject)';
     const threadId=await resolveThread(owner.owner_user_id,subject,candidates);
     const from=parseMailbox(String(email?.from||event?.data?.from||'unknown@invalid'));
+    const blockedSenders=new Set((Array.isArray(owner.blocked_senders)?owner.blocked_senders:[]).map((v:string)=>String(v).toLowerCase()));
+    const isBlocked=blockedSenders.has(from.address);
     const cc=[...(Array.isArray(email?.cc)?email.cc:[email?.cc]).filter(Boolean).map((v:any)=>parseMailbox(String(v)).address)];
     const text=String(email?.text||'').trim()||htmlToText(String(email?.html||''));
     const boundedText=text.slice(0,100000);
@@ -203,8 +208,8 @@ Deno.serve(async(req:Request)=>{
     const updated=await admin.from('owner_email_center_threads').update({
       subject,
       normalized_subject:normalizeSubject(subject),
-      folder:'inbox',
-      unread:true,
+      folder:isBlocked?'spam':'inbox',
+      unread:!isBlocked,
       participants,
       snippet:excerpt(boundedText),
       latest_direction:'inbound',
@@ -219,8 +224,8 @@ Deno.serve(async(req:Request)=>{
     await admin.from('owner_email_center_audit').insert({
       owner_user_id:owner.owner_user_id,
       thread_id:threadId,
-      action:'receive',
-      detail:{provider_email_id:providerEmailId,from:from.address,attachment_count:attachments.length},
+      action:isBlocked?'receive_spam':'receive',
+      detail:{provider_email_id:providerEmailId,from:from.address,attachment_count:attachments.length,blocked:isBlocked},
     });
 
     return json({ok:true,stored:true});

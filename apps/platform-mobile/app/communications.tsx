@@ -3,19 +3,21 @@ import { Pressable,RefreshControl,ScrollView,Text,TextInput,View } from 'react-n
 import { OSHero,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
 import {
-  archiveOwnerMailThread,forwardOwnerMailThread,getOwnerMailStatus,getOwnerMailThread,listOwnerMailThreads,
-  replyOwnerMailThread,sendOwnerMail,setOwnerMailThreadInbox,setOwnerMailThreadLabel,setOwnerMailThreadRead,
+  archiveOwnerMailThread,blockOwnerMailSender,forwardOwnerMailThread,getOwnerMailStatus,getOwnerMailThread,listOwnerMailThreads,
+  markOwnerMailThreadSpam,replyOwnerMailThread,saveOwnerMailDraft,sendOwnerMail,setOwnerMailThreadInbox,setOwnerMailThreadLabel,setOwnerMailThreadRead,
   setOwnerMailThreadStarred,trashOwnerMailThread,
   type OwnerMailConnectionStatus,type OwnerMailThread,type OwnerMailThreadSummary,
 } from '../services/communications';
 
-type ViewKey='action'|'active'|'waiting'|'sent'|'all';
+type ViewKey='action'|'active'|'waiting'|'sent'|'drafts'|'spam'|'all';
 type DateValue=string|number|Date|null|undefined;
-const views:Record<ViewKey,{label:string;description:string;mailbox:'inbox'|'sent'|'all';direction:'any'|'incoming'|'outgoing'}>={
+const views:Record<ViewKey,{label:string;description:string;mailbox:'inbox'|'sent'|'drafts'|'spam'|'all';direction:'any'|'incoming'|'outgoing'}>={
   action:{label:'Needs reply',description:'Latest message came into Kleenest.',mailbox:'inbox',direction:'incoming'},
   active:{label:'Active',description:'Current Kleenest inbox conversations.',mailbox:'inbox',direction:'any'},
   waiting:{label:'Waiting',description:'Kleenest sent the latest message.',mailbox:'all',direction:'outgoing'},
   sent:{label:'Sent',description:'Outbound Kleenest conversations.',mailbox:'sent',direction:'any'},
+  drafts:{label:'Drafts',description:'Saved messages that are not sent yet.',mailbox:'drafts',direction:'any'},
+  spam:{label:'Spam',description:'Blocked or manually filtered conversations.',mailbox:'spam',direction:'any'},
   all:{label:'All mail',description:'Every conversation except Trash.',mailbox:'all',direction:'any'},
 };
 const date=(v:DateValue)=>{
@@ -30,7 +32,7 @@ export default function Communications(){
   const[selected,setSelected]=useState<OwnerMailThread|null>(null);
   const[view,setView]=useState<ViewKey>('action'); const[query,setQuery]=useState(''); const[unread,setUnread]=useState(false);
   const[busy,setBusy]=useState(false); const[notice,setNotice]=useState('');
-  const[compose,setCompose]=useState(false); const[to,setTo]=useState(''); const[cc,setCc]=useState(''); const[bcc,setBcc]=useState('');
+  const[compose,setCompose]=useState(false); const[draftThreadId,setDraftThreadId]=useState<string|null>(null); const[to,setTo]=useState(''); const[cc,setCc]=useState(''); const[bcc,setBcc]=useState('');
   const[subject,setSubject]=useState(''); const[body,setBody]=useState(''); const[reply,setReply]=useState('');
   const[forward,setForward]=useState(false); const[forwardTo,setForwardTo]=useState(''); const[forwardBody,setForwardBody]=useState('');
   const[label,setLabel]=useState('');
@@ -59,10 +61,22 @@ export default function Communications(){
     finally{setBusy(false)}
   }
   async function refreshSelected(){if(selected)setSelected((await getOwnerMailThread(selected.id)).thread)}
+  function clearComposer(){setTo('');setCc('');setBcc('');setSubject('');setBody('');setDraftThreadId(null);setCompose(false)}
+  async function saveDraft(){
+    if(!to.trim()&&!cc.trim()&&!bcc.trim()&&!subject.trim()&&!body.trim())return;
+    setBusy(true);
+    try{const saved=await saveOwnerMailDraft({draftId:draftThreadId,to,cc,bcc,subject,body});setDraftThreadId(saved.threadId);setCompose(false);setNotice('Draft saved.');await load('drafts')}
+    catch(e:any){setNotice(String(e?.message||'Draft could not be saved.'))}finally{setBusy(false)}
+  }
+  async function openDraft(t:OwnerMailThreadSummary){
+    setBusy(true);
+    try{const r=await getOwnerMailThread(t.id);const m=r.thread.messages[r.thread.messages.length-1];setDraftThreadId(r.thread.id);setTo(m?.to||'');setCc(m?.cc||'');setBcc('');setSubject(r.thread.subject==='(draft)'?'':r.thread.subject);setBody(m?.body||'');setCompose(true);setSelected(null);setNotice('Draft loaded into composer.')}
+    catch(e:any){setNotice(String(e?.message||'Draft could not be opened.'))}finally{setBusy(false)}
+  }
   async function sendNew(){
     if(!to.trim()||!subject.trim()||!body.trim())return;
     setBusy(true);
-    try{await sendOwnerMail({to,cc,bcc,subject,body});setTo('');setCc('');setBcc('');setSubject('');setBody('');setCompose(false);setNotice('Email sent from Kleenest.');await load('sent')}
+    try{await sendOwnerMail({to,cc,bcc,subject,body});if(draftThreadId)await trashOwnerMailThread(draftThreadId);clearComposer();setNotice('Email sent from Kleenest.');await load('sent')}
     catch(e:any){setNotice(String(e?.message||'Email could not be sent.'))}finally{setBusy(false)}
   }
   async function sendReply(all=false){
@@ -107,7 +121,7 @@ export default function Communications(){
     <View style={{...card,gap:10}}>
       <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8}}>
         <View style={{flex:1}}><Text style={{fontWeight:'900',color:theme.ink}}>Smart views</Text><Text style={{fontSize:12,color:theme.muted}}>{views[view].description}</Text></View>
-        <Pressable disabled={!ready||busy} onPress={()=>setCompose(v=>!v)} style={{padding:11,borderRadius:12,backgroundColor:theme.accent,opacity:!ready||busy?0.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>{compose?'Close':'Compose'}</Text></Pressable>
+        <Pressable disabled={busy} onPress={()=>setCompose(v=>!v)} style={{padding:11,borderRadius:12,backgroundColor:theme.accent,opacity:!ready||busy?0.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>{compose?'Close':'Compose'}</Text></Pressable>
       </View>
       <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
         {(Object.keys(views) as ViewKey[]).map(k=><Pressable key={k} onPress={()=>void load(k)} style={{paddingHorizontal:12,paddingVertical:9,borderRadius:999,backgroundColor:k===view?theme.accent:theme.accentSoft}}><Text style={{fontWeight:'900',color:k===view?theme.accentText:theme.accent}}>{views[k].label}</Text></Pressable>)}
@@ -120,7 +134,7 @@ export default function Communications(){
         ['To',to,setTo],['Cc (optional)',cc,setCc],['Bcc (optional)',bcc,setBcc],['Subject',subject,setSubject],
       ].map(([p,v,s]:any)=><TextInput key={p} value={v} onChangeText={s} placeholder={p} placeholderTextColor={theme.muted} style={{borderWidth:1,borderColor:theme.line,borderRadius:12,padding:11,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>)}
       <TextInput value={body} onChangeText={setBody} placeholder="Write your message…" placeholderTextColor={theme.muted} multiline style={{minHeight:130,textAlignVertical:'top',borderWidth:1,borderColor:theme.line,borderRadius:12,padding:11,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>
-      <Pressable disabled={busy||!to.trim()||!subject.trim()||!body.trim()} onPress={()=>void sendNew()} style={{padding:12,borderRadius:12,alignItems:'center',backgroundColor:theme.accent,opacity:busy||!to.trim()||!subject.trim()||!body.trim()?0.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>Send from Kleenest</Text></Pressable>
+      <View style={{flexDirection:'row',gap:8,flexWrap:'wrap'}}><Pressable disabled={busy||(!to.trim()&&!subject.trim()&&!body.trim())} onPress={()=>void saveDraft()} style={{padding:12,borderRadius:12,alignItems:'center',backgroundColor:theme.accentSoft,opacity:busy?0.5:1}}><Text style={{fontWeight:'900',color:theme.accent}}>Save draft</Text></Pressable><Pressable disabled={!ready||busy||!to.trim()||!subject.trim()||!body.trim()} onPress={()=>void sendNew()} style={{padding:12,borderRadius:12,alignItems:'center',backgroundColor:theme.accent,opacity:!ready||busy||!to.trim()||!subject.trim()||!body.trim()?0.5:1}}><Text style={{fontWeight:'900',color:theme.accentText}}>Send from Kleenest</Text></Pressable></View>
     </View>:null}
 
     <View style={{...card,gap:8}}>
@@ -132,27 +146,29 @@ export default function Communications(){
       </View>
     </View>
 
-    {threads.length===0?<View style={{...card}}><Text style={{fontWeight:'900',color:theme.ink}}>{busy?'Loading mail…':'No conversations in this view'}</Text><Text style={{fontSize:12,color:theme.muted,marginTop:5}}>New mail to support@kleenest.us will appear here automatically.</Text></View>:threads.map(t=><Pressable key={t.id} onPress={()=>void open(t)} style={{...card,gap:5,borderColor:t.unread?theme.warning:theme.line}}>
+    {threads.length===0?<View style={{...card}}><Text style={{fontWeight:'900',color:theme.ink}}>{busy?'Loading mail…':'No conversations in this view'}</Text><Text style={{fontSize:12,color:theme.muted,marginTop:5}}>New mail to support@kleenest.us will appear here automatically.</Text></View>:threads.map(t=><Pressable key={t.id} onPress={()=>t.folder==='drafts'?void openDraft(t):void open(t)} style={{...card,gap:5,borderColor:t.unread?theme.warning:theme.line}}>
       <View style={{flexDirection:'row',gap:8}}><Text numberOfLines={1} style={{flex:1,fontWeight:t.unread?'900':'800',color:theme.ink}}>{t.subject}</Text>{t.starred?<Text style={{color:theme.warning}}>★</Text>:null}</View>
-      <Text numberOfLines={1} style={{fontSize:12,fontWeight:'800',color:theme.accent}}>{t.from||t.fromEmail||'Conversation'}</Text>
+      <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>{t.sourceApp?<StatusPill label={`${t.sourceApp.toUpperCase()} SUPPORT`} tone="good"/>:<StatusPill label="EMAIL"/>}{t.folder==='drafts'?<StatusPill label="DRAFT" tone="warning"/>:null}{t.folder==='spam'?<StatusPill label="SPAM" tone="danger"/>:null}</View><Text numberOfLines={1} style={{fontSize:12,fontWeight:'800',color:theme.accent}}>{t.from||t.fromEmail||'Conversation'}</Text>
       <Text numberOfLines={2} style={{fontSize:12,lineHeight:18,color:theme.muted}}>{t.snippet}</Text>
       <Text style={{fontSize:11,color:theme.muted}}>{t.latestSent?'WAITING':'NEEDS REPLY'} · {date(t.date)} · {t.messageCount} message{t.messageCount===1?'':'s'}</Text>
     </Pressable>)}
 
     {selected?<View style={{...card,gap:12,borderColor:theme.accent}}>
       <Text style={{fontSize:18,fontWeight:'900',color:theme.ink}}>{selected.subject}</Text>
-      <Text style={{fontSize:12,color:theme.muted}}>{selected.participants.join(' · ')}</Text>
+      <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>{selected.sourceApp?<StatusPill label={`${selected.sourceApp.toUpperCase()} SUPPORT`} tone="good"/>:null}{selected.supportRequestId?<StatusPill label="APP SUPPORT" tone="good"/>:null}{selected.folder==='spam'?<StatusPill label="SPAM" tone="danger"/>:null}</View><Text style={{fontSize:12,color:theme.muted}}>{selected.participants.join(' · ')}</Text>
       <View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>
         <Pressable onPress={()=>void mutate(()=>setOwnerMailThreadStarred(selected.id,true),'Conversation starred.')} style={{padding:8,borderRadius:999,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Star</Text></Pressable>
         <Pressable onPress={()=>void mutate(()=>setOwnerMailThreadRead(selected.id,false),'Marked unread.')} style={{padding:8,borderRadius:999,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Mark unread</Text></Pressable>
         <Pressable onPress={()=>void mutate(()=>setOwnerMailThreadInbox(selected.id,!selected.inInbox),selected.inInbox?'Archived.':'Moved to inbox.')} style={{padding:8,borderRadius:999,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>{selected.inInbox?'Archive':'Move to inbox'}</Text></Pressable>
         <Pressable onPress={()=>void mutate(()=>archiveOwnerMailThread(selected.id),'Conversation archived.',true)} style={{padding:8,borderRadius:999,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Archive</Text></Pressable>
+        {selected.folder!=='spam'?<Pressable onPress={()=>void mutate(()=>markOwnerMailThreadSpam(selected.id),'Conversation moved to Spam.',true)} style={{padding:8,borderRadius:999,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.warning}}>Spam</Text></Pressable>:null}
+        {!selected.supportRequestId?<Pressable onPress={()=>void mutate(()=>blockOwnerMailSender(selected.id),'Sender blocked and conversation moved to Spam.',true)} style={{padding:8,borderRadius:999,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.danger}}>Block sender</Text></Pressable>:null}
         <Pressable onPress={()=>void mutate(()=>trashOwnerMailThread(selected.id),'Conversation moved to Trash.',true)} style={{padding:8,borderRadius:999,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Trash</Text></Pressable>
       </View>
 
       {selected.messages.map(m=><View key={m.id} style={{borderTopWidth:1,borderColor:theme.line,paddingTop:10,gap:6}}>
         <Text style={{fontWeight:'900',color:theme.ink}}>{m.sent?'Kleenest':m.from}</Text>
-        <Text style={{fontSize:11,color:theme.muted}}>{date(m.date)} · {m.sent?'Outbound':'Inbound'}</Text>
+        <View style={{flexDirection:'row',gap:7,alignItems:'center',flexWrap:'wrap'}}><Text style={{fontSize:11,color:theme.muted}}>{date(m.date)} · {m.sent?'Outbound':'Inbound'}</Text>{m.deliveryStatus?<StatusPill label={String(m.deliveryStatus).replaceAll('_',' ').toUpperCase()} tone={m.deliveryStatus==='draft'?'warning':String(m.deliveryStatus).includes('failed')?'danger':'neutral'}/>:null}</View>
         <Text selectable style={{fontSize:14,lineHeight:21,color:theme.ink}}>{m.body||m.snippet||'(no body)'}</Text>
         {m.attachments.length?<View><Text style={{fontWeight:'900',fontSize:12,color:theme.ink}}>Attachments</Text>{m.attachments.map((a,i)=><Text key={i} style={{fontSize:12,color:theme.muted}}>{a.filename} · {a.mimeType}</Text>)}</View>:null}
       </View>)}
