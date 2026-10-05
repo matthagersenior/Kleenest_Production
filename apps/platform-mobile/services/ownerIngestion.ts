@@ -9,6 +9,7 @@ async function rpc<T=any>(name:string,args:Record<string,unknown>={}){
   return data as T;
 }
 
+// Background ingestion now reports adaptive capacity alongside Discovery-driven work.
 export type IngestionControlSnapshot={
   status?:Record<string,unknown>;
   sources?:Record<string,unknown>[];
