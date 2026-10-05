@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import {
   buildMobileRoute,
   buildMobileRouteToDestination,
+  dedupePhysicalPlaceRows,
   findAdaptiveNearbyPlaces,
   refreshNearbyPlaceInventory,
   findAdaptiveNearbyRestrooms,
@@ -523,6 +524,7 @@ export default function AdaptiveExploreScreen() {
   const cameraRef=useRef<any>(null);
   const mapGestureReleaseRef=useRef<ReturnType<typeof setTimeout>|null>(null);
   const nearbyEnrichmentRunRef=useRef(0);
+  const cameraInteractionVersionRef=useRef(0);
   const activeIntentRef=useRef<DiscoveryIntent|null>(null);
   const activeIntentAmenitiesRef=useRef<string[]|null>(null);
   const [mode, setMode] = useState<'nearby' | 'route'>('nearby');
@@ -583,6 +585,14 @@ export default function AdaptiveExploreScreen() {
       listRef.current?.setNativeProps?.({scrollEnabled:true});
       mapGestureReleaseRef.current=null;
     },180);
+  }
+  function applyDensityAwareCamera(cameraRows:any[],target:[number,number]){
+    const densityZoom=densityAwareInitialZoom(cameraRows,target);
+    setFitRouteCamera(false);
+    setMapCenter(target);
+    setMapZoom(densityZoom);
+    cameraRef.current?.jumpTo({center:target,zoom:densityZoom});
+    setCameraNonce((value)=>value+1);
   }
   useEffect(()=>()=>{if(mapGestureReleaseRef.current)clearTimeout(mapGestureReleaseRef.current);},[]);
   const searchedDestination=useMemo(()=>searchAreaOrigin?{
@@ -868,6 +878,7 @@ export default function AdaptiveExploreScreen() {
     if(!Number.isFinite(next[0])||!Number.isFinite(next[1]))return;
     setMapCenter(next);
     if(!viewState.userInteraction)return;
+    cameraInteractionVersionRef.current+=1;
     setFitRouteCamera(false);
     if(mode!=='nearby')return;
     const activeOrigin=searchAreaOrigin||origin;
@@ -950,6 +961,7 @@ export default function AdaptiveExploreScreen() {
 
   async function loadNearby(clearQuery = false, preserveCacheOnEmpty = false, overrideOrigin:[number,number]|null=null, forceLiveRecenter=false) {
     const enrichmentRun=++nearbyEnrichmentRunRef.current;
+    const cameraInteractionVersion=cameraInteractionVersionRef.current;
     const intent=activeIntentRef.current;
     const activeAmenityNames=activeIntentAmenitiesRef.current??selectedAmenityNames;
     const requiresRestroom=Boolean(intent?.restroomRequired)||activeAmenityNames.length>0;
@@ -1086,9 +1098,10 @@ export default function AdaptiveExploreScreen() {
     if (!areaMatch&&!displayRows.length && preserveCacheOnEmpty && !query && !activeAmenityNames.length) {
       const fallback = await readNearbyCache();
       if (fallback?.rows?.length) {
-        const fallbackSelected = selectedId && fallback.rows.some((row: any) => idOf(row) === selectedId) ? selectedId : '';
-        setRows(attachPresence(fallback.rows,livePresence));setSelectedId(fallbackSelected);setRoute(null);
-        if (fallback.origin) {setOrigin(fallback.origin);setMapCenter(fallback.origin);}
+        const cachedRows=attachPresence(dedupePhysicalPlaceRows(fallback.rows,2000),livePresence);
+        const fallbackSelected = selectedId && cachedRows.some((row: any) => idOf(row) === selectedId) ? selectedId : '';
+        setRows(cachedRows);setSelectedId(fallbackSelected);setRoute(null);
+        if (fallback.origin) {setOrigin(fallback.origin);applyDensityAwareCamera(cachedRows,fallback.origin);}
         if (fallback.radiusMeters) {setRadius(fallback.radiusMeters);setEffectiveRadiusMeters(fallback.radiusMeters);}
         setAttemptedRadiiMeters(result.attemptedRadiiMeters || []);setCached(true);
         setMessage(`Live lookup returned no usable locations on first load. Showing cached nearby results from ${cachedAgeLabel(fallback.savedAt)} while you can refresh for a new live result.`);
@@ -1100,9 +1113,7 @@ export default function AdaptiveExploreScreen() {
     const preservedId = !resetSelectionForOriginChange && selectedId && displayRows.some((row) => idOf(row) === selectedId) ? selectedId : '';
     setRows(displayRows);setRoute(null);
     if (!preservedId) {
-      setMapCenter(nextOrigin);
-      setMapZoom(densityAwareInitialZoom(displayRows,nextOrigin));
-      setCameraNonce((value)=>value+1);
+      applyDensityAwareCamera(displayRows,nextOrigin);
     }
     setEffectiveRadiusMeters(result.effectiveRadiusMeters);setAttemptedRadiiMeters(result.attemptedRadiiMeters);setCached(false);setSelectedId(preservedId);
 
@@ -1135,6 +1146,7 @@ export default function AdaptiveExploreScreen() {
         );
         if(nearbyEnrichmentRunRef.current!==enrichmentRun)return;
         setRows(enriched);
+        if(cameraInteractionVersionRef.current===cameraInteractionVersion&&!preservedId)applyDensityAwareCamera(enriched,nextOrigin);
         if(!areaMatch&&!query&&!activeAmenityNames.length&&!requiresRestroom&&enriched.length){
           void writeNearbyCache(enriched,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
         }
@@ -1297,14 +1309,15 @@ export default function AdaptiveExploreScreen() {
       if (mode === 'nearby' && canUseGenericCache) {
         const fallback = await readNearbyCache();
         if (fallback?.rows?.length) {
-          const fallbackSelected = selectedId && fallback.rows.some((row: any) => idOf(row) === selectedId)
+          const cachedRows=dedupePhysicalPlaceRows(fallback.rows,2000);
+          const fallbackSelected = selectedId && cachedRows.some((row: any) => idOf(row) === selectedId)
             ? selectedId
             : '';
-          setRows(fallback.rows);
+          setRows(cachedRows);
           setSelectedId(fallbackSelected);
           if (fallback.origin) {
             setOrigin(fallback.origin);
-            setMapCenter(fallback.origin);
+            applyDensityAwareCamera(cachedRows,fallback.origin);
           }
           if (fallback.radiusMeters) setRadius(fallback.radiusMeters);
           setCached(true);

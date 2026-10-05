@@ -31,7 +31,7 @@ test('brand search retains the chosen Sparta origin without requesting GPS',asyn
   let source=declaration(screenPath,'loadNearby');
   source=source.slice(0,source.indexOf('    let result:'))+'return {nextOrigin,query};}';
   const noop=()=>{};
-  const context={nearbyEnrichmentRunRef:{current:0},activeIntentRef:{current:null},activeIntentAmenitiesRef:{current:null},selectedAmenityNames:[],radius:1609,maxRadius:402336,autoExpand:true,search:'Pizza Hut',searchAreaOrigin:[-89.701,38.123],searchAreaLabel:'Sparta, Illinois',
+  const context={nearbyEnrichmentRunRef:{current:0},cameraInteractionVersionRef:{current:0},activeIntentRef:{current:null},activeIntentAmenitiesRef:{current:null},selectedAmenityNames:[],radius:1609,maxRadius:402336,autoExpand:true,search:'Pizza Hut',searchAreaOrigin:[-89.701,38.123],searchAreaLabel:'Sparta, Illinois',
     looksLikeAddressOrArea:()=>false,currentLocation:async()=>{gpsCalls++;return {coords:{longitude:-90,latitude:39}};},
     recordConsumerPresenceAt:async()=>null,refreshConsumerPresence:async()=>null,
     setSearch:noop,setSearchAreaOrigin:value=>{if(value===null)cleared=true;},setSearchAreaLabel:noop,setPendingMapOrigin:noop,setDestinationCardOpen:noop,setRoute:noop,snapMapToDiscoveryOrigin:noop};
@@ -96,7 +96,7 @@ test('raster map dragging updates the discovery center in the drag direction',()
 
 test('user map movement keeps the camera center for the next zoom',()=>{
   let cameraCenter,pending;
-  const handler=compile(declaration(screenPath,'handleMapRegionDidChange'),{setMapInteracting:()=>{},setMapZoom:()=>{},setMapCenter:center=>{cameraCenter=center;},setFitRouteCamera:()=>{},setPendingMapOrigin:center=>{pending=center;},mode:'nearby',searchAreaOrigin:[-90.26,38.65],origin:null},'handleMapRegionDidChange');
+  const handler=compile(declaration(screenPath,'handleMapRegionDidChange'),{cameraInteractionVersionRef:{current:0},setMapInteracting:()=>{},setMapZoom:()=>{},setMapCenter:center=>{cameraCenter=center;},setFitRouteCamera:()=>{},setPendingMapOrigin:center=>{pending=center;},mode:'nearby',searchAreaOrigin:[-90.26,38.65],origin:null},'handleMapRegionDidChange');
   handler({nativeEvent:{center:[-90.22,38.65],zoom:13,userInteraction:true}});
   assert.deepEqual(cameraCenter,[-90.22,38.65]);assert.deepEqual(pending,cameraCenter);
 });
@@ -181,7 +181,7 @@ test('map-area search overrides a retained typed address',async()=>{
   source=source.slice(0,source.indexOf('    let result:'))+'return {nextOrigin,query};}';
   const noop=()=>{};
   const dragged=[-90.31,38.66];
-  const context={nearbyEnrichmentRunRef:{current:0},activeIntentRef:{current:null},activeIntentAmenitiesRef:{current:null},selectedAmenityNames:[],radius:1609,maxRadius:402336,autoExpand:true,search:'4500 Maryland Ave, St Louis, MO',searchAreaOrigin:[-90.24897,38.65415],searchAreaLabel:'4500 Maryland Ave',
+  const context={nearbyEnrichmentRunRef:{current:0},cameraInteractionVersionRef:{current:0},activeIntentRef:{current:null},activeIntentAmenitiesRef:{current:null},selectedAmenityNames:[],radius:1609,maxRadius:402336,autoExpand:true,search:'4500 Maryland Ave, St Louis, MO',searchAreaOrigin:[-90.24897,38.65415],searchAreaLabel:'4500 Maryland Ave',
     looksLikeAddressOrArea:()=>true,resolveConsumerSearchLocation:async()=>{geocodeCalls++;return {longitude:-90.24897,latitude:38.65415,label:'4500 Maryland Ave'};},
     currentLocation:async()=>{gpsCalls++;return {coords:{longitude:-90,latitude:39}};},
     recordConsumerPresenceAt:async()=>null,refreshConsumerPresence:async()=>null,
@@ -287,4 +287,27 @@ test('discovery collapses duplicate physical pins without collapsing distinct ne
   assert.equal(actual[0].location_id,'d1f7669d-c5da-4c7f-b5e4-a4c87878221d');
   assert.ok(actual[0].discovery_sources.includes('openstreetmap_live'));
   assert.ok(actual.some(row=>row.name==='Circle K Car Wash'));
+});
+
+
+test('discovery collapses brand-coded and punctuation variants from multiple sources',()=>{
+  const path='packages/mobile-core/src/adaptiveDiscovery.ts';
+  const source=[
+    'rowId','distanceOf','normalizedPlaceName','discoveryDistanceMeters','normalizedPlaceAddress',
+    'genericPlaceIdentity','primaryPlaceIdentity','isUsefulPlaceValue','placeRowPriority',
+    'placeSourceLabels','mergeDuplicatePlaceRows','samePhysicalPlace','dedupePhysicalPlaceRows',
+  ].map(name=>declaration(path,name)).join('\n');
+  const dedupe=compile(source,{},'dedupePhysicalPlaceRows');
+  const rows=[
+    {location_id:'circle-canonical',name:'Circle K',brand:'Circle K',latitude:38.1374652,longitude:-89.7038434,source:'canonical',canonical_pending:false,address:'1205 N Market St',distance_meters:10},
+    {location_id:'circle-live',source_external_id:'osm:way:4700',name:'Circle K #4700',brand:'Circle K',latitude:38.1374702,longitude:-89.7040202,source:'openstreetmap_live',canonical_pending:true,address:'1205 North Market Street',distance_meters:28},
+    {location_id:'circle-car-wash',name:'Circle K Car Wash',brand:'Circle K',latitude:38.13749,longitude:-89.70399,source:'openstreetmap_live',canonical_pending:true,address:'1205 N Market St',distance_meters:24},
+    {location_id:'mcd-canonical',name:"McDonald's",brand:"McDonald's",latitude:38.1600,longitude:-89.7000,source:'canonical',canonical_pending:false,distance_meters:2500},
+    {location_id:'mcd-live',name:'McDonalds',brand:'McDonalds',latitude:38.16003,longitude:-89.70002,source:'overture_live',canonical_pending:true,distance_meters:2504},
+  ];
+  const actual=dedupe(rows,2000);
+  assert.equal(actual.length,3);
+  assert.ok(actual.some(row=>row.name==='Circle K'));
+  assert.ok(actual.some(row=>row.name==='Circle K Car Wash'));
+  assert.ok(actual.some(row=>String(row.name).startsWith('McDonald')));
 });
