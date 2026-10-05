@@ -7,6 +7,7 @@ const requireFile=path=>{must(fs.existsSync(path),`missing Email Center file: ${
 const requireAll=(label,source,tokens)=>{for(const token of tokens)must(source.includes(token),`${label}: missing ${token}`)};
 
 const screen=requireFile('apps/platform-mobile/app/communications.tsx');
+const layout=requireFile('apps/platform-mobile/app/_layout.tsx');
 const service=requireFile('apps/platform-mobile/services/communications.ts');
 const center=requireFile('supabase/functions/owner-email-center/index.ts');
 const inbound=requireFile('supabase/functions/owner-email-inbound/index.ts');
@@ -27,9 +28,20 @@ requireAll('Email Center UI',screen,[
   'Trash',
   'Unread',
 ]);
-must(!screen.includes('Connect Gmail'),'Email Center must not require Gmail connection.');
-must(!screen.includes('gmail.modify'),'Email Center must not request Gmail scopes.');
-must(!screen.includes('signInWithOAuth'),'Email Center must not use Google OAuth.');
+for(const retired of [
+  'Connect Gmail',
+  'Gmail authorization needs to be renewed',
+  'Connect your mailbox',
+  'Email inbox',
+  'gmail.modify',
+  'signInWithOAuth',
+]){
+  must(!screen.includes(retired),`Retired Gmail Email Center UI must not return: ${retired}`);
+}
+requireAll('Email Center navigation',layout,[
+  '<Tabs.Screen name="communications" options={{title:\'Email\'}}/>',
+]);
+must(!layout.includes('name="communications" options={{href:null'),'Owner Email Center must remain visible in bottom navigation.');
 
 requireAll('Email Center mobile service',service,[
   "functions.invoke('owner-email-center'",
@@ -98,4 +110,4 @@ if(failures.length){
   failures.forEach(f=>console.error(`- ${f}`));
   process.exit(1);
 }
-console.log('Owner Email Center audit passed: KleenestOS owns persistent mail state, Resend handles transport, and inbound mail remains untrusted data.');
+console.log('Owner Email Center audit passed: KleenestOS owns persistent mail state, Resend handles transport, stale Gmail inbox UI is barred from the Owner runtime, and inbound mail remains untrusted data.');
