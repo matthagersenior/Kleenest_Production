@@ -76,6 +76,7 @@ export default function Layout(){
     <Tabs.Screen name="pilots" options={{title:'Pilots'}}/>
     <Tabs.Screen name="developers" options={{title:'Developers'}}/>
     <Tabs.Screen name="operations" options={{title:'Operations'}}/>
+    <Tabs.Screen name="ingestion" options={{href:null,title:'Ingestion Control'}}/>
     <Tabs.Screen name="devices" options={{href:null,title:'IoT & Smart Devices'}}/>
     <Tabs.Screen name="businesses" options={{href:null,title:'Businesses'}}/>
     <Tabs.Screen name="moderation" options={{href:null,title:'Moderation'}}/>
