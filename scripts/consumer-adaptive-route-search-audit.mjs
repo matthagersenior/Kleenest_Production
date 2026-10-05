@@ -157,6 +157,15 @@ for(const token of [
   'if(withinMile>=15)return 14;',
   'setMapZoom(densityAwareInitialZoom(displayRows,nextOrigin));',
 ])requireToken(screen,token,'Density-aware Explore camera framing');
+for(const token of [
+  'const cameraInteractionVersionRef=useRef(0);',
+  'const cameraInteractionVersion=cameraInteractionVersionRef.current;',
+  'function applyDensityAwareCamera(cameraRows:any[],target:[number,number])',
+  'applyDensityAwareCamera(cachedRows,fallback.origin);',
+  'applyDensityAwareCamera(displayRows,nextOrigin);',
+  'if(cameraInteractionVersionRef.current===cameraInteractionVersion&&!preservedId)applyDensityAwareCamera(enriched,nextOrigin);',
+  'applyDensityAwareCamera(fallback.rows,fallback.origin);',
+])requireToken(screen,token,'Density-aware Explore camera execution across live, enriched, and cached results');
 if(/key=\{`explore-camera-\$\{cameraNonce\}-\$\{selectedId\}-/.test(screen))throw new Error('Opening or closing a selected location must not remount the map camera.');
 if(!/key=\{`explore-camera-\$\{cameraNonce\}-\$\{mode\}-/.test(screen))throw new Error('Explore map camera must remain keyed to intentional camera changes, not selected-card visibility.');
 
