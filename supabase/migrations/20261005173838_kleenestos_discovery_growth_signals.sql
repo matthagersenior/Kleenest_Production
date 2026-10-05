@@ -1,3 +1,4 @@
+-- KleenestOS Discovery growth intelligence: unexpected territory signals and owner notifications.
 create table if not exists public.discovery_growth_signals (
   cell_key text primary key,
   latitude double precision not null,
