@@ -47,7 +47,7 @@ if(!failures.length){
     'showsVerticalScrollIndicator={false}',
     "resultsSheet:{position:'absolute'",
     'selectedSheetScroll:{flex:1,minHeight:0}',
-    'selectedSheetScrollContent:{gap:7,paddingBottom:8}',
+    'selectedSheetScrollContent:{gap:7,paddingBottom:66}',
   ])if(!explore.includes(token))failures.push('Native selected results-sheet containment missing '+token);
   const actionIndex=explore.indexOf('style={s.selectedSheetActions}');
   const scrollIndex=explore.indexOf('<ScrollView style={s.selectedSheetScroll}');
