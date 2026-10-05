@@ -1317,7 +1317,7 @@ export default function AdaptiveExploreScreen() {
           setSelectedId(fallbackSelected);
           if (fallback.origin) {
             setOrigin(fallback.origin);
-            applyDensityAwareCamera(fallback.rows,fallback.origin);
+            applyDensityAwareCamera(cachedRows,fallback.origin);
           }
           if (fallback.radiusMeters) setRadius(fallback.radiusMeters);
           setCached(true);
