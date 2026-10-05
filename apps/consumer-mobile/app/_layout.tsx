@@ -79,7 +79,7 @@ export default function RootLayout() {
   const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
   const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','consumer');
   const {ready:webGateReady,appActive}=useConsumerWebExperience();
-  const publicWeb=Platform.OS==='web'&&!appActive&&webGateReady&&['/','/for-you','/for-business','/trust','/install','/creator'].includes(pathname);
+  const publicWeb=Platform.OS==='web'&&!appActive&&webGateReady&&['/','/for-you','/for-business','/trust','/install','/creator','/support','/privacy','/terms','/community-guidelines','/account-deletion'].includes(pathname);
   useEffect(()=>{
     let active=true;
     async function enforceRewardTheme(mode:KleenestThemeMode){

@@ -193,6 +193,25 @@ function exploreCameraViewState(bounds:any,fitRoute:boolean,center:any,zoom:numb
     ? {bounds,padding:{top:28,right:28,bottom:28,left:28}}
     : {center,zoom};
 }
+function densityAwareInitialZoom(rows:any[],origin:[number,number],fallback=13){
+  const usable=(rows||[]).filter(hasCoordinates);
+  if(!usable.length)return fallback;
+  const nearby=usable.map(row=>{
+    const lat1=origin[1]*Math.PI/180,lat2=Number(row.latitude)*Math.PI/180;
+    const dLat=lat2-lat1,dLng=(Number(row.longitude)-origin[0])*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLng/2)**2;
+    return 6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(Math.max(0,1-a)));
+  });
+  const withinHalfMile=nearby.filter(distance=>distance<=805).length;
+  const withinMile=nearby.filter(distance=>distance<=1609).length;
+  if(withinHalfMile>=80)return 16;
+  if(withinHalfMile>=40||withinMile>=120)return 15.5;
+  if(withinMile>=60)return 15;
+  if(withinMile>=30)return 14.5;
+  if(withinMile>=15)return 14;
+  if(usable.length<=6)return 12.5;
+  return fallback;
+}
 const verificationWindowLabel = (value: string | null | undefined) => {
   if (!value) return '';
   const expires = new Date(value).getTime();
@@ -632,9 +651,7 @@ export default function AdaptiveExploreScreen() {
     return `~${ahead.toFixed(ahead < 10 ? 1 : 0)} mi ahead · ~${Math.round(eta)} min · ${distanceLabel(selected.distance_to_route_meters)} off route`;
   }, [selected, mode, route]);
   const filterAmenities = useMemo(
-    () => amenities
-      .filter((item) => FILTER_CATEGORIES.has(String(item.category || '')))
-      .slice(0, 24),
+    () => amenities.filter((item) => FILTER_CATEGORIES.has(String(item.category || ''))),
     [amenities],
   );
   useEffect(()=>{
@@ -1081,7 +1098,11 @@ export default function AdaptiveExploreScreen() {
     const resetSelectionForOriginChange=Boolean(areaMatch)||clearQuery;
     const preservedId = !resetSelectionForOriginChange && selectedId && displayRows.some((row) => idOf(row) === selectedId) ? selectedId : '';
     setRows(displayRows);setRoute(null);
-    if (!preservedId) setMapCenter(nextOrigin);
+    if (!preservedId) {
+      setMapCenter(nextOrigin);
+      setMapZoom(densityAwareInitialZoom(displayRows,nextOrigin));
+      setCameraNonce((value)=>value+1);
+    }
     setEffectiveRadiusMeters(result.effectiveRadiusMeters);setAttemptedRadiiMeters(result.attemptedRadiiMeters);setCached(false);setSelectedId(preservedId);
 
     captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:displayRows.length,search:originalQuery,amenityCount:activeAmenityNames.length});

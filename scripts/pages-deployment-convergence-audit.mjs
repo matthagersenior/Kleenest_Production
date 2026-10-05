@@ -60,6 +60,7 @@ if(installer.includes('workflows: ["Build Kleenest App Family Android APKs"]'))t
 if(installer.includes("github.event.workflow_run.conclusion != 'cancelled'"))throw new Error('Consumer installer deployment must not publish from failed or skipped validation runs.');
 for(const token of ["group: kleenest-consumer-preview-pages-${{ github.event.workflow_run.head_branch }}","cancel-in-progress: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}"])requireToken(installer,token,'Consumer Pages publisher concurrency policy');
 for(const token of ['id: pages','steps.pages.outputs.base_path','steps.pages.outputs.base_url','EXPO_PUBLIC_PAGES_BASE_PATH','pagesBaseUrl'])requireToken(installer,token,'Custom-domain-aware Pages deployment');
+for(const token of ['node scripts/prepare-consumer-web-seo.mjs','sitemap.xml','robots.txt','https://kleenest.us/'])requireToken(installer,token,'Canonical Kleenest.us SEO publishing');
 
 for(const token of ["output: 'single'","bundler: 'metro'","EXPO_PUBLIC_PAGES_BASE_PATH","pagesBasePath","baseUrl: pagesBasePath || '/'","previewRole: 'non-blocking-web-preview'"])requireToken(appConfig,token,'Expo consumer preview config');
 const consumerInstall=read('apps/consumer-mobile/app/install.tsx');
@@ -78,7 +79,7 @@ for(const token of ['Verify Kleenest Installation Center','Publish Consumer Stan
 for(const token of ['group: kleenest-install-center-smoke',"cancel-in-progress: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}"])requireToken(installSmoke,token,'Installation Center smoke concurrency policy');
 const installSpec=read('scripts/install-center-browser-smoke.spec.ts');
 for(const token of ['Install Kleenest','INSTALL WEB APP','SHARE INSTALL LINK','Kleenest-release-state.json','Kleenest-Consumer.apk.sha256','manifest.webmanifest','EXPECTED_SHA','KLEENEST_LIVE_WEB_BASE'])requireToken(installSpec,token,'Installation Center browser journey');
-for(const token of ['public_routes="install for-you for-business trust"','cp apps/consumer-mobile/dist/index.html "apps/consumer-mobile/dist/$route/index.html"'])requireToken(installer,token,'Public marketing route materialization');
+for(const token of ['public_routes="install for-you for-business trust support privacy terms community-guidelines account-deletion"','cp apps/consumer-mobile/dist/index.html "apps/consumer-mobile/dist/$route/index.html"'])requireToken(installer,token,'Public marketing route materialization');
 if(!manifest.shortcuts?.some(shortcut=>shortcut.url==='/Kleenest_Production/install'))throw new Error('Consumer PWA manifest must expose the Installation Center as an app shortcut.');
 for(const token of ["output:'single'","bundler:'metro'","EXPO_PUBLIC_PAGES_BASE_PATH","pagesBasePath","/business","Kleenest Business Web"])requireToken(businessConfig,token,'Kleenest Business web config');
 if(businessPkg.scripts?.['web:export']!=='expo export --platform web')throw new Error('Kleenest Business must expose canonical Expo web export script.');

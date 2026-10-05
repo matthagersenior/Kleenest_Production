@@ -177,12 +177,16 @@ jobs:
           test -s apps/consumer-mobile/dist/Kleenest-release-state.json
           grep -q "Kleenest Developer Portal" apps/consumer-mobile/dist/developer/index.html
           grep -q "Browser token" apps/consumer-mobile/dist/developer/index.html
-          public_routes="install for-you for-business trust"
+          public_routes="install for-you for-business trust support privacy terms community-guidelines account-deletion"
           for route in $public_routes; do
             mkdir -p "apps/consumer-mobile/dist/$route"
             cp apps/consumer-mobile/dist/index.html "apps/consumer-mobile/dist/$route/index.html"
             test -s "apps/consumer-mobile/dist/$route/index.html"
           done
+          node scripts/prepare-consumer-web-seo.mjs
+          test -s apps/consumer-mobile/dist/sitemap.xml
+          test -s apps/consumer-mobile/dist/robots.txt
+          grep -q "https://kleenest.us/" apps/consumer-mobile/dist/sitemap.xml
           cp apps/consumer-mobile/dist/index.html apps/consumer-mobile/dist/404.html
           touch apps/consumer-mobile/dist/.nojekyll
           APK_FILE="apps/consumer-mobile/dist/Kleenest-Consumer.apk"
