@@ -78,7 +78,7 @@ for(const token of ['Verify Kleenest Installation Center','Publish Consumer Stan
 for(const token of ['group: kleenest-install-center-smoke',"cancel-in-progress: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}"])requireToken(installSmoke,token,'Installation Center smoke concurrency policy');
 const installSpec=read('scripts/install-center-browser-smoke.spec.ts');
 for(const token of ['Install Kleenest','INSTALL WEB APP','SHARE INSTALL LINK','Kleenest-release-state.json','Kleenest-Consumer.apk.sha256','manifest.webmanifest','EXPECTED_SHA','KLEENEST_LIVE_WEB_BASE'])requireToken(installSpec,token,'Installation Center browser journey');
-for(const token of ['public_routes="install for-you for-business trust"','cp apps/consumer-mobile/dist/index.html "apps/consumer-mobile/dist/$route/index.html"'])requireToken(installer,token,'Public marketing route materialization');
+for(const token of ['public_routes="install for-you for-business trust support"','test -s "apps/consumer-mobile/dist/$route/index.html"'])requireToken(installer,token,'Public marketing route materialization');
 if(!manifest.shortcuts?.some(shortcut=>shortcut.url==='/Kleenest_Production/install'))throw new Error('Consumer PWA manifest must expose the Installation Center as an app shortcut.');
 for(const token of ["output:'single'","bundler:'metro'","EXPO_PUBLIC_PAGES_BASE_PATH","pagesBasePath","/business","Kleenest Business Web"])requireToken(businessConfig,token,'Kleenest Business web config');
 if(businessPkg.scripts?.['web:export']!=='expo export --platform web')throw new Error('Kleenest Business must expose canonical Expo web export script.');
@@ -112,6 +112,7 @@ for(const token of ['getLastNotificationResponseAsync','clearLastNotificationRes
 if(/platform\s*!==\s*['"]web['"]/.test(metro))throw new Error('Metro preview aliases must be positively scoped to web only.');
 
 for(const token of ['manifest.webmanifest','navigator.serviceWorker.register','EXPO_PUBLIC_PAGES_BASE_PATH','pagesScope','pagesAsset','apps/consumer-mobile/dist/index.html','apps/consumer-mobile/assets/app-icon.png','authCallbackDir',"path.join(dist,'profile')",'index.html'])requireToken(pwaPrep,token,'Consumer PWA preparation script');
+for(const token of ['https://kleenest.us','publicSeo','Kleenest Support & Contact','rel="canonical"','og:url','application/ld+json','sitemap.xml','robots.txt','Disallow: /profile/'])requireToken(pwaPrep,token,'Kleenest public SEO contract');
 if(manifest.display!=='standalone'||manifest.start_url!=='/Kleenest_Production/?app=1'||manifest.scope!=='/Kleenest_Production/')throw new Error('Consumer PWA manifest must remain standalone, launch into the app Home experience, and stay scoped to the GitHub Pages app path.');
 if(!Array.isArray(manifest.icons)||manifest.icons.length<2)throw new Error('Consumer PWA manifest must provide installable app icons.');
 if(!manifest.icons.some(icon=>icon.src==='/Kleenest_Production/app-icon.png'&&icon.sizes==='192x192')||!manifest.icons.some(icon=>icon.src==='/Kleenest_Production/app-icon-512.svg'&&icon.sizes==='512x512'))throw new Error('Consumer PWA manifest must publish truthful 192px and 512px install icon metadata.');
