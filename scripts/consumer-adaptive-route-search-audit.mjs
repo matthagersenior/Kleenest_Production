@@ -147,6 +147,15 @@ if(signals.includes('>＋</Text>'))throw new Error('Map legend control must not 
 for(const token of ['accessibilityLabel="Tell Kleenest what you think"','✦ Tell Kleenest'])requireToken(betaButton,token,'Labeled Tell Kleenest feedback control');
 if(betaButton.includes("const compactFab=route==='/explore';"))throw new Error('Explore feedback control must stay labeled instead of collapsing to an unlabeled sparkle-only FAB.');
 if(!screen.includes('setMapZoom((current) => Math.max(current, 14));'))throw new Error('Selecting a place from a grouped pin must preserve the detailed map zoom.');
+for(const token of [
+  'function densityAwareNearbyZoom(rows:any[],effectiveRadiusMeters:number)',
+  'if(localCount>=80)zoom=Math.max(zoom,16);',
+  'else if(localCount>=50)zoom=Math.max(zoom,15.5);',
+  'else if(localCount>=30)zoom=Math.max(zoom,15);',
+  'const densityZoom=densityAwareNearbyZoom(displayRows,result.effectiveRadiusMeters);',
+  'setMapZoom(densityZoom);',
+  'cameraRef.current?.jumpTo({center:nextOrigin,zoom:densityZoom});',
+])requireToken(screen,token,'Density-aware nearby camera framing');
 if(/key=\{`explore-camera-\$\{cameraNonce\}-\$\{selectedId\}-/.test(screen))throw new Error('Opening or closing a selected location must not remount the map camera.');
 if(!/key=\{`explore-camera-\$\{cameraNonce\}-\$\{mode\}-/.test(screen))throw new Error('Explore map camera must remain keyed to intentional camera changes, not selected-card visibility.');
 
