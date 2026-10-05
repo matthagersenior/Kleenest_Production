@@ -130,6 +130,18 @@ export default function SignupScreen(){
   }catch(error:any){setMessage(error?.message||'Confirmation email could not be sent.')}finally{setBusy(false)}
  }
 
+ async function requestPasswordReset(){
+  if(busy)return;
+  setBusy(true);setMessage('');
+  try{
+   const normalized=email.trim().toLowerCase();
+   if(!normalized||!normalized.includes('@'))throw new Error('Enter the email address for the account first.');
+   const{error}=await client.auth.resetPasswordForEmail(normalized,{redirectTo});
+   if(error)throw error;
+   setMessage('If a Kleenest account uses that email, a password reset link has been sent.');
+  }catch(error:any){setMessage(error?.message||'Password reset could not be requested.')}finally{setBusy(false)}
+ }
+
  return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
   <View style={s.header}>
    <Text style={[s.eyebrow,{color:theme.accent}]}>KLEENEST</Text>
@@ -169,6 +181,8 @@ export default function SignupScreen(){
    </View>
 
    <Pressable accessibilityRole="button" accessibilityLabel={mode==='signin'?'Sign in':'Create account'} accessibilityState={{disabled:busy}} disabled={busy} onPress={mode==='signin'?signIn:signUp} style={[s.primary,{backgroundColor:theme.accent},busy&&s.disabled]}><Text style={[s.primaryText,{color:theme.accentText}]}>{busy?'PLEASE WAIT…':mode==='signin'?'SIGN IN':'CREATE ACCOUNT'}</Text></Pressable>
+
+   {mode==='signin'?<Pressable accessibilityRole="button" accessibilityLabel="Forgot password" accessibilityState={{disabled:busy||!email.trim()}} disabled={busy||!email.trim()} onPress={requestPasswordReset} style={[s.resend,{backgroundColor:theme.accentSoft,borderColor:theme.line},(busy||!email.trim())&&s.disabled]}><Text style={[s.resendText,{color:theme.accent}]}>FORGOT PASSWORD?</Text></Pressable>:null}
 
    {needsConfirmation?<Pressable accessibilityRole="button" accessibilityLabel="Resend confirmation email" accessibilityState={{disabled:busy}} disabled={busy} onPress={resendConfirmation} style={[s.resend,{backgroundColor:theme.accentSoft,borderColor:theme.line},busy&&s.disabled]}><Text style={[s.resendText,{color:theme.accent}]}>RESEND CONFIRMATION EMAIL</Text></Pressable>:null}
    {message?<Text accessibilityLiveRegion="polite" style={[s.message,{color:theme.muted}]}>{message}</Text>:null}
