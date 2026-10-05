@@ -64,7 +64,7 @@ function messageIds(value:string){
 }
 async function providerConfig(){
   const admin=adminClient();
-  const{data,error}=await admin.schema('internal').rpc('owner_email_center_provider_config');
+  const{data,error}=await admin.rpc('owner_email_center_provider_config');
   if(error)throw error;
   const config=(data||{}) as {api_key?:string;webhook_secret?:string;configured?:boolean;webhook_configured?:boolean};
   if(!config.configured||!config.api_key)throw new Error('Resend API key is not configured.');

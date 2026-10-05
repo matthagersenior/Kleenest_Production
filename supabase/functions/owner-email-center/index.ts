@@ -77,7 +77,7 @@ function excerpt(value:string,max=240){
 }
 async function providerConfig(){
   const admin=adminClient();
-  const{data,error}=await admin.schema('internal').rpc('owner_email_center_provider_config');
+  const{data,error}=await admin.rpc('owner_email_center_provider_config');
   if(error)throw error;
   return(data||{}) as {configured?:boolean;api_key?:string;from_address?:string;webhook_configured?:boolean};
 }
@@ -205,11 +205,23 @@ Deno.serve(async(req:Request)=>{
     const admin=adminClient();
 
     if(action==='status'){
-      const[settings,provider,snapshot]=await Promise.all([
-        loadSettings(userId),
-        providerConfig(),
-        admin.schema('internal').rpc('owner_email_center_status_snapshot',{p_owner_user_id:userId}),
-      ]);
+      let settings=await loadSettings(userId);
+      const provider=await providerConfig();
+      if(provider.configured&&provider.api_key&&settings.provider_domain_id){
+        try{
+          const domain=await resend(`/domains/${encodeURIComponent(String(settings.provider_domain_id))}`,String(provider.api_key));
+          const domainStatus=String(domain?.status||settings.domain_status||'pending').toLowerCase();
+          if(domainStatus&&domainStatus!==settings.domain_status){
+            const synced=await admin.from('owner_email_center_settings')
+              .update({domain_status:domainStatus,updated_at:new Date().toISOString()})
+              .eq('owner_user_id',userId)
+              .select('*')
+              .single();
+            if(!synced.error&&synced.data)settings=synced.data;
+          }
+        }catch{}
+      }
+      const snapshot=await admin.rpc('owner_email_center_status_snapshot',{p_owner_user_id:userId});
       if(snapshot.error)throw snapshot.error;
       const connected=Boolean(provider.configured)&&settings.domain_status==='verified'&&Boolean(settings.webhook_enabled)&&String(provider.from_address||'').toLowerCase().includes('@kleenest.us');
       return json({
