@@ -125,7 +125,7 @@ function primaryPlaceIdentity(row:any){
   if(name&&!genericPlaceIdentity(name)){
     if(brand&&!genericPlaceIdentity(brand)&&name.startsWith(brand+' ')){
       const suffix=name.slice(brand.length).trim();
-      if(/^(?:(?:store|location|shop|station|unit|no|number)\\s*)?\\d+[a-z0-9-]*$/.test(suffix))return brand;
+      if(/^(?:(?:store|location|shop|station|unit|no|number)\s*)?\d+[a-z0-9-]*$/.test(suffix))return brand;
     }
     return name;
   }
