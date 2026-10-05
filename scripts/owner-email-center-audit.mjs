@@ -20,7 +20,11 @@ requireAll('Email Center UI',screen,[
   'Waiting',
   'Sent',
   'All mail',
+  'Drafts',
+  'Spam',
   'Compose',
+  'Save draft',
+  'Block sender',
   'Reply',
   'Reply all',
   'Forward',
@@ -57,6 +61,9 @@ requireAll('Email Center mobile service',service,[
   "action:'trash'",
   "action:'set_inbox'",
   "action:'set_label'",
+  "action:'save_draft'",
+  "action:'spam'",
+  "action:'block_sender'",
 ]);
 must(!service.includes('owner-email-gateway'),'Owner mobile service must not route mail through the Gmail gateway.');
 must(!service.toLowerCase().includes('gmail'),'Owner mobile service must be provider-neutral.');
@@ -84,7 +91,9 @@ requireAll('Authenticated Email Center gateway',center,[
   "action==='reply'",
   "action==='send'",
   "action==='forward'",
-  "['archive','set_read','star','trash','set_inbox','set_label'].includes(action)",
+  "['archive','set_read','star','trash','set_inbox','set_label','spam'].includes(action)",
+  "action==='save_draft'",
+  "action==='block_sender'",
   'https://api.resend.com/emails',
   'In-Reply-To',
   'References',
