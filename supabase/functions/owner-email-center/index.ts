@@ -245,11 +245,13 @@ Deno.serve(async(req:Request)=>{
       const unreadOnly=Boolean(body?.unreadOnly);
       const mailbox=String(body?.mailbox||'inbox');
       const direction=String(body?.direction||'any');
+      const mailboxId=optionalText(body?.mailboxId,100);
       let q=admin.from('owner_email_center_threads')
-        .select('id,subject,snippet,participants,last_message_at,unread,folder,latest_direction,starred,message_count,has_attachment,labels,priority,support_request_id,source_app')
+        .select('id,subject,snippet,participants,last_message_at,unread,folder,latest_direction,starred,message_count,has_attachment,labels,priority,support_request_id,source_app,mailbox_id,recipient_address')
         .eq('owner_user_id',storageOwnerUserId)
         .order('last_message_at',{ascending:false})
         .limit(maxResults);
+      if(mailboxId)q=q.eq('mailbox_id',mailboxId);
       if(mailbox==='inbox')q=q.eq('folder','inbox');
       else if(mailbox==='sent')q=q.eq('folder','sent');
       else if(mailbox==='drafts')q=q.eq('folder','drafts');
@@ -260,29 +262,27 @@ Deno.serve(async(req:Request)=>{
       else if(direction==='outgoing')q=q.eq('latest_direction','outbound');
       else if(direction!=='any')throw new Error('Unsupported message direction.');
       if(unreadOnly)q=q.eq('unread',true);
-      if(query)q=q.or(`subject.ilike.%${query.replace(/[,%]/g,'')}%,snippet.ilike.%${query.replace(/[,%]/g,'')}%`);
+      if(query)q=q.or('subject.ilike.%'+query.replace(/[,%]/g,'')+'%,snippet.ilike.%'+query.replace(/[,%]/g,'')+'%');
       const{data,error}=await q;
       if(error)throw error;
-      const threads=(data||[]).map((row:any)=>({
-        id:row.id,
-        historyId:null,
-        snippet:row.snippet||'',
-        subject:row.subject||'(no subject)',
-        from:row.participants?.[0]||'',
-        fromEmail:row.participants?.[0]||null,
-        date:row.last_message_at||null,
-        unread:Boolean(row.unread),
-        inInbox:row.folder==='inbox',
-        latestSent:row.latest_direction==='outbound',
-        starred:Boolean(row.starred),
-        messageCount:Number(row.message_count||0),
-        hasAttachment:Boolean(row.has_attachment),
-        labelNames:Array.isArray(row.labels)?row.labels:[],
-        folder:row.folder,
-        priority:row.priority||'normal',
-        supportRequestId:row.support_request_id||null,
-        sourceApp:row.source_app||null,
-      }));
+      const mailboxIds=[...new Set((data||[]).map((row:any)=>row.mailbox_id).filter(Boolean))];
+      const mailboxRows=mailboxIds.length
+        ? await admin.from('owner_email_mailboxes').select('id,address,display_name').in('id',mailboxIds)
+        : {data:[],error:null};
+      if(mailboxRows.error)throw mailboxRows.error;
+      const byId=new Map((mailboxRows.data||[]).map((m:any)=>[String(m.id),m]));
+      const threads=(data||[]).map((row:any)=>{
+        const m=byId.get(String(row.mailbox_id||''));
+        return{
+          id:row.id,historyId:null,snippet:row.snippet||'',subject:row.subject||'(no subject)',
+          from:row.participants?.[0]||'',fromEmail:row.participants?.[0]||null,date:row.last_message_at||null,
+          unread:Boolean(row.unread),inInbox:row.folder==='inbox',latestSent:row.latest_direction==='outbound',
+          starred:Boolean(row.starred),messageCount:Number(row.message_count||0),hasAttachment:Boolean(row.has_attachment),
+          labelNames:Array.isArray(row.labels)?row.labels:[],folder:row.folder,priority:row.priority||'normal',
+          supportRequestId:row.support_request_id||null,sourceApp:row.source_app||null,
+          mailboxId:row.mailbox_id||null,mailboxAddress:m?.address||row.recipient_address||null,mailboxDisplayName:m?.display_name||null,
+        };
+      });
       return json({threads,nextPageToken:null});
     }
 
@@ -290,41 +290,26 @@ Deno.serve(async(req:Request)=>{
       const threadId=requiredText(body?.threadId,'threadId',100);
       const threadResult=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
       if(threadResult.error)throw threadResult.error;
+      const row=threadResult.data;
+      const mailboxRow=row.mailbox_id?await loadMailbox(String(row.mailbox_id)):null;
       const messageResult=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).order('created_at',{ascending:true});
       if(messageResult.error)throw messageResult.error;
-      const row=threadResult.data;
       const messages=(messageResult.data||[]).map((message:any)=>({
-        id:message.id,
-        threadId,
-        from:message.from_name?`${message.from_name} <${message.from_address}>`:message.from_address,
-        fromEmail:message.from_address,
-        to:(message.to_addresses||[]).join(', '),
-        cc:(message.cc_addresses||[]).join(', '),
-        subject:message.subject,
-        date:message.received_at||message.sent_at||message.created_at,
-        messageId:message.internet_message_id,
-        references:(message.reference_ids||[]).join(' '),
-        snippet:excerpt(message.text_body||''),
-        body:message.text_body||'',
-        unread:Boolean(row.unread)&&message.direction==='inbound',
-        sent:message.direction==='outbound',
-        deliveryStatus:message.delivery_status||null,
-        attachments:Array.isArray(message.attachments)?message.attachments:[],
+        id:message.id,threadId,
+        from:message.from_name?String(message.from_name)+' <'+String(message.from_address)+'>':message.from_address,
+        fromEmail:message.from_address,to:(message.to_addresses||[]).join(', '),cc:(message.cc_addresses||[]).join(', '),
+        subject:message.subject,date:message.received_at||message.sent_at||message.created_at,
+        messageId:message.internet_message_id,references:(message.reference_ids||[]).join(' '),
+        snippet:excerpt(message.text_body||''),body:message.text_body||'',
+        unread:Boolean(row.unread)&&message.direction==='inbound',sent:message.direction==='outbound',
+        deliveryStatus:message.delivery_status||null,attachments:Array.isArray(message.attachments)?message.attachments:[],
       }));
       return json({thread:{
-        id:row.id,
-        historyId:null,
-        subject:row.subject,
-        participants:row.participants||[],
-        unread:Boolean(row.unread),
-        inInbox:row.folder==='inbox',
-        folder:row.folder,
-        priority:row.priority||'normal',
-        supportRequestId:row.support_request_id||null,
-        sourceApp:row.source_app||null,
-        labelIds:row.labels||[],
-        labelNames:row.labels||[],
-        messages,
+        id:row.id,historyId:null,subject:row.subject,participants:row.participants||[],unread:Boolean(row.unread),
+        inInbox:row.folder==='inbox',folder:row.folder,priority:row.priority||'normal',
+        supportRequestId:row.support_request_id||null,sourceApp:row.source_app||null,
+        mailboxId:row.mailbox_id||null,mailboxAddress:mailboxRow?.address||row.recipient_address||null,
+        mailboxDisplayName:mailboxRow?.display_name||null,labelIds:row.labels||[],labelNames:row.labels||[],messages,
       }});
     }
 
