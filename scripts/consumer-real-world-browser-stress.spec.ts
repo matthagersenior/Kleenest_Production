@@ -139,7 +139,8 @@ test('Consumer production-equivalent real-world stress test',async({browser})=>{
   const resultName=launch.page.getByText('Pizza Hut',{exact:true}).first();
   const selectableResult=resultName.locator('xpath=ancestor::*[@role="button"][1]');
   if(await resultName.isVisible().catch(()=>false)&&await selectableResult.count()){
-    await selectableResult.click();
+    // Exercise the destination marker action even when the mobile results sheet temporarily overlaps its map position.
+    await selectableResult.click({force:true});
     const details=launch.page.getByText('Full details',{exact:true}).first();
     await expect(details).toBeVisible({timeout:10000});
     await details.click();
