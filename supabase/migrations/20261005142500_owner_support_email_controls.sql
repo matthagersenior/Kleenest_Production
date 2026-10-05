@@ -149,18 +149,3 @@ create trigger support_requests_owner_email_center
 after insert on public.support_requests
 for each row
 execute function internal.route_support_request_to_owner_email_center();
-
--- Backfill any existing support requests without duplicating already-linked threads.
-do $$
-declare
-  r public.support_requests;
-begin
-  for r in select * from public.support_requests loop
-    perform internal.route_support_request_to_owner_email_center()
-    from (select r.*) as new;
-  end loop;
-exception when others then
-  -- Existing installs can have no support rows or legacy metadata; live inserts remain authoritative.
-  null;
-end
-$$;
