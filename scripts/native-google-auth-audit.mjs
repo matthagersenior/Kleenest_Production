@@ -6,6 +6,7 @@ const compact=source=>source.replace(/\s+/g,'');
 const mobileCoreClient=read('packages/mobile-core/src/client.ts');
 const mobileCoreCompact=compact(mobileCoreClient);
 if(!mobileCoreCompact.includes("flowType:'pkce'")&&!mobileCoreCompact.includes('flowType:"pkce"'))failures.push('Shared Supabase client must pin OAuth to PKCE so operator callbacks use deterministic code exchange.');
+if(!mobileCoreCompact.includes("Platform.OS==='web'?baseAuth:{...baseAuth,storage}")&&!mobileCoreCompact.includes('Platform.OS==="web"?baseAuth:{...baseAuth,storage}'))failures.push('Shared Supabase client must use browser storage on web so the PKCE verifier survives the Google redirect.');
 const consumerLayout=read('apps/consumer-mobile/app/_layout.tsx');
 const relay=read('apps/consumer-mobile/services/operatorOAuthRelay.ts');
 if(!consumerLayout.includes('relayOperatorOAuthCallback()')||!consumerLayout.includes('operatorOAuthRelaying'))failures.push('Deployed Consumer Expo root must relay operator OAuth callbacks before normal Consumer rendering.');
@@ -32,6 +33,7 @@ if(!consumerCompact.includes("skipBrowserRedirect:Platform.OS!=='web'")&&!consum
 if(!consumer.includes('mobileAuthRedirect')||!consumer.includes('WebBrowser.openAuthSessionAsync(data.url,mobileAuthRedirect)'))failures.push('Consumer Google OAuth must use an Expo auth session bound to the Kleenest mobile deep link so the browser closes on callback.');
 if(consumer.includes('else await Linking.openURL(data.url)'))failures.push('Consumer native Google OAuth must not launch as a plain external browser URL.');
 if(!consumer.includes('exchangeCodeForSession'))failures.push('Consumer must exchange the OAuth callback code for a Supabase session.');
+if(!consumer.includes("window.location.href:await Linking.getInitialURL()")&&!consumer.includes('window.location.href : await Linking.getInitialURL()'))failures.push('Consumer web OAuth callback must read window.location.href directly instead of depending on Expo Linking initial-URL behavior.');
 if(!consumer.includes("authResult.type==='success'")||!consumer.includes('handleAuthUrl(authResult.url)'))failures.push('Consumer Profile Google OAuth must immediately consume the successful managed auth-session callback instead of waiting for a later link event or refresh.');
 if(consumer.includes("Linking.createURL('/profile'")||consumer.includes('Linking.createURL("/profile"'))failures.push('Consumer OAuth callback must not use the broken triple-slashed profile deep link.');
 if(!consumer.includes("Linking.createURL('profile'")&&!consumer.includes('Linking.createURL("profile"'))failures.push("Consumer native OAuth callback must use Linking.createURL('profile', ...).");
