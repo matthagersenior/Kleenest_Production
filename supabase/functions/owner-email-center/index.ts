@@ -423,12 +423,6 @@ Deno.serve(async(req:Request)=>{
           status:'in_progress',admin_notes:replyBody,updated_at:now,
         }).eq('id',support.data.id);
         if(updatedSupport.error)throw updatedSupport.error;
-        const notified=await admin.from('notifications').insert({
-          user_id:support.data.user_id,type:'support_status',title:'Kleenest Support replied',
-          body:excerpt(replyBody,180),
-          data:{support_request_id:support.data.id,support_status:'in_progress',source_app:support.data.source_app||thread.data.source_app||'unknown'},
-        });
-        if(notified.error)throw notified.error;
         await admin.from('owner_email_center_threads').update({folder:'inbox',unread:false,updated_at:now}).eq('id',threadId);
         await refreshThread(threadId);
         await audit(userId,threadId,'support_reply',{support_request_id:support.data.id,status:'in_progress'});
