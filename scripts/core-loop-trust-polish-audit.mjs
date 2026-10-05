@@ -22,7 +22,7 @@ for(const token of [
   '<FreshnessHeatRing item={selected} size={38} photoUrl={selected.consumer_photo_url ? String(selected.consumer_photo_url) : undefined} />',
   '<DecisionRestroomSignals item={selected} />',
   "resultsSheet:{position:'absolute',left:8,right:8,bottom:8",
-  "selectedSheetActions:{flexDirection:'row',gap:6}",
+  "selectedSheetActions:{flexDirection:'row',gap:6,position:'absolute'",
   "selectedSheetScroll:{flex:1,minHeight:0}",
   "sheetResultRow:{minHeight:76",
   "sheetClose:{width:36,height:36",
