@@ -604,7 +604,7 @@ export default function AdaptiveExploreScreen() {
     ephemeral_destination:true,
   }:null,[searchAreaOrigin,searchAreaLabel]);
   const searchPanelTop=8;
-  const mapChromeTop=(searchAreaLabel||interpretedIntent?.summary)?218:174;
+  const mapChromeTop=(searchAreaLabel||interpretedIntent?.summary)?258:214;
 
   const unlockedMapFilters=Array.isArray(rewardCapabilities?.unlocked_map_filters)?rewardCapabilities.unlocked_map_filters:[];
   const equippedMapFlair=String(rewardCapabilities?.equipped?.map_flair?.reward_key||'');
@@ -1540,6 +1540,12 @@ export default function AdaptiveExploreScreen() {
         ListHeaderComponent={
           <View style={s.exploreStage}>
       <View style={[s.floatingSearchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
+        <View style={s.valuePromise}>
+          <Text numberOfLines={1} style={[s.valuePromiseTitle,{color:theme.ink}]}>{mode==='route'?'Find a useful stop on the way.':'Find a place you can count on.'}</Text>
+          <Text numberOfLines={1} style={[s.valuePromiseBody,{color:theme.muted}]}>{mode==='route'
+            ? 'Enter where you’re going. We’ll show useful stops on the way.'
+            : 'Search a place or address, then tap a result to go.'}</Text>
+        </View>
         <View style={s.searchRow}>
           <TextInput
             accessibilityLabel={mode==='route'?'Search places along route':'Discover nearby places'}
@@ -2358,9 +2364,9 @@ const s = StyleSheet.create({
   locateIcon: { fontSize: 16, fontWeight: '900', color: palette.green },
   locateText: { fontSize: 8, fontWeight: '900', color: palette.green },
   floatingSearchPanel:{position:'absolute',top:0,left:10,right:10,zIndex:80,elevation:24,paddingHorizontal:9,paddingTop:9,paddingBottom:7,gap:6,borderRadius:15,borderWidth:1},
-  valuePromise:{paddingHorizontal:2,paddingBottom:2,gap:2},
-  valuePromiseTitle:{fontSize:19,lineHeight:23,fontWeight:'900',letterSpacing:-.25},
-  valuePromiseBody:{fontSize:13,lineHeight:18,fontWeight:'700'},
+  valuePromise:{paddingHorizontal:2,paddingBottom:1,gap:1},
+  valuePromiseTitle:{fontSize:12,lineHeight:15,fontWeight:'900',letterSpacing:-.1},
+  valuePromiseBody:{fontSize:9,lineHeight:12,fontWeight:'700'},
   searchAreaChip:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,backgroundColor:'#e8f1eb',borderRadius:11,paddingHorizontal:10,paddingVertical:7},
   searchAreaText:{flex:1,fontSize:13,lineHeight:18,fontWeight:'900',color:palette.green},searchAreaAction:{fontSize:12,fontWeight:'900',color:palette.green,textDecorationLine:'underline'},
   segment: { flexDirection: 'row', padding: 3, borderRadius: 12, backgroundColor: '#e8efea' },
