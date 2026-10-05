@@ -91,16 +91,16 @@ need('Route nested cards','apps/consumer-mobile/app/route.tsx',[
   'style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}',
 ]);
 need('Explore nested cards','apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',[
-  'style={[s.routeCoverage,{backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.sheetRouteCoverage,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}',
   'style={[s.amenityMatchPill,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}',
-  'style={[s.searchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}',
+  'style={[s.floatingSearchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}',
   'style={[s.searchThisArea,{top:mapChromeTop,backgroundColor:theme.surface,borderColor:theme.line}]}',
-  'style={[s.resultsHandoff,{backgroundColor:theme.surface,borderColor:theme.line}]}',
-  'style={[s.listEyebrow,{color:theme.accent}]}',
-  'style={[s.listTitle,{color:theme.ink}]}',
-  'style={[s.listNote,{color:theme.muted}]}',
-  'style={[s.primarySmall,s.cardAction,{backgroundColor:theme.accent}',
-  'style={[s.primarySmall,s.selectedAction,{backgroundColor:theme.accent}',
+  'style={[s.sheetResultRow,{borderColor:theme.line,backgroundColor:idOf(item)===selectedId?theme.accentSoft:theme.surface}]}',
+  'style={[s.resultsSheetEyebrow,{color:theme.accent}]}',
+  'style={[s.resultsSheetTitle,{color:theme.ink}]}',
+  'style={[s.sheetStatusText,{color:theme.muted}]}',
+  'style={[s.primarySmall,s.selectedSheetAction,{backgroundColor:theme.accent}',
+  'style={[s.secondarySmall,s.selectedSheetAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}',
 ]);
 need('Location nested cards','apps/consumer-mobile/app/location/[id].tsx',[
   'style={[s.verifyAction,{backgroundColor:checkInId?theme.accentSoft:theme.surface,borderColor:theme.line,borderWidth:1}',

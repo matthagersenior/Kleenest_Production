@@ -519,7 +519,7 @@ function ResultCard({ item, selected, onSelect, onDirections, onCheckIn, onAddTo
 export default function AdaptiveExploreScreen() {
  const theme=useConsumerTheme();
    const {height:windowHeight}=useWindowDimensions();
-  const exploreMapHeight=Math.max(360,Math.min(480,Math.round(windowHeight*0.44)));
+  const exploreMapHeight=Math.max(520,Math.round(windowHeight-(Platform.OS==='web'?86:82)));
   const listRef=useRef<any>(null);
   const cameraRef=useRef<any>(null);
   const mapGestureReleaseRef=useRef<ReturnType<typeof setTimeout>|null>(null);
@@ -569,20 +569,19 @@ export default function AdaptiveExploreScreen() {
   const [cached, setCached] = useState(false);
   const [mapInteracting,setMapInteracting]=useState(false);
   const [showSelectedMore,setShowSelectedMore]=useState(false);
+  const [resultsSheetExpanded,setResultsSheetExpanded]=useState(false);
   function setMapGestureLock(locked:boolean){
     if(mapGestureReleaseRef.current){
       clearTimeout(mapGestureReleaseRef.current);
       mapGestureReleaseRef.current=null;
     }
     setMapInteracting(locked);
-    listRef.current?.setNativeProps?.({scrollEnabled:!locked});
   }
   function beginMapGesture(){setMapGestureLock(true);}
   function endMapGesture(){
     if(mapGestureReleaseRef.current)clearTimeout(mapGestureReleaseRef.current);
     mapGestureReleaseRef.current=setTimeout(()=>{
       setMapInteracting(false);
-      listRef.current?.setNativeProps?.({scrollEnabled:true});
       mapGestureReleaseRef.current=null;
     },180);
   }
@@ -605,7 +604,7 @@ export default function AdaptiveExploreScreen() {
     ephemeral_destination:true,
   }:null,[searchAreaOrigin,searchAreaLabel]);
   const searchPanelTop=8;
-  const mapChromeTop=10;
+  const mapChromeTop=(searchAreaLabel||interpretedIntent?.summary)?258:214;
 
   const unlockedMapFilters=Array.isArray(rewardCapabilities?.unlocked_map_filters)?rewardCapabilities.unlocked_map_filters:[];
   const equippedMapFlair=String(rewardCapabilities?.equipped?.map_flair?.reward_key||'');
@@ -743,6 +742,7 @@ export default function AdaptiveExploreScreen() {
     const id = idOf(row);
     if(id)captureConsumerCoreLoopEvent('place_selected',id,{source:'explore'});
     setSelectedId(id);
+    setResultsSheetExpanded(false);
     if (hasCoordinates(row)) {
       setMapCenter([Number(row.longitude), Number(row.latitude)]);
       // Selecting a place from an expanded cluster must not collapse the map back
@@ -759,6 +759,7 @@ export default function AdaptiveExploreScreen() {
     if(!searchAreaOrigin)return;
     setSelectedId('');
     setDestinationCardOpen(true);
+    setResultsSheetExpanded(false);
     setMapCenter(searchAreaOrigin);
     setMapZoom(14);
     setCameraNonce((value)=>value+1);
@@ -995,6 +996,10 @@ export default function AdaptiveExploreScreen() {
     // A brand/category filters the selected origin; only Use my location resets it.
     const retainedMapOrigin=!clearQuery&&!areaMatch?searchAreaOrigin:null;
     const mapAreaOrigin=overrideOrigin||retainedMapOrigin;
+    // When a place/category search reuses a chosen address as its origin, the
+    // results sheet must switch back to results instead of leaving the
+    // destination card covering the matching places.
+    if(rawQuery&&retainedMapOrigin&&!areaMatch&&!overrideOrigin)setDestinationCardOpen(false);
     const current=areaMatch||mapAreaOrigin?null:await currentLocation(forceLiveRecenter);
     let livePresence:ConsumerPresence|null=null;
     if(areaMatch||mapAreaOrigin){
@@ -1526,7 +1531,7 @@ export default function AdaptiveExploreScreen() {
         ref={listRef}
         style={s.pageScroll}
         data={visibleRows}
-        scrollEnabled={!mapInteracting}
+        scrollEnabled={false}
         nestedScrollEnabled
         keyExtractor={idOf}
         showsVerticalScrollIndicator={false}
@@ -1537,11 +1542,11 @@ export default function AdaptiveExploreScreen() {
           recenterOnLiveLocation:mode==='nearby'&&!searchAreaOrigin,
         })}
         ListHeaderComponent={
-          <View style={s.exploreCanvas}>
-      <View style={[s.searchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
+          <View style={s.exploreStage}>
+      <View style={[s.floatingSearchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
         <View style={s.valuePromise}>
-          <Text style={[s.valuePromiseTitle,{color:theme.ink}]}>{mode==='route'?'Find a useful stop on the way.':'Find a place you can count on.'}</Text>
-          <Text style={[s.valuePromiseBody,{color:theme.muted}]}>{mode==='route'
+          <Text numberOfLines={1} style={[s.valuePromiseTitle,{color:theme.ink}]}>{mode==='route'?'Find a useful stop on the way.':'Find a place you can count on.'}</Text>
+          <Text numberOfLines={1} style={[s.valuePromiseBody,{color:theme.muted}]}>{mode==='route'
             ? 'Enter where you’re going. We’ll show useful stops on the way.'
             : 'Search a place or address, then tap a result to go.'}</Text>
         </View>
@@ -1603,7 +1608,7 @@ export default function AdaptiveExploreScreen() {
           style={[s.filterLauncher,{backgroundColor:theme.surface,borderColor:theme.line}]}
         >
           <View style={s.filterLauncherMain}>
-            <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[s.filterLauncherTitle,{color:theme.ink}]}>{activeFilterCount?filterSummary:'Filters'}</Text>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[s.filterLauncherTitle,{color:theme.ink}]}>{activeFilterCount?filterSummary:'Amenities & filters'}</Text>
           </View>
           <View style={[s.filterLauncherBadge,{backgroundColor:theme.accentSoft}]}><Text numberOfLines={1} maxFontSizeMultiplier={1.1} style={[s.filterLauncherBadgeText,{color:theme.accent}]}>{activeFilterCount?String(activeFilterCount)+' on':'Optional'} ▾</Text></View>
         </Pressable>
@@ -1804,7 +1809,7 @@ export default function AdaptiveExploreScreen() {
 
       {(origin||searchAreaOrigin) ? (
         <View style={s.mapSection}>
-          <View style={[s.mapFrame,{height:exploreMapHeight}]}>
+          <View style={[s.mapFrame,{minHeight:exploreMapHeight,height:exploreMapHeight}]} accessibilityLabel="Explore map and results">
             <View
               style={s.mapGestureSurface}
               onStartShouldSetResponderCapture={()=>{beginMapGesture();return false}}
@@ -1958,8 +1963,8 @@ export default function AdaptiveExploreScreen() {
             <View pointerEvents="box-none" style={[s.legendWrap,{top:mapChromeTop+46}]}>
               <MapLegend />
             </View>
-            {destinationCardOpen&&searchAreaOrigin&&!selected ? (
-              <View pointerEvents="auto" style={[s.selectedPanel,s.destinationPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+            {false&&destinationCardOpen&&searchAreaOrigin&&!selected ? (
+              <View pointerEvents="auto" style={[s.legacySelectedPanel,s.destinationPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
                 <View style={s.selectedHead}>
                   <Text style={[s.selectedLabel,{color:theme.accent}]}>DESTINATION</Text>
                   <Pressable
@@ -2008,8 +2013,8 @@ export default function AdaptiveExploreScreen() {
                 </View>
               </View>
             ) : null}
-            {selected ? (
-              <View pointerEvents="auto" style={[s.selectedPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+            {false&&selected ? (
+              <View pointerEvents="auto" style={[s.legacySelectedPanel,{backgroundColor:theme.surface,borderColor:theme.line}]}>
                 <View style={s.selectedHead}>
                   <Text style={[s.selectedLabel,{color:theme.accent}]}>BEST NEXT DECISION</Text>
                   <Pressable
@@ -2066,8 +2071,166 @@ export default function AdaptiveExploreScreen() {
                 </ScrollView>
               </View>
             ) : null}
+            <View
+              pointerEvents="auto"
+              style={[
+                s.resultsSheet,
+                {
+                  height:resultsSheetExpanded
+                    ? Math.min(Math.max(360,Math.round(exploreMapHeight*0.64)),620)
+                    : (selected||destinationCardOpen?236:184),
+                  backgroundColor:theme.surface,
+                  borderColor:theme.line,
+                },
+              ]}
+            >
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={resultsSheetExpanded?'Collapse results':'Expand results'}
+                accessibilityState={{expanded:resultsSheetExpanded}}
+                onPress={()=>setResultsSheetExpanded(value=>!value)}
+                style={s.resultsSheetHandle}
+              >
+                <View style={[s.resultsSheetHandleBar,{backgroundColor:theme.line}]} />
+                <View style={s.resultsSheetHeadingRow}>
+                  <View style={s.resultsSheetHeadingMain}>
+                    <Text numberOfLines={1} style={[s.resultsSheetEyebrow,{color:theme.accent}]}>
+                      {selected?'SELECTED PLACE':destinationCardOpen&&searchAreaOrigin?'DESTINATION':mode==='route'?'ALONG YOUR ROUTE':'NEARBY RESULTS'}
+                    </Text>
+                    <Text numberOfLines={1} style={[s.resultsSheetTitle,{color:theme.ink}]}>
+                      {selected
+                        ? discoveryPlaceName(selected)
+                        : destinationCardOpen&&searchAreaOrigin
+                          ? (searchAreaLabel||'Destination')
+                          : mode==='route'
+                            ? `Useful stops ahead · ${visibleRows.length}`
+                            : `Useful places nearby · ${visibleRows.length}`}
+                    </Text>
+                  </View>
+                  <Text style={[s.resultsSheetToggle,{color:theme.accent}]}>{resultsSheetExpanded?'Collapse ↑':'Expand ↑'}</Text>
+                </View>
+              </Pressable>
+
+              {destinationCardOpen&&searchAreaOrigin&&!selected ? (
+                <View style={s.selectedSheetBody}>
+                  <Text numberOfLines={2} style={[s.selectedSheetAddress,{color:theme.muted}]}>{searchAreaLabel||'Destination'}</Text>
+                  <Text numberOfLines={1} style={[s.destinationSummary,{color:theme.muted}]}>
+                    {mode==='route'
+                      ? (route?.distanceMiles?`${Number(route.distanceMiles).toFixed(0)} mi route · ~${Math.round(Number(route.durationMinutes||0))} min`:'Route destination')
+                      : `Nearby places ready · ${radiusLabel(effectiveRadiusMeters)}`}
+                  </Text>
+                  <View style={s.selectedSheetActions}>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Start directions to searched destination" style={[s.primarySmall,s.selectedSheetAction,{backgroundColor:theme.accent}]} onPress={()=>void goToSearchDestination()}>
+                      <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Search nearby this destination" style={[s.secondarySmall,s.selectedSheetAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={searchNearDestination}>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>Nearby</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Use searched destination for route" style={[s.secondarySmall,s.selectedSheetAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={addSearchDestinationToRoute}>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>Along route</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : selected ? (
+                <View style={s.selectedSheetBody}>
+                  <View style={s.selectedSheetSummary}>
+                    <FreshnessHeatRing item={selected} size={38} photoUrl={selected.consumer_photo_url ? String(selected.consumer_photo_url) : undefined} />
+                    <View style={s.resultsSheetHeadingMain}>
+                      <Text numberOfLines={1} style={[s.selectedSheetAddress,{color:theme.muted}]}>
+                        {[selected.address,selected.city,selected.state].filter(Boolean).join(', ')||'Address unavailable'}
+                      </Text>
+                      <Text numberOfLines={1} style={[s.selectedDecisionMeta,{color:theme.muted}]}>
+                        {[selected.discovery_recommended?recommendationReason(selected,rankingAmenityNames):null,selectedRoutePosition||distanceLabel(selected.distance_meters)].filter(Boolean).join(' · ')}
+                      </Text>
+                    </View>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Close selected location" hitSlop={12} onPress={()=>setSelectedId('')} style={[s.sheetClose,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+                      <Text style={[s.sheetCloseText,{color:theme.accent}]}>×</Text>
+                    </Pressable>
+                  </View>
+                  <DecisionRestroomSignals item={selected} />
+                  <View style={s.selectedSheetActions}>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Start directions to this location" accessibilityHint="Start navigation" style={[s.primarySmall,s.selectedSheetAction,{backgroundColor:theme.accent},!hasCoordinates(selected)&&s.disabled]} disabled={!hasCoordinates(selected)} onPress={()=>void directions(selected)}>
+                      <Text style={[s.primaryText,{color:theme.accentText}]}>Go →</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Add selected location to route" style={[s.secondarySmall,s.selectedSheetAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>addToRoute(selected)}>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>Add to route</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Open full selected location details" style={[s.secondarySmall,s.selectedSheetAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>openLocationDetails(selected)}>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
+                    </Pressable>
+                  </View>
+                  {resultsSheetExpanded?(
+                    <ScrollView style={s.selectedSheetScroll} contentContainerStyle={s.selectedSheetScrollContent} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                      {organicInsight?<Text style={[s.sheetInsight,{color:theme.ink}]}>{organicInsight}</Text>:null}
+                      <RequestedAmenityMatches item={selected} requested={rankingAmenityNames} />
+                      <Text style={[s.trustLine,{color:theme.ink}]}>{trustSummaryLine(selected)}</Text>
+                      <View style={s.selectedMoreRow}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={selected.active_check_in?'Already checked in at selected location':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking your location':selected.visit_verification_available?'Verify your detected visit at selected location':'Verify that I am at selected location'} accessibilityHint="Check in" accessibilityState={{disabled:Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking',busy:checkInFeedback[idOf(selected)]?.status==='checking'}} disabled={Boolean(selected.active_check_in)||checkInFeedback[idOf(selected)]?.status==='checking'} style={[s.selectedMoreAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},(selected.active_check_in||checkInFeedback[idOf(selected)]?.status==='checking')&&s.disabled]} onPress={()=>void checkIn(selected)}>
+                          <Text style={[s.selectedMoreText,{color:theme.accent}]}>{selected.active_check_in?'Checked in ✓':checkInFeedback[idOf(selected)]?.status==='checking'?'Checking…':selected.visit_verification_available?'Verify visit':"I'm here"}</Text>
+                        </Pressable>
+                        <Pressable accessibilityRole="button" accessibilityLabel="Share what I know about selected location" style={[s.selectedMoreAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>contributeKnowledge(selected)}>
+                          <Text style={[s.selectedMoreText,{color:theme.accent}]}>I know this place</Text>
+                        </Pressable>
+                      </View>
+                      <CheckInStatus feedback={checkInFeedback[idOf(selected)]} onReview={()=>router.push({pathname:'/location/[id]',params:{id:idOf(selected),review:'1'}})} />
+                    </ScrollView>
+                  ):null}
+                </View>
+              ) : (
+                <View style={s.resultsSheetBody}>
+                  {(message||cached)?(
+                    <View style={s.sheetStatusRow}>
+                      <Text numberOfLines={2} accessibilityLiveRegion="polite" style={[s.sheetStatusText,{color:theme.muted}]}>{message||'Showing cached nearby places.'}</Text>
+                      {!loading?<Pressable accessibilityRole="button" accessibilityLabel="Refresh live nearby results" onPress={()=>void load({preserveCacheOnEmpty:true,recenterOnLiveLocation:mode==='nearby'&&!searchAreaOrigin})}><Text style={[s.sheetRefresh,{color:theme.accent}]}>Refresh</Text></Pressable>:null}
+                    </View>
+                  ):null}
+                  <ScrollView style={s.resultsSheetList} contentContainerStyle={s.resultsSheetListContent} showsVerticalScrollIndicator={false} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                    {visibleRows.length?visibleRows.map((item,index)=>(
+                      <View key={idOf(item)||String(index)}>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Select ${discoveryPlaceName(item)}`}
+                          onPress={()=>selectRow(item)}
+                          style={[s.sheetResultRow,{borderColor:theme.line,backgroundColor:idOf(item)===selectedId?theme.accentSoft:theme.surface}]}
+                        >
+                          <FreshnessHeatRing item={item} size={36} photoUrl={item.consumer_photo_url?String(item.consumer_photo_url):undefined} />
+                          <View style={s.sheetResultMain}>
+                            <View style={s.sheetResultTitleRow}>
+                              <Text numberOfLines={1} style={[s.sheetResultTitle,{color:theme.ink}]}>{discoveryPlaceName(item)}</Text>
+                              <Text numberOfLines={1} style={[s.sheetResultDistance,{color:theme.accent}]}>{mode==='route'&&Number.isFinite(Number(item.distance_to_route_meters))?distanceLabel(item.distance_to_route_meters):distanceLabel(item.distance_meters)}</Text>
+                            </View>
+                            <Text numberOfLines={1} style={[s.sheetResultMeta,{color:theme.muted}]}>{[item.address,item.city,item.state].filter(Boolean).join(', ')||discoveryListingReference(item)}</Text>
+                            <CompactRestroomSignals item={item} />
+                            <RequestedAmenityMatches item={item} requested={selectedAmenityNames} compact />
+                          </View>
+                          <Text style={[s.sheetResultChevron,{color:theme.accent}]}>›</Text>
+                        </Pressable>
+                        {index===3?<AdMobNativeSlot contextClass="maps_network_after_results_4" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>:null}
+                        {index===13?<AdMobNativeSlot contextClass="maps_network_after_results_14" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>:null}
+                      </View>
+                    )):(
+                      <View style={[s.sheetEmpty,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+                        <Text style={[s.emptyTitle,{color:theme.ink}]}>No qualifying results yet.</Text>
+                        <Text style={[s.help,{color:theme.muted}]}>{mode==='nearby'?(activeFilterCount?'Your filters are hiding the broader nearby network.':'Search an address, move the map, or refresh live discovery.'):'Enter a destination, widen the route corridor, or adjust amenities.'}</Text>
+                        {mode==='nearby'&&activeFilterCount?<Pressable accessibilityRole="button" style={[s.emptyPrimary,{backgroundColor:theme.accent}]} onPress={()=>{resetFilters();setTimeout(()=>void load(),0)}}><Text style={[s.primaryText,{color:theme.accentText}]}>Show everything nearby</Text></Pressable>:null}
+                      </View>
+                    )}
+                            {mode==='route'&&routeGap!=null?(
+                      <View style={[s.sheetRouteCoverage,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+                        <Text style={[s.routeCoverageTitle,{color:theme.ink}]}>Longest stretch between qualifying bathrooms: ~{routeGap.toFixed(routeGap<10?1:0)} mi</Text>
+                      </View>
+                    ):null}
+                    <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results" compact/>
+                    {resultsSheetExpanded?<Pressable accessibilityRole="button" accessibilityLabel="Add a missing bathroom" onPress={()=>router.push('/discover')} style={[s.sheetMissingPlace,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+                      <Text style={[s.listEyebrow,{color:theme.accent}]}>MISSING A PLACE?</Text>
+                      <Text style={[s.missingTitle,{color:theme.ink}]}>Add a missing bathroom</Text>
+                    </Pressable>:null}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
           </View>
-          {visibleRows.length?(
+          {false&&visibleRows.length?(
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Show ${visibleRows.length} ${mode==='route'?'along-route':'nearby'} result${visibleRows.length===1?'':'s'}`}
@@ -2114,8 +2277,6 @@ export default function AdaptiveExploreScreen() {
               </View>
             ) : null}
 
-            <SponsoredSlot surface="maps" context={{route_context:mode,amenities:selectedAmenityNames}} contextClass="maps_between_results" compact/>
-
             <View style={s.listHeading}>
               <View style={s.listHeadingMain}>
                 <Text style={[s.listEyebrow,{color:theme.accent}]}>{mode === 'route' ? 'ALONG YOUR ROUTE' : 'NEARBY OPTIONS'}</Text>
@@ -2125,28 +2286,7 @@ export default function AdaptiveExploreScreen() {
             </View>
           </View>
         }
-        renderItem={({ item }) => (
-          <>
-            <View style={[s.resultItem,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-              <ResultCard
-                item={item}
-                selected={idOf(item) === selectedId}
-                onSelect={() => selectRow(item)}
-                onDirections={() => void directions(item)}
-                onCheckIn={() => void checkIn(item)}
-                onAddToRoute={() => addToRoute(item)}
-                onKnow={() => contributeKnowledge(item)}
-                onDetails={() => openLocationDetails(item)}
-                onReview={() => router.push({pathname:'/location/[id]',params:{id:idOf(item),review:'1'}})}
-                route={mode === 'route' ? route : null}
-                requestedAmenities={selectedAmenityNames}
-                checkInFeedback={checkInFeedback[idOf(item)]}
-              />
-            </View>
-            {Number(item?.discovery_rank)===4?<View style={s.resultItem}><AdMobNativeSlot contextClass="maps_network_after_results_4" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/></View>:null}
-            {Number(item?.discovery_rank)===14?<View style={s.resultItem}><AdMobNativeSlot contextClass="maps_network_after_results_14" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/></View>:null}
-          </>
-        )}
+        renderItem={() => null}
         ListEmptyComponent={!loading ? (
           <View style={[s.resultItem,{backgroundColor:theme.surface,borderColor:theme.line}]}>
             <View style={[s.empty,{backgroundColor:theme.surface,borderColor:theme.line}]}>
@@ -2186,6 +2326,7 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.canvas },
   pageScroll: { flex: 1 },
   exploreCanvas:{position:'relative'},
+  exploreStage:{position:'relative'},
   hero: {
     marginHorizontal: 12,
     marginTop: 4,
@@ -2209,10 +2350,10 @@ const s = StyleSheet.create({
   },
   locateIcon: { fontSize: 16, fontWeight: '900', color: palette.green },
   locateText: { fontSize: 8, fontWeight: '900', color: palette.green },
-  searchPanel:{position:'relative',marginHorizontal:10,zIndex:60,elevation:20,paddingHorizontal:9,paddingTop:9,paddingBottom:7,gap:6,borderRadius:15,borderWidth:1},
-  valuePromise:{paddingHorizontal:2,paddingBottom:2,gap:2},
-  valuePromiseTitle:{fontSize:19,lineHeight:23,fontWeight:'900',letterSpacing:-.25},
-  valuePromiseBody:{fontSize:13,lineHeight:18,fontWeight:'700'},
+  floatingSearchPanel:{position:'absolute',top:0,left:10,right:10,zIndex:80,elevation:24,paddingHorizontal:9,paddingTop:9,paddingBottom:7,gap:6,borderRadius:15,borderWidth:1},
+  valuePromise:{paddingHorizontal:2,paddingBottom:1,gap:1},
+  valuePromiseTitle:{fontSize:12,lineHeight:15,fontWeight:'900',letterSpacing:-.1},
+  valuePromiseBody:{fontSize:9,lineHeight:12,fontWeight:'700'},
   searchAreaChip:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,backgroundColor:'#e8f1eb',borderRadius:11,paddingHorizontal:10,paddingVertical:7},
   searchAreaText:{flex:1,fontSize:13,lineHeight:18,fontWeight:'900',color:palette.green},searchAreaAction:{fontSize:12,fontWeight:'900',color:palette.green,textDecorationLine:'underline'},
   segment: { flexDirection: 'row', padding: 3, borderRadius: 12, backgroundColor: '#e8efea' },
@@ -2261,9 +2402,9 @@ const s = StyleSheet.create({
   disabled: { opacity: 0.45 },
   message: { fontSize: 9, lineHeight: 14, color: '#66776d', fontWeight: '700' },
   provenance: { fontSize: 8, lineHeight: 12, color: '#718077', fontWeight: '700' },
-  discoveryStatus:{paddingHorizontal:12,paddingVertical:8,gap:4},
+  discoveryStatus:{display:'none',paddingHorizontal:12,paddingVertical:8,gap:4},
   help: { fontSize: 10, lineHeight: 15, color: '#5f7468' },
-  mapSection:{paddingHorizontal:0,gap:0,position:'relative',marginTop:8},
+  mapSection:{paddingHorizontal:0,gap:0,position:'relative',marginTop:0},
   mapFrame: {
     minHeight: 360,
     borderRadius: 0,
@@ -2292,10 +2433,44 @@ const s = StyleSheet.create({
   searchThisArea:{position:'absolute',left:92,right:58,zIndex:52,elevation:16,minHeight:38,borderRadius:999,borderWidth:1,alignItems:'center',justifyContent:'center',paddingHorizontal:12},
   searchThisAreaText:{fontSize:10,fontWeight:'900'},
   legendWrap: { position: 'absolute', left: 10, right: 56, zIndex:48 },
-  resultsHandoff:{minHeight:48,borderTopWidth:1,borderBottomWidth:1,paddingHorizontal:14,paddingVertical:7,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
+  resultsSheet:{position:'absolute',left:8,right:8,bottom:8,zIndex:72,elevation:24,borderWidth:1,borderRadius:20,overflow:'hidden',shadowColor:'#000',shadowOpacity:.16,shadowRadius:16,shadowOffset:{width:0,height:6}},
+  resultsSheetHandle:{paddingHorizontal:14,paddingTop:7,paddingBottom:8,gap:5},
+  resultsSheetHandleBar:{width:44,height:4,borderRadius:999,alignSelf:'center'},
+  resultsSheetHeadingRow:{flexDirection:'row',alignItems:'center',gap:10},
+  resultsSheetHeadingMain:{flex:1,minWidth:0},
+  resultsSheetEyebrow:{fontSize:8,fontWeight:'900',letterSpacing:.9},
+  resultsSheetTitle:{fontSize:16,lineHeight:20,fontWeight:'900'},
+  resultsSheetToggle:{fontSize:11,fontWeight:'900'},
+  resultsSheetBody:{flex:1,minHeight:0},
+  resultsSheetList:{flex:1},
+  resultsSheetListContent:{paddingHorizontal:9,paddingBottom:16,gap:7},
+  sheetStatusRow:{flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:12,paddingBottom:7},
+  sheetStatusText:{flex:1,fontSize:10,lineHeight:14,fontWeight:'700'},
+  sheetRefresh:{fontSize:10,fontWeight:'900',textDecorationLine:'underline'},
+  sheetResultRow:{minHeight:76,borderWidth:1,borderRadius:14,paddingHorizontal:9,paddingVertical:8,flexDirection:'row',alignItems:'center',gap:8},
+  sheetResultMain:{flex:1,minWidth:0,gap:2},
+  sheetResultTitleRow:{flexDirection:'row',alignItems:'center',gap:7},
+  sheetResultTitle:{flex:1,fontSize:15,lineHeight:19,fontWeight:'900'},
+  sheetResultDistance:{maxWidth:'32%',fontSize:10,fontWeight:'900'},
+  sheetResultMeta:{fontSize:10,lineHeight:14,fontWeight:'700'},
+  sheetResultChevron:{fontSize:24,lineHeight:26,fontWeight:'700'},
+  sheetEmpty:{borderWidth:1,borderRadius:14,padding:12,gap:6},
+  sheetMissingPlace:{borderWidth:1,borderRadius:14,padding:11,gap:2},
+  sheetRouteCoverage:{borderWidth:1,borderRadius:12,paddingHorizontal:10,paddingVertical:7},
+  selectedSheetBody:{flex:1,minHeight:0,paddingHorizontal:10,paddingBottom:62,gap:6,position:'relative'},
+  selectedSheetSummary:{flexDirection:'row',alignItems:'center',gap:8},
+  selectedSheetAddress:{fontSize:11,lineHeight:15,fontWeight:'800'},
+  selectedSheetActions:{flexDirection:'row',gap:6,position:'absolute',left:10,right:10,bottom:10,zIndex:4,elevation:8},
+  selectedSheetAction:{flex:1,alignItems:'center',minWidth:0},
+  selectedSheetScroll:{flex:1,minHeight:0},
+  selectedSheetScrollContent:{gap:7,paddingBottom:66},
+  sheetInsight:{fontSize:11,lineHeight:16,fontWeight:'800'},
+  sheetClose:{width:36,height:36,borderRadius:18,borderWidth:1,alignItems:'center',justifyContent:'center'},
+  sheetCloseText:{fontSize:22,lineHeight:24,fontWeight:'900'},
+  resultsHandoff:{display:'none',minHeight:48,borderTopWidth:1,borderBottomWidth:1,paddingHorizontal:14,paddingVertical:7,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
   resultsHandoffText:{flex:1,fontSize:13,fontWeight:'900'},
   resultsHandoffAction:{fontSize:13,fontWeight:'900'},
-  selectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
+  legacySelectedPanel: { position: 'absolute', left: 9, right: 54, bottom: 9, height: 228, zIndex: 40, elevation: 12, borderRadius: 16, padding: 9, backgroundColor: 'rgba(255,255,255,.97)', borderWidth: 1, borderColor: '#cfe0d5', gap: 4, overflow:'hidden' },
   destinationPanel:{height:146,justifyContent:'flex-start'},
   destinationSummary:{fontSize:12,lineHeight:16,fontWeight:'800'},
   destinationAction:{flex:1,alignItems:'center',minWidth:78},
@@ -2344,13 +2519,13 @@ const s = StyleSheet.create({
   modalClose: { width: 38, height: 38, borderRadius: 19, backgroundColor: palette.green, alignItems: 'center', justifyContent: 'center' },
   modalCloseText: { color: '#fff', fontSize: 22, lineHeight: 24, fontWeight: '900' },
   modalDone: { minHeight: 40, borderRadius: 11, backgroundColor: palette.green, alignItems: 'center', justifyContent: 'center' },
-  routeCoverage: { paddingHorizontal: 14, paddingVertical: 5, borderBottomWidth: 1, borderColor: '#ead9b4' },
+  routeCoverage: { display:'none', paddingHorizontal: 14, paddingVertical: 5, borderBottomWidth: 1, borderColor: '#ead9b4' },
   routeCoverageTitle: { fontSize: 9, fontWeight: '800', color: palette.ink },
   list: { paddingHorizontal: 14, paddingBottom: 34, gap: 8 },
-  listHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 8, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 8 },
+  listHeading: { display:'none', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 8, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 8 },
   listHeadingMain:{flex:1,minWidth:0},
-  resultItem: { paddingHorizontal: 14, paddingBottom: 8 },
-  listFooter: { paddingHorizontal: 14, paddingBottom: 34 },
+  resultItem: { display:'none', paddingHorizontal: 14, paddingBottom: 8 },
+  listFooter: { display:'none', paddingHorizontal: 14, paddingBottom: 34 },
   listEyebrow: { fontSize: 8, fontWeight: '900', letterSpacing: 0.8, color: palette.green },
   listTitle: { fontSize: 19, lineHeight:24, fontWeight: '900', color: palette.ink },
   listNote: { maxWidth:'34%', fontSize: 8, fontWeight: '800', color: '#718077', textAlign:'right' },
