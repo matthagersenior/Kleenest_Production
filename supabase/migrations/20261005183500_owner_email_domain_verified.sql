@@ -1,5 +1,5 @@
 -- Keep the database source of truth aligned with the verified Resend domain.
--- Resend reports kleenest.us as verified with both sending and receiving enabled.
+-- Resend reports kleenest.us as verified with both sending and receiving enabled. Verified 2026-10-05.
 update public.owner_email_center_settings
 set domain_status='verified',
     updated_at=now()
