@@ -73,7 +73,7 @@ function escapeHtml(value){
   return String(value).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 function canonicalFor(route){
-  return route?\`${publicOrigin}/${route}/\`:\`${publicOrigin}/\`;
+  return route?`${publicOrigin}/${route}/`:`${publicOrigin}/`;
 }
 function withPublicSeo(source,route,meta){
   const canonical=canonicalFor(route);
@@ -87,7 +87,7 @@ function withPublicSeo(source,route,meta){
     description:meta.description,
     ...(route==='support'?{}:{applicationCategory:'TravelApplication',operatingSystem:'Web, Android, iOS'})
   });
-  const block=\`${markerStart}
+  const block=`${markerStart}
 <link rel="canonical" href="${escapeHtml(canonical)}" />
 <meta property="og:site_name" content="Kleenest" />
 <meta property="og:type" content="website" />
@@ -98,16 +98,16 @@ function withPublicSeo(source,route,meta){
 <meta name="twitter:title" content="${escapeHtml(meta.title)}" />
 <meta name="twitter:description" content="${escapeHtml(meta.description)}" />
 <script type="application/ld+json">${structured}</script>
-${markerEnd}\`;
-  let next=source.replace(new RegExp(\`${markerStart}[\\s\\S]*?${markerEnd}\\n?\`,'g'),'');
-  next=next.replace(/<title>[\\s\\S]*?<\\/title>/i,\`<title>${escapeHtml(meta.title)}</title>\`);
+${markerEnd}`;
+  let next=source.replace(new RegExp(`${markerStart}[\\s\\S]*?${markerEnd}\\n?`,'g'),'');
+  next=next.replace(/<title>[\\s\\S]*?<\\/title>/i,`<title>${escapeHtml(meta.title)}</title>`);
   if(/<meta\\s+name=["']description["'][^>]*>/i.test(next)){
-    next=next.replace(/<meta\\s+name=["']description["'][^>]*>/i,\`<meta name="description" content="${escapeHtml(meta.description)}" />\`);
+    next=next.replace(/<meta\\s+name=["']description["'][^>]*>/i,`<meta name="description" content="${escapeHtml(meta.description)}" />`);
   }else{
-    next=next.replace('</head>',\`<meta name="description" content="${escapeHtml(meta.description)}" />\\n</head>\`);
+    next=next.replace('</head>',`<meta name="description" content="${escapeHtml(meta.description)}" />\\n</head>`);
   }
   if(!next.includes('</head>'))throw new Error('Consumer web export is missing </head> for public SEO.');
-  return next.replace('</head>',\`${block}\\n</head>\`);
+  return next.replace('</head>',`${block}\\n</head>`);
 }
 
 
@@ -163,18 +163,18 @@ fs.writeFileSync(path.join(authCallbackDir,'index.html'),authHtml);
 
 const sitemapUrls=[
   ...Object.keys(publicSeo).map(route=>canonicalFor(route)),
-  \`${publicOrigin}/legal/privacy.html\`,
-  \`${publicOrigin}/legal/terms.html\`,
-  \`${publicOrigin}/legal/account-deletion.html\`,
-  \`${publicOrigin}/legal/community-guidelines.html\`,
+  `${publicOrigin}/legal/privacy.html`,
+  `${publicOrigin}/legal/terms.html`,
+  `${publicOrigin}/legal/account-deletion.html`,
+  `${publicOrigin}/legal/community-guidelines.html`,
 ];
-const sitemap=\`<?xml version="1.0" encoding="UTF-8"?>
+const sitemap=`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemapUrls.map(url=>\`  <url><loc>${escapeHtml(url)}</loc></url>\`).join('\\n')}
+${sitemapUrls.map(url=>`  <url><loc>${escapeHtml(url)}</loc></url>`).join('\\n')}
 </urlset>
-\`;
+`;
 fs.writeFileSync(path.join(dist,'sitemap.xml'),sitemap);
-fs.writeFileSync(path.join(dist,'robots.txt'),\`User-agent: *
+fs.writeFileSync(path.join(dist,'robots.txt'),`User-agent: *
 Allow: /
 Disallow: /profile/
 Disallow: /owner/
@@ -182,6 +182,6 @@ Disallow: /business/
 Disallow: /fleet/
 Disallow: /developer/
 Sitemap: ${publicOrigin}/sitemap.xml
-\`);
+`);
 
 console.log('Prepared installable Kleenest Consumer Web PWA with kleenest.us public SEO, sitemap, robots policy, and direct /profile/ auth callback.');
