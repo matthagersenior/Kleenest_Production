@@ -301,6 +301,7 @@ Deno.serve(async(req:Request)=>{
       else if(mailbox==='sent')q=q.eq('folder','sent');
       else if(mailbox==='drafts')q=q.eq('folder','drafts');
       else if(mailbox==='spam')q=q.eq('folder','spam');
+      else if(mailbox==='trash')q=q.eq('folder','trash');
       else if(mailbox==='all')q=q.neq('folder','trash');
       else throw new Error('Unsupported mailbox view.');
       if(direction==='incoming')q=q.eq('latest_direction','inbound');

@@ -37,6 +37,7 @@ requireAll('Support-aware Owner reply',center,[
   "action==='save_draft'",
   "action==='block_sender'",
   "'spam'",
+  "mailbox==='trash'",
   "delivery_status:'delivered_in_app'",
 ]);
 requireAll('Blocked sender inbound handling',inbound,[
