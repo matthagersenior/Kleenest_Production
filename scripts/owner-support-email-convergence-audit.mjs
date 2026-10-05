@@ -9,6 +9,9 @@ const consumer=read('apps/consumer-mobile/services/support.ts');
 const business=read('apps/business-mobile/app/support.tsx');
 const fleet=read('apps/fleet-mobile/app/support.tsx');
 const center=read('supabase/functions/owner-email-center/index.ts');
+const inbound=read('supabase/functions/owner-email-inbound/index.ts');
+const ui=read('apps/platform-mobile/app/communications.tsx');
+const service=read('apps/platform-mobile/services/communications.ts');
 const migrations=fs.readdirSync('supabase/migrations').filter(v=>v.endsWith('.sql')).map(v=>read(`supabase/migrations/${v}`)).join('\n');
 
 requireAll('Consumer support source',consumer,["p_source_app:'consumer'"]);
@@ -25,6 +28,30 @@ requireAll('Support-aware Owner reply',center,[
   'support_request_id',
   'support_reply',
   "status:'in_progress'",
+  "action==='save_draft'",
+  "action==='block_sender'",
+  "'spam'",
+  "delivery_status:'delivered_in_app'",
+]);
+requireAll('Blocked sender inbound handling',inbound,[
+  'blocked_senders',
+  "isBlocked?'spam':'inbox'",
+  "receive_spam",
+]);
+requireAll('KleenestOS Email Center UI',ui,[
+  "drafts:{label:'Drafts'",
+  "spam:{label:'Spam'",
+  'Save draft',
+  'Block sender',
+  'APP SUPPORT',
+  'deliveryStatus',
+  'sourceApp.toUpperCase()',
+]);
+requireAll('KleenestOS Email Center service',service,[
+  "action:'save_draft'",
+  "action:'spam'",
+  "action:'block_sender'",
+  "mailbox?:'inbox'|'sent'|'drafts'|'spam'|'all'",
 ]);
 
 if(failures.length){
