@@ -2,10 +2,17 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 
 export type OwnerMailConnectionStatus={
   connected:boolean;
+  provider:'resend';
   emailAddress:string|null;
-  messagesTotal:number;
-  threadsTotal:number;
-  historyId:string|null;
+  fallbackAddress:string|null;
+  domainStatus:'pending'|'verified'|'failed'|string;
+  webhookEnabled:boolean;
+  fromAddress:string;
+  providerConfigured:boolean;
+  threads_total?:number;
+  unread_total?:number;
+  needs_reply_total?:number;
+  waiting_total?:number;
 };
 
 export type OwnerMailThreadSummary={
@@ -21,13 +28,15 @@ export type OwnerMailThreadSummary={
   latestSent:boolean;
   starred:boolean;
   messageCount:number;
+  hasAttachment?:boolean;
+  labelNames?:string[];
 };
 
 export type OwnerMailAttachment={
   filename:string;
   mimeType:string;
   size:number;
-  attachmentId:string|null;
+  id?:string|null;
 };
 
 export type OwnerMailMessage={
@@ -67,7 +76,7 @@ async function invoke<T>(body:GatewayInput):Promise<T>{
   const {data:{session},error:sessionError}=await client.auth.getSession();
   if(sessionError)throw sessionError;
   if(!session?.access_token)throw new Error('Owner sign-in is required.');
-  const {data,error}=await client.functions.invoke('owner-email-gateway',{
+  const {data,error}=await client.functions.invoke('owner-email-center',{
     body,
     headers:{Authorization:`Bearer ${session.access_token}`},
   });
@@ -85,14 +94,6 @@ async function invoke<T>(body:GatewayInput):Promise<T>{
   }
   if(data?.error)throw new Error(String(data.error));
   return data as T;
-}
-
-export function connectOwnerMail(providerToken:string,providerRefreshToken:string){
-  return invoke<OwnerMailConnectionStatus>({
-    action:'connect',
-    providerToken,
-    providerRefreshToken,
-  });
 }
 
 export function getOwnerMailStatus(){
@@ -145,7 +146,6 @@ export function archiveOwnerMailThread(threadId:string){
 export function setOwnerMailThreadRead(threadId:string,read:boolean){
   return invoke<{ok:true}>({action:'set_read',threadId,read});
 }
-
 
 export function sendOwnerMail(input:{to:string;cc?:string;bcc?:string;subject:string;body:string}){
   return invoke<{messageId:string;threadId:string|null}>({

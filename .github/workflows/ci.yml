@@ -209,6 +209,8 @@ jobs:
         run: node scripts/tell-kleenest-owner-queue-audit.mjs
       - name: Owner communications and email
         run: node scripts/owner-communications-audit.mjs
+      - name: KleenestOS Email Center
+        run: node scripts/owner-email-center-audit.mjs
       - name: Business onboarding tier authority
         run: node scripts/business-onboarding-tier-authority-audit.mjs
       - name: Business Fleet onboarding portfolio home
