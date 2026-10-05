@@ -27,7 +27,7 @@ export default function IngestionControl(){
   async function act(key:string,fn:()=>Promise<unknown>){setBusy(key);setError('');try{await fn();await load()}catch(cause){setError(cause instanceof Error?cause.message:String(cause))}finally{setBusy('')}}
 
   const status=object(data?.status),storage=object(data?.storage_guard??status.storage_guard),marketStatus=object(status.markets);
-  const sources=rows(data?.sources),markets=rows(data?.markets),history=rows(data?.history);
+  const sources=rows(data?.sources),markets=rows(data?.markets),history=rows(data?.history),discoverySignals=rows(data?.discovery_signals);
   const paused=bool(storage.paused);
   const currentSources=useMemo(()=>sources.filter(row=>Object.prototype.hasOwnProperty.call(SOURCE_LABELS,txt(row.source_key))),[sources]);
   const sourceByKey=useMemo(()=>Object.fromEntries(currentSources.map(row=>[txt(row.source_key),row])),[currentSources]);
@@ -64,6 +64,14 @@ export default function IngestionControl(){
       <View style={card}><StatusPill label="COVERAGE EXPANSION" tone={coverageEnabled&&!paused?'good':'warning'}/><Text style={{fontSize:17,fontWeight:'900',color:theme.ink}}>Fill geographic gaps</Text><Text style={{color:theme.muted,lineHeight:19}}>Overture-backed expansion works through prioritized markets and spare-capacity safeguards.</Text></View>
       <View style={card}><StatusPill label="REFRESH & VERIFY" tone={failed?'warning':'good'}/><Text style={{fontSize:17,fontWeight:'900',color:theme.ink}}>Keep canonical places healthy</Text><Text style={{color:theme.muted,lineHeight:19}}>Repair stalled work and preserve canonical identity so refreshes strengthen an existing place instead of adding another pin.</Text></View>
       <View style={card}><StatusPill label="CORRECTIONS & ENRICHMENT" tone={enrichmentEnabled?'good':'neutral'}/><Text style={{fontSize:17,fontWeight:'900',color:theme.ink}}>Improve what already exists</Text><Text style={{color:theme.muted,lineHeight:19}}>Civic feeds and trusted observations add evidence, amenities and corrections without becoming a second map truth.</Text></View>
+    </View>
+
+    <View style={{gap:9}}>
+      <SectionHeader title="Discovery growth signals" body="Unexpected territory found by real Kleenest use. Repeated activity promotes an area from observed to emerging to an ingestion candidate; meaningful promotions also notify KleenestOS."/>
+      {discoverySignals.length?discoverySignals.slice(0,8).map(row=>{const stage=txt(row.stage)||'observed',events=num(row.event_count),places=num(row.discovered_count),users=num(row.distinct_users),lat=num(row.latitude),lng=num(row.longitude);return <View key={txt(row.cell_key)} style={card}>
+        <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10}}><View style={{flex:1,gap:3}}><Text style={{fontSize:16,fontWeight:'900',color:theme.ink}}>Unexpected Discovery near {lat.toFixed(1)}, {lng.toFixed(1)}</Text><Text style={{color:theme.muted}}>{events} Discovery event{events===1?'':'s'} · {places} places found · {users} user{users===1?'':'s'}</Text></View><StatusPill label={stage.replaceAll('_',' ').toUpperCase()} tone={stage==='ingestion_candidate'?'good':stage==='emerging'?'warning':'neutral'}/></View>
+        <Text style={{color:theme.muted,lineHeight:19}}>Sources: {Array.isArray(row.sources)?row.sources.map(txt).filter(Boolean).join(', ')||'not reported':'not reported'} · Last seen {txt(row.last_seen_at)||'recently'}</Text>
+      </View>}):<View style={card}><Text style={{color:theme.muted}}>No unexpected Discovery territory has crossed the signal threshold yet. Background ingestion is covering expected demand.</Text></View>}
     </View>
 
     <View style={{gap:9}}>
