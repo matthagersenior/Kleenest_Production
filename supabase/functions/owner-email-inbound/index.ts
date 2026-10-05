@@ -4,10 +4,7 @@ import { Resend } from "npm:resend@6.9.2";
 
 const SUPABASE_URL=Deno.env.get('SUPABASE_URL')??'';
 function namedKey(plural:string,legacy:string){
-  try{
-    const parsed=JSON.parse(Deno.env.get(plural)??'{}');
-    if(parsed?.default)return String(parsed.default);
-  }catch{}
+  try{const parsed=JSON.parse(Deno.env.get(plural)??'{}');if(parsed?.default)return String(parsed.default)}catch{}
   return Deno.env.get(legacy)??'';
 }
 const SUPABASE_SECRET_KEY=namedKey('SUPABASE_SECRET_KEYS','SUPABASE_SERVICE_ROLE_KEY');
@@ -71,22 +68,33 @@ async function providerConfig(){
   if(!config.webhook_configured||!config.webhook_secret)throw new Error('Resend webhook signing secret is not configured.');
   return{apiKey:String(config.api_key),webhookSecret:String(config.webhook_secret)};
 }
-async function findOwnerForRecipients(recipients:string[]){
+async function primaryOwner(){
   const admin=adminClient();
-  const{data,error}=await admin.from('owner_email_center_settings').select('*');
-  if(error)throw error;
-  const normalized=new Set(recipients.map(v=>v.toLowerCase()));
-  return(data||[]).find((row:any)=>[
-    String(row.inbox_address||'').toLowerCase(),
-    ...(Array.isArray(row.aliases)?row.aliases.map((v:string)=>String(v).toLowerCase()):[]),
-  ].some(address=>address&&normalized.has(address)))||null;
+  const result=await admin.from('owner_email_center_settings').select('*').order('created_at',{ascending:true}).limit(1).maybeSingle();
+  if(result.error)throw result.error;
+  if(!result.data)throw new Error('Owner Email Center settings are missing.');
+  return result.data;
 }
-async function resolveThread(ownerUserId:string,subject:string,candidates:string[]){
+async function resolveRecipientMailbox(recipients:string[]){
+  const admin=adminClient();
+  const normalized=[...new Set(recipients.map(v=>v.toLowerCase()).filter(v=>v.endsWith('@kleenest.us')))];
+  if(!normalized.length)return null;
+  const direct=await admin.from('owner_email_mailboxes').select('*').in('address',normalized).eq('active',true).limit(1).maybeSingle();
+  if(direct.error)throw direct.error;
+  if(direct.data)return{mailbox:direct.data,recipientAddress:String(direct.data.address)};
+  const alias=await admin.from('owner_email_mailbox_aliases').select('alias_address,mailbox_id').in('alias_address',normalized).eq('active',true).limit(1).maybeSingle();
+  if(alias.error)throw alias.error;
+  if(!alias.data)return null;
+  const mailbox=await admin.from('owner_email_mailboxes').select('*').eq('id',alias.data.mailbox_id).eq('active',true).maybeSingle();
+  if(mailbox.error)throw mailbox.error;
+  return mailbox.data?{mailbox:mailbox.data,recipientAddress:String(alias.data.alias_address)}:null;
+}
+async function resolveThread(ownerUserId:string,mailboxId:string,subject:string,candidates:string[]){
   const admin=adminClient();
   if(candidates.length){
     const{data,error}=await admin.from('owner_email_center_messages')
       .select('thread_id,internet_message_id')
-      .eq('owner_user_id',ownerUserId)
+      .eq('mailbox_id',mailboxId)
       .in('internet_message_id',candidates)
       .limit(1)
       .maybeSingle();
@@ -97,7 +105,7 @@ async function resolveThread(ownerUserId:string,subject:string,candidates:string
   if(normalized){
     const{data,error}=await admin.from('owner_email_center_threads')
       .select('id')
-      .eq('owner_user_id',ownerUserId)
+      .eq('mailbox_id',mailboxId)
       .eq('normalized_subject',normalized)
       .neq('folder','trash')
       .order('last_message_at',{ascending:false})
@@ -108,6 +116,7 @@ async function resolveThread(ownerUserId:string,subject:string,candidates:string
   }
   const{data,error}=await admin.from('owner_email_center_threads').insert({
     owner_user_id:ownerUserId,
+    mailbox_id:mailboxId,
     subject:subject||'(no subject)',
     normalized_subject:normalized,
     folder:'inbox',
@@ -118,6 +127,50 @@ async function resolveThread(ownerUserId:string,subject:string,candidates:string
   }).select('id').single();
   if(error)throw error;
   return String(data.id);
+}
+async function forwardReceived(resend:Resend,mailbox:any,from:{name:string;address:string},recipientAddress:string,subject:string,text:string,html:string|null){
+  if(!mailbox.forwarding_enabled)return[];
+  const targets=(Array.isArray(mailbox.forwarding_targets)?mailbox.forwarding_targets:[])
+    .map((v:any)=>String(v).trim().toLowerCase())
+    .filter((v:string)=>v&&v!==from.address&&v!==recipientAddress);
+  const ids:string[]=[];
+  for(const target of targets){
+    const forwardedText=[
+      `Forwarded by Kleenest Mail for ${recipientAddress}`,
+      `From: ${from.name?from.name+' <'+from.address+'>':from.address}`,
+      `To: ${recipientAddress}`,
+      `Subject: ${subject}`,
+      '',
+      text||'(no text body)',
+    ].join('\n');
+    const result:any=await resend.emails.send({
+      from:`${mailbox.display_name||'Kleenest'} <${mailbox.address}>`,
+      to:[target],
+      replyTo:from.address,
+      subject:subject,
+      text:forwardedText,
+      ...(html?{html:`<p><strong>Forwarded by Kleenest Mail for ${recipientAddress}</strong></p><p>From: ${from.name?from.name+' &lt;'+from.address+'&gt;':from.address}</p><hr/>${html}`}:{}),
+      headers:{'X-Kleenest-Forwarded':'1','X-Kleenest-Mailbox':String(mailbox.address)},
+    });
+    if(result?.error)throw new Error(String(result.error?.message||'Forwarding failed.'));
+    if(result?.data?.id)ids.push(String(result.data.id));
+  }
+  return ids;
+}
+async function sendAutoReply(resend:Resend,mailbox:any,from:{address:string},headers:Map<string,string>,subject:string){
+  if(!mailbox.auto_reply_enabled||!mailbox.auto_reply_body)return null;
+  if(from.address.endsWith('@kleenest.us'))return null;
+  const autoSubmitted=String(headers.get('auto-submitted')||'').toLowerCase();
+  if(autoSubmitted&&autoSubmitted!=='no')return null;
+  const result:any=await resend.emails.send({
+    from:`${mailbox.display_name||'Kleenest'} <${mailbox.address}>`,
+    to:[from.address],
+    subject:String(mailbox.auto_reply_subject||'').trim()||(/^re:/i.test(subject)?subject:`Re: ${subject}`),
+    text:String(mailbox.auto_reply_body),
+    headers:{'Auto-Submitted':'auto-replied','X-Kleenest-Auto-Reply':'1'},
+  });
+  if(result?.error)throw new Error(String(result.error?.message||'Auto-reply failed.'));
+  return result?.data?.id||null;
 }
 
 Deno.serve(async(req:Request)=>{
@@ -149,16 +202,18 @@ Deno.serve(async(req:Request)=>{
     if(result?.error)throw new Error(String(result.error?.message||'Received email body could not be loaded.'));
     const email:any=result?.data||result||{};
     const recipients=[...(Array.isArray(email?.to)?email.to:[email?.to]).filter(Boolean).map((v:any)=>parseMailbox(String(v)).address)];
-    const owner=await findOwnerForRecipients(recipients);
-    if(!owner)return json({ok:true,ignored:true,reason:'recipient_not_managed'});
+    const route=await resolveRecipientMailbox(recipients);
+    if(!route)return json({ok:true,ignored:true,reason:'recipient_not_managed'});
 
+    const owner=await primaryOwner();
+    const mailbox=route.mailbox;
     const headers=headerMap(email?.headers);
     const messageId=String(email?.message_id||headers.get('message-id')||event?.data?.message_id||'').trim()||null;
     const inReplyTo=String(headers.get('in-reply-to')||'').trim()||null;
     const refs=messageIds(headers.get('references')||'');
     const candidates=[...new Set([...(inReplyTo?messageIds(inReplyTo):[]),...refs])];
     const subject=String(email?.subject||event?.data?.subject||'(no subject)').trim()||'(no subject)';
-    const threadId=await resolveThread(owner.owner_user_id,subject,candidates);
+    const threadId=await resolveThread(owner.owner_user_id,String(mailbox.id),subject,candidates);
     const from=parseMailbox(String(email?.from||event?.data?.from||'unknown@invalid'));
     const blockedSenders=new Set((Array.isArray(owner.blocked_senders)?owner.blocked_senders:[]).map((v:string)=>String(v).toLowerCase()));
     const isBlocked=blockedSenders.has(from.address);
@@ -179,11 +234,13 @@ Deno.serve(async(req:Request)=>{
       references:refs.join(' '),
       'reply-to':String(headers.get('reply-to')||'').slice(0,1000),
       date:String(headers.get('date')||'').slice(0,200),
+      recipient:route.recipientAddress,
     };
 
     const inserted=await admin.from('owner_email_center_messages').insert({
       thread_id:threadId,
       owner_user_id:owner.owner_user_id,
+      mailbox_id:mailbox.id,
       provider_email_id:providerEmailId,
       internet_message_id:messageId,
       in_reply_to:inReplyTo,
@@ -204,12 +261,16 @@ Deno.serve(async(req:Request)=>{
     });
     if(inserted.error)throw inserted.error;
 
+    let folder=isBlocked?'spam':'inbox';
+    if(!isBlocked&&mailbox.forwarding_enabled&&mailbox.keep_copy===false)folder='archive';
     const participants=[...new Set([from.address,...recipients,...cc].filter(Boolean))];
     const updated=await admin.from('owner_email_center_threads').update({
+      mailbox_id:mailbox.id,
+      recipient_address:route.recipientAddress,
       subject,
       normalized_subject:normalizeSubject(subject),
-      folder:isBlocked?'spam':'inbox',
-      unread:!isBlocked,
+      folder,
+      unread:folder==='inbox',
       participants,
       snippet:excerpt(boundedText),
       latest_direction:'inbound',
@@ -221,14 +282,22 @@ Deno.serve(async(req:Request)=>{
 
     const count=await admin.from('owner_email_center_messages').select('id',{count:'exact',head:true}).eq('thread_id',threadId);
     if(!count.error)await admin.from('owner_email_center_threads').update({message_count:count.count||1}).eq('id',threadId);
+
+    const forwardedIds=isBlocked?[]:await forwardReceived(resend,mailbox,from,route.recipientAddress,subject,boundedText,boundedHtml);
+    const autoReplyId=isBlocked?null:await sendAutoReply(resend,mailbox,from,headers,subject);
+
     await admin.from('owner_email_center_audit').insert({
       owner_user_id:owner.owner_user_id,
       thread_id:threadId,
       action:isBlocked?'receive_spam':'receive',
-      detail:{provider_email_id:providerEmailId,from:from.address,attachment_count:attachments.length,blocked:isBlocked},
+      detail:{
+        provider_email_id:providerEmailId,from:from.address,attachment_count:attachments.length,blocked:isBlocked,
+        mailbox_id:mailbox.id,mailbox_address:mailbox.address,recipient_address:route.recipientAddress,
+        forwarded_to:mailbox.forwarding_enabled?mailbox.forwarding_targets:[],forwarded_ids:forwardedIds,auto_reply_id:autoReplyId,
+      },
     });
 
-    return json({ok:true,stored:true});
+    return json({ok:true,stored:true,mailbox:mailbox.address,forwarded:forwardedIds.length});
   }catch(error:any){
     return json({error:String(error?.message||error||'Inbound email could not be processed.')},400);
   }
