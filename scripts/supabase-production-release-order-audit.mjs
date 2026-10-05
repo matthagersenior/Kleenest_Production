@@ -71,6 +71,24 @@ reject(ota,'workflows: ["Production CI"]','direct Production CI → OTA bypass')
 reject(ota,'workflow_dispatch:','manual OTA bypass');
 reject(ota,'releases/family-ota.txt','release-file push OTA bypass');
 
+const reconciledOct5Migrations=[
+  'supabase/migrations/20261005170819_isolate_background_crud_pressure.sql',
+  'supabase/migrations/20261005171412_owner_password_reset_audit.sql',
+  'supabase/migrations/20261005181217_adaptive_background_ingestion.sql',
+  'supabase/migrations/20261005183500_owner_email_domain_verified.sql',
+];
+for(const migration of reconciledOct5Migrations){
+  if(!fs.existsSync(path.join(root,migration)))failures.push(`missing reconciled production migration ${migration}`);
+}
+for(const stale of [
+  'supabase/migrations/20261005170500_owner_password_reset_audit.sql',
+  'supabase/migrations/20261005180000_adaptive_background_ingestion.sql',
+]){
+  if(fs.existsSync(path.join(root,stale)))failures.push(`stale migration timestamp still present ${stale}`);
+}
+expect('supabase/migrations/20261005170819_isolate_background_crud_pressure.sql',"kleenest-brand-identity-backfill",'restored production background CRUD migration');
+expect('supabase/migrations/20261005181217_adaptive_background_ingestion.sql',"kleenest-corridor-open-data-ingestion",'adaptive ingestion cron source');
+
 const guard='.github/workflows/supabase-production-release-order-fast.yml';
 expect(guard,'push:\n    branches: [main]','main-branch release-order guard');
 expect(guard,'pull_request:\n    branches: [main]','PR release-order guard');
