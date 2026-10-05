@@ -260,7 +260,7 @@ for(const token of [
   '<CompactRestroomSignals item={item} />',
   "sheetResultRow:{minHeight:76",
   "resultsSheet:{position:'absolute'",
-  "selectedSheetActions:{flexDirection:'row',gap:6}",
+  "selectedSheetActions:{flexDirection:'row',gap:6,position:'absolute'",
   "selectedSheetScroll:{flex:1,minHeight:0}",
   "primarySmall: { minHeight: 44",
   "secondarySmall: { minHeight: 44",
