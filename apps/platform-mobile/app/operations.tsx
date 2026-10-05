@@ -24,10 +24,10 @@ export default function Operations(){
   useEffect(()=>{void load()},[load]);
   const overview=object(data?.overview),integrity=object(data?.integrity);
   return <ScrollView contentInsetAdjustmentBehavior="automatic" refreshControl={<RefreshControl refreshing={busy} onRefresh={load}/>} contentContainerStyle={{padding:18,gap:16,paddingBottom:70,backgroundColor:theme.canvas}}>
-    <OSHero eyebrow="KLEENESTOS · PLATFORM HEALTH" title="Platform Health" body="Monitor integrity, delivery, backend resources and recent platform activity. Interactive Discovery is the canonical acquisition path; legacy national-ingestion controls are retired."/>
+    <OSHero eyebrow="KLEENESTOS · PLATFORM HEALTH" title="Platform Health" body="Monitor integrity, delivery, backend resources and recent platform activity. Interactive Discovery is the canonical acquisition path; legacy national-ingestion controls are retired, and current operations live in the dedicated Ingestion Control center."/>
     <View style={{backgroundColor:theme.surface,borderWidth:1,borderColor:theme.line,borderRadius:16,padding:14,gap:4}}>
       <Text style={{fontWeight:'900',color:theme.ink}}>Discovery is the acquisition authority</Text>
-      <Text style={{color:theme.muted}}>Platform Health now focuses on integrity, delivery and backend resource signals instead of retired ingestion controls.</Text>
+      <Text style={{color:theme.muted}}>Platform Health focuses on integrity, delivery and backend resources; ingestion operations are managed in the dedicated Ingestion Control center.</Text>
     </View>
     {error?<View style={{backgroundColor:theme.surface,borderWidth:1,borderColor:theme.danger,borderRadius:16,padding:14,gap:4}}><Text style={{fontWeight:'900',color:theme.danger}}>Platform health unavailable</Text><Text style={{color:theme.danger}}>{error}</Text></View>:null}
     <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>

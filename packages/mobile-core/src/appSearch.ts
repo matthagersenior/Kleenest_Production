@@ -170,6 +170,7 @@ const INDEX:Record<AppSearchScope,AppSearchEntry[]>={
     {id:'pilots',title:'Pilots',subtitle:'Pilot programs and launch controls',category:'Operations',route:'/pilots',keywords:['pilot','pilots','launch']},
     {id:'developers',title:'Developers',subtitle:'Developer platform, integrations and credentials',category:'Data',route:'/developers',keywords:['developer','developers','api','sdk','integration','integrations','credentials']},
     {id:'operations',title:'Operations',subtitle:'Platform operations and system health',category:'Operations',route:'/operations',keywords:['operations','ops','health']},
+    {id:'ingestion',title:'Ingestion Control',subtitle:'Discovery-first ingestion lanes, source policy, coverage and global pause controls',category:'Operations',route:'/ingestion',keywords:['ingestion','ingestion control','discovery','data acquisition','source policy','coverage','pause ingestion','resume ingestion','repair stalled cells']},
     {id:'moderation',title:'Moderation',subtitle:'Trust, safety and moderation queues',category:'Operations',route:'/moderation',keywords:['moderation','trust','safety','reports','flags']},
     {id:'devices',title:'IoT & Smart Devices',subtitle:'Platform device controls',category:'Operations',route:'/devices',keywords:['iot','device','devices','sensor','smart']},
     {id:'intelligence',title:'Intelligence',subtitle:'Platform intelligence and action surfaces',category:'Data',route:'/intelligence',keywords:['intelligence','ai','insights']},

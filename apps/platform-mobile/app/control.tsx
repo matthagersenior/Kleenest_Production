@@ -169,7 +169,8 @@ export default function ControlCenter(){
         <WorkspaceLink href="/moderation" title="Trust & Moderation" body="Review, safety and AI report decisions."/>
         <WorkspaceLink href="/developers" title="Developer Platform" body="Partners, API products, credentials, webhooks and quotas."/>
         <WorkspaceLink href="/pilots" title="Pilots" body="Named pilot sessions, launch manifests and history."/>
-        <WorkspaceLink href="/operations" title="Operations" body="Ingestion, storage guards, sources and scheduler controls."/>
+        <WorkspaceLink href="/ingestion" title="Ingestion Control" body="Discovery-backed expansion, coverage priorities, current sources, repairs and the global safety throttle."/>
+        <WorkspaceLink href="/operations" title="Platform Health" body="Integrity, delivery, backend resources and recent platform activity."/>
       </View>
     </View>
 
