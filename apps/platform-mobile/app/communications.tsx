@@ -18,7 +18,10 @@ const views:Record<ViewKey,{label:string;description:string;mailbox:'inbox'|'sen
   sent:{label:'Sent',description:'Outbound Kleenest conversations.',mailbox:'sent',direction:'any'},
   all:{label:'All mail',description:'Every conversation except Trash.',mailbox:'all',direction:'any'},
 };
-const date=(v:DateValue)=>{const d=new Date(v||'');return Number.isFinite(d.getTime())?d.toLocaleString():''};
+const date=(v:DateValue)=>{
+  const d=new Date(v||'');
+  return Number.isFinite(d.getTime())?d.toLocaleString():'';
+};
 
 export default function Communications(){
   const theme=usePlatformTheme(); const card=useOSCardStyle();
