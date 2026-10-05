@@ -193,7 +193,8 @@ function exploreCameraViewState(bounds:any,fitRoute:boolean,center:any,zoom:numb
     ? {bounds,padding:{top:28,right:28,bottom:28,left:28}}
     : {center,zoom};
 }
-function densityAwareInitialZoom(rows:any[],origin:[number,number],fallback=13){
+const DENSITY_CAMERA_FALLBACK_ZOOM=13;
+function densityAwareInitialZoom(rows:any[],origin:[number,number],fallback=DENSITY_CAMERA_FALLBACK_ZOOM){
   const usable=(rows||[]).filter(hasCoordinates);
   if(!usable.length)return fallback;
   const nearby=usable.map(row=>{
