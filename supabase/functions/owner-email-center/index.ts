@@ -103,23 +103,22 @@ async function resend(path:string,apiKey:string,init:RequestInit={}){
 }
 async function loadSettings(ownerUserId:string){
   const admin=adminClient();
-  const{data,error}=await admin.from('owner_email_center_settings').select('*').eq('owner_user_id',ownerUserId).maybeSingle();
-  if(error)throw error;
-  if(data)return data;
-  const fallback=await admin.from('owner_email_notification_settings').select('recipient_email').eq('owner_user_id',ownerUserId).maybeSingle();
-  const row={
-    owner_user_id:ownerUserId,
-    inbox_address:'support@kleenest.us',
-    fallback_email:fallback.data?.recipient_email||null,
-    from_name:'Kleenest',
-    provider:'resend',
-    provider_domain_id:null,
-    domain_status:'pending',
-    webhook_enabled:false,
-  };
-  const created=await admin.from('owner_email_center_settings').insert(row).select('*').single();
-  if(created.error)throw created.error;
-  return created.data;
+  const own=await admin.from('owner_email_center_settings').select('*').eq('owner_user_id',ownerUserId).maybeSingle();
+  if(own.error)throw own.error;
+  if(own.data)return own.data;
+  const primary=await admin.from('owner_email_center_settings').select('*').order('created_at',{ascending:true}).limit(1).maybeSingle();
+  if(primary.error)throw primary.error;
+  if(!primary.data)throw new Error('Owner Email Center settings are missing.');
+  return primary.data;
+}
+async function loadMailbox(mailboxId?:string|null){
+  const admin=adminClient();
+  let q=admin.from('owner_email_mailboxes').select('*').eq('active',true);
+  q=mailboxId?q.eq('id',mailboxId):q.eq('address','support@kleenest.us');
+  const result=await q.limit(1).maybeSingle();
+  if(result.error)throw result.error;
+  if(!result.data)throw new Error('Kleenest mailbox is unavailable.');
+  return result.data;
 }
 async function requireReady(ownerUserId:string){
   const[provider,settings]=await Promise.all([providerConfig(),loadSettings(ownerUserId)]);
@@ -203,6 +202,8 @@ Deno.serve(async(req:Request)=>{
     const body=await req.json().catch(()=>({}));
     const action=requiredText(body?.action,'action',40);
     const admin=adminClient();
+    const storageSettings=await loadSettings(userId);
+    const storageOwnerUserId=String(storageSettings.owner_user_id);
 
     if(action==='status'){
       let settings=await loadSettings(userId);
@@ -214,14 +215,14 @@ Deno.serve(async(req:Request)=>{
           if(domainStatus&&domainStatus!==settings.domain_status){
             const synced=await admin.from('owner_email_center_settings')
               .update({domain_status:domainStatus,updated_at:new Date().toISOString()})
-              .eq('owner_user_id',userId)
+              .eq('owner_user_id',storageOwnerUserId)
               .select('*')
               .single();
             if(!synced.error&&synced.data)settings=synced.data;
           }
         }catch{}
       }
-      const snapshot=await admin.rpc('owner_email_center_status_snapshot',{p_owner_user_id:userId});
+      const snapshot=await admin.rpc('owner_email_center_status_snapshot',{p_owner_user_id:storageOwnerUserId});
       if(snapshot.error)throw snapshot.error;
       const connected=Boolean(provider.configured)&&settings.domain_status==='verified'&&Boolean(settings.webhook_enabled)&&String(provider.from_address||'').toLowerCase().includes('@kleenest.us');
       return json({
@@ -246,7 +247,7 @@ Deno.serve(async(req:Request)=>{
       const direction=String(body?.direction||'any');
       let q=admin.from('owner_email_center_threads')
         .select('id,subject,snippet,participants,last_message_at,unread,folder,latest_direction,starred,message_count,has_attachment,labels,priority,support_request_id,source_app')
-        .eq('owner_user_id',userId)
+        .eq('owner_user_id',storageOwnerUserId)
         .order('last_message_at',{ascending:false})
         .limit(maxResults);
       if(mailbox==='inbox')q=q.eq('folder','inbox');
@@ -287,9 +288,9 @@ Deno.serve(async(req:Request)=>{
 
     if(action==='get_thread'){
       const threadId=requiredText(body?.threadId,'threadId',100);
-      const threadResult=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',userId).eq('id',threadId).single();
+      const threadResult=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
       if(threadResult.error)throw threadResult.error;
-      const messageResult=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',userId).eq('thread_id',threadId).order('created_at',{ascending:true});
+      const messageResult=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).order('created_at',{ascending:true});
       if(messageResult.error)throw messageResult.error;
       const row=threadResult.data;
       const messages=(messageResult.data||[]).map((message:any)=>({
@@ -339,7 +340,7 @@ Deno.serve(async(req:Request)=>{
       const from=parseMailbox(String(settings.inbox_address||'support@kleenest.us'));
       let threadId=draftId;
       if(threadId){
-        const current=await admin.from('owner_email_center_threads').select('id,folder').eq('owner_user_id',userId).eq('id',threadId).single();
+        const current=await admin.from('owner_email_center_threads').select('id,folder').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
         if(current.error)throw current.error;
         if(current.data.folder!=='drafts')throw new Error('Only draft conversations can be updated as drafts.');
         const updated=await admin.from('owner_email_center_threads').update({
@@ -348,11 +349,11 @@ Deno.serve(async(req:Request)=>{
           last_message_at:new Date().toISOString(),updated_at:new Date().toISOString(),
         }).eq('id',threadId);
         if(updated.error)throw updated.error;
-        const cleared=await admin.from('owner_email_center_messages').delete().eq('owner_user_id',userId).eq('thread_id',threadId);
+        const cleared=await admin.from('owner_email_center_messages').delete().eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId);
         if(cleared.error)throw cleared.error;
       }else{
         const created=await admin.from('owner_email_center_threads').insert({
-          owner_user_id:userId,subject,normalized_subject:normalizeSubject(subject),folder:'drafts',unread:false,
+          owner_user_id:storageOwnerUserId,subject,normalized_subject:normalizeSubject(subject),folder:'drafts',unread:false,
           participants:[...new Set([...to,...cc])],snippet:excerpt(text),latest_direction:'outbound',
           message_count:0,last_message_at:new Date().toISOString(),
         }).select('id').single();
@@ -360,14 +361,14 @@ Deno.serve(async(req:Request)=>{
         threadId=String(created.data.id);
       }
       const inserted=await admin.from('owner_email_center_messages').insert({
-        thread_id:threadId,owner_user_id:userId,direction:'outbound',from_address:from.address,
+        thread_id:threadId,owner_user_id:storageOwnerUserId,direction:'outbound',from_address:from.address,
         from_name:settings.from_name||'Kleenest',to_addresses:to,cc_addresses:cc,bcc_addresses:bcc,
         subject,text_body:text,headers:{draft:true},attachments:[],delivery_status:'draft',
       }).select('id').single();
       if(inserted.error)throw inserted.error;
       await refreshThread(threadId);
       await admin.from('owner_email_center_threads').update({folder:'drafts',unread:false}).eq('id',threadId);
-      await audit(userId,threadId,'save_draft',{to,subject});
+      await audit(storageOwnerUserId,threadId,'save_draft',{to,subject});
       return json({ok:true,threadId,messageId:String(inserted.data.id)});
     }
 
@@ -380,7 +381,7 @@ Deno.serve(async(req:Request)=>{
       const subject=requiredText(body?.subject,'subject',500);
       const text=requiredText(body?.body,'body',50000);
       const created=await admin.from('owner_email_center_threads').insert({
-        owner_user_id:userId,
+        owner_user_id:storageOwnerUserId,
         subject,
         normalized_subject:normalizeSubject(subject),
         folder:'sent',
@@ -398,20 +399,20 @@ Deno.serve(async(req:Request)=>{
       const threadId=requiredText(body?.threadId,'threadId',100);
       const replyBody=requiredText(body?.body,'body',50000);
       const replyAll=Boolean(body?.replyAll);
-      const thread=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',userId).eq('id',threadId).single();
+      const thread=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
       if(thread.error)throw thread.error;
 
       if(thread.data.support_request_id){
         const support=await admin.from('support_requests').select('id,user_id,status,source_app,subject').eq('id',thread.data.support_request_id).single();
         if(support.error)throw support.error;
         const settings=await loadSettings(userId);
-        const history=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',userId).eq('thread_id',threadId).order('created_at',{ascending:false});
+        const history=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).order('created_at',{ascending:false});
         if(history.error)throw history.error;
         const source=(history.data||[]).find((m:any)=>m.direction==='inbound')||(history.data||[])[0];
         const target=String(source?.from_address||`app-user+${String(support.data.user_id).replaceAll('-','')}@kleenest.local`).toLowerCase();
         const now=new Date().toISOString();
         const stored=await admin.from('owner_email_center_messages').insert({
-          thread_id:threadId,owner_user_id:userId,direction:'outbound',
+          thread_id:threadId,owner_user_id:storageOwnerUserId,direction:'outbound',
           from_address:String(settings.inbox_address||'support@kleenest.us').toLowerCase(),
           from_name:settings.from_name||'Kleenest',to_addresses:[target],cc_addresses:[],bcc_addresses:[],
           subject:/^re:/i.test(thread.data.subject)?thread.data.subject:`Re: ${thread.data.subject}`,
@@ -425,12 +426,12 @@ Deno.serve(async(req:Request)=>{
         if(updatedSupport.error)throw updatedSupport.error;
         await admin.from('owner_email_center_threads').update({folder:'inbox',unread:false,updated_at:now}).eq('id',threadId);
         await refreshThread(threadId);
-        await audit(userId,threadId,'support_reply',{support_request_id:support.data.id,status:'in_progress'});
+        await audit(storageOwnerUserId,threadId,'support_reply',{support_request_id:support.data.id,status:'in_progress'});
         return json({messageId:String(stored.data.id),threadId,status:'in_progress'});
       }
 
       const ready=await requireReady(userId);
-      const history=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',userId).eq('thread_id',threadId).order('created_at',{ascending:false});
+      const history=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).order('created_at',{ascending:false});
       if(history.error)throw history.error;
       const messages=history.data||[];
       const source=messages.find((m:any)=>m.direction==='inbound')||messages[0];
@@ -453,9 +454,9 @@ Deno.serve(async(req:Request)=>{
       const to=emailList(requiredText(body?.to,'to',2000));
       if(!to.length)throw new Error('At least one valid recipient is required.');
       const note=optionalText(body?.body,50000);
-      const thread=await admin.from('owner_email_center_threads').select('subject').eq('owner_user_id',userId).eq('id',threadId).single();
+      const thread=await admin.from('owner_email_center_threads').select('subject').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
       if(thread.error)throw thread.error;
-      const last=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',userId).eq('thread_id',threadId).order('created_at',{ascending:false}).limit(1).maybeSingle();
+      const last=await admin.from('owner_email_center_messages').select('*').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).order('created_at',{ascending:false}).limit(1).maybeSingle();
       if(last.error||!last.data)throw last.error||new Error('Thread has no messages.');
       const subject=/^fwd:/i.test(thread.data.subject)?thread.data.subject:`Fwd: ${thread.data.subject}`;
       const forwarded=[note,note?'\n':'','---------- Forwarded message ----------',`From: ${last.data.from_address}`,`Subject: ${last.data.subject}`,'',last.data.text_body||''].join('\n');
@@ -464,25 +465,25 @@ Deno.serve(async(req:Request)=>{
 
     if(action==='block_sender'){
       const threadId=requiredText(body?.threadId,'threadId',100);
-      const current=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',userId).eq('id',threadId).single();
+      const current=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
       if(current.error)throw current.error;
-      const latest=await admin.from('owner_email_center_messages').select('from_address,direction').eq('owner_user_id',userId).eq('thread_id',threadId).eq('direction','inbound').order('created_at',{ascending:false}).limit(1).maybeSingle();
+      const latest=await admin.from('owner_email_center_messages').select('from_address,direction').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).eq('direction','inbound').order('created_at',{ascending:false}).limit(1).maybeSingle();
       if(latest.error)throw latest.error;
       const sender=String(latest.data?.from_address||'').toLowerCase();
       if(!sender)throw new Error('No inbound sender is available to block.');
       const settings=await loadSettings(userId);
       const blocked=[...new Set([...(Array.isArray(settings.blocked_senders)?settings.blocked_senders:[]),sender])];
-      const saved=await admin.from('owner_email_center_settings').update({blocked_senders:blocked,updated_at:new Date().toISOString()}).eq('owner_user_id',userId);
+      const saved=await admin.from('owner_email_center_settings').update({blocked_senders:blocked,updated_at:new Date().toISOString()}).eq('owner_user_id',storageOwnerUserId);
       if(saved.error)throw saved.error;
       const moved=await admin.from('owner_email_center_threads').update({folder:'spam',unread:false,updated_at:new Date().toISOString()}).eq('id',threadId);
       if(moved.error)throw moved.error;
-      await audit(userId,threadId,'block_sender',{sender});
+      await audit(storageOwnerUserId,threadId,'block_sender',{sender});
       return json({ok:true,sender});
     }
 
     if(['archive','set_read','star','trash','set_inbox','set_label','spam'].includes(action)){
       const threadId=requiredText(body?.threadId,'threadId',100);
-      const current=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',userId).eq('id',threadId).single();
+      const current=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
       if(current.error)throw current.error;
       const patch:any={updated_at:new Date().toISOString()};
       if(action==='archive')patch.folder='archive';
@@ -499,7 +500,7 @@ Deno.serve(async(req:Request)=>{
       }
       const updated=await admin.from('owner_email_center_threads').update(patch).eq('id',threadId);
       if(updated.error)throw updated.error;
-      await audit(userId,threadId,action,patch);
+      await audit(storageOwnerUserId,threadId,action,patch);
       return json(action==='set_label'?{ok:true,labelId:String(body?.labelName||'')}:{ok:true});
     }
 
