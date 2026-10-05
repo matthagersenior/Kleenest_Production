@@ -87,7 +87,7 @@ assert.match(explore, /SafeAreaView.*react-native-safe-area-context/s);
 assert.doesNotMatch(explore, /useSafeAreaInsets/);
 assert.doesNotMatch(explore, /searchPanelHeight/);
 assert.doesNotMatch(explore, /onLayout=\{event=>setSearchPanelHeight/);
-assert.match(explore, /const mapChromeTop=\(searchAreaLabel\|\|interpretedIntent\?\.summary\)\?218:174/);
+assert.match(explore, /const mapChromeTop=\(searchAreaLabel\|\|interpretedIntent\?\.summary\)\?258:214/);
 assert.match(explore, /style=\{\[s\.mapControls,\{top:mapChromeTop\}\]\}/);
 assert.match(explore, /function setMapGestureLock\(locked:boolean\)/);
 assert.doesNotMatch(explore, /listRef\.current\?\.setNativeProps/);
