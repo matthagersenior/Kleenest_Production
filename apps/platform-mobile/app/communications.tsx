@@ -120,6 +120,15 @@ export default function Communications(){
         <StatusPill label={status?.webhookEnabled?'INBOUND LIVE':'INBOUND PENDING'} tone={status?.webhookEnabled?'good':'warning'}/>
       </View>
       <Text style={{fontSize:12,color:theme.muted}}>Primary: support@kleenest.us · Fallback: {status?.fallbackAddress||'Kleenestapp@gmail.com'}</Text>
+      <Pressable accessibilityRole="button" onPress={()=>router.push('/mail-admin')} style={{alignSelf:'flex-start',paddingHorizontal:11,paddingVertical:9,borderRadius:12,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Manage addresses, aliases & forwarding</Text></Pressable>
+    </View>
+
+    <View style={{...card,gap:10}}>
+      <SectionHeader title="Mailbox" body="View one address or the combined Kleenest inbox. Compose uses the selected address."/>
+      <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+        <Pressable onPress={()=>{setSelectedMailboxId('');setTimeout(()=>void load(),0)}} style={{paddingHorizontal:11,paddingVertical:9,borderRadius:999,backgroundColor:selectedMailboxId?theme.accentSoft:theme.accent}}><Text style={{fontWeight:'900',color:selectedMailboxId?theme.accent:theme.accentText}}>All addresses</Text></Pressable>
+        {mailboxes.filter(m=>m.active).map(m=><Pressable key={m.id} onPress={()=>{setSelectedMailboxId(m.id);setTimeout(()=>void load(),0)}} style={{paddingHorizontal:11,paddingVertical:9,borderRadius:999,backgroundColor:selectedMailboxId===m.id?theme.accent:theme.accentSoft}}><Text style={{fontWeight:'900',color:selectedMailboxId===m.id?theme.accentText:theme.accent}}>{m.address}</Text></Pressable>)}
+      </View>
     </View>
 
     <View style={{...card,gap:10}}>
@@ -133,7 +142,7 @@ export default function Communications(){
     </View>
 
     {compose?<View style={{...card,gap:8,borderColor:theme.accent}}>
-      <SectionHeader title="New email" body="Send from Kleenest <support@kleenest.us>."/>
+      <SectionHeader title="New email" body={'Send from '+(mailboxes.find(m=>m.id===selectedMailboxId)?.address||'support@kleenest.us')+'.'}/>
       {[
         ['To',to,setTo],['Cc (optional)',cc,setCc],['Bcc (optional)',bcc,setBcc],['Subject',subject,setSubject],
       ].map(([p,v,s]:any)=><TextInput key={p} value={v} onChangeText={s} placeholder={p} placeholderTextColor={theme.muted} style={{borderWidth:1,borderColor:theme.line,borderRadius:12,padding:11,color:theme.ink,backgroundColor:theme.surfaceRaised}}/>)}
@@ -152,14 +161,14 @@ export default function Communications(){
 
     {threads.length===0?<View style={{...card}}><Text style={{fontWeight:'900',color:theme.ink}}>{busy?'Loading mail…':'No conversations in this view'}</Text><Text style={{fontSize:12,color:theme.muted,marginTop:5}}>New mail to support@kleenest.us will appear here automatically.</Text></View>:threads.map(t=><Pressable key={t.id} onPress={()=>t.folder==='drafts'?void openDraft(t):void open(t)} style={{...card,gap:5,borderColor:t.unread?theme.warning:theme.line}}>
       <View style={{flexDirection:'row',gap:8}}><Text numberOfLines={1} style={{flex:1,fontWeight:t.unread?'900':'800',color:theme.ink}}>{t.subject}</Text>{t.starred?<Text style={{color:theme.warning}}>★</Text>:null}</View>
-      <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>{t.sourceApp?<StatusPill label={`${t.sourceApp.toUpperCase()} SUPPORT`} tone="good"/>:<StatusPill label="EMAIL"/>}{t.folder==='drafts'?<StatusPill label="DRAFT" tone="warning"/>:null}{t.folder==='spam'?<StatusPill label="SPAM" tone="danger"/>:null}</View><Text numberOfLines={1} style={{fontSize:12,fontWeight:'800',color:theme.accent}}>{t.from||t.fromEmail||'Conversation'}</Text>
+      <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>{t.mailboxAddress?<StatusPill label={t.mailboxAddress} tone="neutral"/>:null}{t.sourceApp?<StatusPill label={`${t.sourceApp.toUpperCase()} SUPPORT`} tone="good"/>:<StatusPill label="EMAIL"/>}{t.folder==='drafts'?<StatusPill label="DRAFT" tone="warning"/>:null}{t.folder==='spam'?<StatusPill label="SPAM" tone="danger"/>:null}</View><Text numberOfLines={1} style={{fontSize:12,fontWeight:'800',color:theme.accent}}>{t.from||t.fromEmail||'Conversation'}</Text>
       <Text numberOfLines={2} style={{fontSize:12,lineHeight:18,color:theme.muted}}>{t.snippet}</Text>
       <Text style={{fontSize:11,color:theme.muted}}>{t.latestSent?'WAITING':'NEEDS REPLY'} · {date(t.date)} · {t.messageCount} message{t.messageCount===1?'':'s'}</Text>
     </Pressable>)}
 
     {selected?<View style={{...card,gap:12,borderColor:theme.accent}}>
       <Text style={{fontSize:18,fontWeight:'900',color:theme.ink}}>{selected.subject}</Text>
-      <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>{selected.sourceApp?<StatusPill label={`${selected.sourceApp.toUpperCase()} SUPPORT`} tone="good"/>:null}{selected.supportRequestId?<StatusPill label="APP SUPPORT" tone="good"/>:null}{selected.folder==='spam'?<StatusPill label="SPAM" tone="danger"/>:null}</View><Text style={{fontSize:12,color:theme.muted}}>{selected.participants.join(' · ')}</Text>
+      <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>{selected.mailboxAddress?<StatusPill label={selected.mailboxAddress} tone="neutral"/>:null}{selected.sourceApp?<StatusPill label={`${selected.sourceApp.toUpperCase()} SUPPORT`} tone="good"/>:null}{selected.supportRequestId?<StatusPill label="APP SUPPORT" tone="good"/>:null}{selected.folder==='spam'?<StatusPill label="SPAM" tone="danger"/>:null}</View><Text style={{fontSize:12,color:theme.muted}}>{selected.participants.join(' · ')}</Text>
       <View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>
         <Pressable onPress={()=>void mutate(()=>setOwnerMailThreadStarred(selected.id,true),'Conversation starred.')} style={{padding:8,borderRadius:999,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Star</Text></Pressable>
         <Pressable onPress={()=>void mutate(()=>setOwnerMailThreadRead(selected.id,false),'Marked unread.')} style={{padding:8,borderRadius:999,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Mark unread</Text></Pressable>
