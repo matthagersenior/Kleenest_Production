@@ -57,10 +57,12 @@ const completionGuard = read('pr-completion-guard.yml');
 for (const token of ['protectedShas','staleBefore','status: runStatus','cancelWorkflowRun','Stale workflow cleanup','latestByWorkflow','nonGreenRuns','getCombinedStatusForRef']) {
   requireText(completionGuard, token, 'PR Completion Guard convergence policy missing '+token);
 }
-if (completionGuard.includes('github.rest.actions.createWorkflowDispatch')) throw new Error('PR Completion Guard must not duplicate the automatic Production CI run caused by the merge push.');
+for (const token of ['postMergeWorkflows','github.rest.actions.createWorkflowDispatch',"'ci.yml'","'security-gate.yml'","'product-parity.yml'","'main-lineage-guard.yml'"]) {
+  requireText(completionGuard, token, 'PR Completion Guard bot-merge validation handoff missing '+token);
+}
 
 const lineageGuard = read('main-lineage-guard.yml');
-for (const token of ['push:','branches: [main]','commits/{commit_sha}/pulls','merged_at','base.ref === \'main\'']) {
+for (const token of ['push:','branches: [main]','workflow_dispatch:','commits/{commit_sha}/pulls','merged_at','base.ref === \'main\'']) {
   requireText(lineageGuard, token, 'Main lineage guard missing '+token);
 }
 
