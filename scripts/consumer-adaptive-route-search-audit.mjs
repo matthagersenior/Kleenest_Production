@@ -254,13 +254,14 @@ if(!screen.includes("sheetClose:{width:36,height:36"))throw new Error('Selected-
 if(!screen.includes('hitSlop={12}'))throw new Error('Selected-place close control must preserve forgiving hit slop.');
 const selectedActionsIndex=screen.indexOf('style={s.selectedSheetActions}');
 const selectedScrollIndex=screen.indexOf('<ScrollView style={s.selectedSheetScroll}');
-if(!(selectedActionsIndex>0&&selectedScrollIndex>selectedActionsIndex))throw new Error('Go, Add to route, and Full details must remain fixed above the selected-place detail scroll.');
+if(!(selectedActionsIndex>0&&selectedScrollIndex>selectedActionsIndex))throw new Error('Go, Add to route, and Full details must remain above the selected-place detail scroll.');
+if(screen.includes("selectedSheetActions:{flexDirection:'row',gap:6,position:'absolute'"))throw new Error('Selected-place actions must stay in normal layout flow so they cannot clip or collide with global overlays.');
 if(screen.includes('<RestroomSignals item={item} compact />'))throw new Error('Result cards must use compact icon/value signals instead of tall labeled signal pills.');
 for(const token of [
   '<CompactRestroomSignals item={item} />',
   "sheetResultRow:{minHeight:62",
   "resultsSheet:{position:'absolute'",
-  "selectedSheetActions:{flexDirection:'row',gap:6,position:'absolute'",
+  "selectedSheetActions:{flexDirection:'row',gap:6,flexShrink:0,minHeight:44",
   "selectedSheetScroll:{flex:1,minHeight:0}",
   "primarySmall: { minHeight: 44",
   "secondarySmall: { minHeight: 44",
