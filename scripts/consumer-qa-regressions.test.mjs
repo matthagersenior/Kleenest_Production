@@ -39,7 +39,6 @@ test('brand search retains the chosen Sparta origin without requesting GPS',asyn
   assert.equal(gpsCalls,0);assert.deepEqual(result.nextOrigin,[-89.701,38.123]);assert.equal(result.query,'Pizza Hut');assert.equal(cleared,false);
 });
 
-
 test('selected Explore result keeps camera focus when an older GPS refresh finishes',async()=>{
   const cameraInteractionVersionRef={current:0};
   let mapCenter=null;
