@@ -24,7 +24,7 @@ for(const token of [
   "resultsSheet:{position:'absolute',left:8,right:8,bottom:8",
   "selectedSheetActions:{flexDirection:'row',gap:6,position:'absolute'",
   "selectedSheetScroll:{flex:1,minHeight:0}",
-  "sheetResultRow:{minHeight:76",
+  "sheetResultRow:{minHeight:62",
   "sheetClose:{width:36,height:36",
   'Add a missing bathroom',
   'Name + address is enough to start.',

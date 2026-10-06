@@ -146,13 +146,16 @@ test('fallback route fitting reports its actual viewport for subsequent zoom',()
 });
 
 
-test('Explore explains Kleenest value before exposing advanced discovery controls',()=>{
+test('Explore keeps primary discovery controls self-explanatory without a map-covering hero',()=>{
   const source=fs.readFileSync(screenPath,'utf8');
-  assert.match(source,/Find a place you can count on\./);
-  assert.match(source,/Search a place or address, then tap a result to go\./i);
-  assert.match(source,/Find a useful stop on the way\./);
-  assert.match(source,/Enter where you’re going\. We’ll show useful stops on the way\./i);
-  assert.ok(source.indexOf('Find a place you can count on.')<source.indexOf('Filter places'),'Core value must appear before advanced filters');
+  assert.doesNotMatch(source,/Find a place you can count on\./);
+  assert.doesNotMatch(source,/Search a place or address, then tap a result to go\./i);
+  assert.doesNotMatch(source,/Find a useful stop on the way\./);
+  assert.doesNotMatch(source,/Enter where you’re going\. We’ll show useful stops on the way\./i);
+  for(const required of ['Address, school, workplace, city or brand','>Nearby</Text>','>Along route</Text>','Amenities & filters']){
+    assert.ok(source.includes(required),`Missing self-explanatory primary Explore control: ${required}`);
+  }
+  assert.ok(source.indexOf('Address, school, workplace, city or brand')<source.indexOf('Filter places'),'Primary discovery controls must remain ahead of advanced filters');
 });
 
 test('Explore core filters use user language instead of implementation language',()=>{
