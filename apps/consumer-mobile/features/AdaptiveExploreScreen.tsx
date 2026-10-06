@@ -2492,7 +2492,7 @@ const s = StyleSheet.create({
   selectedSheetBody:{flex:1,minHeight:0,paddingHorizontal:10,paddingBottom:10,gap:6},
   selectedSheetSummary:{minWidth:0,width:'100%',maxWidth:'100%',flexDirection:'row',alignItems:'center',gap:8,flexShrink:0},
   selectedSheetAddress:{fontSize:11,lineHeight:15,fontWeight:'800'},
-  selectedSheetActions:{minWidth:0,width:'100%',maxWidth:'100%',flexDirection:'row',gap:6,flexShrink:0,minHeight:44},
+  selectedSheetActions:{flexDirection:'row',gap:6,flexShrink:0,minHeight:44,minWidth:0,width:'100%',maxWidth:'100%'},
   selectedSheetAction:{flex:1,alignItems:'center',minWidth:0},
   selectedSheetScroll:{flex:1,minHeight:0},
   selectedSheetScrollContent:{gap:7,paddingBottom:14},
