@@ -39,6 +39,66 @@ test('brand search retains the chosen Sparta origin without requesting GPS',asyn
   assert.equal(gpsCalls,0);assert.deepEqual(result.nextOrigin,[-89.701,38.123]);assert.equal(result.query,'Pizza Hut');assert.equal(cleared,false);
 });
 
+test('selected Explore result keeps camera focus when an older GPS refresh finishes',async()=>{
+  const cameraInteractionVersionRef={current:0};
+  let mapCenter=null;
+  let resolveGps;
+  let gpsRequested;
+  const gpsPromise=new Promise(resolve=>{resolveGps=resolve;});
+  const gpsStarted=new Promise(resolve=>{gpsRequested=resolve;});
+  const noop=()=>{};
+  const locationContext={
+    Location:{
+      requestForegroundPermissionsAsync:async()=>({status:'granted'}),
+      getLastKnownPositionAsync:async()=>null,
+      getCurrentPositionAsync:async()=>{gpsRequested();return gpsPromise;},
+      Accuracy:{High:3,Balanced:2},
+    },
+    Platform:{OS:'android'},
+    withTimeout:promise=>promise,
+    LOCATION_LOOKUP_TIMEOUT_MS:12000,
+    cameraInteractionVersionRef,
+    setOrigin:noop,
+    setMessage:noop,
+    setSelectedId:noop,
+    setDestinationCardOpen:noop,
+    setPendingMapOrigin:noop,
+    setMapCenter:value=>{mapCenter=value;},
+    setMapZoom:noop,
+    cameraRef:{current:{jumpTo:({center})=>{mapCenter=center;}}},
+    setCameraNonce:noop,
+    selectedId:'',
+  };
+  const currentLocation=compile(declaration(screenPath,'currentLocation'),locationContext,'currentLocation');
+  const pendingLocation=currentLocation(true);
+  await gpsStarted;
+
+  const selected=[-89.7061,38.1275];
+  const selectRow=compile(declaration(screenPath,'selectRow'),{
+    cameraInteractionVersionRef,
+    setFitRouteCamera:noop,
+    setDestinationCardOpen:noop,
+    idOf:row=>row.id,
+    captureConsumerCoreLoopEvent:noop,
+    setSelectedId:noop,
+    setResultsSheetExpanded:noop,
+    hasCoordinates:()=>true,
+    setMapCenter:value=>{mapCenter=value;},
+    setMapZoom:noop,
+    setCameraNonce:noop,
+    mode:'nearby',
+    writeNearbyContinuity:async()=>{},
+    radius:1609,
+  },'selectRow');
+  selectRow({id:'sparta-result',longitude:selected[0],latitude:selected[1]});
+  assert.deepEqual(mapCenter,selected,'selection should immediately own the camera');
+
+  resolveGps({coords:{longitude:-89.65,latitude:38.2}});
+  await pendingLocation;
+  assert.deepEqual(mapCenter,selected,'an older GPS refresh must not reclaim camera focus');
+  assert.equal(cameraInteractionVersionRef.current,1,'selection should invalidate stale camera work');
+});
+
 for(const value of [null,undefined,'',0,75])test(`cleanliness ${JSON.stringify(value)} preserves unknown versus observed zero`,()=>{
   const path='apps/consumer-mobile/components/RestroomSignals.tsx';
   const React={createElement:(type,props,...children)=>({type,props,children})};
