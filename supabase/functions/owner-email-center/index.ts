@@ -327,12 +327,33 @@ Deno.serve(async(req:Request)=>{
         : {data:[],error:null};
       if(mailboxRows.error)throw mailboxRows.error;
       const byId=new Map((mailboxRows.data||[]).map((m:any)=>[String(m.id),m]));
+      const threadIds=(data||[]).map((row:any)=>String(row.id));
+      const messageRows=threadIds.length
+        ? await admin.from('owner_email_center_messages')
+            .select('thread_id,direction,from_address,to_addresses,delivery_status,created_at')
+            .in('thread_id',threadIds)
+            .order('created_at',{ascending:false})
+        : {data:[],error:null};
+      if(messageRows.error)throw messageRows.error;
+      const latestByThread=new Map<string,any>();
+      for(const message of messageRows.data||[]){
+        const id=String(message.thread_id||'');
+        if(id&&!latestByThread.has(id))latestByThread.set(id,message);
+      }
       const threads=(data||[]).map((row:any)=>{
         const m=byId.get(String(row.mailbox_id||''));
+        const mailboxAddress=String(m?.address||row.recipient_address||'').toLowerCase();
+        const latest=latestByThread.get(String(row.id));
+        const participants=Array.isArray(row.participants)?row.participants.map((v:any)=>String(v).toLowerCase()):[];
+        const fallbackCounterparty=participants.find((v:string)=>v&&v!==mailboxAddress)||participants[0]||'';
+        const counterparty=latest?.direction==='outbound'
+          ? String(latest?.to_addresses?.[0]||fallbackCounterparty)
+          : String(latest?.from_address||fallbackCounterparty);
         return{
           id:row.id,historyId:null,snippet:row.snippet||'',subject:row.subject||'(no subject)',
-          from:row.participants?.[0]||'',fromEmail:row.participants?.[0]||null,date:row.last_message_at||null,
+          from:counterparty,fromEmail:counterparty||null,date:row.last_message_at||null,
           unread:Boolean(row.unread),inInbox:row.folder==='inbox',latestSent:row.latest_direction==='outbound',
+          latestDeliveryStatus:latest?.delivery_status||null,
           starred:Boolean(row.starred),messageCount:Number(row.message_count||0),hasAttachment:Boolean(row.has_attachment),
           labelNames:Array.isArray(row.labels)?row.labels:[],folder:row.folder,priority:row.priority||'normal',
           supportRequestId:row.support_request_id||null,sourceApp:row.source_app||null,
