@@ -2066,6 +2066,7 @@ export default function AdaptiveExploreScreen() {
                 </ScrollView>
               </View>
             ) : null}
+            {/* Keep 2–3 results visible by default; expanded mode deliberately shifts priority toward browsing. */}
             <View
               pointerEvents="auto"
               style={[
