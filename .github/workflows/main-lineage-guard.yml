@@ -1,0 +1,42 @@
+name: Main Lineage Guard
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  verify-pr-lineage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require merged PR ancestry for main
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const response = await github.request('GET /repos/{owner}/{repo}/commits/{commit_sha}/pulls', {
+              owner,
+              repo,
+              commit_sha: context.sha,
+            });
+
+            const mergedToMain = response.data.filter(
+              (pr) => pr.merged_at && pr.base && pr.base.ref === 'main',
+            );
+
+            if (mergedToMain.length === 0) {
+              core.setFailed(
+                'Direct-to-main push detected for ' + context.sha +
+                '. Kleenest release policy requires branch -> PR -> green checks -> merge.',
+              );
+              return;
+            }
+
+            core.info(
+              'main commit ' + context.sha + ' is associated with merged PR(s): ' +
+              mergedToMain.map((pr) => '#' + pr.number).join(', '),
+            );
