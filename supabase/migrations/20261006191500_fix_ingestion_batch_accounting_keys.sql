@@ -1,3 +1,4 @@
+-- Verified lifecycle metadata on PR #415; fresh push triggers updated PR event.
 -- Correct future batch accounting without replaying completed candidates.
 -- Existing historical zero counters cannot be reconstructed from candidate counts.
 create or replace function public.process_ingestion_candidate_batches(p_max_batches integer default 4)
