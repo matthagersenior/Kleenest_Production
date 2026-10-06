@@ -171,7 +171,17 @@ async function requireReady(ownerUserId:string){
   return{provider:{...provider,api_key:String(provider.api_key)},settings,from};
 }
 async function audit(ownerUserId:string,threadId:string|null,action:string,detail:Record<string,unknown>={}){
-  await adminClient().from('owner_email_center_audit').insert({owner_user_id:ownerUserId,thread_id:threadId,action,detail}).catch(()=>{});
+  try{
+    const{error}=await adminClient().from('owner_email_center_audit').insert({
+      owner_user_id:ownerUserId,
+      thread_id:threadId,
+      action,
+      detail,
+    });
+    if(error)console.warn('Owner Email Center audit insert failed:',error.message);
+  }catch(error){
+    console.warn('Owner Email Center audit insert failed:',String((error as any)?.message||error));
+  }
 }
 async function refreshThread(threadId:string){
   const admin=adminClient();
