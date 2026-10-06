@@ -47,11 +47,12 @@ if(!failures.length){
     'showsVerticalScrollIndicator={false}',
     "resultsSheet:{position:'absolute'",
     'selectedSheetScroll:{flex:1,minHeight:0}',
-    'selectedSheetScrollContent:{gap:7,paddingBottom:66}',
+    'selectedSheetScrollContent:{gap:7,paddingBottom:14}',
   ])if(!explore.includes(token))failures.push('Native selected results-sheet containment missing '+token);
   const actionIndex=explore.indexOf('style={s.selectedSheetActions}');
   const scrollIndex=explore.indexOf('<ScrollView style={s.selectedSheetScroll}');
   if(actionIndex<0||scrollIndex<0||actionIndex>scrollIndex)failures.push('Selected-place primary actions must remain outside and above the scrolling detail region.');
+  if(explore.includes("selectedSheetActions:{flexDirection:'row',gap:6,position:'absolute'"))failures.push('Selected-place actions must not return to absolute positioning that can clip or overlap freshness details.');
   if(explore.includes("style={[s.marker,{backgroundColor:theme.surface,borderColor:theme.line}"))
     failures.push('Native map marker wrapper must not replace the freshness ring with a generic border.');
 
