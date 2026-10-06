@@ -109,7 +109,7 @@ export default function BetaReportButton({route}:{route:string}){
       accessibilityRole="button"
       accessibilityLabel="Tell Kleenest what you think"
       onPress={open}
-      style={[s.fab,{backgroundColor:theme.accent,borderColor:theme.line}]}
+      style={[s.fab,route==='/explore'&&s.fabExplore,{backgroundColor:theme.accent,borderColor:theme.line}]}
     >
       <Text style={[s.fabText,{color:theme.accentText}]}>✦ Tell Kleenest</Text>
     </Pressable>
@@ -218,6 +218,7 @@ export default function BetaReportButton({route}:{route:string}){
 
 const s=StyleSheet.create({
   fab:{position:'absolute',right:10,bottom:78,zIndex:1000,elevation:12,minHeight:44,borderWidth:1,borderRadius:999,paddingHorizontal:10,paddingVertical:8,alignItems:'center',justifyContent:'center',shadowColor:'#000',shadowOpacity:.14,shadowRadius:8,shadowOffset:{width:0,height:4}},
+  fabExplore:{bottom:420,zIndex:60,elevation:10},
   fabText:{fontSize:10,fontWeight:'900',letterSpacing:.1},
   overlay:{flex:1,backgroundColor:'rgba(0,0,0,.46)',justifyContent:'flex-end'},
   sheet:{borderTopLeftRadius:26,borderTopRightRadius:26,borderWidth:1,padding:18,paddingBottom:28,gap:13,maxHeight:'86%'},
