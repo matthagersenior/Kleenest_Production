@@ -42,7 +42,11 @@ for (const name of [
 ]) requireManualOnly(name);
 
 const ci = read('ci.yml');
-requireText(ci, 'node scripts/npm-security-advisory-audit.mjs moderate', 'Production CI must reject every published moderate-or-higher dependency advisory through the fail-closed npm/OSV advisory check.');
+const securityGate = read('security-gate.yml');
+requireText(securityGate, 'node scripts/npm-security-advisory-audit.mjs low', 'Security Gate must own the dependency advisory check.');
+if (ci.includes('npm-security-advisory-audit.mjs')) throw new Error('Production CI must not duplicate the dependency advisory check already owned by Security Gate.');
+requireText(ci, 'PR hard-gate authority', 'Production CI must keep a compact hard-gate authority pass on pull requests.');
+requireText(ci, "if: github.event_name != 'pull_request'", 'Product-contract convergence steps must be reserved for main rather than rerun wholesale on every pull request.');
 requireText(ci, 'node scripts/ci-freshness-policy-audit.mjs', 'Production CI must enforce its own freshness policy.');
 requireText(ci, 'fetch-depth: 0', 'Production CI must fetch enough history to prove PR ancestry.');
 requireText(ci, 'Report PR/main divergence', 'Production CI must expose PR/main divergence without duplicating the repository merge-rule gate.');
@@ -50,8 +54,14 @@ requireText(ci, 'git merge-base --is-ancestor', 'Production CI must detect wheth
 if (ci.includes('exit 1') && ci.includes('PR branch behind main')) throw new Error('Production CI must not fail solely because main advanced; repository rules and the completion guard own branch freshness.');
 
 const completionGuard = read('pr-completion-guard.yml');
-for (const token of ['protectedShas','staleBefore','status: runStatus','cancelWorkflowRun','Stale workflow cleanup']) {
-  requireText(completionGuard, token, 'PR Completion Guard stale workflow cleanup missing '+token);
+for (const token of ['protectedShas','staleBefore','status: runStatus','cancelWorkflowRun','Stale workflow cleanup','latestByWorkflow','nonGreenRuns','getCombinedStatusForRef']) {
+  requireText(completionGuard, token, 'PR Completion Guard convergence policy missing '+token);
+}
+if (completionGuard.includes('github.rest.actions.createWorkflowDispatch')) throw new Error('PR Completion Guard must not duplicate the automatic Production CI run caused by the merge push.');
+
+const lineageGuard = read('main-lineage-guard.yml');
+for (const token of ['push:','branches: [main]','commits/{commit_sha}/pulls','merged_at','base.ref === \'main\'']) {
+  requireText(lineageGuard, token, 'Main lineage guard missing '+token);
 }
 
 const branchHygiene = read('branch-hygiene.yml');
