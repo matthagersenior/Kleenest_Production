@@ -22,7 +22,7 @@ for(const token of [
   '<FreshnessHeatRing item={selected} size={38} photoUrl={selected.consumer_photo_url ? String(selected.consumer_photo_url) : undefined} />',
   '<DecisionRestroomSignals item={selected} />',
   "resultsSheet:{position:'absolute',left:8,right:8,bottom:8",
-  "selectedSheetActions:{flexDirection:'row',gap:6,position:'absolute'",
+  "selectedSheetActions:{flexDirection:'row',gap:6,flexShrink:0,minHeight:44",
   "selectedSheetScroll:{flex:1,minHeight:0}",
   "sheetResultRow:{minHeight:62",
   "sheetClose:{width:36,height:36",
@@ -32,6 +32,10 @@ for(const token of [
 if(explore.includes('<RestroomSignals item={item} compact />'))failures.push('Explore result cards still use the taller labeled restroom signals.');
 if(explore.includes("{selected ? 'Selected on map' : 'Tap this card to focus its map pin'}"))failures.push('Explore still spends card height on the redundant map-selection hint.');
 if(explore.includes('size={active ? 28 : 22}')||explore.includes('active={active}'))failures.push('Map marker selection still changes freshness-ring geometry.');
+
+const betaReport=read('apps/consumer-mobile/components/BetaReportButton.tsx');
+requireToken(betaReport,"route==='/explore'&&s.fabExplore",'Explore feedback FAB must yield to the results sheet instead of covering selected-place controls.');
+requireToken(betaReport,"fabExplore:{bottom:420,zIndex:60,elevation:10}",'Explore feedback FAB must sit above the default sheet and below expanded-sheet stacking.');
 
 const location=read('apps/consumer-mobile/app/location/[id].tsx');
 for(const token of [
