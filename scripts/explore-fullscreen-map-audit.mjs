@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 
 const source=fs.readFileSync('apps/consumer-mobile/features/AdaptiveExploreScreen.tsx','utf8');
+const signals=fs.readFileSync('apps/consumer-mobile/components/RestroomSignals.tsx','utf8');
 
 function requireToken(token,message){
   if(!source.includes(token))throw new Error(message);
@@ -18,6 +19,7 @@ requireToken(": (selected||destinationCardOpen?184:132)",'Collapsed results must
 requireToken("minHeight: 36",'Nearby / Along route controls must stay compact.');
 requireToken("filterLauncher:{minHeight:38",'Amenity filters must stay compact in the map-first control stack.');
 forbidToken("style={s.valuePromise}",'Explore must not spend map space on explanatory hero copy inside the floating controls.');
+if(!signals.includes("style={styles.compactRow}")||!signals.includes("signals.slice(0,4)"))throw new Error('Explore overlay result evidence must stay summary-first and compact.');
 requireToken("style={[s.resultsSheet",'Nearby/route results must live in a map-overlay results sheet.');
 requireToken("accessibilityLabel={resultsSheetExpanded?'Collapse results':'Expand results'}",'The results sheet must expose an accessible expand/collapse control.');
 requireToken("style={s.resultsSheetList}",'Expanded results must scroll inside the overlay sheet.');
