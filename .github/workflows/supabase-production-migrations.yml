@@ -8,7 +8,7 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  actions: write
   id-token: write
 
 concurrency:
@@ -38,3 +38,16 @@ jobs:
         run: |
           echo "Supabase GitHub Integration owns production migration deployment; GitHub main is the schema authority, and this gate requires exact bidirectional source/Production ledger convergence before OTA."
           node scripts/supabase-production-ledger-readiness.mjs
+      - name: Dispatch family OTA after explicit database readiness
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id: 'ota-family.yml',
+              ref: 'main',
+            });
+            core.info(`Dispatched guarded family OTA for ${context.sha}`);
