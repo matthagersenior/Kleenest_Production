@@ -16,6 +16,8 @@ requireToken("style={[s.floatingSearchPanel",'Search and discovery controls must
 requireToken("const mapChromeTop=142+(floatingContextRows*38);",'Map controls must start directly below the compact floating control stack.');
 requireToken("? Math.min(Math.max(360,Math.round(exploreMapHeight*0.58)),560)",'Expanded results must prioritize browsing while preserving immediate map context.');
 requireToken(": Math.min(Math.max(228,Math.round(exploreMapHeight*0.24)),286)",'Default results must expose multiple scannable places without surrendering the map.');
+requireToken("? Math.min(Math.max(272,Math.round(exploreMapHeight*0.22)),330)",'Selected places must get enough collapsed height for summary and primary actions.');
+requireToken(": destinationCardOpen\n                        ? 220",'Searched destinations must keep their primary actions fully visible.');
 requireToken("minHeight: 36",'Nearby / Along route controls must stay compact.');
 requireToken("filterLauncher:{minHeight:38",'Amenity filters must stay compact in the map-first control stack.');
 forbidToken("style={s.valuePromise}",'Explore must not spend map space on explanatory hero copy inside the floating controls.');
@@ -25,6 +27,7 @@ requireToken("accessibilityLabel={resultsSheetExpanded?'Collapse results':'Expan
 requireToken("{resultsSheetExpanded?'Collapse ↓':'Expand ↑'}",'The results sheet affordance must show the direction each action will move.');
 requireToken("style={s.resultsSheetList}",'Expanded results must scroll inside the overlay sheet.');
 requireToken("style={s.selectedSheetActions}",'Selected-place primary actions must stay outside the scrolling detail body.');
+forbidToken("selectedSheetActions:{flexDirection:'row',gap:6,position:'absolute'",'Selected-place primary actions must not be absolutely pinned where they can be clipped by the sheet or global overlays.');
 requireToken("if(rawQuery&&retainedMapOrigin&&!areaMatch&&!overrideOrigin)setDestinationCardOpen(false);",'A brand/category search from a chosen address must reveal results instead of leaving the destination card open.');
 requireToken("renderItem={() => null}",'Legacy below-map result cards must stay disabled after the unified results-sheet revamp.');
 requireToken("<MapLegend />",'The map legend must remain available on the unified Explore canvas.');
