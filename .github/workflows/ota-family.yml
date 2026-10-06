@@ -1,6 +1,7 @@
 name: Publish Kleenest App Family OTA
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["Deploy Supabase Migrations to Production"]
     types: [completed]
@@ -11,11 +12,11 @@ permissions:
 
 concurrency:
   group: kleenest-family-ota
-  cancel-in-progress: ${{ github.event.workflow_run.conclusion == 'success' }}
+  cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
 jobs:
   verify-family:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 25
     outputs:
@@ -24,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -32,6 +33,43 @@ jobs:
           cache: npm
           cache-dependency-path: package.json
       - run: npm install --no-audit --no-fund
+      - name: Verify exact production database readiness handoff
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const releaseSha = context.payload.workflow_run?.head_sha || context.sha;
+            const main = await github.rest.repos.getBranch({ owner, repo, branch: 'main' });
+            if (main.data.commit.sha !== releaseSha) {
+              core.setFailed(`Release SHA ${releaseSha} is not current main ${main.data.commit.sha}.`);
+              return;
+            }
+            if (context.eventName !== 'workflow_dispatch') {
+              core.info(`Database readiness inherited from successful workflow_run for ${releaseSha}.`);
+              return;
+            }
+            for (let attempt = 1; attempt <= 12; attempt += 1) {
+              const runs = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id: 'supabase-production-migrations.yml',
+                head_sha: releaseSha,
+                status: 'completed',
+                per_page: 20,
+              });
+              const ready = runs.data.workflow_runs.find((run) =>
+                run.conclusion === 'success' && run.head_sha === releaseSha
+              );
+              if (ready) {
+                core.info(`Verified successful production database readiness run ${ready.id} for ${releaseSha}.`);
+                return;
+              }
+              if (attempt < 12) {
+                core.info(`Waiting for production database readiness completion (${attempt}/12).`);
+                await new Promise((resolve) => setTimeout(resolve, 5000));
+              }
+            }
+            core.setFailed(`No successful production database readiness run found for current main ${releaseSha}.`);
       - name: Resolve synchronized native family baseline
         id: baseline
         env:
@@ -106,7 +144,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
