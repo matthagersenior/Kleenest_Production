@@ -738,6 +738,7 @@ export default function AdaptiveExploreScreen() {
   }
 
   function selectRow(row: any) {
+    cameraInteractionVersionRef.current+=1;
     setFitRouteCamera(false);
     setDestinationCardOpen(false);
     const id = idOf(row);
@@ -758,6 +759,7 @@ export default function AdaptiveExploreScreen() {
   function selectDestinationMarker(){
     setFitRouteCamera(false);
     if(!searchAreaOrigin)return;
+    cameraInteractionVersionRef.current+=1;
     setSelectedId('');
     setDestinationCardOpen(true);
     setResultsSheetExpanded(false);
@@ -842,6 +844,7 @@ export default function AdaptiveExploreScreen() {
   }
 
   async function recenterMap() {
+    cameraInteractionVersionRef.current+=1;
     if(searchAreaOrigin){
       const target=searchAreaOrigin;
       setFitRouteCamera(false);
@@ -863,6 +866,7 @@ export default function AdaptiveExploreScreen() {
 
   function fitRouteMap() {
     if(!route?.geometry?.coordinates?.length)return;
+    cameraInteractionVersionRef.current+=1;
     setFitRouteCamera(true);
     setSelectedId('');
     setDestinationCardOpen(false);
@@ -889,6 +893,7 @@ export default function AdaptiveExploreScreen() {
   }
 
   function changeMapZoom(delta: number) {
+    cameraInteractionVersionRef.current+=1;
     setFitRouteCamera(false);
     setMapZoom((current) => Math.min(18, Math.max(7, current + delta)));
     setCameraNonce((value) => value + 1);
@@ -918,6 +923,7 @@ export default function AdaptiveExploreScreen() {
   }
 
   async function currentLocation(forceMapRecenter = false) {
+    const cameraInteractionVersion=cameraInteractionVersionRef.current;
     const permission = await Location.requestForegroundPermissionsAsync();
     if (permission.status !== 'granted') {
       throw new Error(
@@ -942,12 +948,13 @@ export default function AdaptiveExploreScreen() {
     });
     const current=fresh||lastKnown;
     if(!current)throw freshLocationError||new Error('Kleenest could not determine your current location.');
-    if(!fresh&&forceMapRecenter){
+    const cameraStillOwnedByLocationRequest=cameraInteractionVersionRef.current===cameraInteractionVersion;
+    if(!fresh&&forceMapRecenter&&cameraStillOwnedByLocationRequest){
       setMessage('Fresh GPS was unavailable, so Kleenest is showing your last known position. Try the locate button again when GPS has a clearer fix.');
     }
     const point: [number, number] = [current.coords.longitude, current.coords.latitude];
     setOrigin(point);
-    if (forceMapRecenter) {
+    if (forceMapRecenter&&cameraStillOwnedByLocationRequest) {
       setSelectedId('');
       setDestinationCardOpen(false);
       setPendingMapOrigin(null);
@@ -955,7 +962,7 @@ export default function AdaptiveExploreScreen() {
       setMapZoom(13);
       cameraRef.current?.jumpTo({center:point,zoom:13});
       setCameraNonce((value) => value + 1);
-    } else if (!selectedId) {
+    } else if (!forceMapRecenter&&cameraStillOwnedByLocationRequest&&!selectedId) {
       setMapCenter(point);
     }
     return current;
@@ -1106,8 +1113,17 @@ export default function AdaptiveExploreScreen() {
       if (fallback?.rows?.length) {
         const cachedRows=attachPresence(dedupePhysicalPlaceRows(fallback.rows,2000),livePresence);
         const fallbackSelected = selectedId && cachedRows.some((row: any) => idOf(row) === selectedId) ? selectedId : '';
-        setRows(cachedRows);setSelectedId(fallbackSelected);setRoute(null);
-        if (fallback.origin) {setOrigin(fallback.origin);applyDensityAwareCamera(cachedRows,fallback.origin);}
+        const cameraStillOwnedByLoad=cameraInteractionVersionRef.current===cameraInteractionVersion;
+        setRows(cachedRows);
+        setSelectedId((currentSelected)=>{
+          if(!cameraStillOwnedByLoad)return currentSelected&&cachedRows.some((row:any)=>idOf(row)===currentSelected)?currentSelected:'';
+          return fallbackSelected;
+        });
+        setRoute(null);
+        if (fallback.origin) {
+          setOrigin(fallback.origin);
+          if(cameraStillOwnedByLoad&&!fallbackSelected)applyDensityAwareCamera(cachedRows,fallback.origin);
+        }
         if (fallback.radiusMeters) {setRadius(fallback.radiusMeters);setEffectiveRadiusMeters(fallback.radiusMeters);}
         setAttemptedRadiiMeters(result.attemptedRadiiMeters || []);setCached(true);
         setMessage(`Live lookup returned no usable locations on first load. Showing cached nearby results from ${cachedAgeLabel(fallback.savedAt)} while you can refresh for a new live result.`);
@@ -1117,11 +1133,16 @@ export default function AdaptiveExploreScreen() {
 
     const resetSelectionForOriginChange=Boolean(areaMatch)||clearQuery;
     const preservedId = !resetSelectionForOriginChange && selectedId && displayRows.some((row) => idOf(row) === selectedId) ? selectedId : '';
+    const cameraStillOwnedByLoad=cameraInteractionVersionRef.current===cameraInteractionVersion;
     setRows(displayRows);setRoute(null);
-    if (!preservedId) {
+    if (!preservedId&&cameraStillOwnedByLoad) {
       applyDensityAwareCamera(displayRows,nextOrigin);
     }
-    setEffectiveRadiusMeters(result.effectiveRadiusMeters);setAttemptedRadiiMeters(result.attemptedRadiiMeters);setCached(false);setSelectedId(preservedId);
+    setEffectiveRadiusMeters(result.effectiveRadiusMeters);setAttemptedRadiiMeters(result.attemptedRadiiMeters);setCached(false);
+    setSelectedId((currentSelected)=>{
+      if(!cameraStillOwnedByLoad)return currentSelected&&displayRows.some((row)=>idOf(row)===currentSelected)?currentSelected:'';
+      return preservedId;
+    });
 
     captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:displayRows.length,search:originalQuery,amenityCount:activeAmenityNames.length});
     captureConsumerCoreLoopEvent('nearby_results_shown',null,{resultCount:displayRows.length,radiusMeters:result.effectiveRadiusMeters,search:Boolean(rawQuery),cached:false});
@@ -1263,6 +1284,7 @@ export default function AdaptiveExploreScreen() {
 
   async function load(options: { clearQuery?: boolean; preserveCacheOnEmpty?: boolean; mapOrigin?: [number,number] | null; recenterOnLiveLocation?: boolean } = {}) {
     if (loading) return;
+    const cameraInteractionVersion=cameraInteractionVersionRef.current;
     setLoading(true);
     const originalQuery=options.clearQuery?'':search.trim();
     let targetMode: 'nearby'|'route'=mode;
@@ -1319,11 +1341,15 @@ export default function AdaptiveExploreScreen() {
           const fallbackSelected = selectedId && cachedRows.some((row: any) => idOf(row) === selectedId)
             ? selectedId
             : '';
+          const cameraStillOwnedByLoad=cameraInteractionVersionRef.current===cameraInteractionVersion;
           setRows(cachedRows);
-          setSelectedId(fallbackSelected);
+          setSelectedId((currentSelected)=>{
+            if(!cameraStillOwnedByLoad)return currentSelected&&cachedRows.some((row:any)=>idOf(row)===currentSelected)?currentSelected:'';
+            return fallbackSelected;
+          });
           if (fallback.origin) {
             setOrigin(fallback.origin);
-            applyDensityAwareCamera(cachedRows,fallback.origin);
+            if(cameraStillOwnedByLoad&&!fallbackSelected)applyDensityAwareCamera(cachedRows,fallback.origin);
           }
           if (fallback.radiusMeters) setRadius(fallback.radiusMeters);
           setCached(true);
@@ -1334,8 +1360,10 @@ export default function AdaptiveExploreScreen() {
           return;
         }
       }
-      setRows([]);
-      setSelectedId('');
+      if(cameraInteractionVersionRef.current===cameraInteractionVersion){
+        setRows([]);
+        setSelectedId('');
+      }
       setRoute(null);
       setMessage(friendlyExploreError(error,targetMode==='route'?'Kleenest could not finish the route search in time. Please try again.':'Kleenest could not finish that search. Please try again.'));
     } finally {
