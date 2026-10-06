@@ -1,3 +1,4 @@
+-- KleenestOS startup overview hot-path optimization.
 create or replace function public.admin_get_overview()
 returns jsonb
 language plpgsql
