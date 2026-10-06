@@ -22,6 +22,7 @@ forbidToken("style={s.valuePromise}",'Explore must not spend map space on explan
 if(!signals.includes("style={styles.compactRow}")||!signals.includes("signals.slice(0,4)"))throw new Error('Explore overlay result evidence must stay summary-first and compact.');
 requireToken("style={[s.resultsSheet",'Nearby/route results must live in a map-overlay results sheet.');
 requireToken("accessibilityLabel={resultsSheetExpanded?'Collapse results':'Expand results'}",'The results sheet must expose an accessible expand/collapse control.');
+requireToken("{resultsSheetExpanded?'Collapse ↓':'Expand ↑'}",'The results sheet affordance must show the direction each action will move.');
 requireToken("style={s.resultsSheetList}",'Expanded results must scroll inside the overlay sheet.');
 requireToken("style={s.selectedSheetActions}",'Selected-place primary actions must stay outside the scrolling detail body.');
 requireToken("if(rawQuery&&retainedMapOrigin&&!areaMatch&&!overrideOrigin)setDestinationCardOpen(false);",'A brand/category search from a chosen address must reveal results instead of leaving the destination card open.');
