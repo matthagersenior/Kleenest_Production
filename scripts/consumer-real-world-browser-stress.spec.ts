@@ -89,7 +89,7 @@ async function newConsumerPage(context:BrowserContext){
   const network=watch(page);
   const response=await page.goto(new URL('?app=1',BASE).toString(),{waitUntil:'domcontentloaded',timeout:30000});
   expect(response?.status()).toBe(200);
-  await page.getByText('Find a place you can count on.',{exact:true}).waitFor({state:'visible',timeout:20000});
+  await page.getByPlaceholder('Address, school, workplace, city or brand').waitFor({state:'visible',timeout:20000});
   await readySearch(page,45000);
   return{page,network};
 }
