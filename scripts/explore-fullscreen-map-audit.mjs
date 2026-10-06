@@ -12,6 +12,12 @@ function forbidToken(token,message){
 requireToken("const [resultsSheetExpanded,setResultsSheetExpanded]=useState(false);",'Explore must expose an expandable results sheet state.');
 requireToken("style={s.exploreStage}",'Explore must render the map as the full-screen stage.');
 requireToken("style={[s.floatingSearchPanel",'Search and discovery controls must float over the map canvas.');
+requireToken("const mapChromeTop=142+(floatingContextRows*38);",'Map controls must start directly below the compact floating control stack.');
+requireToken("? Math.min(Math.max(280,Math.round(exploreMapHeight*0.46)),430)",'Expanded results must preserve substantial visible map area.');
+requireToken(": (selected||destinationCardOpen?184:132)",'Collapsed results must remain a compact map overlay.');
+requireToken("minHeight: 36",'Nearby / Along route controls must stay compact.');
+requireToken("filterLauncher:{minHeight:38",'Amenity filters must stay compact in the map-first control stack.');
+forbidToken("style={s.valuePromise}",'Explore must not spend map space on explanatory hero copy inside the floating controls.');
 requireToken("style={[s.resultsSheet",'Nearby/route results must live in a map-overlay results sheet.');
 requireToken("accessibilityLabel={resultsSheetExpanded?'Collapse results':'Expand results'}",'The results sheet must expose an accessible expand/collapse control.');
 requireToken("style={s.resultsSheetList}",'Expanded results must scroll inside the overlay sheet.');
