@@ -162,9 +162,19 @@ export default function Communications(){
 
     {threads.length===0?<View style={{...card}}><Text style={{fontWeight:'900',color:theme.ink}}>{busy?'Loading mail…':'No conversations in this view'}</Text><Text style={{fontSize:12,color:theme.muted,marginTop:5}}>New mail to support@kleenest.us will appear here automatically.</Text></View>:threads.map(t=><Pressable key={t.id} onPress={()=>t.folder==='drafts'?void openDraft(t):void open(t)} style={{...card,gap:5,borderColor:t.unread?theme.warning:theme.line}}>
       <View style={{flexDirection:'row',gap:8}}><Text numberOfLines={1} style={{flex:1,fontWeight:t.unread?'900':'800',color:theme.ink}}>{t.subject}</Text>{t.starred?<Text style={{color:theme.warning}}>★</Text>:null}</View>
-      <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>{t.mailboxAddress?<StatusPill label={t.mailboxAddress} tone="neutral"/>:null}{t.sourceApp?<StatusPill label={`${t.sourceApp.toUpperCase()} SUPPORT`} tone="good"/>:<StatusPill label="EMAIL"/>}{t.folder==='drafts'?<StatusPill label="DRAFT" tone="warning"/>:null}{t.folder==='spam'?<StatusPill label="SPAM" tone="danger"/>:null}</View><Text numberOfLines={1} style={{fontSize:12,fontWeight:'800',color:theme.accent}}>{t.from||t.fromEmail||'Conversation'}</Text>
+      <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>
+        {t.mailboxAddress?<StatusPill label={t.mailboxAddress} tone="neutral"/>:null}
+        {t.sourceApp?<StatusPill label={`${t.sourceApp.toUpperCase()} SUPPORT`} tone="good"/>:<StatusPill label="EMAIL"/>}
+        {t.latestSent&&t.folder!=='drafts'?<StatusPill
+          label={String(t.latestDeliveryStatus||'sent').replaceAll('_',' ').toUpperCase()}
+          tone={['bounced','failed','suppressed','complained'].includes(String(t.latestDeliveryStatus||''))?'danger':String(t.latestDeliveryStatus||'')==='delivery_delayed'?'warning':String(t.latestDeliveryStatus||'')==='delivered'?'good':'neutral'}
+        />:null}
+        {t.folder==='drafts'?<StatusPill label="DRAFT" tone="warning"/>:null}
+        {t.folder==='spam'?<StatusPill label="SPAM" tone="danger"/>:null}
+      </View>
+      <Text numberOfLines={1} style={{fontSize:12,fontWeight:'800',color:theme.accent}}>{t.latestSent?'To: ':'From: '}{t.from||t.fromEmail||'Conversation'}</Text>
       <Text numberOfLines={2} style={{fontSize:12,lineHeight:18,color:theme.muted}}>{t.snippet}</Text>
-      <Text style={{fontSize:11,color:theme.muted}}>{String(t.folder||views[view].mailbox).toUpperCase()} · {t.latestSent?'KLEENEST LAST':'INBOUND LAST'} · {date(t.date)} · {t.messageCount} message{t.messageCount===1?'':'s'}</Text>
+      <Text style={{fontSize:11,color:theme.muted}}>{t.latestSent?'AWAITING REPLY':'RECEIVED'} · {date(t.date)} · {t.messageCount} message{t.messageCount===1?'':'s'}</Text>
     </Pressable>)}
 
     {selected?<View style={{...card,gap:12,borderColor:theme.accent}}>

@@ -188,6 +188,32 @@ Deno.serve(async(req:Request)=>{
       },
       secret:config.webhookSecret,
     });
+    const outboundDeliveryEvents=new Set([
+      'email.sent','email.delivered','email.delivery_delayed','email.bounced',
+      'email.complained','email.failed','email.suppressed',
+    ]);
+    if(outboundDeliveryEvents.has(String(event.type||''))){
+      const providerEmailId=String(event?.data?.email_id||'').trim();
+      if(!providerEmailId)return json({ok:true,ignored:true,reason:'missing_email_id'});
+      const deliveryStatus=String(event.type).replace(/^email\./,'');
+      const admin=adminClient();
+      const updated=await admin.from('owner_email_center_messages')
+        .update({delivery_status:deliveryStatus})
+        .eq('provider_email_id',providerEmailId)
+        .eq('direction','outbound')
+        .select('thread_id,owner_user_id')
+        .maybeSingle();
+      if(updated.error)throw updated.error;
+      if(updated.data){
+        await admin.from('owner_email_center_audit').insert({
+          owner_user_id:updated.data.owner_user_id,
+          thread_id:updated.data.thread_id,
+          action:'delivery_'+deliveryStatus,
+          detail:{provider_email_id:providerEmailId,event_type:event.type},
+        });
+      }
+      return json({ok:true,delivery_status:deliveryStatus,matched:Boolean(updated.data)});
+    }
     if(event.type!=='email.received')return json({ok:true,ignored:true});
 
     const providerEmailId=String(event?.data?.email_id||'').trim();

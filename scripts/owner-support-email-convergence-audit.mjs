@@ -40,12 +40,17 @@ requireAll('Support-aware Owner reply',center,[
   "action==='block_sender'",
   "'spam'",
   "mailbox==='trash'",
+  'latestDeliveryStatus:latest?.delivery_status||null',
+  'fallbackCounterparty',
   "delivery_status:'delivered_in_app'",
 ]);
 requireAll('Blocked sender inbound handling',inbound,[
   'blocked_senders',
   "isBlocked?'spam':'inbox'",
   "receive_spam",
+  "'email.delivered'",
+  "'email.bounced'",
+  "delivery_'+deliveryStatus",
 ]);
 requireAll('KleenestOS Email Center UI',ui,[
   "drafts:{label:'Drafts'",
@@ -54,6 +59,8 @@ requireAll('KleenestOS Email Center UI',ui,[
   'Block sender',
   'APP SUPPORT',
   'deliveryStatus',
+  'latestDeliveryStatus',
+  "t.latestSent?'To: ':'From: '",
   'sourceApp.toUpperCase()',
 ]);
 requireAll('KleenestOS Email Center service',service,[
@@ -61,6 +68,7 @@ requireAll('KleenestOS Email Center service',service,[
   "action:'spam'",
   "action:'block_sender'",
   "mailbox?:'inbox'|'sent'|'drafts'|'spam'|'trash'|'all'",
+  'latestDeliveryStatus?:string|null',
 ]);
 requireAll('Consumer support reply visibility',consumerUi,['row.admin_notes','Kleenest Support']);
 requireAll('Business support reply visibility',businessUi,['admin_notes','Recent requests','Kleenest Support','Support request submitted to KleenestOS.']);
