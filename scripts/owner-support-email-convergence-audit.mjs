@@ -30,6 +30,8 @@ requireAll('Support Email Center schema',migrations,[
   'after update of status, admin_notes',
   "'has_reply',v_reply_changed",
 ]);
+must(!center.includes("owner_email_center_audit').insert({owner_user_id:ownerUserId,thread_id:threadId,action,detail}).catch"),
+  'Owner Email Center audit write must not call .catch on the Supabase query builder');
 requireAll('Support-aware Owner reply',center,[
   'support_request_id',
   'support_reply',
