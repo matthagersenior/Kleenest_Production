@@ -42,6 +42,39 @@ jobs:
               per_page: 100,
             });
 
+            const mainBranch = await github.rest.repos.getBranch({ owner, repo, branch: 'main' });
+            const protectedShas = new Set([
+              mainBranch.data.commit.sha,
+              ...prs.map((pr) => pr.head.sha),
+            ]);
+            const staleBefore = Date.now() - (6 * 60 * 60 * 1000);
+            let staleCancelled = 0;
+            for (const runStatus of ['queued', 'in_progress']) {
+              const staleRuns = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                owner,
+                repo,
+                status: runStatus,
+                per_page: 100,
+              });
+              for (const run of staleRuns) {
+                if (!run.head_sha || protectedShas.has(run.head_sha)) continue;
+                const createdAt = Date.parse(run.created_at || '');
+                if (!Number.isFinite(createdAt) || createdAt >= staleBefore) continue;
+                try {
+                  await github.rest.actions.cancelWorkflowRun({
+                    owner,
+                    repo,
+                    run_id: run.id,
+                  });
+                  staleCancelled += 1;
+                  core.info(`  cancelled stale ${runStatus} run ${run.id}: ${run.name} @ ${run.head_sha.slice(0, 12)}`);
+                } catch (error) {
+                  core.warning(`  stale workflow cancellation failed for ${run.id}: ${error.message}`);
+                }
+              }
+            }
+            core.info(`Stale workflow cleanup cancelled ${staleCancelled} run(s); protected current main and ${prs.length} open PR head(s).`);
+
             for (const pr of prs) {
               core.info(`PR #${pr.number}: ${pr.title}`);
 

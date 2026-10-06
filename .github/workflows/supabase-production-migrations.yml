@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event != 'pull_request')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -30,6 +30,10 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
+      - name: Verify release SHA is current main
+        run: |
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          test "$RELEASE_SHA" = "$(git rev-parse origin/main)"
       - name: Verify native Supabase production deployment
         run: |
           echo "Supabase GitHub Integration owns production migration deployment; GitHub main is the schema authority, and this gate requires exact bidirectional source/Production ledger convergence before OTA."

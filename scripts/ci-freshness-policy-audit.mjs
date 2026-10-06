@@ -49,6 +49,11 @@ requireText(ci, 'Report PR/main divergence', 'Production CI must expose PR/main 
 requireText(ci, 'git merge-base --is-ancestor', 'Production CI must detect whether the PR head contains current main.');
 if (ci.includes('exit 1') && ci.includes('PR branch behind main')) throw new Error('Production CI must not fail solely because main advanced; repository rules and the completion guard own branch freshness.');
 
+const completionGuard = read('pr-completion-guard.yml');
+for (const token of ['protectedShas','staleBefore','status: runStatus','cancelWorkflowRun','Stale workflow cleanup']) {
+  requireText(completionGuard, token, 'PR Completion Guard stale workflow cleanup missing '+token);
+}
+
 const branchHygiene = read('branch-hygiene.yml');
 for (const token of ['pull_request:','types: [closed]','push:','branches: [main]','contents: write','Delete merged pull-request branch','Remove historical branches still pinned to merged PR heads','github.event.pull_request.merged == true']) {
   requireText(branchHygiene, token, 'Branch hygiene policy missing '+token);
@@ -88,9 +93,10 @@ if (installSmoke.includes('EXPECTED_SHA: ${{ github.event.workflow_run.head_sha 
 }
 
 const databaseDeploy = read('supabase-production-migrations.yml');
-for (const token of ['workflow_run:','workflows: ["Production CI"]',"github.event.workflow_run.conclusion == 'success'","github.event.workflow_run.head_branch == 'main'",'ref: ${{ github.event.workflow_run.head_sha || github.sha }}','SUPABASE_PROJECT_ID: ssgesjzdvdsqacdtasje','Supabase GitHub Integration owns production migration deployment','node scripts/supabase-production-ledger-readiness.mjs']) {
+for (const token of ['workflow_run:','workflows: ["Production CI"]',"github.event.workflow_run.conclusion == 'success'","github.event.workflow_run.event != 'pull_request'",'ref: ${{ github.event.workflow_run.head_sha || github.sha }}','SUPABASE_PROJECT_ID: ssgesjzdvdsqacdtasje','Verify release SHA is current main','git fetch --no-tags origin main:refs/remotes/origin/main','test "$RELEASE_SHA" = "$(git rev-parse origin/main)"','Supabase GitHub Integration owns production migration deployment','node scripts/supabase-production-ledger-readiness.mjs']) {
   requireText(databaseDeploy, token, 'Production database readiness authority missing '+token);
 }
+if (databaseDeploy.includes("github.event.workflow_run.head_branch == 'main'")) throw new Error('Production database readiness must not rely on workflow_run head_branch for post-merge workflow_dispatch CI; exact current-main SHA verification owns release identity.');
 if (databaseDeploy.includes('SUPABASE_DB_PASSWORD')) throw new Error('Production database readiness must not require the database password in GitHub.');
 if (databaseDeploy.includes('supabase db push')) throw new Error('Native Supabase GitHub Integration owns migration deployment; GitHub must not duplicate db push.');
 

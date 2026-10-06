@@ -22,6 +22,11 @@ expect(deploy,'RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha
 expect(deploy,'GitHub main is the schema authority','GitHub main schema authority');
 expect(deploy,'Supabase GitHub Integration owns production migration deployment','native Supabase deployment ownership');
 expect(deploy,'node scripts/supabase-production-ledger-readiness.mjs','fail-closed production ledger verification');
+expect(deploy,"github.event.workflow_run.event != 'pull_request'",'post-merge Production CI event gate that does not depend on unreliable workflow_run head_branch metadata');
+expect(deploy,'Verify release SHA is current main','exact main release identity gate');
+expect(deploy,'git fetch --no-tags origin main:refs/remotes/origin/main','current main ref verification');
+expect(deploy,'test "$RELEASE_SHA" = "$(git rev-parse origin/main)"','release SHA must equal current main before database readiness');
+reject(deploy,"github.event.workflow_run.head_branch == 'main'",'workflow_run head_branch gate that can skip canonical post-merge workflow_dispatch CI');
 reject(deploy,'SUPABASE_ACCESS_TOKEN','legacy CLI access-token deployment path');
 reject(deploy,'SUPABASE_DB_PASSWORD','database-password deployment path');
 reject(deploy,'supabase db push','duplicate GitHub CLI migration deployment');
@@ -65,6 +70,24 @@ expect(ota,'workflows: ["Deploy Supabase Migrations to Production"]','database r
 reject(ota,'workflows: ["Production CI"]','direct Production CI → OTA bypass');
 reject(ota,'workflow_dispatch:','manual OTA bypass');
 reject(ota,'releases/family-ota.txt','release-file push OTA bypass');
+
+const reconciledOct5Migrations=[
+  'supabase/migrations/20261005170819_isolate_background_crud_pressure.sql',
+  'supabase/migrations/20261005171412_owner_password_reset_audit.sql',
+  'supabase/migrations/20261005181217_adaptive_background_ingestion.sql',
+  'supabase/migrations/20261005183500_owner_email_domain_verified.sql',
+];
+for(const migration of reconciledOct5Migrations){
+  if(!fs.existsSync(path.join(root,migration)))failures.push(`missing reconciled production migration ${migration}`);
+}
+for(const stale of [
+  'supabase/migrations/20261005170500_owner_password_reset_audit.sql',
+  'supabase/migrations/20261005180000_adaptive_background_ingestion.sql',
+]){
+  if(fs.existsSync(path.join(root,stale)))failures.push(`stale migration timestamp still present ${stale}`);
+}
+expect('supabase/migrations/20261005170819_isolate_background_crud_pressure.sql',"kleenest-brand-identity-backfill",'restored production background CRUD migration');
+expect('supabase/migrations/20261005181217_adaptive_background_ingestion.sql',"kleenest-corridor-open-data-ingestion",'adaptive ingestion cron source');
 
 const guard='.github/workflows/supabase-production-release-order-fast.yml';
 expect(guard,'push:\n    branches: [main]','main-branch release-order guard');
