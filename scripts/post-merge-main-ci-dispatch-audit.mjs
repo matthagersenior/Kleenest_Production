@@ -1,30 +1,25 @@
 import fs from 'node:fs';
 
-const guardPath='.github/workflows/pr-completion-guard.yml';
-const ciPath='.github/workflows/ci.yml';
-const guard=fs.readFileSync(guardPath,'utf8');
-const ci=fs.readFileSync(ciPath,'utf8');
-const failures=[];
-const must=(condition,message)=>{if(!condition)failures.push(message)};
+const guardPath = '.github/workflows/pr-completion-guard.yml';
+const ciPath = '.github/workflows/ci.yml';
+const guard = fs.readFileSync(guardPath, 'utf8');
+const ci = fs.readFileSync(ciPath, 'utf8');
+const failures = [];
+const must = (condition, message) => { if (!condition) failures.push(message); };
 
-const mergeMarker="core.info(\`  merged PR #\${pr.number}: \${result.data.sha}\`);";
-const dispatchMarker='github.rest.actions.createWorkflowDispatch';
+must(guard.includes('actions: write'), 'PR Completion Guard must retain actions: write permission so one failed run can be retried.');
+must(ci.includes('push:\n    branches: [main]'), 'Production CI must run automatically for every main push.');
+must(ci.includes('workflow_dispatch:'), 'Production CI must remain manually dispatchable for recovery.');
+must(!guard.includes('github.rest.actions.createWorkflowDispatch'), 'PR Completion Guard must not duplicate the automatic main-push Production CI run.');
+must(guard.includes('latestByWorkflow'), 'PR Completion Guard must evaluate the latest run for every triggered PR workflow.');
+must(guard.includes('nonGreenRuns'), 'PR Completion Guard must block merges when any triggered PR workflow is not green.');
+must(guard.includes('getCombinedStatusForRef'), 'PR Completion Guard must also honor non-Actions commit statuses.');
+must(guard.includes("core.info('  main push will trigger the authoritative full Production CI pass');"), 'PR Completion Guard must document the single authoritative post-merge CI path.');
 
-must(guard.includes('actions: write'),'PR Completion Guard must retain actions: write permission.');
-must(ci.includes('workflow_dispatch:'),'Production CI must remain manually dispatchable.');
-must(guard.includes(dispatchMarker),'PR Completion Guard must dispatch Production CI after bot merges.');
-must(guard.includes("workflow_id: 'ci.yml'"),"Post-merge dispatch must target Production CI's ci.yml workflow.");
-must(guard.includes("ref: 'main'"),"Post-merge Production CI dispatch must target main.");
-
-const mergeIndex=guard.indexOf(mergeMarker);
-const dispatchIndex=guard.indexOf(dispatchMarker);
-must(mergeIndex>=0,'PR Completion Guard merge success marker is missing.');
-must(dispatchIndex>mergeIndex,'Production CI dispatch must occur only after a successful merge.');
-
-if(failures.length){
-  console.error(`Post-merge main CI dispatch audit failed with ${failures.length} gap(s):`);
-  failures.forEach(f=>console.error('- '+f));
+if (failures.length) {
+  console.error(`Post-merge main CI convergence audit failed with ${failures.length} gap(s):`);
+  failures.forEach((failure) => console.error('- ' + failure));
   process.exit(1);
 }
 
-console.log('Post-merge main CI dispatch audit passed.');
+console.log('Post-merge main CI convergence audit passed.');
