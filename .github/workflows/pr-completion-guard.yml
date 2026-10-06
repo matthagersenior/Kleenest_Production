@@ -191,7 +191,29 @@ jobs:
 
                 core.info(`  merged PR #${pr.number}: ${result.data.sha}`);
 
-                core.info('  main push will trigger the authoritative full Production CI pass');
+                const postMergeWorkflows = [
+                  'ci.yml',
+                  'security-gate.yml',
+                  'product-parity.yml',
+                  'main-lineage-guard.yml',
+                ];
+                const dispatchFailures = [];
+                for (const workflow_id of postMergeWorkflows) {
+                  try {
+                    await github.rest.actions.createWorkflowDispatch({
+                      owner,
+                      repo,
+                      workflow_id,
+                      ref: 'main',
+                    });
+                    core.info('  dispatched post-merge workflow: ' + workflow_id);
+                  } catch (error) {
+                    dispatchFailures.push(workflow_id + ': ' + error.message);
+                  }
+                }
+                if (dispatchFailures.length > 0) {
+                  core.setFailed('Post-merge validation dispatch failed: ' + dispatchFailures.join('; '));
+                }
 
                 if (pr.head.ref !== 'main') {
                   try {
