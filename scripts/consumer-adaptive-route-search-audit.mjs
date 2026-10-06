@@ -258,7 +258,7 @@ if(!(selectedActionsIndex>0&&selectedScrollIndex>selectedActionsIndex))throw new
 if(screen.includes('<RestroomSignals item={item} compact />'))throw new Error('Result cards must use compact icon/value signals instead of tall labeled signal pills.');
 for(const token of [
   '<CompactRestroomSignals item={item} />',
-  "sheetResultRow:{minHeight:76",
+  "sheetResultRow:{minHeight:62",
   "resultsSheet:{position:'absolute'",
   "selectedSheetActions:{flexDirection:'row',gap:6,position:'absolute'",
   "selectedSheetScroll:{flex:1,minHeight:0}",
