@@ -66,6 +66,7 @@ export type OwnerMailThreadSummary={
   unread:boolean;
   inInbox:boolean;
   latestSent:boolean;
+  latestDeliveryStatus?:string|null;
   starred:boolean;
   messageCount:number;
   hasAttachment?:boolean;
