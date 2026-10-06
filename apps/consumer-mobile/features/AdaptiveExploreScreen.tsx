@@ -604,7 +604,8 @@ export default function AdaptiveExploreScreen() {
     ephemeral_destination:true,
   }:null,[searchAreaOrigin,searchAreaLabel]);
   const searchPanelTop=8;
-  const mapChromeTop=(searchAreaLabel||interpretedIntent?.summary)?258:214;
+  const floatingContextRows=(searchAreaLabel?1:0)+(interpretedIntent?.summary?1:0);
+  const mapChromeTop=142+(floatingContextRows*38);
 
   const unlockedMapFilters=Array.isArray(rewardCapabilities?.unlocked_map_filters)?rewardCapabilities.unlocked_map_filters:[];
   const equippedMapFlair=String(rewardCapabilities?.equipped?.map_flair?.reward_key||'');
@@ -1544,12 +1545,6 @@ export default function AdaptiveExploreScreen() {
         ListHeaderComponent={
           <View style={s.exploreStage}>
       <View style={[s.floatingSearchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
-        <View style={s.valuePromise}>
-          <Text numberOfLines={1} style={[s.valuePromiseTitle,{color:theme.ink}]}>{mode==='route'?'Find a useful stop on the way.':'Find a place you can count on.'}</Text>
-          <Text numberOfLines={1} style={[s.valuePromiseBody,{color:theme.muted}]}>{mode==='route'
-            ? 'Enter where you’re going. We’ll show useful stops on the way.'
-            : 'Search a place or address, then tap a result to go.'}</Text>
-        </View>
         <View style={s.searchRow}>
           <TextInput
             accessibilityLabel={mode==='route'?'Search places along route':'Discover nearby places'}
@@ -2077,8 +2072,8 @@ export default function AdaptiveExploreScreen() {
                 s.resultsSheet,
                 {
                   height:resultsSheetExpanded
-                    ? Math.min(Math.max(360,Math.round(exploreMapHeight*0.64)),620)
-                    : (selected||destinationCardOpen?236:184),
+                    ? Math.min(Math.max(280,Math.round(exploreMapHeight*0.46)),430)
+                    : (selected||destinationCardOpen?184:132),
                   backgroundColor:theme.surface,
                   borderColor:theme.line,
                 },
@@ -2193,7 +2188,7 @@ export default function AdaptiveExploreScreen() {
                           onPress={()=>selectRow(item)}
                           style={[s.sheetResultRow,{borderColor:theme.line,backgroundColor:idOf(item)===selectedId?theme.accentSoft:theme.surface}]}
                         >
-                          <FreshnessHeatRing item={item} size={36} photoUrl={item.consumer_photo_url?String(item.consumer_photo_url):undefined} />
+                          <FreshnessHeatRing item={item} size={30} photoUrl={item.consumer_photo_url?String(item.consumer_photo_url):undefined} />
                           <View style={s.sheetResultMain}>
                             <View style={s.sheetResultTitleRow}>
                               <Text numberOfLines={1} style={[s.sheetResultTitle,{color:theme.ink}]}>{discoveryPlaceName(item)}</Text>
@@ -2350,31 +2345,28 @@ const s = StyleSheet.create({
   },
   locateIcon: { fontSize: 16, fontWeight: '900', color: palette.green },
   locateText: { fontSize: 8, fontWeight: '900', color: palette.green },
-  floatingSearchPanel:{position:'absolute',top:0,left:10,right:10,zIndex:80,elevation:24,paddingHorizontal:9,paddingTop:9,paddingBottom:7,gap:6,borderRadius:15,borderWidth:1},
-  valuePromise:{paddingHorizontal:2,paddingBottom:1,gap:1},
-  valuePromiseTitle:{fontSize:12,lineHeight:15,fontWeight:'900',letterSpacing:-.1},
-  valuePromiseBody:{fontSize:9,lineHeight:12,fontWeight:'700'},
+  floatingSearchPanel:{position:'absolute',top:0,left:8,right:8,zIndex:80,elevation:24,paddingHorizontal:7,paddingTop:7,paddingBottom:6,gap:4,borderRadius:14,borderWidth:1},
   searchAreaChip:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,backgroundColor:'#e8f1eb',borderRadius:11,paddingHorizontal:10,paddingVertical:7},
   searchAreaText:{flex:1,fontSize:13,lineHeight:18,fontWeight:'900',color:palette.green},searchAreaAction:{fontSize:12,fontWeight:'900',color:palette.green,textDecorationLine:'underline'},
-  segment: { flexDirection: 'row', padding: 3, borderRadius: 12, backgroundColor: '#e8efea' },
-  segmentButton: { flex: 1, minHeight: 44, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  segment: { flexDirection: 'row', padding: 2, borderRadius: 10, backgroundColor: '#e8efea' },
+  segmentButton: { flex: 1, minHeight: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   segmentActive: { backgroundColor: palette.green },
-  segmentText: { fontSize: 14, fontWeight: '900', color: palette.green },
+  segmentText: { fontSize: 12, fontWeight: '900', color: palette.green },
   segmentTextActive: { color: '#fff' },
   searchRow: { flexDirection: 'row', gap: 7 },
   input: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 42,
     borderWidth: 1,
     borderColor: '#d6e2da',
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: '#fff',
-    paddingHorizontal: 11,
-    fontSize: 16,
+    paddingHorizontal: 10,
+    fontSize: 14,
     color: palette.ink,
   },
-  searchButton: { minHeight: 48, borderRadius: 12, backgroundColor: palette.green, paddingHorizontal: 14, justifyContent: 'center' },
-  searchButtonText: { fontSize: 13, fontWeight: '900', color: '#fff' },
+  searchButton: { minHeight: 42, borderRadius: 10, backgroundColor: palette.green, paddingHorizontal: 12, justifyContent: 'center' },
+  searchButtonText: { fontSize: 12, fontWeight: '900', color: '#fff' },
   rowHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   autoRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   autoLabel: { fontSize: 9, fontWeight: '800', color: '#5f7468' },
@@ -2433,27 +2425,27 @@ const s = StyleSheet.create({
   searchThisArea:{position:'absolute',left:92,right:58,zIndex:52,elevation:16,minHeight:38,borderRadius:999,borderWidth:1,alignItems:'center',justifyContent:'center',paddingHorizontal:12},
   searchThisAreaText:{fontSize:10,fontWeight:'900'},
   legendWrap: { position: 'absolute', left: 10, right: 56, zIndex:48 },
-  resultsSheet:{position:'absolute',left:8,right:8,bottom:8,zIndex:72,elevation:24,borderWidth:1,borderRadius:20,overflow:'hidden',shadowColor:'#000',shadowOpacity:.16,shadowRadius:16,shadowOffset:{width:0,height:6}},
-  resultsSheetHandle:{paddingHorizontal:14,paddingTop:7,paddingBottom:8,gap:5},
-  resultsSheetHandleBar:{width:44,height:4,borderRadius:999,alignSelf:'center'},
+  resultsSheet:{position:'absolute',left:6,right:6,bottom:6,zIndex:72,elevation:24,borderWidth:1,borderRadius:18,overflow:'hidden',shadowColor:'#000',shadowOpacity:.16,shadowRadius:14,shadowOffset:{width:0,height:5}},
+  resultsSheetHandle:{paddingHorizontal:12,paddingTop:5,paddingBottom:6,gap:3},
+  resultsSheetHandleBar:{width:40,height:4,borderRadius:999,alignSelf:'center'},
   resultsSheetHeadingRow:{flexDirection:'row',alignItems:'center',gap:10},
   resultsSheetHeadingMain:{flex:1,minWidth:0},
-  resultsSheetEyebrow:{fontSize:8,fontWeight:'900',letterSpacing:.9},
-  resultsSheetTitle:{fontSize:16,lineHeight:20,fontWeight:'900'},
-  resultsSheetToggle:{fontSize:11,fontWeight:'900'},
+  resultsSheetEyebrow:{fontSize:7,fontWeight:'900',letterSpacing:.9},
+  resultsSheetTitle:{fontSize:14,lineHeight:18,fontWeight:'900'},
+  resultsSheetToggle:{fontSize:10,fontWeight:'900'},
   resultsSheetBody:{flex:1,minHeight:0},
   resultsSheetList:{flex:1},
-  resultsSheetListContent:{paddingHorizontal:9,paddingBottom:16,gap:7},
+  resultsSheetListContent:{paddingHorizontal:8,paddingBottom:12,gap:5},
   sheetStatusRow:{flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:12,paddingBottom:7},
   sheetStatusText:{flex:1,fontSize:10,lineHeight:14,fontWeight:'700'},
   sheetRefresh:{fontSize:10,fontWeight:'900',textDecorationLine:'underline'},
-  sheetResultRow:{minHeight:76,borderWidth:1,borderRadius:14,paddingHorizontal:9,paddingVertical:8,flexDirection:'row',alignItems:'center',gap:8},
-  sheetResultMain:{flex:1,minWidth:0,gap:2},
-  sheetResultTitleRow:{flexDirection:'row',alignItems:'center',gap:7},
-  sheetResultTitle:{flex:1,fontSize:15,lineHeight:19,fontWeight:'900'},
-  sheetResultDistance:{maxWidth:'32%',fontSize:10,fontWeight:'900'},
-  sheetResultMeta:{fontSize:10,lineHeight:14,fontWeight:'700'},
-  sheetResultChevron:{fontSize:24,lineHeight:26,fontWeight:'700'},
+  sheetResultRow:{minHeight:62,borderWidth:1,borderRadius:12,paddingHorizontal:7,paddingVertical:6,flexDirection:'row',alignItems:'center',gap:7},
+  sheetResultMain:{flex:1,minWidth:0,gap:1},
+  sheetResultTitleRow:{flexDirection:'row',alignItems:'center',gap:6},
+  sheetResultTitle:{flex:1,fontSize:13,lineHeight:17,fontWeight:'900'},
+  sheetResultDistance:{maxWidth:'32%',fontSize:9,fontWeight:'900'},
+  sheetResultMeta:{fontSize:9,lineHeight:12,fontWeight:'700'},
+  sheetResultChevron:{fontSize:22,lineHeight:24,fontWeight:'700'},
   sheetEmpty:{borderWidth:1,borderRadius:14,padding:12,gap:6},
   sheetMissingPlace:{borderWidth:1,borderRadius:14,padding:11,gap:2},
   sheetRouteCoverage:{borderWidth:1,borderRadius:12,paddingHorizontal:10,paddingVertical:7},
@@ -2494,12 +2486,12 @@ const s = StyleSheet.create({
   secondarySmall: { minHeight: 44, borderRadius: 9, backgroundColor: '#e8efea', paddingHorizontal: 9, paddingVertical: 6, justifyContent: 'center' },
   primaryText: { fontSize: 12, fontWeight: '900', color: '#fff' },
   secondaryText: { fontSize: 12, fontWeight: '900', color: palette.green },
-  filterLauncher:{minHeight:48,borderRadius:12,borderWidth:1,borderColor:'#cbd9d0',backgroundColor:'#fff',paddingHorizontal:10,paddingVertical:6,flexDirection:'row',alignItems:'center',gap:8},
-  filterLauncherMain:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:7},
+  filterLauncher:{minHeight:38,borderRadius:10,borderWidth:1,borderColor:'#cbd9d0',backgroundColor:'#fff',paddingHorizontal:9,paddingVertical:4,flexDirection:'row',alignItems:'center',gap:7},
+  filterLauncherMain:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:6},
   filterLauncherKicker:{fontSize:7,fontWeight:'900',letterSpacing:.8,color:palette.green},
-  filterLauncherTitle:{flex:1,fontSize:14,fontWeight:'900',color:palette.ink},
-  filterLauncherBadge:{maxWidth:'38%',backgroundColor:'#e8f1eb',borderRadius:999,paddingHorizontal:9,paddingVertical:6},
-  filterLauncherBadgeText:{fontSize:11,fontWeight:'900',color:palette.green},
+  filterLauncherTitle:{flex:1,fontSize:12,fontWeight:'900',color:palette.ink},
+  filterLauncherBadge:{maxWidth:'38%',backgroundColor:'#e8f1eb',borderRadius:999,paddingHorizontal:8,paddingVertical:4},
+  filterLauncherBadgeText:{fontSize:9,fontWeight:'900',color:palette.green},
   filterSection:{gap:8,paddingBottom:12,borderBottomWidth:1,borderBottomColor:'#edf1ee'},
   filterSectionTitle:{fontSize:12,fontWeight:'900',color:palette.ink},
   quickFilterGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},
