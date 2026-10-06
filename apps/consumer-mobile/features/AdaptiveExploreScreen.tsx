@@ -2074,9 +2074,11 @@ export default function AdaptiveExploreScreen() {
                 {
                   height:resultsSheetExpanded
                     ? Math.min(Math.max(360,Math.round(exploreMapHeight*0.58)),560)
-                    : (selected||destinationCardOpen
-                      ? 184
-                      : Math.min(Math.max(228,Math.round(exploreMapHeight*0.24)),286)),
+                    : selected
+                      ? Math.min(Math.max(272,Math.round(exploreMapHeight*0.22)),330)
+                      : destinationCardOpen
+                        ? 220
+                        : Math.min(Math.max(228,Math.round(exploreMapHeight*0.24)),286),
                   backgroundColor:theme.surface,
                   borderColor:theme.line,
                 },
@@ -2452,13 +2454,13 @@ const s = StyleSheet.create({
   sheetEmpty:{borderWidth:1,borderRadius:14,padding:12,gap:6},
   sheetMissingPlace:{borderWidth:1,borderRadius:14,padding:11,gap:2},
   sheetRouteCoverage:{borderWidth:1,borderRadius:12,paddingHorizontal:10,paddingVertical:7},
-  selectedSheetBody:{flex:1,minHeight:0,paddingHorizontal:10,paddingBottom:62,gap:6,position:'relative'},
-  selectedSheetSummary:{flexDirection:'row',alignItems:'center',gap:8},
+  selectedSheetBody:{flex:1,minHeight:0,paddingHorizontal:10,paddingBottom:10,gap:6},
+  selectedSheetSummary:{flexDirection:'row',alignItems:'center',gap:8,flexShrink:0},
   selectedSheetAddress:{fontSize:11,lineHeight:15,fontWeight:'800'},
-  selectedSheetActions:{flexDirection:'row',gap:6,position:'absolute',left:10,right:10,bottom:10,zIndex:4,elevation:8},
+  selectedSheetActions:{flexDirection:'row',gap:6,flexShrink:0,minHeight:44},
   selectedSheetAction:{flex:1,alignItems:'center',minWidth:0},
   selectedSheetScroll:{flex:1,minHeight:0},
-  selectedSheetScrollContent:{gap:7,paddingBottom:66},
+  selectedSheetScrollContent:{gap:7,paddingBottom:14},
   sheetInsight:{fontSize:11,lineHeight:16,fontWeight:'800'},
   sheetClose:{width:36,height:36,borderRadius:18,borderWidth:1,alignItems:'center',justifyContent:'center'},
   sheetCloseText:{fontSize:22,lineHeight:24,fontWeight:'900'},
