@@ -2425,7 +2425,7 @@ const s = StyleSheet.create({
   searchThisArea:{position:'absolute',left:92,right:58,zIndex:52,elevation:16,minHeight:38,borderRadius:999,borderWidth:1,alignItems:'center',justifyContent:'center',paddingHorizontal:12},
   searchThisAreaText:{fontSize:10,fontWeight:'900'},
   legendWrap: { position: 'absolute', left: 10, right: 56, zIndex:48 },
-  resultsSheet:{position:'absolute',left:6,right:6,bottom:6,zIndex:72,elevation:24,borderWidth:1,borderRadius:18,overflow:'hidden',shadowColor:'#000',shadowOpacity:.16,shadowRadius:14,shadowOffset:{width:0,height:5}},
+  resultsSheet:{position:'absolute',left:8,right:8,bottom:8,zIndex:72,elevation:24,borderWidth:1,borderRadius:18,overflow:'hidden',shadowColor:'#000',shadowOpacity:.16,shadowRadius:14,shadowOffset:{width:0,height:5}},
   resultsSheetHandle:{paddingHorizontal:12,paddingTop:5,paddingBottom:6,gap:3},
   resultsSheetHandleBar:{width:40,height:4,borderRadius:999,alignSelf:'center'},
   resultsSheetHeadingRow:{flexDirection:'row',alignItems:'center',gap:10},
