@@ -1886,6 +1886,7 @@ export default function AdaptiveExploreScreen() {
                       anchor="center"
                       onPress={()=>{
                         if(mapZoom>=17){setClusterChoices(group.rows);return;}
+                        cameraInteractionVersionRef.current+=1;
                         setSelectedId('');
                         setDestinationCardOpen(false);
                         setPendingMapOrigin(null);
@@ -1902,6 +1903,7 @@ export default function AdaptiveExploreScreen() {
                         onPress={(event)=>{
                           event.stopPropagation();
                           if(mapZoom>=17){setClusterChoices(group.rows);return;}
+                          cameraInteractionVersionRef.current+=1;
                           setSelectedId('');
                           setDestinationCardOpen(false);
                           setPendingMapOrigin(null);
