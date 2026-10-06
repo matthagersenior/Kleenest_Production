@@ -156,4 +156,31 @@ requireText(sync, 'KLEENEST_PROD_SERVICE_ROLE_KEY', 'Archive reconciliation must
 requireText(sync, 'KLEENEST_DATA_SERVICE_ROLE_KEY', 'Archive reconciliation must require the Kleenest_Data service-role secret.');
 requireText(sync, '/functions/v1/archive-object-ingest', 'Archive reconciliation must write verified Storage objects rather than relational mirror rows.');
 
+
+// Keep the Kleenest_Data source migration ledger aligned with the 15 live-applied versions.
+for (const name of [
+  "20260907065036_create_kleenest_data_archive_core",
+  "20260907065208_add_archive_batch_ingest_rpc",
+  "20260907070731_harden_kleenest_archive_receiver",
+  "20260907071025_restrict_rls_auto_enable",
+  "20260907100540_create_compact_geo_data_tier",
+  "20260907100551_add_internal_geo_archive_auth",
+  "20260907100620_add_geo_archive_batch_upsert",
+  "20260907224607_create_cold_external_location_archive",
+  "20260910163656_thin_geo_archive_remove_unused_read_indexes",
+  "20260910164712_consolidate_cold_provenance_into_canonical_archive",
+  "20260911053104_ingest_archived_ingestion_runs_rpc",
+  "20260911104123_fix_cold_external_location_natural_key_upsert",
+  "20261003185511_enable_worker_geo_and_cron",
+  "20261003201746_coordinate_data_plane_workers",
+  "20261004125629_reduce_geo_archive_write_amplification"
+]) {
+  requireFile(`supabase/kleenest-data/migrations/${name}.sql`);
+}
+const archiveReceiver = requireFile('supabase/kleenest-data/migrations/20260907070731_harden_kleenest_archive_receiver.sql');
+requireText(archiveReceiver, 'archive_ingest_authenticated', 'Data archive receiver authentication must remain source-controlled.');
+if (archiveReceiver.includes('vault.create_secret(') || archiveReceiver.includes('vault.update_secret(')) {
+  throw new Error('Never source-control Kleenest_Data archive Vault secret values.');
+}
+
 console.log('Production live configuration source-control audit passed.');
