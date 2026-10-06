@@ -2066,14 +2066,17 @@ export default function AdaptiveExploreScreen() {
                 </ScrollView>
               </View>
             ) : null}
+            {/* Balanced default keeps 2–3 results visible; expanded mode deliberately shifts priority toward browsing. */}
             <View
               pointerEvents="auto"
               style={[
                 s.resultsSheet,
                 {
                   height:resultsSheetExpanded
-                    ? Math.min(Math.max(280,Math.round(exploreMapHeight*0.46)),430)
-                    : (selected||destinationCardOpen?184:132),
+                    ? Math.min(Math.max(360,Math.round(exploreMapHeight*0.58)),560)
+                    : (selected||destinationCardOpen
+                      ? 184
+                      : Math.min(Math.max(228,Math.round(exploreMapHeight*0.24)),286)),
                   backgroundColor:theme.surface,
                   borderColor:theme.line,
                 },
@@ -2102,7 +2105,7 @@ export default function AdaptiveExploreScreen() {
                             : `Useful places nearby · ${visibleRows.length}`}
                     </Text>
                   </View>
-                  <Text style={[s.resultsSheetToggle,{color:theme.accent}]}>{resultsSheetExpanded?'Collapse ↑':'Expand ↑'}</Text>
+                  <Text style={[s.resultsSheetToggle,{color:theme.accent}]}>{resultsSheetExpanded?'Collapse ↓':'Expand ↑'}</Text>
                 </View>
               </Pressable>
 
