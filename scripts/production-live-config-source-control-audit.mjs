@@ -71,8 +71,8 @@ requireText(openData, "adapter_kind==='socrata'", 'Open-data ingestion must pres
 if (openData.includes('fused_overture') || openData.includes('runOverture')) {
   throw new Error('Fused Overture ingestion must remain retired; official Overture GeoParquet is canonical.');
 }
-requireText(openData, 'BACKGROUND_CANONICAL_BATCH=5', 'Civic canonical writes must remain bounded to the verified 5-row Production timeout envelope.');
-requireText(openData, "rpc('ingest_external_locations_background'", 'Civic writes must use non-blocking canonical admission.');
+requireText(openData, 'BACKGROUND_CANONICAL_BATCH=250', 'Civic discovery staging must remain bounded to 250-row candidate batches.');
+requireText(openData, "rpc('stage_ingestion_candidate_batch'", 'Civic ingestion must stage candidate batches for the bounded canonical admission pipeline.');
 
 const overtureWorker = requireFile('scripts/overture-places-ingest.py');
 requireText(overtureWorker, 'SOURCE_KEY = "overture"', 'Official Overture ingestion must keep one canonical source key.');
