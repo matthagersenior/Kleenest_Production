@@ -34,8 +34,9 @@ for(const token of [
   "functions.invoke('ingest-map-candidates-v3'",
   'collect:true',
   'harvestNearbyMapCandidates',
-  'const harvestPromise=radiusMeters<=LIVE_DISCOVERY_RADIUS_METERS',
-  'const harvest=await harvestPromise.catch(()=>null)',
+  'const locallyEnough=',
+  'if(!locallyEnough&&radiusMeters<=LIVE_DISCOVERY_RADIUS_METERS)',
+  'void harvestNearbyMapCandidates({',
   'listNearbyMapCandidates',
 ])requireToken(core,token,'Consumer discovery bridge');
 

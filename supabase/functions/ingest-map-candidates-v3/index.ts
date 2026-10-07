@@ -1,10 +1,14 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const ENDPOINTS = [
-  "https://overpass-api.de/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
   "https://overpass.private.coffee/api/interpreter",
+  "https://overpass-api.de/api/interpreter",
 ];
+const MAX_PROVIDER_ATTEMPTS = 2;
+const PROVIDER_TIMEOUT_MS = 6000;
+const OSM_SUPPLEMENT_MAX_RADIUS_KM = 8;
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -160,7 +164,7 @@ function query(latitude: number, longitude: number, radiusMeters: number, reques
 
 async function one(endpoint: string, overpassQuery: string) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 16000);
+  const timer = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
   try {
     const response = await fetch(endpoint, {
       method: "POST",
@@ -177,22 +181,34 @@ async function one(endpoint: string, overpassQuery: string) {
 }
 
 async function live(overpassQuery: string) {
-  const results = await Promise.allSettled(ENDPOINTS.map(endpoint => one(endpoint, overpassQuery)));
-  const successes = results.filter((result): result is PromiseFulfilledResult<any[]> => result.status === "fulfilled");
-  const failures = results.map((result, index) => {
-    if (result.status !== "rejected") return null;
-    console.warn("ingest-map-candidates-v3 provider failure", ENDPOINTS[index], result.reason instanceof Error ? result.reason.message : "unknown");
-    return { endpoint: ENDPOINTS[index], code: "PROVIDER_REQUEST_FAILED" };
-  }).filter(Boolean);
-  if (!successes.length) return { ok: false as const, elements: [], providers_succeeded: 0, providers_attempted: ENDPOINTS.length, failures };
-  const seen = new Set<string>();
-  const merged = successes.flatMap(result => result.value).filter(element => {
-    const id = `${element.type}:${element.id}`;
-    if (seen.has(id)) return false;
-    seen.add(id);
-    return true;
-  });
-  return { ok: true as const, elements: merged, providers_succeeded: successes.length, providers_attempted: ENDPOINTS.length, failures };
+  const failures: Array<{ endpoint: string; code: string }> = [];
+  const attempted = ENDPOINTS.slice(0, MAX_PROVIDER_ATTEMPTS);
+  for (const endpoint of attempted) {
+    try {
+      const elements = await one(endpoint, overpassQuery);
+      return {
+        ok: true as const,
+        elements,
+        providers_succeeded: 1,
+        providers_attempted: failures.length + 1,
+        failures,
+      };
+    } catch (error) {
+      console.warn(
+        "ingest-map-candidates-v3 provider failure",
+        endpoint,
+        error instanceof Error ? error.message : "unknown",
+      );
+      failures.push({ endpoint, code: "PROVIDER_REQUEST_FAILED" });
+    }
+  }
+  return {
+    ok: false as const,
+    elements: [],
+    providers_succeeded: 0,
+    providers_attempted: attempted.length,
+    failures,
+  };
 }
 
 async function persist(locations: any[]) {
@@ -253,7 +269,8 @@ Deno.serve(async request => {
 
   const latitude = Number(body.latitude ?? body.lat);
   const longitude = Number(body.longitude ?? body.lng);
-  const radiusKm = Math.min(Math.max(Number(body.radius_km || 8), 1), 40.234);
+  const requestedRadiusKm = Math.min(Math.max(Number(body.radius_km || 8), 1), 40.234);
+  const radiusKm = Math.min(requestedRadiusKm, OSM_SUPPLEMENT_MAX_RADIUS_KM);
   const requested = Array.isArray(body.amenity_names)
     ? [...new Set(body.amenity_names.map((value: unknown) => String(value).trim().toLowerCase()).filter((value: string) => value in AMENITY_QUERIES))]
     : [];
@@ -280,6 +297,7 @@ Deno.serve(async request => {
       provider_failures: acquired.failures,
       discovered: 0,
       radius_km: radiusKm,
+      requested_radius_km: requestedRadiusKm,
       amenity_names: requested,
       persistence: { skipped: true, reason: "no_live_rows" },
       locations: [],
@@ -316,6 +334,7 @@ Deno.serve(async request => {
     discovered: visibleLocations.length,
     canonical_candidates_discovered: allLocations.length,
     radius_km: radiusKm,
+    requested_radius_km: requestedRadiusKm,
     amenity_names: requested,
     providers_succeeded: acquired.providers_succeeded,
     providers_attempted: acquired.providers_attempted,
