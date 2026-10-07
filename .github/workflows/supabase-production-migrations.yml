@@ -1,5 +1,8 @@
 name: Deploy Supabase Migrations to Production
+run-name: Supabase production readiness · ${{ github.event.workflow_run.head_sha || github.sha }}
 
+# PR Completion Guard dispatches this explicitly after bot-driven merges because
+# GITHUB_TOKEN-originated workflow runs do not reliably cascade workflow_run events.
 on:
   workflow_dispatch:
   workflow_run:
