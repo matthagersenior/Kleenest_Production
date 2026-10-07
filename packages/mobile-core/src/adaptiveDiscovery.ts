@@ -404,6 +404,7 @@ export async function findAdaptiveNearbyPlaces(input:{latitude:number;longitude:
   for(const radiusMeters of [...new Set(radii)]){
     attemptedRadiiMeters.push(radiusMeters);
     effectiveRadiusMeters=radiusMeters;
+    // Canonical discovery is the interactive path; supplemental OSM must not block results.
     const loadCanonical=()=>listNearbyMapCandidates({
       latitude:input.latitude,
       longitude:input.longitude,
