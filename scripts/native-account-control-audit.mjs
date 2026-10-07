@@ -23,6 +23,8 @@ if(!failures.length){
   if(!screen.includes('requestAccountDeletion')||!screen.includes('Optional reason')) failures.push('Account deletion UI must submit through the protected service and allow an optional reason.');
   if(!profile.includes("router.push('/account-deletion')")||!profile.includes('Account deletion request')) failures.push('Profile must expose the in-app account deletion request flow.');
   if(!signup.includes('resetPasswordForEmail')||!signup.includes('FORGOT PASSWORD?')) failures.push('Consumer sign-in must expose a visible self-service password reset request.');
+  if(!signup.includes('returnTo')||!signup.includes('safeAuthReturnPath')||!signup.includes('router.replace(returnTo as any)')) failures.push('Consumer sign-in must preserve a safe return path instead of always dumping authenticated users on Home.');
+  if(!profile.includes('returnTo')||!profile.includes('safeAuthReturnPath')||!profile.includes('finishAuthenticated(returnTo)')) failures.push('Profile auth and OAuth callbacks must preserve the originating consumer route.');
   if(!profile.includes("event==='PASSWORD_RECOVERY'")||!profile.includes('Set your new password')) failures.push('Consumer Profile must keep password recovery in-app and expose a new-password completion state.');
   const hiddenRoute=/name=["']account-deletion["'][^>]*options=\{\{[^}]*href\s*:\s*null/.test(layout);
   if(!hiddenRoute) failures.push('Account deletion must remain a hidden account-control route, not a primary tab.');
