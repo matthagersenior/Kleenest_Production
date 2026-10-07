@@ -18,7 +18,7 @@ if(!failures.length){
  if(adaptiveExplore.includes('RefreshControl'))failures.push('Explore must use explicit Search recovery instead of pull-to-refresh so map panning cannot trigger a page refresh.');
  const hasAccessibleRadiusChoices=explore.includes('accessibilityRole="radio"')&&explore.includes('accessibilityState={{ selected: radius === choice.meters }}');
  if(!hasAccessibleRadiusChoices)failures.push('Explore radius choices must expose accessible radio semantics and selected state.');
- const preservesLiveSelected=/selectedId\s*&&\s*displayRows\.some/.test(explore)&&explore.includes('setSelectedId(preservedId)');
+ const preservesLiveSelected=/selectedId\s*&&\s*displayRows\.some/.test(explore)&&(explore.includes('setSelectedId(preservedId)')||(explore.includes('setSelectedId((currentSelected)=>')&&explore.includes('cameraStillOwnedByLoad')&&/currentSelected\s*&&\s*displayRows\.some/.test(explore)&&explore.includes('return preservedId;')));
  const hydratesCachedRows=explore.includes('setRows(cache.rows)')&&explore.includes('setCached(true)');
  const avoidsHydratedSelection=!/setSelectedId\([^\n;]*cache(?:\.|\?\.)selectedId/.test(explore)&&!explore.includes('setSelectedId(continuity.selectedId)');
  const rendersMapFromCoordinates=/\{\(?origin\s*\|\|\s*searchAreaOrigin\)?\s*\?\s*\(/.test(explore)||/\{origin\s*\?\s*\(/.test(explore)||/const\s+mapVisible\s*=\s*Boolean\(origin/.test(explore);

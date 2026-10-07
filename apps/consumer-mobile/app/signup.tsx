@@ -11,16 +11,25 @@ import { markConsumerAppSession } from '../services/webExperience';
 type SignupIntent='individual'|'family';
 type AccessMode='signin'|'signup';
 
-function authRedirect(){
- if(Platform.OS!=='web'||typeof window==='undefined')return Linking.createURL('profile',{scheme:'kleenest',isTripleSlashed:false});
+function appendReturnTo(url:string,returnTo:string){const join=url.includes('?')?'&':'?';return `${url}${join}returnTo=${encodeURIComponent(returnTo)}`}
+function authRedirect(returnTo:string){
+ if(Platform.OS!=='web'||typeof window==='undefined')return appendReturnTo(Linking.createURL('profile',{scheme:'kleenest',isTripleSlashed:false}),returnTo);
  const base=window.location.pathname.startsWith('/Kleenest_Production')?'/Kleenest_Production':'';
- return `${window.location.origin}${base}/profile/`;
+ return appendReturnTo(`${window.location.origin}${base}/profile/`,returnTo);
 }
 function authUrlValue(url:string,key:string){const match=url.match(new RegExp(`[?#&]${key}=([^&#]+)`));return match?.[1]?decodeURIComponent(match[1].replace(/\+/g,' ')):''}
+function safeAuthReturnPath(value:unknown,fallback='/home'){
+ const candidate=Array.isArray(value)?value[0]:value;
+ if(typeof candidate!=='string'||!candidate.trim())return fallback;
+ let decoded=candidate.trim();
+ try{decoded=decodeURIComponent(decoded)}catch{}
+ if(!decoded.startsWith('/')||decoded.startsWith('//')||/^\/(?:signup|profile)(?:[/?#]|$)/i.test(decoded))return fallback;
+ return decoded;
+}
 
 export default function SignupScreen(){
  const theme=useConsumerTheme();
- const params=useLocalSearchParams<{mode?:string}>();
+ const params=useLocalSearchParams<{mode?:string;returnTo?:string|string[]}>();
  const[mode,setMode]=useState<AccessMode>(params.mode==='signup'?'signup':'signin');
  const[intent,setIntent]=useState<SignupIntent>('individual');
  const[email,setEmail]=useState('');
@@ -30,7 +39,8 @@ export default function SignupScreen(){
  const[message,setMessage]=useState('');
  const[needsConfirmation,setNeedsConfirmation]=useState(false);
  const client=getKleenestSupabaseClient();
- const redirectTo=authRedirect();
+ const returnTo=safeAuthReturnPath(params.returnTo);
+ const redirectTo=authRedirect(returnTo);
 
  async function handleAuthUrl(url:string|null){
   if(!url)return false;
@@ -42,7 +52,7 @@ export default function SignupScreen(){
   else if(accessToken&&refreshToken){const{error}=await client.auth.setSession({access_token:accessToken,refresh_token:refreshToken});if(error)throw error}
   else return false;
   markConsumerAppSession();
-  router.replace('/home');
+  router.replace(returnTo as any);
   return true;
  }
 
@@ -79,7 +89,7 @@ export default function SignupScreen(){
    const{error}=await client.auth.signInWithPassword({email:normalized,password});
    if(error)throw error;
    markConsumerAppSession();
-   router.replace('/home');
+   router.replace(returnTo as any);
   }catch(error:any){
    const text=String(error?.message||'Sign in failed.');
    if(/email.*not.*confirm|not.*confirm.*email/i.test(text)){
@@ -103,7 +113,8 @@ export default function SignupScreen(){
    if(error)throw error;
    if(data.session){
     markConsumerAppSession();
-    router.replace((intent==='family'?'/family':'/home') as any);
+    const destination=params.returnTo?returnTo:(intent==='family'?'/family':returnTo);
+    router.replace(destination as any);
     return;
    }
    setNeedsConfirmation(true);
