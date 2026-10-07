@@ -39,7 +39,7 @@ if(consumer.includes("Linking.createURL('/profile'")||consumer.includes('Linking
 if(!consumer.includes("Linking.createURL('profile'")&&!consumer.includes('Linking.createURL("profile"'))failures.push("Consumer native OAuth callback must use Linking.createURL('profile', ...).");
 if(!consumer.includes('isTripleSlashed:false')&&!consumerCompact.includes('isTripleSlashed:false'))failures.push('Consumer native OAuth callback must preserve the non-triple-slashed callback contract.');
 if(!consumer.includes('/Kleenest_Production/profile/'))failures.push('Consumer web OAuth must return to the materialized GitHub Pages profile callback.');
-if(!consumer.includes("router.replace('/home')")&&!consumer.includes('router.replace("/home")'))failures.push('Consumer successful authentication must return to the signed-in Home surface instead of leaving the user on Profile.');
+if((!consumerCompact.includes("functionsafeAuthReturnPath(value:unknown,fallback='/home')")&&!consumerCompact.includes('functionsafeAuthReturnPath(value:unknown,fallback="/home")'))||!consumerCompact.includes('constreturnTo=safeAuthReturnPath(params.returnTo)')||!consumerCompact.includes('router.replace(safeAuthReturnPath(target)asany)')||!consumer.includes('finishAuthenticated(returnTo)'))failures.push('Consumer successful authentication must return to a validated in-app destination, defaulting safely to Home.');
 
 const consumerSignup=read('apps/consumer-mobile/app/signup.tsx');
 if(!consumerSignup.includes("import * as WebBrowser from 'expo-web-browser'"))failures.push('Consumer Get Started must use Expo WebBrowser for a managed native Google auth session.');
@@ -47,7 +47,8 @@ if(!consumerSignup.includes('WebBrowser.openAuthSessionAsync(data.url,redirectTo
 if(consumerSignup.includes('else await Linking.openURL(data.url)'))failures.push('Consumer Get Started must not launch Google OAuth as a plain external browser URL.');
 if(!consumerSignup.includes('exchangeCodeForSession'))failures.push('Consumer Get Started must exchange PKCE callback codes into the Supabase session.');
 if(!consumerSignup.includes("authResult.type==='success'")||!consumerSignup.includes('handleAuthUrl(authResult.url)'))failures.push('Consumer Get Started must consume the successful auth-session callback immediately so signed-in state updates without a hard refresh.');
-if(!consumerSignup.includes("router.replace('/home')")&&!consumerSignup.includes('router.replace("/home")'))failures.push('Consumer Get Started successful authentication must land on Home.');
+const consumerSignupCompact=compact(consumerSignup);
+if((!consumerSignupCompact.includes("functionsafeAuthReturnPath(value:unknown,fallback='/home')")&&!consumerSignupCompact.includes('functionsafeAuthReturnPath(value:unknown,fallback="/home")'))||!consumerSignupCompact.includes('constreturnTo=safeAuthReturnPath(params.returnTo)')||!consumerSignup.includes('router.replace(returnTo as any)'))failures.push('Consumer Get Started successful authentication must return to a validated in-app destination, defaulting safely to Home.');
 
 const operatorAuth=[
   ['Owner','apps/platform-mobile/app/auth.tsx','kleenest-owner','ownerRedirect'],
