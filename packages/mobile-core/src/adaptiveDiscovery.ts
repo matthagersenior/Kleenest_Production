@@ -323,9 +323,6 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
   for(const radiusMeters of [...new Set(radii)]){
     attemptedRadiiMeters.push(radiusMeters);
     effectiveRadiusMeters=radiusMeters;
-    const harvestPromise=radiusMeters<=LIVE_DISCOVERY_RADIUS_METERS
-      ? harvestNearbyMapCandidates({latitude:input.latitude,longitude:input.longitude,radiusMeters,amenityNames})
-      : null;
     const loadCanonical=async()=>{
       const verifiedPromise=listNearbyRestroomsV3({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,amenityNames,amenityMatch,limit});
       if(amenityNames.length){
@@ -347,14 +344,15 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
     const locallyEnough=(radiusMeters<=1609&&rows.length>=DENSE_LOCAL_RESULT_COUNT)
       ||(radiusMeters<=3219&&rows.length>=MODERATE_LOCAL_RESULT_COUNT)
       ||(radiusMeters>=8047&&rows.length>0);
-    if(harvestPromise){
-      if(locallyEnough){
-        void harvestPromise.catch(()=>{});
-      }else{
-        const harvest=await harvestPromise.catch(()=>null);
-        const changed=Number(harvest?.persistence?.imported_locations||0)+Number(harvest?.persistence?.updated_locations||0);
-        if(changed>0||(!rows.length&&Number(harvest?.canonical_candidates_discovered||0)>0))rows=await loadCanonical();
-      }
+    // OSM/Overpass is a supplement, not the primary discovery path. Only
+    // harvest when canonical coverage is thin, and never block map/results.
+    if(!locallyEnough&&radiusMeters<=LIVE_DISCOVERY_RADIUS_METERS){
+      void harvestNearbyMapCandidates({
+        latitude:input.latitude,
+        longitude:input.longitude,
+        radiusMeters,
+        amenityNames,
+      }).catch(()=>{});
     }
 
     // Count controls how far discovery widens, never how many local results survive.
@@ -406,9 +404,7 @@ export async function findAdaptiveNearbyPlaces(input:{latitude:number;longitude:
   for(const radiusMeters of [...new Set(radii)]){
     attemptedRadiiMeters.push(radiusMeters);
     effectiveRadiusMeters=radiusMeters;
-    const harvestPromise=radiusMeters<=LIVE_DISCOVERY_RADIUS_METERS
-      ? harvestNearbyMapCandidates({latitude:input.latitude,longitude:input.longitude,radiusMeters,amenityNames:[]})
-      : null;
+    // Canonical discovery is the interactive path; supplemental OSM must not block results.
     const loadCanonical=()=>listNearbyMapCandidates({
       latitude:input.latitude,
       longitude:input.longitude,
@@ -418,9 +414,19 @@ export async function findAdaptiveNearbyPlaces(input:{latitude:number;longitude:
     });
     rows=await loadCanonical();
 
-    // Canonical discovery is the interactive path. Live harvesting updates the
-    // shared inventory in the background and must never block the map/results.
-    if(harvestPromise)void harvestPromise.catch(()=>{});
+    const locallyEnough=(radiusMeters<=1609&&rows.length>=DENSE_LOCAL_RESULT_COUNT)
+      ||(radiusMeters<=3219&&rows.length>=MODERATE_LOCAL_RESULT_COUNT)
+      ||(radiusMeters>=8047&&rows.length>0);
+    // Canonical data and queued Overture hydration are primary. OSM/Overpass
+    // is only a non-blocking supplement when local canonical coverage is thin.
+    if(!locallyEnough&&radiusMeters<=LIVE_DISCOVERY_RADIUS_METERS){
+      void harvestNearbyMapCandidates({
+        latitude:input.latitude,
+        longitude:input.longitude,
+        radiusMeters,
+        amenityNames:[],
+      }).catch(()=>{});
+    }
 
     if(radiusMeters<=1609&&rows.length>=DENSE_LOCAL_RESULT_COUNT){
       densityClass='dense';
