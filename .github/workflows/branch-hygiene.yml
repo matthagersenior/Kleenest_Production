@@ -42,8 +42,17 @@ jobs:
             echo "Branch moved after PR merge; preserving $HEAD_REF at $CURRENT_SHA"
             exit 0
           fi
-          gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$HEAD_REF"
-          echo "Deleted merged branch: $HEAD_REF"
+          if gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$HEAD_REF"; then
+            echo "Deleted merged branch: $HEAD_REF"
+          else
+            CURRENT_AFTER="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$HEAD_REF" --jq '.object.sha' 2>/dev/null || true)"
+            if [ -z "$CURRENT_AFTER" ]; then
+              echo "Branch was already deleted by concurrent cleanup: $HEAD_REF"
+            else
+              echo "Failed to delete merged branch and it still exists: $HEAD_REF at $CURRENT_AFTER" >&2
+              exit 1
+            fi
+          fi
 
       - name: Remove historical branches still pinned to merged PR heads
         if: github.event_name != 'pull_request'
@@ -65,9 +74,18 @@ jobs:
               preserved=$((preserved+1))
               continue
             fi
-            gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$ref"
-            echo "Deleted historical merged branch: $ref"
-            deleted=$((deleted+1))
+            if gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$ref"; then
+              echo "Deleted historical merged branch: $ref"
+              deleted=$((deleted+1))
+            else
+              current_after="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$ref" --jq '.object.sha' 2>/dev/null || true)"
+              if [ -z "$current_after" ]; then
+                echo "Historical branch was already deleted by concurrent cleanup: $ref"
+              else
+                echo "Failed to delete historical merged branch and it still exists: $ref at $current_after" >&2
+                exit 1
+              fi
+            fi
           done < "$RUNNER_TEMP/merged-pr-heads.tsv"
 
           echo "Historical branch cleanup: deleted=$deleted preserved_moved=$preserved"
