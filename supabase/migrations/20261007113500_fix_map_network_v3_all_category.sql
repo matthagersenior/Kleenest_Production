@@ -1,3 +1,4 @@
+-- Keep broad discovery independent from restroom verification; restroom-only filtering remains explicit.
 CREATE OR REPLACE FUNCTION public.map_network_nearby_v3(p_lat double precision,p_lng double precision,p_radius_m integer DEFAULT 30000,p_limit integer DEFAULT 50,p_category text DEFAULT 'restroom',p_search text DEFAULT NULL,p_amenity_names text[] DEFAULT '{}'::text[],p_amenity_match text DEFAULT 'any')
 RETURNS SETOF jsonb LANGUAGE plpgsql STABLE SET search_path TO 'pg_catalog','public','extensions' AS $fn$
 DECLARE v_names text[]:='{}'::text[]; v_match text:=lower(coalesce(nullif(trim(p_amenity_match),''),'any')); v_category text:=lower(coalesce(nullif(trim(p_category),''),'restroom'));
