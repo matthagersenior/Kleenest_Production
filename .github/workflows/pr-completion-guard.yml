@@ -196,6 +196,7 @@ jobs:
                   'security-gate.yml',
                   'product-parity.yml',
                   'main-lineage-guard.yml',
+                  'supabase-production-migrations.yml',
                 ];
                 const dispatchFailures = [];
                 for (const workflow_id of postMergeWorkflows) {
