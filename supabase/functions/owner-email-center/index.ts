@@ -43,10 +43,13 @@ async function authorize(req:Request){
     client.rpc('admin_authorization_v1'),
   ]);
   if(userError||!userData.user)throw Object.assign(new Error('Owner sign-in is required.'),{status:401});
-  if(error)throw Object.assign(new Error(error.message),{status:403});
-  const authorization=(data&&typeof data==='object'?data:{}) as Record<string,unknown>;
+  const authorization=(!error&&data&&typeof data==='object'?data:{}) as Record<string,unknown>;
   if(!authorization.authorized&&!authorization.is_admin&&!authorization.is_platform_owner){
-    throw Object.assign(new Error('Owner/admin authority is required for email access.'),{status:403});
+    // Membership, not global admin status, grants a named/shared mailbox login.
+    const member=await adminClient().from('owner_email_mailbox_members')
+      .select('mailbox_id').eq('user_id',userData.user.id).limit(1);
+    if(member.error)throw Object.assign(new Error('Mailbox access could not be checked.'),{status:403});
+    if(!member.data?.length)throw Object.assign(new Error('No Kleenest mailbox is assigned to this account.'),{status:403});
   }
   return{userId:userData.user.id,authorization};
 }
@@ -62,6 +65,26 @@ function optionalText(value:unknown,max=20000){
 function emailList(value:unknown){
   return [...new Set(String(value??'').split(/[;,]/).map(v=>v.trim().toLowerCase()).filter(v=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)))];
 }
+
+function emailAttachments(value:unknown){
+  if(value===undefined||value===null)return [];
+  if(!Array.isArray(value)||value.length>3)throw new Error('Up to three attachments are supported.');
+  const formats:Record<string,string>={pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',txt:'text/plain',csv:'text/csv'};
+  let total=0;
+  return value.map((item:any)=>{
+    const filename=String(item?.filename||'').split(/[/\\]/).pop()?.slice(0,140)||'';
+    const ext=filename.split('.').pop()?.toLowerCase()||'';
+    const content=String(item?.content||'');
+    if(!formats[ext])throw new Error('Only PDF, PNG, JPG, TXT, and CSV attachments are supported.');
+    if(!content||content.length%4!==0||!/^[A-Za-z0-9+/]+={0,2}$/.test(content))throw new Error('Attachment encoding is invalid.');
+    const size=content.length/4*3-(content.endsWith('==')?2:content.endsWith('=')?1:0);
+    if(size>2*1024*1024)throw new Error('Each attachment must be 2 MB or smaller.');
+    total+=size;
+    if(total>3*1024*1024)throw new Error('Total attachments must be 3 MB or smaller.');
+    return {filename,content,contentType:formats[ext],size};
+  });
+}
+
 function parseMailbox(value:string){
   const bracket=value.match(/<([^>]+)>/);
   const address=(bracket?.[1]||value).trim().toLowerCase();
@@ -207,15 +230,30 @@ async function refreshThread(threadId:string){
 async function sendAndStore(input:{
   ownerUserId:string;threadId:string;from:string;to:string[];cc?:string[];bcc?:string[];
   subject:string;body:string;headers?:Record<string,string>;auditAction:string;
+  attachments?:Array<{filename:string;content:string;contentType:string;size:number}>;
 }){
   const ready=await requireReady(input.ownerUserId);
   const payload:any={from:input.from||ready.from,to:input.to,subject:input.subject,text:input.body};
   if(input.cc?.length)payload.cc=input.cc;
   if(input.bcc?.length)payload.bcc=input.bcc;
   if(input.headers&&Object.keys(input.headers).length)payload.headers=input.headers;
+  if(input.attachments?.length)payload.attachments=input.attachments.map(({filename,content,contentType})=>({filename,content,contentType}));
   const sent=await resend('/emails',ready.provider.api_key,{method:'POST',body:JSON.stringify(payload)});
   let detail:any={};
   try{detail=await resend(`/emails/${encodeURIComponent(String(sent.id))}`,ready.provider.api_key)}catch{}
+  let attachmentMetadata=(input.attachments||[]).map(file=>({filename:file.filename,mimeType:file.contentType,size:file.size,id:null}));
+  if(input.attachments?.length&&sent.id){
+    try{
+      const listing=await resend('/emails/'+encodeURIComponent(String(sent.id))+'/attachments',ready.provider.api_key);
+      const rows=Array.isArray(listing?.data)?listing.data:[];
+      if(rows.length)attachmentMetadata=rows.map((item:any)=>({
+        id:String(item.id||'')||null,
+        filename:String(item.filename||'attachment'),
+        mimeType:String(item.content_type||'application/octet-stream'),
+        size:Number(item.size)||0,
+      }));
+    }catch{}
+  }
   const internetMessageId=String(detail?.message_id||'').trim()||null;
   const parsedFrom=parseMailbox(input.from||ready.from);
   const now=new Date().toISOString();
@@ -235,7 +273,7 @@ async function sendAndStore(input:{
     subject:input.subject,
     text_body:input.body,
     headers:input.headers||{},
-    attachments:[],
+    attachments:attachmentMetadata,
     delivery_status:String(detail?.last_event||'sent'),
     sent_at:now,
   });
@@ -285,7 +323,7 @@ Deno.serve(async(req:Request)=>{
         webhookEnabled:Boolean(settings.webhook_enabled),
         fromAddress:String(provider.from_address||''),
         providerConfigured:Boolean(provider.configured),
-        ...(snapshot.data||{}),
+        ...(Boolean(authorization.authorized||authorization.is_admin||authorization.is_platform_owner)?(snapshot.data||{}):{}),
         authorization,
       });
     }
@@ -308,6 +346,7 @@ Deno.serve(async(req:Request)=>{
         .limit(maxResults);
       if(mailboxId)q=q.eq('mailbox_id',mailboxId);
       if(mailbox==='inbox')q=q.eq('folder','inbox');
+      else if(mailbox==='archive')q=q.eq('folder','archive');
       else if(mailbox==='sent')q=q.eq('folder','sent');
       else if(mailbox==='drafts')q=q.eq('folder','drafts');
       else if(mailbox==='spam')q=q.eq('folder','spam');
@@ -361,6 +400,33 @@ Deno.serve(async(req:Request)=>{
         };
       });
       return json({threads,nextPageToken:null});
+    }
+
+    if(action==='get_attachment'){
+      const threadId=requiredText(body?.threadId,'threadId',100);
+      const messageId=requiredText(body?.messageId,'messageId',100);
+      const attachmentId=requiredText(body?.attachmentId,'attachmentId',160);
+      const thread=await admin.from('owner_email_center_threads')
+        .select('mailbox_id').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
+      if(thread.error)throw thread.error;
+      if(!thread.data.mailbox_id)throw Object.assign(new Error('Thread mailbox is unavailable.'),{status:409});
+      await requireMailboxAccess(userId,authorization,String(thread.data.mailbox_id),false);
+      const record=await admin.from('owner_email_center_messages')
+        .select('direction,provider_email_id,attachments')
+        .eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).eq('id',messageId).single();
+      if(record.error)throw record.error;
+      const attachments=Array.isArray(record.data.attachments)?record.data.attachments:[];
+      const match=attachments.find((item:any)=>String(item.id||'')===attachmentId);
+      if(!match||!record.data.provider_email_id)throw Object.assign(new Error('Attachment is not available.'),{status:404});
+      const provider=await providerConfig();
+      if(!provider.configured||!provider.api_key)throw Object.assign(new Error('Email provider unavailable.'),{status:503});
+      const prefix=record.data.direction==='inbound'?'emails/receiving/':'emails/';
+      const location='/'+prefix+encodeURIComponent(record.data.provider_email_id)+'/attachments/'+encodeURIComponent(attachmentId);
+      const file=await resend(location,String(provider.api_key));
+      const downloadUrl=String(file.download_url||'');
+      if(!downloadUrl.startsWith('https://'))throw Object.assign(new Error('Secure download is unavailable.'),{status:502});
+      await audit(storageOwnerUserId,threadId,'download_attachment',{messageId,attachmentId});
+      return json({downloadUrl,filename:String(file.filename||match.filename||'attachment'),expiresAt:file.expires_at||null});
     }
 
     if(action==='get_thread'){
@@ -453,6 +519,7 @@ Deno.serve(async(req:Request)=>{
       if(!mailbox.send_enabled)throw Object.assign(new Error('Sending is disabled for this mailbox.'),{status:403});
       const subject=requiredText(body?.subject,'subject',500);
       const text=requiredText(body?.body,'body',50000);
+      const attachments=emailAttachments(body?.attachments);
       const created=await admin.from('owner_email_center_threads').insert({
         owner_user_id:storageOwnerUserId,mailbox_id:mailbox.id,recipient_address:mailbox.address,
         subject,normalized_subject:normalizeSubject(subject),folder:'sent',unread:false,
@@ -461,7 +528,7 @@ Deno.serve(async(req:Request)=>{
       }).select('id').single();
       if(created.error)throw created.error;
       const from=String(mailbox.display_name||'Kleenest')+' <'+String(mailbox.address)+'>';
-      return json(await sendAndStore({ownerUserId:storageOwnerUserId,threadId:created.data.id,from,to,cc,bcc,subject,body:text,auditAction:'send'}));
+      return json(await sendAndStore({ownerUserId:storageOwnerUserId,threadId:created.data.id,from,to,cc,bcc,subject,body:text,attachments,auditAction:'send'}));
     }
 
     if(action==='reply'){
@@ -541,6 +608,11 @@ Deno.serve(async(req:Request)=>{
       if(current.error)throw current.error;
       if(!current.data.mailbox_id)throw Object.assign(new Error('Thread mailbox is unavailable.'),{status:409});
       await requireMailboxAccess(userId,authorization,String(current.data.mailbox_id),false);
+      const member=await mailboxMembership(userId,String(current.data.mailbox_id));
+      const isAdministrator=Boolean(authorization.authorized||authorization.is_admin||authorization.is_platform_owner);
+      if(!isAdministrator&&!['owner','manager'].includes(String(member?.access_role||''))){
+        throw Object.assign(new Error('Mailbox management permission is required to block senders.'),{status:403});
+      }
       const latest=await admin.from('owner_email_center_messages').select('from_address,direction').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).eq('direction','inbound').order('created_at',{ascending:false}).limit(1).maybeSingle();
       if(latest.error)throw latest.error;
       const sender=String(latest.data?.from_address||'').toLowerCase();

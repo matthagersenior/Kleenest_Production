@@ -12,6 +12,8 @@ on:
     paths:
       - apps/consumer-mobile/**
       - apps/platform-mobile/**
+      - apps/mail-client/**
+      - scripts/kleenest-mail-pwa-audit.mjs
       - apps/business-mobile/**
       - apps/fleet-mobile/**
       - public/manifest.webmanifest
@@ -105,6 +107,18 @@ jobs:
         run: |
           test -s apps/platform-mobile/dist/index.html
           grep -q "KleenestOS" apps/platform-mobile/dist/index.html
+      - name: Build installable Kleenest Mail client
+        env:
+          VITE_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+        run: |
+          npx vite build --config apps/mail-client/vite.config.js
+          cp apps/consumer-mobile/assets/app-icon.png apps/mail-client/dist/app-icon.png
+          cp public/app-icon-512.svg apps/mail-client/dist/app-icon-512.svg
+          node scripts/kleenest-mail-pwa-audit.mjs
+          test -s apps/mail-client/dist/index.html
+          test -s apps/mail-client/dist/manifest.webmanifest
+          test -s apps/mail-client/dist/sw.js
       - name: Prepare installable Consumer Web PWA
         env:
           EXPO_PUBLIC_ADSENSE_CLIENT_ID: ${{ vars.EXPO_PUBLIC_ADSENSE_CLIENT_ID }}
@@ -146,6 +160,7 @@ jobs:
           path: |
             apps/consumer-mobile/dist
             apps/platform-mobile/dist
+            apps/mail-client/dist
             apps/business-mobile/dist
             apps/fleet-mobile/dist
             test-results/consumer-stress
