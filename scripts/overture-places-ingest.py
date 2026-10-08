@@ -609,6 +609,21 @@ def self_test() -> None:
     assert row and row["source_id"] == "overture:gers-1"
     assert row["place_type"] == "restaurant"
     assert row["state"] == "MO"
+    # A co-located money-transfer provider is not the primary QuikTrip store brand.
+    quiktrip_sample = (
+        "gers-qt", "QuikTrip", "convenience_store", "convenience_store",
+        '["shopping","convenience_store"]', 0.89, "open",
+        None, None, "Western Union", "1913 Bowles Avenue",
+        "Fenton", "MO", "63026", "US", -90.4701585, 38.5410412, "[]",
+    )
+    qt_row = overture_row(quiktrip_sample, "2026-09-23.1", "2026-10-01T00:00:00Z")
+    assert qt_row and qt_row["place_type"] == "gas_station"
+    assert qt_row["brand"] == "QuikTrip"
+    assert qt_row["source_metadata"]["provider_reported_brand"] == "Western Union"
+    western_union_sample = (*quiktrip_sample[:1], "Western Union", *quiktrip_sample[2:])
+    wu_row = overture_row(western_union_sample, "2026-09-23.1", "2026-10-01T00:00:00Z")
+    assert wu_row and wu_row["brand"] == "Western Union"
+    assert wu_row["place_type"] == "shopping"
     assert http_retry_attempts("GET", retries=2) == 3
     assert http_retry_attempts("PATCH", retries=2) == 3
     assert http_retry_attempts("POST", retries=2) == 1
