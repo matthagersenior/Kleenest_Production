@@ -392,6 +392,8 @@ jobs:
       - name: Consumer Explore tap regression
         if: github.event_name == 'pull_request'
         run: node --test scripts/consumer-qa-regressions.test.mjs
+      - name: Exact review-score input regression
+        run: node scripts/native-review-score-input-audit.mjs
       - name: Consumer native typecheck
         run: npm run native:typecheck
       - name: Business Fleet and Owner typecheck
