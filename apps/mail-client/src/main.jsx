@@ -208,7 +208,7 @@ function App() {
         <div className="sidebar-heading"><span className="overline">MAILBOX</span><select aria-label="Choose mailbox" value={mailboxId} onChange={e=>{setMailboxId(e.target.value);setThread(null);}}>{mailboxes.map(m=><option key={m.id} value={m.id}>{m.address}</option>)}</select></div>
         <button className="primary compose-button" disabled={!mailbox||busy||!mailbox.send_enabled} onClick={()=>{setCompose(true);setThread(null);setFiles([]);setDraft(emptyDraft());}}>＋ Compose</button>
         <nav aria-label="Mail folders" className="folders">{FOLDERS.map(([value,label])=><button key={value} className={folder===value?'selected':''} onClick={()=>{setFolder(value);setThread(null);setCompose(false);}}>{label}</button>)}</nav>
-        <div className="sidebar-foot"><a href="../owner/communications">KleenestOS Email Center ↗</a><p>Private messages are not available offline.</p></div>
+        <div className="sidebar-foot"><a href="https://kleenest.us/owner/communications">KleenestOS Email Center ↗</a><p>Private messages are not available offline.</p></div>
       </aside>
       <section className="threads">
         <div className="pane-head"><div><span className="overline">{mailbox?.address||'NO MAILBOX'}</span><h2>{FOLDERS.find(x=>x[0]===folder)?.[1]}</h2></div><button className="small" onClick={()=>loadThreads()} disabled={!mailbox||loading}>↻ Refresh</button></div>
@@ -254,7 +254,7 @@ function App() {
       </main>
     </div>}
     {notice&&<div role="status" className="notice"><span>{notice}</span><button onClick={()=>setNotice('')} aria-label="Dismiss">×</button></div>}
-    <footer>© Kleenest · <a href="../legal/privacy.html">Privacy</a> · <span>{status?.connected?'Mail provider connected':'Authenticated mail service'}</span></footer>
+    <footer>© Kleenest · <a href="https://kleenest.us/legal/privacy.html">Privacy</a> · <a href="https://kleenest.us/contact/">Contact</a> · <span>{status?.connected?'Mail provider connected':'Authenticated mail service'}</span></footer>
   </div>;
 }
 createRoot(document.getElementById('root')).render(<App />);
