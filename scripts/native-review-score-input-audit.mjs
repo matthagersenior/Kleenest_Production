@@ -34,6 +34,8 @@ for(const forbidden of [
   'placeholder="1–5 stars"',
   'value={cleanliness} onChangeText={updateCleanliness}',
   'placeholder="0–100"',
+  'no number entry needed',
+  'Tap both required scores',
   "cleanliness===''?null:Number(cleanliness)"
 ])if(source.includes(forbidden))throw new Error(`Consumer review score UX still exposes obsolete free-form contract: ${forbidden}`);
 
