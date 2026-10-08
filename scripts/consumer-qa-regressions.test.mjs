@@ -374,3 +374,54 @@ test('discovery collapses brand-coded and punctuation variants from multiple sou
   assert.ok(actual.some(row=>row.name==='Circle K Car Wash'));
   assert.ok(actual.some(row=>String(row.name).startsWith('McDonald')));
 });
+
+
+test('web map markers stay mounted across touch-state rerenders and keep the latest click handler',()=>{
+  const markerPath='apps/consumer-mobile/web/maplibrePreview.tsx';
+  const source=declaration(markerPath,'Marker');
+  const React={createElement:(type,props,...children)=>({type,props,children}),Fragment:'Fragment'};
+  const hookSlots=[], effects=[];
+  let hookIndex=0;
+  let activeMarker=null,created=0,removed=0,clicked=0;
+  const map={};
+  const context={map,fallback:false};
+  const useRef=(initial)=>{
+    const index=hookIndex++;
+    if(!hookSlots[index])hookSlots[index]={current:initial};
+    return hookSlots[index];
+  };
+  const useEffect=(callback,deps)=>{
+    const index=hookIndex++;
+    const previous=effects[index];
+    if(previous&&previous.deps.length===deps.length&&previous.deps.every((value,i)=>Object.is(value,deps[i])))return;
+    previous?.cleanup?.();
+    effects[index]={deps,cleanup:callback()};
+  };
+  const markerClass=class{
+    constructor({element}){created++;activeMarker=element;}
+    setLngLat(){return this;}
+    addTo(){return this;}
+    remove(){removed++;}
+  };
+  const component=compile(source,{
+    React,useRef,useEffect,useContext:()=>context,MapContext:{},
+    document:{createElement:()=>({style:{},setAttribute(){}})},
+    createRoot:()=>({render(){},unmount(){}}),
+    maplibregl:{Marker:markerClass},
+    projectedOffset:()=>({left:0,top:0}),styles:{},View:'View',Pressable:'Pressable',
+  },'Marker');
+  const coords=[-90.4701585,38.5410412];
+  const render=(children,onPress)=>{
+    hookIndex=0;
+    component({id:'place-fenton-qt',lngLat:coords,anchor:'bottom',children,onPress});
+  };
+  render({name:'QuikTrip',isSelected:false},()=>{clicked+=1;});
+  const firstMarker=activeMarker;
+  // A map touch updates gesture state before the click event fires.
+  render({name:'QuikTrip',isSelected:true},()=>{clicked+=10;});
+  assert.equal(created,1,'a touch-state rerender must not recreate the clickable map marker');
+  assert.equal(removed,0,'a touch-state rerender must not remove the event target');
+  assert.equal(activeMarker,firstMarker,'the original tap target must remain mounted');
+  firstMarker.onclick({stopPropagation(){}});
+  assert.equal(clicked,10,'the original marker target must invoke the latest selection handler');
+});
