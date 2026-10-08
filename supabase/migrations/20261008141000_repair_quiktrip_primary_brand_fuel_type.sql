@@ -153,9 +153,10 @@ begin
      'publisher',nullif(v_input_meta->>'publisher',''),
      'brand',v_brand,
      'provider_reported_brand',
-       case when v_brand_identity->>'source'='establishment_name_override'
+       coalesce(nullif(v_input_meta->>'provider_reported_brand',''),
+         case when v_brand_identity->>'source'='establishment_name_override'
          and lower(trim(coalesce(item->>'brand',v_tags->>'brand',''))) <> 'quiktrip'
-         then coalesce(nullif(trim(item->>'brand'),''),nullif(trim(v_tags->>'brand'),'')) else null end,
+         then coalesce(nullif(trim(item->>'brand'),''),nullif(trim(v_tags->>'brand'),'')) else null end),
      'brand_identity_source',nullif(v_brand_identity->>'source',''),
      'brand_identity_confidence',nullif(v_brand_identity->>'confidence',''),
      'operator',v_operator,
