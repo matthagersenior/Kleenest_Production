@@ -15,6 +15,7 @@ import datetime as dt
 import json
 import math
 import os
+import re
 import socket
 import sys
 import time
@@ -29,6 +30,7 @@ SOURCE_KEY = "overture"
 DEFAULT_MIN_CONFIDENCE = 0.30
 batch_size = 50
 MAX_RECORDS_PER_CYCLE = 50
+QUIKTRIP_STORE_NAME = re.compile(r"^quik\s*trip(?:\s*(?:store|#)?\s*[0-9]+)?$", re.IGNORECASE)
 
 
 class BackgroundIngestionBusy(RuntimeError):
@@ -175,12 +177,22 @@ def overture_row(record: tuple[Any, ...], release: str, captured_at: str) -> dic
     if not (-90 <= lat <= 90 and -180 <= lng <= 180):
         return None
 
+    category = place_type(basic_category, taxonomy_primary, taxonomy_hierarchy_json)
+    reported_brand = str(brand_name).strip() if brand_name else None
+    provider_reported_brand = None
+    if QUIKTRIP_STORE_NAME.fullmatch(str(name).strip()):
+        if category in {"shopping", "service"}:
+            category = "gas_station"
+        if reported_brand and reported_brand.casefold() != "quiktrip":
+            provider_reported_brand = reported_brand
+        reported_brand = "QuikTrip"
+
     return {
         "source_id": f"overture:{overture_id}",
         "latitude": lat,
         "longitude": lng,
         "name": str(name).strip(),
-        "place_type": place_type(basic_category, taxonomy_primary, taxonomy_hierarchy_json),
+        "place_type": category,
         "address": str(address).strip() if address else None,
         "city": str(city).strip() if city else None,
         "state": normalize_state(region),
@@ -188,7 +200,7 @@ def overture_row(record: tuple[Any, ...], release: str, captured_at: str) -> dic
         "country": str(country).strip().upper() if country else "US",
         "phone": str(phone).strip() if phone else None,
         "website": str(website).strip() if website else None,
-        "brand": str(brand_name).strip() if brand_name else None,
+        "brand": reported_brand,
         "operator_name": None,
         "source_metadata": {
             "provider": "overture",
@@ -196,6 +208,7 @@ def overture_row(record: tuple[Any, ...], release: str, captured_at: str) -> dic
             "dataset": f"overture_places_{release}",
             "publisher": "Overture Maps Foundation",
             "source_category": str(basic_category or taxonomy_primary or "place"),
+            "provider_reported_brand": provider_reported_brand,
             "source_confidence": str(confidence) if confidence is not None else None,
             "captured_at": captured_at,
             "overture_release": release,
@@ -609,6 +622,21 @@ def self_test() -> None:
     assert row and row["source_id"] == "overture:gers-1"
     assert row["place_type"] == "restaurant"
     assert row["state"] == "MO"
+    # A co-located money-transfer provider is not the primary QuikTrip store brand.
+    quiktrip_sample = (
+        "gers-qt", "QuikTrip", "convenience_store", "convenience_store",
+        '["shopping","convenience_store"]', 0.89, "open",
+        None, None, "Western Union", "1913 Bowles Avenue",
+        "Fenton", "MO", "63026", "US", -90.4701585, 38.5410412, "[]",
+    )
+    qt_row = overture_row(quiktrip_sample, "2026-09-23.1", "2026-10-01T00:00:00Z")
+    assert qt_row and qt_row["place_type"] == "gas_station"
+    assert qt_row["brand"] == "QuikTrip"
+    assert qt_row["source_metadata"]["provider_reported_brand"] == "Western Union"
+    western_union_sample = (*quiktrip_sample[:1], "Western Union", *quiktrip_sample[2:])
+    wu_row = overture_row(western_union_sample, "2026-09-23.1", "2026-10-01T00:00:00Z")
+    assert wu_row and wu_row["brand"] == "Western Union"
+    assert wu_row["place_type"] == "shopping"
     assert http_retry_attempts("GET", retries=2) == 3
     assert http_retry_attempts("PATCH", retries=2) == 3
     assert http_retry_attempts("POST", retries=2) == 1
