@@ -331,6 +331,8 @@ export function Camera({ initialViewState }: any) {
 export function Marker({ children, onPress, lngLat, anchor = 'center', id }: any) {
   const context = useContext(MapContext);
   const rootRef = useRef<Root | null>(null);
+  const onPressRef = useRef(onPress);
+  onPressRef.current = onPress;
   const coordinateKey = Array.isArray(lngLat) ? `${lngLat[0]},${lngLat[1]}` : '';
 
   useEffect(() => {
@@ -340,8 +342,9 @@ export function Marker({ children, onPress, lngLat, anchor = 'center', id }: any
     const lat = Number(lngLat[1]);
     if (!Number.isFinite(lng) || !Number.isFinite(lat)) return;
 
-    const element = document.createElement('button');
-    element.type = 'button';
+    const element = document.createElement('div');
+    element.setAttribute('role', 'button');
+    element.tabIndex = 0;
     element.setAttribute('aria-label', String(id || 'Map location'));
     element.style.border = '0';
     element.style.background = 'transparent';
@@ -350,12 +353,17 @@ export function Marker({ children, onPress, lngLat, anchor = 'center', id }: any
     element.style.touchAction = 'manipulation';
     element.onclick = (event) => {
       event.stopPropagation();
-      onPress?.(event);
+      onPressRef.current?.(event);
+    };
+    element.onkeydown = (event) => {
+      if (event.target === element && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        element.click();
+      }
     };
 
     const root = createRoot(element);
     rootRef.current = root;
-    root.render(<>{children}</>);
     const marker = new maplibregl.Marker({ element, anchor }).setLngLat([lng, lat]).addTo(map);
 
     return () => {
@@ -363,7 +371,12 @@ export function Marker({ children, onPress, lngLat, anchor = 'center', id }: any
       root.unmount();
       rootRef.current = null;
     };
-  }, [context?.map, context?.fallback, coordinateKey, anchor, id, onPress, children]);
+  }, [context?.map, context?.fallback, coordinateKey, anchor, id]);
+
+  // Refresh the marker's React content without removing its DOM tap target.
+  useEffect(() => {
+    rootRef.current?.render(<>{children}</>);
+  }, [children, context?.map, context?.fallback, coordinateKey]);
 
   if (!context?.fallback || !Array.isArray(lngLat) || lngLat.length < 2) return null;
   const lng = Number(lngLat[0]);
