@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
 import './styles.css';
+import MailNotifications,{removeMailSubscription} from './MailNotifications.jsx';
 
 const URL = import.meta.env.VITE_SUPABASE_URL || 'https://ssgesjzdvdsqacdtasje.supabase.co';
 const KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
@@ -40,6 +41,7 @@ function App() {
   const [reply,setReply]=useState(''),[forwardTo,setForwardTo]=useState(''),[forwardBody,setForwardBody]=useState('');
   const [labelName,setLabelName]=useState(''),[status,setStatus]=useState(null);
   const [loading,setLoading]=useState(false);
+  const [notificationPanel,setNotificationPanel]=useState(false);
 
   useEffect(()=>{
     if(!supabase) return;
@@ -59,6 +61,23 @@ function App() {
     return ()=>{active=false;subscription.unsubscribe();window.removeEventListener('online',setConnected);window.removeEventListener('offline',setConnected);window.removeEventListener('beforeinstallprompt',onInstall);};
   },[]);
 
+
+  useEffect(()=>{
+    if(!user||!mailboxes.length)return;
+    const params=new URLSearchParams(window.location.search);
+    const mailId=params.get('mailbox'),threadId=params.get('thread');
+    if(!mailId||!threadId||!mailboxes.some(m=>m.id===mailId))return;
+    history.replaceState(null,'',location.pathname);
+    setMailboxId(mailId);
+    invoke('owner-email-center',{action:'get_thread',threadId})
+      .then(result=>{setCompose(false);setThread(result.thread);})
+      .catch(error=>setNotice(message(error)));
+  },[user?.id,mailboxes.length]);
+  async function signOut() {
+    await removeMailSubscription(supabase,user).catch(e=>console.warn('Unable to remove mail push subscription',e));
+    await supabase.auth.signOut();
+    setNotificationPanel(false);
+  }
   async function task(run) {
     setBusy(true);setNotice('');
     try{return await run();} catch(e){setNotice(message(e));return null;} finally{setBusy(false);}
@@ -191,7 +210,8 @@ function App() {
     <header className="header"><Logo/><span className="header-right">
       {!online&&<span className="offline">Offline: mail unavailable</span>}
       {installPrompt&&<button type="button" className="small" onClick={install}>Install app</button>}
-      {user&&<button type="button" className="small" onClick={()=>supabase.auth.signOut()}>Sign out</button>}
+      {user&&<button type="button" className="small" aria-expanded={notificationPanel} onClick={()=>setNotificationPanel(true)}>🔔 Notifications</button>}
+      {user&&<button type="button" className="small" onClick={signOut}>Sign out</button>}
     </span></header>
     {!user ? <main className="authentication"><section className="panel">
       <span className="overline">SECURE KLEENEST EMAIL</span><h1>Your mail, wherever you are.</h1>
@@ -253,6 +273,7 @@ function App() {
         </div> : <div className="welcome"><div className="welcome-icon">✉</div><h2>Welcome to Kleenest Mail</h2><p>Select a conversation or compose a new message.</p><p className="fine">Delivery is handled securely by KleenestOS and Resend. Messages are not stored in this browser's offline cache.</p></div>}
       </main>
     </div>}
+    {user&&notificationPanel&&<MailNotifications user={user} supabase={supabase} mailboxes={mailboxes} url={URL} apiKey={KEY} onClose={()=>setNotificationPanel(false)}/>}
     {notice&&<div role="status" className="notice"><span>{notice}</span><button onClick={()=>setNotice('')} aria-label="Dismiss">×</button></div>}
     <footer>© Kleenest · <a href="https://kleenest.us/legal/privacy.html">Privacy</a> · <a href="https://kleenest.us/contact/">Contact</a> · <span>{status?.connected?'Mail provider connected':'Authenticated mail service'}</span></footer>
   </div>;
