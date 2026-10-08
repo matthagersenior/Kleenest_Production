@@ -43,10 +43,13 @@ async function authorize(req:Request){
     client.rpc('admin_authorization_v1'),
   ]);
   if(userError||!userData.user)throw Object.assign(new Error('Owner sign-in is required.'),{status:401});
-  if(error)throw Object.assign(new Error(error.message),{status:403});
-  const authorization=(data&&typeof data==='object'?data:{}) as Record<string,unknown>;
+  const authorization=(!error&&data&&typeof data==='object'?data:{}) as Record<string,unknown>;
   if(!authorization.authorized&&!authorization.is_admin&&!authorization.is_platform_owner){
-    throw Object.assign(new Error('Owner/admin authority is required for email access.'),{status:403});
+    // Membership, not global admin status, grants a named/shared mailbox login.
+    const member=await adminClient().from('owner_email_mailbox_members')
+      .select('mailbox_id').eq('user_id',userData.user.id).limit(1);
+    if(member.error)throw Object.assign(new Error('Mailbox access could not be checked.'),{status:403});
+    if(!member.data?.length)throw Object.assign(new Error('No Kleenest mailbox is assigned to this account.'),{status:403});
   }
   return{userId:userData.user.id,authorization};
 }
@@ -285,7 +288,7 @@ Deno.serve(async(req:Request)=>{
         webhookEnabled:Boolean(settings.webhook_enabled),
         fromAddress:String(provider.from_address||''),
         providerConfigured:Boolean(provider.configured),
-        ...(snapshot.data||{}),
+        ...(Boolean(authorization.authorized||authorization.is_admin||authorization.is_platform_owner)?(snapshot.data||{}):{}),
         authorization,
       });
     }
@@ -308,6 +311,7 @@ Deno.serve(async(req:Request)=>{
         .limit(maxResults);
       if(mailboxId)q=q.eq('mailbox_id',mailboxId);
       if(mailbox==='inbox')q=q.eq('folder','inbox');
+      else if(mailbox==='archive')q=q.eq('folder','archive');
       else if(mailbox==='sent')q=q.eq('folder','sent');
       else if(mailbox==='drafts')q=q.eq('folder','drafts');
       else if(mailbox==='spam')q=q.eq('folder','spam');
@@ -541,6 +545,11 @@ Deno.serve(async(req:Request)=>{
       if(current.error)throw current.error;
       if(!current.data.mailbox_id)throw Object.assign(new Error('Thread mailbox is unavailable.'),{status:409});
       await requireMailboxAccess(userId,authorization,String(current.data.mailbox_id),false);
+      const member=await mailboxMembership(userId,String(current.data.mailbox_id));
+      const isAdministrator=Boolean(authorization.authorized||authorization.is_admin||authorization.is_platform_owner);
+      if(!isAdministrator&&!['owner','manager'].includes(String(member?.access_role||''))){
+        throw Object.assign(new Error('Mailbox management permission is required to block senders.'),{status:403});
+      }
       const latest=await admin.from('owner_email_center_messages').select('from_address,direction').eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).eq('direction','inbound').order('created_at',{ascending:false}).limit(1).maybeSingle();
       if(latest.error)throw latest.error;
       const sender=String(latest.data?.from_address||'').toLowerCase();

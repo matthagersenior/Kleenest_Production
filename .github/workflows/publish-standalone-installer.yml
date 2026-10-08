@@ -91,6 +91,18 @@ jobs:
           test -s apps/consumer-mobile/dist/app-icon.png
           test -s apps/consumer-mobile/dist/app-icon-512.svg
           test -s apps/consumer-mobile/dist/profile/index.html
+      - name: Build installable Kleenest Mail client
+        env:
+          VITE_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+        run: |
+          npx vite build --config apps/mail-client/vite.config.js
+          cp public/app-icon.png apps/mail-client/dist/app-icon.png
+          cp public/app-icon-512.svg apps/mail-client/dist/app-icon-512.svg
+          node scripts/kleenest-mail-pwa-audit.mjs
+          test -s apps/mail-client/dist/index.html
+          test -s apps/mail-client/dist/manifest.webmanifest
+          test -s apps/mail-client/dist/sw.js
       - name: Resolve freshest verified Consumer APK
         id: apk
         env:
@@ -137,6 +149,11 @@ jobs:
           cp -R apps/platform-mobile/dist/. apps/consumer-mobile/dist/owner/
           cp -R apps/business-mobile/dist/. apps/consumer-mobile/dist/business/
           cp -R apps/fleet-mobile/dist/. apps/consumer-mobile/dist/fleet/
+          mkdir -p apps/consumer-mobile/dist/mail
+          cp -R apps/mail-client/dist/. apps/consumer-mobile/dist/mail/
+          test -s apps/consumer-mobile/dist/mail/index.html
+          test -s apps/consumer-mobile/dist/mail/manifest.webmanifest
+          test -s apps/consumer-mobile/dist/mail/sw.js
           fleet_routes="auth planner dispatch assets operations member nearby execution signals metrics sync maintenance insights enterprise premium progression capabilities workspaces onboarding demo notifications support terms privacy account"
           for route in $fleet_routes; do
             mkdir -p "apps/consumer-mobile/dist/fleet/$route"
