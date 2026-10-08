@@ -36,6 +36,7 @@ function App() {
   const [folder,setFolder]=useState('inbox'),[threads,setThreads]=useState([]),[thread,setThread]=useState(null);
   const [search,setSearch]=useState(''),[unreadOnly,setUnreadOnly]=useState(false);
   const [compose,setCompose]=useState(false),[draft,setDraft]=useState(emptyDraft());
+  const [files,setFiles]=useState([]);
   const [reply,setReply]=useState(''),[forwardTo,setForwardTo]=useState(''),[forwardBody,setForwardBody]=useState('');
   const [labelName,setLabelName]=useState(''),[status,setStatus]=useState(null);
   const [loading,setLoading]=useState(false);
@@ -120,18 +121,36 @@ function App() {
       await loadThreads();
     });
   }
+  async function chooseFiles(selection){
+    await task(async()=>{
+      const filesList=Array.from(selection||[]);
+      if(filesList.length>3)throw new Error('Choose three files or fewer.');
+      if(filesList.some(f=>f.size>2*1024*1024))throw new Error('Each file must be 2 MB or smaller.');
+      if(filesList.reduce((sum,f)=>sum+f.size,0)>3*1024*1024)throw new Error('Combined file size must be 3 MB or smaller.');
+      const accepted=/\.(pdf|png|jpe?g|txt|csv)$/i;
+      if(filesList.some(f=>!accepted.test(f.name)))throw new Error('Use PDF, PNG, JPG, TXT, or CSV files.');
+      const values=await Promise.all(filesList.map(f=>new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve({filename:f.name,content:String(reader.result||'').split(',')[1]||''});
+        reader.onerror=()=>reject(new Error('File could not be read: '+f.name));
+        reader.readAsDataURL(f);
+      })));
+      setFiles(values);
+    });
+  }
   async function sendDraft(e) {
     e.preventDefault();
     await task(async()=>{
       const fn='owner-email-center';
-      await invoke(fn,{action:'send',mailboxId,to:draft.to,cc:draft.cc,bcc:draft.bcc,subject:draft.subject,body:draft.body});
+      await invoke(fn,{action:'send',mailboxId,to:draft.to,cc:draft.cc,bcc:draft.bcc,subject:draft.subject,body:draft.body,attachments:files});
       if(draft.draftId)await invoke(fn,{action:'trash',threadId:draft.draftId});
-      setCompose(false);setDraft(emptyDraft());setFolder('sent');setThread(null);
+      setCompose(false);setDraft(emptyDraft());setFiles([]);setFolder('sent');setThread(null);
       await loadThreads('sent');setNotice('Message handed to the email provider. Check Sent for delivery state.');
     });
   }
   async function saveDraft() {
     await task(async()=>{
+      if(files.length)throw new Error('Attachments cannot be kept in a draft yet. Send the message or remove the files.');
       await invoke('owner-email-center',{action:'save_draft',mailboxId,draftId:draft.draftId,to:draft.to,cc:draft.cc,bcc:draft.bcc,subject:draft.subject,body:draft.body});
       setCompose(false);setDraft(emptyDraft());setFolder('drafts');setThread(null);await loadThreads('drafts');setNotice('Draft saved.');
     });
@@ -141,7 +160,7 @@ function App() {
       const res=await invoke('owner-email-center',{action:'get_thread',threadId:t.id});
       const m=res.thread.messages.at(-1);
       setDraft({to:m?.to||'',cc:m?.cc||'',bcc:m?.bcc||'',subject:m?.subject||'',body:m?.body||'',draftId:t.id});
-      setThread(null);setCompose(true);
+      setThread(null);setFiles([]);setCompose(true);
     });
   }
   async function respond(all=false) {
@@ -187,7 +206,7 @@ function App() {
     :<div className="workspace">
       <aside className="sidebar">
         <div className="sidebar-heading"><span className="overline">MAILBOX</span><select aria-label="Choose mailbox" value={mailboxId} onChange={e=>{setMailboxId(e.target.value);setThread(null);}}>{mailboxes.map(m=><option key={m.id} value={m.id}>{m.address}</option>)}</select></div>
-        <button className="primary compose-button" disabled={!mailbox||busy||!mailbox.send_enabled} onClick={()=>{setCompose(true);setThread(null);setDraft(emptyDraft());}}>＋ Compose</button>
+        <button className="primary compose-button" disabled={!mailbox||busy||!mailbox.send_enabled} onClick={()=>{setCompose(true);setThread(null);setFiles([]);setDraft(emptyDraft());}}>＋ Compose</button>
         <nav aria-label="Mail folders" className="folders">{FOLDERS.map(([value,label])=><button key={value} className={folder===value?'selected':''} onClick={()=>{setFolder(value);setThread(null);setCompose(false);}}>{label}</button>)}</nav>
         <div className="sidebar-foot"><a href="../owner/communications">KleenestOS Email Center ↗</a><p>Private messages are not available offline.</p></div>
       </aside>
@@ -205,7 +224,7 @@ function App() {
         {compose ? <div className="reader-content"><div className="pane-head"><h2>{draft.draftId?'Edit draft':'New message'}</h2><button className="small" onClick={()=>setCompose(false)}>Close</button></div><div className="sender">From: {mailbox?.address||'Select a mailbox'}</div>
           <form className="editor" onSubmit={sendDraft}>
             {['to','cc','bcc','subject'].map(k=><label key={k}>{k.toUpperCase()}<input required={k==='to'||k==='subject'} type={k==='subject'?'text':'text'} value={draft[k]} onChange={e=>setDraft(d=>({...d,[k]:e.target.value}))}/></label>)}
-            <label>Message<textarea rows="12" required value={draft.body} onChange={e=>setDraft(d=>({...d,body:e.target.value}))}/></label>
+            <label>Message<textarea rows="12" required value={draft.body} onChange={e=>setDraft(d=>({...d,body:e.target.value}))}/></label><label>Attach files (PDF, PNG, JPG, TXT, CSV; max 3 MB total)<input type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.txt,.csv" onChange={e=>chooseFiles(e.target.files)}/></label>{files.length>0&&<p className="fine">{files.map(f=>f.filename).join(', ')} · Attachments are sent with this message and cannot yet be saved with a draft.</p>}
             <div className="actions"><button className="primary" disabled={busy||!mailbox?.send_enabled}>Send</button><button type="button" disabled={busy} onClick={saveDraft}>Save draft</button></div>
           </form></div>
         :thread ? <div className="reader-content">

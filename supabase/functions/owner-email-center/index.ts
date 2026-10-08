@@ -65,6 +65,26 @@ function optionalText(value:unknown,max=20000){
 function emailList(value:unknown){
   return [...new Set(String(value??'').split(/[;,]/).map(v=>v.trim().toLowerCase()).filter(v=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)))];
 }
+
+function emailAttachments(value:unknown){
+  if(value===undefined||value===null)return [];
+  if(!Array.isArray(value)||value.length>3)throw new Error('Up to three attachments are supported.');
+  const formats:Record<string,string>={pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',txt:'text/plain',csv:'text/csv'};
+  let total=0;
+  return value.map((item:any)=>{
+    const filename=String(item?.filename||'').split(/[/\\]/).pop()?.slice(0,140)||'';
+    const ext=filename.split('.').pop()?.toLowerCase()||'';
+    const content=String(item?.content||'');
+    if(!formats[ext])throw new Error('Only PDF, PNG, JPG, TXT, and CSV attachments are supported.');
+    if(!content||content.length%4!==0||!/^[A-Za-z0-9+/]+={0,2}$/.test(content))throw new Error('Attachment encoding is invalid.');
+    const size=content.length/4*3-(content.endsWith('==')?2:content.endsWith('=')?1:0);
+    if(size>2*1024*1024)throw new Error('Each attachment must be 2 MB or smaller.');
+    total+=size;
+    if(total>3*1024*1024)throw new Error('Total attachments must be 3 MB or smaller.');
+    return {filename,content,contentType:formats[ext],size};
+  });
+}
+
 function parseMailbox(value:string){
   const bracket=value.match(/<([^>]+)>/);
   const address=(bracket?.[1]||value).trim().toLowerCase();
@@ -210,15 +230,30 @@ async function refreshThread(threadId:string){
 async function sendAndStore(input:{
   ownerUserId:string;threadId:string;from:string;to:string[];cc?:string[];bcc?:string[];
   subject:string;body:string;headers?:Record<string,string>;auditAction:string;
+  attachments?:Array<{filename:string;content:string;contentType:string;size:number}>;
 }){
   const ready=await requireReady(input.ownerUserId);
   const payload:any={from:input.from||ready.from,to:input.to,subject:input.subject,text:input.body};
   if(input.cc?.length)payload.cc=input.cc;
   if(input.bcc?.length)payload.bcc=input.bcc;
   if(input.headers&&Object.keys(input.headers).length)payload.headers=input.headers;
+  if(input.attachments?.length)payload.attachments=input.attachments.map(({filename,content,contentType})=>({filename,content,contentType}));
   const sent=await resend('/emails',ready.provider.api_key,{method:'POST',body:JSON.stringify(payload)});
   let detail:any={};
   try{detail=await resend(`/emails/${encodeURIComponent(String(sent.id))}`,ready.provider.api_key)}catch{}
+  let attachmentMetadata=(input.attachments||[]).map(file=>({filename:file.filename,mimeType:file.contentType,size:file.size,id:null}));
+  if(input.attachments?.length&&sent.id){
+    try{
+      const listing=await resend('/emails/'+encodeURIComponent(String(sent.id))+'/attachments',ready.provider.api_key);
+      const rows=Array.isArray(listing?.data)?listing.data:[];
+      if(rows.length)attachmentMetadata=rows.map((item:any)=>({
+        id:String(item.id||'')||null,
+        filename:String(item.filename||'attachment'),
+        mimeType:String(item.content_type||'application/octet-stream'),
+        size:Number(item.size)||0,
+      }));
+    }catch{}
+  }
   const internetMessageId=String(detail?.message_id||'').trim()||null;
   const parsedFrom=parseMailbox(input.from||ready.from);
   const now=new Date().toISOString();
@@ -238,7 +273,7 @@ async function sendAndStore(input:{
     subject:input.subject,
     text_body:input.body,
     headers:input.headers||{},
-    attachments:[],
+    attachments:attachmentMetadata,
     delivery_status:String(detail?.last_event||'sent'),
     sent_at:now,
   });
@@ -484,6 +519,7 @@ Deno.serve(async(req:Request)=>{
       if(!mailbox.send_enabled)throw Object.assign(new Error('Sending is disabled for this mailbox.'),{status:403});
       const subject=requiredText(body?.subject,'subject',500);
       const text=requiredText(body?.body,'body',50000);
+      const attachments=emailAttachments(body?.attachments);
       const created=await admin.from('owner_email_center_threads').insert({
         owner_user_id:storageOwnerUserId,mailbox_id:mailbox.id,recipient_address:mailbox.address,
         subject,normalized_subject:normalizeSubject(subject),folder:'sent',unread:false,
@@ -492,7 +528,7 @@ Deno.serve(async(req:Request)=>{
       }).select('id').single();
       if(created.error)throw created.error;
       const from=String(mailbox.display_name||'Kleenest')+' <'+String(mailbox.address)+'>';
-      return json(await sendAndStore({ownerUserId:storageOwnerUserId,threadId:created.data.id,from,to,cc,bcc,subject,body:text,auditAction:'send'}));
+      return json(await sendAndStore({ownerUserId:storageOwnerUserId,threadId:created.data.id,from,to,cc,bcc,subject,body:text,attachments,auditAction:'send'}));
     }
 
     if(action==='reply'){
