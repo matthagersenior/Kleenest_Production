@@ -14,6 +14,7 @@ check(source.includes('auth.getSession') && source.includes('access_token'), 'se
 check(!source.includes('SERVICE_ROLE_KEY')&&!source.includes('sb_secret_'),'no privileged keys in browser');
 check(api.includes("else if(mailbox==='archive')"),'archive backend support');
 check(api.includes("No Kleenest mailbox is assigned"),'non-admin member authentication');
+check(api.includes("action==='get_attachment'")&&api.includes('requireMailboxAccess'),'scoped authenticated attachment retrieval');
 check(sw.includes("request.method!=='GET'")&&!sw.includes('/functions/v1'),'cache excludes private function calls');
 check(manifest.display==='standalone'&&manifest.scope==='./','installable scoped manifest');
 check(html.includes('Kleenest Mail'),'PWA index built');

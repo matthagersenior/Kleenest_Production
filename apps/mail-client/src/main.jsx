@@ -156,6 +156,15 @@ function App() {
       setForwardTo('');setForwardBody('');setNotice('Forward sent.');await loadThreads();
     });
   }
+  async function downloadAttachment(m,a) {
+    await task(async()=>{
+      if(!a.id)throw new Error('This attachment has no downloadable file ID.');
+      const result=await invoke('owner-email-center',{action:'get_attachment',threadId:thread.id,messageId:m.id,attachmentId:a.id});
+      const link=document.createElement('a');
+      link.href=result.downloadUrl;link.target='_blank';link.rel='noopener noreferrer';
+      document.body.appendChild(link);link.click();link.remove();
+    });
+  }
   async function install(){if(!installPrompt)return;await installPrompt.prompt();setInstallPrompt(null);}
   const mailbox=useMemo(()=>mailboxes.find(m=>m.id===mailboxId),[mailboxes,mailboxId]);
   if(!supabase)return <main className="authentication"><Logo/><h2>Mail configuration needed</h2><p>A publishable Supabase key is missing from this deployment.</p></main>;
@@ -213,7 +222,7 @@ function App() {
             <div className="message-head"><b>{m.from||m.fromEmail}</b><time>{fmt(m.date)}</time></div>
             <div className="fine">To: {m.to} {m.cc?' · Cc: '+m.cc:''}{m.deliveryStatus?' · '+m.deliveryStatus:''}</div>
             <div className="message-body">{m.body||m.snippet||'(empty message)'}</div>
-            {m.attachments?.length>0&&<div className="attachment-list">Attachments: {m.attachments.map(a=>a.filename).join(', ')} <small>(download not yet available)</small></div>}
+            {m.attachments?.length>0&&<div className="attachment-list">Attachments: {m.attachments.map((a,i)=><button key={a.id||i} type="button" disabled={busy||!a.id} onClick={()=>downloadAttachment(m,a)}>{a.filename||'Attachment'} ↗</button>)}</div>}
           </article>)}</div>
           <section className="reply-area"><h3>Reply</h3><textarea rows="5" value={reply} onChange={e=>setReply(e.target.value)} placeholder="Write a reply…"/>
             <div className="actions wrap"><button className="primary" disabled={busy||!reply.trim()} onClick={()=>respond(false)}>Reply</button><button disabled={busy||!reply.trim()} onClick={()=>respond(true)}>Reply all</button></div>

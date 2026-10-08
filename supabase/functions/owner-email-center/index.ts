@@ -367,6 +367,33 @@ Deno.serve(async(req:Request)=>{
       return json({threads,nextPageToken:null});
     }
 
+    if(action==='get_attachment'){
+      const threadId=requiredText(body?.threadId,'threadId',100);
+      const messageId=requiredText(body?.messageId,'messageId',100);
+      const attachmentId=requiredText(body?.attachmentId,'attachmentId',160);
+      const thread=await admin.from('owner_email_center_threads')
+        .select('mailbox_id').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
+      if(thread.error)throw thread.error;
+      if(!thread.data.mailbox_id)throw Object.assign(new Error('Thread mailbox is unavailable.'),{status:409});
+      await requireMailboxAccess(userId,authorization,String(thread.data.mailbox_id),false);
+      const record=await admin.from('owner_email_center_messages')
+        .select('direction,provider_email_id,attachments')
+        .eq('owner_user_id',storageOwnerUserId).eq('thread_id',threadId).eq('id',messageId).single();
+      if(record.error)throw record.error;
+      const attachments=Array.isArray(record.data.attachments)?record.data.attachments:[];
+      const match=attachments.find((item:any)=>String(item.id||'')===attachmentId);
+      if(!match||!record.data.provider_email_id)throw Object.assign(new Error('Attachment is not available.'),{status:404});
+      const provider=await providerConfig();
+      if(!provider.configured||!provider.api_key)throw Object.assign(new Error('Email provider unavailable.'),{status:503});
+      const prefix=record.data.direction==='inbound'?'emails/receiving/':'emails/';
+      const location='/'+prefix+encodeURIComponent(record.data.provider_email_id)+'/attachments/'+encodeURIComponent(attachmentId);
+      const file=await resend(location,String(provider.api_key));
+      const downloadUrl=String(file.download_url||'');
+      if(!downloadUrl.startsWith('https://'))throw Object.assign(new Error('Secure download is unavailable.'),{status:502});
+      await audit(storageOwnerUserId,threadId,'download_attachment',{messageId,attachmentId});
+      return json({downloadUrl,filename:String(file.filename||match.filename||'attachment'),expiresAt:file.expires_at||null});
+    }
+
     if(action==='get_thread'){
       const threadId=requiredText(body?.threadId,'threadId',100);
       const threadResult=await admin.from('owner_email_center_threads').select('*').eq('owner_user_id',storageOwnerUserId).eq('id',threadId).single();
