@@ -8,9 +8,39 @@ function key(name:string,legacy:string){
   return Deno.env.get(legacy)??"";
 }
 const SECRET=key("SUPABASE_SECRET_KEYS","SUPABASE_SERVICE_ROLE_KEY");
-const VAPID_PUBLIC_KEY=Deno.env.get("VAPID_PUBLIC_KEY")??"";
-const VAPID_PRIVATE_KEY=Deno.env.get("VAPID_PRIVATE_KEY")??"";
 const VAPID_SUBJECT=Deno.env.get("VAPID_SUBJECT")??"mailto:notifications@kleenest.us";
+async function vapidCredentials(){
+  const publicEnv=Deno.env.get("VAPID_PUBLIC_KEY")??"";
+  const privateEnv=Deno.env.get("VAPID_PRIVATE_KEY")??"";
+  if(publicEnv&&privateEnv)return {publicKey:publicEnv,privateKey:privateEnv};
+  // Supabase Vault keeps the private key encrypted at rest. RPCs are invoker-only,
+  // executable by service_role, never anon or authenticated clients.
+  const stored=await db.rpc("owner_email_vapid_get");
+  if(stored.error)throw stored.error;
+  if(stored.data?.public_key&&stored.data?.private_key){
+    return {publicKey:String(stored.data.public_key),privateKey:String(stored.data.private_key)};
+  }
+  const generated=await crypto.subtle.generateKey(
+    {name:"ECDSA",namedCurve:"P-256"},true,["sign","verify"]
+  );
+  const jwk=await crypto.subtle.exportKey("jwk",generated.privateKey);
+  if(!jwk.x||!jwk.y||!jwk.d)throw new Error("Unable to export VAPID key.");
+  const bytes=(value:string)=>{
+    const b64=value.replace(/-/g,"+").replace(/_/g,"/");
+    return Uint8Array.from(atob(b64+"=".repeat((4-b64.length%4)%4)),ch=>ch.charCodeAt(0));
+  };
+  const raw=new Uint8Array(65);
+  raw[0]=4;raw.set(bytes(jwk.x),1);raw.set(bytes(jwk.y),33);
+  const publicKey=btoa(String.fromCharCode(...raw)).split("+").join("-").split("/").join("_").replace(/=+$/,"");
+  const privateKey=jwk.d;
+  const seeded=await db.rpc("owner_email_vapid_seed",{p_public_key:publicKey,p_private_key:privateKey});
+  if(seeded.error)throw seeded.error;
+  // If another instance won the race, use its keys, not the discarded pair.
+  const persisted=await db.rpc("owner_email_vapid_get");
+  if(persisted.error||!persisted.data?.public_key||!persisted.data?.private_key)
+    throw new Error("Cannot load stored mail push credentials.");
+  return {publicKey:String(persisted.data.public_key),privateKey:String(persisted.data.private_key)};
+}
 const cors={"access-control-allow-origin":"*","access-control-allow-methods":"GET,POST,OPTIONS","access-control-allow-headers":"content-type,authorization,apikey,x-kleenest-worker-secret"};
 const db=createClient(URL,SECRET,{auth:{persistSession:false,autoRefreshToken:false}});
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
@@ -24,11 +54,14 @@ async function workerAuthorized(req:Request){
 async function main(req:Request){
   if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
   if(req.method==="GET"){
-    return VAPID_PUBLIC_KEY?response({vapid_public_key:VAPID_PUBLIC_KEY}):response({error:"Web Push keys are not configured."},503);
+    if(!SECRET)return response({error:"Push service unavailable."},503);
+    const vapid=await vapidCredentials();
+    return response({vapid_public_key:vapid.publicKey});
   }
   if(req.method!=="POST")return response({error:"POST required"},405);
   if(!await workerAuthorized(req))return response({error:"Unauthorized"},401);
-  if(!VAPID_PUBLIC_KEY||!VAPID_PRIVATE_KEY)return response({error:"Web Push credentials unavailable."},503);
+  if(!SECRET)return response({error:"Push service unavailable."},503);
+  const vapid=await vapidCredentials();
   const input=await req.json().catch(()=>({}));
   const threadId=String(input.thread_id??""),mailboxId=String(input.mailbox_id??"");
   if(!uuid.test(threadId)||!uuid.test(mailboxId))return response({error:"Invalid IDs"},400);
@@ -75,7 +108,7 @@ async function main(req:Request){
     url,
     data:{type:"kleenest-mail",url,mailbox_id:mailboxId,thread_id:threadId}
   });
-  webpush.setVapidDetails(VAPID_SUBJECT,VAPID_PUBLIC_KEY,VAPID_PRIVATE_KEY);
+  webpush.setVapidDetails(VAPID_SUBJECT,vapid.publicKey,vapid.privateKey);
   let delivered=0,skipped=0,failed=0;
   for(const subscription of subscriptionsResult.data??[]){
     if(!allowed.has(subscription.user_id)){skipped++;continue;}
