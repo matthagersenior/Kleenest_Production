@@ -13,6 +13,8 @@ const required=[
   "{score:75,label:'Clean'}",
   "{score:100,label:'Spotless'}",
   'reviewScoresValid',
+  'cleanlinessNumber>=0&&cleanlinessNumber<=100',
+  'cleanlinessPct:cleanValue',
   'setCleanliness(String(choice.score))',
   'EXACT SCORE · 0–100',
   'accessibilityLabel="Exact cleanliness score out of 100"',
