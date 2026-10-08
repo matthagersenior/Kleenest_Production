@@ -1,6 +1,6 @@
 import { useEffect,useMemo,useState } from 'react';
 import { router } from 'expo-router';
-import { Pressable,RefreshControl,ScrollView,Text,TextInput,View } from 'react-native';
+import { Linking,Pressable,RefreshControl,ScrollView,Text,TextInput,View } from 'react-native';
 import { OSHero,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
 import {
@@ -121,6 +121,7 @@ export default function Communications(){
         <StatusPill label={status?.webhookEnabled?'INBOUND LIVE':'INBOUND PENDING'} tone={status?.webhookEnabled?'good':'warning'}/>
       </View>
       <Text style={{fontSize:12,color:theme.muted}}>Primary: support@kleenest.us · Fallback: {status?.fallbackAddress||'Kleenestapp@gmail.com'}</Text>
+      <Pressable accessibilityRole="link" onPress={()=>void Linking.openURL('https://mail.kleenest.us/')} style={{alignSelf:'flex-start',paddingHorizontal:11,paddingVertical:9,borderRadius:12,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Open standalone Kleenest Mail ↗</Text></Pressable>
       <Pressable accessibilityRole="button" onPress={()=>router.push('/mail-admin')} style={{alignSelf:'flex-start',paddingHorizontal:11,paddingVertical:9,borderRadius:12,backgroundColor:theme.accentSoft}}><Text style={{fontWeight:'900',color:theme.accent}}>Manage addresses, aliases & forwarding</Text></Pressable>
     </View>
 

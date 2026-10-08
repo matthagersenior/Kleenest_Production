@@ -159,7 +159,7 @@ jobs:
             mkdir -p "apps/consumer-mobile/dist/fleet/$route"
             cp apps/fleet-mobile/dist/index.html "apps/consumer-mobile/dist/fleet/$route/index.html"
           done
-          owner_routes="auth control pilots developers operations devices businesses moderation access accounts history intelligence reports progression capabilities audit data notifications support terms privacy account"
+          owner_routes="communications mail-admin auth control pilots developers operations devices businesses moderation access accounts history intelligence reports progression capabilities audit data notifications support terms privacy account"
           for route in $owner_routes; do
             mkdir -p "apps/consumer-mobile/dist/owner/$route"
             cp apps/platform-mobile/dist/index.html "apps/consumer-mobile/dist/owner/$route/index.html"
@@ -200,6 +200,9 @@ jobs:
             cp apps/consumer-mobile/dist/index.html "apps/consumer-mobile/dist/$route/index.html"
             test -s "apps/consumer-mobile/dist/$route/index.html"
           done
+          mkdir -p apps/consumer-mobile/dist/contact
+          cp public/contact.html apps/consumer-mobile/dist/contact/index.html
+          test -s apps/consumer-mobile/dist/contact/index.html
           node scripts/prepare-consumer-web-seo.mjs
           test -s apps/consumer-mobile/dist/sitemap.xml
           test -s apps/consumer-mobile/dist/robots.txt

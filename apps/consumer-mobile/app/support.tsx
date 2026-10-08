@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { useEffect, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { listMySupportRequests, submitSupportRequest, type SupportCategory, type SupportRequest } from '../services/support';
@@ -7,6 +8,16 @@ import { useConsumerTheme } from '../services/theme';
 
 const CATEGORIES:{code:SupportCategory;label:string}[]=[{code:'general',label:'General'},{code:'account',label:'Account'},{code:'billing',label:'Billing'},{code:'technical',label:'Technical'},{code:'safety',label:'Safety'},{code:'feedback',label:'Feedback'}];
 const hitSlop={top:8,right:8,bottom:8,left:8};
+function EmailContact({label,address,description}:{label:string;address:string;description:string}){
+  const theme=useConsumerTheme();
+  return <Pressable accessibilityRole="link" accessibilityLabel={`Email ${label} at ${address}`} hitSlop={hitSlop}
+    style={[s.resource,{backgroundColor:theme.surface,borderColor:theme.line}]}
+    onPress={()=>void Linking.openURL(`mailto:${address}`)}>
+    <View style={{flex:1}}><Text style={[s.resourceTitle,{color:theme.ink}]}>{label}</Text>
+      <Text style={[s.body,{color:theme.muted}]}>{address} · {description}</Text></View>
+    <Text style={[s.arrow,{color:theme.accent}]}>↗</Text>
+  </Pressable>;
+}
 function Resource({title,body,route}:{title:string;body:string;route:string}){const theme=useConsumerTheme();return <Pressable accessibilityRole="button" hitSlop={hitSlop} style={[s.resource,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>router.push(route as any)}><View style={{flex:1}}><Text style={[s.resourceTitle,{color:theme.ink}]}>{title}</Text><Text style={[s.body,{color:theme.muted}]}>{body}</Text></View><Text style={[s.arrow,{color:theme.accent}]}>›</Text></Pressable>}
 export default function SupportScreen(){
   const theme=useConsumerTheme();
@@ -18,6 +29,15 @@ export default function SupportScreen(){
     <View accessible accessibilityLabel="Help and Support. Get help without leaving Kleenest." style={[s.hero,{backgroundColor:theme.accent}]}><Text style={[s.heroEyebrow,{color:theme.accentText,opacity:.78}]}>HELP & SUPPORT</Text><Text accessibilityRole="header" style={[s.heroTitle,{color:theme.accentText}]}>Get help without leaving Kleenest.</Text><Text style={[s.heroBody,{color:theme.accentText,opacity:.88}]}>Send an account-linked request, review its status, and access the privacy, safety, and account-control resources required to understand and manage your Kleenest experience.</Text><TrustStrip items={['Account-linked','Private identity','Status history']}/></View>
     <View style={s.sectionLead}><Text style={[s.sectionKicker,{color:theme.muted}]}>PRIVACY + SAFETY</Text><Text accessibilityRole="header" style={[s.sectionTitle,{color:theme.ink}]}>Policies and account control</Text><Text style={[s.body,{color:theme.muted}]}>These resources are always available from Help & Support.</Text></View>
     <View style={s.resourceGroup}><Resource title="Privacy Policy" body="What Kleenest collects, why it is used, retention, deletion and your choices." route="/privacy"/><Resource title="Terms of Use" body="Account, content, membership, rewards and service terms." route="/terms"/><Resource title="Community Guidelines" body="Rules for reviews, profiles, messages, reports and moderation." route="/community-guidelines"/><Resource title="Delete account" body="Request deletion from the protected account-control workflow." route="/account-deletion"/></View>
+    <View style={s.sectionLead}><Text style={[s.sectionKicker,{color:theme.muted}]}>CONTACT KLEENEST</Text><Text accessibilityRole="header" style={[s.sectionTitle,{color:theme.ink}]}>Reach the right inbox</Text><Text style={[s.body,{color:theme.muted}]}>For a tracked support ticket, use the request form below. For email, choose a contact.</Text></View>
+    <View style={s.resourceGroup}>
+      <EmailContact label="Help by email" address="help@kleenest.us" description="Delivers to Kleenest Support"/>
+      <EmailContact label="Information" address="info@kleenest.us" description="General questions"/>
+      <EmailContact label="Product feedback" address="feedback@kleenest.us" description="Ideas and suggestions"/>
+      <Pressable accessibilityRole="link" style={[s.resource,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={()=>void Linking.openURL('https://kleenest.us/contact/')}>
+        <View style={{flex:1}}><Text style={[s.resourceTitle,{color:theme.ink}]}>All contact addresses</Text><Text style={[s.body,{color:theme.muted}]}>Business, Fleet, partnerships, privacy and more</Text></View><Text style={[s.arrow,{color:theme.accent}]}>↗</Text>
+      </Pressable>
+    </View>
     <View style={s.sectionLead}><Text style={[s.sectionKicker,{color:theme.muted}]}>NEW REQUEST</Text><Text accessibilityRole="header" style={[s.sectionTitle,{color:theme.ink}]}>What do you need help with?</Text><Text style={[s.body,{color:theme.muted}]}>Your ticket is tied to your signed-in account without exposing your email in the request form.</Text></View>
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.cardTitle,{color:theme.ink}]}>Choose a category</Text><View accessibilityRole="radiogroup" style={s.categories}>{CATEGORIES.map(item=>{const selected=category===item.code;return <Pressable key={item.code} accessibilityRole="radio" accessibilityLabel={`${item.label} support category`} accessibilityState={{selected}} hitSlop={hitSlop} style={[s.pill,{backgroundColor:theme.surfaceRaised,borderColor:theme.line},selected&&[s.pillOn,{backgroundColor:theme.accent,borderColor:theme.accent}]]} onPress={()=>setCategory(item.code)}><Text style={[s.pillText,{color:theme.ink},selected&&[s.pillTextOn,{color:theme.accentText}]]}>{item.label}</Text></Pressable>})}</View><TextInput accessibilityLabel="Support request subject" accessibilityHint="Briefly describe what you need help with" returnKeyType="next" style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} value={subject} onChangeText={setSubject} maxLength={160} placeholder="Subject" placeholderTextColor={theme.muted}/><TextInput accessibilityLabel="Support request message" accessibilityHint="Describe what happened and what you need from Kleenest support" style={[s.input,s.textarea,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]} value={body} onChangeText={setBody} maxLength={5000} multiline textAlignVertical="top" placeholder="Tell us what happened and what you need help with." placeholderTextColor={theme.muted}/><Text accessibilityLiveRegion="polite" style={[s.counter,{color:theme.muted}]}>{body.length}/5000</Text><Pressable accessibilityRole="button" accessibilityLabel="Send support request" accessibilityState={{disabled:busy,busy}} hitSlop={hitSlop} style={[s.primary,{backgroundColor:theme.accent},busy&&s.disabled]} disabled={busy} onPress={submit}><Text style={[s.primaryText,{color:theme.accentText}]}>{busy?'Sending…':'Send support request'}</Text></Pressable></View>
     {message?<View accessibilityRole="alert" style={[s.notice,{backgroundColor:theme.accentSoft,borderColor:theme.line}]}><Text style={[s.noticeText,{color:theme.ink}]}>{message}</Text></View>:null}

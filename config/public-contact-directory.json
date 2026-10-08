@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "publicPage": "https://kleenest.us/contact/",
+  "aliases": {
+    "help@kleenest.us": "support@kleenest.us",
+    "contact@kleenest.us": "hello@kleenest.us"
+  },
+  "contacts": [
+    {
+      "label": "Help",
+      "address": "help@kleenest.us",
+      "purpose": "Account and app assistance"
+    },
+    {
+      "label": "Support",
+      "address": "support@kleenest.us",
+      "purpose": "Technical and support requests"
+    },
+    {
+      "label": "Information",
+      "address": "info@kleenest.us",
+      "purpose": "General questions"
+    },
+    {
+      "label": "Contact",
+      "address": "contact@kleenest.us",
+      "purpose": "General correspondence"
+    },
+    {
+      "label": "Feedback",
+      "address": "feedback@kleenest.us",
+      "purpose": "Ideas and suggestions"
+    },
+    {
+      "label": "Business",
+      "address": "business@kleenest.us",
+      "purpose": "Business services"
+    },
+    {
+      "label": "Fleet",
+      "address": "fleet@kleenest.us",
+      "purpose": "Fleet operations"
+    },
+    {
+      "label": "Partnerships",
+      "address": "partnerships@kleenest.us",
+      "purpose": "Collaborations and inquiries"
+    },
+    {
+      "label": "Privacy",
+      "address": "privacy@kleenest.us",
+      "purpose": "Privacy and account deletion"
+    },
+    {
+      "label": "Administration",
+      "address": "admin@kleenest.us",
+      "purpose": "Administrative correspondence"
+    }
+  ]
+}

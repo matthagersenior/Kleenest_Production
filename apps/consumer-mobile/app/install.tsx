@@ -380,6 +380,7 @@ export default function InstallKleenest(){
       <View style={s.buttonRow}>
         <Pressable accessibilityRole="button" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void refreshDiagnostics()}><Text style={[s.secondaryText,{color:theme.accent}]}>CHECK INSTALLATION AGAIN</Text></Pressable>
         <Pressable accessibilityRole="link" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void Linking.openURL(browserUrl(`${WEB_BASE_PATH}/support`))}><Text style={[s.secondaryText,{color:theme.accent}]}>OPEN SUPPORT</Text></Pressable>
+        <Pressable accessibilityRole="link" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void Linking.openURL('https://kleenest.us/contact/')}><Text style={[s.secondaryText,{color:theme.accent}]}>EMAIL & CONTACT DIRECTORY</Text></Pressable>
       </View>
     </View>
 
