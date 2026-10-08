@@ -383,6 +383,7 @@ test('web map markers stay mounted across touch-state rerenders and keep the lat
   const hookSlots=[], effects=[];
   let hookIndex=0;
   let activeMarker=null,created=0,removed=0,clicked=0;
+  const markerElements=[];
   const map={};
   const context={map,fallback:false};
   const useRef=(initial)=>{
@@ -405,7 +406,7 @@ test('web map markers stay mounted across touch-state rerenders and keep the lat
   };
   const component=compile(source,{
     React,useRef,useEffect,useContext:()=>context,MapContext:{},
-    document:{createElement:()=>({style:{},setAttribute(){}})},
+    document:{createElement:tag=>{markerElements.push(tag);return {style:{},setAttribute(){},click(){this.onclick?.({stopPropagation(){}})}};}},
     createRoot:()=>({render(){},unmount(){}}),
     maplibregl:{Marker:markerClass},
     projectedOffset:()=>({left:0,top:0}),styles:{},View:'View',Pressable:'Pressable',
@@ -424,4 +425,7 @@ test('web map markers stay mounted across touch-state rerenders and keep the lat
   assert.equal(activeMarker,firstMarker,'the original tap target must remain mounted');
   firstMarker.onclick({stopPropagation(){}});
   assert.equal(clicked,10,'the original marker target must invoke the latest selection handler');
+  assert.deepEqual(markerElements,['div'],'web marker must be a non-button container to avoid nesting buttons in React Native Pressables');
+  firstMarker.onkeydown({target:firstMarker,key:'Enter',preventDefault(){}});
+  assert.equal(clicked,20,'keyboard activation must select the same latest location');
 });
