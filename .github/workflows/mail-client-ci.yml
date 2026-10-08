@@ -1,0 +1,41 @@
+name: Kleenest Mail PWA
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - apps/mail-client/**
+      - supabase/functions/owner-email-center/index.ts
+      - scripts/kleenest-mail-pwa-audit.mjs
+      - .github/workflows/mail-client-ci.yml
+  push:
+    branches: [main]
+    paths:
+      - apps/mail-client/**
+      - supabase/functions/owner-email-center/index.ts
+      - scripts/kleenest-mail-pwa-audit.mjs
+      - .github/workflows/mail-client-ci.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mail-pwa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+      - run: npm install --no-audit --no-fund
+      - name: Compile independent mail client
+        env:
+          VITE_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+        run: |
+          npx vite build --config apps/mail-client/vite.config.js
+          cp apps/consumer-mobile/assets/app-icon.png apps/mail-client/dist/app-icon.png
+          cp public/app-icon-512.svg apps/mail-client/dist/app-icon-512.svg
+          node scripts/kleenest-mail-pwa-audit.mjs
