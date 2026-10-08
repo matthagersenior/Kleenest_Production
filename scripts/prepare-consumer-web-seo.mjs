@@ -10,6 +10,7 @@ const pages=[
   {route:'/for-business/',file:'for-business/index.html',title:'Kleenest for Business | Restroom Trust and Visibility',description:'Help customers understand restroom access, amenities, freshness, and trust signals with Kleenest business tools.'},
   {route:'/trust/',file:'trust/index.html',title:'Kleenest Trust + Freshness | Better Restroom Information',description:'Learn how Kleenest combines freshness, verification, community evidence, and amenity details to make restroom information more useful.'},
   {route:'/install/',file:'install/index.html',title:'Install Kleenest | Clean Restroom Finder',description:'Install Kleenest on Android or the web and get fast access to trusted restroom discovery, routing, amenities, and community freshness.'},
+  {route:'/contact/',file:'contact/index.html',title:'Contact Kleenest | Help, Support, Information and Feedback',description:'Official Kleenest contact addresses for support, general information, feedback, business, fleet and privacy.'},
   {route:'/support/',file:'support/index.html',title:'Kleenest Support | Help, Contact, Privacy and Account Control',description:'Get official Kleenest support, contact information, privacy resources, account controls, and help with the Kleenest app and services.'},
   {route:'/privacy/',file:'privacy/index.html',title:'Kleenest Privacy Policy',description:'Read the Kleenest Privacy Policy and learn how account, location, community, support, and service information is handled.'},
   {route:'/terms/',file:'terms/index.html',title:'Kleenest Terms of Use',description:'Read the Kleenest Terms of Use for consumer, community, business, fleet, and platform services.'},
@@ -36,7 +37,7 @@ function seoBlock(page){
         '@id':`${ORIGIN}/#organization`,
         name:'Kleenest',
         url:`${ORIGIN}/`,
-        contactPoint:{'@type':'ContactPoint',url:`${ORIGIN}/support/`,contactType:'customer support'},
+        contactPoint:{'@type':'ContactPoint',url:`${ORIGIN}/contact/`,email:'support@kleenest.us',contactType:'customer support'},
         description:'Kleenest helps people find clean restrooms with freshness, trust, amenity, routing, and community evidence.'
       },
       {
