@@ -113,7 +113,7 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
         run: |
           npx vite build --config apps/mail-client/vite.config.js
-          cp public/app-icon.png apps/mail-client/dist/app-icon.png
+          cp apps/consumer-mobile/assets/app-icon.png apps/mail-client/dist/app-icon.png
           cp public/app-icon-512.svg apps/mail-client/dist/app-icon-512.svg
           node scripts/kleenest-mail-pwa-audit.mjs
           test -s apps/mail-client/dist/index.html
