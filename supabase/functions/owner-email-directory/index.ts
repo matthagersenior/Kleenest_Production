@@ -1,223 +1,167 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const SUPABASE_URL=Deno.env.get('SUPABASE_URL')??'';
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 function namedKey(plural:string,legacy:string){
-  try{const parsed=JSON.parse(Deno.env.get(plural)??'{}');if(parsed?.default)return String(parsed.default)}catch{}
-  return Deno.env.get(legacy)??'';
+  try { const v=JSON.parse(Deno.env.get(plural)??"{}"); if(v?.default)return String(v.default); }catch{}
+  return Deno.env.get(legacy)??"";
 }
-const SUPABASE_PUBLISHABLE_KEY=namedKey('SUPABASE_PUBLISHABLE_KEYS','SUPABASE_ANON_KEY');
-const SUPABASE_SECRET_KEY=namedKey('SUPABASE_SECRET_KEYS','SUPABASE_SERVICE_ROLE_KEY');
-
-function json(body:unknown,status=200){
-  return new Response(JSON.stringify(body),{status,headers:{
-    'content-type':'application/json; charset=utf-8','cache-control':'no-store',
-    'access-control-allow-origin':'*',
-    'access-control-allow-headers':'authorization,apikey,content-type,x-client-info',
-    'access-control-allow-methods':'POST,OPTIONS',
-  }});
+const PUBLIC_KEY=namedKey("SUPABASE_PUBLISHABLE_KEYS","SUPABASE_ANON_KEY");
+const SECRET_KEY=namedKey("SUPABASE_SECRET_KEYS","SUPABASE_SERVICE_ROLE_KEY");
+const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const addressPattern=/^[a-z0-9.!#$%&'*+/=?^_{}|~-]+@kleenest\.us$/;
+const admin=()=>createClient(SUPABASE_URL,SECRET_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":"*","access-control-allow-headers":"authorization,apikey,content-type,x-client-info","access-control-allow-methods":"POST,OPTIONS"}});
+function reject(message:string,status=400):never{throw Object.assign(new Error(message),{status});}
+function id(value:unknown){const v=String(value??"");if(!uuid.test(v))reject("Invalid ID.");return v;}
+function address(value:unknown){const v=String(value??"").trim().toLowerCase();if(!addressPattern.test(v)||v.length>254)reject("Use an @kleenest.us address.");return v;}
+function textValue(value:unknown,max=300){const v=String(value??"").trim();if(v.length>max)reject("Text is too long.");return v;}
+function optionalBool(value:unknown){if(typeof value!=="boolean")reject("Expected a true/false setting.");return value;}
+async function identity(req:Request){
+  const bearer=req.headers.get("authorization")??"";
+  if(!bearer.startsWith("Bearer "))reject("Sign in required.",401);
+  const jwt=bearer.slice(7);
+  const userClient=createClient(SUPABASE_URL,PUBLIC_KEY,{auth:{persistSession:false,autoRefreshToken:false},global:{headers:{Authorization:"Bearer "+jwt}}});
+  const {data:userData,error:userError}=await userClient.auth.getUser(jwt);
+  if(userError||!userData.user||userData.user.is_anonymous)reject("Sign in required.",401);
+  const {data,error}=await userClient.rpc("admin_authorization_v1");
+  // Failure of the admin RPC must never confer administrative powers.
+  const authority=(!error&&data&&typeof data==="object"?data:{}) as Record<string,unknown>;
+  return {userId:userData.user.id,authority,platformOwner:!error&&authority.is_platform_owner===true};
 }
-function adminClient(){
-  if(!SUPABASE_SECRET_KEY)throw new Error('Supabase server credential is unavailable.');
-  return createClient(SUPABASE_URL,SUPABASE_SECRET_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+async function audit(userId:string,action:string,detail:Record<string,unknown>){
+  const {error}=await admin().from("owner_email_center_audit").insert({owner_user_id:userId,action:"mailbox_"+action,detail});
+  if(error)throw error;
 }
-async function authorize(req:Request){
-  const header=req.headers.get('authorization')||'';
-  if(!header.startsWith('Bearer '))throw Object.assign(new Error('Sign-in is required.'),{status:401});
-  const jwt=header.slice(7).trim();
-  const client=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    auth:{persistSession:false,autoRefreshToken:false},
-    global:{headers:{Authorization:`Bearer ${jwt}`}},
-  });
-  const userResult=await client.auth.getUser(jwt);
-  if(userResult.error||!userResult.data.user)throw Object.assign(new Error('Sign-in is required.'),{status:401});
-  let authorization:any={};
+async function availableAddress(value:string,exceptId?:string){
+  const db=admin();
+  const [m,a]=await Promise.all([db.from("owner_email_mailboxes").select("id").eq("address",value).maybeSingle(),db.from("owner_email_mailbox_aliases").select("mailbox_id").eq("alias_address",value).maybeSingle()]);
+  if(m.error)throw m.error;if(a.error)throw a.error;
+  if((m.data&&m.data.id!==exceptId)||(a.data&&a.data.mailbox_id!==exceptId))reject("That address already belongs to a mailbox or alias.",409);
+}
+async function existingMailbox(mailboxId:string){
+  const {data,error}=await admin().from("owner_email_mailboxes").select("id,address,mailbox_type,owner_user_id,active").eq("id",mailboxId).single();
+  if(error||!data)reject("Mailbox not found.",404);
+  return data!;
+}
+async function validUser(value:unknown){
+  const target=id(value);const {data,error}=await admin().auth.admin.getUserById(target);
+  if(error||!data.user)reject("Choose an existing Kleenest account.",404);
+  return target;
+}
+async function overview(){
+  const db=admin();
+  const [mailboxes,members,aliases]=await Promise.all([
+    db.from("owner_email_mailboxes").select("id,address,display_name,mailbox_type,owner_user_id,send_enabled,active,forwarding_enabled,forwarding_targets,keep_copy,signature_text,auto_reply_enabled,auto_reply_subject,auto_reply_body").order("address"),
+    db.from("owner_email_mailbox_members").select("mailbox_id,user_id,access_role,can_send"),
+    db.from("owner_email_mailbox_aliases").select("alias_address,mailbox_id,active").order("alias_address"),
+  ]);
+  for(const result of [mailboxes,members,aliases])if(result.error)throw result.error;
+  // Address display is restricted to the platform owner on this endpoint.
+  const users=[...new Set((members.data||[]).map((m:any)=>String(m.user_id)))];
+  const userEntries=await Promise.all(users.map(async userId=>{
+    const {data,error}=await db.auth.admin.getUserById(userId);
+    return [userId,error?"":String(data.user?.email??"")] as const;
+  }));
+  const emails=new Map<string,string>(userEntries);
+  return {mailboxes:(mailboxes.data||[]).map((m:any)=>({...m,members:(members.data||[]).filter((x:any)=>x.mailbox_id===m.id).map((x:any)=>({...x,email:emails.get(String(x.user_id))??""})),aliases:(aliases.data||[]).filter((a:any)=>a.mailbox_id===m.id)}))};
+}
+Deno.serve(async req=>{
+  if(req.method==="OPTIONS")return json({ok:true});
+  if(req.method!=="POST")return json({error:"POST required."},405);
   try{
-    const result=await client.rpc('admin_authorization_v1');
-    if(!result.error&&result.data&&typeof result.data==='object')authorization=result.data;
-  }catch{}
-  const isAdmin=Boolean(authorization.authorized||authorization.is_admin||authorization.is_platform_owner);
-  return{userId:userResult.data.user.id,isAdmin,authorization};
-}
-function normalizeAddress(value:unknown){
-  const raw=String(value??'').trim().toLowerCase();
-  if(!raw)throw new Error('Email address is required.');
-  const address=raw.includes('@')?raw:`${raw}@kleenest.us`;
-  if(!/^[a-z0-9.!#$%&'*+/=?^_{}|~-]+@kleenest\.us$/.test(address))throw new Error('Address must be on kleenest.us.');
-  return address;
-}
-function emailList(value:unknown){
-  const raw=Array.isArray(value)?value.join(','):String(value??'');
-  return [...new Set(raw.split(/[;,\n]/).map(v=>v.trim().toLowerCase()).filter(v=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)))].slice(0,10);
-}
-async function membership(userId:string,mailboxId:string){
-  const admin=adminClient();
-  const result=await admin.from('owner_email_mailbox_members').select('access_role,can_send').eq('mailbox_id',mailboxId).eq('user_id',userId).maybeSingle();
-  if(result.error)throw result.error;
-  return result.data;
-}
-async function canManage(userId:string,mailboxId:string,isAdmin:boolean){
-  if(isAdmin)return true;
-  const member=await membership(userId,mailboxId);
-  return Boolean(member&&['owner','manager'].includes(String(member.access_role)));
-}
-async function accessibleMailboxIds(userId:string,isAdmin:boolean){
-  const admin=adminClient();
-  if(isAdmin){
-    const result=await admin.from('owner_email_mailboxes').select('id').eq('active',true);
-    if(result.error)throw result.error;
-    return (result.data||[]).map((r:any)=>String(r.id));
-  }
-  const result=await admin.from('owner_email_mailbox_members').select('mailbox_id').eq('user_id',userId);
-  if(result.error)throw result.error;
-  return (result.data||[]).map((r:any)=>String(r.mailbox_id));
-}
-async function resolveUserIdByEmail(email:string){
-  const admin=adminClient();
-  let page=1;
-  for(let i=0;i<10;i++,page++){
-    const result=await admin.auth.admin.listUsers({page,perPage:1000});
-    if(result.error)throw result.error;
-    const found=result.data.users.find(u=>String(u.email||'').toLowerCase()===email.toLowerCase());
-    if(found)return found.id;
-    if(result.data.users.length<1000)break;
-  }
-  return null;
-}
-
-Deno.serve(async(req:Request)=>{
-  if(req.method==='OPTIONS')return json({ok:true});
-  if(req.method!=='POST')return json({error:'POST required.'},405);
-  try{
-    const auth=await authorize(req);
-    const body=await req.json().catch(()=>({}));
-    const action=String(body?.action||'').trim();
-    const admin=adminClient();
-
-    if(action==='list_mailboxes'){
-      const ids=await accessibleMailboxIds(auth.userId,auth.isAdmin);
-      if(!ids.length)return json({mailboxes:[],isAdmin:auth.isAdmin});
-      const q=await admin.from('owner_email_mailboxes')
-        .select('id,address,display_name,mailbox_type,owner_user_id,send_enabled,forwarding_enabled,forwarding_targets,keep_copy,signature_text,auto_reply_enabled,auto_reply_subject,auto_reply_body,active,created_at,updated_at')
-        .in('id',ids)
-        .order('address');
-      if(q.error)throw q.error;
-      return json({mailboxes:q.data||[],isAdmin:auth.isAdmin});
-    }
-
-    if(action==='directory'){
-      if(!auth.isAdmin)throw Object.assign(new Error('Email administrator access is required.'),{status:403});
-      const [mailboxes,aliases,members]=await Promise.all([
-        admin.from('owner_email_mailboxes').select('*').order('address'),
-        admin.from('owner_email_mailbox_aliases').select('*').order('alias_address'),
-        admin.from('owner_email_mailbox_members').select('mailbox_id,user_id,access_role,can_send,created_at,updated_at').order('created_at'),
+    if(!SECRET_KEY||!PUBLIC_KEY)reject("Mail service credentials unavailable.",503);
+    const {userId,authority,platformOwner}=await identity(req);
+    const body=await req.json().catch(()=>({})) as Record<string,unknown>;
+    const action=String(body.action??"");
+    const db=admin();
+    if(action==="list_mailboxes"){
+      const [mailboxes,members]=await Promise.all([
+        db.from("owner_email_mailboxes").select("id,address,display_name,mailbox_type,send_enabled,active,owner_user_id,signature_text,forwarding_enabled,auto_reply_enabled").eq("active",true).neq("mailbox_type","system").order("address"),
+        db.from("owner_email_mailbox_members").select("mailbox_id,access_role,can_send").eq("user_id",userId),
       ]);
-      if(mailboxes.error)throw mailboxes.error;if(aliases.error)throw aliases.error;if(members.error)throw members.error;
-      const userIds=[...new Set((members.data||[]).map((m:any)=>m.user_id).filter(Boolean))];
-      let profiles:any[]=[];
-      if(userIds.length){
-        const p=await admin.from('profiles').select('id,display_name,username,is_admin,is_platform_owner').in('id',userIds);
-        if(!p.error)profiles=p.data||[];
+      if(mailboxes.error)throw mailboxes.error;if(members.error)throw members.error;
+      const byId=new Map((members.data||[]).map((m:any)=>[String(m.mailbox_id),m]));
+      const isAdmin=authority.is_admin===true||authority.is_platform_owner===true||authority.authorized===true;
+      const visible=(mailboxes.data||[]).filter((m:any)=> {
+        const member=byId.has(String(m.id)), owns=m.owner_user_id===userId;
+        return platformOwner||owns||member;
+      }).map((m:any)=>{
+        const member:any=byId.get(String(m.id));
+        return {id:m.id,address:m.address,display_name:m.display_name,mailbox_type:m.mailbox_type,active:m.active,
+          signature_text:m.signature_text||'',forwarding_enabled:Boolean(m.forwarding_enabled),auto_reply_enabled:Boolean(m.auto_reply_enabled),
+          send_enabled:Boolean(m.send_enabled)&&(platformOwner||m.owner_user_id===userId||Boolean(member?.can_send)),
+          can_modify:platformOwner||m.owner_user_id===userId||["owner","manager","responder"].includes(String(member?.access_role||"")),
+          can_manage:platformOwner||m.owner_user_id===userId||["owner","manager"].includes(String(member?.access_role||""))};
+      });
+      if(!visible.length&&!isAdmin)reject("No mailbox is assigned to this account.",403);
+      return json({mailboxes:visible,isAdmin});
+    }
+    if(!platformOwner)reject("Platform owner authorization required.",403);
+    if(action==="admin_overview")return json(await overview());
+    if(action==="create_mailbox"){
+      const addr=address(body.address);await availableAddress(addr);
+      const mailboxType=body.mailboxType==="personal"?"personal":"shared";
+      const ownerId=body.ownerUserId?await validUser(body.ownerUserId):null;
+      if(mailboxType==="personal"&&!ownerId)reject("A personal mailbox must have an assigned owner.");
+      const displayName=textValue(body.displayName,120)||addr;
+      const {data,error}=await db.from("owner_email_mailboxes").insert({address:addr,display_name:displayName,mailbox_type:mailboxType,owner_user_id:ownerId,created_by:userId,send_enabled:true,active:true}).select("id").single();
+      if(error)throw error;
+      if(ownerId){const member=await db.from("owner_email_mailbox_members").upsert({mailbox_id:data.id,user_id:ownerId,access_role:"owner",can_send:true},{onConflict:"mailbox_id,user_id"});if(member.error)throw member.error;}
+      await audit(userId,action,{mailboxId:data.id,address:addr});return json({ok:true,mailboxId:data.id});
+    }
+    if(action==="update_mailbox"){
+      const mailboxId=id(body.mailboxId);const m=await existingMailbox(mailboxId);
+      if(m.mailbox_type==="system")reject("System mailbox settings cannot be edited here.",403);
+      const updates:Record<string,unknown>={updated_at:new Date().toISOString()};
+      const fields:Record<string,string>={displayName:"display_name",sendEnabled:"send_enabled",active:"active",forwardingEnabled:"forwarding_enabled",forwardingTargets:"forwarding_targets",keepCopy:"keep_copy",signatureText:"signature_text",autoReplyEnabled:"auto_reply_enabled",autoReplySubject:"auto_reply_subject",autoReplyBody:"auto_reply_body"};
+      for(const [key,col] of Object.entries(fields)){
+        if(!(key in body))continue;
+        if(["sendEnabled","active","forwardingEnabled","keepCopy","autoReplyEnabled"].includes(key))updates[col]=optionalBool(body[key]);
+        else if(key==="forwardingTargets"){
+          if(!Array.isArray(body[key])||body[key].length>10)reject("Use up to ten forwarding addresses.");
+          updates[col]=(body[key] as unknown[]).map(v=>{const s=textValue(v,254).toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s))reject("Invalid forwarding address.");return s});
+        }else updates[col]=textValue(body[key],key==="autoReplyBody"?5000:key==="signatureText"?2000:160);
       }
-      return json({mailboxes:mailboxes.data||[],aliases:aliases.data||[],members:members.data||[],profiles});
-    }
-
-    if(action==='save_mailbox'){
-      if(!auth.isAdmin)throw Object.assign(new Error('Email administrator access is required.'),{status:403});
-      const address=normalizeAddress(body?.address);
-      const displayName=String(body?.displayName||address.split('@')[0]).trim().slice(0,120)||address;
-      const mailboxType=String(body?.mailboxType||'shared');
-      if(!['personal','shared','system'].includes(mailboxType))throw new Error('Invalid mailbox type.');
-      const ownerUserId=body?.ownerUserId?String(body.ownerUserId):null;
-      const row:any={
-        address,display_name:displayName,mailbox_type:mailboxType,owner_user_id:ownerUserId,
-        send_enabled:body?.sendEnabled!==false,
-        signature_text:String(body?.signatureText||'').slice(0,10000),
-        auto_reply_enabled:Boolean(body?.autoReplyEnabled),
-        auto_reply_subject:String(body?.autoReplySubject||'').slice(0,500),
-        auto_reply_body:String(body?.autoReplyBody||'').slice(0,20000),
-        active:body?.active!==false,created_by:auth.userId,updated_at:new Date().toISOString(),
-      };
-      const saved=await admin.from('owner_email_mailboxes').upsert(row,{onConflict:'address'}).select('*').single();
-      if(saved.error)throw saved.error;
-      const member=await admin.from('owner_email_mailbox_members').upsert({
-        mailbox_id:saved.data.id,user_id:auth.userId,access_role:'owner',can_send:true,updated_at:new Date().toISOString(),
-      },{onConflict:'mailbox_id,user_id'});
-      if(member.error)throw member.error;
-      return json({ok:true,mailbox:saved.data});
-    }
-
-    if(action==='set_forwarding'){
-      const mailboxId=String(body?.mailboxId||'');
-      if(!mailboxId)throw new Error('Mailbox is required.');
-      if(!await canManage(auth.userId,mailboxId,auth.isAdmin))throw Object.assign(new Error('Mailbox manager access is required.'),{status:403});
-      const targets=emailList(body?.targets);
-      const enabled=Boolean(body?.enabled)&&targets.length>0;
-      const update=await admin.from('owner_email_mailboxes').update({
-        forwarding_enabled:enabled,forwarding_targets:targets,keep_copy:body?.keepCopy!==false,updated_at:new Date().toISOString(),
-      }).eq('id',mailboxId).select('*').single();
-      if(update.error)throw update.error;
-      return json({ok:true,mailbox:update.data});
-    }
-
-    if(action==='save_alias'){
-      if(!auth.isAdmin)throw Object.assign(new Error('Email administrator access is required.'),{status:403});
-      const mailboxId=String(body?.mailboxId||'');
-      if(!mailboxId)throw new Error('Mailbox is required.');
-      const aliasAddress=normalizeAddress(body?.aliasAddress);
-      const same=await admin.from('owner_email_mailboxes').select('id').eq('address',aliasAddress).maybeSingle();
-      if(same.error)throw same.error;
-      if(same.data)throw new Error('That address is already a mailbox.');
-      const saved=await admin.from('owner_email_mailbox_aliases').upsert({alias_address:aliasAddress,mailbox_id:mailboxId,active:true},{onConflict:'alias_address'}).select('*').single();
-      if(saved.error)throw saved.error;
-      return json({ok:true,alias:saved.data});
-    }
-
-    if(action==='remove_alias'){
-      if(!auth.isAdmin)throw Object.assign(new Error('Email administrator access is required.'),{status:403});
-      const aliasAddress=normalizeAddress(body?.aliasAddress);
-      const removed=await admin.from('owner_email_mailbox_aliases').delete().eq('alias_address',aliasAddress);
-      if(removed.error)throw removed.error;
+      if("display_name" in updates&&!updates.display_name)reject("Display name required.");
+      const {error}=await db.from("owner_email_mailboxes").update(updates).eq("id",mailboxId);
+      if(error)throw error;
+      await audit(userId,action,{mailboxId,fields:Object.keys(updates)});
       return json({ok:true});
     }
-
-    if(action==='grant_access'){
-      const mailboxId=String(body?.mailboxId||'');
-      if(!mailboxId)throw new Error('Mailbox is required.');
-      if(!await canManage(auth.userId,mailboxId,auth.isAdmin))throw Object.assign(new Error('Mailbox manager access is required.'),{status:403});
-      const email=String(body?.memberEmail||'').trim().toLowerCase();
-      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))throw new Error('A valid user email is required.');
-      const userId=await resolveUserIdByEmail(email);
-      if(!userId)throw new Error('No Kleenest account exists for that email yet.');
-      const role=String(body?.accessRole||'viewer');
-      if(!['owner','manager','responder','viewer'].includes(role))throw new Error('Invalid mailbox role.');
-      const saved=await admin.from('owner_email_mailbox_members').upsert({
-        mailbox_id:mailboxId,user_id:userId,access_role:role,can_send:Boolean(body?.canSend),updated_at:new Date().toISOString(),
-      },{onConflict:'mailbox_id,user_id'}).select('*').single();
-      if(saved.error)throw saved.error;
-      return json({ok:true,member:saved.data});
+    if(action==="add_alias"){
+      const mailboxId=id(body.mailboxId);const m=await existingMailbox(mailboxId);
+      if(m.mailbox_type==="system")reject("System aliases cannot be modified.",403);
+      const alias=address(body.alias);await availableAddress(alias,mailboxId);
+      const {error}=await db.from("owner_email_mailbox_aliases").upsert({alias_address:alias,mailbox_id:mailboxId,active:true},{onConflict:"alias_address"});
+      if(error)throw error;
+      await audit(userId,action,{mailboxId,alias});return json({ok:true});
     }
-
-    if(action==='revoke_access'){
-      const mailboxId=String(body?.mailboxId||'');
-      const userId=String(body?.userId||'');
-      if(!mailboxId||!userId)throw new Error('Mailbox and user are required.');
-      if(!await canManage(auth.userId,mailboxId,auth.isAdmin))throw Object.assign(new Error('Mailbox manager access is required.'),{status:403});
-      const removed=await admin.from('owner_email_mailbox_members').delete().eq('mailbox_id',mailboxId).eq('user_id',userId);
-      if(removed.error)throw removed.error;
-      return json({ok:true});
+    if(action==="remove_alias"){
+      const mailboxId=id(body.mailboxId);const alias=address(body.alias);
+      await existingMailbox(mailboxId);
+      const {data,error}=await db.from("owner_email_mailbox_aliases").update({active:false}).eq("mailbox_id",mailboxId).eq("alias_address",alias).select("alias_address");
+      if(error)throw error;if(!data?.length)reject("Alias not found.",404);
+      await audit(userId,action,{mailboxId,alias});return json({ok:true});
     }
-
-    if(action==='set_active'){
-      if(!auth.isAdmin)throw Object.assign(new Error('Email administrator access is required.'),{status:403});
-      const mailboxId=String(body?.mailboxId||'');
-      const updated=await admin.from('owner_email_mailboxes').update({active:Boolean(body?.active),updated_at:new Date().toISOString()}).eq('id',mailboxId);
-      if(updated.error)throw updated.error;
-      return json({ok:true});
+    if(action==="assign_member"){
+      const mailboxId=id(body.mailboxId);const m=await existingMailbox(mailboxId);
+      if(m.mailbox_type==="system")reject("System mailbox cannot be delegated.",403);
+      const target=await validUser(body.userId);
+      const role=String(body.role??"viewer");
+      if(!["owner","manager","responder","viewer"].includes(role))reject("Invalid mailbox role.");
+      const canSend=role==="viewer"?false:optionalBool(body.canSend??true);
+      const {error}=await db.from("owner_email_mailbox_members").upsert({mailbox_id:mailboxId,user_id:target,access_role:role,can_send:canSend},{onConflict:"mailbox_id,user_id"});
+      if(error)throw error;
+      await audit(userId,action,{mailboxId,userId:target,role,canSend});return json({ok:true});
     }
-
-    throw Object.assign(new Error('Unsupported mail directory action.'),{status:400});
-  }catch(error:any){
-    return json({error:String(error?.message||error||'Mail directory request failed.')},Number(error?.status)||500);
-  }
+    if(action==="remove_member"){
+      const mailboxId=id(body.mailboxId),target=id(body.userId),m=await existingMailbox(mailboxId);
+      if(m.owner_user_id===target)reject("Transfer ownership before removing the personal mailbox owner.");
+      const {data,error}=await db.from("owner_email_mailbox_members").delete().eq("mailbox_id",mailboxId).eq("user_id",target).select("user_id");
+      if(error)throw error;if(!data?.length)reject("Membership not found.",404);
+      await audit(userId,action,{mailboxId,userId:target});return json({ok:true});
+    }
+    reject("Unsupported directory action.",400);
+  }catch(error:any){return json({error:String(error?.message||"Mailbox request failed.")},Number(error?.status)||500)}
 });
