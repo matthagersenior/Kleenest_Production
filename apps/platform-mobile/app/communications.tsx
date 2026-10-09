@@ -257,7 +257,8 @@ export default function Communications(){
 
     {threads.length===0?<View style={{...card}}><Text style={{fontWeight:'900',color:theme.ink}}>{busy?'Loading mail…':'No conversations in this view'}</Text><Text style={{fontSize:12,color:theme.muted,marginTop:5}}>New mail to {activeMailbox?.address||'any available Kleenest address'} will appear here automatically.</Text></View>:threads.map(t=><Pressable key={t.id} onPress={()=>void open(t)} style={{...card,gap:5,borderColor:t.unread?theme.warning:theme.line}}>
       <View style={{flexDirection:'row',gap:8}}><Text numberOfLines={1} style={{flex:1,fontWeight:t.unread?'900':'800',color:theme.ink}}>{t.subject}</Text>{t.starred?<Text style={{color:theme.warning}}>★</Text>:null}</View>
-      <Text numberOfLines={1} style={{fontSize:12,fontWeight:'800',color:theme.accent}}>{t.from||t.fromEmail||'Conversation'}</Text>
+      <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>{t.sourceApp?<StatusPill label={`${t.sourceApp.toUpperCase()} SUPPORT`} tone="good"/>:null}{t.supportRequestId?<StatusPill label="APP SUPPORT" tone="good"/>:null}{t.latestSent&&t.latestDeliveryStatus?<StatusPill label={String(t.latestDeliveryStatus).replaceAll('_',' ').toUpperCase()} tone={['bounced','failed','suppressed','complained'].includes(t.latestDeliveryStatus)?'danger':t.latestDeliveryStatus==='delivered'?'good':'neutral'}/>:null}</View>
+      <Text numberOfLines={1} style={{fontSize:12,fontWeight:'800',color:theme.accent}}>{t.latestSent?'To: ':'From: '}{t.from||t.fromEmail||'Conversation'}</Text>
       <Text numberOfLines={1} style={{fontSize:11,fontWeight:'800',color:theme.muted}}>{t.mailboxAddress||'Shared mailbox'}</Text>
       <Text numberOfLines={2} style={{fontSize:12,lineHeight:18,color:theme.muted}}>{t.snippet}</Text>
       <Text style={{fontSize:11,color:theme.muted}}>{String(t.folder||views[view].mailbox).toUpperCase()} · {t.latestSent?'KLEENEST LAST':'INBOUND LAST'} · {date(t.date)} · {t.messageCount} message{t.messageCount===1?'':'s'}</Text>
@@ -267,7 +268,7 @@ export default function Communications(){
       <Pressable accessibilityRole="button" onPress={()=>setSelected(null)} style={{alignSelf:'flex-start',padding:8,backgroundColor:theme.accentSoft,borderRadius:9}}><Text style={{color:theme.accent,fontWeight:'900'}}>← Back to conversations</Text></Pressable>
       {!selectedCanModify?<Text style={{color:theme.muted,fontSize:12}}>Read-only access: reply and organization controls are restricted for this mailbox.</Text>:null}
       <Text style={{fontSize:18,fontWeight:'900',color:theme.ink}}>{selected.subject}</Text>
-      <StatusPill label={selected.mailboxAddress||'MAILBOX'} tone="good"/>
+      <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}><StatusPill label={selected.mailboxAddress||'MAILBOX'} tone="good"/>{selected.sourceApp?<StatusPill label={`${selected.sourceApp.toUpperCase()} SUPPORT`} tone="good"/>:null}{selected.supportRequestId?<StatusPill label="APP SUPPORT" tone="good"/>:null}</View>
       <Text style={{fontSize:12,color:theme.muted}}>{selected.participants.join(' · ')}</Text>
       {selectedCanModify?<View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>
         {selectedCanSend&&selected.folder==='drafts'?<Pressable onPress={editDraft} style={{padding:8,borderRadius:999,backgroundColor:theme.accent}}><Text style={{fontWeight:'900',color:theme.accentText}}>Edit draft</Text></Pressable>:null}
@@ -282,7 +283,7 @@ export default function Communications(){
 
       {selected.messages.map(m=><View key={m.id} style={{borderTopWidth:1,borderColor:theme.line,paddingTop:10,gap:6}}>
         <Text style={{fontWeight:'900',color:theme.ink}}>{m.sent?'Kleenest':m.from}</Text>
-        <Text style={{fontSize:11,color:theme.muted}}>{date(m.date)} · {m.sent?'Outbound':'Inbound'}</Text>
+        <View style={{flexDirection:'row',flexWrap:'wrap',gap:7,alignItems:'center'}}><Text style={{fontSize:11,color:theme.muted}}>{date(m.date)} · {m.sent?'Outbound':'Inbound'}</Text>{m.deliveryStatus?<StatusPill label={String(m.deliveryStatus).replaceAll('_',' ').toUpperCase()} tone={String(m.deliveryStatus).includes('failed')?'danger':m.deliveryStatus==='delivered'?'good':'neutral'}/>:null}</View>
         <Text selectable style={{fontSize:14,lineHeight:21,color:theme.ink}}>{m.body||m.snippet||'(no body)'}</Text>
         {m.attachments.length?<View><Text style={{fontWeight:'900',fontSize:12,color:theme.ink}}>Attachments</Text>{m.attachments.map((a,i)=>a.id?<Pressable key={i} accessibilityRole="button" disabled={busy} onPress={()=>void downloadAttachment(selected.id,m.id,String(a.id))} style={{paddingVertical:6}}><Text style={{fontSize:13,fontWeight:'800',color:theme.accent}}>↓ {a.filename} · Download</Text></Pressable>:<Text key={i} style={{fontSize:12,color:theme.muted}}>{a.filename} · Download not available</Text>)}</View>:null}
       </View>)}
