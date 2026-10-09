@@ -285,7 +285,7 @@ function App() {
             <h3>Forward</h3><input type="text" placeholder="Recipient email" value={forwardTo} onChange={e=>setForwardTo(e.target.value)}/><textarea rows="3" value={forwardBody} onChange={e=>setForwardBody(e.target.value)} placeholder="Optional note"/>
             <button disabled={busy||!forwardTo.trim()} onClick={forward}>Forward message</button>
             </>}{canModify&&<><h3>Labels</h3><div className="actions wrap">{(thread.labelNames||[]).map(l=><button key={l} disabled={busy} onClick={()=>action('set_label',{labelName:l,applied:false})}>{l} ×</button>)}</div>
-            <div className="actions"><input placeholder="New label" value={labelName} onChange={e=>setLabelName(e.target.value)}/><button disabled={busy||!labelName.trim()} onClick={async()=>{await action('set_label',{labelName,applied:true});setLabelName('');}}>Add label</button></div></>
+            <div className="actions"><input placeholder="New label" value={labelName} onChange={e=>setLabelName(e.target.value)}/><button disabled={busy||!labelName.trim()} onClick={async()=>{await action('set_label',{labelName,applied:true});setLabelName('');}}>Add label</button></div></>}
           </section>
         </div> : <div className="welcome"><div className="welcome-icon">✉</div><h2>Welcome to Kleenest Mail</h2><p>Select a conversation or compose a new message.</p><p className="fine">Delivery is handled securely by KleenestOS and Resend. Messages are not stored in this browser's offline cache.</p></div>}
       </main>
