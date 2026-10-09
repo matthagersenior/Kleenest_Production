@@ -22,7 +22,7 @@ hasAll('Native mail source',native,[
   'Attach files','attachNativePhotos','signature_text','Forward','Reply all','Save draft',
   'Kleenest Email Center','usePlatformTheme','getOwnerAuthorization'
 ]);
-hasAll('Native mail service',nativeApi,["action:'get_attachment'","attachments:input.attachments||[]","action:'list_mailboxes'","action:'admin_overview'","action:'send'","action:'reply'","action:'forward'"]);
+hasAll('Native mail service',nativeApi,["action:'get_attachment'","attachments:input.attachments||[]","action:'list_mailboxes'",'admin_overview',"action:'send'","action:'reply'","action:'forward'"]);
 hasAll('Native mailbox CRUD',nativeAdmin,["run('create_mailbox'","run('update_mailbox'","run('add_alias'","run('remove_alias'","run('assign_member'","run('remove_member'","autoReplyEnabled","signatureText","forwardingEnabled","getOwnerAuthorization"]);
 hasAll('Installable Mail PWA',mail,['MailboxAdmin','isPlatformOwner','canModify','canSend','downloadAttachment','get_attachment','signInWithPassword','resetPasswordForEmail','signature_text','MailNotifications']);
 hasAll('Mail PWA Owner management',mailAdmin,['admin_overview','create_mailbox','update_mailbox','add_alias','remove_alias','assign_member','remove_member','autoReplyEnabled','signatureText','forwardingEnabled','searchUsers']);
