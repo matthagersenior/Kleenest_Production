@@ -41,6 +41,9 @@ export type OwnerMailThreadSummary={
   inInbox:boolean;
   folder?:'inbox'|'archive'|'sent'|'drafts'|'spam'|'trash'|string;
   latestSent:boolean;
+  latestDeliveryStatus?:string|null;
+  sourceApp?:string|null;
+  supportRequestId?:string|null;
   starred:boolean;
   messageCount:number;
   hasAttachment?:boolean;
@@ -73,6 +76,7 @@ export type OwnerMailMessage={
   body:string;
   unread:boolean;
   sent:boolean;
+  deliveryStatus?:string|null;
   attachments:OwnerMailAttachment[];
 };
 
@@ -90,6 +94,8 @@ export type OwnerMailThread={
   labelNames:string[];
   mailboxAddress?:string|null;
   mailboxDisplayName?:string|null;
+  sourceApp?:string|null;
+  supportRequestId?:string|null;
   messages:OwnerMailMessage[];
 };
 
