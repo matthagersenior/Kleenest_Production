@@ -109,6 +109,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TARGET_SHA: ${{ inputs.source_sha || github.event.workflow_run.head_sha || github.sha }}
         run: node scripts/resolve-consumer-apk-baseline.mjs --target-sha "$TARGET_SHA"
+      - name: Resolve canonical KleenestOS APK from the family build
+        id: owner-apk
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ inputs.source_sha || github.event.workflow_run.head_sha || github.sha }}
+        run: node scripts/resolve-family-apk-baseline.mjs --target-sha "$TARGET_SHA"
+      - name: Download canonical KleenestOS Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: Kleenest-Owner-Standalone-APK
+          path: owner-installer
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.owner-apk.outputs.run_id }}
       - name: Fetch Consumer APK baseline commit
         run: git fetch --no-tags --depth=1 origin "${{ steps.apk.outputs.source_sha }}"
       - name: Assess Consumer native and OTA drift
@@ -140,6 +153,10 @@ jobs:
           set -euo pipefail
           test -s installer/Kleenest-Consumer.apk
           cp installer/Kleenest-Consumer.apk apps/consumer-mobile/dist/Kleenest-Consumer.apk
+          test -s owner-installer/Kleenest-Owner.apk
+          cp owner-installer/Kleenest-Owner.apk apps/consumer-mobile/dist/KleenestOS.apk
+          unzip -t apps/consumer-mobile/dist/KleenestOS.apk >/dev/null
+          sha256sum apps/consumer-mobile/dist/KleenestOS.apk > apps/consumer-mobile/dist/KleenestOS.apk.sha256
           cp "$RUNNER_TEMP/Kleenest-release-state.json" apps/consumer-mobile/dist/Kleenest-release-state.json
           mkdir -p apps/consumer-mobile/dist/legal
           cp public/legal/*.html apps/consumer-mobile/dist/legal/
@@ -147,6 +164,7 @@ jobs:
           mkdir -p apps/consumer-mobile/dist/developer apps/consumer-mobile/dist/owner apps/consumer-mobile/dist/business apps/consumer-mobile/dist/fleet
           cp -R apps/developer-portal/static/. apps/consumer-mobile/dist/developer/
           cp -R apps/platform-mobile/dist/. apps/consumer-mobile/dist/owner/
+          cp apps/consumer-mobile/dist/KleenestOS.apk apps/consumer-mobile/dist/owner/KleenestOS.apk
           cp -R apps/business-mobile/dist/. apps/consumer-mobile/dist/business/
           cp -R apps/fleet-mobile/dist/. apps/consumer-mobile/dist/fleet/
           mkdir -p apps/consumer-mobile/dist/mail
@@ -216,6 +234,9 @@ jobs:
           unzip -t "$APK_FILE" >/dev/null
           sha256sum "$APK_FILE" > apps/consumer-mobile/dist/Kleenest-Consumer.apk.sha256
           grep -q "Kleenest-Consumer.apk" apps/consumer-mobile/dist/Kleenest-Consumer.apk.sha256
+          test -s apps/consumer-mobile/dist/KleenestOS.apk
+          test -s apps/consumer-mobile/dist/KleenestOS.apk.sha256
+          test -s apps/consumer-mobile/dist/owner/KleenestOS.apk
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/consumer-mobile/dist
