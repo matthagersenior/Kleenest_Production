@@ -203,6 +203,7 @@ export default function Communications(){
     <View style={{...card,gap:10}}>
       <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
         {canManage?<Pressable onPress={()=>router.push('/mail-admin')} style={{backgroundColor:theme.accent,padding:11,borderRadius:11}}><Text style={{color:theme.accentText,fontWeight:'900'}}>Manage mailboxes & access</Text></Pressable>:null}
+        <Pressable accessibilityRole="link" onPress={()=>void Linking.openURL('https://mail.kleenest.us/')} style={{backgroundColor:theme.accentSoft,padding:11,borderRadius:11}}><Text style={{color:theme.accent,fontWeight:'900'}}>Open standalone Kleenest Mail</Text></Pressable>
         <Pressable onPress={()=>void getKleenestSupabaseClient().auth.signOut({scope:'local'}).then(()=>router.replace({pathname:'/auth',params:{returnTo:pathname==='/mail'?'/mail':'/'}})).catch(e=>setNotice(String(e?.message||e)))} style={{backgroundColor:theme.accentSoft,padding:11,borderRadius:11}}><Text style={{color:theme.accent,fontWeight:'900'}}>Sign out</Text></Pressable>
       </View>
       <SectionHeader title="Mailboxes" body="Select a mailbox. Sending and editing follow the permissions granted to your account."/>
