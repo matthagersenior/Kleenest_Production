@@ -5,7 +5,7 @@ export type OwnerMailConnectionStatus={
   provider:'resend';
   emailAddress:string|null;
   fallbackAddress:string|null;
-  domainStatus:'pending'|'verified'|'failed'|'partially_verified'|string;
+  domainStatus:'pending'|'verified'|'failed'|string;
   webhookEnabled:boolean;
   fromAddress:string;
   providerConfigured:boolean;
@@ -20,39 +20,13 @@ export type OwnerMailbox={
   address:string;
   display_name:string;
   mailbox_type:'personal'|'shared'|'system'|string;
-  owner_user_id?:string|null;
   send_enabled:boolean;
-  forwarding_enabled:boolean;
-  forwarding_targets:string[];
-  keep_copy:boolean;
-  signature_text:string;
-  auto_reply_enabled:boolean;
-  auto_reply_subject:string;
-  auto_reply_body:string;
+  signature_text?:string;
+  forwarding_enabled?:boolean;
+  auto_reply_enabled?:boolean;
+  can_modify?:boolean;
+  can_manage?:boolean;
   active:boolean;
-  created_at?:string;
-  updated_at?:string;
-};
-
-export type OwnerMailboxAlias={
-  alias_address:string;
-  mailbox_id:string;
-  active:boolean;
-};
-
-export type OwnerMailboxMember={
-  mailbox_id:string;
-  user_id:string;
-  access_role:'owner'|'manager'|'responder'|'viewer'|string;
-  can_send:boolean;
-};
-
-export type OwnerMailboxProfile={
-  id:string;
-  display_name?:string|null;
-  username?:string|null;
-  is_admin?:boolean;
-  is_platform_owner?:boolean;
 };
 
 export type OwnerMailThreadSummary={
@@ -65,22 +39,23 @@ export type OwnerMailThreadSummary={
   date:string|null;
   unread:boolean;
   inInbox:boolean;
+  folder?:'inbox'|'archive'|'sent'|'drafts'|'spam'|'trash'|string;
   latestSent:boolean;
-  latestDeliveryStatus?:string|null;
   starred:boolean;
   messageCount:number;
   hasAttachment?:boolean;
   labelNames?:string[];
-  folder?:'inbox'|'archive'|'sent'|'drafts'|'spam'|'trash'|string;
-  priority?:string;
-  supportRequestId?:string|null;
-  sourceApp?:string|null;
   mailboxId?:string|null;
   mailboxAddress?:string|null;
   mailboxDisplayName?:string|null;
 };
 
-export type OwnerMailAttachment={filename:string;mimeType:string;size:number;id?:string|null};
+export type OwnerMailAttachment={
+  filename:string;
+  mimeType:string;
+  size:number;
+  id?:string|null;
+};
 
 export type OwnerMailMessage={
   id:string;
@@ -98,12 +73,12 @@ export type OwnerMailMessage={
   body:string;
   unread:boolean;
   sent:boolean;
-  deliveryStatus?:string|null;
   attachments:OwnerMailAttachment[];
 };
 
 export type OwnerMailThread={
   id:string;
+  mailboxId?:string|null;
   historyId:string|null;
   subject:string;
   participants:string[];
@@ -111,27 +86,24 @@ export type OwnerMailThread={
   inInbox:boolean;
   folder?:'inbox'|'archive'|'sent'|'drafts'|'spam'|'trash'|string;
   starred?:boolean;
-  priority?:string;
-  supportRequestId?:string|null;
-  sourceApp?:string|null;
-  mailboxId?:string|null;
-  mailboxAddress?:string|null;
-  mailboxDisplayName?:string|null;
   labelIds:string[];
   labelNames:string[];
+  mailboxAddress?:string|null;
+  mailboxDisplayName?:string|null;
   messages:OwnerMailMessage[];
 };
 
+export type MailUploadAttachment={filename:string;content:string;contentType:string;size:number};
 type GatewayInput=Record<string,unknown>;
 
-async function invokeFunction<T>(name:string,body:GatewayInput):Promise<T>{
+async function invokeFunction<T>(functionName:string,body:GatewayInput):Promise<T>{
   const client=getKleenestSupabaseClient();
   const {data:{session},error:sessionError}=await client.auth.getSession();
   if(sessionError)throw sessionError;
   if(!session?.access_token)throw new Error('Owner sign-in is required.');
-  const {data,error}=await client.functions.invoke(name,{
+  const {data,error}=await client.functions.invoke(functionName,{
     body,
-    headers:{Authorization:'Bearer '+session.access_token},
+    headers:{Authorization:`Bearer ${session.access_token}`},
   });
   if(error){
     const context=(error as any)?.context;
@@ -149,18 +121,25 @@ async function invokeFunction<T>(name:string,body:GatewayInput):Promise<T>{
   return data as T;
 }
 
-const invoke=<T>(body:GatewayInput)=>invokeFunction<T>('owner-email-center',body);
-const invokeDirectory=<T>(body:GatewayInput)=>invokeFunction<T>('owner-email-directory',body);
+function invoke<T>(body:GatewayInput):Promise<T>{
+  return invokeFunction<T>('owner-email-center',body);
+}
 
-export function getOwnerMailStatus(){return invoke<OwnerMailConnectionStatus>({action:'status'})}
+export function listOwnerMailboxes(){
+  return invokeFunction<{mailboxes:OwnerMailbox[];isAdmin:boolean}>('owner-email-directory',{action:'list_mailboxes'});
+}
+
+export function getOwnerMailStatus(){
+  return invoke<OwnerMailConnectionStatus>({action:'status'});
+}
 
 export function listOwnerMailThreads(input:{
   query?:string;
   unreadOnly?:boolean;
   maxResults?:number;
   mailbox?:'inbox'|'sent'|'drafts'|'spam'|'trash'|'all';
-  mailboxId?:string|null;
   direction?:'any'|'incoming'|'outgoing';
+  mailboxId?:string;
 }={}){
   return invoke<{threads:OwnerMailThreadSummary[];nextPageToken:string|null}>({
     action:'list_threads',
@@ -168,90 +147,107 @@ export function listOwnerMailThreads(input:{
     unreadOnly:Boolean(input.unreadOnly),
     maxResults:Math.min(Math.max(input.maxResults||50,1),100),
     mailbox:input.mailbox||'inbox',
-    mailboxId:input.mailboxId||'',
     direction:input.direction||'any',
+    mailboxId:input.mailboxId||'',
   });
 }
 
-export function getOwnerMailThread(threadId:string){return invoke<{thread:OwnerMailThread}>({action:'get_thread',threadId})}
+export function getOwnerMailThread(threadId:string){
+  return invoke<{thread:OwnerMailThread}>({action:'get_thread',threadId});
+}
+
+export function getOwnerMailAttachment(input:{threadId:string;messageId:string;attachmentId:string}){
+  return invoke<{downloadUrl:string;filename:string;expiresAt:string|null}>({action:'get_attachment',...input});
+}
 
 export function replyOwnerMailThread(input:{threadId:string;body:string;replyAll?:boolean}){
-  return invoke<{messageId:string;threadId:string}>({action:'reply',threadId:input.threadId,body:input.body.trim(),replyAll:Boolean(input.replyAll)});
+  return invoke<{messageId:string;threadId:string}>({
+    action:'reply',
+    threadId:input.threadId,
+    body:input.body.trim(),
+    replyAll:Boolean(input.replyAll),
+  });
 }
 
 export function forwardOwnerMailThread(input:{threadId:string;to:string;body?:string}){
-  return invoke<{messageId:string;threadId:string|null}>({action:'forward',threadId:input.threadId,to:input.to.trim(),body:input.body?.trim()||''});
-}
-
-export function archiveOwnerMailThread(threadId:string){return invoke<{ok:true}>({action:'archive',threadId})}
-export function setOwnerMailThreadRead(threadId:string,read:boolean){return invoke<{ok:true}>({action:'set_read',threadId,read})}
-
-export function sendOwnerMail(input:{mailboxId?:string|null;to:string;cc?:string;bcc?:string;subject:string;body:string}){
   return invoke<{messageId:string;threadId:string|null}>({
-    action:'send',mailboxId:input.mailboxId||'',to:input.to.trim(),cc:input.cc?.trim()||'',bcc:input.bcc?.trim()||'',
-    subject:input.subject.trim(),body:input.body.trim(),
+    action:'forward',
+    threadId:input.threadId,
+    to:input.to.trim(),
+    body:input.body?.trim()||'',
   });
 }
 
-export function saveOwnerMailDraft(input:{mailboxId?:string|null;draftId?:string|null;to?:string;cc?:string;bcc?:string;subject?:string;body?:string}){
+export function archiveOwnerMailThread(threadId:string){
+  return invoke<{ok:true}>({action:'archive',threadId});
+}
+
+export function setOwnerMailThreadRead(threadId:string,read:boolean){
+  return invoke<{ok:true}>({action:'set_read',threadId,read});
+}
+
+export function saveOwnerMailDraft(input:{draftId?:string|null;mailboxId?:string|null;to?:string;cc?:string;bcc?:string;subject?:string;body?:string}){
   return invoke<{ok:true;threadId:string;messageId:string}>({
-    action:'save_draft',mailboxId:input.mailboxId||'',draftId:input.draftId||'',to:input.to?.trim()||'',cc:input.cc?.trim()||'',
-    bcc:input.bcc?.trim()||'',subject:input.subject?.trim()||'',body:input.body?.trim()||'',
+    action:'save_draft',
+    draftId:input.draftId||'',
+    mailboxId:input.mailboxId||'',
+    to:input.to?.trim()||'',
+    cc:input.cc?.trim()||'',
+    bcc:input.bcc?.trim()||'',
+    subject:input.subject?.trim()||'',
+    body:input.body?.trim()||'',
   });
 }
 
-export function markOwnerMailThreadSpam(threadId:string){return invoke<{ok:true}>({action:'spam',threadId})}
-export function blockOwnerMailSender(threadId:string){return invoke<{ok:true;sender:string}>({action:'block_sender',threadId})}
-export function setOwnerMailThreadStarred(threadId:string,starred:boolean){return invoke<{ok:true}>({action:'star',threadId,starred})}
-export function trashOwnerMailThread(threadId:string){return invoke<{ok:true}>({action:'trash',threadId})}
-export function setOwnerMailThreadInbox(threadId:string,inInbox:boolean){return invoke<{ok:true}>({action:'set_inbox',threadId,inInbox})}
+export function sendOwnerMail(input:{mailboxId?:string|null;to:string;cc?:string;bcc?:string;subject:string;body:string;attachments?:MailUploadAttachment[]}){
+  return invoke<{messageId:string;threadId:string|null}>({
+    action:'send',
+    mailboxId:input.mailboxId||'',
+    to:input.to.trim(),
+    cc:input.cc?.trim()||'',
+    bcc:input.bcc?.trim()||'',
+    subject:input.subject.trim(),
+    body:input.body.trim(),
+    attachments:input.attachments||[],
+  });
+}
+
+export function setOwnerMailThreadStarred(threadId:string,starred:boolean){
+  return invoke<{ok:true}>({action:'star',threadId,starred});
+}
+
+export function trashOwnerMailThread(threadId:string){
+  return invoke<{ok:true}>({action:'trash',threadId});
+}
+
+export function setOwnerMailThreadInbox(threadId:string,inInbox:boolean){
+  return invoke<{ok:true}>({action:'set_inbox',threadId,inInbox});
+}
+
 export function setOwnerMailThreadLabel(threadId:string,labelName:string,applied:boolean){
   return invoke<{ok:true;labelId:string}>({action:'set_label',threadId,labelName:labelName.trim(),applied});
 }
 
-export function listOwnerMailboxes(){
-  return invokeDirectory<{mailboxes:OwnerMailbox[];isAdmin:boolean}>({action:'list_mailboxes'});
+
+export function spamOwnerMailThread(threadId:string){
+  return invoke<{ok:true}>({action:'spam',threadId});
 }
 
-export function getOwnerMailDirectory(){
-  return invokeDirectory<{mailboxes:OwnerMailbox[];aliases:OwnerMailboxAlias[];members:OwnerMailboxMember[];profiles:OwnerMailboxProfile[]}>({action:'directory'});
+export function blockOwnerMailThreadSender(threadId:string){
+  return invoke<{ok:true;sender:string}>({action:'block_sender',threadId});
 }
 
-export function saveOwnerMailbox(input:{
-  address:string;displayName:string;mailboxType:'personal'|'shared'|'system';ownerUserId?:string|null;sendEnabled?:boolean;
-  signatureText?:string;autoReplyEnabled?:boolean;autoReplySubject?:string;autoReplyBody?:string;active?:boolean;
-}){
-  return invokeDirectory<{ok:true;mailbox:OwnerMailbox}>({
-    action:'save_mailbox',address:input.address,displayName:input.displayName,mailboxType:input.mailboxType,
-    ownerUserId:input.ownerUserId||'',sendEnabled:input.sendEnabled!==false,signatureText:input.signatureText||'',
-    autoReplyEnabled:Boolean(input.autoReplyEnabled),autoReplySubject:input.autoReplySubject||'',autoReplyBody:input.autoReplyBody||'',active:input.active!==false,
-  });
-}
 
-export function setOwnerMailboxForwarding(input:{mailboxId:string;enabled:boolean;targets:string;keepCopy?:boolean}){
-  return invokeDirectory<{ok:true;mailbox:OwnerMailbox}>({
-    action:'set_forwarding',mailboxId:input.mailboxId,enabled:input.enabled,targets:input.targets,keepCopy:input.keepCopy!==false,
-  });
+export type MailboxMember={mailbox_id:string;user_id:string;email:string;access_role:'owner'|'manager'|'responder'|'viewer';can_send:boolean};
+export type MailboxAlias={alias_address:string;mailbox_id:string;active:boolean};
+export type ManagedMailbox=OwnerMailbox&{
+  owner_user_id:string|null;forwarding_enabled:boolean;forwarding_targets:string[];
+  keep_copy:boolean;signature_text:string;auto_reply_enabled:boolean;
+  auto_reply_subject:string;auto_reply_body:string;members:MailboxMember[];aliases:MailboxAlias[];
+};
+export function manageMailDirectory<T=Record<string,unknown>>(action:string,payload:Record<string,unknown>={}){
+  return invokeFunction<T>('owner-email-directory',{action,...payload});
 }
-
-export function saveOwnerMailboxAlias(mailboxId:string,aliasAddress:string){
-  return invokeDirectory<{ok:true;alias:OwnerMailboxAlias}>({action:'save_alias',mailboxId,aliasAddress});
-}
-
-export function removeOwnerMailboxAlias(aliasAddress:string){
-  return invokeDirectory<{ok:true}>({action:'remove_alias',aliasAddress});
-}
-
-export function grantOwnerMailboxAccess(input:{mailboxId:string;memberEmail:string;accessRole:'owner'|'manager'|'responder'|'viewer';canSend:boolean}){
-  return invokeDirectory<{ok:true;member:OwnerMailboxMember}>({
-    action:'grant_access',mailboxId:input.mailboxId,memberEmail:input.memberEmail,accessRole:input.accessRole,canSend:input.canSend,
-  });
-}
-
-export function revokeOwnerMailboxAccess(mailboxId:string,userId:string){
-  return invokeDirectory<{ok:true}>({action:'revoke_access',mailboxId,userId});
-}
-
-export function setOwnerMailboxActive(mailboxId:string,active:boolean){
-  return invokeDirectory<{ok:true}>({action:'set_active',mailboxId,active});
+export function listManagedMailboxes(){
+  return manageMailDirectory<{mailboxes:ManagedMailbox[]}>('admin_overview');
 }
