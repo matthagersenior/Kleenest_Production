@@ -33,7 +33,6 @@ must(!appSearch.includes("keywords:['email','gmail'"),'Owner search should not p
 requireAll('Owner Email Center UI',screen,[
   'Kleenest Email Center',
   'support@kleenest.us',
-  'Kleenestapp@gmail.com',
   'Needs reply',
   'Waiting',
   'Sent',

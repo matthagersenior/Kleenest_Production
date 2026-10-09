@@ -32,15 +32,15 @@ all('Mail directory schema',migration,[
   'recipient_address text',
 ]);
 all('Mail directory control plane',directory,[
-  "action==='list_mailboxes'",
-  "action==='directory'",
-  "action==='save_mailbox'",
-  "action==='set_forwarding'",
-  "action==='save_alias'",
-  "action==='grant_access'",
-  "action==='revoke_access'",
+  'list_mailboxes',
+  'admin_overview',
+  'create_mailbox',
+  'update_mailbox',
+  'add_alias',
+  'assign_member',
+  'remove_member',
   'owner_email_mailbox_members',
-  'admin.auth.admin.listUsers',
+  'getUserById(target)',
 ]);
 all('Inbound mailbox routing',inbound,[
   'resolveRecipientMailbox',
@@ -71,25 +71,25 @@ all('Email Center send-as',center,[
 all('Owner mail client',service,[
   "owner-email-directory",
   'listOwnerMailboxes',
-  'getOwnerMailDirectory',
-  'setOwnerMailboxForwarding',
-  'grantOwnerMailboxAccess',
+  'listManagedMailboxes',
+  'manageMailDirectory',
+  'getOwnerMailAttachment',
   'mailboxId',
 ]);
 all('KleenestOS mailbox UI',ui,[
-  'Manage addresses, aliases & forwarding',
-  'All addresses',
+  'Manage mailboxes & access',
+  'Mailboxes',
   'mailboxAddress',
   '/mail-admin',
 ]);
 all('Mail admin UI',adminUi,[
-  'Kleenest Mail Directory',
-  'Create an address',
-  'Forwarding',
+  'Mailbox Management',
+  'Create a mailbox',
+  'Forward incoming mail',
   'Aliases',
-  'Access',
-  'Grant access',
-  'Save forwarding',
+  'Assigned accounts',
+  'Grant / update mailbox access',
+  'Save mailbox settings',
 ]);
 must(layout.includes('<Tabs.Screen name="mail-admin" options={{href:null,title:\'Mail Admin\'}}/>'),'Mail Admin route must remain hidden from the bottom tab bar.');
 
