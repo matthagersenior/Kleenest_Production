@@ -13,3 +13,17 @@
 .mail-push-feedback{background:#e6f2e8;border-radius:9px;padding:10px;font-size:13px;word-break:break-word}
 @media(max-width:700px){.header-right{gap:4px}.header-right .small{font-size:11px;padding:7px}.mail-push-panel{padding:20px 16px}}
 @media(prefers-color-scheme:dark){.mail-push-panel{background:#14271c;color:#e5f3e8}.mail-push-mailbox{background:#1e3527;border-color:#44634e}.mail-push-state{border-color:#44634e}.mail-push-feedback{background:#23432f}}
+
+/* Owner mailbox management is a full-screen, touch-friendly workspace. */
+.mail-admin{min-height:0;flex:1;overflow:auto;padding:20px max(16px,calc((100vw - 980px)/2));display:grid;align-content:start;gap:14px;background:#f3f7f5}
+.mail-admin>.pane-head{padding:10px 0;align-items:flex-start}
+.mail-admin .panel{width:100%;max-width:none;box-shadow:none;border:1px solid #d8e4da;padding:20px}
+.mail-admin .panel>.actions{flex-wrap:wrap}
+.mail-admin .panel>.actions button{max-width:100%;overflow-wrap:anywhere}
+.mail-admin .panel>.actions input{flex:1;min-width:190px}
+.mail-admin .editor label.check{display:flex;gap:9px;align-items:center;padding:7px 0}
+.mail-admin .editor label.check input{width:18px;flex-shrink:0}
+.mail-admin .panel h3{margin-top:22px}
+.mail-admin-launch{font-weight:800}
+@media(max-width:700px){.mail-admin{padding:13px;gap:12px}.mail-admin .panel{padding:16px}.mail-admin .pane-head{flex-wrap:wrap}.mail-admin-launch{font-size:11px;padding:9px}}
+@media(prefers-color-scheme:dark){.mail-admin{background:#101c17}.mail-admin .panel{border-color:#375849}}
