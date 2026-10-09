@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
 import './styles.css';
 import MailNotifications,{removeMailSubscription} from './MailNotifications.jsx';
+import MailboxAdmin from './MailboxAdmin.jsx';
 
 const URL = import.meta.env.VITE_SUPABASE_URL || 'https://ssgesjzdvdsqacdtasje.supabase.co';
 const KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
@@ -42,6 +43,8 @@ function App() {
   const [labelName,setLabelName]=useState(''),[status,setStatus]=useState(null);
   const [loading,setLoading]=useState(false);
   const [notificationPanel,setNotificationPanel]=useState(false);
+  const [isPlatformOwner,setIsPlatformOwner]=useState(false);
+  const [mailAdmin,setMailAdmin]=useState(false);
 
   useEffect(()=>{
     if(!supabase) return;
@@ -73,6 +76,14 @@ function App() {
       .then(result=>{setCompose(false);setThread(result.thread);})
       .catch(error=>setNotice(message(error)));
   },[user?.id,mailboxes.length]);
+  useEffect(()=>{
+    if(!user){setIsPlatformOwner(false);setMailAdmin(false);return;}
+    let active=true;
+    supabase.rpc('admin_authorization_v1').then(({data,error})=>{
+      if(active)setIsPlatformOwner(!error&&Boolean(data?.is_platform_owner));
+    }).catch(()=>{if(active)setIsPlatformOwner(false)});
+    return()=>{active=false};
+  },[user?.id]);
   async function signOut() {
     await removeMailSubscription(supabase,user).catch(e=>console.warn('Unable to remove mail push subscription',e));
     await supabase.auth.signOut();
@@ -127,7 +138,8 @@ function App() {
       const res=await invoke('owner-email-center',{action:'get_thread',threadId:t.id});
       setThread(res.thread);
       setReply('');setForwardTo('');setForwardBody('');
-      if(t.unread){await invoke('owner-email-center',{action:'set_read',threadId:t.id,read:true});await loadThreads();}
+      const target=mailboxes.find(m=>m.id===(res.thread.mailboxId||mailboxId));
+      if(t.unread&&(isPlatformOwner||target?.can_modify)){await invoke('owner-email-center',{action:'set_read',threadId:t.id,read:true});await loadThreads();}
     });
   }
   async function action(type,extra={},close=false) {
@@ -205,6 +217,9 @@ function App() {
   }
   async function install(){if(!installPrompt)return;await installPrompt.prompt();setInstallPrompt(null);}
   const mailbox=useMemo(()=>mailboxes.find(m=>m.id===mailboxId),[mailboxes,mailboxId]);
+  const activeMailbox=mailboxes.find(m=>m.id===(thread?.mailboxId||mailboxId))||mailbox;
+  const canModify=Boolean(isPlatformOwner||activeMailbox?.can_modify);
+  const canSend=Boolean(activeMailbox?.send_enabled);
   if(!supabase)return <main className="authentication"><Logo/><h2>Mail configuration needed</h2><p>A publishable Supabase key is missing from this deployment.</p></main>;
   return <div className="app">
     <header className="header"><Logo/><span className="header-right">
@@ -223,12 +238,13 @@ function App() {
       <p className="fine">Mail access is granted by Kleenest administrators; signing up is not available here.</p>
       </section></main>
     :recover?<main className="authentication"><section className="panel"><h1>Change your password</h1><form onSubmit={updatePassword}><label>New password<input type="password" autoComplete="new-password" value={nextPassword} onChange={e=>setNextPassword(e.target.value)}/></label><button className="primary" disabled={busy}>Save password</button></form></section></main>
+    :mailAdmin&&isPlatformOwner?<MailboxAdmin invoke={invoke} searchUsers={async query=>{const {data,error}=await supabase.rpc('admin_user_search',{p_query:query});if(error)throw error;return Array.isArray(data)?data:(data?.users||data?.rows||data?.items||[]);}} onChanged={loadDirectory} onClose={()=>setMailAdmin(false)}/>
     :<div className="workspace">
       <aside className="sidebar">
         <div className="sidebar-heading"><span className="overline">MAILBOX</span><select aria-label="Choose mailbox" value={mailboxId} onChange={e=>{setMailboxId(e.target.value);setThread(null);}}>{mailboxes.map(m=><option key={m.id} value={m.id}>{m.address}</option>)}</select></div>
         <button className="primary compose-button" disabled={!mailbox||busy||!mailbox.send_enabled} onClick={()=>{setCompose(true);setThread(null);setFiles([]);setDraft(emptyDraft());}}>＋ Compose</button>
         <nav aria-label="Mail folders" className="folders">{FOLDERS.map(([value,label])=><button key={value} className={folder===value?'selected':''} onClick={()=>{setFolder(value);setThread(null);setCompose(false);}}>{label}</button>)}</nav>
-        <div className="sidebar-foot"><a href="https://kleenest.us/owner/communications">KleenestOS Email Center ↗</a><p>Private messages are not available offline.</p></div>
+        <div className="sidebar-foot">{isPlatformOwner&&<button className="small" type="button" onClick={()=>{setMailAdmin(true);setThread(null);setCompose(false)}}>Manage mailboxes &amp; access</button>}<a href="https://kleenest.us/owner/communications">KleenestOS Email Center ↗</a><p>Private messages are not available offline.</p></div>
       </aside>
       <section className="threads">
         <div className="pane-head"><div><span className="overline">{mailbox?.address||'NO MAILBOX'}</span><h2>{FOLDERS.find(x=>x[0]===folder)?.[1]}</h2></div><button className="small" onClick={()=>loadThreads()} disabled={!mailbox||loading}>↻ Refresh</button></div>
@@ -243,6 +259,7 @@ function App() {
       <main className={'reading '+(thread||compose?'reading-active':'')}>
         {compose ? <div className="reader-content"><div className="pane-head"><h2>{draft.draftId?'Edit draft':'New message'}</h2><button className="small" onClick={()=>setCompose(false)}>Close</button></div><div className="sender">From: {mailbox?.address||'Select a mailbox'}</div>
           <form className="editor" onSubmit={sendDraft}>
+             {mailbox?.signature_text&&<p className="fine">Signature added automatically when sent: {mailbox.signature_text}</p>
             {['to','cc','bcc','subject'].map(k=><label key={k}>{k.toUpperCase()}<input required={k==='to'||k==='subject'} type={k==='subject'?'text':'text'} value={draft[k]} onChange={e=>setDraft(d=>({...d,[k]:e.target.value}))}/></label>)}
             <label>Message<textarea rows="12" required value={draft.body} onChange={e=>setDraft(d=>({...d,body:e.target.value}))}/></label><label>Attach files (PDF, PNG, JPG, TXT, CSV; max 3 MB total)<input type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.txt,.csv" onChange={e=>chooseFiles(e.target.files)}/></label>{files.length>0&&<p className="fine">{files.map(f=>f.filename).join(', ')} · Attachments are sent with this message and cannot yet be saved with a draft.</p>}
             <div className="actions"><button className="primary" disabled={busy||!mailbox?.send_enabled}>Send</button><button type="button" disabled={busy} onClick={saveDraft}>Save draft</button></div>
@@ -250,12 +267,12 @@ function App() {
         :thread ? <div className="reader-content">
           <div className="pane-head"><div><button className="small mobile-back" onClick={()=>setThread(null)}>← Messages</button><span className="overline">{thread.mailboxAddress}</span><h2>{thread.subject}</h2></div><button className="small" onClick={()=>setThread(null)}>Close</button></div>
           <div className="actions wrap">
-            <button disabled={busy} onClick={()=>action('star',{starred:!thread.starred})}>{thread.starred?'☆ Unstar':'★ Star'}</button>
+            {canModify&&<><button disabled={busy} onClick={()=>action('star',{starred:!thread.starred})}>{thread.starred?'☆ Unstar':'★ Star'}</button>
             <button disabled={busy} onClick={()=>action('set_read',{read:thread.unread})}>{thread.unread?'Mark read':'Mark unread'}</button>
             {thread.folder==='inbox'?<button disabled={busy} onClick={()=>action('archive',{},true)}>Archive</button>:<button disabled={busy} onClick={()=>action('set_inbox',{inInbox:true},true)}>Move to inbox</button>}
             <button disabled={busy} onClick={()=>action('spam',{},true)}>Spam</button>
             <button disabled={busy} onClick={()=>action('trash',{},true)}>Trash</button>
-            <button disabled={busy} onClick={()=>action('block_sender',{},true)}>Block sender</button>
+            <button disabled={busy} onClick={()=>action('block_sender',{},true)}>Block sender</button></>}
           </div>
           <div className="messages">{thread.messages?.map(m=><article key={m.id} className="message">
             <div className="message-head"><b>{m.from||m.fromEmail}</b><time>{fmt(m.date)}</time></div>
@@ -263,12 +280,12 @@ function App() {
             <div className="message-body">{m.body||m.snippet||'(empty message)'}</div>
             {m.attachments?.length>0&&<div className="attachment-list">Attachments: {m.attachments.map((a,i)=><button key={a.id||i} type="button" disabled={busy||!a.id} onClick={()=>downloadAttachment(m,a)}>{a.filename||'Attachment'} ↗</button>)}</div>}
           </article>)}</div>
-          <section className="reply-area"><h3>Reply</h3><textarea rows="5" value={reply} onChange={e=>setReply(e.target.value)} placeholder="Write a reply…"/>
+          <section className="reply-area">{!canModify&&<p className="fine">Read-only mailbox access: conversation changes are restricted.</p>}{canSend&&<><h3>Reply</h3><textarea rows="5" value={reply} onChange={e=>setReply(e.target.value)} placeholder="Write a reply…"/>
             <div className="actions wrap"><button className="primary" disabled={busy||!reply.trim()} onClick={()=>respond(false)}>Reply</button><button disabled={busy||!reply.trim()} onClick={()=>respond(true)}>Reply all</button></div>
             <h3>Forward</h3><input type="text" placeholder="Recipient email" value={forwardTo} onChange={e=>setForwardTo(e.target.value)}/><textarea rows="3" value={forwardBody} onChange={e=>setForwardBody(e.target.value)} placeholder="Optional note"/>
             <button disabled={busy||!forwardTo.trim()} onClick={forward}>Forward message</button>
-            <h3>Labels</h3><div className="actions wrap">{(thread.labelNames||[]).map(l=><button key={l} disabled={busy} onClick={()=>action('set_label',{labelName:l,applied:false})}>{l} ×</button>)}</div>
-            <div className="actions"><input placeholder="New label" value={labelName} onChange={e=>setLabelName(e.target.value)}/><button disabled={busy||!labelName.trim()} onClick={async()=>{await action('set_label',{labelName,applied:true});setLabelName('');}}>Add label</button></div>
+            </>}{canModify&&<><h3>Labels</h3><div className="actions wrap">{(thread.labelNames||[]).map(l=><button key={l} disabled={busy} onClick={()=>action('set_label',{labelName:l,applied:false})}>{l} ×</button>)}</div>
+            <div className="actions"><input placeholder="New label" value={labelName} onChange={e=>setLabelName(e.target.value)}/><button disabled={busy||!labelName.trim()} onClick={async()=>{await action('set_label',{labelName,applied:true});setLabelName('');}}>Add label</button></div></>
           </section>
         </div> : <div className="welcome"><div className="welcome-icon">✉</div><h2>Welcome to Kleenest Mail</h2><p>Select a conversation or compose a new message.</p><p className="fine">Delivery is handled securely by KleenestOS and Resend. Messages are not stored in this browser's offline cache.</p></div>}
       </main>
