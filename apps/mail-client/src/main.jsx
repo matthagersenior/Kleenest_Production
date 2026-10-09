@@ -243,8 +243,9 @@ function App() {
       <aside className="sidebar">
         <div className="sidebar-heading"><span className="overline">MAILBOX</span><select aria-label="Choose mailbox" value={mailboxId} onChange={e=>{setMailboxId(e.target.value);setThread(null);}}>{mailboxes.map(m=><option key={m.id} value={m.id}>{m.address}</option>)}</select></div>
         <button className="primary compose-button" disabled={!mailbox||busy||!mailbox.send_enabled} onClick={()=>{setCompose(true);setThread(null);setFiles([]);setDraft(emptyDraft());}}>＋ Compose</button>
+        {isPlatformOwner&&<button className="small mail-admin-launch" type="button" onClick={()=>{setMailAdmin(true);setThread(null);setCompose(false)}}>Manage mailboxes &amp; access</button>}
         <nav aria-label="Mail folders" className="folders">{FOLDERS.map(([value,label])=><button key={value} className={folder===value?'selected':''} onClick={()=>{setFolder(value);setThread(null);setCompose(false);}}>{label}</button>)}</nav>
-        <div className="sidebar-foot">{isPlatformOwner&&<button className="small" type="button" onClick={()=>{setMailAdmin(true);setThread(null);setCompose(false)}}>Manage mailboxes &amp; access</button>}<a href="https://kleenest.us/owner/communications">KleenestOS Email Center ↗</a><p>Private messages are not available offline.</p></div>
+        <div className="sidebar-foot"><a href="https://kleenest.us/owner/communications">KleenestOS Email Center ↗</a><p>Private messages are not available offline.</p></div>
       </aside>
       <section className="threads">
         <div className="pane-head"><div><span className="overline">{mailbox?.address||'NO MAILBOX'}</span><h2>{FOLDERS.find(x=>x[0]===folder)?.[1]}</h2></div><button className="small" onClick={()=>loadThreads()} disabled={!mailbox||loading}>↻ Refresh</button></div>
