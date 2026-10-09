@@ -259,7 +259,7 @@ function App() {
       <main className={'reading '+(thread||compose?'reading-active':'')}>
         {compose ? <div className="reader-content"><div className="pane-head"><h2>{draft.draftId?'Edit draft':'New message'}</h2><button className="small" onClick={()=>setCompose(false)}>Close</button></div><div className="sender">From: {mailbox?.address||'Select a mailbox'}</div>
           <form className="editor" onSubmit={sendDraft}>
-             {mailbox?.signature_text&&<p className="fine">Signature added automatically when sent: {mailbox.signature_text}</p>
+             {mailbox?.signature_text&&<p className="fine">Signature added automatically when sent: {mailbox.signature_text}</p>}
             {['to','cc','bcc','subject'].map(k=><label key={k}>{k.toUpperCase()}<input required={k==='to'||k==='subject'} type={k==='subject'?'text':'text'} value={draft[k]} onChange={e=>setDraft(d=>({...d,[k]:e.target.value}))}/></label>)}
             <label>Message<textarea rows="12" required value={draft.body} onChange={e=>setDraft(d=>({...d,body:e.target.value}))}/></label><label>Attach files (PDF, PNG, JPG, TXT, CSV; max 3 MB total)<input type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.txt,.csv" onChange={e=>chooseFiles(e.target.files)}/></label>{files.length>0&&<p className="fine">{files.map(f=>f.filename).join(', ')} · Attachments are sent with this message and cannot yet be saved with a draft.</p>}
             <div className="actions"><button className="primary" disabled={busy||!mailbox?.send_enabled}>Send</button><button type="button" disabled={busy} onClick={saveDraft}>Save draft</button></div>
