@@ -1,3 +1,4 @@
+-- Feature lifecycle: internal:national-ingestion-owner-control; Owner-audited national coverage control.
 -- National ingestion + Owner controls. Runtime-first deployment was verified before this ledger migration.
 alter table public.ingestion_capacity_policy
   add column if not exists national_ingestion_enabled boolean not null default false,
