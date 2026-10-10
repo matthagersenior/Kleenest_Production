@@ -48,9 +48,11 @@ for (const market of [
 requireText(frontier, 'corridor_0.24_frontier_v1', 'Moving-frontier configuration must preserve its source-controlled seed contract.');
 
 const focus = requireFile('supabase/functions/focus-ingestion-orchestrator/index.ts');
-requireText(focus, "corridor:'kc_to_chicago'", 'Focus ingestion must preserve the KC-to-Chicago corridor contract.');
-requireText(focus, ".like('market_key','focus_corridor_%')", 'Focus ingestion must select corridor markets.');
-requireText(focus, "status:'kc_to_chicago_coverage_v25'", 'Focus ingestion must report the current coverage runtime version.');
+requireText(focus, "const corridor=/^focus_corridor_/", 'Focus ingestion must preserve explicit KC-to-Chicago corridor recognition.');
+requireText(focus, "focus_corridor_kansas_city", 'Focus ingestion must preserve KC-to-Chicago corridor priority seeds.');
+requireText(focus, "market_kind==='travel_corridor'", 'Focus ingestion must support national travel corridors without removing the legacy corridor.');
+requireText(focus, "market_kind==='tourism'", 'Focus ingestion must support national tourism priorities.');
+requireText(focus, "status:'national_coverage_v1'", 'Focus ingestion must report the current national coverage runtime version.');
 requireText(focus, 'try_acquire_focus_ingestion_lease', 'Focus ingestion must preserve its overlap-suppression lease.');
 requireText(focus, 'national_ingestion_storage_status', 'Focus ingestion must remain governed by the storage guard.');
 requireText(focus, "storage.data?.may_ingest===false", 'Focus ingestion must stop when the storage guard pauses ingestion.');
@@ -62,8 +64,8 @@ for (const endpoint of [
 ]) requireText(focus, endpoint, `Focus ingestion must keep provider ${endpoint} source-controlled.`);
 requireText(focus, "PROVIDER_POOL_VERSION='overpass_pool_v4_failure_rate_breaker'", 'Focus ingestion provider-pool version must remain source-controlled.');
 requireText(focus, "breaker:'failure_rate_cooldown'", 'Failure-rate endpoint breaker policy must remain source-controlled.');
-requireText(focus, 'BACKGROUND_CANONICAL_BATCH=100', 'Background OSM canonical writes must remain bounded to 100 rows.');
-requireText(focus, "rpc('ingest_external_locations_background'", 'Background OSM writes must use non-blocking canonical admission.');
+requireText(focus, 'canonical_batch_size', 'Background OSM staging must remain bounded by the capacity policy batch size.');
+requireText(focus, "rpc('stage_ingestion_candidate_batch'", 'Background OSM writes must flow through staged canonicalization.');
 const openData = requireFile('supabase/functions/corridor-open-data-ingestor/index.ts');
 requireText(openData, 'get_internal_scheduler_secret', 'Open-data ingestion must preserve scheduler authentication.');
 requireText(openData, 'external_ingestion_adapters', 'Open-data ingestion adapter registry must remain source-controlled.');
