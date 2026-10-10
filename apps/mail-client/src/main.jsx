@@ -31,6 +31,7 @@ async function invoke(functionName, payload) {
 function App() {
   const [user,setUser]=useState(null), [recover,setRecover]=useState(false);
   const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[nextPassword,setNextPassword]=useState('');
+  const [showPassword,setShowPassword]=useState(false);
   const [notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
   const [online,setOnline]=useState(navigator.onLine);
   const [installPrompt,setInstallPrompt]=useState(null);
@@ -94,7 +95,8 @@ function App() {
     try{return await run();} catch(e){setNotice(message(e));return null;} finally{setBusy(false);}
   }
   async function logIn(e){e.preventDefault();await task(async()=>{
-    const {error}=await supabase.auth.signInWithPassword({email:email.trim(),password});
+    const {error}=await supabase.auth.signInWithPassword({email:email.trim().toLowerCase(),password});
+    if(error?.code==='invalid_credentials')throw new Error('Sign-in failed. Use the Kleenest account email that received your reset link, not a separately assigned @kleenest.us mailbox address. Check your new password and try again.');
     if(error)throw error;
     setPassword('');
   });}
@@ -111,7 +113,7 @@ function App() {
   async function updatePassword(e){e.preventDefault();await task(async()=>{
     if(nextPassword.length<8)throw new Error('Use a password of at least 8 characters.');
     const {error}=await supabase.auth.updateUser({password:nextPassword});
-    if(error)throw error;setRecover(false);setNextPassword('');setNotice('Password changed.');
+    if(error)throw error;setRecover(false);setNextPassword('');setNotice('Password changed. Next time, sign in with the same Kleenest account email that received your reset link.');
   });}
   async function loadDirectory(){
     const [m,s]=await Promise.all([
@@ -231,8 +233,10 @@ function App() {
     {!user ? <main className="authentication"><section className="panel">
       <span className="overline">SECURE KLEENEST EMAIL</span><h1>Your mail, wherever you are.</h1>
       <p>Use your existing Kleenest account. Your personal and shared addresses are available according to your assigned permissions.</p>
-      <form onSubmit={logIn}><label>Account email<input type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>
-      <label>Password<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label>
+      <form onSubmit={logIn}><label>Kleenest account email<input type="email" autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} required value={email} onChange={e=>setEmail(e.target.value)}/></label>
+      <p className="fine">Use the email where you received your Kleenest password-reset link. Your assigned @kleenest.us mailbox may have a different address.</p>
+      <label>Password<input type={showPassword?"text":"password"} autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label>
+      <button className="small" type="button" aria-pressed={showPassword} onClick={()=>setShowPassword(value=>!value)}>{showPassword?"Hide password":"Show password"}</button>
       <button className="primary" disabled={busy}>Sign in</button></form>
       <div className="auth-secondary"><button type="button" onClick={googleSignIn} disabled={busy}>Continue with Google</button><button type="button" onClick={resetPassword} disabled={busy}>Reset password</button></div>
       <p className="fine">Mail access is granted by Kleenest administrators; signing up is not available here.</p>
