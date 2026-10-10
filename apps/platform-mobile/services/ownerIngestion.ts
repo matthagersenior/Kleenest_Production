@@ -17,16 +17,24 @@ export type IngestionControlSnapshot={
   storage_guard?:Record<string,unknown>;
   history?:Record<string,unknown>[];
   discovery_signals?:Record<string,unknown>[];
+  discovery_signals_error?:string;
   generated_at?:string;
 };
 
 export const getOwnerIngestionControl=async(limit=80):Promise<IngestionControlSnapshot>=>{
   const bounded=Math.min(Math.max(limit,1),200);
-  const [snapshot,discoverySignals]=await Promise.all([
+  // Discovery signal telemetry is supplemental: it must not hide canonical counts
+  // or disable ingestion controls if its own RPC is temporarily unavailable.
+  const [snapshotResult,signalsResult]=await Promise.allSettled([
     rpc<IngestionControlSnapshot>('owner_ingestion_control_snapshot',{p_limit:bounded}),
     rpc<Record<string,unknown>[]>('owner_discovery_growth_signals',{p_limit:Math.min(bounded,100)}),
   ]);
-  return {...snapshot,discovery_signals:discoverySignals};
+  if(snapshotResult.status==='rejected')throw snapshotResult.reason;
+  return {
+    ...snapshotResult.value,
+    discovery_signals:signalsResult.status==='fulfilled'?signalsResult.value:[],
+    discovery_signals_error:signalsResult.status==='rejected'?'Discovery growth signals temporarily unavailable':undefined,
+  };
 };
 
 export const setGlobalIngestionPaused=(paused:boolean)=>rpc('owner_set_ingestion_global_pause',{
