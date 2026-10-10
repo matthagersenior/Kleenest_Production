@@ -63,7 +63,7 @@ for(const token of [
   'pip install duckdb',
   'scripts/overture-places-ingest.py',
   "default: '1'",
-  '${INPUT_MAX_JOBS:-1}',
+  '${INPUT_MAX_JOBS:-4}',
 ])need(workflow,token,'Overture ingestion workflow');
 
 for(const token of [
