@@ -62,3 +62,11 @@ export const setCoverageMarketEnabled=(input:{marketId:string;priority:number;en
   p_enabled:input.enabled,
   p_reason:`${input.enabled?'Enabled':'Paused'} coverage priority${input.name?' for '+input.name:''} from KleenestOS Ingestion Control`,
 });
+
+export async function setNationalIngestionPolicy(patch:{national_ingestion_enabled?:boolean;travel_priority_enabled?:boolean;tourism_priority_enabled?:boolean;major_markets_enabled?:boolean}){
+  const {data,error}=await getSupabaseClient().rpc('owner_update_ingestion_capacity_policy',{
+    p_patch:patch,
+    p_reason:'Updated national ingestion priorities from KleenestOS Ingestion Control',
+  });
+  return unwrap(data,error);
+}

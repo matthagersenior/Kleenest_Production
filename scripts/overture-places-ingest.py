@@ -338,6 +338,7 @@ def queue_rows(url: str, key: str, limit: int) -> list[dict[str, Any]]:
         {
             "select": "id,request_key,market_key,latitude,longitude,radius_meters,bbox,priority,status,attempt_count,records_seen,records_imported,records_updated,skipped_rows",
             "status": "in.(pending,failed)",
+            "owner_paused": "eq.false",
             "attempt_count": "lt.5",
             "order": "priority.asc,requested_at.asc",
             "limit": str(max(1, min(limit, 8))),
