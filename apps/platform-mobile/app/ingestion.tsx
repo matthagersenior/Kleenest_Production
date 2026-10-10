@@ -1,7 +1,7 @@
 import { useCallback,useEffect,useMemo,useState } from 'react';
 import { Pressable,RefreshControl,ScrollView,Text,View } from 'react-native';
 import { DiagnosticDisclosure,HealthCard,OSHero,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
-import { getOwnerIngestionControl,repairStalledIngestion,runBoundedIngestionCycle,setCoverageMarketEnabled,setGlobalIngestionPaused,setIngestionSourceEnabled } from '../services/ownerIngestion';
+import { getOwnerIngestionControl,repairStalledIngestion,runBoundedIngestionCycle,setCoverageMarketEnabled,setGlobalIngestionPaused,setIngestionSourceEnabled,setNationalIngestionPolicy } from '../services/ownerIngestion';
 import { usePlatformTheme } from '../services/theme';
 
 type Row=Record<string,unknown>;
@@ -27,10 +27,13 @@ export default function IngestionControl(){
   async function act(key:string,fn:()=>Promise<unknown>){setBusy(key);setError('');setNotice('');try{await fn()}catch(cause){setErrorHeading('Control action failed');setError(cause instanceof Error?cause.message:String(cause));setBusy('');return}try{await load();setNotice('Control action completed.')}catch(cause){setErrorHeading('Action completed; telemetry refresh failed');setError(cause instanceof Error?cause.message:String(cause));setNotice('The action succeeded. Pull to refresh its displayed status.')}finally{setBusy('')}}
 
   const hasSnapshot=data!==null;
-  const status=object(data?.status),storage=object(data?.storage_guard??status.storage_guard),marketStatus=object(status.markets),capacity=object(data?.capacity),canonical=object(data?.canonical),pipeline=object(data?.pipeline);
+  const status=object(data?.status),storage=object(data?.storage_guard??status.storage_guard),marketStatus=object(status.markets),capacity=object(data?.capacity),capacityPolicy=object(data?.capacity_policy),canonical=object(data?.canonical),pipeline=object(data?.pipeline);
   const backgroundAllowed=bool(capacity.allow_background_ingestion);
   const sources=rows(data?.sources),markets=rows(data?.markets),history=rows(data?.history),discoverySignals=rows(data?.discovery_signals);
   const paused=bool(storage.paused);
+  const nationalEnabled=bool(capacityPolicy.national_ingestion_enabled);
+  const travelPriorityEnabled=bool(capacityPolicy.travel_priority_enabled);
+  const tourismPriorityEnabled=bool(capacityPolicy.tourism_priority_enabled);
   const currentSources=useMemo(()=>sources.filter(row=>Object.prototype.hasOwnProperty.call(SOURCE_LABELS,txt(row.source_key))),[sources]);
   const sourceByKey=useMemo(()=>Object.fromEntries(currentSources.map(row=>[txt(row.source_key),row])),[currentSources]);
   const coverageEnabled=bool(sourceByKey.overture?.enabled),enrichmentEnabled=bool(sourceByKey.data_gov?.enabled);
@@ -57,6 +60,9 @@ export default function IngestionControl(){
     <View style={card}>
       <SectionHeader title="Master controls" body="Background work can be paused without disabling interactive Discovery. Manual cycles remain bounded by the existing scheduler and storage safeguards."/>
       <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+        <Action label={busy==='national'?'Working…':nationalEnabled?'National ingestion ON':'Enable national ingestion'} danger={nationalEnabled} disabled={Boolean(busy)||!hasSnapshot} onPress={()=>void act('national',()=>setNationalIngestionPolicy({national_ingestion_enabled:!nationalEnabled}))}/>
+        <Action label={busy==='travel'?'Working…':travelPriorityEnabled?'Travel corridors prioritized':'Prioritize travel corridors'} danger={travelPriorityEnabled} disabled={Boolean(busy)||!hasSnapshot||!nationalEnabled} onPress={()=>void act('travel',()=>setNationalIngestionPolicy({travel_priority_enabled:!travelPriorityEnabled}))}/>
+        <Action label={busy==='tourism'?'Working…':tourismPriorityEnabled?'Tourism prioritized':'Prioritize tourism'} danger={tourismPriorityEnabled} disabled={Boolean(busy)||!hasSnapshot||!nationalEnabled} onPress={()=>void act('tourism',()=>setNationalIngestionPolicy({tourism_priority_enabled:!tourismPriorityEnabled}))}/>
         <Action label={busy==='global'?'Working…':paused?'Resume background ingestion':'Pause background ingestion'} danger={!paused} disabled={Boolean(busy)||!hasSnapshot} onPress={()=>void act('global',()=>setGlobalIngestionPaused(!paused))}/>
         <Action label={busy==='cycle'?'Starting…':'Run one bounded cycle'} disabled={Boolean(busy)||!hasSnapshot||paused||!backgroundAllowed} onPress={()=>void act('cycle',runBoundedIngestionCycle)}/>
         <Action label={busy==='repair'?'Repairing…':'Repair stalled cells'} disabled={Boolean(busy)} onPress={()=>void act('repair',repairStalledIngestion)}/>
