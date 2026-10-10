@@ -17,6 +17,7 @@ export type IngestionControlSnapshot={
   storage_guard?:Record<string,unknown>;
   history?:Record<string,unknown>[];
   discovery_signals?:Record<string,unknown>[];
+  discovery_signals_error?:string;
   generated_at?:string;
 };
 
