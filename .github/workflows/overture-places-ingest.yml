@@ -73,6 +73,6 @@ jobs:
           if [ -n "${INPUT_BBOX:-}" ]; then
             args+=(--bbox "$INPUT_BBOX")
           else
-            args+=(--process-queue --max-jobs "${INPUT_MAX_JOBS:-1}")
+            args+=(--process-queue --max-jobs "${INPUT_MAX_JOBS:-4}")
           fi
           python3 scripts/overture-places-ingest.py "${args[@]}"
