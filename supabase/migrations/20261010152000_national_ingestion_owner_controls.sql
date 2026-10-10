@@ -108,3 +108,100 @@ end;
 $function$;
 
 select cron.alter_job(21, active := true);
+
+
+-- National Overture queue is governed by the same Owner controls.
+alter table public.place_discovery_hydration_queue
+  add column if not exists owner_paused boolean not null default false;
+create index if not exists place_discovery_hydration_queue_owner_work_idx
+  on public.place_discovery_hydration_queue(owner_paused,status,priority,requested_at);
+
+insert into public.place_discovery_hydration_queue(
+  request_key,source_key,market_key,latitude,longitude,radius_meters,bbox,priority,status,owner_paused,requested_at,updated_at
+)
+select
+  'market:'||m.market_key,'overture',m.market_key,
+  ((m.bbox->>0)::double precision+(m.bbox->>2)::double precision)/2.0,
+  ((m.bbox->>1)::double precision+(m.bbox->>3)::double precision)/2.0,
+  40234,
+  jsonb_build_array((m.bbox->>1)::double precision,(m.bbox->>0)::double precision,(m.bbox->>3)::double precision,(m.bbox->>2)::double precision),
+  case m.market_kind when 'tourism' then 40 when 'travel_corridor' then 45 else 60 end,
+  'pending',false,now(),now()
+from public.national_ingestion_markets m
+where (m.market_key like 'national_%' or m.market_key like 'tourism_%' or m.market_key like 'travel_%')
+  and jsonb_typeof(m.bbox)='array' and jsonb_array_length(m.bbox)=4
+on conflict(request_key) do update set
+  source_key='overture',market_key=excluded.market_key,latitude=excluded.latitude,longitude=excluded.longitude,
+  radius_meters=excluded.radius_meters,bbox=excluded.bbox,priority=excluded.priority,owner_paused=false,
+  status=case when public.place_discovery_hydration_queue.status='running' then 'running' else 'pending' end,
+  requested_at=now(),last_error=null,updated_at=now();
+
+update public.national_ingestion_source_policies
+set max_requests_per_cycle=4,updated_at=now()
+where source_key='overture' and enabled=true;
+
+create or replace function public.owner_update_ingestion_capacity_policy(p_patch jsonb,p_reason text default null)
+returns jsonb language plpgsql security definer set search_path='' as $function$
+declare v_uid uuid:=auth.uid(); v_before jsonb; v_after jsonb;
+begin
+ if v_uid is null or not public.is_platform_owner(v_uid) then raise exception 'Platform owner access required'; end if;
+ select to_jsonb(p) into v_before from public.ingestion_capacity_policy p where singleton=true for update;
+ update public.ingestion_capacity_policy set
+  idle_demand_enabled=coalesce((p_patch->>'idle_demand_enabled')::boolean,idle_demand_enabled),
+  idle_min_interval_seconds=least(greatest(coalesce((p_patch->>'idle_min_interval_seconds')::integer,idle_min_interval_seconds),60),3600),
+  quiet_min_interval_seconds=least(greatest(coalesce((p_patch->>'quiet_min_interval_seconds')::integer,quiet_min_interval_seconds),60),3600),
+  active_min_interval_seconds=least(greatest(coalesce((p_patch->>'active_min_interval_seconds')::integer,active_min_interval_seconds),60),3600),
+  tile_step_degrees=least(greatest(coalesce((p_patch->>'tile_step_degrees')::numeric,tile_step_degrees),0.02),1.0),
+  max_tile_subdivision_level=least(greatest(coalesce((p_patch->>'max_tile_subdivision_level')::integer,max_tile_subdivision_level),0),8),
+  max_parallel_tiles=least(greatest(coalesce((p_patch->>'max_parallel_tiles')::integer,max_parallel_tiles),1),8),
+  canonical_batch_size=least(greatest(coalesce((p_patch->>'canonical_batch_size')::integer,canonical_batch_size),25),500),
+  major_markets_enabled=coalesce((p_patch->>'major_markets_enabled')::boolean,major_markets_enabled),
+  national_ingestion_enabled=coalesce((p_patch->>'national_ingestion_enabled')::boolean,national_ingestion_enabled),
+  travel_priority_enabled=coalesce((p_patch->>'travel_priority_enabled')::boolean,travel_priority_enabled),
+  tourism_priority_enabled=coalesce((p_patch->>'tourism_priority_enabled')::boolean,tourism_priority_enabled),
+  updated_at=now(),updated_by=v_uid
+ where singleton=true returning to_jsonb(public.ingestion_capacity_policy.*) into v_after;
+ if p_patch ? 'national_ingestion_enabled' then
+   update public.place_discovery_hydration_queue set owner_paused=not (p_patch->>'national_ingestion_enabled')::boolean,updated_at=now()
+   where market_key like 'national_%' or market_key like 'travel_%' or market_key like 'tourism_%';
+ end if;
+ if p_patch ? 'travel_priority_enabled' then
+   update public.place_discovery_hydration_queue set owner_paused=not (p_patch->>'travel_priority_enabled')::boolean,updated_at=now()
+   where market_key like 'travel_%';
+ end if;
+ if p_patch ? 'tourism_priority_enabled' then
+   update public.place_discovery_hydration_queue set owner_paused=not (p_patch->>'tourism_priority_enabled')::boolean,updated_at=now()
+   where market_key like 'tourism_%';
+ end if;
+ insert into public.platform_owner_control_audit(owner_user_id,domain,action,target_key,previous_state,new_state,reason)
+ values(v_uid,'ingestion','update_capacity_policy','national_tile_engine',v_before,v_after,p_reason);
+ return v_after;
+end $function$;
+
+create or replace function public.owner_update_ingestion_market(p_market_id uuid,p_priority integer default null,p_enabled boolean default null,p_reason text default null)
+returns jsonb language plpgsql security definer set search_path='' as $function$
+declare v_uid uuid:=auth.uid(); v_before jsonb; v_after jsonb; v_status text; v_key text;
+begin
+ if v_uid is null or not public.is_platform_owner(v_uid) then raise exception 'Platform owner access required'; end if;
+ select to_jsonb(m),m.status,m.market_key into v_before,v_status,v_key from public.national_ingestion_markets m where m.id=p_market_id;
+ if v_before is null then raise exception 'Ingestion market not found'; end if;
+ if p_enabled=false and v_status='running' then raise exception 'A running market cannot be disabled until the current cycle completes'; end if;
+ update public.national_ingestion_markets set
+  priority=coalesce(least(greatest(p_priority,1),100000),priority),
+  status=case when p_enabled=false then 'blocked' when p_enabled=true and status='blocked' then 'pending' else status end,
+  last_error=case when p_enabled=true and status='blocked' then null else last_error end,updated_at=now()
+ where id=p_market_id returning to_jsonb(public.national_ingestion_markets.*) into v_after;
+ if p_enabled is not null then
+   update public.place_discovery_hydration_queue set owner_paused=not p_enabled,updated_at=now() where market_key=v_key;
+ end if;
+ insert into public.platform_owner_control_audit(owner_user_id,domain,action,target_key,previous_state,new_state,reason)
+ values(v_uid,'ingestion','update_market',p_market_id::text,v_before,v_after,p_reason);
+ return v_after;
+end $function$;
+
+revoke all on function public.owner_update_ingestion_capacity_policy(jsonb,text) from public,anon;
+grant execute on function public.owner_update_ingestion_capacity_policy(jsonb,text) to authenticated,service_role;
+revoke all on function public.owner_update_ingestion_market(uuid,integer,boolean,text) from public,anon;
+grant execute on function public.owner_update_ingestion_market(uuid,integer,boolean,text) to authenticated,service_role;
+
+select cron.alter_job(21, schedule := '*/10 * * * *', active := true);
