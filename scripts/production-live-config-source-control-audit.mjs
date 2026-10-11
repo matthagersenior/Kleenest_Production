@@ -62,7 +62,7 @@ for (const endpoint of [
   'https://overpass.private.coffee/api/interpreter',
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
 ]) requireText(focus, endpoint, `Focus ingestion must keep provider ${endpoint} source-controlled.`);
-requireText(focus, "PROVIDER_POOL_VERSION='overpass_pool_v4_failure_rate_breaker'", 'Focus ingestion provider-pool version must remain source-controlled.');
+requireText(focus, "PROVIDER_POOL_VERSION='overpass_pool_v5_http500_breaker'", 'Focus ingestion provider-pool version must remain source-controlled.');
 requireText(focus, "breaker:'failure_rate_cooldown'", 'Failure-rate endpoint breaker policy must remain source-controlled.');
 requireText(focus, 'canonical_batch_size', 'Background OSM staging must remain bounded by the capacity policy batch size.');
 requireText(focus, "rpc('stage_ingestion_candidate_batch'", 'Background OSM writes must flow through staged canonicalization.');
