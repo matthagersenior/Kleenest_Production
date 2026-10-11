@@ -10,6 +10,8 @@ const api = read('supabase/functions/owner-email-center/index.ts');
 const workflow = read('.github/workflows/publish-standalone-installer.yml');
 for(const token of ["'list_mailboxes'","'list_threads'","'get_thread'","'send'","'reply'","'forward'","'save_draft'","'trash'","'spam'","'set_read'","'star'","'set_label'","'archive'"])check(source.includes(token),'mail app action '+token);
 check(source.includes('signInWithPassword') && source.includes('resetPasswordForEmail'), 'password sign-in/reset');
+check(source.includes('Your assigned @kleenest.us mailbox may have a different address.'), 'account versus mailbox sign-in guidance');
+check(source.includes('Show password') && source.includes('Hide password'), 'password visibility for accessible sign-in');
 check(source.includes('auth.getSession') && source.includes('access_token'), 'session authentication');
 check(!source.includes('SERVICE_ROLE_KEY')&&!source.includes('sb_secret_'),'no privileged keys in browser');
 check(api.includes("else if(mailbox==='archive')"),'archive backend support');
