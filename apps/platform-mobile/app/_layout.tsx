@@ -1,3 +1,4 @@
+import { useAppActivity } from '@kleenest/mobile-core';
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -5,6 +6,7 @@ import { ActivityIndicator, AppState, Pressable, Text, useColorScheme, View } fr
 import { getKleenestSupabaseClient, loadKleenestThemeMode, resolveKleenestTheme, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
 
 export default function Layout(){
+  useAppActivity();
   const systemScheme=useColorScheme();
   const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
   const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','platform');

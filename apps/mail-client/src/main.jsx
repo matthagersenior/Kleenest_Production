@@ -67,6 +67,21 @@ function App() {
 
 
   useEffect(()=>{
+    if(!user || !supabase)return;
+    let pending=false;
+    const sync=async()=>{
+      if(pending||document.visibilityState!=='visible')return;
+      pending=true;
+      try{await supabase.rpc('record_app_activity')}catch{}finally{pending=false}
+    };
+    void sync();
+    const timer=setInterval(()=>{void sync()},60000);
+    const visible=()=>{void sync()};
+    document.addEventListener('visibilitychange',visible);
+    return()=>{clearInterval(timer);document.removeEventListener('visibilitychange',visible)};
+  },[user?.id]);
+
+  useEffect(()=>{
     if(!user||!mailboxes.length)return;
     const params=new URLSearchParams(window.location.search);
     const mailId=params.get('mailbox'),threadId=params.get('thread');

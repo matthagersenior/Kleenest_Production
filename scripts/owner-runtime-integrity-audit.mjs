@@ -69,7 +69,7 @@ requireAll('Owner Discovery-first presentation',home,[
   'label="Discovery"',
   'live Discovery grows canonical locations',
   'Platform Health',
-  'canonical discoveries',
+  'user contributions',
 ]);
 for(const token of ['getIngestionControlSnapshot','storage_guard','label="Ingestion"','LIVE RUNS','Ingestion scheduler inactive']){
   must(!home.includes(token),`Owner home must not restore retired ingestion telemetry: ${token}`);

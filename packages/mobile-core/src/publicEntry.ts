@@ -12,3 +12,5 @@ export * from './creatorMissions';
 export * from './appSearch';
 
 export * from './intelligence';
+
+export * from "./appActivity";

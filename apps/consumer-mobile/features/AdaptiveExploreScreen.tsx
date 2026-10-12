@@ -1571,7 +1571,7 @@ export default function AdaptiveExploreScreen() {
           recenterOnLiveLocation:mode==='nearby'&&!searchAreaOrigin,
         })}
         ListHeaderComponent={
-          <View style={s.exploreStage}>
+          <View style={[s.exploreStage,{minHeight:exploreMapHeight}]}>
       <View style={[s.floatingSearchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
         <View style={s.searchRow}>
           <TextInput
@@ -2404,10 +2404,10 @@ const s = StyleSheet.create({
   },
   searchButton: { flexShrink: 0, minHeight: 42, borderRadius: 10, backgroundColor: palette.green, paddingHorizontal: 12, justifyContent: 'center' },
   searchButtonText: { fontSize: 12, fontWeight: '900', color: '#fff' },
-  rowHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-  autoRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  autoLabel: { fontSize: 9, fontWeight: '800', color: '#5f7468' },
-  filterTitle: { fontSize: 10, fontWeight: '900', color: palette.green },
+  rowHeading: { flexWrap: 'wrap', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  autoRow: { maxWidth: '100%', flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  autoLabel: { flexShrink: 1, fontSize: 9, fontWeight: '800', color: '#5f7468' },
+  filterTitle: { flexShrink: 1, fontSize: 10, fontWeight: '900', color: palette.green },
   inlineBlock: { gap: 5 },
   choiceRow: { flexDirection: 'row', gap: 6, paddingRight: 8 },
   choice: { minHeight: 32, paddingHorizontal: 9, borderRadius: 999, backgroundColor: '#e8efea', justifyContent: 'center' },
@@ -2415,7 +2415,7 @@ const s = StyleSheet.create({
   choiceText: { fontSize: 9, fontWeight: '900', color: '#52675a' },
   choiceTextActive: { color: '#fff' },
   linkText: { fontSize: 9, fontWeight: '900', color: palette.green, textDecorationLine: 'underline' },
-  amenityHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  amenityHeading: { flexWrap: 'wrap', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   amenityTitle: { fontSize: 10, fontWeight: '900', color: palette.green },
   clear: { fontSize: 9, fontWeight: '900', color: '#567060' },
   amenityRow: { gap: 6, paddingRight: 8 },
@@ -2543,14 +2543,14 @@ const s = StyleSheet.create({
   amenityWrap:{flexDirection:'row',flexWrap:'wrap',gap:6},
   advancedButton: { minHeight: 34, borderRadius: 11, borderWidth: 1, borderColor: '#d6e2da', backgroundColor: '#f7faf8', paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 8 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(13,31,22,.46)', justifyContent: 'center', padding: 18 },
-  advancedModalCard: { maxHeight: '82%', borderRadius: 20, backgroundColor: '#fff', padding: 14, gap: 12 },
-  advancedModalHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  advancedModalCard: { maxHeight: '90%', flexShrink: 1, overflow: 'hidden', borderRadius: 20, backgroundColor: '#fff', padding: 14, gap: 12 },
+  advancedModalHeader: { flexShrink: 0, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   advancedModalTitle: { fontSize: 18, lineHeight: 22, fontWeight: '900', color: palette.ink },
-  advancedModalScroll: { flexGrow: 0 },
+  advancedModalScroll: { flexGrow: 0, flexShrink: 1, minHeight: 0 },
   advancedModalContent: { gap: 12, paddingBottom: 4 },
-  modalClose: { width: 38, height: 38, borderRadius: 19, backgroundColor: palette.green, alignItems: 'center', justifyContent: 'center' },
+  modalClose: { flexShrink: 0, width: 38, height: 38, borderRadius: 19, backgroundColor: palette.green, alignItems: 'center', justifyContent: 'center' },
   modalCloseText: { color: '#fff', fontSize: 22, lineHeight: 24, fontWeight: '900' },
-  modalDone: { minHeight: 40, borderRadius: 11, backgroundColor: palette.green, alignItems: 'center', justifyContent: 'center' },
+  modalDone: { flexShrink: 0, paddingVertical: 12, minHeight: 40, borderRadius: 11, backgroundColor: palette.green, alignItems: 'center', justifyContent: 'center' },
   routeCoverage: { display:'none', paddingHorizontal: 14, paddingVertical: 5, borderBottomWidth: 1, borderColor: '#ead9b4' },
   routeCoverageTitle: { fontSize: 9, fontWeight: '800', color: palette.ink },
   list: { paddingHorizontal: 14, paddingBottom: 34, gap: 8 },
