@@ -23,7 +23,7 @@ async function setup(page,root,{failed=false}={}){
  await page.route('https://ssgesjzdvdsqacdtasje.supabase.co/**',async route=>{
   const url=route.request().url();let data=[];
   if(url.includes('/auth/v1/user'))data={id:uid,email:'test@example.invalid',app_metadata:{},user_metadata:{}};
-  if(url.includes('/rest/v1/amenities?'))data=['Accessible','Accessible Stall','Showers','Vending','Baby Changing','Changing Table','Family Restroom','Mirrors','Sinks','Stalls','Urinals','24 Hours','24-hour Access','Hand Dryer','Hands-Free Door Opener','Hot Water','Paper Towels','Soap','Toilet Seat Covers','Connected / Smart Restroom','Gender-neutral Restroom','Public Restroom','Touchless Fixtures','Water Fountain','Attended','Well Lit'].map((name,index)=>({id:'amenity-'+index,name,category:'fixtures'}));
+  if(url.includes('/rest/v1/amenities?'))data=['Accessible','Accessible Stall','Showers','Vending','Baby Changing','Changing Table','Family Restroom','Mirrors','Sinks','Stalls','Urinals','24 Hours','24-hour Access','Hand Dryer','Hands-Free Door Opener','Hot Water','Paper Towels','Soap','Toilet Seat Covers','Connected / Smart Restroom','Gender-neutral Restroom','Public Restroom','Touchless Fixtures','Water Fountain','Attended','Well Lit'].map((name,index)=>({id:'amenity-'+index,name,category:'Fixtures'}));
   if(url.includes('admin_authorization_v1'))data={authorized:true,is_platform_owner:true,is_admin:true};
   if(url.includes('has_current_policy_acceptance'))data=true;
   if(url.includes('owner_progression_platform_snapshot'))data={discoveries:0,on_site_discoveries:0,xp_awarded:0,xp_last_24h:0,active_objectives:0};
