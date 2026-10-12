@@ -1,6 +1,6 @@
 const {test,expect}=require('@playwright/test');
 const fs=require('node:fs');const path=require('node:path');
-test.use({screenshot:'only-on-failure',trace:'retain-on-failure'});
+test.use({screenshot:'only-on-failure',trace:'retain-on-failure',geolocation:{latitude:38.627,longitude:-90.199},permissions:['geolocation']});
 const ROOT=path.resolve(process.env.OWNER_EXPORT_DIR||'apps/platform-mobile/dist');
 const CONSUMER=path.resolve('apps/consumer-mobile/dist');
 const uid='00000000-0000-4000-8000-000000000001';
