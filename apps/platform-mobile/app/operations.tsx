@@ -1,6 +1,6 @@
 import { useCallback,useEffect,useState } from 'react';
 import { RefreshControl,ScrollView,Text,View } from 'react-native';
-import { DiagnosticDisclosure,HealthCard,OSHero,SectionHeader } from '../components/KleenestOS';
+import { DiagnosticDisclosure,HealthCard,OSHero,SectionHeader,StatusPill } from '../components/KleenestOS';
 import { getOwnerOperationsBundle } from '../services/ownerAdmin';
 import { usePlatformTheme } from '../services/theme';
 
@@ -11,6 +11,43 @@ function count(value:unknown){
   return Number(value||0);
 }
 function object(value:unknown){return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};}
+function activityRows(value:unknown):Record<string,unknown>[]{
+  if(Array.isArray(value))return value.map(object);
+  const record=object(value);
+  for(const key of ['events','items','rows','results'])if(Array.isArray(record[key]))return (record[key] as unknown[]).map(object);
+  return [];
+}
+function humanize(value:unknown,fallback='Platform event'){
+  if(typeof value!=='string'||!value.trim())return fallback;
+  const label=value.replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
+  return label.charAt(0).toUpperCase()+label.slice(1);
+}
+function activityTime(value:unknown){
+  if(typeof value!=='string')return 'Time unavailable';
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return 'Time unavailable';
+  return new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(date);
+}
+function activityTone(value:unknown):'good'|'warning'|'danger'|'neutral'{
+  const status=String(value||'').toLowerCase();
+  if(/fail|error|blocked|denied/.test(status))return 'danger';
+  if(/pending|review|warning|retry/.test(status))return 'warning';
+  if(/recorded|success|complete|delivered|resolved/.test(status))return 'good';
+  return 'neutral';
+}
+function ActivityEntry({event}:{event:Record<string,unknown>}){
+  const theme=usePlatformTheme();
+  const action=typeof event.action==='string'?event.action:humanize(event.event_type);
+  const type=humanize(event.event_type,'Platform activity');
+  const status=humanize(event.status,'Recorded');
+  return <View style={{backgroundColor:theme.surface,borderWidth:1,borderColor:theme.line,borderRadius:14,padding:13,gap:7}}>
+    <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}>
+      <Text style={{fontSize:15,fontWeight:'800',color:theme.ink,flex:1}}>{action}</Text>
+      <StatusPill label={status} tone={activityTone(event.status)}/>
+    </View>
+    <Text style={{fontSize:12,color:theme.muted}}>{type} · {activityTime(event.created_at)}</Text>
+  </View>;
+}
 
 export default function Operations(){
   const theme=usePlatformTheme();
@@ -23,6 +60,7 @@ export default function Operations(){
   },[]);
   useEffect(()=>{void load()},[load]);
   const overview=object(data?.overview),integrity=object(data?.integrity);
+  const activity=activityRows(data?.activity);
   return <ScrollView contentInsetAdjustmentBehavior="automatic" refreshControl={<RefreshControl refreshing={busy} onRefresh={load}/>} contentContainerStyle={{padding:18,gap:16,paddingBottom:70,backgroundColor:theme.canvas}}>
     <OSHero eyebrow="KLEENESTOS · PLATFORM HEALTH" title="Platform Health" body="Monitor integrity, delivery, backend resources and recent platform activity. Interactive Discovery is the canonical acquisition path; legacy national-ingestion controls are retired, and current operations live in the dedicated Ingestion Control center."/>
     <View style={{backgroundColor:theme.surface,borderWidth:1,borderColor:theme.line,borderRadius:16,padding:14,gap:4}}>
@@ -36,19 +74,22 @@ export default function Operations(){
       <HealthCard label="Resources" value={count(data?.resources)} detail="Backend resource catalog entries"/>
     </View>
     <View style={{gap:9}}>
-      <SectionHeader title="Platform health" body="Authoritative overview and integrity diagnostics without obsolete ingestion controls."/>
-      <DiagnosticDisclosure title="system overview diagnostics" value={overview}/>
-      <DiagnosticDisclosure title="data integrity diagnostics" value={integrity}/>
+      <SectionHeader title="Platform health" body="Current service health and integrity signals."/>
+      <DiagnosticDisclosure title="technical overview details" value={overview}/>
+      <DiagnosticDisclosure title="technical integrity details" value={integrity}/>
     </View>
     <View style={{gap:9}}>
       <SectionHeader title="Delivery health" body="Web and native notification delivery in the last 24 hours."/>
-      <DiagnosticDisclosure title="push delivery diagnostics" value={data?.push}/>
-      <DiagnosticDisclosure title="native push diagnostics" value={data?.nativePush}/>
+      <DiagnosticDisclosure title="technical web push details" value={data?.push}/>
+      <DiagnosticDisclosure title="technical native push details" value={data?.nativePush}/>
     </View>
     <View style={{gap:9}}>
-      <SectionHeader title="Backend resources" body="Canonical resource state and recent audited activity."/>
-      <DiagnosticDisclosure title="backend resource catalog" value={data?.resources}/>
-      <DiagnosticDisclosure title="recent platform activity" value={data?.activity}/>
+      <SectionHeader title="Backend resources" body="Resource details for platform support. Technical fields are available when needed."/>
+      <DiagnosticDisclosure title="technical backend resource details" value={data?.resources}/>
+    </View>
+    <View style={{gap:9}}>
+      <SectionHeader title="Recent platform activity" body="A readable timeline of recent administrative and system events."/>
+      {activity.length?activity.slice(0,30).map((event,index)=><ActivityEntry key={String(event.id||index)} event={event}/>):<View style={{backgroundColor:theme.surface,borderWidth:1,borderColor:theme.line,borderRadius:14,padding:14}}><Text style={{color:theme.muted}}>No recent platform activity is available.</Text></View>}
     </View>
   </ScrollView>
 }
