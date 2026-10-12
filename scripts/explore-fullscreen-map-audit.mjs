@@ -11,7 +11,7 @@ function forbidToken(token,message){
 }
 
 requireToken("const [resultsSheetExpanded,setResultsSheetExpanded]=useState(false);",'Explore must expose an expandable results sheet state.');
-requireToken("style={s.exploreStage}",'Explore must render the map as the full-screen stage.');
+requireToken("style={[s.exploreStage,{minHeight:exploreMapHeight}]}",'Explore must render the map as the full-screen stage.');
 requireToken("style={[s.floatingSearchPanel",'Search and discovery controls must float over the map canvas.');
 requireToken("const mapChromeTop=142+(floatingContextRows*38);",'Map controls must start directly below the compact floating control stack.');
 requireToken("? Math.min(Math.max(360,Math.round(exploreMapHeight*0.58)),560)",'Expanded results must prioritize browsing while preserving immediate map context.');

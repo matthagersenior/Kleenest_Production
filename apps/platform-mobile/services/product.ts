@@ -1,8 +1,8 @@
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 const client=()=>getKleenestSupabaseClient();
 async function rpc(name:string,args:Record<string,unknown>={}){const{data,error}=await client().rpc(name,args);if(error)throw error;return data;}
-export async function getPlatformDashboard(){const[pending,activity,reports,snapshot,history]=await Promise.all([rpc('admin_list_pending_businesses'),rpc('admin_list_activity_events',{p_limit:100}),rpc('admin_list_review_reports',{p_status:'open'}),rpc('admin_control_plane_snapshot'),rpc('admin_control_plane_history',{p_limit:100})]);return{pending,activity,reports,snapshot,history};}
-export async function listOpenReviewReports(){return (await rpc('admin_list_review_reports',{p_status:'open'}))||[];}
+export async function getPlatformDashboard(){const[pending,activity,reports,snapshot,history]=await Promise.all([rpc('admin_list_pending_businesses'),rpc('admin_list_activity_events',{p_limit:100}),rpc('admin_list_review_reports',{p_status:null}),rpc('admin_control_plane_snapshot'),rpc('admin_control_plane_history',{p_limit:100})]);if(!Array.isArray(pending)||!Array.isArray(reports))throw new Error('Dashboard queue snapshot incomplete.');return{pending,activity,reports:reports.filter((row:any)=>['pending','reviewing'].includes(row.status)),snapshot,history};}
+export async function listOpenReviewReports(){const reports=await rpc('admin_list_review_reports',{p_status:null});if(!Array.isArray(reports))throw new Error('Review queue incomplete.');return reports.filter((row:any)=>['pending','reviewing'].includes(row.status));}
 export async function resolveReviewReport(reportId:string,resolution:string,reason:string,reviewStatus:string){return rpc('admin_resolve_review_report',{p_report_id:reportId,p_resolution:resolution,p_reason:reason,p_review_status:reviewStatus});}
 export async function searchBusinesses(query:string){return (await rpc('admin_business_search',{p_query:query.trim()}))||[];}
 export async function getBusinessAdminDetail(businessId:string){return (await rpc('admin_business_detail',{p_business_id:businessId}))||{};}

@@ -1571,7 +1571,7 @@ export default function AdaptiveExploreScreen() {
           recenterOnLiveLocation:mode==='nearby'&&!searchAreaOrigin,
         })}
         ListHeaderComponent={
-          <View style={s.exploreStage}>
+          <View style={[s.exploreStage,{minHeight:exploreMapHeight}]}>
       <View style={[s.floatingSearchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
         <View style={s.searchRow}>
           <TextInput

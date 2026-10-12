@@ -26,9 +26,13 @@ async function setup(page,root,{failed=false}={}){
   if(url.includes('admin_authorization_v1'))data={authorized:true,is_platform_owner:true,is_admin:true};
   if(url.includes('has_current_policy_acceptance'))data=true;
   if(url.includes('owner_progression_platform_snapshot'))data={discoveries:0,on_site_discoveries:0,xp_awarded:0,xp_last_24h:0,active_objectives:0};
+  if(url.includes('admin_list_review_reports')){
+    const status=JSON.parse(route.request().postData()||'{}').p_status;
+    data=[{id:'pending-fixture',status:'pending'},{id:'reviewing-fixture',status:'reviewing'},{id:'resolved-fixture',status:'resolved'}].filter(row=>!status||row.status===status);
+  }
   if(url.includes('admin_notification_native_push_delivery_health'))data={active_tokens:9,failed:0,expired:0};
   if(url.includes('owner_user_tally_snapshot'))data=tally;
-  if(failed && ['owner_user_tally_snapshot','owner_progression_platform_snapshot','admin_get_overview','admin_list_pending_businesses'].some(name=>url.includes(name)))return route.fulfill({status:503,json:{message:'Fixture subsystem unavailable'}});
+  if(failed && ['owner_user_tally_snapshot','owner_progression_platform_snapshot','admin_get_overview','admin_list_pending_businesses','admin_list_review_reports'].some(name=>url.includes(name)))return route.fulfill({status:503,json:{message:'Fixture subsystem unavailable'}});
   await route.fulfill({json:data});
  });
  return errors;
@@ -40,6 +44,7 @@ for(const width of [320,360]){
   await expect(page.getByText('People & Growth',{exact:true})).toBeVisible();
   await expect(page.getByText('Current accounts',{exact:true})).toBeVisible();
   await expect(page.getByText('24',{exact:true}).first()).toBeVisible();
+  await expect(page.getByText('Moderation',{exact:true}).locator('..').locator('..').getByText('2',{exact:true})).toBeVisible();
   const overflow=await page.getByText('Registered accounts that still exist',{exact:true}).evaluate(el=>{const box=el.getBoundingClientRect(),parent=el.parentElement.getBoundingClientRect();return box.left<parent.left||box.right>parent.right});
   expect(overflow).toBe(false);
   const overflowText=await page.evaluate(()=>[...document.querySelectorAll('div[dir="auto"]')].filter(el=>{
