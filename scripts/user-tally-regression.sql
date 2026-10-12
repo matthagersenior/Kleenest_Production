@@ -12,6 +12,7 @@ begin
   select p.id into owner_id from public.profiles p join auth.users u on u.id=p.id
   where p.is_platform_owner and u.deleted_at is null limit 1;
   if owner_id is null then raise exception 'Owner fixture unavailable'; end if;
+  if exists(select 1 from pg_proc where oid in ('public.record_app_activity(text)'::regprocedure,'public.owner_user_tally_snapshot()'::regprocedure) and prosecdef) then raise exception 'Privileged helper exposed in public schema'; end if;
   if has_function_privilege('anon','public.owner_user_tally_snapshot()','execute') then raise exception 'Anonymous tally access exposed'; end if;
   if has_table_privilege('authenticated','private.user_tally_daily','select') then raise exception 'Raw tally table exposed'; end if;
   perform set_config('request.jwt.claim.sub',owner_id::text,true);

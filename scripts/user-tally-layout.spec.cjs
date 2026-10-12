@@ -23,6 +23,7 @@ async function setup(page,root,{failed=false}={}){
  await page.route('https://ssgesjzdvdsqacdtasje.supabase.co/**',async route=>{
   const url=route.request().url();let data=[];
   if(url.includes('/auth/v1/user'))data={id:uid,email:'test@example.invalid',app_metadata:{},user_metadata:{}};
+  if(url.includes('/rest/v1/amenities?'))data=['Accessible','Accessible Stall','Showers','Vending','Baby Changing','Changing Table','Family Restroom','Mirrors','Sinks','Stalls','Urinals','24 Hours','24-hour Access','Hand Dryer','Hands-Free Door Opener','Hot Water','Paper Towels','Soap','Toilet Seat Covers','Connected / Smart Restroom','Gender-neutral Restroom','Public Restroom','Touchless Fixtures','Water Fountain','Attended','Well Lit'].map((name,index)=>({id:'amenity-'+index,name,category:'Fixtures'}));
   if(url.includes('admin_authorization_v1'))data={authorized:true,is_platform_owner:true,is_admin:true};
   if(url.includes('has_current_policy_acceptance'))data=true;
   if(url.includes('owner_progression_platform_snapshot'))data={discoveries:0,on_site_discoveries:0,xp_awarded:0,xp_last_24h:0,active_objectives:0};
@@ -75,14 +76,18 @@ for(const width of [320,360]){
     const panel=title.parentElement.parentElement.parentElement;
     const texts=[...panel.querySelectorAll('div[dir="auto"]')];
     const sizes=texts.map(el=>({el,font:parseFloat(getComputedStyle(el).fontSize),line:parseFloat(getComputedStyle(el).lineHeight)}));
-    for(const {el,font,line} of sizes){el.style.fontSize=font*1.5+'px';if(Number.isFinite(line))el.style.lineHeight=line*1.5+'px'}
+    for(const {el,font,line} of sizes){el.style.fontSize=font*2+'px';if(Number.isFinite(line))el.style.lineHeight=line*2+'px'}
   });
   const done=page.getByRole('button',{name:'Show filtered results',exact:true});await expect(done).toBeVisible();
   const overflow=await page.getByText('Keep looking for what I need',{exact:true}).evaluate(el=>{
     let panel=el;while(panel&&!panel.querySelector('[aria-label="Show filtered results"]'))panel=panel.parentElement;
     const box=panel.getBoundingClientRect();
-    return [...panel.querySelectorAll('div[dir="auto"]')].filter(e=>['Keep looking for what I need','Search farther when needed','Default is Everything. Narrow the map only when you want a specific kind of stop.'].includes(e.textContent)).filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&(r.left<box.left-1||r.right>box.right+1)}).map(e=>e.textContent);
+    return [...panel.querySelectorAll('div[dir="auto"]')].filter(e=>['Keep looking for what I need','Search farther when needed','Default is Everything. Narrow the map only when you want a specific kind of stop.','Connected / Smart Restroom','Hands-Free Door Opener','Gender-neutral Restroom'].includes(e.textContent)).filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&(r.left<box.left-1||r.right>box.right+1)}).map(e=>e.textContent);
   });expect(overflow).toEqual([]);
+  await expect.poll(()=>page.getByRole('button',{name:'Show filtered results',exact:true}).evaluate(el=>{
+    let opacity=1;for(let parent=el;parent;parent=parent.parentElement)opacity*=Number(getComputedStyle(parent).opacity);return opacity;
+  })).toBe(1);
+  await page.getByText('Connected / Smart Restroom',{exact:true}).scrollIntoViewIfNeeded();
   await page.screenshot({path:testInfo.outputPath('filter-large-text.png')});expect(errors).toEqual([]);
  });
 }
