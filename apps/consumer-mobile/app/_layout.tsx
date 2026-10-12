@@ -1,3 +1,4 @@
+import { useAppActivity } from '@kleenest/mobile-core';
 import * as Notifications from 'expo-notifications';
 import * as Updates from 'expo-updates';
 import { isKleenestRewardThemeMode, loadKleenestThemeMode, markMobileNotificationRead, resolveKleenestTheme, setKleenestThemeMode, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
@@ -80,6 +81,7 @@ export default function RootLayout() {
   const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','consumer');
   const {ready:webGateReady,appActive}=useConsumerWebExperience();
   const publicWeb=Platform.OS==='web'&&!appActive&&webGateReady&&['/','/for-you','/for-business','/trust','/install','/creator','/support','/privacy','/terms','/community-guidelines','/account-deletion'].includes(pathname);
+  useAppActivity(Platform.OS !== 'web' || (webGateReady && appActive));
   useEffect(()=>{
     let active=true;
     async function enforceRewardTheme(mode:KleenestThemeMode){

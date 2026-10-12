@@ -1,0 +1,42 @@
+name: User tally and filter layout
+on:
+  pull_request:
+    paths:
+      - 'apps/platform-mobile/**'
+      - 'apps/consumer-mobile/**'
+      - 'packages/mobile-core/**'
+      - 'scripts/user-tally-layout.spec.cjs'
+      - '.github/workflows/user-tally-layout.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/platform-mobile/**'
+      - 'apps/consumer-mobile/**'
+      - 'packages/mobile-core/**'
+      - 'scripts/user-tally-layout.spec.cjs'
+      - '.github/workflows/user-tally-layout.yml'
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPO_NO_TELEMETRY: '1'
+      EXPO_PUBLIC_SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run web:export --workspace @kleenest/consumer-mobile
+      - run: npm run web:export --workspace @kleenest/owner-mobile
+      - run: npm install --no-save --no-package-lock @playwright/test@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test scripts/user-tally-layout.spec.cjs --workers=1 --reporter=line
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: user-tally-layout-evidence
+          path: test-results/

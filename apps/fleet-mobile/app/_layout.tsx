@@ -1,3 +1,4 @@
+import { useAppActivity } from '@kleenest/mobile-core';
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -10,6 +11,7 @@ const ONBOARDING_BYPASS=new Set(['onboarding','workspaces','support','terms','pr
 const MEMBER_ALLOWED=new Set(['member','nearby','notifications','workspaces','support','terms','privacy','account','auth','search']);
 
 export default function Layout(){
+  useAppActivity();
   const systemScheme=useColorScheme();
   const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
   const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','fleet');

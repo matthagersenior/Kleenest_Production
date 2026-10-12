@@ -1,3 +1,4 @@
+import { useAppActivity } from '@kleenest/mobile-core';
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -9,6 +10,7 @@ import { getBusinessOnboardingGate } from '../services/onboarding';
 const PROVISIONING_ALLOWED=new Set(['get-started','onboarding','support','terms','privacy','account','search']);
 
 export default function Layout() {
+  useAppActivity();
   const systemScheme=useColorScheme();
   const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
   const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','business');
