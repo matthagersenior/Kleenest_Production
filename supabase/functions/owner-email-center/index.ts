@@ -451,7 +451,7 @@ Deno.serve(async(req:Request)=>{
         fromEmail:message.from_address,to:(message.to_addresses||[]).join(', '),cc:(message.cc_addresses||[]).join(', '),bcc:(message.bcc_addresses||[]).join(', '),
         subject:message.subject,date:message.received_at||message.sent_at||message.created_at,
         messageId:message.internet_message_id,references:(message.reference_ids||[]).join(' '),
-        snippet:excerpt(message.text_body||''),body:message.text_body||'',
+        snippet:excerpt(message.text_body||''),body:message.text_body||'',htmlBody:message.html_body||'',
         unread:Boolean(row.unread)&&message.direction==='inbound',sent:message.direction==='outbound',
         deliveryStatus:message.delivery_status||null,attachments:Array.isArray(message.attachments)?message.attachments:[],
       }));
