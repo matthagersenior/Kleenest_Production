@@ -19,7 +19,8 @@ function activityRows(value:unknown):Record<string,unknown>[]{
 }
 function humanize(value:unknown,fallback='Platform event'){
   if(typeof value!=='string'||!value.trim())return fallback;
-  return value.replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
+  const label=value.replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
+  return label.charAt(0).toUpperCase()+label.slice(1);
 }
 function activityTime(value:unknown){
   if(typeof value!=='string')return 'Time unavailable';
