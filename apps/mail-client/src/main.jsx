@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import './styles.css';
 import MailNotifications,{removeMailSubscription} from './MailNotifications.jsx';
 import MailboxAdmin from './MailboxAdmin.jsx';
+import MessageBody from './MessageBody.jsx';
 
 const URL = import.meta.env.VITE_SUPABASE_URL || 'https://ssgesjzdvdsqacdtasje.supabase.co';
 const KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
@@ -297,7 +298,7 @@ function App() {
           <div className="messages">{thread.messages?.map(m=><article key={m.id} className="message">
             <div className="message-head"><b>{m.from||m.fromEmail}</b><time>{fmt(m.date)}</time></div>
             <div className="fine">To: {m.to} {m.cc?' · Cc: '+m.cc:''}{m.deliveryStatus?' · '+m.deliveryStatus:''}</div>
-            <div className="message-body">{m.body||m.snippet||'(empty message)'}</div>
+            <MessageBody message={m}/>
             {m.attachments?.length>0&&<div className="attachment-list">Attachments: {m.attachments.map((a,i)=><button key={a.id||i} type="button" disabled={busy||!a.id} onClick={()=>downloadAttachment(m,a)}>{a.filename||'Attachment'} ↗</button>)}</div>}
           </article>)}</div>
           <section className="reply-area">{!canModify&&<p className="fine">Read-only mailbox access: conversation changes are restricted.</p>}{canSend&&<><h3>Reply</h3><textarea rows="5" value={reply} onChange={e=>setReply(e.target.value)} placeholder="Write a reply…"/>
