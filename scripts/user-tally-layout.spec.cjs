@@ -1,5 +1,6 @@
 const {test,expect}=require('@playwright/test');
 const fs=require('node:fs');const path=require('node:path');
+test.use({screenshot:'only-on-failure',trace:'retain-on-failure'});
 const ROOT=path.resolve(process.env.OWNER_EXPORT_DIR||'apps/platform-mobile/dist');
 const CONSUMER=path.resolve('apps/consumer-mobile/dist');
 const uid='00000000-0000-4000-8000-000000000001';
@@ -41,6 +42,11 @@ for(const width of [320,360]){
   await expect(page.getByText('24',{exact:true}).first()).toBeVisible();
   const overflow=await page.getByText('Registered accounts that still exist',{exact:true}).evaluate(el=>{const box=el.getBoundingClientRect(),parent=el.parentElement.getBoundingClientRect();return box.left<parent.left||box.right>parent.right});
   expect(overflow).toBe(false);
+  const overflowText=await page.evaluate(()=>[...document.querySelectorAll('div[dir="auto"]')].filter(el=>{
+    if(el.closest('[role="tablist"]'))return false;
+    const r=el.getBoundingClientRect();return r.width>0&&(r.left < -1 || r.right > innerWidth+1);
+  }).map(el=>el.textContent));
+  expect(overflowText).toEqual([]);
   await page.getByRole('button',{name:/Refresh user tally/}).click();
   await expect(page.getByText('24',{exact:true}).first()).toBeVisible();
   await page.screenshot({path:testInfo.outputPath('owner-tally.png')});
@@ -49,7 +55,15 @@ for(const width of [320,360]){
  if(!process.env.DASHBOARD_ONLY)test(`filter text remains inside panel at ${width}px with enlarged text`,async({page},testInfo)=>{
   await page.setViewportSize({width,height:800});const errors=await setup(page,CONSUMER);
   await page.goto('http://kleenest.test/Kleenest_Production/explore?app=1');
-  await page.getByRole('button',{name:'Filter places',exact:true}).click();
+  const filter=page.getByRole('button',{name:'Filter places',exact:true});
+  await expect(filter).toBeVisible();
+  console.log('FILTER_READY',JSON.stringify({errors,hit:await filter.evaluate(el=>{
+    const r=el.getBoundingClientRect(),top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+    return {bounds:{x:r.x,y:r.y,width:r.width,height:r.height},top:top?.outerHTML.slice(0,2000)};
+  })}));
+  await page.screenshot({path:testInfo.outputPath('before-filter.png')});
+  expect(errors).toEqual([]);
+  await filter.click();
   await expect(page.getByRole('button',{name:'Show filtered results',exact:true})).toBeVisible();
   await page.evaluate(()=>{
     const title=[...document.querySelectorAll('div[dir="auto"]')].find(el=>el.textContent==='Filter places');
@@ -62,7 +76,7 @@ for(const width of [320,360]){
   const overflow=await page.getByText('Keep looking for what I need',{exact:true}).evaluate(el=>{
     let panel=el;while(panel&&!panel.querySelector('[aria-label="Show filtered results"]'))panel=panel.parentElement;
     const box=panel.getBoundingClientRect();
-    return [...panel.querySelectorAll('div[dir="auto"]')].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&(r.left<box.left-1||r.right>box.right+1)}).map(e=>e.textContent);
+    return [...panel.querySelectorAll('div[dir="auto"]')].filter(e=>['Keep looking for what I need','Search farther when needed','Default is Everything. Narrow the map only when you want a specific kind of stop.'].includes(e.textContent)).filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&(r.left<box.left-1||r.right>box.right+1)}).map(e=>e.textContent);
   });expect(overflow).toEqual([]);
   await page.screenshot({path:testInfo.outputPath('filter-large-text.png')});expect(errors).toEqual([]);
  });

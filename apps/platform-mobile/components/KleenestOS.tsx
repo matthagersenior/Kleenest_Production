@@ -3,7 +3,7 @@ import { Pressable,Switch,Text,View } from 'react-native';
 import { usePlatformTheme } from '../services/theme';
 
 export const osColors={ink:'#10261d',green:'#173f2d',mint:'#dcebe2',paper:'#f4f7f5',white:'#ffffff',muted:'#5e7066',border:'#d5e0d9',danger:'#8f2f2f',warning:'#8a5a18',good:'#1d6b43'};
-export const osCard={backgroundColor:osColors.white,borderRadius:18,padding:15,borderWidth:1,borderColor:osColors.border,gap:7} as const;
+export const osCard={backgroundColor:osColors.white,borderRadius:18,padding:15,borderWidth:1,borderColor:osColors.border,gap:7,maxWidth:'100%',minWidth:0,flexShrink:1} as const;
 export function useOSCardStyle(){const theme=usePlatformTheme();return {...osCard,backgroundColor:theme.surface,borderColor:theme.line} as const;}
 
 export function OSHero({eyebrow,title,body,children}:{eyebrow:string;title:string;body:string;children?:ReactNode}){const theme=usePlatformTheme();return <View style={{backgroundColor:theme.accent,borderWidth:1,borderColor:theme.accent,borderRadius:16,padding:12,gap:4}}><Text style={{color:theme.accentText,fontWeight:'900',letterSpacing:1.2,fontSize:9}}>{eyebrow}</Text><Text style={{color:theme.accentText,fontSize:21,lineHeight:25,fontWeight:'900'}}>{title}</Text><Text style={{color:theme.accentText,fontSize:12,lineHeight:18}}>{body}</Text>{children}</View>}

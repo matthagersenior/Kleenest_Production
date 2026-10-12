@@ -16,7 +16,7 @@ export default function UserTallyPanel() {
     try {
       const result = await getKleenestSupabaseClient().rpc('owner_user_tally_snapshot');
       if (result.error) throw result.error;
-      if (!result.data || !result.data.updated_at) throw new Error('User tally returned no snapshot.');
+      if (!result.data || !result.data.updated_at || ['current_accounts','total_signups_recorded','deleted_accounts_recorded','pending_deletion_requests','active_24h','active_7d','active_30d','guest_sessions_24h','guest_sessions_7d','guest_sessions_30d','signups_today','deletions_today','signups_7d','deletions_7d','signups_30d','deletions_30d'].some(key => typeof result.data[key] !== 'number' || !Number.isFinite(result.data[key]))) throw new Error('User tally returned an incomplete snapshot.');
       setData(result.data); setError('');
     } catch (cause: any) {
       setData(null); setError(cause?.message || 'User tally unavailable.');
@@ -50,7 +50,7 @@ export default function UserTallyPanel() {
       {metrics.map(([label, key, detail]) => <HealthCard key={key} label={label} value={count(key)} detail={detail} tone={data ? 'neutral' : 'warning'} />)}
     </View>
     <View style={{ ...card, gap: 10 }}>
-      <Text style={{ color: theme.ink, fontWeight: '900' }}>New accounts / deleted / net growth</Text>
+      <Text style={{ color: theme.ink, fontWeight: '900' }}>Recorded new accounts / deleted / net change</Text>
       {['today', '7d', '30d'].map((period, i) => <View key={period} style={{ gap: 3 }}>
         <Text style={{ color: theme.ink, fontWeight: '800' }}>{['Today', 'Last 7 calendar days', 'Last 30 calendar days'][i]}</Text>
         <Text style={{ color: theme.muted }}>{count('signups_' + period)} new · {count('deletions_' + period)} deleted · {data ? (data['signups_' + period] - data['deletions_' + period]).toLocaleString() : 'Unavailable'} net</Text>
