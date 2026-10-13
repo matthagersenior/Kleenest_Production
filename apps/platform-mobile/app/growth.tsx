@@ -1,5 +1,5 @@
-import { ScrollView, Text, View } from 'react-native';
-import { OSCard, OSHero } from '../components/KleenestOS';
+import { ScrollView } from 'react-native';
+import { OSHero } from '../components/KleenestOS';
 import UserTallyPanel from '../components/UserTallyPanel';
 import { usePlatformTheme } from '../services/theme';
 
