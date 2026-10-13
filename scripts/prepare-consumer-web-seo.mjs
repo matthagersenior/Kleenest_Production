@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const dist=path.resolve('apps/consumer-mobile/dist');
 const ORIGIN='https://kleenest.us';
+const SHARE_IMAGE_URL=`${ORIGIN}/app-icon.png`;
 
 const pages=[
   {route:'/',file:'index.html',title:'Kleenest | Clean Restroom Finder You Can Trust',description:'Find clean, accessible restrooms with fresh community evidence, trusted amenities, routing, and verified location details from Kleenest.'},
@@ -68,9 +69,17 @@ function seoBlock(page){
 <meta property="og:title" content="${escapeAttr(page.title)}" />
 <meta property="og:description" content="${escapeAttr(page.description)}" />
 <meta property="og:url" content="${url}" />
+<meta property="og:image" content="${SHARE_IMAGE_URL}" />
+<meta property="og:image:secure_url" content="${SHARE_IMAGE_URL}" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="192" />
+<meta property="og:image:height" content="192" />
+<meta property="og:image:alt" content="Kleenest app logo" />
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:title" content="${escapeAttr(page.title)}" />
 <meta name="twitter:description" content="${escapeAttr(page.description)}" />
+<meta name="twitter:image" content="${SHARE_IMAGE_URL}" />
+<meta name="twitter:image:alt" content="Kleenest app logo" />
 <script type="application/ld+json">${JSON.stringify(structured)}</script>
 <!-- kleenest-public-seo:end -->`;
 }
@@ -83,13 +92,18 @@ function applySeo(file,page){
   html=html.replace(/<meta\s+name=["']robots["'][^>]*>\s*/gi,'');
   html=html.replace(/<meta\s+name=["']googlebot["'][^>]*>\s*/gi,'');
   html=html.replace(/<link\s+rel=["']canonical["'][^>]*>\s*/gi,'');
-  html=html.replace(/<meta\s+property=["']og:(?:type|site_name|title|description|url)["'][^>]*>\s*/gi,'');
-  html=html.replace(/<meta\s+name=["']twitter:(?:card|title|description)["'][^>]*>\s*/gi,'');
+  html=html.replace(/<meta\s+property=["']og:(?:type|site_name|title|description|url|image(?::(?:secure_url|type|width|height|alt))?)["'][^>]*>\s*/gi,'');
+  html=html.replace(/<meta\s+name=["']twitter:(?:card|title|description|image(?::alt)?)["'][^>]*>\s*/gi,'');
   if(/<title>[\s\S]*?<\/title>/i.test(html))html=html.replace(/<title>[\s\S]*?<\/title>/i,`<title>${escapeAttr(page.title)}</title>`);
   else html=html.replace(/<head([^>]*)>/i,`<head$1><title>${escapeAttr(page.title)}</title>`);
   if(!/<\/head>/i.test(html))throw new Error(`SEO target lacks </head>: ${file}`);
   html=html.replace(/<\/head>/i,`${seoBlock(page)}\n</head>`);
   fs.writeFileSync(file,html);
+}
+
+const shareImageFile=path.join(dist,'app-icon.png');
+if(!fs.existsSync(shareImageFile)||fs.statSync(shareImageFile).size<100){
+  throw new Error('Public Kleenest share image is missing or empty: app-icon.png');
 }
 
 for(const page of pages)applySeo(path.join(dist,page.file),page);
