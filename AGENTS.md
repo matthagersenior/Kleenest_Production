@@ -28,3 +28,10 @@ A Kleenest feature is not implemented merely because schema, migrations, RPCs, s
 ## Repository hygiene
 
 Keep `main` canonical. Avoid long-lived integration, repair, sync, or duplicate feature branches. Do not preserve an old branch as an alternate source of behavior once its intended work is represented on `main`.
+
+## Production migration identity
+
+- Supabase migration versions are release identities, not interchangeable timestamps. Once Production has applied a migration, the file in `supabase/migrations/` must retain the **exact version in `supabase_migrations.schema_migrations`** and its original SQL.
+- Before reconciling drift, compare the complete Production ledger against the source tree, then compare content of any apparently renamed migration. If production SQL matches but the local filename does not, restore the deployed version in source rather than rerunning SQL or fabricating migration ledger records.
+- Do not delete Production migration records, reapply an already-applied migration under a new version, or edit deployed SQL to silence release checks. Follow-on schema changes require a new migration.
+- After a reconciliation, verify no source-only or Production-only versions remain, keep all SQL unchanged, and let the OIDC-backed production-readiness gate verify the deployed `main` commit.
