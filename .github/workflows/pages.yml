@@ -19,6 +19,8 @@ on:
       - public/manifest.webmanifest
       - public/sw.js
       - scripts/prepare-consumer-web-pwa.mjs
+      - scripts/prepare-consumer-web-seo.mjs
+      - scripts/public-share-preview.test.mjs
       - scripts/pages-deployment-convergence-audit.mjs
       - scripts/business-web-browser-smoke.spec.ts
       - scripts/consumer-real-world-browser-stress.spec.ts
@@ -50,6 +52,8 @@ jobs:
           cache-dependency-path: package.json
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Validate Kleenest social share previews
+        run: node --test scripts/public-share-preview.test.mjs
       - name: Preview deployment contract
         run: node scripts/pages-deployment-convergence-audit.mjs
       - name: Export canonical Expo consumer preview
