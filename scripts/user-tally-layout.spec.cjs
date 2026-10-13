@@ -4,7 +4,7 @@ test.use({screenshot:'only-on-failure',trace:'retain-on-failure',geolocation:{la
 const ROOT=path.resolve(process.env.OWNER_EXPORT_DIR||'apps/platform-mobile/dist');
 const CONSUMER=path.resolve('apps/consumer-mobile/dist');
 const uid='00000000-0000-4000-8000-000000000001';
-const tally={updated_at:'2026-10-12T20:00:00Z',tracking_since:'2026-10-12T19:00:00Z',current_accounts:24,total_signups_recorded:24,deleted_accounts_recorded:0,pending_deletion_requests:1,active_24h:1,active_7d:2,active_30d:5,guest_sessions_24h:3,guest_sessions_7d:4,guest_sessions_30d:6,signups_today:0,deletions_today:0,signups_7d:0,deletions_7d:0,signups_30d:24,deletions_30d:0};
+const tally={updated_at:'2026-10-12T20:00:00Z',tracking_since:'2026-10-12T19:00:00Z',current_accounts:24,total_signups_recorded:24,deleted_accounts_recorded:0,pending_deletion_requests:1,active_24h:1,active_7d:2,active_30d:5,returning_24h:0,returning_7d:1,returning_30d:2,guest_sessions_24h:3,guest_sessions_7d:4,guest_sessions_30d:6,signups_today:0,deletions_today:0,signups_7d:0,deletions_7d:0,signups_30d:24,deletions_30d:0};
 async function setup(page,root,{failed=false}={}){
  const errors=[];page.on('pageerror',error=>errors.push(error.message));
  await page.route('http://kleenest.test/**',async route=>{
@@ -43,6 +43,13 @@ for(const width of [320,360]){
   await page.setViewportSize({width,height:800});const errors=await setup(page,ROOT);
   await page.goto('http://kleenest.test/');
   await expect(page.getByText('People & Growth',{exact:true})).toBeVisible();
+  await expect(page.getByText('Current accounts',{exact:true})).toBeVisible();
+  await expect(page.getByText('Open User Growth workspace →',{exact:true})).toBeVisible();
+  await page.getByText('Open User Growth workspace →',{exact:true}).click();
+  await expect(page.getByText('USER GROWTH WORKSPACE',{exact:true})).toBeVisible();
+  await expect(page.getByText('Returning · 7 days',{exact:true})).toBeVisible();
+  await expect(page.getByText('New users · deleted accounts · net change',{exact:true})).toBeVisible();
+  await page.goto('http://kleenest.test/');
   await expect(page.getByText('Current accounts',{exact:true})).toBeVisible();
   await expect(page.getByText('24',{exact:true}).first()).toBeVisible();
   await expect(page.getByText('Moderation',{exact:true}).locator('..').locator('..').getByText('2',{exact:true})).toBeVisible();
