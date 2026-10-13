@@ -57,9 +57,9 @@ test('every public Kleenest page shares the actual PNG app icon on X and Open Gr
       for(const tag of tags){
         assert.equal(html.split(tag).length-1,1,`${file}: expected exactly one ${tag}`);
       }
-      assert.doesNotMatch(html,/wrong\\.example/);
+      assert.doesNotMatch(html,/wrong\.example/);
       assert.match(html,/<meta property="og:title" content="Kleenest/);
-      assert.match(html,/<link rel="canonical" href="https:\\/\\/kleenest\\.us\\//);
+      assert.match(html,/<link rel="canonical" href="https:\/\/kleenest\.us\//);
     }
     assert.ok(fs.existsSync(path.join(dist,'sitemap.xml')));
     assert.ok(fs.existsSync(path.join(dist,'robots.txt')));
