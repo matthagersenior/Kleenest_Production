@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const migration=read('supabase/migrations/20261013230000_creator_studio_invites_and_mission_approvals.sql');
+const migration=read('supabase/migrations/20261013221605_creator_studio_invites_and_mission_approvals.sql');
 const studio=read('src/runtime/CreatorStudioPage.jsx');
 const app=read('src/runtime/App.jsx');
 const workspace=read('src/runtime/WorkspacePage.jsx');
