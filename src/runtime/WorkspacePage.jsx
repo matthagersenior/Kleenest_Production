@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getSupabase } from '../lib/supabase.js';
 import { getWorkspaceContext } from '../services/workspaces.js';
 
-const labels={consumer:'Consumer',business:'Business',fleet:'Fleet',enterprise:'Enterprise',platform:'Platform'};
+const labels={consumer:'Consumer',business:'Business',fleet:'Fleet',enterprise:'Enterprise',platform:'Platform',creator:'Creator Studio'};
 export default function WorkspacePage(){
   const navigate=useNavigate();
   const[context,setContext]=useState(null);const[status,setStatus]=useState('loading');const[error,setError]=useState('');
-  useEffect(()=>{let active=true;getWorkspaceContext().then(value=>{if(active){setContext(value);setStatus('ready');}}).catch(err=>{if(active){setError(err?.message||'Workspaces could not be loaded.');setStatus('error');}});return()=>{active=false;};},[]);
+  useEffect(()=>{let active=true;getWorkspaceContext().then(async value=>{try{const {data}=await getSupabase().rpc('creator_studio_dashboard');value.access.creator=Boolean(data?.authorized);}catch{}if(active){setContext(value);setStatus('ready');}}).catch(err=>{if(active){setError(err?.message||'Workspaces could not be loaded.');setStatus('error');}});return()=>{active=false;};},[]);
   if(status==='loading')return <section className="panel"><div className="eyebrow">WORKSPACES</div><h1>Workspaces</h1><p>Loading authorized workspaces…</p></section>;
   if(status==='error')return <section className="panel"><div className="eyebrow">WORKSPACES</div><h1>Workspaces</h1><div className="notice error">{error}</div></section>;
   const access=context?.access||{};
   const cards=[
     {key:'consumer',desc:'Explore restrooms, saved places, routes, activity, community, and membership.',to:'/'},
+    {key:'creator',desc:'Design missions, verify amenities, request owner approval, and review creator progress.',to:'/workspace/creator-studio'},
     {key:'business',desc:'Manage authorized business locations, access, and performance.',to:'/workspace/business'},
     {key:'fleet',desc:'Fleet operations and route intelligence.',to:'/workspace/fleet'},
     {key:'enterprise',desc:'Enterprise network and partner intelligence.',to:'/workspace/enterprise'},
