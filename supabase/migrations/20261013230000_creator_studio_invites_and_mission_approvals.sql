@@ -69,6 +69,7 @@ begin
  on conflict(email) do update set display_name=excluded.display_name,
   creator_handle=excluded.creator_handle,
   status=case when creator_studio_accounts.status='revoked' then 'invited' else creator_studio_accounts.status end,
+  user_id=case when creator_studio_accounts.status='revoked' then null else creator_studio_accounts.user_id end,
   updated_at=now() returning * into a;
  return jsonb_build_object('id',a.id,'email',a.email,'status',a.status,'has_login',a.user_id is not null);
 end $$;
@@ -156,7 +157,8 @@ end $$;
 -- Public display is restricted to owner-approved missions; no unverified automatic XP awards.
 create or replace function public.creator_studio_public_mission(p_id uuid) returns jsonb
 language sql stable security definer set search_path='' as $$
-select to_jsonb(m)||jsonb_build_object('creator_name',a.display_name,'creator_handle',a.creator_handle)
+select jsonb_build_object('id',m.id,'title',m.title,'description',m.description,
+ 'requirements',m.requirements,'creator_name',a.display_name,'creator_handle',a.creator_handle)
 from public.creator_studio_missions m join public.creator_studio_accounts a on a.id=m.account_id
 where m.id=p_id and m.status='approved' and a.status='active' limit 1;
 $$;
