@@ -16,7 +16,7 @@ export default function UserTallyPanel() {
     try {
       const result = await getKleenestSupabaseClient().rpc('owner_user_tally_snapshot');
       if (result.error) throw result.error;
-      if (!result.data || !result.data.updated_at || ['current_accounts','total_signups_recorded','deleted_accounts_recorded','pending_deletion_requests','active_24h','active_7d','active_30d','guest_sessions_24h','guest_sessions_7d','guest_sessions_30d','signups_today','deletions_today','signups_7d','deletions_7d','signups_30d','deletions_30d'].some(key => typeof result.data[key] !== 'number' || !Number.isFinite(result.data[key]))) throw new Error('User tally returned an incomplete snapshot.');
+      if (!result.data || !result.data.updated_at || ['current_accounts','total_signups_recorded','deleted_accounts_recorded','pending_deletion_requests','active_24h','active_7d','active_30d','returning_24h','returning_7d','returning_30d','guest_sessions_24h','guest_sessions_7d','guest_sessions_30d','signups_today','deletions_today','signups_7d','deletions_7d','signups_30d','deletions_30d'].some(key => typeof result.data[key] !== 'number' || !Number.isFinite(result.data[key]))) throw new Error('User tally returned an incomplete snapshot.');
       setData(result.data); setError('');
     } catch (cause: any) {
       setData(null); setError(cause?.message || 'User tally unavailable.');
@@ -34,6 +34,9 @@ export default function UserTallyPanel() {
     ['Active · 24 hours', 'active_24h', 'Unique accounts using any Kleenest app'],
     ['Active · 7 days', 'active_7d', 'Each account counts once across devices'],
     ['Active · 30 days', 'active_30d', 'Recorded foreground usage, not sign-ins'],
+    ['Returning · 24 hours', 'returning_24h', 'Previously registered accounts active in this window'],
+    ['Returning · 7 days', 'returning_7d', 'Accounts registered before this 7-day window and active in it'],
+    ['Returning · 30 days', 'returning_30d', 'Accounts registered before this 30-day window and active in it'],
     ['Signups recorded', 'total_signups_recorded', 'Existing accounts at baseline + new signups'],
     ['Accounts deleted', 'deleted_accounts_recorded', 'Completed deletions since tracking began'],
     ['Deletion requests', 'pending_deletion_requests', 'Pending requests; not completed deletions'],
@@ -50,13 +53,13 @@ export default function UserTallyPanel() {
       {metrics.map(([label, key, detail]) => <HealthCard key={key} label={label} value={count(key)} detail={detail} tone={data ? 'neutral' : 'warning'} />)}
     </View>
     <View style={{ ...card, gap: 10 }}>
-      <Text style={{ color: theme.ink, fontWeight: '900' }}>Recorded new accounts / deleted / net change</Text>
+      <Text style={{ color: theme.ink, fontWeight: '900' }}>New users · deleted accounts · net change</Text>
       {['today', '7d', '30d'].map((period, i) => <View key={period} style={{ gap: 3 }}>
         <Text style={{ color: theme.ink, fontWeight: '800' }}>{['Today', 'Last 7 calendar days', 'Last 30 calendar days'][i]}</Text>
         <Text style={{ color: theme.muted }}>{count('signups_' + period)} new · {count('deletions_' + period)} deleted · {data ? (data['signups_' + period] - data['deletions_' + period]).toLocaleString() : 'Unavailable'} net</Text>
       </View>)}
       <Text style={{ color: theme.muted }}>Guest sessions: {count('guest_sessions_7d')} in 7 days · {count('guest_sessions_30d')} in 30 days.</Text>
-      <Text style={{ color: theme.muted }}>Calendar totals use Central time. Active users use rolling time windows. Deleted accounts no longer count as current or active.</Text>
+      <Text style={{ color: theme.muted }}>Calendar totals use Central time. Active and returning users use rolling time windows. Returning means an existing registered account with recorded app activity during that window.</Text>
       <Text style={{ color: theme.muted }}>{data ? `Deletion tracking began ${new Date(data.tracking_since).toLocaleString()}. Earlier deleted accounts are not recoverable from this tally.` : 'Historical deletion coverage unavailable.'}</Text>
     </View>
   </View>;

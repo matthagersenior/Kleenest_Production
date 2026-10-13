@@ -1019,6 +1019,14 @@
       "kind": "user",
       "status": "wired",
       "gap": "Natural-language intent is being wired into existing Explore, route, match explanation, and review flows. It is not live until the full user journey, graceful fallback, production deployment, and production-equivalent verification are complete."
+    },
+    {
+      "id": "platform.user-growth-analytics",
+      "product": "platform",
+      "capability": "user-growth-analytics",
+      "kind": "user",
+      "status": "discoverable",
+      "gap": "The account tally existed in the command center but lacked a dedicated User Growth workspace and explicit returning-account measures."
     }
   ]
 }
