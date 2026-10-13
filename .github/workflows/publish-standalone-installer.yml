@@ -222,6 +222,9 @@ jobs:
           cp public/contact.html apps/consumer-mobile/dist/contact/index.html
           test -s apps/consumer-mobile/dist/contact/index.html
           node scripts/prepare-consumer-web-seo.mjs
+          # Never publish a page that makes social platforms guess at the logo.
+          grep -Fq 'property="og:image" content="https://kleenest.us/app-icon.png"' apps/consumer-mobile/dist/index.html
+          grep -Fq 'name="twitter:image" content="https://kleenest.us/app-icon.png"' apps/consumer-mobile/dist/index.html
           test -s apps/consumer-mobile/dist/sitemap.xml
           test -s apps/consumer-mobile/dist/robots.txt
           grep -q "https://kleenest.us/" apps/consumer-mobile/dist/sitemap.xml
