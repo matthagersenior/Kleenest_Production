@@ -47,8 +47,8 @@ for(const width of [320,360]){
   await expect(page.getByText('Open User Growth workspace →',{exact:true})).toBeVisible();
   await page.getByText('Open User Growth workspace →',{exact:true}).click();
   await expect(page.getByText('USER GROWTH WORKSPACE',{exact:true})).toBeVisible();
-  await expect(page.getByText('Returning · 7 days',{exact:true})).toBeVisible();
-  await expect(page.getByText('New users · deleted accounts · net change',{exact:true})).toBeVisible();
+  await expect(page.getByText('Returning · 7 days',{exact:true}).last()).toBeVisible();
+  await expect(page.getByText('New users · deleted accounts · net change',{exact:true}).last()).toBeVisible();
   await page.goto('http://kleenest.test/');
   await expect(page.getByText('Current accounts',{exact:true})).toBeVisible();
   await expect(page.getByText('24',{exact:true}).first()).toBeVisible();
