@@ -113,7 +113,7 @@ if (databaseDeploy.includes('SUPABASE_DB_PASSWORD')) throw new Error('Production
 if (databaseDeploy.includes('supabase db push')) throw new Error('Native Supabase GitHub Integration owns migration deployment; GitHub must not duplicate db push.');
 
 const familyOta = read('ota-family.yml');
-for (const token of ['workflow_run:','workflows: ["Deploy Supabase Migrations to Production"]',"github.event.workflow_run.conclusion == 'success'","github.event.workflow_run.head_branch == 'main'",'ref: ${{ github.event.workflow_run.head_sha }}','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_publish','native_rebuild_required','consumer-production','business-production','fleet-production','owner-production']) {
+for (const token of ['workflow_run:','workflows: ["Deploy Supabase Migrations to Production"]',"github.event.workflow_run.conclusion == 'success'","github.event.workflow_run.head_branch == 'main'",'github.event_name == \'push\' && github.sha || github.event.workflow_run.head_sha','resolve-family-apk-baseline.mjs','app-family-release-plan.mjs','should_publish','native_rebuild_required','consumer-production','business-production','fleet-production','owner-production']) {
   requireText(familyOta, token, 'Coordinated family OTA authority missing '+token);
 }
 if (familyOta.includes('workflows: ["Production CI"]')) throw new Error('Coordinated family OTA must not bypass production database deployment.');

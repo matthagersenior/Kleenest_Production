@@ -11,10 +11,17 @@ function count(value:unknown){
   return Number(value||0);
 }
 function object(value:unknown){return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};}
+function newestFirst(rows:Record<string,unknown>[]){
+  return rows.sort((a,b)=>{
+    const aTime=Date.parse(String(a.created_at||''))||0;
+    const bTime=Date.parse(String(b.created_at||''))||0;
+    return bTime-aTime;
+  });
+}
 function activityRows(value:unknown):Record<string,unknown>[]{
-  if(Array.isArray(value))return value.map(object);
+  if(Array.isArray(value))return newestFirst(value.map(object));
   const record=object(value);
-  for(const key of ['events','items','rows','results'])if(Array.isArray(record[key]))return (record[key] as unknown[]).map(object);
+  for(const key of ['events','items','rows','results'])if(Array.isArray(record[key]))return newestFirst((record[key] as unknown[]).map(object));
   return [];
 }
 function humanize(value:unknown,fallback='Platform event'){
