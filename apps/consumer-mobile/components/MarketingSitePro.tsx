@@ -1,5 +1,5 @@
 import { router, usePathname } from 'expo-router';
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { useConsumerWebExperience } from '../services/webExperience';
 import {
   Image,
@@ -46,6 +46,13 @@ const marketingAsset=(name:string)=>Platform.OS==='web'
   ? `${pagesBasePath()}/marketing/${name}`
   : `https://matthagersenior.github.io/Kleenest_Production/marketing/${name}`;
 
+const openPortal=(path:string)=>()=>{
+  if(Platform.OS==='web'&&typeof window!=='undefined'){
+    window.location.assign(`${pagesBasePath()}${path}`);
+    return;
+  }
+  router.push('/for-business' as any);
+};
 const openFleetPortal=()=>{
   if(Platform.OS==='web'&&typeof window!=='undefined'){
     window.location.assign(`${pagesBasePath()}/fleet/`);
@@ -97,15 +104,16 @@ function LogoLockup({ light = false }: { light?: boolean }) {
 function Header() {
   const { width } = useWindowDimensions();
   const compact = width < 900;
+  const [menuOpen,setMenuOpen]=useState(false);
   return (
     <>
       <View style={s.utilityBar}>
         <Text style={s.utilityText}>RESTROOM DISCOVERY · FRESH EVIDENCE · REAL-WORLD TRUST</Text>
         {!compact && <Text style={s.utilityNote}>Built for everyday life, travel, families and businesses.</Text>}
       </View>
-      <View style={[s.header, Platform.OS === 'web' ? ({ position: 'sticky', top: 0, zIndex: 40 } as any) : null]}>
+      <View style={[s.header,compact&&{paddingHorizontal:12,gap:8},Platform.OS === 'web' ? ({ position: 'sticky', top: 0, zIndex: 40 } as any) : null]}>
         <LogoLockup />
-        <View style={s.headerActions}>
+        <View style={[s.headerActions,compact&&{gap:6}]}>
           {!compact && (
             <>
               <Pressable onPress={go('/for-you')}><Text style={s.navText}>For You</Text></Pressable>
@@ -113,14 +121,32 @@ function Header() {
               <Pressable onPress={go('/trust')}><Text style={s.navText}>Trust</Text></Pressable>
             </>
           )}
-          <Pressable style={s.openButton} onPress={go('/?app=1')}>
-            <Text style={s.openButtonText}>Open App</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Open Kleenest sign in" style={[s.openButton,compact&&{paddingHorizontal:9}]} onPress={go('/profile')}>
+            <Text style={s.openButtonText}>{compact?'Sign in':'Sign In'}</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest now" style={s.installButton} onPress={go('/install')}>
-            <Text style={s.installButtonText}>Install Now</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={menuOpen?'Close audience navigation':'Open audience navigation'} style={[s.openButton,compact&&{paddingHorizontal:9}]} onPress={()=>setMenuOpen(value=>!value)}>
+            <Text style={s.openButtonText}>{menuOpen?'Close':'Menu'}</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest now" style={[s.installButton,compact&&{paddingHorizontal:10}]} onPress={go('/install')}>
+            <Text style={s.installButtonText}>{compact?'Install':'Install Now'}</Text>
           </Pressable>
         </View>
       </View>
+      {menuOpen&&<View accessibilityLabel="Kleenest audience navigation" style={{backgroundColor:brand.paper,borderBottomWidth:1,borderBottomColor:brand.line,paddingHorizontal:20,paddingVertical:14,gap:10}}>
+        <Text style={{color:brand.muted,fontSize:10,fontWeight:'900',letterSpacing:1}}>CHOOSE YOUR KLEENEST</Text>
+        <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+          {[
+            ['For people','/for-you'],
+            ['Business','/business/auth/?mode=signup&intent=claim'],
+            ['Fleet','/fleet/'],
+            ['Enterprise','/business/enterprise/'],
+            ['Developer','/developer/'],
+            ['Partner','/business/partners/'],
+          ].map(([label,path])=><Pressable key={label} accessibilityRole="link" onPress={openPortal(path)} style={{backgroundColor:brand.mintSoft,borderColor:brand.line,borderWidth:1,borderRadius:999,paddingHorizontal:13,paddingVertical:10}}>
+            <Text style={{color:brand.forest,fontSize:11,fontWeight:'900'}}>{label} →</Text>
+          </Pressable>)}
+        </View>
+      </View>}
     </>
   );
 }
@@ -406,6 +432,25 @@ export function MarketingHome() {
         <Text style={s.promiseBody}>
           Restroom conditions change. Kleenest is built around fresh observations, repeated verification and practical details so you can make a better decision before you arrive.
         </Text>
+      </View>
+
+      <View style={{paddingHorizontal:24,paddingVertical:34,gap:12,backgroundColor:'#F3F7F3'}}>
+        <Eyebrow>ONE NETWORK, MANY WAYS TO TAKE PART</Eyebrow>
+        <Text style={s.sectionTitle}>Kleenest works for people, places and the teams behind them.</Text>
+        <Text style={s.sectionLead}>Start as a guest, install the app, or go straight to the space that fits your work. Sign in when you are ready; Kleenest will recognize returning accounts and send them to their available workspace.</Text>
+        <View style={{flexDirection:'row',flexWrap:'wrap',gap:10,marginTop:8}}>
+          {[
+            ['For people','Find useful, trusted restrooms for daily life, family trips and travel.','/for-you'],
+            ['Business','Claim locations, manage your presence and improve guest experiences.','/business/auth/?mode=signup&intent=claim'],
+            ['Fleet','Plan field operations, routes and mobile workforces.','/fleet/'],
+            ['Enterprise','Manage locations and restroom operations across a portfolio.','/business/enterprise/'],
+            ['Developers','Explore platform access, APIs and integration paths.','/developer/'],
+            ['Partners','Build programs and partnerships across the Kleenest network.','/business/partners/'],
+          ].map(([title,body,path])=><Pressable key={title} accessibilityRole="link" onPress={openPortal(path)} style={{flexGrow:1,flexBasis:250,maxWidth:440,backgroundColor:brand.paper,borderWidth:1,borderColor:brand.line,borderRadius:18,padding:17,gap:7}}>
+            <Text style={{color:brand.forest,fontSize:15,fontWeight:'900'}}>{title} →</Text>
+            <Text style={{color:brand.muted,fontSize:12,lineHeight:18}}>{body}</Text>
+          </Pressable>)}
+        </View>
       </View>
 
       <View style={s.section}>
@@ -840,7 +885,7 @@ const s = StyleSheet.create({
   logoTextLight: { color: '#FFFFFF' },
   logoTag: { color: '#738078', fontSize: 9, fontWeight: '700', marginTop: 2 },
   logoTagLight: { color: '#A8BCB0' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' },
   navText: { color: brand.ink, fontSize: 11, fontWeight: '800' },
   openButton: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#C9D6CD' },
   openButtonText: { color: brand.forest, fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },

@@ -11,6 +11,15 @@ test('Installation Center click-through and release assets',async({page,request,
   await expect(page.getByText('FOR YOU',{exact:true})).toBeVisible();
   await expect(page.getByText('FOR BUSINESS',{exact:true})).toBeVisible();
   await expect(page.getByText('TRUST + FRESHNESS',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Open Kleenest sign in'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Install Kleenest now'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Continue as guest'})).toBeVisible();
+  await expect(page.getByText('ONE NETWORK, MANY WAYS TO TAKE PART')).toBeVisible();
+  await page.getByRole('button',{name:'Open audience navigation'}).click();
+  for(const audience of ['Business →','Fleet →','Enterprise →','Developer →','Partner →']){
+    await expect(page.getByRole('link',{name:audience,exact:true})).toBeVisible();
+  }
+  await page.getByRole('button',{name:'Close audience navigation'}).click();
   await page.getByRole('button',{name:/Install Kleenest/i}).first().click();
   await expect(page).toHaveURL(new RegExp(`${routePath('install')}/?$`));
   await expect(page.getByText('KLEENEST · UNIVERSAL INSTALLATION CENTER')).toBeVisible();
@@ -46,6 +55,14 @@ test('Installation Center click-through and release assets',async({page,request,
     hasTouch:true,
   });
   const mobilePage=await mobileContext.newPage();
+  await mobilePage.goto(BASE,{waitUntil:'domcontentloaded'});
+  await expect(mobilePage.getByRole('button',{name:'Open Kleenest sign in'})).toBeVisible({timeout:30000});
+  await expect(mobilePage.getByRole('button',{name:'Install Kleenest now'})).toBeVisible();
+  await expect(mobilePage.getByRole('button',{name:'Continue as guest'})).toBeVisible();
+  await mobilePage.getByRole('button',{name:'Open audience navigation'}).click();
+  await expect(mobilePage.getByRole('link',{name:'Developer →',exact:true})).toBeVisible();
+  const homeMetrics=await mobilePage.evaluate(()=>({innerWidth:window.innerWidth,scrollWidth:document.documentElement.scrollWidth}));
+  expect(homeMetrics.scrollWidth).toBeLessThanOrEqual(homeMetrics.innerWidth+1);
   await mobilePage.goto(BASE+'install/',{waitUntil:'domcontentloaded'});
   await expect(mobilePage.getByText('KLEENEST · UNIVERSAL INSTALLATION CENTER')).toBeVisible({timeout:30000});
   const mobileMetrics=await mobilePage.evaluate(()=>({innerWidth:window.innerWidth,scrollWidth:document.documentElement.scrollWidth}));
