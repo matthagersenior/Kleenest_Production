@@ -43,6 +43,8 @@ for(const width of [320,360]){
   await page.setViewportSize({width,height:800});const errors=await setup(page,ROOT);
   await page.goto('http://kleenest.test/');
   await expect(page.getByText('People & Growth',{exact:true})).toBeVisible();
+  await expect(page.getByText('New users · 7 days',{exact:true}).first()).toBeVisible();
+  await expect(page.getByText('Returning users · 7 days',{exact:true}).first()).toBeVisible();
   await expect(page.getByText('Current accounts',{exact:true})).toBeVisible();
   await expect(page.getByText('Open User Growth workspace →',{exact:true})).toBeVisible();
   await page.getByText('Open User Growth workspace →',{exact:true}).click();
