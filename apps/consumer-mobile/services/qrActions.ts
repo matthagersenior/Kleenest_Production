@@ -77,10 +77,14 @@ export async function resolveQrAction(code:string):Promise<ResolvedQrAction>{
 
 export async function ensureLocationQrIdentity(locationId:string):Promise<LocationQrIdentity>{
   const id=String(locationId||'').trim();if(!id)throw new Error('Location is required.');
-  const{data,error}=await getKleenestSupabaseClient().rpc('ensure_location_qr_identity',{p_location_id:id});
+  // A deterministic KLOC code is available for every canonical UUID. Resolution
+  // materializes the same identity on its first scan or display.
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))throw new Error('Invalid location ID.');
+  const code='KLOC-'+id.replace(/-/g,'').toUpperCase();
+  const{data,error}=await getKleenestSupabaseClient().rpc('resolve_custom_qr_action',{p_qr_code:code});
   if(error)throw error;
   if(!data?.id||!data?.code)throw new Error('Location QR identity could not be created.');
-  return data as LocationQrIdentity;
+  return {...data,deep_link:'https://kleenest.us/qr?code='+encodeURIComponent(String(data.code))} as LocationQrIdentity;
 }
 
 export async function recordLocationQrPlacementEvent(

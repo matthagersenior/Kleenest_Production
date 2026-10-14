@@ -20,3 +20,11 @@ export function restoreQrVersion(businessId:string,qrId:string,version:number){r
 export function saveQrVersion(businessId:string,qrId:string,locationId:string|null,patch:Record<string,unknown>,summary:string){return rpc('qr_studio_upsert_asset',{p_business_id:businessId,p_qr_id:qrId,p_location_id:locationId,p_patch:patch,p_change_summary:summary});}
 export async function listQrLocationOptions(businessId:string){const value:any=await rpc('business_list_locations',{p_business_id:businessId});return rows(value);}
 export async function getQrAnalytics(businessId:string,days=30){const end=new Date(),start=new Date(end.getTime()-days*86400000);const args={p_business_id:businessId,p_start:start.toISOString(),p_end:end.toISOString()};const [detail,analytics,attribution]=await Promise.allSettled([rpc('business_qr_detail',args),rpc('business_qr_analytics',args),rpc('get_business_attribution_funnel',args)]);return{detail:detail.status==='fulfilled'?detail.value:null,analytics:analytics.status==='fulfilled'?analytics.value:null,attribution:attribution.status==='fulfilled'?attribution.value:null,partial:[detail,analytics,attribution].some(x=>x.status==='rejected')};}
+
+/** Open the pre-assigned KLOC location QR; never mint an alternative code. */
+export async function openPermanentLocationQr(locationId:string){
+  const {data,error}=await client().rpc('ensure_location_qr_identity',{p_location_id:locationId});
+  if(error)throw error;
+  if(!data?.id||!data?.code||!data.canonical_location_identity)throw new Error('Permanent location QR unavailable.');
+  return {...data,active:true,public_url:'https://kleenest.us/qr?code='+encodeURIComponent(String(data.code))};
+}

@@ -5,6 +5,7 @@ import { Linking,Pressable,SafeAreaView,ScrollView,Share,StyleSheet,Text,View } 
 import QRCode from 'react-native-qrcode-svg';
 import { ensureLocationQrIdentity,recordLocationQrPlacementEvent,type LocationQrIdentity,type QrPlacementEventType } from '../services/qrActions';
 import { useConsumerTheme } from '../services/theme';
+import { PlaceIcon } from '../components/RestroomSignals';
 
 function trustLabel(value:LocationQrIdentity|null){
   if(!value)return'Community QR';
@@ -25,6 +26,7 @@ function actionError(error:any){
   if(detail.includes('OUTSIDE_GEOFENCE'))return'You need to be at this location to record or verify a physical QR placement.';
   if(detail.includes('INDEPENDENT_PLACEMENT_REQUIRED'))return'A different Kleenest member must record the placement before you can independently verify it.';
   if(detail.includes('LOCATION_REQUIRED'))return'Kleenest needs your current location to verify the physical QR placement.';
+  if(/authentication required|auth_required/i.test(detail))return 'Location QR is ready. Sign in to verify physical placement.';
   return detail&&detail.length<180?detail:'QR action could not be completed.';
 }
 
@@ -35,7 +37,15 @@ export default function LocationQrScreen(){
   const[identity,setIdentity]=useState<LocationQrIdentity|null>(null);
   const[message,setMessage]=useState('Preparing this location’s permanent Kleenest QR…');
   const[busy,setBusy]=useState(false);
-  const qrValue=useMemo(()=>identity?.deep_link||'',[identity?.deep_link]);
+  const defaultCode=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)?'KLOC-'+id.replace(/-/g,'').toUpperCase():'';
+  const qrValue=useMemo(()=>identity?.deep_link||(defaultCode?'https://kleenest.us/qr?code='+defaultCode:''),[identity?.deep_link,defaultCode]);
+  const mapIcon=useMemo(()=>({
+    name:identity?.location_name||String(name||''),
+    brand_name:identity?.brand_name||'',
+    business_name:identity?.business_name||'',
+    business_logo_url:identity?.business_logo_url||'',
+    place_type:identity?.location_place_type||'restroom'
+  }),[identity?.location_name,identity?.brand_name,identity?.business_name,identity?.business_logo_url,identity?.location_place_type,name]);
 
   async function load(){
     if(!id){setMessage('This location QR is missing its location.');return}
@@ -73,8 +83,8 @@ export default function LocationQrScreen(){
   }
 
   async function share(){
-    if(!identity)return;
-    await Share.share({title:String(identity.location_name||name||'Kleenest location')+' QR',message:String(identity.location_name||name||'Kleenest location')+' · Kleenest QR\n'+identity.deep_link});
+    if(!qrValue)return;
+    await Share.share({title:String(identity?.location_name||name||'Kleenest location')+' QR',message:String(identity?.location_name||name||'Kleenest location')+' · Kleenest QR\\n'+qrValue});
   }
   async function claim(){
     if(!identity)return;
@@ -104,11 +114,14 @@ export default function LocationQrScreen(){
 
     <View style={[s.qrCard,{backgroundColor:theme.surface,borderColor:theme.line}]}>
       <Text style={[s.kicker,{color:theme.muted}]}>PERMANENT LOCATION IDENTITY</Text>
-      {qrValue?<View style={s.qrFrame}><QRCode value={qrValue} size={228} color="#173f2d" backgroundColor="#ffffff" quietZone={8} ecl="M"/></View>:<View style={[s.loadingQr,{backgroundColor:theme.surfaceRaised}]}><Text style={[s.meta,{color:theme.muted}]}>{busy?'Creating QR…':'QR unavailable'}</Text></View>}
-      <Text style={[s.code,{color:theme.ink}]}>{identity?.code||'—'}</Text>
+      {qrValue?<View style={s.qrFrame}><QRCode value={qrValue} size={228} color="#173f2d" backgroundColor="#ffffff" quietZone={8} ecl="H"/>
+        <View pointerEvents="none" style={s.qrCenterIcon}>
+          <PlaceIcon item={mapIcon} size={30} evidenceFrame={false}/>
+        </View></View>:<View style={[s.loadingQr,{backgroundColor:theme.surfaceRaised}]}><Text style={[s.meta,{color:theme.muted}]}>{busy?'Loading QR…':'QR unavailable'}</Text></View>}
+      <Text style={[s.code,{color:theme.ink}]}>{identity?.code||defaultCode||'—'}</Text>
       <Text style={[s.meta,{color:theme.muted}]}>{placementLabel(identity)}</Text>
       <Text style={[s.meta,{color:theme.muted}]}>Scan → location info → feedback, or verify an on-site visit → review. Claimed/integrated Business context is added to this same permanent identity.</Text>
-      <View style={s.actions}><Action label="Share QR" disabled={!identity||busy} onPress={share}/><Action quiet label="Open location" disabled={!identity} onPress={()=>router.replace({pathname:'/location/[id]',params:{id:String(identity?.location_id||id)}})}/></View>
+      <View style={s.actions}><Action label="Share QR" disabled={!qrValue||busy} onPress={share}/><Action quiet label="Open location" disabled={!identity} onPress={()=>router.replace({pathname:'/location/[id]',params:{id:String(identity?.location_id||id)}})}/></View>
     </View>
 
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
@@ -139,4 +152,4 @@ function Action({label,onPress,disabled,quiet=false,danger=false}:{label:string;
   const theme=useConsumerTheme();
   return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[s.action,{backgroundColor:danger?theme.surfaceRaised:quiet?theme.accentSoft:theme.accent,borderColor:danger?theme.warning:quiet?theme.line:theme.accent},disabled&&{opacity:.45}]}><Text style={[s.actionText,{color:danger?theme.warning:quiet?theme.accent:theme.accentText}]}>{label}</Text></Pressable>
 }
-const s=StyleSheet.create({safe:{flex:1},page:{padding:18,paddingBottom:48,gap:12},hero:{padding:19,borderRadius:24,gap:7,borderWidth:1},eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1.4,color:'#c8ead7'},title:{fontSize:28,lineHeight:32,fontWeight:'900',color:'#fff'},copy:{fontSize:13,lineHeight:20,fontWeight:'700',color:'#deebe4'},badges:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:4},badge:{paddingHorizontal:9,paddingVertical:6,borderRadius:999},badgeText:{fontSize:9,fontWeight:'900',letterSpacing:.7},messageCard:{padding:13,borderRadius:15,borderWidth:1},message:{fontSize:12,lineHeight:18,fontWeight:'800'},qrCard:{padding:18,borderRadius:22,borderWidth:1,gap:10,alignItems:'center'},qrFrame:{backgroundColor:'#fff',padding:10,borderRadius:18},loadingQr:{height:248,width:248,borderRadius:18,alignItems:'center',justifyContent:'center'},kicker:{alignSelf:'stretch',fontSize:9,fontWeight:'900',letterSpacing:1.2},code:{fontSize:12,fontWeight:'900',letterSpacing:1},meta:{fontSize:12,lineHeight:18,fontWeight:'700'},actions:{flexDirection:'row',flexWrap:'wrap',gap:8,alignSelf:'stretch'},action:{minHeight:46,paddingHorizontal:13,paddingVertical:10,borderRadius:999,borderWidth:1,justifyContent:'center',alignItems:'center',flexGrow:1},actionText:{fontSize:12,fontWeight:'900'},card:{padding:16,borderRadius:19,borderWidth:1,gap:7},cardTitle:{fontSize:19,fontWeight:'900'},businessInfo:{borderWidth:1,borderRadius:14,padding:11,gap:4},businessName:{fontSize:16,fontWeight:'900'},back:{minHeight:46,borderWidth:1,borderRadius:14,alignItems:'center',justifyContent:'center'},backText:{fontWeight:'900'}});
+const s=StyleSheet.create({safe:{flex:1},page:{padding:18,paddingBottom:48,gap:12},hero:{padding:19,borderRadius:24,gap:7,borderWidth:1},eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1.4,color:'#c8ead7'},title:{fontSize:28,lineHeight:32,fontWeight:'900',color:'#fff'},copy:{fontSize:13,lineHeight:20,fontWeight:'700',color:'#deebe4'},badges:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:4},badge:{paddingHorizontal:9,paddingVertical:6,borderRadius:999},badgeText:{fontSize:9,fontWeight:'900',letterSpacing:.7},messageCard:{padding:13,borderRadius:15,borderWidth:1},message:{fontSize:12,lineHeight:18,fontWeight:'800'},qrCard:{padding:18,borderRadius:22,borderWidth:1,gap:10,alignItems:'center'},qrFrame:{backgroundColor:'#fff',padding:10,borderRadius:18,width:248,height:248,position:'relative'},qrCenterIcon:{position:'absolute',left:105,top:105,width:38,height:38,backgroundColor:'#ffffff',borderRadius:8,alignItems:'center',justifyContent:'center'},loadingQr:{height:248,width:248,borderRadius:18,alignItems:'center',justifyContent:'center'},kicker:{alignSelf:'stretch',fontSize:9,fontWeight:'900',letterSpacing:1.2},code:{fontSize:12,fontWeight:'900',letterSpacing:1},meta:{fontSize:12,lineHeight:18,fontWeight:'700'},actions:{flexDirection:'row',flexWrap:'wrap',gap:8,alignSelf:'stretch'},action:{minHeight:46,paddingHorizontal:13,paddingVertical:10,borderRadius:999,borderWidth:1,justifyContent:'center',alignItems:'center',flexGrow:1},actionText:{fontSize:12,fontWeight:'900'},card:{padding:16,borderRadius:19,borderWidth:1,gap:7},cardTitle:{fontSize:19,fontWeight:'900'},businessInfo:{borderWidth:1,borderRadius:14,padding:11,gap:4},businessName:{fontSize:16,fontWeight:'900'},back:{minHeight:46,borderWidth:1,borderRadius:14,alignItems:'center',justifyContent:'center'},backText:{fontWeight:'900'}});
