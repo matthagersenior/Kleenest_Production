@@ -51,7 +51,7 @@ assert.match(studio,/permanent&&/);
 assert.match(studio,/brand:\{/);
 assert.match(studio,/claimApproved/);
 
-const guard=read('supabase/migrations/20261014195000_lock_permanent_location_qr.sql');
+const guard=read('supabase/migrations/20261014200158_lock_permanent_location_qr.sql');
 assert.match(guard,/PERMANENT_QR_CANNOT_BE_DELETED/);
 assert.match(guard,/PERMANENT_QR_IDENTITY_LOCKED/);
 assert.match(guard,/VERIFIED_LOCATION_CLAIM_REQUIRED_FOR_QR_CUSTOMIZATION/);
