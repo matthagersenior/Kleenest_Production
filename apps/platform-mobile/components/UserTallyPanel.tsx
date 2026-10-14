@@ -43,7 +43,12 @@ export default function UserTallyPanel() {
     ['Guest sessions · 24 hours', 'guest_sessions_24h', 'Sessions, not unique people or registered users'],
   ];
   return <View style={{ gap: 10 }}>
-    <SectionHeader title="People & Growth" body="Running account and usage tally" />
+    <SectionHeader title="People & Growth" body="New and returning users at a glance; full account and usage tally below" />
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+      <HealthCard label="Current accounts" value={count('current_accounts')} detail="Registered users still on Kleenest" tone={data ? 'neutral' : 'warning'} />
+      <HealthCard label="New users · 7 days" value={count('signups_7d')} detail="New registered accounts this week" tone={data ? 'neutral' : 'warning'} />
+      <HealthCard label="Returning users · 7 days" value={count('returning_7d')} detail="Existing users active this week" tone={data ? 'neutral' : 'warning'} />
+    </View>
     <Pressable accessibilityRole="button" disabled={busy} onPress={() => { void load(); }} style={card}>
       <Text style={{ color: theme.accent, fontWeight: '900' }}>{busy ? 'Refreshing user tally…' : 'Refresh user tally'}</Text>
       <Text style={{ color: theme.muted }}>{data ? `Updated ${new Date(data.updated_at).toLocaleString()} · refreshes every minute` : 'Counts unavailable until a successful refresh'}</Text>
