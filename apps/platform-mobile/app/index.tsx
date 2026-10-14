@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import UserTallyPanel from '../components/UserTallyPanel';
 import { Link } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
@@ -38,6 +39,19 @@ export default function PlatformHome(){
   </OSHero>
   {errors.map((error,index)=><View key={`${error}:${index}`} style={{...card,borderColor:theme.danger,backgroundColor:theme.surface}}><Text style={{fontWeight:'900',color:theme.danger}}>Subsystem degraded</Text><Text style={{color:theme.danger}}>{error}</Text></View>)}
   <UserTallyPanel />
+  {authorization?.is_platform_owner?<View style={{...card,borderColor:theme.accent,backgroundColor:theme.surface,gap:8}}>
+    <Text style={{fontSize:11,fontWeight:'900',letterSpacing:1,color:theme.accent}}>PRIVATE OWNER INSTALLER</Text>
+    <Text style={{fontSize:19,fontWeight:'900',color:theme.ink}}>KleenestOS Android app</Text>
+    <Text style={{lineHeight:19,color:theme.muted}}>This download appears only in the signed-in Platform Owner account. Install the latest verified Owner APK on your Android device.</Text>
+    <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+      <Pressable accessibilityRole="link" accessibilityLabel="Download KleenestOS Owner APK" onPress={()=>void Linking.openURL('https://kleenest.us/KleenestOS.apk')} style={{backgroundColor:theme.accent,borderRadius:12,paddingHorizontal:14,paddingVertical:11}}>
+        <Text style={{fontSize:10,fontWeight:'900',letterSpacing:.5,color:theme.accentText}}>DOWNLOAD OWNER APK</Text>
+      </Pressable>
+      <Pressable accessibilityRole="link" accessibilityLabel="View KleenestOS Owner APK checksum" onPress={()=>void Linking.openURL('https://kleenest.us/KleenestOS.apk.sha256')} style={{backgroundColor:theme.surfaceRaised,borderColor:theme.line,borderWidth:1,borderRadius:12,paddingHorizontal:12,paddingVertical:9}}>
+        <Text style={{fontSize:9,fontWeight:'900',color:theme.accent}}>VIEW SHA-256</Text>
+      </Pressable>
+    </View>
+  </View>:null}
   <Link href="/growth" asChild><Pressable accessibilityRole="link" style={{...card,backgroundColor:theme.accent,borderColor:theme.accent,gap:5}}><Text style={{fontSize:11,fontWeight:'900',letterSpacing:1,color:theme.accentText}}>USER ANALYTICS</Text><Text style={{fontSize:20,fontWeight:'900',color:theme.accentText}}>Open User Growth workspace →</Text><Text style={{lineHeight:19,color:theme.accentText}}>See new users, returning users, active users, account deletions and guest sessions in one place.</Text></Pressable></Link>
   <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}><HealthCard label="Discovery" value={economy ? discoveries.toLocaleString() : 'Unavailable'} tone="neutral" detail={`${onSiteDiscoveries.toLocaleString()} on-site · live Discovery grows canonical locations · user contributions, not total places`}/><HealthCard label="Messaging" value={!messagingLoaded?'UNKNOWN':failedRuns?`${failedRuns} FAILED`:'HEALTHY'} tone={!messagingLoaded?'warning':failedRuns?'warning':'good'} detail={!messagingLoaded?'Control-plane snapshot unavailable':`${number(outcomes.delivered)} delivered · ${number(outcomes.opened)} opened`}/><HealthCard label="Moderation" value={data ? reports : 'Unavailable'} tone={!data ? 'warning' : reports?'warning':'good'} detail="Open review reports"/><HealthCard label="Business queue" value={data ? pending : 'Unavailable'} tone={!data ? 'warning' : pending?'warning':'good'} detail="Pending verification/access"/></View>
   <View style={{gap:9}}><SectionHeader title="Needs attention" body="KleenestOS promotes actionable conditions instead of making you hunt through diagnostics."/>{attention.length?attention.map(item=><AttentionCard key={item.key} item={item}/>):<View style={card}><Text style={{fontWeight:'900',color:theme.success}}>{errors.length ? 'Some checks are unavailable' : 'No active owner actions'}</Text><Text style={{color:theme.muted}}>{errors.length ? 'Refresh the failed checks before treating the platform as clear.' : 'Current messaging, moderation and business queues are clear.'}</Text></View>}</View>
