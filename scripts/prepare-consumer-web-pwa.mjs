@@ -7,6 +7,7 @@ const manifestSource=path.resolve('public/manifest.webmanifest');
 const workerSource=path.resolve('public/sw.js');
 const iconSource=path.resolve('apps/consumer-mobile/assets/app-icon.png');
 const icon512Source=path.resolve('public/app-icon-512.svg');
+const marketingSource=path.resolve('public/marketing');
 
 function normalizePagesBasePath(value){
   if(value===undefined)return '/Kleenest_Production';
@@ -18,7 +19,7 @@ const pagesBasePath=normalizePagesBasePath(process.env.EXPO_PUBLIC_PAGES_BASE_PA
 const pagesScope=`${pagesBasePath}/`||'/';
 const pagesAsset=name=>`${pagesBasePath}/${name}`;
 
-for(const required of [indexPath,manifestSource,workerSource,iconSource,icon512Source]){
+for(const required of [indexPath,manifestSource,workerSource,iconSource,icon512Source,marketingSource]){
   if(!fs.existsSync(required))throw new Error(`Consumer PWA input missing: ${required}`);
 }
 
@@ -35,6 +36,7 @@ fs.writeFileSync(path.join(dist,'manifest.webmanifest'),JSON.stringify(manifest,
 fs.copyFileSync(workerSource,path.join(dist,'sw.js'));
 fs.copyFileSync(iconSource,path.join(dist,'app-icon.png'));
 fs.copyFileSync(icon512Source,path.join(dist,'app-icon-512.svg'));
+fs.cpSync(marketingSource,path.join(dist,'marketing'),{recursive:true});
 
 let html=fs.readFileSync(indexPath,'utf8');
 const headMarker='<!-- kleenest-consumer-pwa-head -->';
