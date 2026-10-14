@@ -513,8 +513,8 @@ export function MarketingHome() {
         </View>
       </View>
 
-      <View style={[s.visualStory, wide && s.visualStoryWide]}>
-        <View style={s.visualStoryImage}>
+      <View style={[s.visualStory, wide && s.visualStoryWide, { width: Math.max(0, Math.min(width - 48, 1192)) }]}>
+        <View style={[s.visualStoryImage, wide && s.visualStoryImageWide]}>
           <MarketingImage file="home-progress.svg" label="Kleenest progress page with missions, journeys, challenges, check-ins and rewards" />
         </View>
         <View style={s.visualStoryCopy}>
@@ -984,7 +984,8 @@ const s = StyleSheet.create({
   iconCardBody: { color: brand.muted, fontSize: 12, lineHeight: 19, marginTop: 7 },
   visualStory: { marginHorizontal: 24, marginVertical: 28, maxWidth: 1192, alignSelf: 'center', width: '100%', borderRadius: 30, overflow: 'hidden', backgroundColor: brand.paper, borderWidth: 1, borderColor: '#DDE5DF' },
   visualStoryWide: { flexDirection: 'row', alignItems: 'stretch' },
-  visualStoryImage: { flex: 1.2, minHeight: 360, aspectRatio: 1200/760 },
+  visualStoryImage: { flex: 0, width: '100%', minHeight: 0, aspectRatio: 1200/760 },
+  visualStoryImageWide: { flex: 1.2, minHeight: 360 },
   visualStoryCopy: { flex: 0.8, padding: 32, justifyContent: 'center' },
   visualStoryTitle: { color: brand.ink, fontSize: 34, lineHeight: 40, fontWeight: '900', marginTop: 8 },
   visualStoryBody: { color: brand.muted, fontSize: 14, lineHeight: 22, marginTop: 10 },
