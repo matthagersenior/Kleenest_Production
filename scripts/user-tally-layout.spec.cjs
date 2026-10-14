@@ -45,14 +45,14 @@ for(const width of [320,360]){
   await expect(page.getByText('People & Growth',{exact:true})).toBeVisible();
   await expect(page.getByText('New users · 7 days',{exact:true}).first()).toBeVisible();
   await expect(page.getByText('Returning users · 7 days',{exact:true}).first()).toBeVisible();
-  await expect(page.getByText('Current accounts',{exact:true})).toBeVisible();
+  await expect(page.getByText('Current accounts',{exact:true}).first()).toBeVisible();
   await expect(page.getByText('Open User Growth workspace →',{exact:true})).toBeVisible();
   await page.getByText('Open User Growth workspace →',{exact:true}).click();
   await expect(page.getByText('USER GROWTH WORKSPACE',{exact:true})).toBeVisible();
   await expect(page.getByText('Returning · 7 days',{exact:true}).last()).toBeVisible();
   await expect(page.getByText('New users · deleted accounts · net change',{exact:true}).last()).toBeVisible();
   await page.goto('http://kleenest.test/');
-  await expect(page.getByText('Current accounts',{exact:true})).toBeVisible();
+  await expect(page.getByText('Current accounts',{exact:true}).first()).toBeVisible();
   await expect(page.getByText('24',{exact:true}).first()).toBeVisible();
   await expect(page.getByText('Moderation',{exact:true}).locator('..').locator('..').getByText('2',{exact:true})).toBeVisible();
   const overflow=await page.getByText('Registered accounts that still exist',{exact:true}).evaluate(el=>{const box=el.getBoundingClientRect(),parent=el.parentElement.getBoundingClientRect();return box.left<parent.left||box.right>parent.right});
