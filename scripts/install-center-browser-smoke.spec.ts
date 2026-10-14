@@ -93,13 +93,13 @@ test('Installation Center click-through and release assets',async({page,request,
   const ownerChecksum=await request.get(BASE+'KleenestOS.apk.sha256');
   expect(ownerChecksum.ok()).toBeTruthy();
   const ownerChecksumText=(await ownerChecksum.text()).trim();
-  expect(ownerChecksumText).toMatch(/^[a-f0-9]{64}\\s+/i);
+  expect(ownerChecksumText).toMatch(/^[a-f0-9]{64}\s+/i);
   expect(ownerChecksumText).toContain('KleenestOS.apk');
 
   const ownerApkHead=await request.head(BASE+'KleenestOS.apk');
   expect(ownerApkHead.ok()).toBeTruthy();
   const ownerApkHeaders=ownerApkHead.headers();
-  expect(String(ownerApkHeaders['content-type']||'')).toMatch(/android|octet-stream|application\\/zip/i);
+  expect(String(ownerApkHeaders['content-type']||'')).toMatch(/android|octet-stream|application\/zip/i);
   const ownerApkLength=Number(ownerApkHeaders['content-length']||0);
   if(ownerApkLength)expect(ownerApkLength).toBeGreaterThan(1_000_000);
 
