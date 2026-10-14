@@ -111,9 +111,9 @@ function Header() {
         <Text style={s.utilityText}>RESTROOM DISCOVERY · FRESH EVIDENCE · REAL-WORLD TRUST</Text>
         {!compact && <Text style={s.utilityNote}>Built for everyday life, travel, families and businesses.</Text>}
       </View>
-      <View style={[s.header, Platform.OS === 'web' ? ({ position: 'sticky', top: 0, zIndex: 40 } as any) : null]}>
+      <View style={[s.header,compact&&{paddingHorizontal:12,gap:8},Platform.OS === 'web' ? ({ position: 'sticky', top: 0, zIndex: 40 } as any) : null]}>
         <LogoLockup />
-        <View style={s.headerActions}>
+        <View style={[s.headerActions,compact&&{gap:6}]}>
           {!compact && (
             <>
               <Pressable onPress={go('/for-you')}><Text style={s.navText}>For You</Text></Pressable>
@@ -121,13 +121,13 @@ function Header() {
               <Pressable onPress={go('/trust')}><Text style={s.navText}>Trust</Text></Pressable>
             </>
           )}
-          <Pressable accessibilityRole="button" accessibilityLabel="Open Kleenest sign in" style={s.openButton} onPress={go('/profile')}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Open Kleenest sign in" style={[s.openButton,compact&&{paddingHorizontal:9}]} onPress={go('/profile')}>
             <Text style={s.openButtonText}>{compact?'Sign in':'Sign In'}</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={menuOpen?'Close audience navigation':'Open audience navigation'} style={s.openButton} onPress={()=>setMenuOpen(value=>!value)}>
+          <Pressable accessibilityRole="button" accessibilityLabel={menuOpen?'Close audience navigation':'Open audience navigation'} style={[s.openButton,compact&&{paddingHorizontal:9}]} onPress={()=>setMenuOpen(value=>!value)}>
             <Text style={s.openButtonText}>{menuOpen?'Close':'Menu'}</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest now" style={s.installButton} onPress={go('/install')}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest now" style={[s.installButton,compact&&{paddingHorizontal:10}]} onPress={go('/install')}>
             <Text style={s.installButtonText}>{compact?'Install':'Install Now'}</Text>
           </Pressable>
         </View>
@@ -442,7 +442,8 @@ export function MarketingHome() {
           {[
             ['For people','Find useful, trusted restrooms for daily life, family trips and travel.','/for-you'],
             ['Business','Claim locations, manage your presence and improve guest experiences.','/business/auth/?mode=signup&intent=claim'],
-            ['Fleet + enterprise','Plan field operations and manage locations across a fleet or portfolio.','/fleet/'],
+            ['Fleet','Plan field operations, routes and mobile workforces.','/fleet/'],
+            ['Enterprise','Manage locations and restroom operations across a portfolio.','/business/enterprise/'],
             ['Developers','Explore platform access, APIs and integration paths.','/developer/'],
             ['Partners','Build programs and partnerships across the Kleenest network.','/business/partners/'],
           ].map(([title,body,path])=><Pressable key={title} accessibilityRole="link" onPress={openPortal(path)} style={{flexGrow:1,flexBasis:250,maxWidth:440,backgroundColor:brand.paper,borderWidth:1,borderColor:brand.line,borderRadius:18,padding:17,gap:7}}>
