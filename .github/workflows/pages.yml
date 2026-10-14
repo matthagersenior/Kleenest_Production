@@ -132,6 +132,7 @@ jobs:
           test -s apps/consumer-mobile/dist/sw.js
           test -s apps/consumer-mobile/dist/app-icon.png
           test -s apps/consumer-mobile/dist/app-icon-512.svg
+          test -s apps/consumer-mobile/dist/marketing/home-progress.svg
           test -s apps/consumer-mobile/dist/profile/index.html
       - name: Browser-stress Kleenest Consumer Web
         env:

@@ -203,68 +203,64 @@ function TrustChip({ label, value }: { label: string; value: string }) {
 
 function LiveAppPreview() {
   const items = [
-    {
-      name: 'Riverfront Market',
-      meta: '0.3 mi · Open now',
-      score: '4.8',
-      evidence: 'Fresh · verified 9 min ago · 4 confirmations',
-      details: 'Accessible · family restroom · changing table · stocked',
-      best: true,
-    },
-    {
-      name: 'Central Library',
-      meta: '0.6 mi · Free access',
-      score: '4.7',
-      evidence: 'Fresh · verified 24 min ago · 3 confirmations',
-      details: 'Family restroom · accessible · low traffic',
-      best: false,
-    },
-    {
-      name: 'Coffee House',
-      meta: '0.8 mi · Customer access',
-      score: '4.5',
-      evidence: 'Recent · verified 1 hr ago · 2 confirmations',
-      details: 'Clean · stocked · accessible stall',
-      best: false,
-    },
+    { name: 'Riverfront Market', meta: '0.3 mi · Open now', score: '4.8', evidence: 'Fresh · verified 9 min ago · 4 confirmations', details: 'Accessible · family restroom · changing table · stocked', best: true },
+    { name: 'Central Library', meta: '0.6 mi · Free access', score: '4.7', evidence: 'Fresh · verified 24 min ago · 3 confirmations', details: 'Family restroom · accessible · low traffic', best: false },
+    { name: 'Coffee House', meta: '0.8 mi · Customer access', score: '4.5', evidence: 'Recent · verified 1 hr ago · 2 confirmations', details: 'Clean · stocked · accessible stall', best: false },
   ];
 
   return (
-    <View style={[s.device, webShadow]}>
-      <View style={s.deviceTop}>
-        <Text style={s.deviceBrand}>KLEENEST</Text>
-        <View style={s.livePill}><View style={s.liveDot} /><Text style={s.livePillText}>LIVE</Text></View>
-      </View>
-      <Text style={s.deviceKicker}>EXPLORE</Text>
-      <Text style={s.deviceTitle}>Find a bathroom you can trust.</Text>
-      <View style={s.searchField}>
-        <Text style={s.searchLabel}>SEARCH ANY ADDRESS</Text>
-        <Text style={s.searchValue}>Downtown, school, work, hotel...</Text>
-      </View>
-      <View style={s.deviceFilterRow}>
-        <Text style={s.filterPillActive}>CLEANEST</Text>
-        <Text style={s.filterPill}>NEAREST</Text>
-        <Text style={s.filterPill}>ACCESSIBLE</Text>
-      </View>
-      <View style={s.placeStack}>
-        {items.map((item) => (
-          <View key={item.name} style={[s.placeCard, item.best && s.placeCardBest]}>
-            <View style={s.scoreBadge}><Text style={s.scoreNumber}>{item.score}</Text><Text style={s.scoreStar}>★</Text></View>
-            <View style={s.placeCopy}>
-              <View style={s.placeTitleRow}>
-                <Text style={s.placeName}>{item.name}</Text>
-                {item.best && <Text style={s.bestBadge}>BEST MATCH</Text>}
-              </View>
-              <Text style={s.placeMeta}>{item.meta}</Text>
-              <Text style={s.placeEvidence}>● {item.evidence}</Text>
-              <Text style={s.placeDetails}>{item.details}</Text>
-            </View>
+    <View style={[s.deviceShell, webShadow]}>
+      <View style={s.deviceScreen}>
+        <View style={s.deviceStatusBar}>
+          <Text style={s.deviceStatusTime}>9:41</Text>
+          <View style={s.deviceStatusRight}>
+            <Text style={s.deviceStatusGlyph}>▂▄▆</Text>
+            <Text style={s.deviceStatusGlyph}>◔</Text>
+            <View style={s.deviceBattery}><View style={s.deviceBatteryLevel} /></View>
           </View>
-        ))}
-      </View>
-      <View style={s.deviceActions}>
-        <View style={s.navAction}><Text style={s.navActionText}>START NAVIGATION</Text></View>
-        <View style={s.routeAction}><Text style={s.routeActionText}>ADD TO ROUTE</Text></View>
+        </View>
+        <View style={s.deviceNotch} />
+        <View style={s.deviceAppBar}>
+          <View style={s.deviceAppIdentity}>
+            <View style={s.deviceAppMark}><Text style={s.deviceAppMarkText}>K</Text></View>
+            <View><Text style={s.deviceBrand}>KLEENEST</Text><Text style={s.deviceAppTag}>Know before you go.</Text></View>
+          </View>
+          <View style={s.livePill}><View style={s.liveDot} /><Text style={s.livePillText}>LIVE</Text></View>
+        </View>
+        <View style={s.deviceContent}>
+          <Text style={s.deviceKicker}>EXPLORE NEARBY</Text>
+          <Text style={s.deviceTitle}>Find a bathroom you can trust.</Text>
+          <View style={s.searchField}>
+            <Text style={s.searchLabel}>SEARCH ANY ADDRESS</Text>
+            <Text style={s.searchValue}>Downtown, school, work, hotel...</Text>
+          </View>
+          <View style={s.deviceFilterRow}>
+            <Text style={s.filterPillActive}>CLEANEST</Text>
+            <Text style={s.filterPill}>NEAREST</Text>
+            <Text style={s.filterPill}>ACCESSIBLE</Text>
+          </View>
+          <View style={s.placeStack}>
+            {items.map((item) => (
+              <View key={item.name} style={[s.placeCard, item.best && s.placeCardBest]}>
+                <View style={s.scoreBadge}><Text style={s.scoreNumber}>{item.score}</Text><Text style={s.scoreStar}>★</Text></View>
+                <View style={s.placeCopy}>
+                  <View style={s.placeTitleRow}>
+                    <Text style={s.placeName}>{item.name}</Text>
+                    {item.best && <Text style={s.bestBadge}>BEST MATCH</Text>}
+                  </View>
+                  <Text style={s.placeMeta}>{item.meta}</Text>
+                  <Text style={s.placeEvidence}>● {item.evidence}</Text>
+                  <Text style={s.placeDetails}>{item.details}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+          <View style={s.deviceActions}>
+            <View style={s.navAction}><Text style={s.navActionText}>START NAVIGATION</Text></View>
+            <View style={s.routeAction}><Text style={s.routeActionText}>ADD TO ROUTE</Text></View>
+          </View>
+        </View>
+        <View style={s.deviceHomeArea}><View style={s.deviceHomeIndicator} /></View>
       </View>
     </View>
   );
@@ -513,8 +509,8 @@ export function MarketingHome() {
         </View>
       </View>
 
-      <View style={[s.visualStory, wide && s.visualStoryWide]}>
-        <View style={s.visualStoryImage}>
+      <View style={[s.visualStory, wide && s.visualStoryWide, { width: Math.max(0, Math.min(width - 48, 1192)) }]}>
+        <View style={[s.visualStoryImage, wide && s.visualStoryImageWide]}>
           <MarketingImage file="home-progress.svg" label="Kleenest progress page with missions, journeys, challenges, check-ins and rewards" />
         </View>
         <View style={s.visualStoryCopy}>
@@ -916,14 +912,27 @@ const s = StyleSheet.create({
   heroImageFrame: { width: '100%', maxWidth: 650, aspectRatio: 1200/760, borderRadius: 30, overflow: 'hidden', backgroundColor: '#E8F1EB', borderWidth: 1, borderColor: '#D8E3DB', ...webShadow },
   marketingImage: { width: '100%', height: '100%' },
   heroGlow: { position: 'absolute', width: 340, height: 340, borderRadius: 170, backgroundColor: '#DDEEE3', opacity: 0.8 },
-  device: { width: '100%', maxWidth: 430, borderRadius: 34, padding: 22, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCE6DF', transform: [{ rotate: '-1deg' }] },
-  deviceTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  deviceBrand: { color: brand.forest, fontSize: 12, fontWeight: '900', letterSpacing: 2.1 },
+  deviceShell: { width: '100%', maxWidth: 390, borderRadius: 48, padding: 8, backgroundColor: '#18392B', borderWidth: 2, borderColor: '#254A37', transform: [{ rotate: '-1deg' }] },
+  deviceScreen: { borderRadius: 39, overflow: 'hidden', backgroundColor: brand.paper, position: 'relative' },
+  deviceStatusBar: { height: 30, paddingHorizontal: 18, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: brand.paper },
+  deviceStatusTime: { color: brand.ink, fontSize: 9, fontWeight: '900' },
+  deviceStatusRight: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  deviceStatusGlyph: { color: brand.ink, fontSize: 9, fontWeight: '900' },
+  deviceBattery: { width: 14, height: 8, borderWidth: 1, borderColor: brand.ink, borderRadius: 2, padding: 1 },
+  deviceBatteryLevel: { width: '72%', height: '100%', backgroundColor: brand.ink, borderRadius: 1 },
+  deviceNotch: { position: 'absolute', top: 4, alignSelf: 'center', width: 76, height: 15, borderRadius: 999, backgroundColor: '#18392B', zIndex: 2 },
+  deviceAppBar: { minHeight: 54, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: brand.line, backgroundColor: '#FFFFFF' },
+  deviceAppIdentity: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  deviceAppMark: { width: 29, height: 29, borderRadius: 10, backgroundColor: brand.forest, alignItems: 'center', justifyContent: 'center' },
+  deviceAppMarkText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  deviceBrand: { color: brand.forest, fontSize: 9, fontWeight: '900', letterSpacing: 1.4 },
+  deviceAppTag: { color: '#718076', fontSize: 7, fontWeight: '700', marginTop: 1 },
+  deviceContent: { padding: 16, backgroundColor: brand.paper },
   livePill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#EBF6EF', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 999 },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#2C8B54' },
   livePillText: { color: '#2C754B', fontSize: 8, fontWeight: '900', letterSpacing: 0.7 },
-  deviceKicker: { color: '#708178', fontSize: 8, fontWeight: '900', letterSpacing: 1.5, marginTop: 22 },
-  deviceTitle: { color: brand.ink, fontSize: 26, lineHeight: 31, fontWeight: '900', marginTop: 3 },
+  deviceKicker: { color: '#708178', fontSize: 8, fontWeight: '900', letterSpacing: 1.5, marginTop: 3 },
+  deviceTitle: { color: brand.ink, fontSize: 22, lineHeight: 26, fontWeight: '900', marginTop: 5 },
   searchField: { marginTop: 16, backgroundColor: '#F6F7F3', borderWidth: 1, borderColor: '#DEE5DF', borderRadius: 14, padding: 12 },
   searchLabel: { color: brand.forest, fontSize: 7, fontWeight: '900', letterSpacing: 1 },
   searchValue: { color: '#66746C', fontSize: 12, fontWeight: '700', marginTop: 4 },
@@ -943,7 +952,9 @@ const s = StyleSheet.create({
   placeMeta: { color: '#6C7A72', fontSize: 9, fontWeight: '700', marginTop: 2 },
   placeEvidence: { color: '#2F7A50', fontSize: 8, fontWeight: '900', marginTop: 4 },
   placeDetails: { color: '#79857D', fontSize: 8, fontWeight: '600', marginTop: 2 },
-  deviceActions: { flexDirection: 'row', gap: 8, marginTop: 14 },
+  deviceActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  deviceHomeArea: { height: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.paper },
+  deviceHomeIndicator: { width: 84, height: 4, borderRadius: 999, backgroundColor: '#27352D' },
   navAction: { flex: 1, backgroundColor: brand.forest, borderRadius: 11, paddingVertical: 11, alignItems: 'center' },
   navActionText: { color: '#FFFFFF', fontSize: 8, fontWeight: '900', letterSpacing: 0.5 },
   routeAction: { flex: 1, borderWidth: 1, borderColor: '#C8D5CC', borderRadius: 11, paddingVertical: 10, alignItems: 'center' },
@@ -984,7 +995,8 @@ const s = StyleSheet.create({
   iconCardBody: { color: brand.muted, fontSize: 12, lineHeight: 19, marginTop: 7 },
   visualStory: { marginHorizontal: 24, marginVertical: 28, maxWidth: 1192, alignSelf: 'center', width: '100%', borderRadius: 30, overflow: 'hidden', backgroundColor: brand.paper, borderWidth: 1, borderColor: '#DDE5DF' },
   visualStoryWide: { flexDirection: 'row', alignItems: 'stretch' },
-  visualStoryImage: { flex: 1.2, minHeight: 360, aspectRatio: 1200/760 },
+  visualStoryImage: { flex: 0, width: '100%', minHeight: 0, aspectRatio: 1200/760 },
+  visualStoryImageWide: { flex: 1.2, minHeight: 360 },
   visualStoryCopy: { flex: 0.8, padding: 32, justifyContent: 'center' },
   visualStoryTitle: { color: brand.ink, fontSize: 34, lineHeight: 40, fontWeight: '900', marginTop: 8 },
   visualStoryBody: { color: brand.muted, fontSize: 14, lineHeight: 22, marginTop: 10 },
