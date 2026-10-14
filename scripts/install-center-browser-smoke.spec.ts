@@ -19,10 +19,15 @@ test('Installation Center click-through and release assets',async({page,request,
   await expect(page.getByRole('button',{name:'CHECK INSTALLATION',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'SHARE INSTALL LINK',exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:'OPEN KLEENEST',exact:true})).toBeVisible();
-  await expect(page.getByText('KLEENESTOS OWNER APP · FULL PLATFORM CONTROL',{exact:true})).toBeVisible();
-  await expect(page.getByRole('link',{name:'Open KleenestOS Owner app',exact:true})).toBeVisible();
-  await expect(page.getByRole('link',{name:'Download KleenestOS Owner APK',exact:true})).toBeVisible();
-  await expect(page.locator('body')).toContainText(new URL('KleenestOS.apk',BASE).toString());
+  await expect(page.getByText('KLEENESTOS OWNER APP · FULL PLATFORM CONTROL',{exact:true})).toHaveCount(0);
+  await expect(page.getByText('KLEENEST BUSINESS · ANDROID + WEB',{exact:true})).toBeVisible();
+  await expect(page.getByText('KLEENEST FLEET · ANDROID + WEB',{exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Open Kleenest Business app',exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Download Kleenest Business APK',exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Open Kleenest Fleet app',exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Download Kleenest Fleet APK',exact:true})).toBeVisible();
+  await expect(page.locator('body')).toContainText(new URL('Kleenest-Business.apk',BASE).toString());
+  await expect(page.locator('body')).toContainText(new URL('Kleenest-Fleet.apk',BASE).toString());
   await expect(page.getByText('ANDROID APK · DIRECT DOWNLOAD',{exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:/Download Android APK/i})).toBeVisible();
   await expect(page.getByRole('button',{name:/Copy APK link/i})).toBeVisible();
@@ -66,7 +71,7 @@ test('Installation Center click-through and release assets',async({page,request,
   await expect(page).toHaveURL(new RegExp(`${routePath('')}\\?app=1$`));
   await expect(page.locator('body')).toContainText(/Find a place you can count on|Nearby options|Address, school, workplace, city or brand|Search this area/i,{timeout:30000});
 
-  for(const route of ['install/','for-you/','for-business/','trust/']){
+  for(const route of ['install/','for-you/','for-business/','trust/','business/','fleet/']){
     const direct=await request.get(BASE+route,{failOnStatusCode:false});
     expect(direct.status()).toBe(200);
   }
@@ -87,6 +92,23 @@ test('Installation Center click-through and release assets',async({page,request,
   expect(typeof state.nativeDrift).toBe('boolean');
   expect(['OTA_SAFE','NATIVE_REBUILD_REQUIRED']).toContain(state.status);
   if(EXPECTED_SHA)expect(state.currentSha).toBe(EXPECTED_SHA);
+
+  for(const app of ['Business','Fleet']){
+    const slug=app==='Business'?'business':'fleet';
+    const pageResponse=await request.get(BASE+`${slug}/`,{failOnStatusCode:false});
+    expect(pageResponse.status()).toBe(200);
+    const checksumResponse=await request.get(BASE+`Kleenest-${app}.apk.sha256`);
+    expect(checksumResponse.ok()).toBeTruthy();
+    const checksumText=(await checksumResponse.text()).trim();
+    expect(checksumText).toMatch(/^[a-f0-9]{64}\s+/i);
+    expect(checksumText).toContain(`Kleenest-${app}.apk`);
+    const apkHead=await request.head(BASE+`Kleenest-${app}.apk`);
+    expect(apkHead.ok()).toBeTruthy();
+    const apkHeaders=apkHead.headers();
+    expect(String(apkHeaders['content-type']||'')).toMatch(/android|octet-stream|application\/zip/i);
+    const apkLength=Number(apkHeaders['content-length']||0);
+    if(apkLength)expect(apkLength).toBeGreaterThan(1_000_000);
+  }
 
   const ownerPage=await request.get(BASE+'owner/',{failOnStatusCode:false});
   expect(ownerPage.status()).toBe(200);

@@ -122,6 +122,20 @@ jobs:
           path: owner-installer
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.owner-apk.outputs.run_id }}
+      - name: Download canonical Kleenest Business Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: Kleenest-Business-Standalone-APK
+          path: business-installer
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.owner-apk.outputs.run_id }}
+      - name: Download canonical Kleenest Fleet Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: Kleenest-Fleet-Standalone-APK
+          path: fleet-installer
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.owner-apk.outputs.run_id }}
       - name: Fetch Consumer APK baseline commit
         run: git fetch --no-tags --depth=1 origin "${{ steps.apk.outputs.source_sha }}"
       - name: Assess Consumer native and OTA drift
@@ -157,6 +171,14 @@ jobs:
           cp owner-installer/Kleenest-Owner.apk apps/consumer-mobile/dist/KleenestOS.apk
           unzip -t apps/consumer-mobile/dist/KleenestOS.apk >/dev/null
           sha256sum apps/consumer-mobile/dist/KleenestOS.apk > apps/consumer-mobile/dist/KleenestOS.apk.sha256
+          test -s business-installer/Kleenest-Business.apk
+          cp business-installer/Kleenest-Business.apk apps/consumer-mobile/dist/Kleenest-Business.apk
+          unzip -t apps/consumer-mobile/dist/Kleenest-Business.apk >/dev/null
+          sha256sum apps/consumer-mobile/dist/Kleenest-Business.apk > apps/consumer-mobile/dist/Kleenest-Business.apk.sha256
+          test -s fleet-installer/Kleenest-Fleet.apk
+          cp fleet-installer/Kleenest-Fleet.apk apps/consumer-mobile/dist/Kleenest-Fleet.apk
+          unzip -t apps/consumer-mobile/dist/Kleenest-Fleet.apk >/dev/null
+          sha256sum apps/consumer-mobile/dist/Kleenest-Fleet.apk > apps/consumer-mobile/dist/Kleenest-Fleet.apk.sha256
           cp "$RUNNER_TEMP/Kleenest-release-state.json" apps/consumer-mobile/dist/Kleenest-release-state.json
           mkdir -p apps/consumer-mobile/dist/legal
           cp public/legal/*.html apps/consumer-mobile/dist/legal/
@@ -239,6 +261,12 @@ jobs:
           grep -q "Kleenest-Consumer.apk" apps/consumer-mobile/dist/Kleenest-Consumer.apk.sha256
           test -s apps/consumer-mobile/dist/KleenestOS.apk
           test -s apps/consumer-mobile/dist/KleenestOS.apk.sha256
+          for app in Business Fleet; do
+            apk="apps/consumer-mobile/dist/Kleenest-${app}.apk"
+            test -s "$apk"
+            test "$(wc -c < "$apk" | tr -d '[:space:]')" -gt 1000000
+            test -s "${apk}.sha256"
+          done
           test -s apps/consumer-mobile/dist/owner/KleenestOS.apk
       - uses: actions/upload-pages-artifact@v3
         with:
