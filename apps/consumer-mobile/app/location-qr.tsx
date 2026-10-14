@@ -25,6 +25,7 @@ function actionError(error:any){
   if(detail.includes('OUTSIDE_GEOFENCE'))return'You need to be at this location to record or verify a physical QR placement.';
   if(detail.includes('INDEPENDENT_PLACEMENT_REQUIRED'))return'A different Kleenest member must record the placement before you can independently verify it.';
   if(detail.includes('LOCATION_REQUIRED'))return'Kleenest needs your current location to verify the physical QR placement.';
+  if(/authentication required|auth_required/i.test(detail))return 'Location QR is ready. Sign in to verify physical placement.';
   return detail&&detail.length<180?detail:'QR action could not be completed.';
 }
 
@@ -35,7 +36,8 @@ export default function LocationQrScreen(){
   const[identity,setIdentity]=useState<LocationQrIdentity|null>(null);
   const[message,setMessage]=useState('Preparing this location’s permanent Kleenest QR…');
   const[busy,setBusy]=useState(false);
-  const qrValue=useMemo(()=>identity?.deep_link||'',[identity?.deep_link]);
+  const defaultCode=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)?'KLOC-'+id.replace(/-/g,'').toUpperCase():'';
+  const qrValue=useMemo(()=>identity?.deep_link||(defaultCode?'https://kleenest.us/qr?code='+defaultCode:''),[identity?.deep_link,defaultCode]);
 
   async function load(){
     if(!id){setMessage('This location QR is missing its location.');return}
@@ -73,8 +75,8 @@ export default function LocationQrScreen(){
   }
 
   async function share(){
-    if(!identity)return;
-    await Share.share({title:String(identity.location_name||name||'Kleenest location')+' QR',message:String(identity.location_name||name||'Kleenest location')+' · Kleenest QR\n'+identity.deep_link});
+    if(!qrValue)return;
+    await Share.share({title:String(identity?.location_name||name||'Kleenest location')+' QR',message:String(identity?.location_name||name||'Kleenest location')+' · Kleenest QR\\n'+qrValue});
   }
   async function claim(){
     if(!identity)return;
@@ -104,11 +106,11 @@ export default function LocationQrScreen(){
 
     <View style={[s.qrCard,{backgroundColor:theme.surface,borderColor:theme.line}]}>
       <Text style={[s.kicker,{color:theme.muted}]}>PERMANENT LOCATION IDENTITY</Text>
-      {qrValue?<View style={s.qrFrame}><QRCode value={qrValue} size={228} color="#173f2d" backgroundColor="#ffffff" quietZone={8} ecl="M"/></View>:<View style={[s.loadingQr,{backgroundColor:theme.surfaceRaised}]}><Text style={[s.meta,{color:theme.muted}]}>{busy?'Creating QR…':'QR unavailable'}</Text></View>}
-      <Text style={[s.code,{color:theme.ink}]}>{identity?.code||'—'}</Text>
+      {qrValue?<View style={s.qrFrame}><QRCode value={qrValue} size={228} color="#173f2d" backgroundColor="#ffffff" quietZone={8} ecl="M"/></View>:<View style={[s.loadingQr,{backgroundColor:theme.surfaceRaised}]}><Text style={[s.meta,{color:theme.muted}]}>{busy?'Loading QR…':'QR unavailable'}</Text></View>}
+      <Text style={[s.code,{color:theme.ink}]}>{identity?.code||defaultCode||'—'}</Text>
       <Text style={[s.meta,{color:theme.muted}]}>{placementLabel(identity)}</Text>
       <Text style={[s.meta,{color:theme.muted}]}>Scan → location info → feedback, or verify an on-site visit → review. Claimed/integrated Business context is added to this same permanent identity.</Text>
-      <View style={s.actions}><Action label="Share QR" disabled={!identity||busy} onPress={share}/><Action quiet label="Open location" disabled={!identity} onPress={()=>router.replace({pathname:'/location/[id]',params:{id:String(identity?.location_id||id)}})}/></View>
+      <View style={s.actions}><Action label="Share QR" disabled={!qrValue||busy} onPress={share}/><Action quiet label="Open location" disabled={!identity} onPress={()=>router.replace({pathname:'/location/[id]',params:{id:String(identity?.location_id||id)}})}/></View>
     </View>
 
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>

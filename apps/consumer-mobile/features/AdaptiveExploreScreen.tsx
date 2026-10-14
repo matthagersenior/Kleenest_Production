@@ -1403,6 +1403,12 @@ export default function AdaptiveExploreScreen() {
     router.push({ pathname: '/knowledge', params: { locationId: id, name: String(row?.name || '') } });
   }
 
+  function openLocationQr(row:any) {
+    const id=idOf(row);
+    if(!id)return;
+    router.push({pathname:'/location-qr',params:{locationId:id,name:String(discoveryPlaceName(row)||row?.name||'')}});
+  }
+
   function openLocationDetails(row:any) {
     const id=idOf(row);
     if(!id)return;
@@ -2077,6 +2083,9 @@ export default function AdaptiveExploreScreen() {
                     <Pressable accessibilityRole="button" accessibilityLabel="Open full selected location details" style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => openLocationDetails(selected)}>
                       <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
                     </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel="View the Kleenest location QR" style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={() => openLocationQr(selected)}>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>▦ QR</Text>
+                    </Pressable>
                     <Pressable accessibilityRole="button" accessibilityLabel={showSelectedMore?'Hide more selected-location actions':'Show more selected-location actions'} accessibilityState={{expanded:showSelectedMore}} style={[s.secondarySmall,s.selectedAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>setShowSelectedMore(value=>!value)}>
                       <Text style={[s.secondaryText,{color:theme.accent}]}>{showSelectedMore?'Less':'More •••'}</Text>
                     </Pressable>
@@ -2188,6 +2197,9 @@ export default function AdaptiveExploreScreen() {
                     <Pressable accessibilityRole="button" accessibilityLabel="Open full selected location details" style={[s.secondarySmall,s.selectedSheetAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>openLocationDetails(selected)}>
                       <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
                     </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel="View the Kleenest location QR" style={[s.secondarySmall,s.selectedSheetAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>openLocationQr(selected)}>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>▦ QR</Text>
+                    </Pressable>
                   </View>
                   {resultsSheetExpanded?(
                     <ScrollView style={s.selectedSheetScroll} contentContainerStyle={s.selectedSheetScrollContent} showsVerticalScrollIndicator={false} nestedScrollEnabled>
@@ -2233,6 +2245,9 @@ export default function AdaptiveExploreScreen() {
                             <CompactRestroomSignals item={item} />
                             <RequestedAmenityMatches item={item} requested={selectedAmenityNames} compact />
                           </View>
+                          <Pressable accessibilityRole="button" accessibilityLabel={'View Kleenest QR for '+String(discoveryPlaceName(item))} onPress={(event)=>{event.stopPropagation();openLocationQr(item);}} style={{paddingHorizontal:6,paddingVertical:6,backgroundColor:theme.accentSoft,borderRadius:10}}>
+                            <Text style={{color:theme.accent,fontSize:11,fontWeight:'900'}}>▦ QR</Text>
+                          </Pressable>
                           <Text style={[s.sheetResultChevron,{color:theme.accent}]}>›</Text>
                         </Pressable>
                         {index===3?<AdMobNativeSlot contextClass="maps_network_after_results_4" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>:null}
