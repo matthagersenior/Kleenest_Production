@@ -19,6 +19,10 @@ test('Installation Center click-through and release assets',async({page,request,
   await expect(page.getByRole('button',{name:'CHECK INSTALLATION',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'SHARE INSTALL LINK',exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:'OPEN KLEENEST',exact:true})).toBeVisible();
+  await expect(page.getByText('KLEENESTOS OWNER APP · FULL PLATFORM CONTROL',{exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Open KleenestOS Owner app',exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Download KleenestOS Owner APK',exact:true})).toBeVisible();
+  await expect(page.locator('body')).toContainText(new URL('KleenestOS.apk',BASE).toString());
   await expect(page.getByText('ANDROID APK · DIRECT DOWNLOAD',{exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:/Download Android APK/i})).toBeVisible();
   await expect(page.getByRole('button',{name:/Copy APK link/i})).toBeVisible();
@@ -83,6 +87,21 @@ test('Installation Center click-through and release assets',async({page,request,
   expect(typeof state.nativeDrift).toBe('boolean');
   expect(['OTA_SAFE','NATIVE_REBUILD_REQUIRED']).toContain(state.status);
   if(EXPECTED_SHA)expect(state.currentSha).toBe(EXPECTED_SHA);
+
+  const ownerPage=await request.get(BASE+'owner/',{failOnStatusCode:false});
+  expect(ownerPage.status()).toBe(200);
+  const ownerChecksum=await request.get(BASE+'KleenestOS.apk.sha256');
+  expect(ownerChecksum.ok()).toBeTruthy();
+  const ownerChecksumText=(await ownerChecksum.text()).trim();
+  expect(ownerChecksumText).toMatch(/^[a-f0-9]{64}\s+/i);
+  expect(ownerChecksumText).toContain('KleenestOS.apk');
+
+  const ownerApkHead=await request.head(BASE+'KleenestOS.apk');
+  expect(ownerApkHead.ok()).toBeTruthy();
+  const ownerApkHeaders=ownerApkHead.headers();
+  expect(String(ownerApkHeaders['content-type']||'')).toMatch(/android|octet-stream|application\/zip/i);
+  const ownerApkLength=Number(ownerApkHeaders['content-length']||0);
+  if(ownerApkLength)expect(ownerApkLength).toBeGreaterThan(1_000_000);
 
   const checksum=await request.get(BASE+'Kleenest-Consumer.apk.sha256');
   expect(checksum.ok()).toBeTruthy();

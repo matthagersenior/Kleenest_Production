@@ -27,6 +27,8 @@ const ROOT_PATH=`${WEB_BASE_PATH}/`;
 const INSTALL_PATH=`${WEB_BASE_PATH}/install`;
 const APP_PATH=`${WEB_BASE_PATH}/?app=1`;
 const APK_PATH=`${WEB_BASE_PATH}/Kleenest-Consumer.apk`;
+const OWNER_APK_PATH=`${WEB_BASE_PATH}/KleenestOS.apk`;
+const OWNER_APP_PATH=`${WEB_BASE_PATH}/owner/`;
 const CHECKSUM_PATH=`${WEB_BASE_PATH}/Kleenest-Consumer.apk.sha256`;
 const RELEASE_STATE_PATH=`${WEB_BASE_PATH}/Kleenest-release-state.json`;
 
@@ -303,6 +305,21 @@ export default function InstallKleenest(){
     {message?<View style={[s.notice,{backgroundColor:theme.surfaceRaised,borderColor:theme.warning}]}><Text style={[s.noticeText,{color:theme.warning}]}>{message}</Text></View>:null}
 
     <InstallChoiceGuide deviceKind={deviceKind}/>
+
+    <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.accent}]}>
+      <Text style={[s.kicker,{color:theme.accent}]}>KLEENESTOS OWNER APP · FULL PLATFORM CONTROL</Text>
+      <Text style={[s.cardTitle,{color:theme.ink}]}>Looking for the owner app?</Text>
+      <Text style={[s.cardBody,{color:theme.muted}]}>KleenestOS is the private platform command center for owners. Open the Owner web app in your browser, or install the Android Owner APK on your Android device. This is separate from the consumer Kleenest app.</Text>
+      <View style={s.buttonRow}>
+        <Pressable accessibilityRole="link" accessibilityLabel="Open KleenestOS Owner app" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void Linking.openURL(browserUrl(OWNER_APP_PATH))}><Text style={[s.primaryText,{color:theme.accentText}]}>OPEN OWNER APP</Text></Pressable>
+        <Pressable accessibilityRole="link" accessibilityLabel="Download KleenestOS Owner APK" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void Linking.openURL(browserUrl(OWNER_APK_PATH))}><Text style={[s.secondaryText,{color:theme.accent}]}>DOWNLOAD OWNER APK</Text></Pressable>
+      </View>
+      <View style={[s.directLinkBox,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+        <Text style={[s.directLinkLabel,{color:theme.accent}]}>OWNER APK DIRECT LINK</Text>
+        <Text selectable style={[s.directLink,{color:theme.ink}]}>{browserUrl(OWNER_APK_PATH)}</Text>
+      </View>
+      <Text style={[s.help,{color:theme.muted}]}>On Android, open the downloaded KleenestOS.apk and follow Android’s install prompts. The Consumer APK below is a different app.</Text>
+    </View>
 
     <View style={[s.continueCard,{backgroundColor:theme.surface,borderColor:theme.accent}]}>
       <Text style={[s.kicker,{color:theme.accent}]}>NO INSTALL REQUIRED</Text>
