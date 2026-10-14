@@ -50,4 +50,12 @@ assert.match(studio,/verified business claim/i);
 assert.match(studio,/permanent&&/);
 assert.match(studio,/brand:\{/);
 assert.match(studio,/claimApproved/);
+
+const guard=read('supabase/migrations/20261014195000_lock_permanent_location_qr.sql');
+assert.match(guard,/PERMANENT_QR_CANNOT_BE_DELETED/);
+assert.match(guard,/PERMANENT_QR_IDENTITY_LOCKED/);
+assert.match(guard,/VERIFIED_LOCATION_CLAIM_REQUIRED_FOR_QR_CUSTOMIZATION/);
+assert.match(guard,/c.status='approved'/);
+assert.match(guard,/b.verification_status::text='verified'/);
+
 console.log('Universal location QR discovery audit passed: preassigned identifiers, public scan/QR check-in, consumer entry points and verified business customization UI.');
