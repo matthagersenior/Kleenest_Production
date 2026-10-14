@@ -1,6 +1,7 @@
 import {useEffect,useState} from 'react';
 import {Link,useSearchParams} from 'react-router-dom';
 import {getSupabase} from '../lib/supabase.js';
+import {directNavigationUrl} from '../services/routing.js';
 
 function safeWebUrl(input){
   try{const url=new URL(String(input||''));return ['http:','https:'].includes(url.protocol)?url.href:null}catch{return null}
@@ -24,7 +25,8 @@ export default function QrLandingPage(){
     navigator.geolocation.getCurrentPosition(async({coords})=>{
       try{const {error}=await getSupabase().rpc('verify_checkin',{p_qr_code:code,p_lat:coords.latitude,p_lng:coords.longitude,p_accuracy_m:coords.accuracy??null});if(error)throw error;
         setMessage('GPS/geofence check-in verified. You can now add a review on the location page.');
-      }catch(error){setMessage(error?.message||'Visit could not be verified. Sign in and check your location permissions.');}
+      }catch(error){const detail=String(error?.message||'');
+        setMessage(/OUTSIDE_GEOFENCE/i.test(detail)?'You are outside this location’s check-in area. Use Directions to get there, then verify your visit on site.':detail||'Visit could not be verified. Sign in and check your location permissions.');}
       finally{setBusy(false);}
     },()=>{setBusy(false);setMessage('Location access is needed for a verified visit. You can still view this location.');},{enableHighAccuracy:true,maximumAge:0,timeout:15000});
   };
@@ -34,6 +36,8 @@ export default function QrLandingPage(){
   const custom=qr.customization&&typeof qr.customization==='object'?qr.customization:{};
   const brand=custom.brand&&typeof custom.brand==='object'?custom.brand:{};
   const external=safeWebUrl(brand.cta_url||custom.cta_url||qr.business_website);
+  const directions=qr.location_id?directNavigationUrl({name:qr.location_name,address:qr.address,city:qr.city,state:qr.state}):'';
+
   return <section className="panel" style={{maxWidth:700,margin:'16px auto'}}>
     <div className="eyebrow">KLEENEST QR · {qr.canonical_location_identity?'CANONICAL LOCATION':'BUSINESS ACTION'}</div>
     {qr.business_logo_url?<img src={qr.business_logo_url} alt="" width="72" height="72" style={{objectFit:'contain',marginTop:8}}/>:null}
@@ -47,6 +51,7 @@ export default function QrLandingPage(){
     <div className="card-actions">
       <Link className="primary" to={destination}>Open location & feedback</Link>
       {qr.location_id?<button type="button" className="secondary" disabled={busy} onClick={verify}>{busy?'Checking…':'Verify on-site visit'}</button>:null}
+      {directions?<a className="secondary" href={directions} target="_blank" rel="noopener noreferrer">Get directions to this location</a>:null}
       {external?<a className="secondary" href={external} target="_blank" rel="noopener noreferrer">{String(brand.cta_label||custom.cta_label||'Business website').slice(0,90)}</a>:null}
     </div>
     {message?<p role="status" className="notice">{message}</p>:null}

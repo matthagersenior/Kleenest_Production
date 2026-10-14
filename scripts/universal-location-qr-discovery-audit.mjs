@@ -19,6 +19,9 @@ assert.match(landing,/verify_checkin/);
 assert.match(landing,/p_qr_code:code/);
 assert.match(landing,/brand\.offer_text/);
 assert.match(landing,/brand\.welcome_message/);
+assert.match(landing,/Get directions to this location/);
+assert.match(landing,/directNavigationUrl/);
+assert.match(landing,/OUTSIDE_GEOFENCE/);
 
 const explore=read('src/runtime/ExplorePage.jsx');
 assert.match(explore,/View QR/);
