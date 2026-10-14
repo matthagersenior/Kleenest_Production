@@ -110,18 +110,27 @@ export default function LocationQrScreen(){
       <Text style={[s.meta,{color:theme.muted}]}>Every location QR can open the same Kleenest location details, feedback, verified check-in and review workflow.</Text>
     </View>:null}
 
+    <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+      <Text style={[s.kicker,{color:theme.accent}]}>THIS LOCATION</Text>
+      <Text style={[s.cardTitle,{color:theme.ink}]}>{identity?.location_name||name||'Kleenest location'}</Text>
+      <Text style={[s.meta,{color:theme.muted}]}>You don't have to scan the QR on your own screen to visit this listing.</Text>
+      <View style={s.actions}>
+        <Action label="Open location details & reviews" disabled={!defaultCode} onPress={()=>router.push({pathname:'/location/[id]',params:{id}})}/>
+        <Action quiet label="Scan another QR" onPress={()=>router.push('/qr')}/>
+      </View>
+    </View>
     {message?<View style={[s.messageCard,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.message,{color:theme.ink}]}>{message}</Text></View>:null}
 
     <View style={[s.qrCard,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-      <Text style={[s.kicker,{color:theme.muted}]}>PERMANENT LOCATION IDENTITY</Text>
+      <Text style={[s.kicker,{color:theme.muted}]}>SHARE OR PRINT THIS LOCATION'S QR</Text>
       {qrValue?<View style={s.qrFrame}><QRCode value={qrValue} size={228} color="#173f2d" backgroundColor="#ffffff" quietZone={8} ecl="H"/>
         <View pointerEvents="none" style={s.qrCenterIcon}>
           <PlaceIcon item={mapIcon} size={30} evidenceFrame={false}/>
         </View></View>:<View style={[s.loadingQr,{backgroundColor:theme.surfaceRaised}]}><Text style={[s.meta,{color:theme.muted}]}>{busy?'Loading QR…':'QR unavailable'}</Text></View>}
       <Text style={[s.code,{color:theme.ink}]}>{identity?.code||defaultCode||'—'}</Text>
       <Text style={[s.meta,{color:theme.muted}]}>{placementLabel(identity)}</Text>
-      <Text style={[s.meta,{color:theme.muted}]}>Scan → location info → feedback, or verify an on-site visit → review. Claimed/integrated Business context is added to this same permanent identity.</Text>
-      <View style={s.actions}><Action label="Share QR" disabled={!qrValue||busy} onPress={share}/><Action quiet label="Open location" disabled={!identity} onPress={()=>router.replace({pathname:'/location/[id]',params:{id:String(identity?.location_id||id)}})}/></View>
+      <Text style={[s.meta,{color:theme.muted}]}>This QR is for other people to scan from a printed sticker or another device. Use Open location details above when the code is displayed on your phone.</Text>
+      <View style={s.actions}><Action label="Share QR" disabled={!qrValue||busy} onPress={share}/></View>
     </View>
 
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>

@@ -39,7 +39,7 @@ export default function QrLandingPage(){
   const directions=qr.location_id?directNavigationUrl({name:qr.location_name,address:qr.address,city:qr.city,state:qr.state}):'';
 
   return <section className="panel" style={{maxWidth:700,margin:'16px auto'}}>
-    <div className="eyebrow">KLEENEST QR · {qr.canonical_location_identity?'CANONICAL LOCATION':'BUSINESS ACTION'}</div>
+    <div className="eyebrow">KLEENEST LOCATION · {qr.canonical_location_identity?'QR SCANNED':'BUSINESS QR'}</div>
     {qr.business_logo_url?<img src={qr.business_logo_url} alt="" width="72" height="72" style={{objectFit:'contain',marginTop:8}}/>:null}
     <h1>{qr.location_name||qr.business_name||'Kleenest QR'}</h1>
     {address?<p>{address}</p>:null}
@@ -47,9 +47,9 @@ export default function QrLandingPage(){
     {brand.welcome_message?<p>{String(brand.welcome_message).slice(0,500)}</p>:null}
     {brand.offer_text?<p><strong>Business offer: </strong>{String(brand.offer_text).slice(0,400)}</p>:null}
     {qr.rating!=null?<p>{Number(qr.rating).toFixed(1)} ★ · {qr.review_count||0} reviews</p>:null}
-    <p className="meta">Scan identifies the location. It does not by itself verify a visit or a physical QR placement.</p>
+    <p className="meta">This is the location connected to the scanned QR. Opening its details does not require being physically there. Check-in is verified separately.</p>
     <div className="card-actions">
-      <Link className="primary" to={destination}>Open location & feedback</Link>
+      <Link className="primary" to={destination}>View full location details & reviews</Link>
       {qr.location_id?<button type="button" className="secondary" disabled={busy} onClick={verify}>{busy?'Checking…':'Verify on-site visit'}</button>:null}
       {directions?<a className="secondary" href={directions} target="_blank" rel="noopener noreferrer">Get directions to this location</a>:null}
       {external?<a className="secondary" href={external} target="_blank" rel="noopener noreferrer">{String(brand.cta_label||custom.cta_label||'Business website').slice(0,90)}</a>:null}

@@ -28,7 +28,7 @@ export default function LocationQrPage(){
   useEffect(()=>{
     let current=true;
     if(!url){setState('invalid');return;}
-    getSupabase().from('locations').select('id,name,brand,address,city,state,is_active').eq('id',id).eq('is_active',true).maybeSingle()
+    getSupabase().from('locations').select('id,name,brand,address,city,state,is_active,rating,review_count,cleanliness_pct,accessible').eq('id',id).eq('is_active',true).maybeSingle()
     .then(async({data,error})=>{
       if(!current)return;
       if(error)throw error;
@@ -46,7 +46,16 @@ export default function LocationQrPage(){
     <style>{`@media print {body *{visibility:hidden!important}.kleenest-printable-sticker,.kleenest-printable-sticker *{visibility:visible!important}.kleenest-printable-sticker{position:absolute;left:0;top:0;width:100%;border:0;box-shadow:none}.kleenest-qr-actions,.kleenest-print-note{display:none!important}}`}</style>
     <div className="eyebrow">KLEENEST LOCATION IDENTITY</div>
     <h1>{title}</h1><p>{address}</p>
-    <p><strong>QR ready · digital identity</strong></p>
+    <div className="detail-grid kleenest-print-note">
+      <div><span>Rating</span><strong>{place?.rating??'—'}</strong></div>
+      <div><span>Reviews</span><strong>{place?.review_count??0}</strong></div>
+      <div><span>Cleanliness</span><strong>{place?.cleanliness_pct!=null?`${place.cleanliness_pct}%`:'—'}</strong></div>
+      <div><span>Accessible</span><strong>{place?.accessible?'Yes':'Not confirmed'}</strong></div>
+    </div>
+    <div className="card-actions kleenest-qr-actions" style={{justifyContent:'center'}}>
+      <Link className="primary" to={'/location/'+encodeURIComponent(id)}>Open this location's details & reviews</Link>
+    </div>
+    <p><strong>Shareable QR · print or download below</strong></p>
     <div style={{background:'#fff',padding:14,display:'inline-block',borderRadius:16}}>
       <img src={image} width={340} height={340} style={{maxWidth:'100%',height:'auto'}} alt={'Scannable Kleenest location QR for '+title}/>
     </div>
@@ -55,7 +64,7 @@ export default function LocationQrPage(){
     <div className="card-actions kleenest-qr-actions" style={{justifyContent:'center'}}>
       <a className="primary" href={image} download={'kleenest-'+code+'.png'}>Save QR image</a><button className="secondary" type="button" onClick={()=>window.print()}>Print sticker</button>
       <button className="secondary" type="button" onClick={()=>{if(navigator.share)void navigator.share({title,url}).catch(()=>{});else if(navigator.clipboard)void navigator.clipboard.writeText(url).then(()=>setMessage('QR link copied.')).catch(()=>setMessage('Copy the QR link shown above.'));}}>Share / copy link</button>
-      <Link className="secondary" to={'/location/'+id}>Location details</Link>
+      <Link className="secondary" to={'/location/'+id}>Open details</Link>
     </div>
     {message?<p role="status">{message}</p>:null}
   </section>;
