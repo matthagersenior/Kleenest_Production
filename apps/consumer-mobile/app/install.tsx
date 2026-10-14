@@ -29,6 +29,10 @@ const APP_PATH=`${WEB_BASE_PATH}/?app=1`;
 const APK_PATH=`${WEB_BASE_PATH}/Kleenest-Consumer.apk`;
 const OWNER_APK_PATH=`${WEB_BASE_PATH}/KleenestOS.apk`;
 const OWNER_APP_PATH=`${WEB_BASE_PATH}/owner/`;
+const BUSINESS_APK_PATH=`${WEB_BASE_PATH}/Kleenest-Business.apk`;
+const BUSINESS_APP_PATH=`${WEB_BASE_PATH}/business/`;
+const FLEET_APK_PATH=`${WEB_BASE_PATH}/Kleenest-Fleet.apk`;
+const FLEET_APP_PATH=`${WEB_BASE_PATH}/fleet/`;
 const CHECKSUM_PATH=`${WEB_BASE_PATH}/Kleenest-Consumer.apk.sha256`;
 const RELEASE_STATE_PATH=`${WEB_BASE_PATH}/Kleenest-release-state.json`;
 
@@ -319,6 +323,36 @@ export default function InstallKleenest(){
         <Text selectable style={[s.directLink,{color:theme.ink}]}>{browserUrl(OWNER_APK_PATH)}</Text>
       </View>
       <Text style={[s.help,{color:theme.muted}]}>On Android, open the downloaded KleenestOS.apk and follow Android’s install prompts. The Consumer APK below is a different app.</Text>
+    </View>
+
+    <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+      <Text style={[s.kicker,{color:theme.accent}]}>KLEENEST BUSINESS · ANDROID + WEB</Text>
+      <Text style={[s.cardTitle,{color:theme.ink}]}>Business app</Text>
+      <Text style={[s.cardBody,{color:theme.muted}]}>For businesses and teams managing their Kleenest locations. Open the Business web app or download its separate Android APK.</Text>
+      <View style={s.buttonRow}>
+        <Pressable accessibilityRole="link" accessibilityLabel="Open Kleenest Business app" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void Linking.openURL(browserUrl(BUSINESS_APP_PATH))}><Text style={[s.primaryText,{color:theme.accentText}]}>OPEN BUSINESS APP</Text></Pressable>
+        <Pressable accessibilityRole="link" accessibilityLabel="Download Kleenest Business APK" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void Linking.openURL(browserUrl(BUSINESS_APK_PATH))}><Text style={[s.secondaryText,{color:theme.accent}]}>DOWNLOAD BUSINESS APK</Text></Pressable>
+        <Pressable accessibilityRole="link" accessibilityLabel="Business APK checksum" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void Linking.openURL(browserUrl(`${BUSINESS_APK_PATH}.sha256`))}><Text style={[s.secondaryText,{color:theme.accent}]}>BUSINESS SHA-256</Text></Pressable>
+      </View>
+      <View style={[s.directLinkBox,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+        <Text style={[s.directLinkLabel,{color:theme.accent}]}>BUSINESS APK DIRECT LINK</Text>
+        <Text selectable style={[s.directLink,{color:theme.ink}]}>{browserUrl(BUSINESS_APK_PATH)}</Text>
+      </View>
+    </View>
+
+    <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+      <Text style={[s.kicker,{color:theme.accent}]}>KLEENEST FLEET · ANDROID + WEB</Text>
+      <Text style={[s.cardTitle,{color:theme.ink}]}>Fleet app</Text>
+      <Text style={[s.cardBody,{color:theme.muted}]}>For fleet teams coordinating field operations in Kleenest. Open the Fleet web app or download its separate Android APK.</Text>
+      <View style={s.buttonRow}>
+        <Pressable accessibilityRole="link" accessibilityLabel="Open Kleenest Fleet app" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void Linking.openURL(browserUrl(FLEET_APP_PATH))}><Text style={[s.primaryText,{color:theme.accentText}]}>OPEN FLEET APP</Text></Pressable>
+        <Pressable accessibilityRole="link" accessibilityLabel="Download Kleenest Fleet APK" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void Linking.openURL(browserUrl(FLEET_APK_PATH))}><Text style={[s.secondaryText,{color:theme.accent}]}>DOWNLOAD FLEET APK</Text></Pressable>
+        <Pressable accessibilityRole="link" accessibilityLabel="Fleet APK checksum" style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void Linking.openURL(browserUrl(`${FLEET_APK_PATH}.sha256`))}><Text style={[s.secondaryText,{color:theme.accent}]}>FLEET SHA-256</Text></Pressable>
+      </View>
+      <View style={[s.directLinkBox,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+        <Text style={[s.directLinkLabel,{color:theme.accent}]}>FLEET APK DIRECT LINK</Text>
+        <Text selectable style={[s.directLink,{color:theme.ink}]}>{browserUrl(FLEET_APK_PATH)}</Text>
+      </View>
     </View>
 
     <View style={[s.continueCard,{backgroundColor:theme.surface,borderColor:theme.accent}]}>
