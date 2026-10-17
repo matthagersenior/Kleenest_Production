@@ -368,6 +368,8 @@ def fair_queue_jobs(candidates: list[dict[str, Any]], limit: int) -> list[dict[s
     used_ids: set[str] = set()
 
     def take(rows: list[dict[str, Any]], count: int) -> None:
+        if len(selected) >= count:
+            return
         seen_markets: set[str] = set()
         for job in rows:
             market = str(job.get("market_key") or job.get("request_key") or job.get("id") or "")
