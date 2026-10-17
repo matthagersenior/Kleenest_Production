@@ -574,7 +574,7 @@ def process_queue(
                         "status": "pending",
                         "started_at": None,
                         "attempt_count": prior_attempts,
-                        "release": release,
+                        "release": job_release,
                         "last_error": None,
                         "updated_at": utc_now(),
                         **cumulative,
@@ -600,7 +600,7 @@ def process_queue(
                     "status": "completed",
                     "started_at": None,
                     "attempt_count": prior_attempts,
-                    "release": release,
+                    "release": job_release,
                     "completed_at": utc_now(),
                     "last_error": None,
                     "updated_at": utc_now(),
@@ -648,7 +648,7 @@ def process_queue(
             summary.append({"id": request_id, "request_key": job.get("request_key"), "ok": False, "error": message})
     failed_jobs = sum(1 for job in summary if not job.get("ok", False))
     return {
-        "release": release,
+        "release": job_release,
         "jobs": summary,
         "job_count": len(summary),
         "failed_jobs": failed_jobs,
@@ -811,7 +811,7 @@ def main() -> int:
             service_key=args.service_key,
             min_confidence=args.min_confidence,
         )
-        result = {"release": release, "bbox": args.bbox, "storage": storage, **totals}
+        result = {"release": job_release, "bbox": args.bbox, "storage": storage, **totals}
     print(json.dumps(result, separators=(",", ":"), sort_keys=True))
     if args.process_queue and int(result.get("failed_jobs") or 0) > 0:
         return 2
