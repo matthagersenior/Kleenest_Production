@@ -101,6 +101,8 @@ export async function recordAcquisitionEvent(
   const attribution=isTagged(current)?current:(remembered||current);
   if(isTagged(current))await rememberAcquisitionAttribution(current);
   const sessionKey=await acquisitionSessionKey();
+  // Keep guest journey coverage even when the legacy acquisition write is unavailable.
+  captureGuestJourneyEvent(eventName,null,input.metadata||{});
   const {error}=await getKleenestSupabaseClient().rpc('record_acquisition_attribution_event',{
     p_session_key:sessionKey,
     p_event_name:eventName,
@@ -114,7 +116,17 @@ export async function recordAcquisitionEvent(
     p_metadata:input.metadata||{},
   });
   if(error)throw error;
-  captureGuestJourneyEvent(eventName,null,input.metadata||{});
+}
+
+function safeGuestJourneyContext(input:Record<string,unknown>){
+  const result:Record<string,unknown>={};
+  for(const key of ['surface','source','method','device_kind','browser_kind'] as const){
+    if(typeof input[key]==='string')result[key]=String(input[key]).slice(0,50);
+  }
+  if(Number.isInteger(input.resultCount)&&Number(input.resultCount)>=0)result.resultCount=Math.min(Number(input.resultCount),100000);
+  // Record only whether a search occurred; never transmit or persist the search phrase.
+  if(Object.prototype.hasOwnProperty.call(input,'search'))result.search=Boolean(input.search);
+  return result;
 }
 
 export function captureGuestJourneyEvent(
@@ -131,7 +143,7 @@ export function captureGuestJourneyEvent(
       p_visitor_key:visitorKey,
       p_event_name:eventName,
       p_location_id:locationId||null,
-      p_context:context,
+      p_context:safeGuestJourneyContext(context),
     });
   })().catch(()=>{/* Telemetry must not interrupt discovery. */});
 }

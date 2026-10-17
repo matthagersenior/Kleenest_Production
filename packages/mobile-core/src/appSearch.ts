@@ -162,6 +162,7 @@ const INDEX:Record<AppSearchScope,AppSearchEntry[]>={
   owner:[
     {id:'home',title:'KleenestOS Home',subtitle:'Owner command center',category:'Page',route:'/',keywords:['home','dashboard','command center']},
     {id:'control',title:'Control',subtitle:'Platform operating controls',category:'Operations',route:'/control',keywords:['control','owner','platform']},
+    {id:'guest-insights',title:'Guest Insights',subtitle:'Anonymous visitor sessions, guest journeys, engagement, drop-off and registration attribution',category:'Data',route:'/guest-insights',keywords:['guest','guests','visits','visitor','visitor analytics','sessions','growth','returning guests','conversion','funnel','acquisition','anonymous','engagement']},
     {id:'people',title:'People & Access',subtitle:'Users, roles, subscriptions and permissions',category:'Operations',route:'/access',keywords:['people','users','account','accounts','role','roles','access','permissions']},
     {id:'businesses',title:'Businesses',subtitle:'Businesses, locations, claims and access',category:'Operations',route:'/businesses',keywords:['business','businesses','claims','location','locations']},
     {id:'progression',title:'Progression',subtitle:'XP policy, missions, rewards and objectives',category:'Progression',route:'/progression',keywords:['progression','xp','mission','missions','quest','reward','rewards','theme','themes','objective','objectives']},

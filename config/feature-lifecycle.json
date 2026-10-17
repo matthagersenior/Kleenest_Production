@@ -1027,6 +1027,14 @@
       "kind": "user",
       "status": "discoverable",
       "gap": "The account tally existed in the command center but lacked a dedicated User Growth workspace and explicit returning-account measures."
+    },
+    {
+      "id": "platform.guest-insights",
+      "product": "platform",
+      "capability": "guest-insights",
+      "kind": "user",
+      "status": "wired",
+      "gap": "Guest journey ingestion, owner-only RPCs, searchable KleenestOS workspace, privacy-safe instrumentation and initial database smoke tests exist. This feature remains wired pending green main CI, consumer/Owner OTA publishing, live guest event and session inspection, and production-equivalent verification."
     }
   ]
 }

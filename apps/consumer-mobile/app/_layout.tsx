@@ -102,8 +102,8 @@ export default function RootLayout() {
     const client=getKleenestSupabaseClient();
     // Conversion is only counted when a recent guest journey precedes account creation.
     void client.auth.getSession().then(({data})=>{if(data.session)linkGuestJourneyRegistration()}).catch(()=>{});
-    const {data:listener}=client.auth.onAuthStateChange((_event,session)=>{
-      if(session)setTimeout(linkGuestJourneyRegistration,0);
+    const {data:listener}=client.auth.onAuthStateChange((event,session)=>{
+      if(session&&event==='SIGNED_IN')setTimeout(linkGuestJourneyRegistration,0);
     });
     return()=>listener.subscription.unsubscribe();
   },[]);
