@@ -106,7 +106,7 @@ for (const token of [
 
 const overtureWorkflow = requireFile('.github/workflows/overture-places-ingest.yml');
 requireText(overtureWorkflow, "cron: '*/10 * * * *'", 'Overture worker cadence must remain ten minutes.');
-requireText(overtureWorkflow, "default: '1'", 'Overture worker must process one queued request per automatic cycle.');
+requireText(overtureWorkflow, "default: '4'", 'Overture worker default must allow four policy-governed jobs per cycle.');
 requireText(overtureWorkflow, '${INPUT_MAX_JOBS:-4}', 'Overture scheduled runtime fallback must remain bounded to four queued requests.');
 
 const brandRepair = requireFile('supabase/migrations/20261002212000_target_brand_identity_repair.sql');
