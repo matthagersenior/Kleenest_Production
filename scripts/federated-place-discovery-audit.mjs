@@ -44,7 +44,7 @@ for(const token of [
   'national_ingestion_storage_status',
   'national_ingestion_source_policies',
   'effective_job_limit',
-  'MAX_RECORDS_PER_CYCLE = 50',
+  'MAX_RECORDS_PER_CYCLE = 250',
   'def page_state(',
   'records_seen',
   'partial_progress',
