@@ -351,7 +351,8 @@ def queue_rows(url: str, key: str, limit: int) -> list[dict[str, Any]]:
 
 
 def fair_queue_jobs(candidates: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
-    """Prioritize longest-waiting markets, with one job per market before repeats."""
+    """Rotate pending markets fairly and reserve at most one slot for retries."""
+    target = max(1, int(limit))
     ordered = sorted(
         candidates,
         key=lambda job: (
@@ -360,24 +361,33 @@ def fair_queue_jobs(candidates: list[dict[str, Any]], limit: int) -> list[dict[s
             str(job.get("request_key") or job.get("id") or ""),
         ),
     )
+    pending = [job for job in ordered if job.get("status", "pending") == "pending"]
+    retries = [job for job in ordered if job.get("status") == "failed"]
+    retry_slots = 1 if retries and pending and target > 1 else 0
     selected: list[dict[str, Any]] = []
-    selected_ids: set[str] = set()
-    seen_markets: set[str] = set()
-    target = max(1, int(limit))
-    for job in ordered:
-        market = str(job.get("market_key") or job.get("request_key") or job.get("id") or "")
-        if market in seen_markets:
-            continue
-        seen_markets.add(market)
-        selected.append(job)
-        selected_ids.add(str(job.get("id")))
-        if len(selected) == target:
-            return selected
-    for job in ordered:
-        if str(job.get("id")) not in selected_ids:
-            selected.append(job)
-        if len(selected) == target:
-            break
+    used_ids: set[str] = set()
+
+    def take(rows: list[dict[str, Any]], count: int) -> None:
+        seen_markets: set[str] = set()
+        for job in rows:
+            market = str(job.get("market_key") or job.get("request_key") or job.get("id") or "")
+            if market not in seen_markets and str(job.get("id")) not in used_ids:
+                seen_markets.add(market)
+                selected.append(job)
+                used_ids.add(str(job.get("id")))
+                if len(selected) == count:
+                    return
+        for job in rows:
+            if str(job.get("id")) not in used_ids:
+                selected.append(job)
+                used_ids.add(str(job.get("id")))
+                if len(selected) == count:
+                    return
+
+    take(pending, target - retry_slots)
+    if retry_slots:
+        take(retries, min(target, len(selected) + retry_slots))
+    take(ordered, target)
     return selected
 
 
@@ -719,6 +729,9 @@ def self_test() -> None:
     ]
     assert [job["id"] for job in fair_queue_jobs(jobs, 3)] == ["b", "c", "d"]
     assert [job["id"] for job in fair_queue_jobs(jobs, 4)] == ["b", "c", "d", "a"]
+    queued = [dict(job, status="pending") for job in jobs[1:]] + [
+        {"id": "retry", "market_key": "kc", "priority": -20000, "status": "failed", "updated_at": "2026-10-01T00:00:00Z"}]
+    assert [job["id"] for job in fair_queue_jobs(queued, 3)] == ["b", "c", "retry"]
 
     # Exercise the real page reader with mocked remote dependencies: >50 rows
     # must be processed, all writes <=50 rows, with durable per-batch checkpoints.
