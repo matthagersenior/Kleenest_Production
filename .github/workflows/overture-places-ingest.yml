@@ -14,7 +14,7 @@ on:
       max_jobs:
         description: 'Maximum queued search/market hydration jobs to process.'
         required: false
-        default: '1'
+        default: '4'
         type: string
   workflow_run:
     workflows: ["Production CI"]
