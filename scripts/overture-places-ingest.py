@@ -22,14 +22,14 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 STAC_URL = "https://stac.overturemaps.org/catalog.json"
 S3_ROOT = "s3://overturemaps-us-west-2/release"
 SOURCE_KEY = "overture"
 DEFAULT_MIN_CONFIDENCE = 0.30
 batch_size = 50
-MAX_RECORDS_PER_CYCLE = 50
+MAX_RECORDS_PER_CYCLE = 250
 QUIKTRIP_STORE_NAME = re.compile(r"^quik\s*trip(?:\s*(?:store|#)?\s*[0-9]+)?$", re.IGNORECASE)
 
 
@@ -336,17 +336,61 @@ def patch_queue(url: str, key: str, request_id: str, payload: dict[str, Any]) ->
 def queue_rows(url: str, key: str, limit: int) -> list[dict[str, Any]]:
     query = urllib.parse.urlencode(
         {
-            "select": "id,request_key,market_key,latitude,longitude,radius_meters,bbox,priority,status,attempt_count,records_seen,records_imported,records_updated,skipped_rows",
+            "select": "id,request_key,market_key,latitude,longitude,radius_meters,bbox,priority,status,attempt_count,records_seen,records_imported,records_updated,skipped_rows,release,updated_at,requested_at",
             "status": "in.(pending,failed)",
+            "owner_paused": "eq.false",
             "attempt_count": "lt.5",
-            "order": "priority.asc,requested_at.asc",
-            "limit": str(max(1, min(limit, 8))),
+            "order": "updated_at.asc,priority.asc,requested_at.asc",
+            "limit": str(max(64, min(max(1, limit) * 32, 256))),
         },
         safe="(),.",
     )
     endpoint = f"{url.rstrip('/')}/rest/v1/place_discovery_hydration_queue?{query}"
     data = http_json("GET", endpoint, key=key)
     return data if isinstance(data, list) else []
+
+
+def fair_queue_jobs(candidates: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+    """Rotate pending markets fairly and reserve at most one slot for retries."""
+    target = max(1, int(limit))
+    ordered = sorted(
+        candidates,
+        key=lambda job: (
+            str(job.get("updated_at") or job.get("requested_at") or ""),
+            int(job.get("priority") or 0),
+            str(job.get("request_key") or job.get("id") or ""),
+        ),
+    )
+    pending = [job for job in ordered if job.get("status", "pending") == "pending"]
+    retries = [job for job in ordered if job.get("status") == "failed"]
+    retry_slots = 1 if retries and pending and target > 1 else 0
+    selected: list[dict[str, Any]] = []
+    used_ids: set[str] = set()
+
+    def take(rows: list[dict[str, Any]], count: int) -> None:
+        if len(selected) >= count:
+            return
+        seen_markets: set[str] = set()
+        for job in rows:
+            market = str(job.get("market_key") or job.get("request_key") or job.get("id") or "")
+            if market not in seen_markets and str(job.get("id")) not in used_ids:
+                seen_markets.add(market)
+                selected.append(job)
+                used_ids.add(str(job.get("id")))
+                if len(selected) == count:
+                    return
+        for job in rows:
+            if str(job.get("id")) not in used_ids:
+                selected.append(job)
+                used_ids.add(str(job.get("id")))
+                if len(selected) == count:
+                    return
+
+    take(pending, target - retry_slots)
+    if retry_slots:
+        take(retries, min(target, len(selected) + retry_slots))
+    take(ordered, target)
+    return selected
 
 
 def stale_queue_rows(url: str, key: str, stale_minutes: int = 90) -> list[dict[str, Any]]:
@@ -428,33 +472,45 @@ def ingest_bbox_page(
     min_confidence: float,
     offset: int,
     max_records: int = MAX_RECORDS_PER_CYCLE,
+    checkpoint: Callable[[int, dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
+    # The SQL page is bounded for throughput, but canonical writes remain <= 50 rows.
     page_size = max(1, min(int(max_records), MAX_RECORDS_PER_CYCLE))
+    start_offset = max(0, int(offset))
     cursor = query_places(
         con,
         release,
         bbox,
         min_confidence,
-        offset=max(0, int(offset)),
+        offset=start_offset,
         limit=page_size,
     )
     captured_at = utc_now()
-    records = cursor.fetchmany(page_size)
-    rows = [row for record in records if (row := overture_row(record, release, captured_at)) is not None]
     totals: dict[str, Any] = {
-        "fetched_records": len(records),
+        "fetched_records": 0,
         "records_imported": 0,
         "records_updated": 0,
-        "skipped_rows": len(records) - len(rows),
+        "skipped_rows": 0,
     }
-    if rows:
-        result = supabase_rpc(supabase_url, service_key, rows)
-        totals["records_imported"] += int(result.get("imported_locations") or 0)
-        totals["records_updated"] += int(result.get("updated_locations") or 0)
-        totals["skipped_rows"] += int(result.get("skipped_rows") or 0)
-        if result.get("durably_accounted") is False:
-            raise RuntimeError("Canonical ingestion did not durably account for every Overture row.")
-    next_seen, has_more = page_state(offset, len(records), page_size)
+    while totals["fetched_records"] < page_size:
+        records = cursor.fetchmany(min(batch_size, page_size - totals["fetched_records"]))
+        if not records:
+            break
+        rows = [row for record in records if (row := overture_row(record, release, captured_at)) is not None]
+        skipped = len(records) - len(rows)
+        if rows:
+            result = supabase_rpc(supabase_url, service_key, rows)
+            if result.get("durably_accounted") is False:
+                raise RuntimeError("Canonical ingestion did not durably account for every Overture row.")
+            totals["records_imported"] += int(result.get("imported_locations") or 0)
+            totals["records_updated"] += int(result.get("updated_locations") or 0)
+            skipped += int(result.get("skipped_rows") or 0)
+        totals["fetched_records"] += len(records)
+        totals["skipped_rows"] += skipped
+        if checkpoint:
+            # Persist each successful batch so stale-job recovery never resets the cursor.
+            checkpoint(start_offset + totals["fetched_records"], totals)
+    next_seen, has_more = page_state(start_offset, totals["fetched_records"], page_size)
     totals["records_seen"] = next_seen
     totals["has_more"] = has_more
     return totals
@@ -470,10 +526,11 @@ def process_queue(
 ) -> dict[str, Any]:
     recovered_stale_jobs = recover_stale_queue(args.supabase_url, args.service_key)
     limit = effective_job_limit(args.max_jobs, policy)
-    jobs = queue_rows(args.supabase_url, args.service_key, limit)
+    jobs = fair_queue_jobs(queue_rows(args.supabase_url, args.service_key, limit), limit)
     summary: list[dict[str, Any]] = []
     for job in jobs:
         request_id = str(job["id"])
+        job_release = str(job.get("release") or release)
         prior_attempts = int(job.get("attempt_count") or 0)
         attempt = prior_attempts + 1
         prior_seen = int(job.get("records_seen") or 0)
@@ -484,18 +541,35 @@ def process_queue(
             args.supabase_url,
             args.service_key,
             request_id,
-            {"status": "running", "started_at": utc_now(), "attempt_count": attempt, "last_error": None, "updated_at": utc_now()},
+            {"status": "running", "started_at": utc_now(), "attempt_count": attempt, "release": job_release, "last_error": None, "updated_at": utc_now()},
         )
         try:
             bbox = [float(v) for v in job["bbox"]]
+
+            def save_checkpoint(next_seen: int, totals: dict[str, Any]) -> None:
+                patch_queue(
+                    args.supabase_url,
+                    args.service_key,
+                    request_id,
+                    {
+                        "records_seen": next_seen,
+                        "records_imported": prior_imported + int(totals["records_imported"]),
+                        "records_updated": prior_updated + int(totals["records_updated"]),
+                        "skipped_rows": prior_skipped + int(totals["skipped_rows"]),
+                        "release": job_release,
+                        "updated_at": utc_now(),
+                    },
+                )
+
             page = ingest_bbox_page(
                 con,
-                release=release,
+                release=job_release,
                 bbox=bbox,
                 supabase_url=args.supabase_url,
                 service_key=args.service_key,
                 min_confidence=args.min_confidence,
                 offset=prior_seen,
+                checkpoint=save_checkpoint,
             )
             cumulative = {
                 "records_seen": int(page["records_seen"]),
@@ -512,7 +586,7 @@ def process_queue(
                         "status": "pending",
                         "started_at": None,
                         "attempt_count": prior_attempts,
-                        "release": release,
+                        "release": job_release,
                         "last_error": None,
                         "updated_at": utc_now(),
                         **cumulative,
@@ -528,7 +602,7 @@ def process_queue(
                     "fetched_records": int(page["fetched_records"]),
                     **cumulative,
                 })
-                break
+                continue
 
             patch_queue(
                 args.supabase_url,
@@ -538,7 +612,7 @@ def process_queue(
                     "status": "completed",
                     "started_at": None,
                     "attempt_count": prior_attempts,
-                    "release": release,
+                    "release": job_release,
                     "completed_at": utc_now(),
                     "last_error": None,
                     "updated_at": utc_now(),
@@ -643,11 +717,57 @@ def self_test() -> None:
     assert http_timeout_seconds("GET") == 45
     assert http_timeout_seconds("POST") == 85
     assert batch_size == 50
-    assert MAX_RECORDS_PER_CYCLE == 50
+    assert MAX_RECORDS_PER_CYCLE == 250
     assert page_state(0, 50, 50) == (50, True)
     assert page_state(50, 12, 50) == (62, False)
+    assert page_state(50, 250, 250) == (300, True)
     assert effective_job_limit(8, {"max_requests_per_cycle": 1}) == 1
     assert effective_job_limit(2, {"max_requests_per_cycle": 1}) == 1
+    jobs = [
+        {"id": "a", "market_key": "dallas", "priority": -16000, "updated_at": "2026-10-17T12:00:00Z"},
+        {"id": "b", "market_key": "dallas", "priority": -16000, "updated_at": "2026-10-13T11:00:00Z"},
+        {"id": "c", "market_key": "jacksonville", "priority": -15990, "updated_at": "2026-10-13T12:00:00Z"},
+        {"id": "d", "market_key": "atlanta", "priority": -15980, "updated_at": "2026-10-13T12:30:00Z"},
+    ]
+    assert [job["id"] for job in fair_queue_jobs(jobs, 3)] == ["b", "c", "d"]
+    assert [job["id"] for job in fair_queue_jobs(jobs, 4)] == ["b", "c", "d", "a"]
+    queued = [dict(job, status="pending") for job in jobs[1:]] + [
+        {"id": "retry", "market_key": "kc", "priority": -20000, "status": "failed", "updated_at": "2026-10-01T00:00:00Z"}]
+    assert [job["id"] for job in fair_queue_jobs(queued, 3)] == ["b", "c", "retry"]
+
+    # Exercise the real page reader with mocked remote dependencies: >50 rows
+    # must be processed, all writes <=50 rows, with durable per-batch checkpoints.
+    original_query, original_rpc = globals()["query_places"], globals()["supabase_rpc"]
+    pages, writes, saved_offsets = [sample] * 120, [], []
+
+    class FakeCursor:
+        def __init__(self, records: list[tuple[Any, ...]]):
+            self.records = records
+        def fetchmany(self, size: int) -> list[tuple[Any, ...]]:
+            batch, self.records = self.records[:size], self.records[size:]
+            return batch
+
+    def fake_query(*_args: Any, **kwargs: Any) -> FakeCursor:
+        assert kwargs["limit"] == MAX_RECORDS_PER_CYCLE
+        return FakeCursor(pages)
+
+    def fake_rpc(_url: str, _key: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
+        assert len(rows) <= batch_size
+        writes.append(len(rows))
+        return {"imported_locations": len(rows), "durably_accounted": True}
+
+    globals()["query_places"], globals()["supabase_rpc"] = fake_query, fake_rpc
+    try:
+        result = ingest_bbox_page(None, release="test-release", bbox=[-91, 38, -90, 39],
+                                  supabase_url="test", service_key="test",
+                                  min_confidence=.3, offset=50,
+                                  checkpoint=lambda offset, _totals: saved_offsets.append(offset))
+    finally:
+        globals()["query_places"], globals()["supabase_rpc"] = original_query, original_rpc
+    assert writes == [50, 50, 20]
+    assert saved_offsets == [100, 150, 170]
+    assert result["records_seen"] == 170 and result["has_more"] is False
+    assert result["records_imported"] == 120
     print("Overture ingestion self-test passed.")
 
 
@@ -656,7 +776,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--process-queue", action="store_true")
     parser.add_argument("--bbox", type=parse_bbox)
     parser.add_argument("--release")
-    parser.add_argument("--max-jobs", type=int, default=1)
+    parser.add_argument("--max-jobs", type=int, default=4)
     parser.add_argument("--min-confidence", type=float, default=DEFAULT_MIN_CONFIDENCE)
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--supabase-url", default=os.getenv("SUPABASE_URL", ""))
@@ -706,7 +826,7 @@ def main() -> int:
             service_key=args.service_key,
             min_confidence=args.min_confidence,
         )
-        result = {"release": release, "bbox": args.bbox, "storage": storage, **totals}
+        result = {"release": job_release, "bbox": args.bbox, "storage": storage, **totals}
     print(json.dumps(result, separators=(",", ":"), sort_keys=True))
     if args.process_queue and int(result.get("failed_jobs") or 0) > 0:
         return 2

@@ -44,7 +44,7 @@ for(const token of [
   'national_ingestion_storage_status',
   'national_ingestion_source_policies',
   'effective_job_limit',
-  'MAX_RECORDS_PER_CYCLE = 50',
+  'MAX_RECORDS_PER_CYCLE = 250',
   'def page_state(',
   'records_seen',
   'partial_progress',
@@ -62,8 +62,8 @@ for(const token of [
   'KLEENEST_PROD_SERVICE_ROLE_KEY',
   'pip install duckdb',
   'scripts/overture-places-ingest.py',
-  "default: '1'",
-  '${INPUT_MAX_JOBS:-1}',
+  "default: '4'",
+  '${INPUT_MAX_JOBS:-4}',
 ])need(workflow,token,'Overture ingestion workflow');
 
 for(const token of [
