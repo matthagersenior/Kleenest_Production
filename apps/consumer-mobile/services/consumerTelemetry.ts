@@ -1,4 +1,5 @@
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { captureGuestJourneyEvent } from './acquisitionAttribution';
 
 export type ConsumerFeedbackEvent='tell_kleenest_open'|'pulse_response'|'feedback_detail_opened'|'feedback_submitted';
 
@@ -75,6 +76,7 @@ export function captureConsumerCoreLoopEvent(
   metadata:Record<string,unknown>={}
 ){
   const id=String(locationId||'').trim();
+  captureGuestJourneyEvent(eventName,id||null,metadata);
   void (async()=>{
     try{
       await getKleenestSupabaseClient().rpc('record_consumer_core_loop_event',{

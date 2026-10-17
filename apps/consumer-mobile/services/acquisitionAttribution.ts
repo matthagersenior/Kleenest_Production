@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { getKleenestGuestSessionId, getKleenestSupabaseClient } from '@kleenest/mobile-core';
 
 const SESSION_KEY='kleenest.acquisition.session';
 const ATTRIBUTION_KEY='kleenest.acquisition.lastTouch';
@@ -37,7 +37,7 @@ function randomKey(){
   return 'acq-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12);
 }
 
-async function acquisitionSessionKey(){
+export async function acquisitionSessionKey(){
   const existing=await AsyncStorage.getItem(SESSION_KEY);
   if(existing)return existing;
   const created=randomKey();
@@ -114,6 +114,35 @@ export async function recordAcquisitionEvent(
     p_metadata:input.metadata||{},
   });
   if(error)throw error;
+  captureGuestJourneyEvent(eventName,null,input.metadata||{});
+}
+
+export function captureGuestJourneyEvent(
+  eventName:string,
+  locationId?:string|null,
+  context:Record<string,unknown>={}
+){
+  void (async()=>{
+    const client=getKleenestSupabaseClient();
+    // The RPC itself excludes registered accounts. Never attach raw searches, GPS or IP.
+    const visitorKey=await acquisitionSessionKey();
+    await client.rpc('record_guest_journey_event',{
+      p_session_id:getKleenestGuestSessionId(),
+      p_visitor_key:visitorKey,
+      p_event_name:eventName,
+      p_location_id:locationId||null,
+      p_context:context,
+    });
+  })().catch(()=>{/* Telemetry must not interrupt discovery. */});
+}
+
+export function linkGuestJourneyRegistration(){
+  void (async()=>{
+    const visitorKey=await acquisitionSessionKey();
+    await getKleenestSupabaseClient().rpc('link_guest_journey_registration',{
+      p_visitor_key:visitorKey,
+    });
+  })().catch(()=>{/* Optional attribution, never an auth dependency. */});
 }
 
 export function captureAcquisitionEvent(
