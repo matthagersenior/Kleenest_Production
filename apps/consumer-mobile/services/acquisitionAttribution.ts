@@ -101,6 +101,8 @@ export async function recordAcquisitionEvent(
   const attribution=isTagged(current)?current:(remembered||current);
   if(isTagged(current))await rememberAcquisitionAttribution(current);
   const sessionKey=await acquisitionSessionKey();
+  // Keep guest journey coverage even when the legacy acquisition write is unavailable.
+  captureGuestJourneyEvent(eventName,null,input.metadata||{});
   const {error}=await getKleenestSupabaseClient().rpc('record_acquisition_attribution_event',{
     p_session_key:sessionKey,
     p_event_name:eventName,
@@ -114,7 +116,6 @@ export async function recordAcquisitionEvent(
     p_metadata:input.metadata||{},
   });
   if(error)throw error;
-  captureGuestJourneyEvent(eventName,null,input.metadata||{});
 }
 
 function safeGuestJourneyContext(input:Record<string,unknown>){
