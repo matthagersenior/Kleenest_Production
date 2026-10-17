@@ -16,6 +16,8 @@ import { useConsumerWebExperience } from '../services/webExperience';
 import BetaReportButton from '../components/BetaReportButton';
 import { flushQueuedBetaReports,recordBetaBreadcrumb } from '../services/betaReporting';
 import { captureConsumerCoreLoopEvent } from '../services/consumerTelemetry';
+import { linkGuestJourneyRegistration } from '../services/acquisitionAttribution';
+import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { getProgressionRewards } from '../services/discoveryProgression';
 import { runConsumerPermissionPreflight } from '../services/permissionPreflight';
 
@@ -96,6 +98,15 @@ export default function RootLayout() {
     return()=>{active=false;unsubscribe()};
   },[]);
   useEffect(()=>{captureConsumerCoreLoopEvent('app_open',null,{surface:Platform.OS==='web'?'web':'native'})},[]);
+  useEffect(()=>{
+    const client=getKleenestSupabaseClient();
+    // Conversion is only counted when a recent guest journey precedes account creation.
+    void client.auth.getSession().then(({data})=>{if(data.session)linkGuestJourneyRegistration()}).catch(()=>{});
+    const {data:listener}=client.auth.onAuthStateChange((_event,session)=>{
+      if(session)setTimeout(linkGuestJourneyRegistration,0);
+    });
+    return()=>listener.subscription.unsubscribe();
+  },[]);
   useEffect(()=>{
     if(Platform.OS==='web')return;
     let active=true;

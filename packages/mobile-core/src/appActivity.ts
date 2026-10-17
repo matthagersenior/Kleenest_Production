@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 import { getKleenestSupabaseClient } from './client';
 
+export const getKleenestGuestSessionId = () => guestSession;
 const guestSession = 'guest-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + '-' + Math.random().toString(36).slice(2);
 
 /** Foreground usage only. Auth changes refresh the identity; tokens refreshing are not activity. */

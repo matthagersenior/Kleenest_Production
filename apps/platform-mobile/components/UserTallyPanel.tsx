@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'expo-router';
 import { AppState, Pressable, Text, View } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { HealthCard, SectionHeader, useOSCardStyle } from './KleenestOS';
@@ -49,6 +50,7 @@ export default function UserTallyPanel() {
       <HealthCard label="New users · 7 days" value={count('signups_7d')} detail="New registered accounts this week" tone={data ? 'neutral' : 'warning'} />
       <HealthCard label="Returning users · 7 days" value={count('returning_7d')} detail="Existing users active this week" tone={data ? 'neutral' : 'warning'} />
     </View>
+    <Link href="/guest-insights" asChild><Pressable accessibilityRole="button" style={{...card,gap:4,borderColor:theme.accent}}><Text style={{fontSize:17,fontWeight:'900',color:theme.accent}}>Open Guest Insights →</Text><Text style={{color:theme.muted}}>View anonymous sessions, returning visitor IDs, location selection, navigation, conversion and friction.</Text></Pressable></Link>
     <Pressable accessibilityRole="button" disabled={busy} onPress={() => { void load(); }} style={card}>
       <Text style={{ color: theme.accent, fontWeight: '900' }}>{busy ? 'Refreshing user tally…' : 'Refresh user tally'}</Text>
       <Text style={{ color: theme.muted }}>{data ? `Updated ${new Date(data.updated_at).toLocaleString()} · refreshes every minute` : 'Counts unavailable until a successful refresh'}</Text>
