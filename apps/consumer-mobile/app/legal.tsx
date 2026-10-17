@@ -19,6 +19,7 @@ const community=[
 const privacy=[
   'Kleenest processes account, profile, device, app-use, location, check-in, review, social, notification, QR, progression, support, safety, and diagnostic data as needed for the features you use.',
   'Precise/background location is used only for location-enabled features such as nearby discovery, verified arrival/check-in, Live Network, geofencing, routing, and related notifications when permission is granted.',
+  'Guest usage analytics record pseudonymous session and visitor keys, selected places, and limited action metadata to improve discovery. They do not store raw search phrases or precise coordinates in the guest event log; older events are pruned after 30 days as new activity arrives.',
   'Public contributions such as reviews and profile information you choose to publish can be visible to other users. Safety reports and moderation evidence are restricted to authorized workflows.',
   'You can request account deletion in Account control. Deletion may retain limited records when required for security, fraud prevention, dispute resolution, legal obligations, or de-identification integrity.',
 ];
