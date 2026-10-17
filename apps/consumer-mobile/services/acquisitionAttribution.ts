@@ -117,6 +117,17 @@ export async function recordAcquisitionEvent(
   captureGuestJourneyEvent(eventName,null,input.metadata||{});
 }
 
+function safeGuestJourneyContext(input:Record<string,unknown>){
+  const result:Record<string,unknown>={};
+  for(const key of ['surface','source','method','device_kind','browser_kind'] as const){
+    if(typeof input[key]==='string')result[key]=String(input[key]).slice(0,50);
+  }
+  if(Number.isInteger(input.resultCount)&&Number(input.resultCount)>=0)result.resultCount=Math.min(Number(input.resultCount),100000);
+  // Record only whether a search occurred; never transmit or persist the search phrase.
+  if(Object.prototype.hasOwnProperty.call(input,'search'))result.search=Boolean(input.search);
+  return result;
+}
+
 export function captureGuestJourneyEvent(
   eventName:string,
   locationId?:string|null,
@@ -131,7 +142,7 @@ export function captureGuestJourneyEvent(
       p_visitor_key:visitorKey,
       p_event_name:eventName,
       p_location_id:locationId||null,
-      p_context:context,
+      p_context:safeGuestJourneyContext(context),
     });
   })().catch(()=>{/* Telemetry must not interrupt discovery. */});
 }
