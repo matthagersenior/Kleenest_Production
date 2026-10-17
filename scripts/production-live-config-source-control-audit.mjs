@@ -88,7 +88,7 @@ requireText(overtureWorker, 'http_retry_attempts("PATCH", retries=2) == 3', 'Que
 requireText(overtureWorker, 'ingest_external_locations_background', 'Overture writes must use background canonical admission.');
 requireText(overtureWorker, 'BackgroundIngestionBusy', 'Overture must explicitly defer when the canonical writer is busy.');
 requireText(overtureWorker, 'deferred_control_plane_unavailable', 'Automated Overture runs must defer cleanly when the database control plane is saturated.');
-requireText(overtureWorker, 'default=1', 'Automated Overture queue processing must default to one request per worker.');
+requireText(overtureWorker, 'default=4', 'Automated Overture queue processing must default to four policy-governed requests per worker.');
 
 const throughput = requireFile('supabase/migrations/20261002211143_ingestion_throughput_control.sql');
 for (const token of [
