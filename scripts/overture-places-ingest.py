@@ -648,7 +648,7 @@ def process_queue(
             summary.append({"id": request_id, "request_key": job.get("request_key"), "ok": False, "error": message})
     failed_jobs = sum(1 for job in summary if not job.get("ok", False))
     return {
-        "release": job_release,
+        "release": release,
         "jobs": summary,
         "job_count": len(summary),
         "failed_jobs": failed_jobs,
