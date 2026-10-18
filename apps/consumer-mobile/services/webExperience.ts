@@ -1,13 +1,28 @@
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { useEffect,useState } from 'react';
 import { Platform } from 'react-native';
+import { captureAcquisitionEvent } from './acquisitionAttribution';
 
 const APP_PRESENCE_KEY='kleenest.consumer.installed-presence.v2';
+const INSTALL_CONFIRMED_KEY='kleenest.consumer.install-confirmed.v1';
+let standaloneLaunchRecorded=false;
 const APP_SESSION_KEY='kleenest.consumer.web-app-session.v1';
 const LEGACY_APP_PRESENCE_KEY='kleenest.consumer.app-presence.v1';
 
 function browser(){
   return Platform.OS==='web'&&typeof window!=='undefined'?window:null;
+}
+
+function standaloneInstallMetadata(){
+  const ua=browser()?.navigator.userAgent||'';
+  const device_kind=/iPhone|iPad|iPod/.test(ua)?'ios':/Android/.test(ua)?'android':'desktop';
+  const browser_kind=ua.includes('SamsungBrowser')?'samsung':
+    ua.includes('OPR/')||ua.includes('Opera')?'opera':
+    ua.includes('Edg')?'edge':
+    ua.includes('Firefox')||ua.includes('FxiOS')?'firefox':
+    ua.includes('Chrome')||ua.includes('CriOS')?'chrome':
+    ua.includes('Safari')?'safari':'other';
+  return {method:'standalone_launch',device_kind,browser_kind};
 }
 
 export function isConsumerStandaloneWebApp(){
@@ -44,6 +59,18 @@ export function markConsumerAppPresence(){
   const w=browser();
   if(!w)return;
   try{w.localStorage.setItem(APP_PRESENCE_KEY,'1')}catch{}
+}
+
+export function markConsumerInstallConfirmed(){
+  const w=browser();
+  if(!w)return;
+  try{w.localStorage.setItem(INSTALL_CONFIRMED_KEY,'1')}catch{}
+}
+
+function isInstallConfirmedOnThisBrowser(){
+  const w=browser();
+  if(!w)return false;
+  try{return w.localStorage.getItem(INSTALL_CONFIRMED_KEY)==='1'}catch{return false}
 }
 
 export function clearConsumerAppPresence(){
@@ -96,7 +123,19 @@ export function useConsumerWebExperience(){
 
     if(!native){
       clearLegacyConsumerAppPresence();
-      if(standalone)markConsumerAppPresence();
+      if(standalone){
+        markConsumerAppPresence();
+        // Safari often has no appinstalled event. First standalone launch is
+        // reliable evidence of installed use, not just an accepted prompt.
+        if(!isInstallConfirmedOnThisBrowser()){
+          markConsumerInstallConfirmed();
+          captureAcquisitionEvent('install_success',{metadata:standaloneInstallMetadata()});
+        }
+        if(!standaloneLaunchRecorded){
+          standaloneLaunchRecorded=true;
+          captureAcquisitionEvent('installed_app_launch',{metadata:standaloneInstallMetadata()});
+        }
+      }
     }
 
     async function refresh(sessionOverride?:unknown){
