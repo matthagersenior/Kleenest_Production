@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
 import { ActivityIndicator, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { usePlatformTheme } from '../services/theme';
 import {
@@ -72,6 +73,7 @@ function DiffRow({item}:{item:ReviewDifference}){
 
 export default function LocationDuplicates(){
   const theme=usePlatformTheme();
+  const router=useRouter();
   const [status,setStatus]=useState<DuplicateStatus>('pending');
   const [page,setPage]=useState(0);
   const [cursor,setCursor]=useState<DuplicateReviewCursor|null>(null);
@@ -212,6 +214,13 @@ export default function LocationDuplicates(){
         <Text style={[s.count,{color:theme.muted}]}>Batch {page+1} · {index+1} of {rows.length} · {laneTotal.toLocaleString()} remaining in lane</Text>
       </View>
       <Text style={[s.detail,{color:theme.muted}]}>{metres(item.distance_m)} · Rule match {Math.round(Number(item.confidence)*100)}% (not a verified probability)</Text>
+      {(item.status==='confirmed'||item.status==='resolved')?<Pressable accessibilityRole="button"
+        onPress={()=>router.push({pathname:'/location-consolidate',params:{caseId:String(item.id)}})}
+        style={[s.recommendedAction,{backgroundColor:theme.accent}]}>
+        <Text style={{color:theme.accentText,fontWeight:'900'}}>
+          {item.status==='resolved'?'View consolidation / restore':'Preview verified consolidation →'}
+        </Text>
+      </Pressable>:null}
       <View style={[s.recommendation,{borderColor:insight.urgency==='urgent'?theme.danger:theme.line,backgroundColor:theme.surfaceRaised}]}>
         <Text style={[s.kicker,{color:insight.urgency==='urgent'?theme.danger:theme.muted}]}>{insight.urgency.toUpperCase()} PRIORITY · SUGGESTED NEXT STEP</Text>
         <Text style={[s.headingSmall,{color:theme.ink}]}>{insight.headline}</Text>
