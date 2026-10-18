@@ -42,7 +42,7 @@ for(const retired of [
 ]){
   must(!screen.includes(retired),`Retired Gmail Email Center UI must not return: ${retired}`);
 }
-const emailTab=layout.split('\\n').find(line=>line.includes('<Tabs.Screen name="communications" '));
+const emailTab=layout.split(String.fromCharCode(10)).find(line=>line.includes('<Tabs.Screen name="communications" '));
 must(Boolean(emailTab&&emailTab.includes("title:'Email'")),'Email Center navigation must include a labeled Email tab.');
 must(Boolean(emailTab&&!emailTab.includes('href:null')),'Owner Email Center must remain visible in bottom navigation.');
 
