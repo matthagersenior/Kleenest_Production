@@ -16,6 +16,14 @@ assertContains('supabase/migrations/20261017151431_guest_journey_insights_202610
   'private.guest_journey_conversions',"interval '30 days'",
   'public.is_platform_owner_session()',
 ]);
+assertContains('supabase/migrations/20261018023035_owner_guest_journey_private_rpc_execute_grants_20261017.sql',[
+  'GRANT EXECUTE ON FUNCTION private.owner_guest_journey_snapshot(integer) TO authenticated;',
+  'GRANT EXECUTE ON FUNCTION private.owner_guest_journey_session(text) TO authenticated;',
+]);
+const ownerRpcGrant=read('supabase/migrations/20261018023035_owner_guest_journey_private_rpc_execute_grants_20261017.sql');
+if (/grant\\s+execute\\s+on\\s+function\\s+private\\.owner_guest_journey_(?:snapshot|session)\\([^)]*\\)\\s+to\\s+(?:anon|public)/i.test(ownerRpcGrant)) {
+  throw new Error('Guest Insights private analytics RPC must never be granted to anonymous/public roles.');
+}
 assertContains('apps/consumer-mobile/services/acquisitionAttribution.ts',[
   'safeGuestJourneyContext(context)','getKleenestGuestSessionId()',
   "p_visitor_key:visitorKey",'linkGuestJourneyRegistration',
