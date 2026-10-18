@@ -18,7 +18,7 @@ Deno.serve(async req=>{
  if(task.attempt_count>=snapshot.policy.max_attempts_per_task)return Response.json({status:"attempt_limit"});
  // Restrict early-stage autonomous inference to public-class evidence.
  if(task.data_class!=="public")return Response.json({status:"data_class_requires_review"});
- const maxInput=1200,maxOutput=250;
+ const maxInput=2200,maxOutput=500;
  const evidence=JSON.stringify(task.evidence??{});
  if(evidence.length>4200)return Response.json({status:"evidence_too_large"});
  const models=(snapshot.models as M[]??[]).filter(m=>m.enabled&&m.model!=="unconfigured"&&m.supports_json&&m.allowed_data_class in level&&level[m.allowed_data_class]>=level[task.data_class]&&env[m.provider]&&Deno.env.get(env[m.provider])&&m.input_usd_per_million!==null&&m.output_usd_per_million!==null&&m.input_usd_per_million>=0&&m.output_usd_per_million>=0);
@@ -42,8 +42,8 @@ Deno.serve(async req=>{
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
  let response:Response;
  try{
- if(selected.provider==="gemini")response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(selected.model)+":generateContent",{method:"POST",headers:{"content-type":"application/json","x-goog-api-key":secret},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxOutput,responseMimeType:"application/json",temperature:0.1}}),signal:controller.signal});
- else response=await fetch(urls[selected.provider],{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+secret},body:JSON.stringify({model:selected.model,messages:[{role:"user",content:prompt}],max_tokens:maxOutput,temperature:0.1,response_format:{type:"json_object"}}),signal:controller.signal});
+ if(selected.provider==="gemini")response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(selected.model)+":generateContent",{method:"POST",headers:{"content-type":"application/json","x-goog-api-key":secret},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxOutput,responseMimeType:"application/json",temperature:0.35}}),signal:controller.signal});
+ else response=await fetch(urls[selected.provider],{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+secret},body:JSON.stringify({model:selected.model,messages:[{role:"user",content:prompt}],max_tokens:maxOutput,temperature:0.35,response_format:{type:"json_object"}}),signal:controller.signal});
  }finally{clearTimeout(timeout)}
  if(!response.ok)throw Error("provider_http_"+response.status);
  const output=await response.json();
