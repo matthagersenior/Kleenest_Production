@@ -110,7 +110,7 @@ export default function LocationDuplicates() {
         ] as [DuplicateStatus,string][]).filter(([target])=>target!==item.status).map(([target,label])=>
           <Pressable key={target} accessibilityRole="button" disabled={saving!==null||busy}
             onPress={()=>void classify(item,target)}
-            style={[s.action,{borderColor:theme.line,backgroundColor:theme.surfaceRaised,opacity:saving!==null?.5:1}]}>
+            style={[s.action,{borderColor:theme.line,backgroundColor:theme.surfaceRaised,opacity:saving !== null ? 0.5 : 1}]}>
             <Text style={{color:theme.ink,fontWeight:'800',fontSize:12}}>{label}</Text>
           </Pressable>)}
       </View>
