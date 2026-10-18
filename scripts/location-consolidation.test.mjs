@@ -63,3 +63,12 @@ test('public owner RPCs cannot be executed anonymously',()=>{
  assert.match(undo,/REVOKE ALL ON FUNCTION public\.undo_location_consolidation/);
  assert.match(geo,/GRANT EXECUTE ON FUNCTION public\.apply_geo_catalog_retirements\(jsonb\) TO service_role/);
 });
+
+test('preview exposes specific associated identity samples for evidence review',()=>{
+ const samples=migration('supabase/migrations','location_consolidation_linked_identity_samples_v5');
+ assert.match(samples,/linked_samples/);
+ for(const key of ['qr_codes','reviews','check_ins','location_claims','location_photos','external_location_records']){
+  assert.ok(samples.includes(key), 'impact evidence must include '+key);
+ }
+ assert.match(ownerUI,/Affected record identities/);
+});
