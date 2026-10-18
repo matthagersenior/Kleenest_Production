@@ -43,6 +43,9 @@ test('Installation Center click-through and release assets',async({page,request,
   await expect(page.getByRole('link',{name:/View SHA-256 checksum/i})).toBeVisible();
   await expect(page.locator('body')).toContainText('WHICH INSTALL SHOULD I CHOOSE?');
   await expect(page.locator('body')).toContainText(/Recommended for most Android users|iPhone or iPad: use the Web App|Windows or Mac: use the Web App/);
+  await expect(page.getByText('3 steps to install Kleenest')).toBeVisible();
+  await expect(page.getByRole('button',{name:'SHOW DETAILED INSTALL HELP'})).toBeVisible();
+  await page.getByRole('button',{name:'SHOW DETAILED INSTALL HELP'}).click();
   await expect(page.locator('body')).toContainText('If you have never installed a web app before');
   await expect(page.locator('body')).toContainText('Find Kleenest after installation');
   await expect(page.locator('body')).toContainText('Allow from this source');
@@ -65,6 +68,15 @@ test('Installation Center click-through and release assets',async({page,request,
   expect(homeMetrics.scrollWidth).toBeLessThanOrEqual(homeMetrics.innerWidth+1);
   await mobilePage.goto(BASE+'install/',{waitUntil:'domcontentloaded'});
   await expect(mobilePage.getByText('KLEENEST · UNIVERSAL INSTALLATION CENTER')).toBeVisible({timeout:30000});
+  await expect(mobilePage.getByText('3 steps to put Kleenest on your Home Screen')).toBeVisible();
+  await expect(mobilePage.getByRole('button',{name:'INSTALL WEB APP',exact:true})).toBeVisible();
+  const installOrder=await mobilePage.evaluate(()=>{
+    const text=document.body.innerText;
+    return {install:text.indexOf('ANDROID · WEB APP'),business:text.indexOf('KLEENEST BUSINESS · ANDROID + WEB'),fleet:text.indexOf('KLEENEST FLEET · ANDROID + WEB')};
+  });
+  expect(installOrder.install).toBeGreaterThan(0);
+  expect(installOrder.business).toBeGreaterThan(installOrder.install);
+  expect(installOrder.fleet).toBeGreaterThan(installOrder.install);
   const mobileMetrics=await mobilePage.evaluate(()=>({innerWidth:window.innerWidth,scrollWidth:document.documentElement.scrollWidth}));
   expect(mobileMetrics.scrollWidth).toBeLessThanOrEqual(mobileMetrics.innerWidth+1);
   await expect(mobilePage.getByRole('button',{name:/Continue to Kleenest as a guest/i})).toBeVisible();
