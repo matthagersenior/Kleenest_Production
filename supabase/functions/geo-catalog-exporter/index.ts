@@ -23,5 +23,22 @@ Deno.serve(async(req)=>{try{
   const ack=await db.rpc('geo_catalog_export_ack',{p_mode:mode,p_watermark_id:x.watermark_id,p_watermark_updated_at:x.watermark_updated_at,p_rows:rows.length});if(ack.error)throw ack.error;
   total+=rows.length;last={mode,rows:rows.length,worker:JSON.parse(t)};
  }
- return new Response(JSON.stringify({ok:true,storage:'hot_worker_mirror',exported:total,mode,last}),{headers:H});
+ // Send source retirements after normal catalog rows, so surviving map IDs are mirrored first.
+ const outbox=await db.rpc('location_consolidation_geo_outbox_batch',{p_limit:100});
+ if(outbox.error)throw outbox.error;
+ const retirements=Array.isArray(outbox.data)?outbox.data:[];
+ let synced=0;
+ if(retirements.length){
+  const response=await fetch(DEST,{
+   method:'POST',headers:{'content-type':'application/json','x-kleenest-geo-archive':sec.data},
+   body:JSON.stringify({retirements}),signal:AbortSignal.timeout(60000),
+  });
+  const responseText=await response.text();
+  if(!response.ok)throw new Error(`geo retirements ${response.status}: ${responseText.slice(0,500)}`);
+  const ack=await db.rpc('location_consolidation_geo_outbox_ack',{p_ids:retirements.map((x:any)=>Number(x.id))});
+  if(ack.error)throw ack.error;
+  synced=Number(ack.data||0);
+ }
+ return new Response(JSON.stringify({ok:true,storage:'hot_worker_mirror',exported:total,
+   consolidated_aliases_synced:synced,mode,last}),{headers:H});
 }catch(e){return new Response(JSON.stringify({ok:false,error:msg(e)}),{status:500,headers:H});}});
