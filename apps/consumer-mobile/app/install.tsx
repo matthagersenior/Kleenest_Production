@@ -479,15 +479,8 @@ export default function InstallKleenest(){
         <Text style={[s.benefit,{color:theme.muted}]}>• Launch from your Home Screen, app launcher or desktop.</Text>
         <Text style={[s.benefit,{color:theme.muted}]}>• Keep the full Explore, route, saved-place and community experience.</Text>
         <Text style={[s.benefit,{color:theme.muted}]}>• Web-compatible updates can arrive without waiting for a new native download.</Text>
-        <Text style={[s.benefit,{color:theme.muted}]}>• Native drift is checked automatically before OTA is allowed to publish.</Text>
       </View>
     </View>
-
-    {isAndroid?<View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
-      <Text style={[s.kicker,{color:theme.accent}]}>GOOGLE PLAY PACKAGING</Text>
-      <Text style={[s.cardTitle,{color:theme.ink}]}>The AAB is for Google Play, not direct installation.</Text>
-      <Text style={[s.cardBody,{color:theme.muted}]}>Consumers should install the PWA, verified APK, or eventual Google Play listing rather than downloading the AAB itself.</Text>
-    </View>:null}
 
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
       <Text style={[s.kicker,{color:theme.accent}]}>ONE KLEENEST · EVERY DEVICE</Text>
