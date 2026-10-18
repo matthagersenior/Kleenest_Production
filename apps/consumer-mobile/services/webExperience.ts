@@ -16,9 +16,12 @@ function browser(){
 function standaloneInstallMetadata(){
   const ua=browser()?.navigator.userAgent||'';
   const device_kind=/iPhone|iPad|iPod/.test(ua)?'ios':/Android/.test(ua)?'android':'desktop';
-  const browser_kind=/SamsungBrowser/.test(ua)?'samsung':/OPR\\/|Opera/.test(ua)?'opera':
-    /EdgA?\\//.test(ua)?'edge':/FxiOS|Firefox/.test(ua)?'firefox':
-    /CriOS|Chrome/.test(ua)?'chrome':/Safari/.test(ua)?'safari':'other';
+  const browser_kind=ua.includes('SamsungBrowser')?'samsung':
+    ua.includes('OPR/')||ua.includes('Opera')?'opera':
+    ua.includes('Edg')?'edge':
+    ua.includes('Firefox')||ua.includes('FxiOS')?'firefox':
+    ua.includes('Chrome')||ua.includes('CriOS')?'chrome':
+    ua.includes('Safari')?'safari':'other';
   return {method:'standalone_launch',device_kind,browser_kind};
 }
 
