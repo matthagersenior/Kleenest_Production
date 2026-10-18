@@ -1,0 +1,1 @@
+CREATE POLICY locations_owner_duplicate_review_select ON public.locations FOR SELECT TO authenticated USING ((select public.is_platform_owner_session()));
