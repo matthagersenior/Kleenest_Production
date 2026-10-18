@@ -17,6 +17,8 @@ const apps={
 // intentionally lands on /members instead of duplicating the search result.
 const routeAliases={
   business:{team:'members'},
+  // Consolidation requires a selected duplicate case. Search enters its review queue first.
+  owner:{'location-consolidate':'location-duplicates'},
 };
 
 const failures=[];
