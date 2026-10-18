@@ -129,17 +129,18 @@ Deno.serve(async (request) => {
   try {
     const body = await request.json();
     const versions = Array.isArray(body?.versions) ? body.versions : [];
-    if (versions.length < 1 || versions.length > 100 || versions.some((v: unknown) => typeof v !== "string" || !/^\d{14}$/.test(v))) {
-      return json({ error: "versions must contain 1-100 migration timestamps" }, 400);
+    if (versions.length < 1 || versions.length > 2048 || versions.some((v: unknown) => typeof v !== "string" || !/^\d{14}$/.test(v))) {
+      return json({ error: "versions must contain 1-2048 migration timestamps" }, 400);
     }
     if (body.expected_sha !== claims.sha) return json({ error: "Workflow SHA does not match OIDC claim" }, 403);
 
     const unique = [...new Set(versions as string[])].sort();
-    const results: Record<string, boolean> = {};
-    for (const version of unique) results[version] = await isMigrationApplied(version);
-    const missing = unique.filter((version) => !results[version]);
+    // Compare the complete ledgers in one projection rather than making one
+    // privileged network request per migration (which times out as history grows).
     const productionVersions = await productionMigrationVersions(unique[0]);
+    const productionSet = new Set(productionVersions);
     const sourceSet = new Set(unique);
+    const missing = unique.filter((version) => !productionSet.has(version));
     const productionOnly = productionVersions.filter((version) => !sourceSet.has(version));
     const ready = missing.length === 0 && productionOnly.length === 0 && productionVersions.length === unique.length;
 
