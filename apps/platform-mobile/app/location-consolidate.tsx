@@ -131,6 +131,16 @@ export default function LocationConsolidate(){
       Retiring: {childCount(preview,table,'source_rows')} · Keeping: {childCount(preview,table,'survivor_rows')}
      </Text>
     </View>)}
+    <Text style={[styles.h3,{color:theme.ink}]}>Affected record identities</Text>
+    <Text style={[styles.text,{color:theme.muted}]}>Sample IDs for each category, up to 25 per category. “Retiring” and “surviving” show which location currently owns the association; none are discarded automatically.</Text>
+    {Object.entries(preview.linked_samples||{}).map(([kind,records])=>records.length>0?<View key={kind} style={{gap:5}}>
+      <Text style={[styles.text,{color:theme.ink,fontWeight:'800'}]}>{kind.replaceAll('_',' ')} · {records.length} shown</Text>
+      {records.map((linked,i)=><Text key={String(linked.id??i)} style={[styles.text,{color:theme.muted}]}>
+        {String(linked.on||'record')}: {String(linked.id||'unknown')}
+        {linked.code?' · QR '+String(linked.code):''}
+        {linked.external_id?' · '+String(linked.external_id):''}
+      </Text>)}
+    </View>:null)}
     <Text style={[styles.text,{color:theme.muted}]}>Total dependent source links (including other inventory tables): {preview.source_linked_total}. If any dependents need reconciliation, consolidation is blocked.</Text>
     {(preview.impact||[]).filter(x=>Number(x.source_rows)>0).map((x,i)=>
      <Text key={x.table+x.column+i} style={[styles.text,{color:theme.danger}]}>
