@@ -35,6 +35,13 @@ assertContains('apps/platform-mobile/app/guest-insights.tsx',[
   'owner_guest_journey_snapshot','owner_guest_journey_session',
   'No detailed guest sessions recorded yet',
 ]);
+assertContains('apps/platform-mobile/app/_layout.tsx',[
+  'Tabs.Screen name="growth" options={{href:null',
+  'TabIcon symbol="🏠"','TabIcon symbol="📧"',
+]);
+assertContains('apps/platform-mobile/app/guest-insights.tsx',[
+  'style={{flex:1,backgroundColor:theme.canvas}}',"minHeight:'100%'",
+]);
 assertContains('apps/platform-mobile/components/UserTallyPanel.tsx',['href="/guest-insights"']);
 assertContains('packages/mobile-core/src/appSearch.ts',["id:'guest-insights'","route:'/guest-insights'"]);
 const registry=JSON.parse(read('config/feature-lifecycle.json'));
