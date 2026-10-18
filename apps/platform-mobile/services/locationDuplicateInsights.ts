@@ -22,10 +22,11 @@ const phoneKey = (input: unknown) => {
   const digits = value(input).replace(/\D/g, '');
   return digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
 };
+const streetAbbreviations: Record<string,string> = {street:'st',road:'rd',avenue:'ave',boulevard:'blvd',drive:'dr',lane:'ln',highway:'hwy',parkway:'pkwy'};
 const addressKey = (input: unknown) => value(input).toLowerCase()
   .replace(/\b(north|south|east|west)\b/g, m => m[0])
   .replace(/\b(street|road|avenue|boulevard|drive|lane|highway|parkway)\b/g,
-    m => ({street:'st',road:'rd',avenue:'ave',boulevard:'blvd',drive:'dr',lane:'ln',highway:'hwy',parkway:'pkwy'}[m] || m))
+    m => (streetAbbreviations[m] || m))
   .replace(/[^a-z0-9]/g, '');
 const websiteKey = (input: unknown) => value(input).toLowerCase()
   .replace(/^https?:\/\//, '').replace(/^www\./, '').split(/[/?#]/)[0];
