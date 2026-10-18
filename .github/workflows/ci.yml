@@ -50,6 +50,8 @@ jobs:
         run: npm ci --no-audit --no-fund --prefer-offline
       - name: Duplicate location review recommendations
         run: node --test scripts/location-duplicate-review.test.mjs
+      - name: Verified canonical consolidation safeguards
+        run: node --test scripts/location-consolidation.test.mjs
       - name: Public Kleenest contact routing
         run: node scripts/public-contact-links-audit.mjs
       - name: Overture ingestion self-test
