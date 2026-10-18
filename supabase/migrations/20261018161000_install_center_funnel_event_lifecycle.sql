@@ -133,3 +133,59 @@ begin
   delete from private.guest_journey_conversions where converted_at<now()-interval '30 days';
  end if;
 end $function$;
+
+
+-- Browser/device counts for KleenestOS, guarded by the existing owner-only RPC.
+create or replace function private.owner_guest_journey_snapshot(p_days integer default 7)
+returns jsonb language plpgsql stable security definer set search_path='' as $function$
+declare v_days integer:=case when p_days=30 then 30 else 7 end;
+ v_since timestamptz:=now() - make_interval(days=>case when p_days=30 then 30 else 7 end);
+begin
+ if auth.uid() is null or not public.is_platform_owner_session()
+ then raise exception 'platform owner access required';end if;
+ return jsonb_build_object(
+  'updated_at',now(),'days',v_days,
+  'tracked_events',(select count(*) from private.guest_journey_events where occurred_at>=v_since),
+  'tracked_sessions',(select count(distinct session_id) from private.guest_journey_events where occurred_at>=v_since),
+  'approximate_visitors',(select count(distinct visitor_key) from private.guest_journey_events where occurred_at>=v_since),
+  'engaged_sessions',(select count(distinct session_id) from private.guest_journey_events where occurred_at>=v_since and event_name in ('place_selected','navigation_started','review_started')),
+  'navigation_sessions',(select count(distinct session_id) from private.guest_journey_events where occurred_at>=v_since and event_name='navigation_started'),
+  'zero_result_sessions',(select count(distinct session_id) from private.guest_journey_events where occurred_at>=v_since and (event_name='no_results' or (event_name='nearby_results_shown' and context->>'result_count'='0'))),
+  'returning_visitors',(select count(*) from (
+     select visitor_key from private.guest_journey_events
+     where occurred_at>=v_since group by visitor_key having count(distinct session_id)>1
+   ) visitors),
+  'registrations_linked',(select count(*) from private.guest_journey_conversions where converted_at>=v_since),
+  'historical_guest_sessions',(select count(*) from private.user_tally_guest_activity where last_seen_at>=v_since),
+  'acquisition_events',(select coalesce(jsonb_agg(jsonb_build_object('event_name',event_name,'events',events) order by events desc),'[]'::jsonb)
+     from(select event_name,count(*) events from public.acquisition_attribution_events
+      where created_at>=v_since group by event_name) a),
+  'install_browser_events',(select coalesce(jsonb_agg(jsonb_build_object(
+        'device_kind',device_kind,'browser_kind',browser_kind,'event_name',event_name,
+        'events',events) order by events desc),'[]'::jsonb)
+    from (
+      select left(coalesce(nullif(e.metadata->>'device_kind',''),'unknown'),32) device_kind,
+             left(coalesce(nullif(e.metadata->>'browser_kind',''),'unknown'),32) browser_kind,
+             e.event_name,count(*) events
+      from public.acquisition_attribution_events e
+      where e.created_at>=v_since and e.event_name in (
+        'install_intent','install_guidance_view','install_prompt_accepted',
+        'install_prompt_dismissed','install_success','installed_app_launch'
+      )
+      group by 1,2,3 order by events desc limit 80
+    ) browser_groups),
+  'events_by_type',(select coalesce(jsonb_agg(jsonb_build_object('event_name',event_name,'events',events) order by events desc),'[]'::jsonb)
+     from(select event_name,count(*) events from private.guest_journey_events
+      where occurred_at>=v_since group by event_name) a),
+  'recent_sessions',(select coalesce(jsonb_agg(jsonb_build_object(
+      'session_id',session_id,'visitor_label',left(md5(visitor_key),10),
+      'started_at',started_at,'last_seen_at',last_seen_at,
+      'event_count',event_count,'last_action',last_action
+     ) order by last_seen_at desc),'[]'::jsonb)
+   from (select e.session_id,min(e.occurred_at) started_at,max(e.occurred_at) last_seen_at,
+         count(*) event_count,(array_agg(e.event_name order by e.occurred_at desc))[1] last_action,
+         (array_agg(e.visitor_key order by e.occurred_at desc))[1] visitor_key
+         from private.guest_journey_events e where e.occurred_at>=v_since
+         group by e.session_id order by last_seen_at desc limit 30) recent)
+ );
+end $function$;
