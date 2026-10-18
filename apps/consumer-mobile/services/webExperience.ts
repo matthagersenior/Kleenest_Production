@@ -5,6 +5,7 @@ import { captureAcquisitionEvent } from './acquisitionAttribution';
 
 const APP_PRESENCE_KEY='kleenest.consumer.installed-presence.v2';
 const INSTALL_CONFIRMED_KEY='kleenest.consumer.install-confirmed.v1';
+let standaloneLaunchRecorded=false;
 const APP_SESSION_KEY='kleenest.consumer.web-app-session.v1';
 const LEGACY_APP_PRESENCE_KEY='kleenest.consumer.app-presence.v1';
 
@@ -118,7 +119,10 @@ export function useConsumerWebExperience(){
           markConsumerInstallConfirmed();
           captureAcquisitionEvent('install_success',{metadata:{method:'standalone_launch'}});
         }
-        captureAcquisitionEvent('installed_app_launch',{metadata:{method:'standalone_launch'}});
+        if(!standaloneLaunchRecorded){
+          standaloneLaunchRecorded=true;
+          captureAcquisitionEvent('installed_app_launch',{metadata:{method:'standalone_launch'}});
+        }
       }
     }
 
