@@ -113,3 +113,24 @@ test('two generic restroom listings cannot be confirmed by near-identical map pi
   }));
   assert.equal(result.suggestedStatus,null);
 });
+
+test('review pagination does not use unstable offsets while statuses change',()=>{
+  const service=fs.readFileSync(new URL('../apps/platform-mobile/services/locationDedup.ts',import.meta.url),'utf8');
+  assert.doesNotMatch(service,/\.range\(start,/);
+  assert.match(service,/query\.or\(filter\)/);
+  assert.match(service,/distance_m\.lt\./);
+  assert.match(service,/confidence\.lt\./);
+});
+test('review saves require unchanged status and timestamp',()=>{
+  const service=fs.readFileSync(new URL('../apps/platform-mobile/services/locationDedup.ts',import.meta.url),'utf8');
+  assert.match(service,/eq\('status',item\.status\)/);
+  assert.match(service,/eq\('reviewed_at',item\.reviewed_at\)/);
+  assert.match(service,/is\('reviewed_at',null\)/);
+});
+test('review workflow retains an explicit confirmation step and cursor navigation',()=>{
+  const screen=fs.readFileSync(new URL('../apps/platform-mobile/app/location-duplicates.tsx',import.meta.url),'utf8');
+  assert.match(screen,/setCursorHistory/);
+  assert.match(screen,/nextBatch\(/);
+  assert.match(screen,/Save and continue/);
+  assert.match(screen,/no business records merged/i);
+});
