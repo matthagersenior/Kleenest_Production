@@ -21,7 +21,7 @@ assertContains('supabase/migrations/20261018023035_owner_guest_journey_private_r
   'GRANT EXECUTE ON FUNCTION private.owner_guest_journey_session(text) TO authenticated;',
 ]);
 const ownerRpcGrant=read('supabase/migrations/20261018023035_owner_guest_journey_private_rpc_execute_grants_20261017.sql');
-if (/grant\\s+execute\\s+on\\s+function\\s+private\\.owner_guest_journey_(?:snapshot|session)\\([^)]*\\)\\s+to\\s+(?:anon|public)/i.test(ownerRpcGrant)) {
+if (ownerRpcGrant.toLowerCase().includes(' to anon;') || ownerRpcGrant.toLowerCase().includes(' to public;')) {
   throw new Error('Guest Insights private analytics RPC must never be granted to anonymous/public roles.');
 }
 assertContains('apps/consumer-mobile/services/acquisitionAttribution.ts',[
