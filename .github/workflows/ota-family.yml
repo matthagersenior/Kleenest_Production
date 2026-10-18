@@ -17,8 +17,12 @@ permissions:
   contents: read
   actions: read
 
+# Push and migration-completion events can overlap for the same commit.
+# Keep event streams isolated so a skipped migration callback cannot cancel
+# a valid push-triggered OTA publication. Newer commits still supersede
+# older in-progress work inside each stream.
 concurrency:
-  group: kleenest-family-ota
+  group: kleenest-family-ota-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
