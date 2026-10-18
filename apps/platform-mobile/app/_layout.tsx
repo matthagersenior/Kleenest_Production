@@ -96,6 +96,7 @@ export default function Layout(){
     <Tabs.Screen name="audit" options={{href:null,title:'Audit'}}/>
     <Tabs.Screen name="data" options={{href:null,title:'Data'}}/>
     <Tabs.Screen name="location-duplicates" options={{href:null,title:'Duplicate Review'}}/>
+    <Tabs.Screen name="location-consolidate" options={{href:null,title:'Consolidate Locations'}}/>
     <Tabs.Screen name="notifications" options={{href:null,title:'Live Network Messaging'}}/>
     <Tabs.Screen name="communications" options={{title:'Email'}}/>
     <Tabs.Screen name="mail-admin" options={{href:null,title:'Mail Admin'}}/>
