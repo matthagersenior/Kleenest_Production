@@ -50,21 +50,43 @@ export type DuplicateReviewEvent = {
 export const openReviewStatuses: DuplicateStatus[] = ['pending','needs_geocoding'];
 const client = () => getKleenestSupabaseClient();
 
-// Only the next 40 records are fetched. This prevents massive mobile tables and
-// supports page-by-page review of the backlog without pulling all 3,500+ rows.
-export async function listOwnerLocationDuplicates(status: DuplicateStatus, page = 0, limit = 40): Promise<DuplicateCase[]> {
+// A keyset cursor does not shift when the owner changes the status of earlier
+// cases. OFFSET paging skipped records as the review queue shrank.
+export type DuplicateReviewCursor = Pick<DuplicateCase,'id'|'confidence'|'distance_m'>;
+export async function listOwnerLocationDuplicates(
+  status:DuplicateStatus, after:DuplicateReviewCursor|null=null,limit=40
+):Promise<DuplicateCase[]> {
   await requirePlatformOwner();
-  const size = Math.min(Math.max(1,limit),80);
-  const start = Math.max(0,page)*size;
-  let query = client().from('location_duplicate_cases')
+  const size=Math.min(Math.max(1,limit),80);
+  let query=client().from('location_duplicate_cases')
     .select('id,first_location_id,second_location_id,rule,confidence,status,distance_m,review_notes,reviewed_at,created_at')
     .eq('status',status);
-  query = status==='needs_geocoding'
-    ? query.order('distance_m',{ascending:false}).order('id',{ascending:true})
-    : status==='pending'
-      ? query.order('confidence',{ascending:false}).order('distance_m',{ascending:true}).order('id',{ascending:true})
-      : query.order('reviewed_at',{ascending:false,nullsFirst:false}).order('id',{ascending:false});
-  const { data,error } = await query.range(start,start+size-1);
+  if(status==='pending'){
+    query=query.order('confidence',{ascending:false})
+      .order('distance_m',{ascending:true,nullsFirst:false}).order('id',{ascending:true});
+    if(after){
+      const conf=Number(after.confidence);
+      const id=Number(after.id);
+      const dist=after.distance_m===null?null:Number(after.distance_m);
+      const filter=dist===null
+        ? `confidence.lt.${conf},and(confidence.eq.${conf},distance_m.is.null,id.gt.${id})`
+        : `confidence.lt.${conf},and(confidence.eq.${conf},distance_m.gt.${dist}),and(confidence.eq.${conf},distance_m.eq.${dist},id.gt.${id}),and(confidence.eq.${conf},distance_m.is.null)`;
+      query=query.or(filter);
+    }
+  } else if(status==='needs_geocoding'){
+    query=query.order('distance_m',{ascending:false,nullsFirst:false}).order('id',{ascending:true});
+    if(after){
+      const id=Number(after.id);
+      const dist=after.distance_m===null?null:Number(after.distance_m);
+      query=query.or(dist===null
+        ? `and(distance_m.is.null,id.gt.${id})`
+        : `distance_m.lt.${dist},and(distance_m.eq.${dist},id.gt.${id}),distance_m.is.null`);
+    }
+  } else {
+    query=query.order('id',{ascending:false});
+    if(after)query=query.lt('id',after.id);
+  }
+  const {data,error}=await query.limit(size);
   if(error) throw error;
   const cases=(data??[]) as DuplicateCase[];
   if(!cases.length) return [];
