@@ -9,6 +9,11 @@ export type DuplicateLocation = {
   address: string | null;
   city: string | null;
   state: string | null;
+  postal_code: string | null;
+  phone: string | null;
+  website: string | null;
+  place_type: string | null;
+  brand_name: string | null;
   latitude: number | null;
   longitude: number | null;
   source_dataset: string | null;
@@ -25,62 +30,86 @@ export type DuplicateCase = {
   status: DuplicateStatus;
   distance_m: number | null;
   review_notes: string | null;
+  reviewed_at: string | null;
   created_at: string;
   first?: DuplicateLocation;
   second?: DuplicateLocation;
 };
 
+export type DuplicateReviewEvent = {
+  id: number;
+  case_id: number;
+  reviewer_id: string | null;
+  previous_status: DuplicateStatus;
+  next_status: DuplicateStatus;
+  previous_notes: string | null;
+  next_notes: string | null;
+  changed_at: string;
+};
+
+export const openReviewStatuses: DuplicateStatus[] = ['pending','needs_geocoding'];
 const client = () => getKleenestSupabaseClient();
 
-// Database RLS independently requires platform-owner authorization.
-export async function listOwnerLocationDuplicates(status: DuplicateStatus, limit = 80): Promise<DuplicateCase[]> {
+// Only the next 40 records are fetched. This prevents massive mobile tables and
+// supports page-by-page review of the backlog without pulling all 3,500+ rows.
+export async function listOwnerLocationDuplicates(status: DuplicateStatus, page = 0, limit = 40): Promise<DuplicateCase[]> {
   await requirePlatformOwner();
-  const { data, error } = await client()
-    .from('location_duplicate_cases')
-    .select('id,first_location_id,second_location_id,rule,confidence,status,distance_m,review_notes,created_at')
-    .eq('status', status)
-    .order('confidence', { ascending: false })
-    .order('created_at', { ascending: true })
-    .limit(Math.min(Math.max(1, limit), 200));
-  if (error) throw error;
-  const cases = (data ?? []) as DuplicateCase[];
-  if (!cases.length) return [];
-  const ids = [...new Set(cases.flatMap(item => [item.first_location_id, item.second_location_id]))];
-  const { data: locations, error: locationError } = await client()
-    .from('locations')
-    .select('id,name,address,city,state,latitude,longitude,source_dataset,source_external_id,is_active')
-    .in('id', ids);
-  if (locationError) throw locationError;
-  const byId = new Map(((locations ?? []) as DuplicateLocation[]).map(location => [location.id, location]));
-  return cases.map(item => ({
-    ...item,
-    first: byId.get(item.first_location_id),
-    second: byId.get(item.second_location_id),
-  }));
+  const size = Math.min(Math.max(1,limit),80);
+  const start = Math.max(0,page)*size;
+  let query = client().from('location_duplicate_cases')
+    .select('id,first_location_id,second_location_id,rule,confidence,status,distance_m,review_notes,reviewed_at,created_at')
+    .eq('status',status);
+  query = status==='needs_geocoding'
+    ? query.order('distance_m',{ascending:false}).order('id',{ascending:true})
+    : status==='pending'
+      ? query.order('confidence',{ascending:false}).order('distance_m',{ascending:true}).order('id',{ascending:true})
+      : query.order('reviewed_at',{ascending:false,nullsFirst:false}).order('id',{ascending:false});
+  const { data,error } = await query.range(start,start+size-1);
+  if(error) throw error;
+  const cases=(data??[]) as DuplicateCase[];
+  if(!cases.length) return [];
+  const ids=[...new Set(cases.flatMap(item=>[item.first_location_id,item.second_location_id]))];
+  const {data:locations,error:locationError}=await client().from('locations')
+    .select('id,name,address,city,state,postal_code,phone,website,place_type,brand_name,latitude,longitude,source_dataset,source_external_id,is_active')
+    .in('id',ids);
+  if(locationError) throw locationError;
+  const byId=new Map(((locations??[]) as DuplicateLocation[]).map(location=>[location.id,location]));
+  return cases.map(item=>({...item,first:byId.get(item.first_location_id),second:byId.get(item.second_location_id)}));
 }
 
-export async function getOwnerDuplicateCounts(): Promise<Record<DuplicateStatus, number>> {
+export async function getOwnerDuplicateCounts():Promise<Record<DuplicateStatus,number>> {
   await requirePlatformOwner();
-  const statuses: DuplicateStatus[] = ['pending', 'needs_geocoding', 'confirmed', 'co_located', 'different_businesses', 'resolved'];
-  const results = await Promise.all(statuses.map(async status => {
-    const { count, error } = await client()
-      .from('location_duplicate_cases').select('id', { count: 'exact', head: true }).eq('status', status);
-    if (error) throw error;
-    return [status, count ?? 0] as const;
+  const statuses:DuplicateStatus[]=['pending','needs_geocoding','confirmed','co_located','different_businesses','resolved'];
+  const entries=await Promise.all(statuses.map(async status=>{
+    const {count,error}=await client().from('location_duplicate_cases')
+      .select('id',{count:'exact',head:true}).eq('status',status);
+    if(error)throw error;
+    return [status,count??0] as const;
   }));
-  return Object.fromEntries(results) as Record<DuplicateStatus, number>;
+  return Object.fromEntries(entries) as Record<DuplicateStatus,number>;
 }
 
-// Review is intentionally non-destructive. Consolidation is a separate audited server workflow.
+export async function listDuplicateReviewHistory(caseId:number):Promise<DuplicateReviewEvent[]> {
+  await requirePlatformOwner();
+  const {data,error}=await client().from('location_duplicate_review_events')
+    .select('id,case_id,reviewer_id,previous_status,next_status,previous_notes,next_notes,changed_at')
+    .eq('case_id',caseId).order('changed_at',{ascending:false}).limit(10);
+  if(error) throw error;
+  return (data??[]) as DuplicateReviewEvent[];
+}
+
+// Optimistic lock prevents another reviewer from silently overwriting a decision.
+// No mutation to canonical businesses occurs, only review classification and audit log.
 export async function classifyOwnerLocationDuplicate(
-  id: number,
-  status: DuplicateStatus,
-  review_notes: string
-): Promise<void> {
+  item:DuplicateCase,status:DuplicateStatus,reviewNotes:string
+):Promise<void> {
   await requirePlatformOwner();
-  const { data, error } = await client().from('location_duplicate_cases')
-    .update({ status, review_notes: review_notes.trim() || null, reviewed_at: new Date().toISOString() })
-    .eq('id', id).select('id').single();
-  if (error) throw error;
-  if (!data) throw new Error('Duplicate review could not be saved.');
+  const {data,error}=await client().from('location_duplicate_cases')
+    .update({
+      status, review_notes:reviewNotes.trim() || null,
+      reviewed_at:new Date().toISOString(),
+    })
+    .eq('id',item.id).eq('status',item.status).select('id').maybeSingle();
+  if(error)throw error;
+  if(!data)throw new Error('This case was changed in another session. Refresh to review the latest evidence.');
 }
