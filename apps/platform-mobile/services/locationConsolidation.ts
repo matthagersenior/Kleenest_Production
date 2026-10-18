@@ -8,7 +8,7 @@ export type ConsolidationImpact = {
 export type ConsolidationPreview = {
  case_id: number; case_status: string; case_reviewed_at: string|null;
  survivor: Record<string,unknown>; retiring: Record<string,unknown>;
- impact: ConsolidationImpact[]; source_linked_total: number; unresolved_other_cases: number;
+ impact: ConsolidationImpact[]; linked_samples: Record<string,Array<Record<string,unknown>>>; source_linked_total: number; unresolved_other_cases: number;
  blockers: string[]; preservation: string; mirror_status: string;
  allowed: boolean; fingerprint: string;
 };
