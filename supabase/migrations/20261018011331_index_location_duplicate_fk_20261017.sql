@@ -1,0 +1,4 @@
+CREATE INDEX IF NOT EXISTS location_identity_redirects_canonical_idx
+ON internal.location_identity_redirects(canonical_location_id);
+CREATE INDEX IF NOT EXISTS location_duplicate_cases_second_id_idx
+ON public.location_duplicate_cases(second_location_id);
