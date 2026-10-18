@@ -2,12 +2,12 @@ import { useAppActivity } from '@kleenest/mobile-core';
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, AppState, Pressable, Text, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, Text, useColorScheme, View, type ColorValue } from 'react-native';
 import { getKleenestSupabaseClient, loadKleenestThemeMode, resolveKleenestTheme, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
 
 // Native Android uses default empty square placeholders unless tabs declare
 // an icon. Emoji avoid a native icon-font dependency and work over Expo OTA.
-function TabIcon({symbol,color}:{symbol:string;color:string}) {
+function TabIcon({symbol,color}:{symbol:string;color:ColorValue}) {
   return <Text allowFontScaling={false} accessibilityElementsHidden style={{fontSize:21,lineHeight:25,textAlign:'center',color}}>{symbol}</Text>;
 }
 
