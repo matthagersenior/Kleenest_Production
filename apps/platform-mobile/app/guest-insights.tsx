@@ -32,6 +32,7 @@ type Snapshot = {
   returning_visitors:number;
   registrations_linked:number;
   acquisition_events:Metric[];
+  install_browser_events?:Array<{device_kind:string;browser_kind:string;event_name:string;events:number}>;
   events_by_type:Metric[];
   recent_sessions:Session[];
 };
@@ -80,6 +81,7 @@ export default function GuestInsights(){
     }catch(reason:any){setError(reason?.message||'Could not load guest timeline.')}
     finally{setDetailBusy(false)}
   };
+  const installCount=(name:string)=>data?.acquisition_events?.find(item=>item.event_name===name)?.events??0;
   const MetricCard=({title,value,detail}:{title:string;value:unknown;detail:string})=><View style={{...card,flexGrow:1,minWidth:138,flexBasis:'43%',gap:5}}>
     <Text style={{color:theme.muted,fontSize:12,fontWeight:'700'}}>{title}</Text>
     <Text style={{color:theme.ink,fontSize:25,fontWeight:'900'}}>{format(value)}</Text>
@@ -109,6 +111,13 @@ export default function GuestInsights(){
         <Text style={{color:theme.ink,fontWeight:'900',fontSize:16}}>Understanding coverage</Text>
         <Text style={{color:theme.muted,lineHeight:21}}>Legacy session tally and historical acquisition events use different identifiers. They cannot be merged into verified unique visitors. Detailed journeys and conversions are only counted from the new instrumented release onward.</Text>
         <Text style={{color:theme.muted}}>Updated {dateTime(data.updated_at)} · {format(data.tracked_events)} detailed events recorded for this period</Text>
+      </View>
+      <View style={{...card,gap:8}}>
+        <Text style={{color:theme.ink,fontSize:17,fontWeight:'900'}}>Installation progress</Text>
+        {(['landing_view','install_intent','install_guidance_view','install_prompt_accepted','install_prompt_dismissed','install_success','installed_app_launch'] as const).map(name=><View key={name} style={{flexDirection:'row',justifyContent:'space-between',gap:12}}><Text style={{color:theme.muted,flex:1}}>{readable(name)}</Text><Text style={{color:theme.ink,fontWeight:'800'}}>{format(installCount(name))}</Text></View>)}
+        <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>Events are not unique people. New install stages begin after the upgrade; older versions could count an accepted browser prompt as installation success.</Text>
+        <Text style={{color:theme.ink,fontWeight:'900'}}>Install activity by device and browser</Text>
+        {data.install_browser_events?.length ? data.install_browser_events.filter(entry=>['install_intent','install_success','installed_app_launch'].includes(entry.event_name)).map((entry,i)=><View key={i} style={{flexDirection:'row',justifyContent:'space-between',gap:8}}><Text style={{color:theme.muted,flex:1,fontSize:12}}>{readable(entry.device_kind)} · {readable(entry.browser_kind)} · {readable(entry.event_name)}</Text><Text style={{color:theme.ink,fontWeight:'800'}}>{format(entry.events)}</Text></View>) : <Text style={{color:theme.muted,fontSize:12}}>Breakdown begins when the upgraded instrumentation records activity.</Text>}
       </View>
       <View style={{...card,gap:9}}>
         <Text style={{color:theme.ink,fontSize:17,fontWeight:'900'}}>Acquisition actions · historical source</Text>
