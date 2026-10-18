@@ -202,7 +202,7 @@ export default function InstallKleenest(){
   const isIOS=deviceKind==='ios';
   const isAndroid=deviceKind==='android';
   const isDesktop=deviceKind==='desktop';
-  const embeddedBrowser=useMemo(()=>Platform.OS==='web'&&typeof navigator!=='undefined'&&/FBAN|FBAV|Instagram|TikTok|Snapchat|; wv\\)|Line\\/|GSA\\//i.test(navigator.userAgent||''),[]);
+  const embeddedBrowser=useMemo(()=>Platform.OS==='web'&&typeof navigator!=='undefined'&&['FBAN','FBAV','Instagram','TikTok','Snapchat','; wv','Line/','GSA/'].some(token=>(navigator.userAgent||'').includes(token)),[]);
 
   const refreshDiagnostics=useCallback(async()=>{
     if(Platform.OS!=='web'||typeof window==='undefined')return;
