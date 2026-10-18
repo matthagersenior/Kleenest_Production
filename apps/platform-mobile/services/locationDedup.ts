@@ -101,14 +101,19 @@ export async function listOwnerLocationDuplicates(
 
 export async function getOwnerDuplicateCounts():Promise<Record<DuplicateStatus,number>> {
   await requirePlatformOwner();
-  const statuses:DuplicateStatus[]=['pending','needs_geocoding','confirmed','co_located','different_businesses','resolved'];
-  const entries=await Promise.all(statuses.map(async status=>{
-    const {count,error}=await client().from('location_duplicate_cases')
-      .select('id',{count:'exact',head:true}).eq('status',status);
-    if(error)throw error;
-    return [status,count??0] as const;
-  }));
-  return Object.fromEntries(entries) as Record<DuplicateStatus,number>;
+  const counts:Record<DuplicateStatus,number>={
+    pending:0,needs_geocoding:0,confirmed:0,co_located:0,
+    different_businesses:0,resolved:0,
+  };
+  // Invoker-security view preserves owner RLS and avoids six round trips.
+  const {data,error}=await client().from('owner_location_duplicate_review_counts')
+    .select('status,case_count');
+  if(error)throw error;
+  for(const row of data??[]){
+    const key=row.status as DuplicateStatus;
+    if(Object.prototype.hasOwnProperty.call(counts,key))counts[key]=Number(row.case_count)||0;
+  }
+  return counts;
 }
 
 export async function listDuplicateReviewHistory(caseId:number):Promise<DuplicateReviewEvent[]> {
@@ -126,12 +131,17 @@ export async function classifyOwnerLocationDuplicate(
   item:DuplicateCase,status:DuplicateStatus,reviewNotes:string
 ):Promise<void> {
   await requirePlatformOwner();
-  const {data,error}=await client().from('location_duplicate_cases')
+  const update=client().from('location_duplicate_cases')
     .update({
       status, review_notes:reviewNotes.trim() || null,
       reviewed_at:new Date().toISOString(),
     })
-    .eq('id',item.id).eq('status',item.status).select('id').maybeSingle();
+    .eq('id',item.id).eq('status',item.status);
+  // Status alone is not a lock if another reviewer edits notes in-place.
+  const guarded=item.reviewed_at
+    ? update.eq('reviewed_at',item.reviewed_at)
+    : update.is('reviewed_at',null);
+  const {data,error}=await guarded.select('id').maybeSingle();
   if(error)throw error;
   if(!data)throw new Error('This case was changed in another session. Refresh to review the latest evidence.');
 }
