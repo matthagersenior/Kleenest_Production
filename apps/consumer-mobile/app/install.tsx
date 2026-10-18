@@ -93,11 +93,11 @@ function QuickInstallSteps({deviceKind,browserKind}:{deviceKind:DeviceKind;brows
     ['Tap the Share button (square with ↑)','Find the Share control in Safari’s toolbar. Scroll through the options if needed.'],
     ['Tap Add to Home Screen, then Add','Keep Open as Web App enabled if shown. Find the Kleenest icon on your Home Screen.'],
   ]:desktop?[
-    ['Choose INSTALL WEB APP below','When your browser asks, approve the installation.'],
+    ['Choose INSTALL WEB APP above','When your browser asks, approve the installation.'],
     ['No popup? Open your browser menu',menu],
     ['Open Kleenest from your apps','Look in your Start menu, Applications, or Dock.'],
   ]:[
-    ['Tap INSTALL WEB APP below','If a browser installation window appears, choose Install.'],
+    ['Tap INSTALL WEB APP above','If a browser installation window appears, choose Install.'],
     ['No popup? Use your browser menu',menu+'. Choose Install if it is offered.'],
     ['Look for the Kleenest icon','Check your Home Screen or app drawer, then tap Kleenest.'],
   ];
@@ -341,7 +341,7 @@ export default function InstallKleenest(){
     <View style={[s.hero,{backgroundColor:theme.accent}]}>
       <Text style={[s.eyebrow,{color:theme.accentText,opacity:.78}]}>KLEENEST · UNIVERSAL INSTALLATION CENTER</Text>
       <Text style={[s.title,{color:theme.accentText}]}>{isIOS?'Put Kleenest on your iPhone or iPad.':isAndroid?'Install Kleenest on Android.':'Install Kleenest like an app.'}</Text>
-      <Text style={[s.body,{color:theme.accentText,opacity:.88}]}>{isIOS?'No App Store download is required for the web app. Add Kleenest to your Home Screen and it opens in its own app-style window.':isAndroid?'Choose the installable web app or the verified Android APK. Both use the same Kleenest account and network.':'Install the Kleenest PWA from a supported browser and launch it from your desktop or app launcher.'}</Text>
+      <Text style={[s.body,{color:theme.accentText,opacity:.88}]}>{isIOS?'No App Store download is required for the web app. Add Kleenest to your Home Screen and it opens in its own app-style window.':isAndroid?'Get the Kleenest icon on your Home Screen without the Play Store. The native Android download is also available below.':'Add Kleenest to your computer as an app, without visiting an app store.'}</Text>
       <View style={s.statusRow}>
         <View style={[s.status,{backgroundColor:theme.accentSoft}]}><Text style={[s.statusText,{color:theme.accentText}]}>{environment}{installed?' · INSTALLED':''}</Text></View>
         <View style={[s.status,{backgroundColor:theme.accentSoft}]}><Text style={[s.statusText,{color:theme.accentText}]}>{browserLabel(browserKind).toUpperCase()}</Text></View>
@@ -367,9 +367,10 @@ export default function InstallKleenest(){
       <Text style={[s.kicker,{color:theme.accent}]}>{isAndroid?'ANDROID · WEB APP':'BROWSER APP'}</Text>
       <Text style={[s.cardTitle,{color:theme.ink}]}>Install the Kleenest web app</Text>
       <Text style={[s.cardBody,{color:theme.muted}]}>Recommended for most people. A web app is the Kleenest website saved to your device like an app: it gets its own icon, opens in an app-style window, updates quickly, and uses the same Kleenest account and network.</Text>
-      <QuickInstallSteps deviceKind={deviceKind} browserKind={browserKind}/>
       {embeddedBrowser?<Text style={[s.inlineWarning,{color:theme.warning}]}>This browser may not support installation. Open the Installation Center in Chrome, Safari, or your phone browser first.</Text>:null}
       <Pressable accessibilityRole="button" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void installWeb()}><Text style={[s.primaryText,{color:theme.accentText}]}>{installed?'WEB APP INSTALLED':'INSTALL WEB APP'}</Text></Pressable>
+      <Text style={[s.cardBody,{color:theme.ink,fontWeight:'800'}]}>If no install window appears, follow these steps:</Text>
+      <QuickInstallSteps deviceKind={deviceKind} browserKind={browserKind}/>
       {!installed?<Text style={[s.help,{color:theme.muted}]}>{prompt?'Your browser is ready for a one-tap install.':browserHelp}</Text>:null}
       {showDetailedWebSteps?<WebInstallSteps deviceKind={deviceKind} browserKind={browserKind}/>:null}
       <Pressable accessibilityRole="button" onPress={toggleDetailedWebSteps} style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.secondaryText,{color:theme.accent}]}>{showDetailedWebSteps?'HIDE EXTRA HELP':'SHOW DETAILED INSTALL HELP'}</Text></Pressable>
