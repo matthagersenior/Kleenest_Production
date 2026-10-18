@@ -123,8 +123,8 @@ export function useConsumerWebExperience(){
 
     if(!native){
       clearLegacyConsumerAppPresence();
+      if(standalone)markConsumerAppPresence();
       if(standalone){
-        markConsumerAppPresence();
         // Safari often has no appinstalled event. First standalone launch is
         // reliable evidence of installed use, not just an accepted prompt.
         if(!isInstallConfirmedOnThisBrowser()){
