@@ -1,8 +1,10 @@
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { useEffect,useState } from 'react';
 import { Platform } from 'react-native';
+import { captureAcquisitionEvent } from './acquisitionAttribution';
 
 const APP_PRESENCE_KEY='kleenest.consumer.installed-presence.v2';
+const INSTALL_CONFIRMED_KEY='kleenest.consumer.install-confirmed.v1';
 const APP_SESSION_KEY='kleenest.consumer.web-app-session.v1';
 const LEGACY_APP_PRESENCE_KEY='kleenest.consumer.app-presence.v1';
 
@@ -44,6 +46,18 @@ export function markConsumerAppPresence(){
   const w=browser();
   if(!w)return;
   try{w.localStorage.setItem(APP_PRESENCE_KEY,'1')}catch{}
+}
+
+export function markConsumerInstallConfirmed(){
+  const w=browser();
+  if(!w)return;
+  try{w.localStorage.setItem(INSTALL_CONFIRMED_KEY,'1')}catch{}
+}
+
+function isInstallConfirmedOnThisBrowser(){
+  const w=browser();
+  if(!w)return false;
+  try{return w.localStorage.getItem(INSTALL_CONFIRMED_KEY)==='1'}catch{return false}
 }
 
 export function clearConsumerAppPresence(){
@@ -96,7 +110,16 @@ export function useConsumerWebExperience(){
 
     if(!native){
       clearLegacyConsumerAppPresence();
-      if(standalone)markConsumerAppPresence();
+      if(standalone){
+        markConsumerAppPresence();
+        // Safari often has no appinstalled event. First standalone launch is
+        // reliable evidence of installed use, not just an accepted prompt.
+        if(!isInstallConfirmedOnThisBrowser()){
+          markConsumerInstallConfirmed();
+          captureAcquisitionEvent('install_success',{metadata:{method:'standalone_launch'}});
+        }
+        captureAcquisitionEvent('installed_app_launch',{metadata:{method:'standalone_launch'}});
+      }
     }
 
     async function refresh(sessionOverride?:unknown){
