@@ -70,6 +70,11 @@ test('Installation Center click-through and release assets',async({page,request,
   await expect(mobilePage.getByText('KLEENEST · UNIVERSAL INSTALLATION CENTER')).toBeVisible({timeout:30000});
   await expect(mobilePage.getByText('3 steps to put Kleenest on your Home Screen')).toBeVisible();
   await expect(mobilePage.getByRole('button',{name:'INSTALL WEB APP',exact:true})).toBeVisible();
+  // Android visitors should see actionable install choices, not AAB/OTA release jargon.
+  await expect(mobilePage.getByText('GOOGLE PLAY PACKAGING',{exact:true})).toHaveCount(0);
+  await expect(mobilePage.getByText('The AAB is for Google Play, not direct installation.')).toHaveCount(0);
+  await expect(mobilePage.getByText(/Native drift is checked automatically/)).toHaveCount(0);
+  await expect(mobilePage.getByText('WHY INSTALL?',{exact:true})).toBeVisible();
   const installOrder=await mobilePage.evaluate(()=>{
     const text=document.body.innerText;
     return {install:text.indexOf('ANDROID · WEB APP'),business:text.indexOf('KLEENEST BUSINESS · ANDROID + WEB'),fleet:text.indexOf('KLEENEST FLEET · ANDROID + WEB')};
