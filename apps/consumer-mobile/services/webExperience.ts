@@ -13,6 +13,15 @@ function browser(){
   return Platform.OS==='web'&&typeof window!=='undefined'?window:null;
 }
 
+function standaloneInstallMetadata(){
+  const ua=browser()?.navigator.userAgent||'';
+  const device_kind=/iPhone|iPad|iPod/.test(ua)?'ios':/Android/.test(ua)?'android':'desktop';
+  const browser_kind=/SamsungBrowser/.test(ua)?'samsung':/OPR\\/|Opera/.test(ua)?'opera':
+    /EdgA?\\//.test(ua)?'edge':/FxiOS|Firefox/.test(ua)?'firefox':
+    /CriOS|Chrome/.test(ua)?'chrome':/Safari/.test(ua)?'safari':'other';
+  return {method:'standalone_launch',device_kind,browser_kind};
+}
+
 export function isConsumerStandaloneWebApp(){
   const w=browser();
   if(!w)return Platform.OS!=='web';
@@ -117,11 +126,11 @@ export function useConsumerWebExperience(){
         // reliable evidence of installed use, not just an accepted prompt.
         if(!isInstallConfirmedOnThisBrowser()){
           markConsumerInstallConfirmed();
-          captureAcquisitionEvent('install_success',{metadata:{method:'standalone_launch'}});
+          captureAcquisitionEvent('install_success',{metadata:standaloneInstallMetadata()});
         }
         if(!standaloneLaunchRecorded){
           standaloneLaunchRecorded=true;
-          captureAcquisitionEvent('installed_app_launch',{metadata:{method:'standalone_launch'}});
+          captureAcquisitionEvent('installed_app_launch',{metadata:standaloneInstallMetadata()});
         }
       }
     }
