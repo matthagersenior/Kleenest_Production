@@ -2,8 +2,14 @@ import { useAppActivity } from '@kleenest/mobile-core';
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, AppState, Pressable, Text, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, Text, useColorScheme, View, type ColorValue } from 'react-native';
 import { getKleenestSupabaseClient, loadKleenestThemeMode, resolveKleenestTheme, subscribeKleenestTheme, type KleenestThemeMode } from '@kleenest/mobile-core';
+
+// Native Android uses default empty square placeholders unless tabs declare
+// an icon. Emoji avoid a native icon-font dependency and work over Expo OTA.
+function TabIcon({symbol,color}:{symbol:string;color:ColorValue}) {
+  return <Text allowFontScaling={false} accessibilityElementsHidden style={{fontSize:21,lineHeight:25,textAlign:'center',color}}>{symbol}</Text>;
+}
 
 export default function Layout(){
   useAppActivity();
@@ -73,11 +79,11 @@ export default function Layout(){
     </View>,
     tabBarStyle:onAuthRoute?{display:'none'}:{backgroundColor:theme.surface,borderTopColor:theme.line}
   }}>
-    <Tabs.Screen name="index" options={{title:'Home'}}/>
-    <Tabs.Screen name="control" options={{title:'Control'}}/>
-    <Tabs.Screen name="pilots" options={{title:'Pilots'}}/>
-    <Tabs.Screen name="developers" options={{title:'Developers'}}/>
-    <Tabs.Screen name="operations" options={{title:'Operations'}}/>
+    <Tabs.Screen name="index" options={{title:'Home',tabBarIcon:({color})=><TabIcon symbol="🏠" color={color}/>}}/>
+    <Tabs.Screen name="control" options={{title:'Control',tabBarIcon:({color})=><TabIcon symbol="🎛️" color={color}/>}}/>
+    <Tabs.Screen name="pilots" options={{title:'Pilots',tabBarIcon:({color})=><TabIcon symbol="🧭" color={color}/>}}/>
+    <Tabs.Screen name="developers" options={{title:'Developers',tabBarLabel:'Dev',tabBarIcon:({color})=><TabIcon symbol="💻" color={color}/>}}/>
+    <Tabs.Screen name="operations" options={{title:'Operations',tabBarLabel:'Ops',tabBarIcon:({color})=><TabIcon symbol="⚙️" color={color}/>}}/>
     <Tabs.Screen name="ingestion" options={{href:null,title:'Ingestion Control'}}/>
     <Tabs.Screen name="devices" options={{href:null,title:'IoT & Smart Devices'}}/>
     <Tabs.Screen name="businesses" options={{href:null,title:'Businesses'}}/>
@@ -90,6 +96,7 @@ export default function Layout(){
     <Tabs.Screen name="history" options={{href:null,title:'History'}}/>
     <Tabs.Screen name="intelligence" options={{href:null,title:'Intelligence'}}/>
     <Tabs.Screen name="reports" options={{href:null,title:'Reports'}}/>
+    <Tabs.Screen name="growth" options={{href:null,title:'Growth'}}/>
     <Tabs.Screen name="progression" options={{href:null,title:'Progression'}}/>
     <Tabs.Screen name="passport" options={{href:null,title:'Passport'}}/>
     <Tabs.Screen name="capabilities" options={{href:null,title:'Capabilities'}}/>
@@ -97,7 +104,7 @@ export default function Layout(){
     <Tabs.Screen name="data" options={{href:null,title:'Data'}}/>
     <Tabs.Screen name="location-duplicates" options={{href:null,title:'Duplicate Review'}}/>
     <Tabs.Screen name="notifications" options={{href:null,title:'Live Network Messaging'}}/>
-    <Tabs.Screen name="communications" options={{title:'Email'}}/>
+    <Tabs.Screen name="communications" options={{title:'Email',tabBarIcon:({color})=><TabIcon symbol="📧" color={color}/>}}/>
     <Tabs.Screen name="mail-admin" options={{href:null,title:'Mail Admin'}}/>
     <Tabs.Screen name="feedback-inbox" options={{href:null,title:'Tell Kleenest'}}/>
     <Tabs.Screen name="beta-incidents" options={{href:null,title:'Beta Incidents'}}/>

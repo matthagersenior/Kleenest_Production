@@ -85,7 +85,7 @@ export default function GuestInsights(){
     <Text style={{color:theme.ink,fontSize:25,fontWeight:'900'}}>{format(value)}</Text>
     <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>{detail}</Text>
   </View>;
-  return <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh}/>} contentContainerStyle={{padding:16,paddingBottom:80,gap:13,backgroundColor:theme.canvas}}>
+  return <ScrollView style={{flex:1,backgroundColor:theme.canvas}} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh}/>} contentContainerStyle={{padding:16,paddingBottom:80,gap:13,backgroundColor:theme.canvas,minHeight:'100%'}}>
     <SectionHeader title="Guest Insights" body="Anonymous journeys, engagement, acquisition and friction. Private to the platform owner."/>
     <View style={{flexDirection:'row',gap:9}}>
       {([7,30] as const).map(period=><Pressable key={period} onPress={()=>setDays(period)} accessibilityRole="button" accessibilityState={{selected:days===period}} style={{...card,paddingVertical:10,backgroundColor:days===period?theme.accent:theme.surface,flex:1,alignItems:'center'}}>
