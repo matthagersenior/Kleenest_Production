@@ -86,7 +86,12 @@ export function analyzeDuplicateCase(item: DuplicateCase): ReviewInsight {
   const phoneSame = Boolean(phoneKey(first.phone) && phoneKey(second.phone) && phoneKey(first.phone) === phoneKey(second.phone));
   const phoneConflict = Boolean(phoneKey(first.phone) && phoneKey(second.phone) && phoneKey(first.phone) !== phoneKey(second.phone));
   const cityConflict = Boolean(value(first.city) && value(second.city) && normalized(first.city) !== normalized(second.city));
+  const stateConflict = Boolean(value(first.state) && value(second.state) && normalized(first.state) !== normalized(second.state));
+  const postalConflict = Boolean(value(first.postal_code) && value(second.postal_code) && normalized(first.postal_code) !== normalized(second.postal_code));
+  const websiteConflict = Boolean(websiteKey(first.website) && websiteKey(second.website) && websiteKey(first.website) !== websiteKey(second.website));
   const categoryConflict = Boolean(first.place_type && second.place_type && !categoriesSame);
+  const genericName = /^(publicplace|publicrestroom|unnamed.*|restroom|bathroom)$/.test(normalized(first.name))
+    || /^(publicplace|publicrestroom|unnamed.*|restroom|bathroom)$/.test(normalized(second.name));
   if (namesSame) signals.push('Business names match after punctuation and spacing cleanup');
   if (addressSame) signals.push('Street addresses match after standard abbreviations');
   if (brandSame) signals.push('Brand identity matches');
@@ -103,23 +108,27 @@ export function analyzeDuplicateCase(item: DuplicateCase): ReviewInsight {
   if (dist === null)
     return insight('high',null,'Find missing map evidence','One or both map positions are unknown. Verify coordinates and the actual premises before choosing an identity.');
   if (dist > 100)
-    return insight(dist > 1000?'urgent':'high','needs_geocoding',
-      'Investigate conflicting map coordinates',
+    return insight(dist > 1000?'urgent':'high',item.status==='needs_geocoding'?null:'needs_geocoding',
+      item.status==='needs_geocoding'?'Coordinate correction still needs verification':'Investigate conflicting map coordinates',
       `These records are ${Math.round(dist).toLocaleString()} metres apart despite their reported identity or address match. Verify the true entrance/site first; do not merge on name or street alone.`);
-  if (cityConflict)
-    return insight('high',null,'Verify city and municipal boundary','The reported cities differ. A municipal boundary may explain it; verify address and entrance before making an identity decision.');
-  if (categoryConflict || phoneConflict)
+  if (stateConflict || cityConflict || postalConflict)
+    return insight('high',null,'Verify conflicting address details',
+      'The state, city or ZIP differs. Verify the correct site and municipal boundary before making any identity decision.');
+  if (genericName)
+    return insight('high',null,'Generic names are not identities',
+      'Two unnamed places or restrooms at the same address can be distinct fixtures or entrances. Check independent source IDs and the physical layout first.');
+  if (categoryConflict || phoneConflict || websiteConflict)
     return insight('high',null,'Resolve contradictory business details',
-      `${categoryConflict?'The location categories disagree. ':''}${phoneConflict?'Different phone numbers may indicate different tenants or stale information. ':''}Compare the real establishment before confirming a duplicate.`);
+      `${categoryConflict?'The location categories disagree. ':''}${phoneConflict?'Different phone numbers may indicate different tenants or stale information. ':''}${websiteConflict?'The website domains differ. ':''}Compare the actual establishment and source evidence before confirming a duplicate.`);
   if (addressSame && namesSame && dist <= 20 && (categoriesSame || !first.place_type || !second.place_type))
     return insight('high','confirmed','Likely duplicate — verify and confirm',
       'The cleaned name and street address agree and the pins are very close. Check that these are the same storefront, not two suites, entrances or separate amenities.');
-  if (addressSame && brandSame && dist <= 20 && namesSame)
-    return insight('high','confirmed','Likely brand duplicate — verify and confirm',
-      'Brand, cleaned name and address agree. Confirm it is one establishment before classifying.');
+  if (addressSame && brandSame && dist <= 20 && !namesSame && (phoneSame || (websiteKey(first.website) && websiteKey(first.website)===websiteKey(second.website))))
+    return insight('high','confirmed','Possible brand alias — verify the storefront',
+      'The reported names vary but the canonical brand and independent contact details match. Check that these truly refer to one establishment before confirming.');
   if (dist <= 15 && addressSame && !namesSame)
-    return insight('high','co_located','Check for two tenants in one building',
-      'The map positions and street address overlap, but names differ. This could be alternate branding or separate businesses. Keep both until verified.');
+    return insight('high',null,'Check for separate tenants or aliases',
+      'The pins and address overlap but the names differ. They may be different businesses, different departments, or alternative brand names. Confirm the physical relationship before selecting Shared building or Same business.');
   return insight('standard',null,'Compare identity and storefront',
     'There is a possible match but insufficient evidence for a confident action. Verify the current name, entrance, category and source records.');
 }

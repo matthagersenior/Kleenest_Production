@@ -3,7 +3,7 @@ import { ActivityIndicator, Linking, Pressable, RefreshControl, ScrollView, Styl
 import { usePlatformTheme } from '../services/theme';
 import {
   classifyOwnerLocationDuplicate, getOwnerDuplicateCounts, listDuplicateReviewHistory,
-  listOwnerLocationDuplicates, type DuplicateCase, type DuplicateLocation,
+  listOwnerLocationDuplicates, type DuplicateCase, type DuplicateLocation, type DuplicateReviewCursor,
   type DuplicateReviewEvent, type DuplicateStatus,
 } from '../services/locationDedup';
 import { analyzeDuplicateCase, type ReviewDifference } from '../services/locationDuplicateInsights';
@@ -74,6 +74,9 @@ export default function LocationDuplicates(){
   const theme=usePlatformTheme();
   const [status,setStatus]=useState<DuplicateStatus>('pending');
   const [page,setPage]=useState(0);
+  const [cursor,setCursor]=useState<DuplicateReviewCursor|null>(null);
+  const [cursorHistory,setCursorHistory]=useState<(DuplicateReviewCursor|null)[]>([]);
+  const [reachedEnd,setReachedEnd]=useState(false);
   const [index,setIndex]=useState(0);
   const [rows,setRows]=useState<DuplicateCase[]>([]);
   const [counts,setCounts]=useState<Partial<Record<DuplicateStatus,number>>>({});
@@ -86,6 +89,8 @@ export default function LocationDuplicates(){
   const [history,setHistory]=useState<DuplicateReviewEvent[]|null>(null);
   const [historyBusy,setHistoryBusy]=useState(false);
   const latestRequest=useRef(0);
+  const pageEnd=useRef<DuplicateReviewCursor|null>(null);
+  const pageWasFull=useRef(false);
   const item=rows[index];
   const insight=useMemo(()=>item?analyzeDuplicateCase(item):null,[item]);
   const allTotal=lanes.reduce((sum,lane)=>sum+(counts[lane.key]||0),0);
@@ -94,22 +99,24 @@ export default function LocationDuplicates(){
   const percent=allTotal?Math.round(handled*100/allTotal):0;
   const laneTotal=counts[status]||0;
 
-  async function load(nextStatus:DuplicateStatus=status,nextPage:number=page){
+  async function load(nextStatus:DuplicateStatus=status,nextCursor:DuplicateReviewCursor|null=cursor){
     const request=++latestRequest.current;
     setBusy(true);setError('');
     try{
       const [cases,nextCounts]=await Promise.all([
-        listOwnerLocationDuplicates(nextStatus,nextPage,PAGE_SIZE),
+        listOwnerLocationDuplicates(nextStatus,nextCursor,PAGE_SIZE),
         getOwnerDuplicateCounts(),
       ]);
       if(request!==latestRequest.current)return;
-      setRows(cases);setCounts(nextCounts);setIndex(0);
+      setRows(cases);setCounts(nextCounts);setIndex(0);setReachedEnd(false);
+      pageEnd.current=cases.length?cases[cases.length-1]:null;
+      pageWasFull.current=cases.length===PAGE_SIZE;
     }catch(e:unknown){
       if(request!==latestRequest.current)return;
       setRows([]);setError(e instanceof Error?e.message:'Unable to load duplicate cases');
     }finally{if(request===latestRequest.current)setBusy(false);}
   }
-  useEffect(()=>{void load(status,page);},[status,page]);
+  useEffect(()=>{void load(status,cursor);},[status,cursor]);
   useEffect(()=>{
     setNotes(item?.review_notes||'');
     setProposed(null);
@@ -117,18 +124,31 @@ export default function LocationDuplicates(){
   },[item?.id]);
 
   function selectLane(next:DuplicateStatus){
-    setMessage('');setError('');setIndex(0);setPage(0);setStatus(next);
-    if(next===status)void load(next,0);
+    setMessage('');setError('');setIndex(0);setPage(0);setCursorHistory([]);
+    setCursor(null);setReachedEnd(false);setStatus(next);
+    if(next===status&&cursor===null)void load(next,null);
+  }
+  function nextBatch(){
+    if(pageWasFull.current&&pageEnd.current){
+      setCursorHistory(old=>[...old,cursor]);
+      setCursor(pageEnd.current);setPage(n=>n+1);setIndex(0);
+    }else{
+      setRows([]);setReachedEnd(true);
+    }
   }
   function advance(){
     setMessage('');setError('');
     if(index<rows.length-1)setIndex(index+1);
-    else {setIndex(0);setPage(page+1);}
+    else nextBatch();
   }
   function previous(){
     setMessage('');setError('');
-    if(index>0)setIndex(index-1);
-    else if(page>0){setIndex(0);setPage(page-1);}
+    if(index>0){setIndex(index-1);return;}
+    if(cursorHistory.length>0){
+      setCursor(cursorHistory[cursorHistory.length-1]);
+      setCursorHistory(old=>old.slice(0,-1));setPage(n=>Math.max(0,n-1));
+      setReachedEnd(false);
+    }
   }
   async function saveDecision(){
     if(!item||!proposed||saving)return;
@@ -137,8 +157,14 @@ export default function LocationDuplicates(){
       await classifyOwnerLocationDuplicate(item,proposed,notes);
       setMessage(`Case #${item.id}: ${actionLabel[proposed]}. Decision logged; no business records merged.`);
       setProposed(null);
-      // A status change removes the case from an open lane; refresh to select the next case.
-      await load(status,page);
+      // Keep this batch in its original ordering. Re-fetching an offset
+      // window after deletion could re-show skipped rows and skip unseen rows.
+      if(rows.length===1)nextBatch();
+      else {
+        setRows(current=>current.filter(candidate=>candidate.id!==item.id));
+        setIndex(current=>Math.min(current,rows.length-2));
+      }
+      setCounts(await getOwnerDuplicateCounts());
     }catch(e:unknown){
       setError(e instanceof Error?e.message:'Unable to save review');
     }finally{setSaving(false);}
@@ -153,7 +179,7 @@ export default function LocationDuplicates(){
   }
 
   return <ScrollView style={{backgroundColor:theme.canvas}}
-    refreshControl={<RefreshControl refreshing={busy} onRefresh={()=>void load(status,page)}/>}
+    refreshControl={<RefreshControl refreshing={busy} onRefresh={()=>void load(status,cursor)}/>}
     contentContainerStyle={s.page}>
     <View style={[s.hero,{backgroundColor:theme.accent}]}>
       <Text style={[s.kicker,{color:theme.accentText}]}>KLEENESTOS · DATA INTEGRITY</Text>
@@ -183,7 +209,7 @@ export default function LocationDuplicates(){
     {!busy&&item&&insight?<View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
       <View style={s.diffHead}>
         <Text style={[s.headingSmall,{color:theme.ink}]}>Case #{item.id}</Text>
-        <Text style={[s.count,{color:theme.muted}]}>{page*PAGE_SIZE+index+1} / {laneTotal.toLocaleString()}</Text>
+        <Text style={[s.count,{color:theme.muted}]}>Batch {page+1} · {index+1} of {rows.length} · {laneTotal.toLocaleString()} remaining in lane</Text>
       </View>
       <Text style={[s.detail,{color:theme.muted}]}>{metres(item.distance_m)} · Rule match {Math.round(Number(item.confidence)*100)}% (not a verified probability)</Text>
       <View style={[s.recommendation,{borderColor:insight.urgency==='urgent'?theme.danger:theme.line,backgroundColor:theme.surfaceRaised}]}>
@@ -252,15 +278,15 @@ export default function LocationDuplicates(){
       </View>:null}
     </View>:null}
     {!busy&&!item?<View style={[s.card,{borderColor:theme.line,backgroundColor:theme.surface}]}>
-      <Text style={[s.headingSmall,{color:theme.ink}]}>No more cases on this page</Text>
-      <Text style={[s.detail,{color:theme.muted}]}>Continue from the first remaining case or choose another review lane.</Text>
-      <Pressable accessibilityRole="button" onPress={()=>{setPage(0);void load(status,0);}}
+      <Text style={[s.headingSmall,{color:theme.ink}]}>{reachedEnd?'End of this review lane':'No more cases on this page'}</Text>
+      <Text style={[s.detail,{color:theme.muted}]}>Open the next batch of remaining cases or choose another review lane.</Text>
+      <Pressable accessibilityRole="button" onPress={()=>{setPage(0);setCursorHistory([]);setCursor(null);void load(status,null);}}
         style={[s.recommendedAction,{backgroundColor:theme.accent}]}>
         <Text style={{color:theme.accentText,fontWeight:'900'}}>Return to remaining cases</Text>
       </Pressable>
     </View>:null}
     <View style={s.navigator}>
-      <Pressable accessibilityRole="button" disabled={busy||(!page&&!index)}
+      <Pressable accessibilityRole="button" disabled={busy||(!cursorHistory.length&&!index)}
         onPress={previous} style={[s.action,{backgroundColor:theme.surface,borderColor:theme.line}]}>
         <Text style={{color:theme.ink,fontWeight:'800'}}>← Previous</Text>
       </Pressable>

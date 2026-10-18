@@ -44,8 +44,8 @@ test('large coordinate conflicts take priority over names and addresses',()=>{
 test('same-building distinct names are never automatically merged',()=>{
   const result=analyze(caseOf({distance_m:0,
     second:location({name:'Tenant B',phone:null})}));
-  assert.equal(result.suggestedStatus,'co_located');
-  assert.match(result.headline,/two tenants/i);
+  assert.equal(result.suggestedStatus,null);
+  assert.match(result.headline,/separate tenants or aliases/i);
 });
 
 test('conflicting categories prevent automatic duplicate recommendations',()=>{
@@ -69,4 +69,68 @@ test('missing records never get a confident recommendation',()=>{
   const result=analyze(caseOf({second:undefined}));
   assert.equal(result.suggestedStatus,null);
   assert.equal(result.urgency,'high');
+});
+
+test('same address but unrelated tenants needs investigation before co-location',()=>{
+  const result=analyze(caseOf({distance_m:3,
+    second:location({name:'Tenant B',phone:null})}));
+  assert.equal(result.suggestedStatus,null);
+  assert.match(result.headline,/separate tenants or aliases/i);
+});
+test('abbreviated brand names with matching contact can be proposed as duplicates',()=>{
+  const result=analyze(caseOf({
+    second:location({name:'QuikTrip',brand_name:'QuikTrip',phone:'(847) 382-8772'}),
+    first:location({name:'QT',brand_name:'QT'}),distance_m:6,
+  }));
+  assert.equal(result.suggestedStatus,'confirmed');
+  assert.match(result.headline,/brand alias/i);
+});
+test('brand-name alias alone is insufficient to confirm two storefronts',()=>{
+  const result=analyze(caseOf({
+    first:location({name:'QT',brand_name:'QT',phone:null}),
+    second:location({name:'QuikTrip',brand_name:'QuikTrip',phone:null}),
+  }));
+  assert.equal(result.suggestedStatus,null);
+});
+test('matching name is not enough when state or postal code conflicts',()=>{
+  const result=analyze(caseOf({second:location({state:'MO',postal_code:'63101'})}));
+  assert.equal(result.suggestedStatus,null);
+  assert.match(result.headline,/address details/i);
+});
+test('two different websites require investigation before confirming same business',()=>{
+  const result=analyze(caseOf({first:location({website:'https://first.example'}),
+    second:location({website:'https://second.example'})}));
+  assert.equal(result.suggestedStatus,null);
+});
+test('geocoding lane does not repeatedly recommend selecting the same status',()=>{
+  const result=analyze(caseOf({status:'needs_geocoding',distance_m:7300}));
+  assert.equal(result.suggestedStatus,null);
+});
+test('two generic restroom listings cannot be confirmed by near-identical map pins',()=>{
+  const result=analyze(caseOf({
+    first:location({name:'Public Restroom'}),
+    second:location({name:'Public Restroom'}),distance_m:0,
+  }));
+  assert.equal(result.suggestedStatus,null);
+});
+
+test('review pagination does not use unstable offsets while statuses change',()=>{
+  const service=fs.readFileSync(new URL('../apps/platform-mobile/services/locationDedup.ts',import.meta.url),'utf8');
+  assert.doesNotMatch(service,/\.range\(start,/);
+  assert.match(service,/query\.or\(filter\)/);
+  assert.match(service,/distance_m\.lt\./);
+  assert.match(service,/confidence\.lt\./);
+});
+test('review saves require unchanged status and timestamp',()=>{
+  const service=fs.readFileSync(new URL('../apps/platform-mobile/services/locationDedup.ts',import.meta.url),'utf8');
+  assert.match(service,/eq\('status',item\.status\)/);
+  assert.match(service,/eq\('reviewed_at',item\.reviewed_at\)/);
+  assert.match(service,/is\('reviewed_at',null\)/);
+});
+test('review workflow retains an explicit confirmation step and cursor navigation',()=>{
+  const screen=fs.readFileSync(new URL('../apps/platform-mobile/app/location-duplicates.tsx',import.meta.url),'utf8');
+  assert.match(screen,/setCursorHistory/);
+  assert.match(screen,/nextBatch\(/);
+  assert.match(screen,/Save and continue/);
+  assert.match(screen,/no business records merged/i);
 });

@@ -50,21 +50,43 @@ export type DuplicateReviewEvent = {
 export const openReviewStatuses: DuplicateStatus[] = ['pending','needs_geocoding'];
 const client = () => getKleenestSupabaseClient();
 
-// Only the next 40 records are fetched. This prevents massive mobile tables and
-// supports page-by-page review of the backlog without pulling all 3,500+ rows.
-export async function listOwnerLocationDuplicates(status: DuplicateStatus, page = 0, limit = 40): Promise<DuplicateCase[]> {
+// A keyset cursor does not shift when the owner changes the status of earlier
+// cases. OFFSET paging skipped records as the review queue shrank.
+export type DuplicateReviewCursor = Pick<DuplicateCase,'id'|'confidence'|'distance_m'>;
+export async function listOwnerLocationDuplicates(
+  status:DuplicateStatus, after:DuplicateReviewCursor|null=null,limit=40
+):Promise<DuplicateCase[]> {
   await requirePlatformOwner();
-  const size = Math.min(Math.max(1,limit),80);
-  const start = Math.max(0,page)*size;
-  let query = client().from('location_duplicate_cases')
+  const size=Math.min(Math.max(1,limit),80);
+  let query=client().from('location_duplicate_cases')
     .select('id,first_location_id,second_location_id,rule,confidence,status,distance_m,review_notes,reviewed_at,created_at')
     .eq('status',status);
-  query = status==='needs_geocoding'
-    ? query.order('distance_m',{ascending:false}).order('id',{ascending:true})
-    : status==='pending'
-      ? query.order('confidence',{ascending:false}).order('distance_m',{ascending:true}).order('id',{ascending:true})
-      : query.order('reviewed_at',{ascending:false,nullsFirst:false}).order('id',{ascending:false});
-  const { data,error } = await query.range(start,start+size-1);
+  if(status==='pending'){
+    query=query.order('confidence',{ascending:false})
+      .order('distance_m',{ascending:true,nullsFirst:false}).order('id',{ascending:true});
+    if(after){
+      const conf=Number(after.confidence);
+      const id=Number(after.id);
+      const dist=after.distance_m===null?null:Number(after.distance_m);
+      const filter=dist===null
+        ? `confidence.lt.${conf},and(confidence.eq.${conf},distance_m.is.null,id.gt.${id})`
+        : `confidence.lt.${conf},and(confidence.eq.${conf},distance_m.gt.${dist}),and(confidence.eq.${conf},distance_m.eq.${dist},id.gt.${id}),and(confidence.eq.${conf},distance_m.is.null)`;
+      query=query.or(filter);
+    }
+  } else if(status==='needs_geocoding'){
+    query=query.order('distance_m',{ascending:false,nullsFirst:false}).order('id',{ascending:true});
+    if(after){
+      const id=Number(after.id);
+      const dist=after.distance_m===null?null:Number(after.distance_m);
+      query=query.or(dist===null
+        ? `and(distance_m.is.null,id.gt.${id})`
+        : `distance_m.lt.${dist},and(distance_m.eq.${dist},id.gt.${id}),distance_m.is.null`);
+    }
+  } else {
+    query=query.order('id',{ascending:false});
+    if(after)query=query.lt('id',after.id);
+  }
+  const {data,error}=await query.limit(size);
   if(error) throw error;
   const cases=(data??[]) as DuplicateCase[];
   if(!cases.length) return [];
@@ -79,14 +101,19 @@ export async function listOwnerLocationDuplicates(status: DuplicateStatus, page 
 
 export async function getOwnerDuplicateCounts():Promise<Record<DuplicateStatus,number>> {
   await requirePlatformOwner();
-  const statuses:DuplicateStatus[]=['pending','needs_geocoding','confirmed','co_located','different_businesses','resolved'];
-  const entries=await Promise.all(statuses.map(async status=>{
-    const {count,error}=await client().from('location_duplicate_cases')
-      .select('id',{count:'exact',head:true}).eq('status',status);
-    if(error)throw error;
-    return [status,count??0] as const;
-  }));
-  return Object.fromEntries(entries) as Record<DuplicateStatus,number>;
+  const counts:Record<DuplicateStatus,number>={
+    pending:0,needs_geocoding:0,confirmed:0,co_located:0,
+    different_businesses:0,resolved:0,
+  };
+  // Invoker-security view preserves owner RLS and avoids six round trips.
+  const {data,error}=await client().from('owner_location_duplicate_review_counts')
+    .select('status,case_count');
+  if(error)throw error;
+  for(const row of data??[]){
+    const key=row.status as DuplicateStatus;
+    if(Object.prototype.hasOwnProperty.call(counts,key))counts[key]=Number(row.case_count)||0;
+  }
+  return counts;
 }
 
 export async function listDuplicateReviewHistory(caseId:number):Promise<DuplicateReviewEvent[]> {
@@ -104,12 +131,17 @@ export async function classifyOwnerLocationDuplicate(
   item:DuplicateCase,status:DuplicateStatus,reviewNotes:string
 ):Promise<void> {
   await requirePlatformOwner();
-  const {data,error}=await client().from('location_duplicate_cases')
+  const update=client().from('location_duplicate_cases')
     .update({
       status, review_notes:reviewNotes.trim() || null,
       reviewed_at:new Date().toISOString(),
     })
-    .eq('id',item.id).eq('status',item.status).select('id').maybeSingle();
+    .eq('id',item.id).eq('status',item.status);
+  // Status alone is not a lock if another reviewer edits notes in-place.
+  const guarded=item.reviewed_at
+    ? update.eq('reviewed_at',item.reviewed_at)
+    : update.is('reviewed_at',null);
+  const {data,error}=await guarded.select('id').maybeSingle();
   if(error)throw error;
   if(!data)throw new Error('This case was changed in another session. Refresh to review the latest evidence.');
 }
