@@ -32,7 +32,7 @@ class OvertureWorkerTests(unittest.TestCase):
         class NeverQuery:
             def execute(self, *_):
                 raise AssertionError("query should not run")
-        for bbox in ([], [-90, 38, -91, 39], [-200, 38, -90, 39]):
+        for bbox in ([], [-90, 38, -91, 39], [-200, 38, -90, 39], [float('nan'), 38, -90, 39]):
             with self.subTest(bbox=bbox), self.assertRaises(ValueError):
                 worker.extract(NeverQuery(), "2026-09-23.1", bbox, "")
 
@@ -51,6 +51,8 @@ class OvertureWorkerTests(unittest.TestCase):
         self.assertEqual(conn.params[-2], "id-1")
         self.assertLessEqual(conn.params[-1], 500)
         self.assertIn("ORDER BY id", conn.query)
+        self.assertIn("ST_X(ST_GeomFromWKB(geometry)) BETWEEN", conn.query)
+        self.assertIn("ST_Y(ST_GeomFromWKB(geometry)) BETWEEN", conn.query)
 
 if __name__ == "__main__":
     unittest.main()
