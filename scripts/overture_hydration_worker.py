@@ -31,7 +31,7 @@ def extract(conn, release, bbox, after):
     if not (-180 <= west < east <= 180 and -90 <= south < north <= 90):
         raise ValueError("invalid coordinates")
     uri = f"s3://overturemaps-us-west-2/release/{release}/theme=places/type=place/*"
-    query = """SELECT id, names.primary AS name, categories.primary AS category,
+    query = """SELECT id, names.primary AS name, taxonomy.primary AS category,
                       ST_X(ST_GeomFromWKB(geometry)) AS longitude, ST_Y(ST_GeomFromWKB(geometry)) AS latitude
                FROM read_parquet(?, hive_partitioning=true)
                WHERE bbox.xmin <= ? AND bbox.xmax >= ?
