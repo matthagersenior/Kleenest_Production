@@ -1,0 +1,26 @@
+name: Overture Worker Checks
+on:
+  pull_request:
+    paths:
+      - 'scripts/overture_hydration_worker.py'
+      - 'scripts/test_overture_hydration_worker.py'
+      - 'scripts/requirements-overture.txt'
+      - '.github/workflows/overture-*.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  worker-unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r scripts/requirements-overture.txt
+      - name: Compile worker and tests
+        run: python -m py_compile scripts/overture_hydration_worker.py scripts/test_overture_hydration_worker.py
+      - name: Verify worker invariants
+        run: python -m unittest scripts/test_overture_hydration_worker.py
