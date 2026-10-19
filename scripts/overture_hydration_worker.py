@@ -24,7 +24,10 @@ def extract(conn, release, bbox, after):
         raise ValueError("invalid release")
     if not isinstance(bbox, list) or len(bbox) != 4:
         raise ValueError("invalid bbox")
+    import math
     west, south, east, north = map(float, bbox)
+    if not all(math.isfinite(value) for value in (west, south, east, north)):
+        raise ValueError('non-finite coordinates')
     if not (-180 <= west < east <= 180 and -90 <= south < north <= 90):
         raise ValueError("invalid coordinates")
     uri = f"s3://overturemaps-us-west-2/release/{release}/theme=places/type=place/*"
@@ -34,8 +37,10 @@ def extract(conn, release, bbox, after):
                WHERE bbox.xmin <= ? AND bbox.xmax >= ?
                  AND bbox.ymin <= ? AND bbox.ymax >= ?
                  AND id > ? AND names.primary IS NOT NULL
+                 AND ST_X(ST_GeomFromWKB(geometry)) BETWEEN ? AND ?
+                 AND ST_Y(ST_GeomFromWKB(geometry)) BETWEEN ? AND ?
                ORDER BY id LIMIT ?"""
-    return conn.execute(query, [uri, east, west, north, south, after, LIMIT]).fetchall()
+    return conn.execute(query, [uri, east, west, north, south, after, west, east, south, north, LIMIT]).fetchall()
 
 def run():
     # Initialize the extractor before claiming a leased task.
@@ -44,6 +49,9 @@ def run():
     conn.execute("INSTALL httpfs; LOAD httpfs;")
     conn.execute("INSTALL spatial; LOAD spatial;")
     conn.execute("SET s3_region='us-west-2'")
+    # Overture is public: never require cloud credentials for this read.
+    conn.execute("SET s3_access_key_id=''")
+    conn.execute("SET s3_secret_access_key=''")
     task = rpc("claim_overture_hydration_task", {})
     if not task:
         print(json.dumps({"status": "idle"}))
