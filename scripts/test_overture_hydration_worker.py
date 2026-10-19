@@ -48,7 +48,7 @@ class OvertureWorkerTests(unittest.TestCase):
         conn = Connection()
         result = worker.extract(conn, "2026-09-23.1", [-91, 37, -89, 39], "id-1")
         self.assertEqual(result[0][0], "id-2")
-        self.assertEqual(conn.params[-2], "id-1")
+        self.assertEqual(conn.params[5], "id-1")
         self.assertLessEqual(conn.params[-1], 500)
         self.assertIn("ORDER BY id", conn.query)
         self.assertIn("ST_X(ST_GeomFromWKB(geometry)) BETWEEN", conn.query)
