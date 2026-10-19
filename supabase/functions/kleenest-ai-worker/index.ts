@@ -23,7 +23,14 @@ Deno.serve(async req=>{
  if(evidence.length>4200)return Response.json({status:"evidence_too_large"});
  const models=(snapshot.models as M[]??[]).filter(m=>m.enabled&&m.model!=="unconfigured"&&m.supports_json&&m.allowed_data_class in level&&level[m.allowed_data_class]>=level[task.data_class]&&env[m.provider]&&Deno.env.get(env[m.provider])&&m.input_usd_per_million!==null&&m.output_usd_per_million!==null&&m.input_usd_per_million>=0&&m.output_usd_per_million>=0);
  const cooling=new Set((snapshot.health??[]).filter((v:{cooldown_until:string|null})=>v.cooldown_until&&new Date(v.cooldown_until).getTime()>Date.now()).map((v:{provider_model_id:string})=>v.provider_model_id));
- selected=models.filter(m=>!cooling.has(m.id)).sort((a,b)=>a.priority-b.priority)[0];
+ const available=models.filter(m=>!cooling.has(m.id)).sort((a,b)=>a.priority-b.priority);
+ // Companion reviews must use the opposite independently available provider.
+ // Never silently substitute the original model for an independent review.
+ if(String(task.input_fingerprint??"").startsWith("peer-v1-")){
+  const parentFingerprint=String(task.input_fingerprint).slice("peer-v1-".length);
+  const parent=await rpc("kleenest_ai_peer_primary_provider",{p_capability:task.capability,p_fingerprint:parentFingerprint});
+  selected=available.find(m=>m.provider!==parent && (m.provider==="groq"||m.provider==="gemini"));
+ }else selected=available[0];
  if(!selected)return Response.json({status:"no_verified_models",paid_inference_calls:0});
  const estimated=Math.max(0.000001,(maxInput*selected.input_usd_per_million!+maxOutput*selected.output_usd_per_million!)/1000000);
  if(estimated>0.1||estimated>Number(snapshot.budget.remaining_usd))return Response.json({status:"budget_limit"});
