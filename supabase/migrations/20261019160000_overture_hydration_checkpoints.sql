@@ -65,7 +65,7 @@ begin
   if jsonb_typeof(p_rows)<>'array' then raise exception 'rows must be an array'; end if;
   v_count:=jsonb_array_length(p_rows);
   if v_count>500 then raise exception 'overture page too large'; end if;
-  if p_last_id is null or p_last_id<v_checkpoint.last_source_id then
+  if p_last_id is null or (p_last_id collate "C") < (v_checkpoint.last_source_id collate "C") then
     raise exception 'overture cursor regressed';
   end if;
   if v_count>0 then
