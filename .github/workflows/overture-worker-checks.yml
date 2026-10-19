@@ -33,7 +33,6 @@ jobs:
           geom=c.execute("SELECT ST_AsWKB(ST_Point(-90.0,38.0))").fetchone()[0]
           c.execute('CREATE TABLE sample (id VARCHAR, names STRUCT(primary VARCHAR), categories STRUCT(primary VARCHAR), geometry BLOB, bbox STRUCT(xmin DOUBLE, xmax DOUBLE, ymin DOUBLE, ymax DOUBLE))')
           c.execute('INSERT INTO sample VALUES (?, ?, ?, ?, ?)', ['a', {'primary':'Sample'}, {'primary':'restaurant'}, geom, {'xmin':-90.0,'xmax':-90.0,'ymin':38.0,'ymax':38.0}])
-          from scripts.overture_hydration_worker import extract
-          rows=extract(c, '2026-09-23.1', [-91.0,37.0,-89.0,39.0], '') if False else c.execute('SELECT ST_X(ST_GeomFromWKB(geometry)),ST_Y(ST_GeomFromWKB(geometry)) FROM sample').fetchall()
+          rows=c.execute('SELECT ST_X(ST_GeomFromWKB(geometry)),ST_Y(ST_GeomFromWKB(geometry)) FROM sample').fetchall()
           assert rows == [(-90.0,38.0)], rows
           PY
