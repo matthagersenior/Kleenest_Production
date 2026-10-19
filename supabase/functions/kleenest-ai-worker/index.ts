@@ -50,13 +50,13 @@ Deno.serve(async req=>{
  let response:Response;
  try{
  if(selected.provider==="gemini")response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(selected.model)+":generateContent",{method:"POST",headers:{"content-type":"application/json","x-goog-api-key":secret},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxOutput,responseMimeType:"application/json",responseSchema:{type:"OBJECT",properties:{summary:{type:"STRING"},recommendation:{type:"STRING"},confidence:{type:"NUMBER"},requires_human_approval:{type:"BOOLEAN"}},required:["summary","recommendation","confidence","requires_human_approval"]},temperature:0.35}}),signal:controller.signal});
- else response=await fetch(urls[selected.provider],{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+secret},body:JSON.stringify({model:selected.model,messages:[{role:"user",content:prompt}],max_tokens:selected.provider==="groq"?650:maxOutput,temperature:0.35,response_format:{type:"json_object"}}),signal:controller.signal});
+ else response=await fetch(urls[selected.provider],{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+secret},body:JSON.stringify({model:selected.model,messages:[{role:"user",content:prompt}],max_tokens:maxOutput,temperature:0.35,response_format:{type:"json_object"}}),signal:controller.signal});
  }finally{clearTimeout(timeout)}
  if(!response.ok){const detail=(await response.text()).slice(0,250);console.error("osai_provider_failure",selected.provider,response.status,detail);throw Error("provider_http_"+response.status)}
  const output=await response.json();
  const raw=selected.provider==="gemini"?output.candidates?.[0]?.content?.parts?.[0]?.text:output.choices?.[0]?.message?.content;
  if(typeof raw!=="string"||raw.length>12000)throw Error("invalid_output");
- const parsed=JSON.parse(raw);
+ const parsed=JSON.parse(raw); if(typeof parsed.confidence==="string" && /^0(?:\\.\\d+)?$|^1(?:\\.0+)?$/.test(parsed.confidence.trim()))parsed.confidence=Number(parsed.confidence);
  if(!parsed||typeof parsed.summary!=="string"||typeof parsed.recommendation!=="string"||typeof parsed.confidence!=="number"||typeof parsed.requires_human_approval!=="boolean")throw Error("invalid_schema");
  const inputTokens=Number(selected.provider==="gemini"?output.usageMetadata?.promptTokenCount:output.usage?.prompt_tokens)||maxInput;
  const outputTokens=Number(selected.provider==="gemini"?output.usageMetadata?.candidatesTokenCount:output.usage?.completion_tokens)||maxOutput;
