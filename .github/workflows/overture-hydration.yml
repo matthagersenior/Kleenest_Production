@@ -27,5 +27,7 @@ jobs:
           test -n "$SUPABASE_SERVICE_ROLE_KEY"
       - name: Install pinned dependencies
         run: pip install -r scripts/requirements-overture.txt
+      - name: Verify worker invariants
+        run: python -m unittest scripts/test_overture_hydration_worker.py
       - name: Run bounded Overture extraction
         run: python scripts/overture_hydration_worker.py
