@@ -1,5 +1,6 @@
+import { Link } from 'expo-router';
 import { useCallback,useEffect,useState } from 'react';
-import { RefreshControl,ScrollView,Text,View } from 'react-native';
+import { Pressable,RefreshControl,ScrollView,Text,View } from 'react-native';
 import { DiagnosticDisclosure,HealthCard,OSHero,SectionHeader,StatusPill } from '../components/KleenestOS';
 import { getOwnerOperationsBundle } from '../services/ownerAdmin';
 import { usePlatformTheme } from '../services/theme';
@@ -69,6 +70,7 @@ export default function Operations(){
   const overview=object(data?.overview),integrity=object(data?.integrity);
   const activity=activityRows(data?.activity);
   return <ScrollView contentInsetAdjustmentBehavior="automatic" refreshControl={<RefreshControl refreshing={busy} onRefresh={load}/>} contentContainerStyle={{padding:18,gap:16,paddingBottom:70,backgroundColor:theme.canvas}}>
+    <Link href="/ai-jobs" asChild><Pressable accessibilityRole="link" accessibilityLabel="Open AI investigations and results" style={{padding:15,gap:6,borderWidth:2,borderRadius:16,borderColor:theme.accent,backgroundColor:theme.surface}}><Text style={{color:theme.accent,fontSize:11,fontWeight:"900",letterSpacing:1}}>KLEENESTOS AI</Text><Text style={{color:theme.ink,fontSize:20,fontWeight:"900"}}>AI Jobs & Results →</Text><Text style={{color:theme.muted}}>Review model findings, queued investigations, independent challenges and provider status.</Text></Pressable></Link>
     <OSHero eyebrow="KLEENESTOS · PLATFORM HEALTH" title="Platform Health" body="Monitor integrity, delivery, backend resources and recent platform activity. Interactive Discovery is the canonical acquisition path; legacy national-ingestion controls are retired, and current operations live in the dedicated Ingestion Control center."/>
     <View style={{backgroundColor:theme.surface,borderWidth:1,borderColor:theme.line,borderRadius:16,padding:14,gap:4}}>
       <Text style={{fontWeight:'900',color:theme.ink}}>Discovery is the acquisition authority</Text>

@@ -94,6 +94,7 @@ export default function Layout(){
     <Tabs.Screen name="accounts" options={{href:null,title:'Accounts'}}/>
     <Tabs.Screen name="guest-insights" options={{href:null,title:'Guest Insights'}}/>
     <Tabs.Screen name="history" options={{href:null,title:'History'}}/>
+    <Tabs.Screen name="ai-jobs" options={{href:null,title:"AI Jobs & Results"}}/>
     <Tabs.Screen name="intelligence" options={{href:null,title:'Intelligence'}}/>
     <Tabs.Screen name="reports" options={{href:null,title:'Reports'}}/>
     <Tabs.Screen name="growth" options={{href:null,title:'Growth'}}/>
