@@ -161,6 +161,7 @@ export default function ControlCenter(){
     <View style={{gap:9}}>
       <SectionHeader title="Global workspaces" body="Reach the real owner controls directly. Search is reserved for record-level administration."/>
       <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+        <WorkspaceLink href="/ai-jobs" title="KleenestOS AI" body="Live AI jobs, hypotheses, independent model findings, execution audit and budget."/>
         <WorkspaceLink href="/notifications" title="Messaging" body="Rules, audiences, consent, dry-runs and delivery."/>
         <WorkspaceLink href="/progression" title="Economy" body="XP, objectives, progression supply and rewards."/>
         <WorkspaceLink href="/passport" title="Passport" body="Stamp catalog, collections, public defaults and adoption."/>
