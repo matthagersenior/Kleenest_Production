@@ -38,16 +38,16 @@ def extract(conn, release, bbox, after):
     return conn.execute(query, [uri, east, west, north, south, after, LIMIT]).fetchall()
 
 def run():
-    # Never claim work unless the durable checkpoint RPC exists.
-    task = rpc("claim_overture_hydration_task", {})
-    if not task:
-        print(json.dumps({"status": "idle"}))
-        return
+    # Initialize the extractor before claiming a leased task.
     import duckdb
     conn = duckdb.connect()
     conn.execute("INSTALL httpfs; LOAD httpfs;")
     conn.execute("INSTALL spatial; LOAD spatial;")
     conn.execute("SET s3_region='us-west-2'")
+    task = rpc("claim_overture_hydration_task", {})
+    if not task:
+        print(json.dumps({"status": "idle"}))
+        return
     rows = extract(conn, task["release"], task["bbox"], task["last_source_id"])
     records = []
     for identifier, name, category, longitude, latitude in rows:
