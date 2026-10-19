@@ -29,5 +29,16 @@ jobs:
         run: pip install -r scripts/requirements-overture.txt
       - name: Verify worker invariants
         run: python -m unittest scripts/test_overture_hydration_worker.py
+      - name: Require production checkpoint schema before extraction
+        run: |
+          python - <<'PY'
+          import os, requests
+          base=os.environ['SUPABASE_URL'].rstrip('/')
+          key=os.environ['SUPABASE_SERVICE_ROLE_KEY']
+          headers={'apikey':key,'Authorization':'Bearer '+key}
+          r=requests.get(base+'/rest/v1/overture_hydration_checkpoints?select=task_id&limit=0',headers=headers,timeout=20)
+          r.raise_for_status()
+          print('Production checkpoint schema available')
+          PY
       - name: Run bounded Overture extraction
         run: python scripts/overture_hydration_worker.py
