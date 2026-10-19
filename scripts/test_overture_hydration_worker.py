@@ -36,6 +36,15 @@ class OvertureWorkerTests(unittest.TestCase):
             with self.subTest(bbox=bbox), self.assertRaises(ValueError):
                 worker.extract(NeverQuery(), "2026-09-23.1", bbox, "")
 
+    def test_extract_rejects_empty_or_invalid_release(self):
+        worker = self.load_worker()
+        class NeverQuery:
+            def execute(self, *_):
+                raise AssertionError('unexpected query')
+        for release in ('', '../2026-09-23.1', '2026-09-23.1/places', 'release with spaces'):
+            with self.subTest(release=release), self.assertRaises(ValueError):
+                worker.extract(NeverQuery(), release, [-91, 38, -90, 39], '')
+
     def test_stable_id_cursor_and_bounded_query(self):
         worker = self.load_worker()
         class Connection:
