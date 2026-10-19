@@ -1,0 +1,44 @@
+name: Overture hydration
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: overture-hydration-production
+  cancel-in-progress: false
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SUPABASE_URL: ${{ secrets.KLEENEST_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.KLEENEST_SUPABASE_SERVICE_ROLE_KEY }}
+      OVERTURE_BATCH_SIZE: '250'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify configured credentials
+        run: |
+          test -n "$SUPABASE_URL"
+          test -n "$SUPABASE_SERVICE_ROLE_KEY"
+      - name: Install pinned dependencies
+        run: pip install -r scripts/requirements-overture.txt
+      - name: Verify worker invariants
+        run: python -m unittest scripts/test_overture_hydration_worker.py
+      - name: Require production checkpoint schema before extraction
+        run: |
+          python - <<'PY'
+          import os, requests
+          base=os.environ['SUPABASE_URL'].rstrip('/')
+          key=os.environ['SUPABASE_SERVICE_ROLE_KEY']
+          headers={'apikey':key,'Authorization':'Bearer '+key}
+          r=requests.get(base+'/rest/v1/overture_hydration_checkpoints?select=task_id&limit=0',headers=headers,timeout=20)
+          r.raise_for_status()
+          print('Production checkpoint schema available')
+          PY
+      - name: Run bounded Overture extraction
+        run: python scripts/overture_hydration_worker.py
