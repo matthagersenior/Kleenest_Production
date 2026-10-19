@@ -15,7 +15,7 @@ LIMIT = min(500, max(1, int(os.getenv("OVERTURE_BATCH_SIZE", "250"))))
 
 def rpc(name, payload):
     response = requests.post(BASE + "/rest/v1/rpc/" + name, headers=HEADERS,
-                             json=payload, timeout=120)
+                             json=payload, timeout=(10, 120))
     response.raise_for_status()
     return response.json() if response.content else None
 
@@ -52,6 +52,8 @@ def run():
     # Overture is public: never require cloud credentials for this read.
     conn.execute("SET s3_access_key_id=''")
     conn.execute("SET s3_secret_access_key=''")
+    # Refuse to claim a lease if the staging endpoint is absent.
+    # The actual claim/stage RPCs enforce atomic leases and cursor advancement.
     task = rpc("claim_overture_hydration_task", {})
     if not task:
         print(json.dumps({"status": "idle"}))
@@ -75,6 +77,7 @@ def run():
             },
         })
     # Advance by last raw ID, even if some rows were filtered out.
+    # The database staging RPC must persist this cursor even for empty batches.
     last_id = str(rows[-1][0]) if rows else task["last_source_id"]
     result = rpc("stage_overture_hydration_page", {
         "p_task_id": task["task_id"],
