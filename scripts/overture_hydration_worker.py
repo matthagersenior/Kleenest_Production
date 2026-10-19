@@ -29,7 +29,7 @@ def extract(conn, release, bbox, after):
         raise ValueError("invalid coordinates")
     uri = f"s3://overturemaps-us-west-2/release/{release}/theme=places/type=place/*"
     query = """SELECT id, names.primary AS name, categories.primary AS category,
-                      ST_X(geometry) AS longitude, ST_Y(geometry) AS latitude
+                      ST_X(ST_GeomFromWKB(geometry)) AS longitude, ST_Y(ST_GeomFromWKB(geometry)) AS latitude
                FROM read_parquet(?, hive_partitioning=true)
                WHERE bbox.xmin <= ? AND bbox.xmax >= ?
                  AND bbox.ymin <= ? AND bbox.ymax >= ?
@@ -54,7 +54,7 @@ def run():
         if not identifier or not name or latitude is None or longitude is None:
             continue
         records.append({
-            "source_id": str(identifier),
+            "source_id": "overture:" + str(identifier),
             "name": str(name),
             "latitude": float(latitude),
             "longitude": float(longitude),
