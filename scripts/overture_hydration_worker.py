@@ -36,10 +36,10 @@ def extract(conn, release, bbox, after):
                FROM read_parquet(?, hive_partitioning=true)
                WHERE bbox.xmin <= ? AND bbox.xmax >= ?
                  AND bbox.ymin <= ? AND bbox.ymax >= ?
-                 AND id COLLATE "C" > ? AND names.primary IS NOT NULL
+                 AND id > ? AND names.primary IS NOT NULL
                  AND ST_X(ST_GeomFromWKB(geometry)) BETWEEN ? AND ?
                  AND ST_Y(ST_GeomFromWKB(geometry)) BETWEEN ? AND ?
-               ORDER BY id COLLATE "C" LIMIT ?"""
+               ORDER BY id LIMIT ?"""
     return conn.execute(query, [uri, east, west, north, south, after, west, east, south, north, LIMIT]).fetchall()
 
 def run():
