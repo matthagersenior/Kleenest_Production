@@ -56,7 +56,7 @@ Deno.serve(async req=>{
  const output=await response.json();
  const raw=selected.provider==="gemini"?output.candidates?.[0]?.content?.parts?.[0]?.text:output.choices?.[0]?.message?.content;
  if(typeof raw!=="string"||raw.length>12000)throw Error("invalid_output");
- const parsed=JSON.parse(raw); if(typeof parsed.confidence==="string" && /^0(?:\\.\\d+)?$|^1(?:\\.0+)?$/.test(parsed.confidence.trim()))parsed.confidence=Number(parsed.confidence);
+ const parsed=JSON.parse(raw); if(typeof parsed.confidence==="string" && parsed.confidence.trim()!=="" && Number.isFinite(Number(parsed.confidence)) && Number(parsed.confidence)>=0 && Number(parsed.confidence)<=1)parsed.confidence=Number(parsed.confidence);
  if(!parsed||typeof parsed.summary!=="string"||typeof parsed.recommendation!=="string"||typeof parsed.confidence!=="number"||typeof parsed.requires_human_approval!=="boolean")throw Error("invalid_schema");
  const inputTokens=Number(selected.provider==="gemini"?output.usageMetadata?.promptTokenCount:output.usage?.prompt_tokens)||maxInput;
  const outputTokens=Number(selected.provider==="gemini"?output.usageMetadata?.candidatesTokenCount:output.usage?.completion_tokens)||maxOutput;
