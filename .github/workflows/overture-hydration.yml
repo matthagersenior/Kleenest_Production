@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      SUPABASE_URL: ${{ secrets.KLEENEST_SUPABASE_URL }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.KLEENEST_SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_URL: https://ssgesjzdvdsqacdtasje.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.KLEENEST_PROD_SERVICE_ROLE_KEY }}
       OVERTURE_BATCH_SIZE: '250'
     steps:
       - uses: actions/checkout@v4
