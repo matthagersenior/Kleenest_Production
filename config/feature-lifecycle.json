@@ -1035,6 +1035,14 @@
       "kind": "user",
       "status": "wired",
       "gap": "Guest journey ingestion, owner-only RPCs, searchable KleenestOS workspace, privacy-safe instrumentation and initial database smoke tests exist. This feature remains wired pending green main CI, consumer/Owner OTA publishing, live guest event and session inspection, and production-equivalent verification."
+    },
+    {
+      "id": "platform.ingestion-controls",
+      "product": "platform",
+      "capability": "ingestion-controls",
+      "kind": "user",
+      "status": "wired",
+      "gap": "Owner-authorized buttons for adjusting existing source priority, bounded jobs per cycle, and market priority are wired to audit-logged RPCs. Create/delete job CRUD and independent on-demand dispatch remain unavailable, and production UI verification has not been completed."
     }
   ]
 }
