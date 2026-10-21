@@ -48,8 +48,8 @@ begin
    jsonb_build_object(
     'owner_follow_up_question',v_note,
     'original_task_id',p_task_id,
-    'original_observation',left(coalesce(v_task.result->>'summary',''),3000),
-    'original_recommendation',left(coalesce(v_task.result->>'recommendation',''),3000),
+    'original_observation',left(coalesce(v_task.result->>'summary',''),700),
+    'original_recommendation',left(coalesce(v_task.result->>'recommendation',''),1100),
     'human_approval_required',true
    ),
    v_task.data_class,
