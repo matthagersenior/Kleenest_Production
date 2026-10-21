@@ -62,7 +62,8 @@
     "platform.owner-email-inbox",
     "platform.sponsored-ad-crud",
     "platform.creator-missions",
-    "platform.theme-entitlements"
+    "platform.theme-entitlements",
+    "platform.ai-recommendation-actions"
   ],
   "grandfatheredUnverified": [
     "consumer.discovery",
@@ -1035,6 +1036,14 @@
       "kind": "user",
       "status": "wired",
       "gap": "Guest journey ingestion, owner-only RPCs, searchable KleenestOS workspace, privacy-safe instrumentation and initial database smoke tests exist. This feature remains wired pending green main CI, consumer/Owner OTA publishing, live guest event and session inspection, and production-equivalent verification."
+    },
+    {
+      "id": "platform.ai-recommendation-actions",
+      "product": "platform",
+      "capability": "ai-recommendation-actions",
+      "kind": "user",
+      "status": "wired",
+      "gap": "KleenestOS can route recommendations to existing controls and run an explicitly confirmed bounded ingestion cycle. Persistent accept/dismiss/schedule controls and end-to-end action verification are not yet complete."
     }
   ]
 }
