@@ -29,7 +29,7 @@ export default function CoordinateReview() {
    await requirePlatformOwner();
    const {data,error:rpcError}=await getKleenestSupabaseClient().rpc('owner_location_coordinate_review',{p_limit:100});
    if(rpcError)throw rpcError;
-   setCases(Array.isArray(data)?data as CoordinateCase:[]);
+   setCases(Array.isArray(data)?data as CoordinateCase[]:[]);
   }catch(e:unknown){setError(e instanceof Error?e.message:'Unable to load coordinate reviews');}
   finally{setBusy(false);}
  };
