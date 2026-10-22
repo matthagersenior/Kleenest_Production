@@ -76,3 +76,27 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: /language:javascript-typescript
+      - name: Diagnose changed-source SARIF findings
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, glob
+          paths=glob.glob('results/*.sarif')
+          print('SARIF_FILES',paths)
+          changed=('guestMonetization.ts','GuestInstallUpsell.tsx','StorePurchaseControls.tsx','AdMobNativeSlot.tsx','AdMobNativeSlot.native.tsx','sponsorship.ts','membership.tsx','AdaptiveExploreScreen.tsx','guest-insights.tsx')
+          for path in paths:
+            data=json.load(open(path))
+            for run in data.get('runs',[]):
+              rules={rule.get('id'):rule for rule in run.get('tool',{}).get('driver',{}).get('rules',[])}
+              for finding in run.get('results',[]):
+                locations=finding.get('locations') or []
+                for location in locations:
+                  physical=location.get('physicalLocation',{})
+                  uri=physical.get('artifactLocation',{}).get('uri','')
+                  if not any(name in uri for name in changed): continue
+                  rule=rules.get(finding.get('ruleId'),{})
+                  severity=rule.get('properties',{}).get('security-severity','')
+                  line=physical.get('region',{}).get('startLine')
+                  print('SARIF_ALERT',finding.get('ruleId'),severity,uri,line,(finding.get('message',{}).get('text','') or '')[:250])
+          PY
