@@ -39,7 +39,7 @@ assertContains('apps/platform-mobile/app/guest-insights.tsx',[
   "(visitor.visit_count??0)>1",'visitor.friction_events>0',
   'visitor.registration_linked', 'visitor.sessions.map',
 ]);
-assertContains('supabase/migrations/20261022031000_guest_meaningful_return_analytics.sql',[
+assertContains('supabase/migrations/20261022030130_guest_meaningful_return_analytics.sql',[
   "interval '30 minutes'",'visit_clusters','visit_count',
   'private.owner_guest_visit_summary','public.owner_guest_visit_summary',
   'public.is_platform_owner_session()',
