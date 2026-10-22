@@ -44,6 +44,17 @@ module.exports = function withKleenestAndroidWidget(config) {
       await fs.mkdir(path.dirname(out), { recursive: true });
       await fs.copyFile(path.join(source, from), out);
     }
+    // Expo SDK 57's older NDK default is not available on current Ubuntu 26
+    // build images. Pin the installed 27.3 toolchain for reproducible native builds.
+    const gradleProperties = path.join(root, 'gradle.properties');
+    const ndkProperty = 'android.ndkVersion=27.3.13750724';
+    let properties = await fs.readFile(gradleProperties, 'utf8');
+    if (/^android\.ndkVersion=/m.test(properties)) {
+      properties = properties.replace(/^android\.ndkVersion=.*$/m, ndkProperty);
+    } else {
+      properties += '\\n' + ndkProperty + '\\n';
+    }
+    await fs.writeFile(gradleProperties, properties);
     const main = path.join(app, 'java/com/kleenest/app/MainApplication.kt');
     let content = await fs.readFile(main, 'utf8');
     const marker = 'add(com.kleenest.app.widgets.KleenestWidgetPackage())';
