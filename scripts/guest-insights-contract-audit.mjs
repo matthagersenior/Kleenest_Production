@@ -73,7 +73,7 @@ assertContains('packages/mobile-core/src/appSearch.ts',["id:'guest-insights'","r
 const registry=JSON.parse(read('config/feature-lifecycle.json'));
 const guest=registry.features.find(x=>x.id==='platform.guest-insights');
 if(!guest||guest.status!=='wired')throw new Error('Guest Insights lifecycle must remain wired until release verified.');
-assertContains('supabase/migrations/20261022030000_owner_guest_discovery_funnel.sql',[
+assertContains('supabase/migrations/20261022032717_owner_guest_discovery_funnel.sql',[
   'private.owner_guest_discovery_funnel','public.owner_guest_discovery_funnel',
   'public.is_platform_owner_session()','guest_app_sessions','discovery_result_sessions',
   'intentional_discovery_sessions','place_selected_sessions','returning_discovery_visitor_ids',
