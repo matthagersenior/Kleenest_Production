@@ -14,6 +14,14 @@ create table if not exists private.guest_monetization_events (
   source text,
   created_at timestamptz not null default now()
 );
+create table if not exists private.guest_monetization_housekeeping (
+  singleton boolean primary key default true check (singleton),
+  last_pruned_at timestamptz not null default now()
+);
+insert into private.guest_monetization_housekeeping(singleton)
+values(true) on conflict(singleton) do nothing;
+revoke all on private.guest_monetization_housekeeping from public,anon,authenticated;
+grant select,update on private.guest_monetization_housekeeping to service_role;
 alter table private.guest_monetization_events enable row level security;
 revoke all on private.guest_monetization_events from public,anon,authenticated;
 grant select,insert,delete on private.guest_monetization_events to service_role;
@@ -76,6 +84,14 @@ begin
         and e.created_at>now()-interval '60 seconds') then return; end if;
   insert into private.guest_monetization_events(session_id,visitor_key,event_type,placement_code,campaign_id,source)
   values(p_session_id,p_visitor_key,v_event,v_placement,p_campaign_id,v_source);
+  -- Batched retention once per day, piggybacking on active guest traffic.
+  update private.guest_monetization_housekeeping
+  set last_pruned_at=now()
+  where singleton and last_pruned_at<now()-interval '1 day';
+  if found then
+    delete from private.guest_monetization_events
+    where created_at<now()-interval '30 days';
+  end if;
 end;
 $$;
 revoke all on function public.record_guest_monetization_event(text,text,text,text,uuid,text) from public;
