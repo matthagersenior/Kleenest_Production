@@ -12,11 +12,14 @@ const required={
   membership:'apps/consumer-mobile/app/membership.tsx',
   webCheckout:'apps/consumer-mobile/components/StorePurchaseControls.tsx',
   owner:'apps/platform-mobile/app/guest-insights.tsx',
+  acquisition:'apps/consumer-mobile/services/acquisitionAttribution.ts',
 };
 const read=(key)=>{const path=required[key];if(!fs.existsSync(path)){failures.push('Missing '+path);return ''}return fs.readFileSync(path,'utf8')};
 const contents=Object.fromEntries(Object.keys(required).map(key=>[key,read(key)]));
 function needs(key,...tokens){for(const token of tokens)if(!contents[key].includes(token))failures.push(required[key]+': missing '+token)}
 needs('sql','private.guest_monetization_events','enable row level security','to anon,authenticated,service_role','not public.is_platform_owner_session()','owner_guest_monetization_snapshot','30 days','never a billable impression ledger');
+needs('acquisition','cryptoObj.getRandomValues','Secure random generator unavailable');
+if(contents.acquisition.includes('Math.random()'))failures.push('Guest attribution may not mint predictable identifiers');
 needs('event','getKleenestGuestSessionId','acquisitionSessionKey','record_guest_monetization_event');
 needs('sponsor','captureGuestMonetizationEvent','data.session.user.is_anonymous','record_sponsored_event');
 needs('web','network_slot_missing_config','network_request_attempt','ADSENSE_WEB_DISPLAY_SLOT');
