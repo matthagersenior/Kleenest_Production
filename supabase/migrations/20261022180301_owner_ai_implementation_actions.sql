@@ -1,5 +1,5 @@
--- Owner-authorized execution of a fixed catalog of AI recommendation actions.
--- LLM recommendations are never interpreted as executable SQL or arbitrary code.
+
+-- Owner-controlled implementation operations for AI findings. Freeform AI text is never executable.
 create table if not exists kleenest_ai.ai_implementation_actions (
  id uuid primary key default gen_random_uuid(),
  task_id uuid not null references kleenest_ai.ai_tasks(id) on delete cascade,
@@ -16,12 +16,8 @@ create index if not exists ai_implementation_actions_recent_idx on kleenest_ai.a
 alter table kleenest_ai.ai_implementation_actions enable row level security;
 revoke all on kleenest_ai.ai_implementation_actions from public,anon,authenticated;
 
-CREATE OR REPLACE FUNCTION public.owner_ai_implementation_preview(p_task_id uuid, p_action_key text)
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE SECURITY DEFINER
- SET search_path TO ''
-AS $function$
+create or replace function public.owner_ai_implementation_preview(p_task_id uuid, p_action_key text)
+returns jsonb language plpgsql stable security definer set search_path to '' as $fn$
 declare v_task kleenest_ai.ai_tasks%rowtype; v_prior jsonb; v_title text; v_effect text; v_scope text;
 begin
  if auth.uid() is null or not public.is_platform_owner(auth.uid()) then
@@ -55,17 +51,13 @@ begin
   'effect',v_effect,'scope',v_scope,'needs_confirmation',true,'prior',v_prior,
   'warning','The model recommendation is a hypothesis, not verified evidence. Only this named operation will be run.',
   'recommendation',left(coalesce(v_task.result->>'recommendation',''),1200));
-end $function$
-;
+end $fn$;
 revoke all on function public.owner_ai_implementation_preview(uuid,text) from public,anon;
 grant execute on function public.owner_ai_implementation_preview(uuid,text) to authenticated;
 
-CREATE OR REPLACE FUNCTION public.owner_ai_implementation_execute(p_task_id uuid, p_action_key text, p_confirmation text, p_owner_instructions text DEFAULT ''::text)
- RETURNS jsonb
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
+create or replace function public.owner_ai_implementation_execute(
+ p_task_id uuid,p_action_key text,p_confirmation text,p_owner_instructions text default ''
+) returns jsonb language plpgsql security definer set search_path to '' as $fn$
 declare v_owner uuid:=auth.uid();v_task kleenest_ai.ai_tasks%rowtype;
  v_note text:=btrim(coalesce(p_owner_instructions,''));v_id uuid;v_response jsonb;v_status text;v_existing jsonb;
 begin
@@ -125,17 +117,12 @@ begin
  where id=v_id;
  return jsonb_build_object('id',v_id,'task_id',p_task_id,'action_key',p_action_key,
   'status',v_status,'execution_result',v_response,'already_recorded',false,'created_at',now());
-end $function$
-;
+end $fn$;
 revoke all on function public.owner_ai_implementation_execute(uuid,text,text,text) from public,anon;
 grant execute on function public.owner_ai_implementation_execute(uuid,text,text,text) to authenticated;
 
-CREATE OR REPLACE FUNCTION public.owner_ai_jobs_snapshot(p_limit integer DEFAULT 40)
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE SECURITY DEFINER
- SET search_path TO ''
-AS $function$
+create or replace function public.owner_ai_jobs_snapshot(p_limit integer default 40)
+returns jsonb language plpgsql stable security definer set search_path to '' as $fn$
 declare v_result jsonb;
 begin
  if auth.uid() is null or not public.is_platform_owner(auth.uid()) then
@@ -159,5 +146,4 @@ begin
  from kleenest_ai.ai_implementation_actions order by created_at desc limit 300) i),'[]'::jsonb)
  ) into v_result;
  return v_result;
-end $function$
-;
+end $fn$;

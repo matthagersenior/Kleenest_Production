@@ -60,8 +60,8 @@ class OvertureWorkerTests(unittest.TestCase):
         self.assertEqual(conn.params[5], "id-1")
         self.assertLessEqual(conn.params[-1], 500)
         self.assertIn("ORDER BY id", conn.query)
-        self.assertIn("ST_X(ST_GeomFromWKB(geometry)) BETWEEN", conn.query)
-        self.assertIn("ST_Y(ST_GeomFromWKB(geometry)) BETWEEN", conn.query)
+        self.assertIn("ST_X(geometry) BETWEEN", conn.query)
+        self.assertIn("ST_Y(geometry) BETWEEN", conn.query)
 
 if __name__ == "__main__":
     unittest.main()
