@@ -184,9 +184,13 @@ function organizeMapMarkers(rows:any[],zoom:number):MapMarkerGroup[]{
     buckets.set(key,bucket);
   }
   return [...buckets.entries()].map(([key,bucket])=>{
+    // Cluster badges must be anchored to a real member's coordinates rather
+    // than floating between buildings at the arithmetic center of several POIs.
     const longitude=bucket.reduce((sum,row)=>sum+Number(row.longitude),0)/bucket.length;
     const latitude=bucket.reduce((sum,row)=>sum+Number(row.latitude),0)/bucket.length;
-    return {key:`cluster:${key}`,rows:bucket,center:[longitude,latitude]};
+    const squaredDistance=(row:any)=>Math.pow(Number(row.longitude)-longitude,2)+Math.pow(Number(row.latitude)-latitude,2);
+    const anchor=bucket.reduce((best,row)=>squaredDistance(row)<squaredDistance(best)?row:best,bucket[0]);
+    return {key:`cluster:${key}`,rows:bucket,center:[Number(anchor.longitude),Number(anchor.latitude)]};
   });
 }
 function exploreCameraViewState(bounds:any,fitRoute:boolean,center:any,zoom:number){
