@@ -41,6 +41,20 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install SDK 57 Android NDK with retry
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if sdkmanager --install "ndk;27.1.12297006"; then
+              test -s "${ANDROID_HOME}/ndk/27.1.12297006/source.properties"
+              break
+            fi
+            rm -rf "${ANDROID_HOME}/ndk/27.1.12297006"
+            if [ "$attempt" -eq 3 ]; then exit 1; fi
+            sleep 8
+          done
       - run: npm ci --no-audit --no-fund
       - name: Verify widget source and dependency lock
         run: node scripts/consumer-native-widget-audit.mjs
