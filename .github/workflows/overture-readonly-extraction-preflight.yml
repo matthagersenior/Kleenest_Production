@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r scripts/requirements-overture.txt
-      - name: Verify extraction contract
+      - name: Verify native GeoParquet GEOMETRY extraction contract
         run: python -m unittest scripts/test_overture_hydration_worker.py
       - name: Read-only public Overture query validation without claiming a task
         shell: bash
