@@ -82,7 +82,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, glob
-          paths=glob.glob('results/*.sarif')
+          paths=glob.glob('results/*.sarif')+glob.glob('../results/*.sarif')
           print('SARIF_FILES',paths)
           changed=('guestMonetization.ts','GuestInstallUpsell.tsx','StorePurchaseControls.tsx','AdMobNativeSlot.tsx','AdMobNativeSlot.native.tsx','sponsorship.ts','membership.tsx','AdaptiveExploreScreen.tsx','guest-insights.tsx')
           for path in paths:
