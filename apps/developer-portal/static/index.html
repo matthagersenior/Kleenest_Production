@@ -156,6 +156,8 @@ button{transition:transform .12s ease,border-color .12s ease,background .12s eas
     <div id="serverCredential">
       <h3>Server API key</h3>
       <label>Key label<input id="keyLabel" value="Production backend" /></label>
+      <label>Key scopes (comma-separated, least privilege)<input id="keyScopes" value="recommendations:read" autocomplete="off" /></label>
+      <p id="allowedKeyScopes" class="muted">Open a workspace to view allowed server scopes. Device command/write/event scopes are server-only.</p>
       <div class="row"><button id="issueKey" class="primary">Issue server API key</button></div>
       <div id="keySecret" class="secret hidden"></div>
     </div>
@@ -450,6 +452,7 @@ async function loadSummary(){
  const products=summary.product_access?.api_products||[];const surfaces=summary.product_access?.integration_surfaces||[];
  $('metricProducts').textContent=products.length||'—';$('metricBundle').textContent=summary.product_access?.bundle_label||summary.product_access?.bundle_key||'assigned by Kleenest';
  $('metricSurfaces').textContent=surfaces.length||'—';
+  $('allowedKeyScopes').textContent='Allowed server scopes: '+(summary.product_access?.scopes||[]).join(', ')+'. Only grant device command/write/event privileges to trusted backends.';
  showWorkspace(true);renderKeys();renderWebhooks();renderSandbox();updatePlaygroundAvailability();renderOnboarding();renderCapabilities();
 }
 function renderKeys(){
@@ -493,7 +496,11 @@ async function createInvite(){
 }
 async function issueKey(){
  if(!selectedPartnerId)throw new Error('Open a workspace first.');
- const b=await admin('issue-key',{partnerId:selectedPartnerId,label:$('keyLabel').value||'Production backend',scopes:['recommendations:read']});const el=$('keySecret');el.classList.remove('hidden');el.textContent='One-time API key — copy now:\n'+b.api_key;await loadSummary();notice('Server API key issued. Save it now; Kleenest will not show the raw key again.')
+ const scopes=$('keyScopes').value.split(',').map(value=>value.trim()).filter(Boolean);
+  if(!scopes.length)throw new Error('Select at least one server key scope.');
+  const allowed=summary?.product_access?.scopes||[];
+  if(scopes.some(scope=>!allowed.includes(scope)&&!allowed.includes('*')))throw new Error('Requested server key scope exceeds workspace permissions.');
+  const b=await admin('issue-key',{partnerId:selectedPartnerId,label:$('keyLabel').value||'Production backend',scopes});const el=$('keySecret');el.classList.remove('hidden');el.textContent='One-time API key — copy now:\n'+b.api_key;await loadSummary();notice('Server API key issued. Save it now; Kleenest will not show the raw key again.')
 }
 async function issuePublicToken(){
  if(!selectedPartnerId)throw new Error('Open a workspace first.');const origin=$('clientOrigin').value.trim();if(!origin)throw new Error('Allowed origin is required.');
