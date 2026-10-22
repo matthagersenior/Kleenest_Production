@@ -2,6 +2,7 @@ import { createElement, useEffect, useRef, useState } from 'react';
 import { Pressable,StyleSheet,Text,View } from 'react-native';
 import { router } from 'expo-router';
 import { consumerNetworkAdPlacementEnabled } from '../services/networkAds';
+import { captureGuestMonetizationEvent } from '../services/guestMonetization';
 import { useConsumerTheme } from '../services/theme';
 
 const ADSENSE_CLIENT=String(process.env.EXPO_PUBLIC_ADSENSE_CLIENT_ID||'ca-pub-6958734306376288').trim();
@@ -25,9 +26,16 @@ export function AdMobNativeSlot({contextClass}:{keywords?:string[];contextClass?
   const theme=useConsumerTheme();
   const[allowed,setAllowed]=useState(false);
   const pushed=useRef(false);
+  const reportedMissingSlot=useRef(false);
   const placement=String(contextClass||'network').trim().toLowerCase();
 
   useEffect(()=>{let active=true;void consumerNetworkAdPlacementEnabled(placement).then(value=>{if(active)setAllowed(value)});return()=>{active=false}},[placement]);
+  useEffect(()=>{
+    if(allowed&&(!ADSENSE_CLIENT||!ADSENSE_WEB_DISPLAY_SLOT)&&!reportedMissingSlot.current){
+      reportedMissingSlot.current=true;
+      captureGuestMonetizationEvent('network_slot_missing_config',placement,null,'web_adsense');
+    }
+  },[allowed,placement]);
   useEffect(()=>{
     if(!allowed||!ADSENSE_CLIENT||!ADSENSE_WEB_DISPLAY_SLOT||pushed.current)return;
     const runtime=globalThis as any;
@@ -37,6 +45,7 @@ export function AdMobNativeSlot({contextClass}:{keywords?:string[];contextClass?
       const queue=runtime.adsbygoogle=runtime.adsbygoogle||[];
       queue.push({});
       pushed.current=true;
+      captureGuestMonetizationEvent('network_request_attempt',placement,null,'web_adsense');
     }catch{}
   },[allowed,placement]);
 
