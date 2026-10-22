@@ -41,12 +41,23 @@ function randomKey(){
   return 'acq-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12);
 }
 
-export async function acquisitionSessionKey(){
-  const existing=await AsyncStorage.getItem(SESSION_KEY);
-  if(existing)return existing;
-  const created=randomKey();
-  await AsyncStorage.setItem(SESSION_KEY,created);
-  return created;
+// Deduplicate concurrent first-open events. Without this, simultaneous landing,
+ // app-open and discovery calls can mint different identifiers for one guest.
+let acquisitionSessionKeyPromise:Promise<string>|null=null;
+export function acquisitionSessionKey():Promise<string>{
+  if(!acquisitionSessionKeyPromise){
+    acquisitionSessionKeyPromise=(async()=>{
+      const existing=await AsyncStorage.getItem(SESSION_KEY);
+      if(existing)return existing;
+      const created=randomKey();
+      await AsyncStorage.setItem(SESSION_KEY,created);
+      return created;
+    })().catch(error=>{
+      acquisitionSessionKeyPromise=null;
+      throw error;
+    });
+  }
+  return acquisitionSessionKeyPromise;
 }
 
 function currentReferrerHost(){

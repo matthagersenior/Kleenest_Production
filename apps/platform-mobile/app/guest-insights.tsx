@@ -5,6 +5,24 @@ import { SectionHeader, useOSCardStyle } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
 
 type Metric = { event_name:string; events:number };
+type DiscoveryFunnel = {
+  guest_app_sessions:number;
+  discovery_sessions:number;
+  discovery_result_sessions:number;
+  intentional_discovery_sessions:number;
+  search_sessions:number;
+  filtered_sessions:number;
+  place_selected_sessions:number;
+  navigation_sessions:number;
+  zero_result_sessions:number;
+  non_discovery_sessions:number;
+  discovery_rate_percent:number;
+  intentional_rate_percent:number;
+  place_selection_rate_percent:number;
+  guest_entry_visitor_ids:number;
+  guest_entry_discovery_visitor_ids:number;
+  returning_discovery_visitor_ids:number;
+};
 type Session = {
   session_id:string;
   visitor_label:string;
@@ -70,6 +88,8 @@ export default function GuestInsights(){
   const card=useOSCardStyle();
   const [days,setDays]=useState<7|30>(7);
   const [data,setData]=useState<Snapshot|null>(null);
+  const [discovery,setDiscovery]=useState<DiscoveryFunnel|null>(null);
+  const [discoveryError,setDiscoveryError]=useState('');
   const [loading,setLoading]=useState(true);
   const [refreshing,setRefreshing]=useState(false);
   const [error,setError]=useState('');
@@ -84,15 +104,23 @@ export default function GuestInsights(){
   const [events,setEvents]=useState<Event[]>([]);
   const [detailBusy,setDetailBusy]=useState(false);
   const load=useCallback(async()=>{
-    const [snapshot,groups,visitSummaryResult]=await Promise.all([
+    const [snapshot,groups,visitSummaryResult,funnel]=await Promise.all([
       getKleenestSupabaseClient().rpc('owner_guest_journey_snapshot',{p_days:days}),
       getKleenestSupabaseClient().rpc('owner_guest_visitor_groups',{p_days:days}),
       getKleenestSupabaseClient().rpc('owner_guest_visit_summary',{p_days:days}),
+      getKleenestSupabaseClient().rpc('owner_guest_discovery_funnel',{p_days:days}),
     ]);
     const {data:response,error:rpcError}=snapshot;
     if(rpcError)throw rpcError;
     if(!response || typeof response.tracked_events!=='number' || !Array.isArray(response.recent_sessions))throw new Error('Guest Insights returned incomplete data.');
     setData(response as Snapshot);
+    if(funnel.error || !funnel.data || typeof funnel.data.guest_app_sessions!=='number'){
+      setDiscovery(null);
+      setDiscoveryError(funnel.error?.message||'Discovery funnel unavailable on this version.');
+    }else{
+      setDiscovery(funnel.data as DiscoveryFunnel);
+      setDiscoveryError('');
+    }
     if(visitSummaryResult.error || typeof visitSummaryResult.data?.estimated_visits!=='number'){
       setVisitSummary(null);
       setVisitSummaryError(visitSummaryResult.error?.message||'Inactivity-based visit estimates unavailable.');
@@ -113,6 +141,8 @@ export default function GuestInsights(){
     let active=true;
     setLoading(true);
     setSelected(null);
+    setDiscovery(null);
+    setDiscoveryError('');
     setSelectedVisitor(null);
     setEvents([]);
     void load().catch(reason=>{if(active){setData(null);setError(reason?.message||'Guest Insights unavailable.')}}).finally(()=>{if(active)setLoading(false)});
@@ -174,6 +204,33 @@ export default function GuestInsights(){
         <MetricCard title="Navigated" value={data.navigation_sessions} detail="Sessions with directions started"/>
         <MetricCard title="No-results sessions" value={data.zero_result_sessions} detail="Missing results worth investigating"/>
         <MetricCard title="Linked registrations" value={data.registrations_linked} detail="Recently created accounts linked to prior guest activity"/>
+      </View>
+      <View style={{...card,gap:10}}>
+        <Text style={{color:theme.ink,fontWeight:'900',fontSize:17}}>Guest → Discovery funnel</Text>
+        <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>Based on recorded guest app sessions, not landing-page views. Distinct pseudonymous IDs are not verified individuals.</Text>
+        {discoveryError?<Text accessibilityRole="alert" style={{color:theme.danger,fontSize:12}}>{discoveryError}</Text>:null}
+        {discovery?<><View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+          <MetricCard title="Guest app visits" value={discovery.guest_app_sessions} detail="Sessions where the consumer app opened"/>
+          <MetricCard title="Discovery shown" value={discovery.discovery_sessions} detail={`${format(discovery.discovery_rate_percent)}% of guest app visits; includes automatic nearby results`}/>
+          <MetricCard title="Intentional Discovery" value={discovery.intentional_discovery_sessions} detail={`${format(discovery.intentional_rate_percent)}% searched, applied filters, selected places or navigated`}/>
+          <MetricCard title="Places selected" value={discovery.place_selected_sessions} detail={`${format(discovery.place_selection_rate_percent)}% of guest app visits`}/>
+        </View>
+        <Text style={{color:theme.ink,fontWeight:'800'}}>Activity breakdown (distinct sessions)</Text>
+        {([
+          ['Nearby results displayed',discovery.discovery_result_sessions],
+          ['Search performed',discovery.search_sessions],
+          ['Filters applied',discovery.filtered_sessions],
+          ['Place opened',discovery.place_selected_sessions],
+          ['Directions started',discovery.navigation_sessions],
+          ['No Discovery activity',discovery.non_discovery_sessions],
+          ['Zero-result sessions',discovery.zero_result_sessions],
+        ] as const).map(([label,value])=><View key={label} style={{flexDirection:'row',justifyContent:'space-between',gap:10}}>
+          <Text style={{color:theme.muted,flex:1}}>{label}</Text><Text style={{color:theme.ink,fontWeight:'800'}}>{format(value)}</Text>
+        </View>)}
+        <Text style={{color:theme.ink,fontWeight:'800'}}>Guest journey connection</Text>
+        <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>{format(discovery.guest_entry_discovery_visitor_ids)} of {format(discovery.guest_entry_visitor_ids)} tracked visitor IDs had both a guest-entry event and Discovery activity (possibly across sessions; event order is not inferred). {format(discovery.returning_discovery_visitor_ids)} returning visitor IDs have Discovery activity.</Text>
+        <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>Categories overlap: searching and selecting a place in the same visit counts once in each category, never twice in the total. Events before guest journey instrumentation cannot be retroactively matched.</Text>
+        </>:null}
       </View>
       <View style={{...card,gap:6}}>
         <Text style={{color:theme.ink,fontWeight:'900',fontSize:16}}>Understanding coverage</Text>
