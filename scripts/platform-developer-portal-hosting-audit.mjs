@@ -32,6 +32,32 @@ for (const phrase of [
 ]) {
   if (!html.includes(phrase)) throw new Error(`Static developer portal missing: ${phrase}`);
 }
+for (const phrase of [
+  'COMPLETE INTEGRATION CATALOG',
+  'Embeddable Web Widget',
+  'Official Consumer Home-screen Widget',
+  'Dedicated Native Mobile SDK',
+  'Not shipped',
+  'Smart Facilities',
+  'Place Evidence + Verified Access',
+  'Canonical Deep Links + QR',
+  'keyScopes',
+  'allowedKeyScopes',
+  'renderCapabilities',
+]) {
+  if (!html.includes(phrase)) throw new Error('Developer capability catalog lacks: ' + phrase);
+}
+const ownerProductControls=file('apps/platform-mobile/app/developers.tsx');
+for (const phrase of ["'smart_devices'", "'devices:read'", "'devices:write'", "'devices:command'", "'devices:events:write'"]) {
+  if (!ownerProductControls.includes(phrase)) throw new Error('KleenestOS owner controls lack '+phrase);
+}
+const accessMigration=file('supabase/migrations/20261022135000_owner_smart_device_product_scope_alignment.sql');
+for (const phrase of ["'smart_devices'", "'devices:events:write'", 'is_platform_owner_session()']) {
+  if (!accessMigration.includes(phrase)) throw new Error('Smart facility owner migration missing '+phrase);
+}
+if (!file('supabase/functions/platform-api/index.ts').includes("(isDevices && req.method === 'POST')?'/v1/devices/register'")) {
+  throw new Error('Register device must require devices:write, not devices:read.');
+}
 if (!/Content-Security-Policy/i.test(html)) throw new Error('Static portal must include a CSP.');
 for (const token of ['manifest.webmanifest','navigator.serviceWorker.register','Install Developer Portal']) if (!html.includes(token)) throw new Error(`Developer Portal PWA missing: ${token}`);
 const manifestJson=JSON.parse(manifest);

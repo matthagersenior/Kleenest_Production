@@ -103,6 +103,41 @@ export class KleenestClient {
     return this.request(`/v1/places/${encodeURIComponent(id)}/access`);
   }
 
+  listAmenities(): Promise<{ amenities: Array<{ id: string; name: string; category: string }> }> {
+    return this.request('/v1/amenities');
+  }
+
+  private requireServerKey(action: string): void {
+    if (!this.apiKey) throw new Error(action + ' requires a server API key; do not use a Browser token for devices.');
+  }
+
+  listSmartDevices(): Promise<unknown> {
+    this.requireServerKey('listSmartDevices');
+    return this.request('/v1/devices');
+  }
+
+  registerSmartDevice(input: Record<string, unknown>): Promise<unknown> {
+    this.requireServerKey('registerSmartDevice');
+    return this.request('/v1/devices', { method: 'POST', body: JSON.stringify(input) });
+  }
+
+  sendSmartDeviceEvent(input: Record<string, unknown>): Promise<unknown> {
+    this.requireServerKey('sendSmartDeviceEvent');
+    return this.request('/v1/devices/events', { method: 'POST', body: JSON.stringify(input) });
+  }
+
+  commandSmartDevice(deviceId: string, input: Record<string, unknown>): Promise<unknown> {
+    this.requireServerKey('commandSmartDevice');
+    if (!deviceId) throw new Error('deviceId is required');
+    return this.request('/v1/devices/' + encodeURIComponent(deviceId) + '/commands', { method: 'POST', body: JSON.stringify(input) });
+  }
+
+  completeSmartDeviceCommand(deviceId: string, commandId: string, input: Record<string, unknown>): Promise<unknown> {
+    this.requireServerKey('completeSmartDeviceCommand');
+    if (!deviceId || !commandId) throw new Error('deviceId and commandId are required');
+    return this.request('/v1/devices/' + encodeURIComponent(deviceId) + '/commands/' + encodeURIComponent(commandId) + '/complete', { method: 'POST', body: JSON.stringify(input) });
+  }
+
   getRouteIntelligence(input:RouteRecommendationRequest):Promise<PublicRouteIntelligence>{
     return this.request('/v1/intelligence/route',{
       method:'POST',

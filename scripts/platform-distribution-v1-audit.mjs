@@ -13,7 +13,34 @@ for (const path of ['/v1/recommendations/nearby','/v1/recommendations/route']) {
 }
 if (!spec.components?.securitySchemes?.KleenestApiKey) throw new Error('OpenAPI must define KleenestApiKey auth.');
 
+const publishedSpec = JSON.parse(file('supabase/functions/platform-distribution/openapi.json'));
+const sourceRoutes = Object.keys(spec.paths).sort();
+const publishedRoutes = Object.keys(publishedSpec.paths).sort();
+if (JSON.stringify(sourceRoutes) !== JSON.stringify(publishedRoutes)) {
+  throw new Error('Publicly distributed OpenAPI endpoint inventory drifted from the canonical API spec.');
+}
+for (const required of [
+  '/v1/amenities',
+  '/v1/places/{placeId}/intelligence',
+  '/v1/places/{placeId}/proof',
+  '/v1/places/{placeId}/access',
+  '/v1/intelligence/route',
+  '/v1/devices',
+  '/v1/devices/events'
+]) if (!publishedSpec.paths[required]) throw new Error('Distribution OpenAPI omitted '+required);
+const packagedSdk = file('packages/sdk-js/src/index.ts');
+for (const method of ['getPlaceIntelligence','getPlaceProof','getVerifiedAccess','getRouteIntelligence','listAmenities',
+  'listSmartDevices','registerSmartDevice','sendSmartDeviceEvent','commandSmartDevice','completeSmartDeviceCommand']) {
+  if (!packagedSdk.includes(method)) throw new Error('Typed SDK lacks '+method);
+}
 const dist = file('supabase/functions/platform-distribution/index.ts');
+for (const method of ['getPlaceIntelligence','getPlaceProof','getVerifiedAccess','getRouteIntelligence','listAmenities',
+  'listSmartDevices','registerSmartDevice','sendSmartDeviceEvent','commandSmartDevice','completeSmartDeviceCommand']) {
+  if (!dist.includes(method)) throw new Error('Hosted SDK lacks '+method);
+}
+if (!/requireServerKey/.test(dist) || !/requireServerKey/.test(packagedSdk)) {
+  throw new Error('Smart device SDK calls must require server credentials, never Browser tokens.');
+}
 for (const route of ['/v1/manifest.json','/v1/openapi.json','/v1/sdk.js','/v1/widget.js','/v1/map.js','/v1/route.js']) {
   if (!dist.includes(route)) throw new Error(`Distribution function must serve ${route}.`);
 }

@@ -748,7 +748,8 @@ Deno.serve(async req => {
 
   let auth: Authorization;
   try {
-    const authRoute=isAmenities?'/v1/places/amenities'
+    const authRoute=(isDevices && req.method === 'POST')?'/v1/devices/register'
+      :isAmenities?'/v1/places/amenities'
       :isRouteIntelligence?'/v1/recommendations/route'
       :(isPlaceIntelligence||isPlaceProof||isVerifiedAccess)?routePath.replace(/\/(intelligence|proof|access)$/,'')
       :routePath;
