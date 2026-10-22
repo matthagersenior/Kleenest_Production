@@ -29,7 +29,7 @@ type Visitor = {
   last_action:string;
   sessions:Session[];
 };
-type VisitorFilter='all'|'returning'|'single'|'friction'|'engaged';
+type VisitorFilter='all'|'returning'|'multi_day'|'single'|'friction'|'engaged';
 type Event = {
   event_name:string;
   occurred_at:string;
@@ -118,6 +118,7 @@ export default function GuestInsights(){
   const installCount=(name:string)=>data?.acquisition_events?.find(item=>item.event_name===name)?.events??0;
   const visibleVisitors=visitors.filter(visitor=>{
     if(visitorFilter==='returning')return visitor.session_count>1;
+    if(visitorFilter==='multi_day')return visitor.active_days>1;
     if(visitorFilter==='single')return visitor.session_count===1;
     if(visitorFilter==='friction')return visitor.friction_events>0;
     if(visitorFilter==='engaged')return visitor.place_selections+visitor.navigation_starts+visitor.review_actions>0;
@@ -125,7 +126,7 @@ export default function GuestInsights(){
   }).sort((a,b)=>visitorSort==='frequent'
     ? b.session_count-a.session_count || Date.parse(b.last_seen_at)-Date.parse(a.last_seen_at)
     : Date.parse(b.last_seen_at)-Date.parse(a.last_seen_at));
-  const filterLabels:Record<VisitorFilter,string>={all:'All',returning:'Returning',single:'One session',friction:'Friction',engaged:'Engaged'};
+  const filterLabels:Record<VisitorFilter,string>={all:'All',returning:'Repeat sessions',multi_day:'Multi-day',single:'One session',friction:'Friction',engaged:'Engaged'};
   const MetricCard=({title,value,detail}:{title:string;value:unknown;detail:string})=><View style={{...card,flexGrow:1,minWidth:138,flexBasis:'43%',gap:5}}>
     <Text style={{color:theme.muted,fontSize:12,fontWeight:'700'}}>{title}</Text>
     <Text style={{color:theme.ink,fontSize:25,fontWeight:'900'}}>{format(value)}</Text>
@@ -182,7 +183,7 @@ export default function GuestInsights(){
         {visitorError?<Text accessibilityRole="alert" style={{color:theme.danger}}>Grouped histories unavailable: {visitorError}. Showing recent individual sessions instead.</Text>:null}
         {!visitorError&&visitors.length>0?<View style={{gap:9}}>
           <View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>
-            {(['all','returning','single','friction','engaged'] as const).map(filter=><Pressable key={filter} accessibilityRole="button" accessibilityState={{selected:visitorFilter===filter}} onPress={()=>setVisitorFilter(filter)} style={{borderWidth:1,borderColor:visitorFilter===filter?theme.accent:theme.line,backgroundColor:visitorFilter===filter?theme.accent:theme.surface,borderRadius:9,paddingHorizontal:11,paddingVertical:8}}>
+            {(['all','returning','multi_day','single','friction','engaged'] as const).map(filter=><Pressable key={filter} accessibilityRole="button" accessibilityState={{selected:visitorFilter===filter}} onPress={()=>setVisitorFilter(filter)} style={{borderWidth:1,borderColor:visitorFilter===filter?theme.accent:theme.line,backgroundColor:visitorFilter===filter?theme.accent:theme.surface,borderRadius:9,paddingHorizontal:11,paddingVertical:8}}>
               <Text style={{color:visitorFilter===filter?theme.accentText:theme.ink,fontWeight:'800',fontSize:12}}>{filterLabels[filter]}</Text>
             </Pressable>)}
           </View>
