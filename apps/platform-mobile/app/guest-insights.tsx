@@ -97,6 +97,21 @@ type Snapshot = {
 function format(value:unknown){return typeof value==='number'?value.toLocaleString():'Unavailable'}
 function readable(name:string){return String(name).replaceAll('_',' ').replace(/\b\w/g, c=>c.toUpperCase())}
 function dateTime(value:string){const date=new Date(value);return Number.isNaN(date.getTime())?'Unavailable':date.toLocaleString()}
+function journeyContext(context:Record<string,unknown>){
+  const lines:string[]=[];
+  const searchKind=context.search_kind;
+  if(searchKind==='nearby')lines.push('Search: nearby discovery');
+  else if(searchKind==='place_or_business')lines.push('Search: place or business');
+  else if(searchKind==='address_or_area')lines.push('Search: address or area');
+  else if(context.search_present===true)lines.push('Search: text entered (phrase not stored)');
+  if(typeof context.area_cell==='string')lines.push(`Approximate search area · ~5 km grid: ${context.area_cell}`);
+  if(Array.isArray(context.filters)&&context.filters.length)lines.push(`Filters: ${context.filters.map(String).join(', ')}`);
+  if(typeof context.result_count==='number')lines.push(`Results shown: ${format(context.result_count)}`);
+  if(typeof context.radius_meters==='number')lines.push(`Search radius: ${(context.radius_meters/1000).toFixed(1)} km`);
+  const known=new Set(['search_kind','search_present','area_cell','filters','result_count','radius_meters']);
+  for(const [key,value] of Object.entries(context))if(!known.has(key))lines.push(`${readable(key)}: ${String(value)}`);
+  return lines;
+}
 export default function GuestInsights(){
   const theme=usePlatformTheme();
   const card=useOSCardStyle();
@@ -361,7 +376,7 @@ export default function GuestInsights(){
                   {!detailBusy&&events.map((entry,i)=><View key={i} style={{gap:2,paddingVertical:4}}>
                     <Text style={{color:theme.ink,fontWeight:'800'}}>{readable(entry.event_name)}{entry.location_name?` · ${entry.location_name}`:''}</Text>
                     <Text style={{color:theme.muted,fontSize:12}}>{dateTime(entry.occurred_at)}</Text>
-                    {entry.context&&Object.keys(entry.context).length?<Text style={{color:theme.muted,fontSize:12}}>{Object.entries(entry.context).map(([key,value])=>`${readable(key)}: ${String(value)}`).join(' · ')}</Text>:null}
+                    {entry.context&&Object.keys(entry.context).length?journeyContext(entry.context).map((line,index)=><Text key={index} style={{color:theme.muted,fontSize:12}}>{line}</Text>):null}
                   </View>)}
                 </View>:null}
               </View>)}
@@ -377,7 +392,7 @@ export default function GuestInsights(){
         </View>):null}
         {!visitorError&&!visitors.length?<View style={card}><Text style={{color:theme.muted}}>No detailed guest sessions recorded yet.</Text></View>:null}
       </View>
-      <Text style={{color:theme.muted,lineHeight:19,fontSize:12}}>Guest identifiers are pseudonymous first-party random IDs. No device fingerprinting, IP addresses, exact GPS traces or raw search strings are saved by this system. Events are capped per session and retained for up to 30 days while new activity is arriving.</Text>
+      <Text style={{color:theme.muted,lineHeight:19,fontSize:12}}>Guest identifiers are pseudonymous first-party random IDs. Search details show the search type, selected amenity filters, result count and a roughly 5 km area cell. No device fingerprinting, IP addresses, exact GPS traces or raw search phrases are saved. Events are capped per session and retained for up to 30 days while new activity is arriving.</Text>
     </>:null}
   </ScrollView>;
 }

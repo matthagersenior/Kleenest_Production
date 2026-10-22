@@ -2,7 +2,7 @@ import fs from 'node:fs';
 
 const failures=[];
 const required={
-  sql:'supabase/migrations/20261022190000_guest_monetization_funnel.sql',
+  sql:'supabase/migrations/20261022185231_guest_monetization_funnel_20261022.sql',
   event:'apps/consumer-mobile/services/guestMonetization.ts',
   sponsor:'apps/consumer-mobile/services/sponsorship.ts',
   web:'apps/consumer-mobile/components/AdMobNativeSlot.tsx',

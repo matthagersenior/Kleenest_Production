@@ -142,10 +142,12 @@ export async function recordAcquisitionEvent(
 
 function safeGuestJourneyContext(input:Record<string,unknown>){
   const result:Record<string,unknown>={};
-  for(const key of ['surface','source','method','device_kind','browser_kind'] as const){
+  for(const key of ['surface','source','method','device_kind','browser_kind','search_kind','area_cell'] as const){
     if(typeof input[key]==='string')result[key]=String(input[key]).slice(0,50);
   }
   if(Number.isInteger(input.resultCount)&&Number(input.resultCount)>=0)result.resultCount=Math.min(Number(input.resultCount),100000);
+  if(Number.isInteger(input.radiusMeters)&&Number(input.radiusMeters)>=0)result.radiusMeters=Math.min(Number(input.radiusMeters),50000);
+  if(Array.isArray(input.filters))result.filters=input.filters.filter(value=>typeof value==='string').slice(0,12).map(value=>String(value).slice(0,40));
   // Record only whether a search occurred; never transmit or persist the search phrase.
   if(Object.prototype.hasOwnProperty.call(input,'search'))result.search=Boolean(input.search);
   return result;

@@ -1150,7 +1150,18 @@ export default function AdaptiveExploreScreen() {
     });
 
     captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:displayRows.length,search:originalQuery,amenityCount:activeAmenityNames.length});
-    captureConsumerCoreLoopEvent('nearby_results_shown',null,{resultCount:displayRows.length,radiusMeters:result.effectiveRadiusMeters,search:Boolean(rawQuery),cached:false});
+    // Keep guest diagnostics useful without retaining the guest's exact search phrase
+    // or precise location. The area is a roughly 5 km grid cell, not a GPS coordinate.
+    const areaCell=`${(Math.round(latitude*20)/20).toFixed(2)},${(Math.round(longitude*20)/20).toFixed(2)}`;
+    captureConsumerCoreLoopEvent('nearby_results_shown',null,{
+      resultCount:displayRows.length,
+      radiusMeters:result.effectiveRadiusMeters,
+      search:Boolean(rawQuery),
+      search_kind:areaMatch?'address_or_area':rawQuery?'place_or_business':'nearby',
+      area_cell:areaCell,
+      filters:activeAmenityNames,
+      cached:false,
+    });
 
     if (!areaMatch&&!query && !activeAmenityNames.length && !requiresRestroom && displayRows.length) {
       void writeNearbyCache(displayRows,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
