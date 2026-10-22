@@ -205,7 +205,7 @@ export default function GuestInsights(){
           <Text style={{color:theme.muted,flex:1}}>{label}</Text><Text style={{color:theme.ink,fontWeight:'800'}}>{format(value)}</Text>
         </View>)}
         <Text style={{color:theme.ink,fontWeight:'800'}}>Guest journey connection</Text>
-        <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>{format(discovery.guest_entry_discovery_visitor_ids)} of {format(discovery.guest_entry_visitor_ids)} tracked visitor IDs used Discovery after recording a guest-entry event (possibly across sessions). {format(discovery.returning_discovery_visitor_ids)} returning visitor IDs have Discovery activity.</Text>
+        <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>{format(discovery.guest_entry_discovery_visitor_ids)} of {format(discovery.guest_entry_visitor_ids)} tracked visitor IDs had both a guest-entry event and Discovery activity (possibly across sessions; event order is not inferred). {format(discovery.returning_discovery_visitor_ids)} returning visitor IDs have Discovery activity.</Text>
         <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>Categories overlap: searching and selecting a place in the same visit counts once in each category, never twice in the total. Events before guest journey instrumentation cannot be retroactively matched.</Text>
         </>:null}
       </View>
