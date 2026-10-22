@@ -83,7 +83,7 @@ const config: ExpoConfig = {
         name:'KleenestNearby',
         displayName:'Kleenest Nearby',
         description:'Fresh nearby restroom results and one-tap Explorer, Routes and QR actions',
-        ios:{supportedFamilies:['systemSmall','systemMedium','systemLarge']},
+        supportedFamilies:['systemSmall','systemMedium','systemLarge'],
       }],
     }],
     ['expo-location', {
