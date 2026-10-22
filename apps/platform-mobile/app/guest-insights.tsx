@@ -13,6 +13,23 @@ type Session = {
   last_action:string;
   event_count:number;
 };
+type Visitor = {
+  visitor_label:string;
+  first_seen_at:string;
+  last_seen_at:string;
+  session_count:number;
+  event_count:number;
+  active_days:number;
+  place_selections:number;
+  navigation_starts:number;
+  review_actions:number;
+  install_actions:number;
+  friction_events:number;
+  registration_linked:boolean;
+  last_action:string;
+  sessions:Session[];
+};
+type VisitorFilter='all'|'returning'|'single'|'friction'|'engaged';
 type Event = {
   event_name:string;
   occurred_at:string;
@@ -48,19 +65,36 @@ export default function GuestInsights(){
   const [refreshing,setRefreshing]=useState(false);
   const [error,setError]=useState('');
   const [selected,setSelected]=useState<Session|null>(null);
+  const [visitors,setVisitors]=useState<Visitor[]>([]);
+  const [visitorError,setVisitorError]=useState('');
+  const [selectedVisitor,setSelectedVisitor]=useState<string|null>(null);
+  const [visitorFilter,setVisitorFilter]=useState<VisitorFilter>('all');
+  const [visitorSort,setVisitorSort]=useState<'recent'|'frequent'>('recent');
   const [events,setEvents]=useState<Event[]>([]);
   const [detailBusy,setDetailBusy]=useState(false);
   const load=useCallback(async()=>{
-    const {data:response,error:rpcError}=await getKleenestSupabaseClient().rpc('owner_guest_journey_snapshot',{p_days:days});
+    const [snapshot,groups]=await Promise.all([
+      getKleenestSupabaseClient().rpc('owner_guest_journey_snapshot',{p_days:days}),
+      getKleenestSupabaseClient().rpc('owner_guest_visitor_groups',{p_days:days}),
+    ]);
+    const {data:response,error:rpcError}=snapshot;
     if(rpcError)throw rpcError;
     if(!response || typeof response.tracked_events!=='number' || !Array.isArray(response.recent_sessions))throw new Error('Guest Insights returned incomplete data.');
     setData(response as Snapshot);
+    if(groups.error || !Array.isArray(groups.data)){
+      setVisitors([]);
+      setVisitorError(groups.error?.message||'Guest grouping unavailable.');
+    }else{
+      setVisitors(groups.data as Visitor[]);
+      setVisitorError('');
+    }
     setError('');
   },[days]);
   useEffect(()=>{
     let active=true;
     setLoading(true);
     setSelected(null);
+    setSelectedVisitor(null);
     setEvents([]);
     void load().catch(reason=>{if(active){setData(null);setError(reason?.message||'Guest Insights unavailable.')}}).finally(()=>{if(active)setLoading(false)});
     return()=>{active=false};
@@ -82,6 +116,16 @@ export default function GuestInsights(){
     finally{setDetailBusy(false)}
   };
   const installCount=(name:string)=>data?.acquisition_events?.find(item=>item.event_name===name)?.events??0;
+  const visibleVisitors=visitors.filter(visitor=>{
+    if(visitorFilter==='returning')return visitor.session_count>1;
+    if(visitorFilter==='single')return visitor.session_count===1;
+    if(visitorFilter==='friction')return visitor.friction_events>0;
+    if(visitorFilter==='engaged')return visitor.place_selections+visitor.navigation_starts+visitor.review_actions>0;
+    return true;
+  }).sort((a,b)=>visitorSort==='frequent'
+    ? b.session_count-a.session_count || Date.parse(b.last_seen_at)-Date.parse(a.last_seen_at)
+    : Date.parse(b.last_seen_at)-Date.parse(a.last_seen_at));
+  const filterLabels:Record<VisitorFilter,string>={all:'All',returning:'Returning',single:'One session',friction:'Friction',engaged:'Engaged'};
   const MetricCard=({title,value,detail}:{title:string;value:unknown;detail:string})=><View style={{...card,flexGrow:1,minWidth:138,flexBasis:'43%',gap:5}}>
     <Text style={{color:theme.muted,fontSize:12,fontWeight:'700'}}>{title}</Text>
     <Text style={{color:theme.ink,fontSize:25,fontWeight:'900'}}>{format(value)}</Text>
@@ -132,25 +176,65 @@ export default function GuestInsights(){
           <Text style={{color:theme.muted,flex:1}}>{readable(item.event_name)}</Text><Text style={{color:theme.ink,fontWeight:'800'}}>{format(item.events)}</Text>
         </View>):<Text style={{color:theme.muted}}>New telemetry will appear after the updated app records guest activity.</Text>}
       </View>
+
       <View style={{gap:9}}>
-        <SectionHeader title="Recent guest sessions" body="Choose a session to inspect its chronological actions, without personal identity or raw location history."/>
-        {!data.recent_sessions?.length?<View style={card}><Text style={{color:theme.muted}}>No detailed guest sessions recorded yet.</Text></View>:null}
-        {data.recent_sessions?.map(session=><View key={session.session_id} style={{...card,gap:7}}>
-          <Pressable accessibilityRole="button" accessibilityState={{expanded:selected?.session_id===session.session_id}} onPress={()=>void open(session)} style={{gap:4}}>
-            <Text style={{color:theme.accent,fontSize:16,fontWeight:'900'}}>Guest {session.visitor_label}  {selected?.session_id===session.session_id?'▴':'▾'}</Text>
-            <Text style={{color:theme.ink}}>{readable(session.last_action)} · {format(session.event_count)} events</Text>
-            <Text style={{color:theme.muted,fontSize:12}}>Last active {dateTime(session.last_seen_at)}</Text>
+        <SectionHeader title="Guest histories" body="Group observed sessions by their existing first-party visitor identifier. One identifier can still be shared, reset or reused; it does not prove a person's identity."/>
+        {visitorError?<Text accessibilityRole="alert" style={{color:theme.danger}}>Grouped histories unavailable: {visitorError}. Showing recent individual sessions instead.</Text>:null}
+        {!visitorError&&visitors.length>0?<View style={{gap:9}}>
+          <View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>
+            {(['all','returning','single','friction','engaged'] as const).map(filter=><Pressable key={filter} accessibilityRole="button" accessibilityState={{selected:visitorFilter===filter}} onPress={()=>setVisitorFilter(filter)} style={{borderWidth:1,borderColor:visitorFilter===filter?theme.accent:theme.line,backgroundColor:visitorFilter===filter?theme.accent:theme.surface,borderRadius:9,paddingHorizontal:11,paddingVertical:8}}>
+              <Text style={{color:visitorFilter===filter?theme.accentText:theme.ink,fontWeight:'800',fontSize:12}}>{filterLabels[filter]}</Text>
+            </Pressable>)}
+          </View>
+          <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10}}>
+            <Text style={{color:theme.muted,fontSize:12}}>{visibleVisitors.length} grouped IDs shown · {visitors.length} loaded</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Change guest sorting" onPress={()=>setVisitorSort(value=>value==='recent'?'frequent':'recent')} style={{padding:9,borderRadius:8,borderWidth:1,borderColor:theme.line}}>
+              <Text style={{color:theme.accent,fontWeight:'800',fontSize:12}}>{visitorSort==='recent'?'Most recent ▾':'Most sessions ▾'}</Text>
+            </Pressable>
+          </View>
+          {visitors.length < (data?.approximate_visitors||0)?<Text style={{color:theme.muted,fontSize:12}}>Showing the 200 most recently active IDs at most; totals include all IDs in the period.</Text>:null}
+          {!visibleVisitors.length?<View style={card}><Text style={{color:theme.muted}}>No guest histories match this filter.</Text></View>:null}
+          {visibleVisitors.map(visitor=><View key={visitor.visitor_label} style={{...card,gap:8}}>
+            <Pressable accessibilityRole="button" accessibilityState={{expanded:selectedVisitor===visitor.visitor_label}} onPress={()=>{
+              setSelectedVisitor(value=>value===visitor.visitor_label?null:visitor.visitor_label);
+              setSelected(null);setEvents([]);
+            }} style={{gap:4}}>
+              <Text style={{color:theme.accent,fontWeight:'900',fontSize:16}}>Guest {visitor.visitor_label} · {visitor.session_count>1?'Returning':'One observed session'} {selectedVisitor===visitor.visitor_label?'▴':'▾'}</Text>
+              <Text style={{color:theme.ink,fontWeight:'700'}}>{format(visitor.session_count)} sessions · {format(visitor.event_count)} events · {format(visitor.active_days)} active days</Text>
+              <Text style={{color:theme.muted,fontSize:12}}>Last action: {readable(visitor.last_action)} · {dateTime(visitor.last_seen_at)}</Text>
+              <Text style={{color:theme.muted,fontSize:12}}>First observed in period: {dateTime(visitor.first_seen_at)}</Text>
+            </Pressable>
+            {selectedVisitor===visitor.visitor_label?<View style={{gap:9,borderTopWidth:1,borderColor:theme.line,paddingTop:10}}>
+              <Text style={{color:theme.ink,fontWeight:'800'}}>Behavior across sessions</Text>
+              <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>Places opened: {format(visitor.place_selections)} · Directions: {format(visitor.navigation_starts)} · Review actions: {format(visitor.review_actions)} · Installation actions: {format(visitor.install_actions)} · Search friction: {format(visitor.friction_events)}</Text>
+              {visitor.registration_linked?<Text style={{color:theme.accent,fontWeight:'800'}}>Registration linked to this guest ID</Text>:null}
+              <Text style={{color:theme.ink,fontWeight:'800'}}>Recent sessions ({visitor.sessions.length} shown of {visitor.session_count})</Text>
+              {visitor.sessions.map(session=><View key={session.session_id} style={{borderTopWidth:1,borderColor:theme.line,paddingTop:7,gap:4}}>
+                <Pressable accessibilityRole="button" accessibilityState={{expanded:selected?.session_id===session.session_id}} onPress={()=>void open(session)} style={{gap:3,paddingVertical:5}}>
+                  <Text style={{color:theme.accent,fontWeight:'800'}}>{readable(session.last_action)} · {format(session.event_count)} events {selected?.session_id===session.session_id?'▴':'▾'}</Text>
+                  <Text style={{color:theme.muted,fontSize:12}}>{dateTime(session.started_at)} to {dateTime(session.last_seen_at)}</Text>
+                </Pressable>
+                {selected?.session_id===session.session_id?<View style={{gap:7,paddingLeft:8}}>
+                  {detailBusy?<ActivityIndicator color={theme.accent}/>:null}
+                  {!detailBusy&&!events.length?<Text style={{color:theme.muted}}>No events available for this session.</Text>:null}
+                  {!detailBusy&&events.map((entry,i)=><View key={i} style={{gap:2,paddingVertical:4}}>
+                    <Text style={{color:theme.ink,fontWeight:'800'}}>{readable(entry.event_name)}{entry.location_name?` · ${entry.location_name}`:''}</Text>
+                    <Text style={{color:theme.muted,fontSize:12}}>{dateTime(entry.occurred_at)}</Text>
+                    {entry.context&&Object.keys(entry.context).length?<Text style={{color:theme.muted,fontSize:12}}>{Object.entries(entry.context).map(([key,value])=>`${readable(key)}: ${String(value)}`).join(' · ')}</Text>:null}
+                  </View>)}
+                </View>:null}
+              </View>)}
+            </View>:null}
+          </View>)}
+        </View>:null}
+        {visitorError?data.recent_sessions.map(session=><View key={session.session_id} style={{...card,gap:4}}>
+          <Pressable accessibilityRole="button" onPress={()=>void open(session)}>
+            <Text style={{color:theme.accent,fontWeight:'900'}}>Guest {session.visitor_label} · {readable(session.last_action)}</Text>
+            <Text style={{color:theme.muted,fontSize:12}}>{dateTime(session.last_seen_at)} · {format(session.event_count)} events</Text>
           </Pressable>
-          {selected?.session_id===session.session_id?<View style={{gap:8,borderTopWidth:1,borderColor:theme.line,paddingTop:10}}>
-            {detailBusy?<ActivityIndicator color={theme.accent}/>:null}
-            {!detailBusy&&events.length===0?<Text style={{color:theme.muted}}>No events available for this session.</Text>:null}
-            {!detailBusy&&events.map((entry,i)=><View key={i} style={{gap:2,paddingVertical:5}}>
-              <Text style={{color:theme.ink,fontWeight:'800'}}>{readable(entry.event_name)}{entry.location_name?` · ${entry.location_name}`:''}</Text>
-              <Text style={{color:theme.muted,fontSize:12}}>{dateTime(entry.occurred_at)}</Text>
-              {entry.context&&Object.keys(entry.context).length?<Text style={{color:theme.muted,fontSize:12}}>{Object.entries(entry.context).map(([key,value])=>`${readable(key)}: ${String(value)}`).join(' · ')}</Text>:null}
-            </View>)}
-          </View>:null}
-        </View>)}
+          {selected?.session_id===session.session_id&&events.map((entry,i)=><Text key={i} style={{color:theme.muted,fontSize:12}}>{dateTime(entry.occurred_at)} · {readable(entry.event_name)}</Text>)}
+        </View>):null}
+        {!visitorError&&!visitors.length?<View style={card}><Text style={{color:theme.muted}}>No detailed guest sessions recorded yet.</Text></View>:null}
       </View>
       <Text style={{color:theme.muted,lineHeight:19,fontSize:12}}>Guest identifiers are pseudonymous first-party random IDs. No device fingerprinting, IP addresses, exact GPS traces or raw search strings are saved by this system. Events are capped per session and retained for up to 30 days while new activity is arriving.</Text>
     </>:null}
