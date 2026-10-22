@@ -24,6 +24,21 @@ const ownerRpcGrant=read('supabase/migrations/20261018023035_owner_guest_journey
 if (ownerRpcGrant.toLowerCase().includes(' to anon;') || ownerRpcGrant.toLowerCase().includes(' to public;')) {
   throw new Error('Guest Insights private analytics RPC must never be granted to anonymous/public roles.');
 }
+assertContains('supabase/migrations/20261022004233_owner_guest_returning_visitor_groups.sql',[
+  'private.owner_guest_visitor_groups','public.owner_guest_visitor_groups',
+  'public.is_platform_owner_session()',"LIMIT 20",'visitor_label',
+  'REVOKE ALL ON FUNCTION public.owner_guest_visitor_groups(integer) FROM PUBLIC, anon;',
+  'GRANT EXECUTE ON FUNCTION private.owner_guest_visitor_groups(integer) TO authenticated;',
+]);
+const guestGroupsMigration=read('supabase/migrations/20261022004233_owner_guest_returning_visitor_groups.sql');
+if (guestGroupsMigration.includes('GRANT EXECUTE ON FUNCTION public.owner_guest_visitor_groups(integer) TO anon')) {
+  throw new Error('Guest repeat visitor histories must be owner-only.');
+}
+assertContains('apps/platform-mobile/app/guest-insights.tsx',[
+  'owner_guest_visitor_groups', 'Guest histories',
+  "visitor.session_count>1",'visitor.friction_events>0',
+  'visitor.registration_linked', 'visitor.sessions.map',
+]);
 assertContains('apps/consumer-mobile/services/acquisitionAttribution.ts',[
   'safeGuestJourneyContext(context)','getKleenestGuestSessionId()',
   "p_visitor_key:visitorKey",'linkGuestJourneyRegistration',
