@@ -77,6 +77,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     'expo-router',
+    './plugins/withKleenestAndroidWidget',
     ['expo-location', {
       locationWhenInUsePermission: 'Kleenest uses your location to find nearby restrooms and help calculate routes.',
       locationAlwaysAndWhenInUsePermission: 'Kleenest uses background location only when you enable Live Network nearby-restroom alerts.',
