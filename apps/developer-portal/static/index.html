@@ -25,6 +25,7 @@ button{transition:transform .12s ease,border-color .12s ease,background .12s eas
 @media(max-width:760px){.portal-hero{padding:18px}.portal-brandline{align-items:flex-start}.portal-hero h1{font-size:30px}}
 @media(max-width:980px){.metrics{grid-template-columns:repeat(3,1fr)}.samples{grid-template-columns:1fr 1fr}.play-layout{grid-template-columns:1fr}.onboarding{grid-template-columns:1fr 1fr 1fr}.choice-grid,.success-grid{grid-template-columns:1fr}}
 @media(max-width:760px){main{padding:14px}.grid,.metrics,.samples,.onboarding{grid-template-columns:1fr}.wide{grid-column:auto}header{flex-direction:column}.item{align-items:flex-start;flex-direction:column}.actions{width:100%;justify-content:flex-end}.choice-grid{grid-template-columns:1fr}.result{grid-template-columns:1fr}.brand{align-items:flex-start}}
+.capability-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:15px}.capability-item{display:flex;flex-direction:column;gap:8px;background:#091611;border:1px solid #244338;border-radius:13px;padding:14px}.capability-item strong{font-size:14px}.capability-item p{color:#94ab9f;font-size:12px;line-height:1.5;margin:0;flex:1}.capability-item small{color:#b1c8bb;line-height:1.5}.capability-item a{font-size:12px;color:#83edaf;text-decoration:underline;text-underline-offset:2px}.capability-item[data-state="not-shipped"]{border-style:dashed}@media(max-width:900px){.capability-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.capability-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -59,6 +60,14 @@ button{transition:transform .12s ease,border-color .12s ease,background .12s eas
   <h2>Get your first result in under 5 minutes</h2>
   <p class="sub">The portal tracks your path from account creation to a working production integration. Start with a one-hour sandbox; move to production credentials only when you are ready.</p>
   <div id="onboardingSteps" class="onboarding"></div>
+</section>
+
+<section id="capabilitiesCard" class="card wide">
+  <div class="eyebrow">COMPLETE INTEGRATION CATALOG</div>
+  <div class="section-title"><span class="section-icon"><svg><use href="#icon-samples"/></svg></span><h2>Kleenest services and widgets</h2></div>
+  <p class="sub">Explore every integration surface before creating an account. Once you open a partner workspace, each card shows whether its required product and surface are enabled. Native consumer home-screen widgets are different from the embeddable web widget and require an app build.</p>
+  <div id="capabilityGrid" class="capability-grid"></div>
+  <p class="muted">A product not enabled for your workspace is not an outage. Access is managed by KleenestOS; a service marked “Not shipped” cannot be enabled by issuing a key. <a href="https://github.com/matthagersenior/Kleenest_Production/blob/main/docs/platform/INTEGRATION_CATALOG.md" target="_blank" rel="noopener">Full documentation and implementation status</a>.</p>
 </section>
 
 <section class="card">
@@ -99,7 +108,7 @@ button{transition:transform .12s ease,border-color .12s ease,background .12s eas
       <h3>Create partner workspace</h3>
       <label>Name<input id="partnerName" placeholder="Partner Company" /></label>
       <label>Slug<input id="partnerSlug" placeholder="partner-company" /></label>
-      <label>Product bundle<select id="partnerBundle"><option value="starter_api">Starter API</option><option value="developer_sandbox">Developer Sandbox</option><option value="route_intelligence">Route Intelligence</option><option value="place_intelligence">Place Intelligence</option><option value="fleet_integration">Fleet Integration</option><option value="enterprise_data">Enterprise Data</option></select></label>
+      <label>Product bundle<select id="partnerBundle"><option value="starter_api">Starter API</option><option value="developer_sandbox">Developer Sandbox</option><option value="route_intelligence">Route Intelligence</option><option value="place_intelligence">Place Intelligence</option><option value="fleet_integration">Fleet Integration</option><option value="enterprise_data">Enterprise Data</option><option value="smart_facilities">Smart Facilities</option></select></label>
       <div class="row"><button id="createPartner" class="primary">Create workspace</button><button id="createDemoWorkspace">Launch Demo Workspace</button></div>
     </div>
     <div>
@@ -288,6 +297,44 @@ function activeKeys(){return (summary?.api_keys||[]).filter(k=>!k.revoked_at&&(!
 function enabledProducts(){return Array.isArray(summary?.product_access?.api_products)?summary.product_access.api_products:[]}
 function productEnabled(product){return enabledProducts().includes(product)}
 function productLabel(product){return product==='route'?'Route Intelligence':product==='nearby'?'Nearby recommendations':product.replaceAll('_',' ')}
+const catalogDocs='https://github.com/matthagersenior/Kleenest_Production/blob/main/docs/platform/INTEGRATION_CATALOG.md';
+const openApi=functions+'/platform-distribution/v1/openapi.json';
+const catalog=[
+ {title:'Nearby REST API',desc:'Rank accessible restroom locations using canonical distance, amenities and trust signals.',product:'nearby',surface:'rest',href:openApi,action:'Open API specification'},
+ {title:'Route Intelligence API',desc:'Find along-route and next-stop options for travel, delivery, fleets and navigation.',product:'route',surface:'rest',href:openApi,action:'Open route API'},
+ {title:'Place Details + Match',desc:'Look up canonical place records and reconcile partner place identities.',product:'place_details',surface:'rest',href:openApi,action:'Read API contract'},
+ {title:'Place Evidence + Verified Access',desc:'Retrieve place intelligence, verification proof and access summaries where authorized.',product:'place_details',surface:'rest',href:catalogDocs,action:'View endpoints'},
+ {title:'Smart Facilities',desc:'Integrate approved devices, telemetry, alerts and commands with device-specific scopes.',product:'smart_devices',surface:'rest',href:catalogDocs,action:'Read security requirements'},
+ {title:'JavaScript / TypeScript SDK',desc:'Typed and hosted browser modules for restroom data and recommendations.',product:'nearby',surface:'sdk',href:functions+'/platform-distribution/v1/sdk.js',action:'Get SDK module'},
+ {title:'Embeddable Web Widget',desc:'Mount a restroom finder inside an existing website. Uses origin-restricted browser tokens.',product:'nearby',surface:'widget',href:functions+'/platform-distribution/v1/widget.js',action:'Get web widget'},
+ {title:'Map Layer',desc:'Render recommendations as GeoJSON for a map experience in your site or product.',product:'nearby',surface:'map',href:functions+'/platform-distribution/v1/map.js',action:'Get map module'},
+ {title:'Route SDK',desc:'Provider-neutral restroom stops for an existing routing or dispatch experience.',product:'route',surface:'route_sdk',href:functions+'/platform-distribution/v1/route.js',action:'Get route module'},
+ {title:'Canonical Deep Links + QR',desc:'Link visitors directly to places, directions and location identity in Kleenest.',surface:'public',href:catalogDocs,action:'Read link contracts'},
+ {title:'Signed Webhooks',desc:'Receive verified place, amenity and smart facility changes with replay protection.',surface:'webhooks',href:catalogDocs,action:'Read webhook contract'},
+ {title:'MCP / AI Agent Tools',desc:'Connect nearby, routes, verification and permitted smart-device tools to AI assistants.',product:'nearby',surface:'mcp',href:catalogDocs,action:'Configure MCP'},
+ {title:'Official Consumer Home-screen Widget',desc:'Android/iOS small, medium and large widget experience for guests and signed-in Kleenest users.',status:'not-shipped',href:catalogDocs,action:'See native build requirements'},
+ {title:'Dedicated Native Mobile SDK',desc:'Future Kotlin/Swift SDK; use REST or the JavaScript SDK for supported integrations today.',status:'not-shipped',href:catalogDocs,action:'See current alternatives'}
+];
+function renderCapabilities(){
+ const root=$('capabilityGrid');root.replaceChildren();
+ const access=summary?.product_access,products=access?.api_products||[],surfaces=access?.integration_surfaces||[];
+ for(const item of catalog){
+  const article=document.createElement('article');article.className='capability-item';
+  const h=document.createElement('strong');h.textContent=item.title;
+  const p=document.createElement('p');p.textContent=item.desc;
+  const state=document.createElement('small');
+  if(item.status==='not-shipped'){article.dataset.state='not-shipped';state.textContent='Not shipped — not yet installable/usable';}
+  else if(item.surface==='public'){state.textContent='Public link contract — no partner key required';}
+  else if(!access){state.textContent='Implemented — open a workspace to check your access';}
+  else{
+    const missing=[];if(item.product&&!products.includes(item.product))missing.push('product: '+productLabel(item.product));
+    if(item.surface&&!surfaces.includes(item.surface))missing.push('surface: '+item.surface.replaceAll('_',' '));
+    state.textContent=missing.length?'Not enabled for workspace — '+missing.join(', '):'Enabled for this workspace';
+  }
+  const link=document.createElement('a');link.href=item.href;link.target='_blank';link.rel='noopener noreferrer';link.textContent=item.action;
+  article.append(h,p,state,link);root.append(article);
+ }
+}
 function updatePlaygroundAvailability(){
  const nearby=productEnabled('nearby'),route=productEnabled('route');
  $('modeNearby').disabled=!nearby;$('modeRoute').disabled=!route;
@@ -373,7 +420,7 @@ async function signUp(){
 }
 function signOut(){
  token='';actor=null;memberships=[];selectedPartnerId='';summary=null;sandboxToken='';sandboxKeyId='';sandboxExpiresAt='';lastPlaygroundSuccess=false;
- sessionStorage.removeItem('kleenest-developer-access-token');setAuth('Not authenticated.');$('ownerTools').classList.add('hidden');$('diagnosticsCard').classList.add('hidden');renderWorkspaces();showWorkspace(false);renderSandbox();renderOnboarding();
+ sessionStorage.removeItem('kleenest-developer-access-token');setAuth('Not authenticated.');$('ownerTools').classList.add('hidden');$('diagnosticsCard').classList.add('hidden');renderWorkspaces();showWorkspace(false);renderSandbox();renderOnboarding();renderCapabilities();
 }
 async function bootstrapSession(){
  actor=await admin('actor');setAuth((actor.platformOwner?'Kleenest platform owner':'Developer')+' authenticated as '+actor.email,true);
@@ -403,7 +450,7 @@ async function loadSummary(){
  const products=summary.product_access?.api_products||[];const surfaces=summary.product_access?.integration_surfaces||[];
  $('metricProducts').textContent=products.length||'—';$('metricBundle').textContent=summary.product_access?.bundle_label||summary.product_access?.bundle_key||'assigned by Kleenest';
  $('metricSurfaces').textContent=surfaces.length||'—';
- showWorkspace(true);renderKeys();renderWebhooks();renderSandbox();updatePlaygroundAvailability();renderOnboarding();
+ showWorkspace(true);renderKeys();renderWebhooks();renderSandbox();updatePlaygroundAvailability();renderOnboarding();renderCapabilities();
 }
 function renderKeys(){
  const root=$('keyList');root.replaceChildren();const keys=summary?.api_keys||[];
@@ -561,7 +608,7 @@ if(fragment.get('invite'))$('inviteToken').value=fragment.get('invite');
 $('partnerName').oninput=()=>{if(!$('partnerSlug').dataset.touched)$('partnerSlug').value=sanitizeSlug($('partnerName').value)};
 $('partnerSlug').oninput=()=>{$('partnerSlug').dataset.touched='1'};
 $('clientOrigin').value=location.origin;
-renderSamples();renderOnboarding();renderSandbox();renderCodeExamples(buildPlaygroundBody());
+renderSamples();renderOnboarding();renderSandbox();renderCodeExamples(buildPlaygroundBody());renderCapabilities();
 let deferredInstallPrompt=null;
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;$('installPortal').hidden=false;});
 $('installPortal').onclick=async()=>{
