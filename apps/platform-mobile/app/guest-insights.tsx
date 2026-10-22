@@ -31,7 +31,16 @@ type Session = {
   last_action:string;
   event_count:number;
 };
+type VisitWindow={started_at:string;last_seen_at:string;session_count:number;event_count:number;place_selections:number};
+type VisitSummary={
+  guest_identifiers:number;recorded_sessions:number;estimated_visits:number;
+  returning_identifiers:number;multi_day_identifiers:number;
+  relaunch_sessions:number;relaunch_heavy_identifiers:number;engaged_identifiers:number;
+};
 type Visitor = {
+  visit_count?:number;
+  relaunch_sessions?:number;
+  visit_windows?:VisitWindow[];
   visitor_label:string;
   first_seen_at:string;
   last_seen_at:string;
@@ -47,7 +56,7 @@ type Visitor = {
   last_action:string;
   sessions:Session[];
 };
-type VisitorFilter='all'|'returning'|'multi_day'|'single'|'friction'|'engaged';
+type VisitorFilter='all'|'returning'|'multi_day'|'single'|'relaunch'|'friction'|'engaged';
 type Event = {
   event_name:string;
   occurred_at:string;
@@ -86,6 +95,8 @@ export default function GuestInsights(){
   const [error,setError]=useState('');
   const [selected,setSelected]=useState<Session|null>(null);
   const [visitors,setVisitors]=useState<Visitor[]>([]);
+  const [visitSummary,setVisitSummary]=useState<VisitSummary|null>(null);
+  const [visitSummaryError,setVisitSummaryError]=useState('');
   const [visitorError,setVisitorError]=useState('');
   const [selectedVisitor,setSelectedVisitor]=useState<string|null>(null);
   const [visitorFilter,setVisitorFilter]=useState<VisitorFilter>('all');
@@ -93,9 +104,10 @@ export default function GuestInsights(){
   const [events,setEvents]=useState<Event[]>([]);
   const [detailBusy,setDetailBusy]=useState(false);
   const load=useCallback(async()=>{
-    const [snapshot,groups,funnel]=await Promise.all([
+    const [snapshot,groups,visitSummaryResult,funnel]=await Promise.all([
       getKleenestSupabaseClient().rpc('owner_guest_journey_snapshot',{p_days:days}),
       getKleenestSupabaseClient().rpc('owner_guest_visitor_groups',{p_days:days}),
+      getKleenestSupabaseClient().rpc('owner_guest_visit_summary',{p_days:days}),
       getKleenestSupabaseClient().rpc('owner_guest_discovery_funnel',{p_days:days}),
     ]);
     const {data:response,error:rpcError}=snapshot;
@@ -108,6 +120,13 @@ export default function GuestInsights(){
     }else{
       setDiscovery(funnel.data as DiscoveryFunnel);
       setDiscoveryError('');
+    }
+    if(visitSummaryResult.error || typeof visitSummaryResult.data?.estimated_visits!=='number'){
+      setVisitSummary(null);
+      setVisitSummaryError(visitSummaryResult.error?.message||'Inactivity-based visit estimates unavailable.');
+    }else{
+      setVisitSummary(visitSummaryResult.data as VisitSummary);
+      setVisitSummaryError('');
     }
     if(groups.error || !Array.isArray(groups.data)){
       setVisitors([]);
@@ -147,16 +166,17 @@ export default function GuestInsights(){
   };
   const installCount=(name:string)=>data?.acquisition_events?.find(item=>item.event_name===name)?.events??0;
   const visibleVisitors=visitors.filter(visitor=>{
-    if(visitorFilter==='returning')return visitor.session_count>1;
+    if(visitorFilter==='returning')return (visitor.visit_count??0)>1;
     if(visitorFilter==='multi_day')return visitor.active_days>1;
-    if(visitorFilter==='single')return visitor.session_count===1;
+    if(visitorFilter==='single')return visitor.visit_count===1;
+    if(visitorFilter==='relaunch')return (visitor.relaunch_sessions??0)>0;
     if(visitorFilter==='friction')return visitor.friction_events>0;
     if(visitorFilter==='engaged')return visitor.place_selections+visitor.navigation_starts+visitor.review_actions>0;
     return true;
   }).sort((a,b)=>visitorSort==='frequent'
-    ? b.session_count-a.session_count || Date.parse(b.last_seen_at)-Date.parse(a.last_seen_at)
+    ? (b.visit_count??0)-(a.visit_count??0) || Date.parse(b.last_seen_at)-Date.parse(a.last_seen_at)
     : Date.parse(b.last_seen_at)-Date.parse(a.last_seen_at));
-  const filterLabels:Record<VisitorFilter,string>={all:'All',returning:'Repeat sessions',multi_day:'Multi-day',single:'One session',friction:'Friction',engaged:'Engaged'};
+  const filterLabels:Record<VisitorFilter,string>={all:'All',returning:'Separated returns',multi_day:'Multi-day',single:'One visit',relaunch:'Rapid relaunches',friction:'Friction',engaged:'Engaged'};
   const MetricCard=({title,value,detail}:{title:string;value:unknown;detail:string})=><View style={{...card,flexGrow:1,minWidth:138,flexBasis:'43%',gap:5}}>
     <Text style={{color:theme.muted,fontSize:12,fontWeight:'700'}}>{title}</Text>
     <Text style={{color:theme.ink,fontSize:25,fontWeight:'900'}}>{format(value)}</Text>
@@ -176,7 +196,10 @@ export default function GuestInsights(){
         <MetricCard title="Guest sessions · legacy tally" value={data.historical_guest_sessions} detail="Recorded foreground sessions, not people"/>
         <MetricCard title="Journeys tracked" value={data.tracked_sessions} detail="Sessions with detailed event coverage"/>
         <MetricCard title="Approximate visitors" value={data.approximate_visitors} detail="Distinct first-party IDs; not guaranteed unique people"/>
-        <MetricCard title="Returning visitor IDs" value={data.returning_visitors} detail="Seen in multiple tracked sessions"/>
+        <MetricCard title="Guest visits · estimated" value={visitSummary?.estimated_visits} detail="Events separated by over 30 minutes of inactivity"/>
+        <MetricCard title="Separated returning IDs" value={visitSummary?.returning_identifiers} detail="Multiple independent visit windows; not verified people"/>
+        <MetricCard title="Rapid relaunches" value={visitSummary?.relaunch_sessions} detail="Additional foreground sessions inside visit windows"/>
+        <MetricCard title="Multi-day guest IDs" value={visitSummary?.multi_day_identifiers} detail="Observed on more than one UTC calendar day"/>
         <MetricCard title="Engaged sessions" value={data.engaged_sessions} detail="Selected a place, navigated or started a review"/>
         <MetricCard title="Navigated" value={data.navigation_sessions} detail="Sessions with directions started"/>
         <MetricCard title="No-results sessions" value={data.zero_result_sessions} detail="Missing results worth investigating"/>
@@ -211,7 +234,8 @@ export default function GuestInsights(){
       </View>
       <View style={{...card,gap:6}}>
         <Text style={{color:theme.ink,fontWeight:'900',fontSize:16}}>Understanding coverage</Text>
-        <Text style={{color:theme.muted,lineHeight:21}}>Legacy session tally and historical acquisition events use different identifiers. They cannot be merged into verified unique visitors. Detailed journeys and conversions are only counted from the new instrumented release onward.</Text>
+        <Text style={{color:theme.muted,lineHeight:21}}>Foreground sessions are not separate visits: six quick app opens can be one visit. A new visit starts only after more than 30 minutes without recorded activity. Identifiers are not verified people, and absence of events may reflect incomplete instrumentation. Historical acquisition events use different keys; do not merge them into unique visitors.</Text>
+        {visitSummaryError?<Text accessibilityRole="alert" style={{color:theme.danger}}>Visit estimates unavailable: {visitSummaryError}</Text>:null}
         <Text style={{color:theme.muted}}>Updated {dateTime(data.updated_at)} · {format(data.tracked_events)} detailed events recorded for this period</Text>
       </View>
       <View style={{...card,gap:8}}>
@@ -240,14 +264,14 @@ export default function GuestInsights(){
         {visitorError?<Text accessibilityRole="alert" style={{color:theme.danger}}>Grouped histories unavailable: {visitorError}. Showing recent individual sessions instead.</Text>:null}
         {!visitorError&&visitors.length>0?<View style={{gap:9}}>
           <View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>
-            {(['all','returning','multi_day','single','friction','engaged'] as const).map(filter=><Pressable key={filter} accessibilityRole="button" accessibilityState={{selected:visitorFilter===filter}} onPress={()=>setVisitorFilter(filter)} style={{borderWidth:1,borderColor:visitorFilter===filter?theme.accent:theme.line,backgroundColor:visitorFilter===filter?theme.accent:theme.surface,borderRadius:9,paddingHorizontal:11,paddingVertical:8}}>
+            {(['all','returning','multi_day','single','relaunch','friction','engaged'] as const).map(filter=><Pressable key={filter} accessibilityRole="button" accessibilityState={{selected:visitorFilter===filter}} onPress={()=>setVisitorFilter(filter)} style={{borderWidth:1,borderColor:visitorFilter===filter?theme.accent:theme.line,backgroundColor:visitorFilter===filter?theme.accent:theme.surface,borderRadius:9,paddingHorizontal:11,paddingVertical:8}}>
               <Text style={{color:visitorFilter===filter?theme.accentText:theme.ink,fontWeight:'800',fontSize:12}}>{filterLabels[filter]}</Text>
             </Pressable>)}
           </View>
           <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10}}>
             <Text style={{color:theme.muted,fontSize:12}}>{visibleVisitors.length} grouped IDs shown · {visitors.length} loaded</Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Change guest sorting" onPress={()=>setVisitorSort(value=>value==='recent'?'frequent':'recent')} style={{padding:9,borderRadius:8,borderWidth:1,borderColor:theme.line}}>
-              <Text style={{color:theme.accent,fontWeight:'800',fontSize:12}}>{visitorSort==='recent'?'Most recent ▾':'Most sessions ▾'}</Text>
+              <Text style={{color:theme.accent,fontWeight:'800',fontSize:12}}>{visitorSort==='recent'?'Most recent ▾':'Most visits ▾'}</Text>
             </Pressable>
           </View>
           {visitors.length < (data?.approximate_visitors||0)?<Text style={{color:theme.muted,fontSize:12}}>Showing the 200 most recently active IDs at most; totals include all IDs in the period.</Text>:null}
@@ -257,8 +281,9 @@ export default function GuestInsights(){
               setSelectedVisitor(value=>value===visitor.visitor_label?null:visitor.visitor_label);
               setSelected(null);setEvents([]);
             }} style={{gap:4}}>
-              <Text style={{color:theme.accent,fontWeight:'900',fontSize:16}}>Guest {visitor.visitor_label} · {visitor.session_count>1?'Returning':'One observed session'} {selectedVisitor===visitor.visitor_label?'▴':'▾'}</Text>
-              <Text style={{color:theme.ink,fontWeight:'700'}}>{format(visitor.session_count)} sessions · {format(visitor.event_count)} events · {format(visitor.active_days)} active days</Text>
+              <Text style={{color:theme.accent,fontWeight:'900',fontSize:16}}>Guest {visitor.visitor_label} · {(visitor.visit_count??0)>1?'Returned after break':(visitor.relaunch_sessions??0)>0?'Reopened within one visit':'One observed visit'} {selectedVisitor===visitor.visitor_label?'▴':'▾'}</Text>
+              <Text style={{color:theme.ink,fontWeight:'700'}}>{format(visitor.visit_count)} visits · {format(visitor.session_count)} recorded sessions · {format(visitor.active_days)} active days</Text>
+              <Text style={{color:theme.muted,fontSize:12}}>{format(visitor.event_count)} events · {format(visitor.relaunch_sessions)} session relaunches within visits</Text>
               <Text style={{color:theme.muted,fontSize:12}}>Last action: {readable(visitor.last_action)} · {dateTime(visitor.last_seen_at)}</Text>
               <Text style={{color:theme.muted,fontSize:12}}>First observed in period: {dateTime(visitor.first_seen_at)}</Text>
             </Pressable>
@@ -266,7 +291,12 @@ export default function GuestInsights(){
               <Text style={{color:theme.ink,fontWeight:'800'}}>Behavior across sessions</Text>
               <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>Places opened: {format(visitor.place_selections)} · Directions: {format(visitor.navigation_starts)} · Review actions: {format(visitor.review_actions)} · Installation actions: {format(visitor.install_actions)} · Search friction: {format(visitor.friction_events)}</Text>
               {visitor.registration_linked?<Text style={{color:theme.accent,fontWeight:'800'}}>Registration linked to this guest ID</Text>:null}
-              <Text style={{color:theme.ink,fontWeight:'800'}}>Recent sessions ({visitor.sessions.length} shown of {visitor.session_count})</Text>
+              <Text style={{color:theme.ink,fontWeight:'800'}}>Estimated visit windows (last {visitor.visit_windows?.length??0})</Text>
+              {visitor.visit_windows?.map((window,i)=><View key={String(i)} style={{gap:3,borderTopWidth:1,borderColor:theme.line,paddingTop:7}}>
+                <Text style={{color:theme.ink,fontWeight:'700'}}>Visit {i+1} · {format(window.session_count)} sessions · {format(window.event_count)} events</Text>
+                <Text style={{color:theme.muted,fontSize:12}}>{dateTime(window.started_at)} to {dateTime(window.last_seen_at)} · {format(window.place_selections)} places selected</Text>
+              </View>)}
+              <Text style={{color:theme.ink,fontWeight:'800'}}>Recent raw sessions ({visitor.sessions.length} shown of {visitor.session_count})</Text>
               {visitor.sessions.map(session=><View key={session.session_id} style={{borderTopWidth:1,borderColor:theme.line,paddingTop:7,gap:4}}>
                 <Pressable accessibilityRole="button" accessibilityState={{expanded:selected?.session_id===session.session_id}} onPress={()=>void open(session)} style={{gap:3,paddingVertical:5}}>
                   <Text style={{color:theme.accent,fontWeight:'800'}}>{readable(session.last_action)} · {format(session.event_count)} events {selected?.session_id===session.session_id?'▴':'▾'}</Text>
