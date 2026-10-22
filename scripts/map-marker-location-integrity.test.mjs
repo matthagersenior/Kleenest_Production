@@ -1,3 +1,4 @@
+// Regression contract for production map pin authority and owner coordinate review.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
