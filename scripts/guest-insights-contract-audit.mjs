@@ -36,8 +36,19 @@ if (guestGroupsMigration.includes('GRANT EXECUTE ON FUNCTION public.owner_guest_
 }
 assertContains('apps/platform-mobile/app/guest-insights.tsx',[
   'owner_guest_visitor_groups', 'Guest histories',
-  "visitor.session_count>1",'visitor.friction_events>0',
+  "(visitor.visit_count??0)>1",'visitor.friction_events>0',
   'visitor.registration_linked', 'visitor.sessions.map',
+]);
+assertContains('supabase/migrations/20261022030130_guest_meaningful_return_analytics.sql',[
+  "interval '30 minutes'",'visit_clusters','visit_count',
+  'private.owner_guest_visit_summary','public.owner_guest_visit_summary',
+  'public.is_platform_owner_session()',
+  'REVOKE ALL ON FUNCTION public.owner_guest_visit_summary(integer) FROM PUBLIC, anon;',
+]);
+assertContains('apps/platform-mobile/app/guest-insights.tsx',[
+  'owner_guest_visit_summary', 'Separated returning IDs',
+  'visitor.visit_count??0','visit_windows?.map','Rapid relaunches',
+  "visitorFilter==='relaunch'",
 ]);
 assertContains('apps/consumer-mobile/services/acquisitionAttribution.ts',[
   'safeGuestJourneyContext(context)','getKleenestGuestSessionId()',
