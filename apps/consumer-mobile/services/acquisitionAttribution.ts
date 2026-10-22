@@ -37,8 +37,15 @@ function clean(value:unknown,max=120){
 
 function randomKey(){
   const cryptoObj=(globalThis as any)?.crypto;
-  if(cryptoObj?.randomUUID)return cryptoObj.randomUUID();
-  return 'acq-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12);
+  if(typeof cryptoObj?.randomUUID==='function')return cryptoObj.randomUUID();
+  if(typeof cryptoObj?.getRandomValues==='function'){
+    const bytes=new Uint8Array(16);
+    cryptoObj.getRandomValues(bytes);
+    return 'acq-'+Array.from(bytes,byte=>byte.toString(16).padStart(2,'0')).join('');
+  }
+  // A predictable ID would undermine guest telemetry deduplication and rate limits.
+  // Do not create a new persistent identifier without a secure entropy source.
+  throw new Error('Secure random generator unavailable for guest attribution.');
 }
 
 // Deduplicate concurrent first-open events. Without this, simultaneous landing,

@@ -5,6 +5,20 @@ import { SectionHeader, useOSCardStyle } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
 
 type Metric = { event_name:string; events:number };
+type MonetizationSnapshot = {
+  days:number;
+  updated_at:string;
+  guest:{sessions:number;visitor_keys:number;install_intents:number;install_successes:number};
+  guest_ad_diagnostics:{
+    network_request_attempts:number;network_impressions:number;web_missing_config:number;network_no_fills:number;
+    sponsored_impressions:number;sponsored_clicks:number;install_upsell_views:number;
+    install_upsell_clicks:number;upgrade_intents:number;sessions_with_signals:number;
+  };
+  native_admob:{requests:number;fills:number;impressions:number;paid_callbacks:number;last_event_at:string|null};
+  authenticated_sponsorship:{authenticated_impressions:number;authenticated_clicks:number};
+  purchases:{verified_store_purchases:number};
+  measurement_note:string;
+};
 type DiscoveryFunnel = {
   guest_app_sessions:number;
   discovery_sessions:number;
@@ -90,6 +104,8 @@ export default function GuestInsights(){
   const [data,setData]=useState<Snapshot|null>(null);
   const [discovery,setDiscovery]=useState<DiscoveryFunnel|null>(null);
   const [discoveryError,setDiscoveryError]=useState('');
+  const [monetization,setMonetization]=useState<MonetizationSnapshot|null>(null);
+  const [monetizationError,setMonetizationError]=useState('');
   const [loading,setLoading]=useState(true);
   const [refreshing,setRefreshing]=useState(false);
   const [error,setError]=useState('');
@@ -104,16 +120,24 @@ export default function GuestInsights(){
   const [events,setEvents]=useState<Event[]>([]);
   const [detailBusy,setDetailBusy]=useState(false);
   const load=useCallback(async()=>{
-    const [snapshot,groups,visitSummaryResult,funnel]=await Promise.all([
+    const [snapshot,groups,visitSummaryResult,funnel,monetizationResult]=await Promise.all([
       getKleenestSupabaseClient().rpc('owner_guest_journey_snapshot',{p_days:days}),
       getKleenestSupabaseClient().rpc('owner_guest_visitor_groups',{p_days:days}),
       getKleenestSupabaseClient().rpc('owner_guest_visit_summary',{p_days:days}),
       getKleenestSupabaseClient().rpc('owner_guest_discovery_funnel',{p_days:days}),
+      getKleenestSupabaseClient().rpc('owner_guest_monetization_snapshot',{p_days:days}),
     ]);
     const {data:response,error:rpcError}=snapshot;
     if(rpcError)throw rpcError;
     if(!response || typeof response.tracked_events!=='number' || !Array.isArray(response.recent_sessions))throw new Error('Guest Insights returned incomplete data.');
     setData(response as Snapshot);
+    if(monetizationResult.error || !monetizationResult.data?.guest_ad_diagnostics){
+      setMonetization(null);
+      setMonetizationError(monetizationResult.error?.message||'Guest monetization snapshot unavailable.');
+    }else{
+      setMonetization(monetizationResult.data as MonetizationSnapshot);
+      setMonetizationError('');
+    }
     if(funnel.error || !funnel.data || typeof funnel.data.guest_app_sessions!=='number'){
       setDiscovery(null);
       setDiscoveryError(funnel.error?.message||'Discovery funnel unavailable on this version.');
@@ -143,6 +167,8 @@ export default function GuestInsights(){
     setSelected(null);
     setDiscovery(null);
     setDiscoveryError('');
+    setMonetization(null);
+    setMonetizationError('');
     setSelectedVisitor(null);
     setEvents([]);
     void load().catch(reason=>{if(active){setData(null);setError(reason?.message||'Guest Insights unavailable.')}}).finally(()=>{if(active)setLoading(false)});
@@ -230,6 +256,33 @@ export default function GuestInsights(){
         <Text style={{color:theme.ink,fontWeight:'800'}}>Guest journey connection</Text>
         <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>{format(discovery.guest_entry_discovery_visitor_ids)} of {format(discovery.guest_entry_visitor_ids)} tracked visitor IDs had both a guest-entry event and Discovery activity (possibly across sessions; event order is not inferred). {format(discovery.returning_discovery_visitor_ids)} returning visitor IDs have Discovery activity.</Text>
         <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>Categories overlap: searching and selecting a place in the same visit counts once in each category, never twice in the total. Events before guest journey instrumentation cannot be retroactively matched.</Text>
+        </>:null}
+      </View>
+      <View style={{...card,gap:10}}>
+        <Text style={{color:theme.ink,fontWeight:'900',fontSize:17}}>Guest → Ads → Install → Upgrade</Text>
+        <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>Production diagnostics for the selected window. No assumed revenue, install completion, or cross-device attribution.</Text>
+        {monetizationError?<Text accessibilityRole="alert" style={{color:theme.danger,fontSize:12}}>{monetizationError}</Text>:null}
+        {monetization?<><View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+          <MetricCard title="Guest sessions" value={monetization.guest.sessions} detail="Recorded guest app and visit sessions"/>
+          <MetricCard title="Guest identifiers" value={monetization.guest.visitor_keys} detail="Pseudonymous identifiers, not verified people"/>
+          <MetricCard title="Network request attempts" value={monetization.guest_ad_diagnostics.network_request_attempts} detail="Client-reported guest requests, not ad fills"/>
+          <MetricCard title="Web ad slot missing" value={monetization.guest_ad_diagnostics.web_missing_config} detail="AdSense slot configuration missing when placement was eligible"/>
+          <MetricCard title="Guest sponsored exposures" value={monetization.guest_ad_diagnostics.sponsored_impressions} detail="Unverified anonymous impressions; not billable"/>
+          <MetricCard title="Guest sponsor clicks" value={monetization.guest_ad_diagnostics.sponsored_clicks} detail="Unverified anonymous click signals"/>
+          <MetricCard title="Install CTA views" value={monetization.guest_ad_diagnostics.install_upsell_views} detail="Guest install prompts shown after discovery"/>
+          <MetricCard title="Install CTA clicks" value={monetization.guest_ad_diagnostics.install_upsell_clicks} detail="Guests choosing the installation path"/>
+          <MetricCard title="Remove Ads intent" value={monetization.guest_ad_diagnostics.upgrade_intents} detail="Guest entry into $5 membership path"/>
+          <MetricCard title="Install success events" value={monetization.guest.install_successes} detail="Observed browser/native confirmation events"/>
+        </View>
+        <Text style={{color:theme.ink,fontWeight:'900'}}>Separate authenticated / platform signals</Text>
+        <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+          <MetricCard title="Native AdMob fills" value={monetization.native_admob.fills} detail={`${format(monetization.native_admob.requests)} requests; Android/iOS only`}/>
+          <MetricCard title="Native ad impressions" value={monetization.native_admob.impressions} detail="SDK impression callbacks; not earnings"/>
+          <MetricCard title="Signed-in sponsored impressions" value={monetization.authenticated_sponsorship.authenticated_impressions} detail="Existing sponsor ledger, not anonymous traffic"/>
+          <MetricCard title="Verified store purchases" value={monetization.purchases.verified_store_purchases} detail="Platform-wide; not attributed to guests"/>
+        </View>
+        <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>Ad revenue: not connected to this dashboard. Confirm actual earnings using the ad network and store reporting before using revenue figures.</Text>
+        <Text style={{color:theme.muted,fontSize:11,lineHeight:17}}>{monetization.measurement_note}</Text>
         </>:null}
       </View>
       <View style={{...card,gap:6}}>
