@@ -1,3 +1,0 @@
--- Groq GPT-OSS 20B verified via real structured-output inference.
--- Conservative reservation rates, not a claim of provider's published prices.
-update kleenest_ai.provider_models set model='openai/gpt-oss-20b',enabled=true,supports_json=true,allowed_data_class='public',input_usd_per_million=0.25,output_usd_per_million=1.00,priority=2,updated_at=now() where provider='groq' and model='unconfigured' and enabled=false;

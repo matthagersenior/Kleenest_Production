@@ -2,6 +2,13 @@ name: Overture hydration
 on:
   schedule:
     - cron: '17 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - scripts/overture_hydration_worker.py
+      - scripts/test_overture_hydration_worker.py
+      - supabase/migrations/*_overture_hydration_checkpoints.sql
+      - .github/workflows/overture-hydration.yml
   workflow_dispatch:
 permissions:
   contents: read

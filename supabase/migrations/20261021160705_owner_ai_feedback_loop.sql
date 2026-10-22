@@ -1,23 +1,22 @@
--- Auditable, owner-only feedback for KleenestOS AI jobs.
--- Requires the private kleenest_ai.ai_tasks runtime to be installed.
+
 create table if not exists kleenest_ai.ai_task_feedback (
- id uuid primary key default gen_random_uuid(),
- task_id uuid not null references kleenest_ai.ai_tasks(id) on delete cascade,
- owner_id uuid not null references auth.users(id),
- action text not null check (action in ('agree','reject','comment','follow_up')),
- note text not null default '' check (length(note)<=1500),
- followup_task_id uuid references kleenest_ai.ai_tasks(id),
- created_at timestamptz not null default now()
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references kleenest_ai.ai_tasks(id) on delete cascade,
+  owner_id uuid not null references auth.users(id),
+  action text not null check (action in ('agree','reject','comment','follow_up')),
+  note text not null default '' check (length(note) <= 1500),
+  followup_task_id uuid references kleenest_ai.ai_tasks(id),
+  created_at timestamptz not null default now()
 );
 create index if not exists ai_task_feedback_task_date_idx on kleenest_ai.ai_task_feedback(task_id,created_at desc);
 alter table kleenest_ai.ai_task_feedback enable row level security;
 revoke all on kleenest_ai.ai_task_feedback from public,anon,authenticated;
-CREATE OR REPLACE FUNCTION public.owner_ai_feedback_submit(p_task_id uuid, p_action text, p_note text DEFAULT ''::text)
- RETURNS jsonb
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
+
+create or replace function public.owner_ai_feedback_submit(
+ p_task_id uuid, p_action text, p_note text default ''
+) returns jsonb
+language plpgsql security definer set search_path = ''
+as $func$
 declare
  v_owner uuid := auth.uid();
  v_task kleenest_ai.ai_tasks%rowtype;
@@ -48,8 +47,8 @@ begin
    jsonb_build_object(
     'owner_follow_up_question',v_note,
     'original_task_id',p_task_id,
-    'original_observation',left(coalesce(v_task.result->>'summary',''),700),
-    'original_recommendation',left(coalesce(v_task.result->>'recommendation',''),1100),
+    'original_observation',left(coalesce(v_task.result->>'summary',''),3000),
+    'original_recommendation',left(coalesce(v_task.result->>'recommendation',''),3000),
     'human_approval_required',true
    ),
    v_task.data_class,
@@ -61,16 +60,14 @@ begin
  return jsonb_build_object('id',v_feedback_id,'task_id',p_task_id,'action',p_action,
                            'followup_task_id',v_followup_id,'created',true);
 end;
-$function$
-;
+$func$;
 revoke all on function public.owner_ai_feedback_submit(uuid,text,text) from public,anon;
 grant execute on function public.owner_ai_feedback_submit(uuid,text,text) to authenticated;
-CREATE OR REPLACE FUNCTION public.owner_ai_jobs_snapshot(p_limit integer DEFAULT 40)
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE SECURITY DEFINER
- SET search_path TO ''
-AS $function$
+
+create or replace function public.owner_ai_jobs_snapshot(p_limit integer default 40)
+returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $func$
 declare v_result jsonb;
 begin
  if auth.uid() is null or not public.is_platform_owner(auth.uid()) then
@@ -91,5 +88,4 @@ begin
            from kleenest_ai.ai_task_feedback order by created_at desc limit 300) f),'[]'::jsonb)
  ) into v_result;
  return v_result;
-end $function$
-;
+end $func$;

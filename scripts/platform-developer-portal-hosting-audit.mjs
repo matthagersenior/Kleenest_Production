@@ -51,7 +51,9 @@ const ownerProductControls=file('apps/platform-mobile/app/developers.tsx');
 for (const phrase of ["'smart_devices'", "'devices:read'", "'devices:write'", "'devices:command'", "'devices:events:write'"]) {
   if (!ownerProductControls.includes(phrase)) throw new Error('KleenestOS owner controls lack '+phrase);
 }
-const accessMigration=file('supabase/migrations/20261022135000_owner_smart_device_product_scope_alignment.sql');
+const ownerMigrationCandidates=fs.readdirSync('supabase/migrations').filter(name=>/^\d{14}_owner_smart_device_product_scope_alignment\.sql$/.test(name));
+if(ownerMigrationCandidates.length!==1)throw new Error('Expected exactly one production-tracked Smart Facilities owner migration.');
+const accessMigration=file('supabase/migrations/'+ownerMigrationCandidates[0]);
 for (const phrase of ["'smart_devices'", "'devices:events:write'", 'is_platform_owner_session()']) {
   if (!accessMigration.includes(phrase)) throw new Error('Smart facility owner migration missing '+phrase);
 }

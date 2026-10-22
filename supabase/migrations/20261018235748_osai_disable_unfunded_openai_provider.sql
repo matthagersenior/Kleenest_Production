@@ -1,0 +1,1 @@
+update kleenest_ai.provider_models set enabled=false,updated_at=now() where provider='openai' and model='gpt-4.1-nano';
