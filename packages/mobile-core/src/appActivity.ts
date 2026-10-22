@@ -2,8 +2,22 @@ import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 import { getKleenestSupabaseClient } from './client';
 
-export const getKleenestGuestSessionId = () => guestSession;
-const guestSession = 'guest-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + '-' + Math.random().toString(36).slice(2);
+function newSecureGuestSession():string|null{
+  const cryptoObj=(globalThis as any)?.crypto;
+  if(typeof cryptoObj?.randomUUID==='function')return 'guest-'+cryptoObj.randomUUID();
+  if(typeof cryptoObj?.getRandomValues==='function'){
+    const bytes=new Uint8Array(16);
+    cryptoObj.getRandomValues(bytes);
+    return 'guest-'+Array.from(bytes,byte=>byte.toString(16).padStart(2,'0')).join('');
+  }
+  return null;
+}
+// Analytics never treats a weak random value as a unique visitor or rate-limit key.
+const guestSession=newSecureGuestSession();
+export const getKleenestGuestSessionId=()=>{
+  if(!guestSession)throw new Error('Secure guest session identifier unavailable.');
+  return guestSession;
+};
 
 /** Foreground usage only. Auth changes refresh the identity; tokens refreshing are not activity. */
 export function useAppActivity(enabled = true) {
@@ -15,7 +29,7 @@ export function useAppActivity(enabled = true) {
     const visible = () => AppState.currentState === 'active' &&
       (Platform.OS !== 'web' || typeof document === 'undefined' || document.visibilityState === 'visible');
     const sync = async () => {
-      if (stopped || inFlight || !visible()) return;
+      if (stopped || inFlight || !visible() || !guestSession) return;
       inFlight = true;
       try { await client.rpc('record_app_activity', { p_guest_session: guestSession }); }
       catch { /* Analytics must never block the user's app. */ }
