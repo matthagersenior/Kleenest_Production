@@ -304,7 +304,8 @@ const openApi=functions+'/platform-distribution/v1/openapi.json';
 const catalog=[
  {title:'Nearby REST API',desc:'Rank accessible restroom locations using canonical distance, amenities and trust signals.',product:'nearby',surface:'rest',href:openApi,action:'Open API specification'},
  {title:'Route Intelligence API',desc:'Find along-route and next-stop options for travel, delivery, fleets and navigation.',product:'route',surface:'rest',href:openApi,action:'Open route API'},
- {title:'Place Details + Match',desc:'Look up canonical place records and reconcile partner place identities.',product:'place_details',surface:'rest',href:openApi,action:'Read API contract'},
+ {title:'Canonical Place Details',desc:'Look up one canonical restroom place by Kleenest location ID.',product:'place_details',surface:'rest',href:openApi,action:'Read place details API'},
+ {title:'Place Matching',desc:'Reconcile partner-provided place identities with canonical Kleenest locations.',product:'place_match',surface:'rest',href:openApi,action:'Read place match API'},
  {title:'Place Evidence + Verified Access',desc:'Retrieve place intelligence, verification proof and access summaries where authorized.',product:'place_details',surface:'rest',href:catalogDocs,action:'View endpoints'},
  {title:'Smart Facilities',desc:'Integrate approved devices, telemetry, alerts and commands with device-specific scopes.',product:'smart_devices',surface:'rest',href:catalogDocs,action:'Read security requirements'},
  {title:'JavaScript / TypeScript SDK',desc:'Typed and hosted browser modules for restroom data and recommendations.',product:'nearby',surface:'sdk',href:functions+'/platform-distribution/v1/sdk.js',action:'Get SDK module'},
