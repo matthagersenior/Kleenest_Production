@@ -12,7 +12,7 @@ const benefitCopy=(code:string)=>code==='premium_user'?['Every Consumer capabili
 export default function MembershipScreen(){
   const theme=useConsumerTheme();
   const [plans,setPlans]=useState<any[]>([]),[summary,setSummary]=useState<any>(null),[message,setMessage]=useState('Loading membership…');
-  async function loadMembership(){try{const[catalog,account]=await Promise.all([listMobilePricingCatalog(),getMobileAccountSummary()]);setPlans(catalog);setSummary(account);setMessage('')}catch(error:any){setMessage(error?.message||'Membership could not be loaded.')}}
+  async function loadMembership(){try{const[catalog,account]=await Promise.all([listMobilePricingCatalog(),getMobileAccountSummary().catch(()=>null)]);setPlans(catalog);setSummary(account);setMessage('')}catch(error:any){setMessage(error?.message||'Membership could not be loaded.')}}
   useEffect(()=>{void loadMembership()},[]);
   const profile=summary?.profile||{};
   const networkAdsRemoved=['premium','family'].includes(String(profile.subscription_tier||'').toLowerCase())||Boolean(profile.is_admin||profile.is_platform_owner);
