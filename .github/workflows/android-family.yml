@@ -91,6 +91,10 @@ jobs:
       - run: npm run typecheck --workspace @kleenest/business-mobile
       - run: npm run typecheck --workspace @kleenest/fleet-mobile
       - run: npm run typecheck --workspace @kleenest/owner-mobile
+      - name: Verify Android emulator recovery does not mask app crashes
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_android_emulator_launcher_anr.py'
+          bash -n scripts/android-startup-smoke.sh
 
   build:
     needs: verify-family
@@ -301,6 +305,13 @@ jobs:
           if [ "$TARGET_SDK" -lt 36 ]; then echo '${{ matrix.app }} APK targets API '"$TARGET_SDK"', but Google Play requires API 36 or newer.' >&2; exit 1; fi
           echo '${{ matrix.app }} effective targetSdkVersion='"$TARGET_SDK"
           if grep -Fq 'application-debuggable' "$BADGING"; then echo '${{ matrix.app }} APK is debuggable.' >&2; exit 1; fi
+          if [ '${{ matrix.app }}' = 'Consumer' ]; then
+            "$AAPT" dump xmltree "$APK" AndroidManifest.xml > "$RUNNER_TEMP/consumer-widget-manifest.txt"
+            for widget in KleenestSmallWidget KleenestMediumWidget KleenestLargeWidget; do
+              grep -Fq "com.kleenest.app.widgets.$widget" "$RUNNER_TEMP/consumer-widget-manifest.txt" || { echo "Missing Consumer AppWidgetProvider: $widget" >&2; exit 1; }
+            done
+            echo 'Consumer APK contains all three native Android home-screen widget providers.'
+          fi
       - name: Enable KVM access
         shell: bash
         run: |
