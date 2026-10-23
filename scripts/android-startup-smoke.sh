@@ -38,6 +38,22 @@ capture_window() {
   adb_bounded "$ADB_COMMAND_TIMEOUT" shell cat /sdcard/kleenest-window.xml > "$LOG_DIR/window.xml" 2>&1 || true
 }
 
+# The Android 16 emulator launcher can surface its own ANR over a healthy app.
+# Only select the system Quickstep dialog's Wait action; never dismiss app ANRs.
+recover_emulator_quickstep_anr() {
+  local attempt location x y
+  for attempt in 1 2 3; do
+    if ! location="$(python3 scripts/android_emulator_launcher_anr.py "$LOG_DIR/window.xml")"; then
+      return 0
+    fi
+    read -r x y <<< "$location"
+    echo "$LABEL smoke: emulator Quickstep ANR obscured app; selecting system Wait (attempt $attempt)" >&2
+    adb_bounded "$ADB_COMMAND_TIMEOUT" shell input tap "$x" "$y" || return 1
+    sleep 7
+    capture_window
+  done
+}
+
 fail_with_diagnostics() {
   local reason="$1"
   capture_diagnostics
@@ -93,6 +109,9 @@ if [[ -n "$DEEPLINK" ]]; then
   capture_diagnostics
   capture_window
   [[ -n "$PID" ]] || fail_with_diagnostics 'process exited after deep link launch'
+  if ! recover_emulator_quickstep_anr; then
+    fail_with_diagnostics 'emulator Quickstep system dialog could not be dismissed'
+  fi
   if grep -Eqi "Process: ${PACKAGE//./\\.}|FATAL EXCEPTION.*${PACKAGE//./\\.}|UnsatisfiedLinkError|ReactNativeJS.*(TypeError|ReferenceError|Invariant Violation|Unhandled JS Exception)" "$LOG_DIR/logcat.txt"; then
     fail_with_diagnostics 'fatal or unhandled JavaScript signature found after deep link launch'
   fi
