@@ -187,6 +187,10 @@ export default function LocationDuplicates(){
       <Text style={[s.kicker,{color:theme.accentText}]}>KLEENESTOS · DATA INTEGRITY</Text>
       <Text style={[s.heading,{color:theme.accentText}]}>Duplicate review</Text>
       <Text style={[s.heroText,{color:theme.accentText}]}>One case at a time. See inconsistencies, review evidence, and keep real businesses separate.</Text>
+      <Pressable accessibilityRole="button" onPress={()=>router.push('/location-coordinate-review' as any)}
+        style={[s.recommendedAction,{backgroundColor:theme.surface}]}>
+        <Text style={{color:theme.ink,fontWeight:'900'}}>Review wrong map pins and coordinates →</Text>
+      </Pressable>
     </View>
     <View style={[s.card,{backgroundColor:theme.surface,borderColor:theme.line}]}>
       <View style={s.diffHead}><Text style={[s.headingSmall,{color:theme.ink}]}>Review progress</Text>

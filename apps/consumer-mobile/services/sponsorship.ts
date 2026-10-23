@@ -1,4 +1,5 @@
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
+import { captureGuestMonetizationEvent } from './guestMonetization';
 
 export type SponsoredCard={
   campaign_id:string;
@@ -44,6 +45,9 @@ export async function listSponsoredCards(surface:string,context:Record<string,un
 
 export async function recordSponsoredEvent(card:SponsoredCard,eventType:'impression'|'click'|'dismiss',contextClass?:string){
   const{data}=await client().auth.getSession();
-  if(!data.session)return;
+  if(!data.session || data.session.user.is_anonymous){
+    captureGuestMonetizationEvent(`sponsored_${eventType}`,card.placement_code,card.campaign_id,contextClass||null);
+    return;
+  }
   await client().rpc('record_sponsored_event',{p_campaign_id:card.campaign_id,p_placement_code:card.placement_code,p_event_type:eventType,p_context_class:contextClass||null});
 }

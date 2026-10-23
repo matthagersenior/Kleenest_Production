@@ -32,6 +32,7 @@ for(let attempt=1;attempt<=5;attempt+=1){
       method:'POST',
       headers:{'content-type':'application/json','accept':'application/json'},
       body:JSON.stringify(payload),
+      signal:AbortSignal.timeout(20000), // Bounded network failure; fallback remains fail-closed.
     });
     if(response.ok){
       result=await response.json();
@@ -103,6 +104,7 @@ if(result===null){
       method:'POST',
       headers:{'content-type':'application/json','accept':'application/json'},
       body:JSON.stringify({queries:chunk.map(item=>({package:{ecosystem:'npm',name:item.name},version:item.version}))}),
+      signal:AbortSignal.timeout(30000), // Do not leave the security workflow hung indefinitely.
     });
     if(!osvResponse.ok)throw new Error(`Both npm and OSV advisory services are unavailable; OSV HTTP ${osvResponse.status}`);
     const osvPayload=await osvResponse.json();

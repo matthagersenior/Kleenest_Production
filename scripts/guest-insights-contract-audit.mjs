@@ -24,9 +24,36 @@ const ownerRpcGrant=read('supabase/migrations/20261018023035_owner_guest_journey
 if (ownerRpcGrant.toLowerCase().includes(' to anon;') || ownerRpcGrant.toLowerCase().includes(' to public;')) {
   throw new Error('Guest Insights private analytics RPC must never be granted to anonymous/public roles.');
 }
+assertContains('supabase/migrations/20261022004233_owner_guest_returning_visitor_groups.sql',[
+  'private.owner_guest_visitor_groups','public.owner_guest_visitor_groups',
+  'public.is_platform_owner_session()',"LIMIT 20",'visitor_label',
+  'REVOKE ALL ON FUNCTION public.owner_guest_visitor_groups(integer) FROM PUBLIC, anon;',
+  'GRANT EXECUTE ON FUNCTION private.owner_guest_visitor_groups(integer) TO authenticated;',
+]);
+const guestGroupsMigration=read('supabase/migrations/20261022004233_owner_guest_returning_visitor_groups.sql');
+if (guestGroupsMigration.includes('GRANT EXECUTE ON FUNCTION public.owner_guest_visitor_groups(integer) TO anon')) {
+  throw new Error('Guest repeat visitor histories must be owner-only.');
+}
+assertContains('apps/platform-mobile/app/guest-insights.tsx',[
+  'owner_guest_visitor_groups', 'Guest histories',
+  "(visitor.visit_count??0)>1",'visitor.friction_events>0',
+  'visitor.registration_linked', 'visitor.sessions.map',
+]);
+assertContains('supabase/migrations/20261022030130_guest_meaningful_return_analytics.sql',[
+  "interval '30 minutes'",'visit_clusters','visit_count',
+  'private.owner_guest_visit_summary','public.owner_guest_visit_summary',
+  'public.is_platform_owner_session()',
+  'REVOKE ALL ON FUNCTION public.owner_guest_visit_summary(integer) FROM PUBLIC, anon;',
+]);
+assertContains('apps/platform-mobile/app/guest-insights.tsx',[
+  'owner_guest_visit_summary', 'Separated returning IDs',
+  'visitor.visit_count??0','visit_windows?.map','Rapid relaunches',
+  "visitorFilter==='relaunch'",
+]);
 assertContains('apps/consumer-mobile/services/acquisitionAttribution.ts',[
   'safeGuestJourneyContext(context)','getKleenestGuestSessionId()',
   "p_visitor_key:visitorKey",'linkGuestJourneyRegistration',
+  "'search_kind','area_cell'",'input.filters','input.radiusMeters',
 ]);
 assertContains('apps/consumer-mobile/services/consumerTelemetry.ts',[
   'captureGuestJourneyEvent(eventName,id||null,metadata)',
@@ -47,4 +74,25 @@ assertContains('packages/mobile-core/src/appSearch.ts',["id:'guest-insights'","r
 const registry=JSON.parse(read('config/feature-lifecycle.json'));
 const guest=registry.features.find(x=>x.id==='platform.guest-insights');
 if(!guest||guest.status!=='wired')throw new Error('Guest Insights lifecycle must remain wired until release verified.');
+assertContains('supabase/migrations/20261022032717_owner_guest_discovery_funnel.sql',[
+  'private.owner_guest_discovery_funnel','public.owner_guest_discovery_funnel',
+  'public.is_platform_owner_session()','guest_app_sessions','discovery_result_sessions',
+  'intentional_discovery_sessions','place_selected_sessions','returning_discovery_visitor_ids',
+  'REVOKE ALL ON FUNCTION public.owner_guest_discovery_funnel(integer) FROM PUBLIC,anon;',
+]);
+assertContains('apps/platform-mobile/app/guest-insights.tsx',[
+  "owner_guest_discovery_funnel",'Guest → Discovery funnel',
+  'intentional_discovery_sessions','discovery_rate_percent',
+  'guest_entry_discovery_visitor_ids','non_discovery_sessions',
+  'Approximate search area · ~5 km grid','Filters:','Results shown:',
+]);
+assertContains('supabase/migrations/20261022220000_guest_search_area_context.sql',[
+  "'area_cell',v_area", "'search_kind'", "'radius_meters'", "'filter_count'",
+  "'privacy','2026-10-22'", "p.privacy_version='2026-10-22'",
+  "'2026-09-01','2026-09-01','2026-10-22'",
+]);
+assertContains('apps/consumer-mobile/app/legal.tsx',[
+  'amenity filters, result counts, and approximate search areas rounded to roughly 5 km cells',
+  'They do not store raw search phrases or precise coordinates',
+]);
 console.log('Guest Insights data, privacy, searchable owner UI, and lifecycle contracts passed.');

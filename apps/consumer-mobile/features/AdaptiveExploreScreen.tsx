@@ -66,6 +66,7 @@ import {
 import { palette } from '../components/ConsumerUI';
 import { SponsoredSlot } from '../components/SponsoredSlot';
 import { AdMobNativeSlot } from '../components/AdMobNativeSlot';
+import { GuestInstallUpsell } from '../components/GuestInstallUpsell';
 import { organicExploreReason } from '../services/aiAssist';
 
 const DRAFT_KEY = 'kleenest.native.route.draft';
@@ -184,9 +185,13 @@ function organizeMapMarkers(rows:any[],zoom:number):MapMarkerGroup[]{
     buckets.set(key,bucket);
   }
   return [...buckets.entries()].map(([key,bucket])=>{
+    // Cluster badges must be anchored to a real member's coordinates rather
+    // than floating between buildings at the arithmetic center of several POIs.
     const longitude=bucket.reduce((sum,row)=>sum+Number(row.longitude),0)/bucket.length;
     const latitude=bucket.reduce((sum,row)=>sum+Number(row.latitude),0)/bucket.length;
-    return {key:`cluster:${key}`,rows:bucket,center:[longitude,latitude]};
+    const squaredDistance=(row:any)=>Math.pow(Number(row.longitude)-longitude,2)+Math.pow(Number(row.latitude)-latitude,2);
+    const anchor=bucket.reduce((best,row)=>squaredDistance(row)<squaredDistance(best)?row:best,bucket[0]);
+    return {key:`cluster:${key}`,rows:bucket,center:[Number(anchor.longitude),Number(anchor.latitude)]};
   });
 }
 function exploreCameraViewState(bounds:any,fitRoute:boolean,center:any,zoom:number){
@@ -1145,7 +1150,18 @@ export default function AdaptiveExploreScreen() {
     });
 
     captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:displayRows.length,search:originalQuery,amenityCount:activeAmenityNames.length});
-    captureConsumerCoreLoopEvent('nearby_results_shown',null,{resultCount:displayRows.length,radiusMeters:result.effectiveRadiusMeters,search:Boolean(rawQuery),cached:false});
+    // Keep guest diagnostics useful without retaining the guest's exact search phrase
+    // or precise location. The area is a roughly 5 km grid cell, not a GPS coordinate.
+    const areaCell=`${(Math.round(latitude*20)/20).toFixed(2)},${(Math.round(longitude*20)/20).toFixed(2)}`;
+    captureConsumerCoreLoopEvent('nearby_results_shown',null,{
+      resultCount:displayRows.length,
+      radiusMeters:result.effectiveRadiusMeters,
+      search:Boolean(rawQuery),
+      search_kind:areaMatch?'address_or_area':rawQuery?'place_or_business':'nearby',
+      area_cell:areaCell,
+      filters:activeAmenityNames,
+      cached:false,
+    });
 
     if (!areaMatch&&!query && !activeAmenityNames.length && !requiresRestroom && displayRows.length) {
       void writeNearbyCache(displayRows,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
@@ -2252,6 +2268,7 @@ export default function AdaptiveExploreScreen() {
                         </Pressable>
                         {index===3?<AdMobNativeSlot contextClass="maps_network_after_results_4" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>:null}
                         {index===13?<AdMobNativeSlot contextClass="maps_network_after_results_14" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>:null}
+                        {visibleRows.length>=3&&index===Math.min(5,visibleRows.length-1)?<GuestInstallUpsell/>:null}
                       </View>
                     )):(
                       <View style={[s.sheetEmpty,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>

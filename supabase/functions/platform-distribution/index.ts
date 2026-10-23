@@ -37,6 +37,17 @@ const SDK = `export class KleenestClient {
   matchPlace(input) { return this.request('/v1/places/match', { method: 'POST', body: JSON.stringify(input) }); }
   recommendNearby(input) { return this.request('/v1/recommendations/nearby', { method: 'POST', body: JSON.stringify(input) }); }
   recommendRoute(input) { return this.request('/v1/recommendations/route', { method: 'POST', body: JSON.stringify(input) }); }
+  listAmenities() { return this.request('/v1/amenities'); }
+  getPlaceIntelligence(id) { if (!id) throw new Error('id is required'); return this.request('/v1/places/' + encodeURIComponent(id) + '/intelligence'); }
+  getPlaceProof(id) { if (!id) throw new Error('id is required'); return this.request('/v1/places/' + encodeURIComponent(id) + '/proof'); }
+  getVerifiedAccess(id) { if (!id) throw new Error('id is required'); return this.request('/v1/places/' + encodeURIComponent(id) + '/access'); }
+  getRouteIntelligence(input) { return this.request('/v1/intelligence/route', { method: 'POST', body: JSON.stringify(input) }); }
+  requireServerKey(action) { if (!this.apiKey) throw new Error(action + ' requires a server API key, not a Browser token'); }
+  listSmartDevices() { this.requireServerKey('listSmartDevices'); return this.request('/v1/devices'); }
+  registerSmartDevice(input) { this.requireServerKey('registerSmartDevice'); return this.request('/v1/devices', { method: 'POST', body: JSON.stringify(input) }); }
+  sendSmartDeviceEvent(input) { this.requireServerKey('sendSmartDeviceEvent'); return this.request('/v1/devices/events', { method: 'POST', body: JSON.stringify(input) }); }
+  commandSmartDevice(id,input) { this.requireServerKey('commandSmartDevice'); if (!id) throw new Error('id is required'); return this.request('/v1/devices/' + encodeURIComponent(id) + '/commands', { method: 'POST', body: JSON.stringify(input) }); }
+  completeSmartDeviceCommand(id,commandId,input) { this.requireServerKey('completeSmartDeviceCommand'); if (!id || !commandId) throw new Error('id and commandId are required'); return this.request('/v1/devices/' + encodeURIComponent(id) + '/commands/' + encodeURIComponent(commandId) + '/complete', { method: 'POST', body: JSON.stringify(input) }); }
 }
 export const KLEENEST_SDK_VERSION = '${VERSION}';
 `;

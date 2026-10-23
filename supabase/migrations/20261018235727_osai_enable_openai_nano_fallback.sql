@@ -1,0 +1,1 @@
+update kleenest_ai.provider_models set model='gpt-4.1-nano',enabled=true,supports_json=true,allowed_data_class='public',input_usd_per_million=0.10,output_usd_per_million=0.40,priority=2,updated_at=now() where provider='openai' and model='unconfigured' and enabled=false;
