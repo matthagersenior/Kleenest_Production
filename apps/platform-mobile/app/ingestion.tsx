@@ -1,7 +1,7 @@
 import { useCallback,useEffect,useMemo,useState } from 'react';
 import { Pressable,RefreshControl,ScrollView,Text,View } from 'react-native';
 import { DiagnosticDisclosure,HealthCard,OSHero,SectionHeader,StatusPill,useOSCardStyle } from '../components/KleenestOS';
-import { getOwnerIngestionControl,repairStalledIngestion,runBoundedIngestionCycle,setCoverageMarketEnabled,setGlobalIngestionPaused,setIngestionSourceEnabled,setNationalIngestionPolicy } from '../services/ownerIngestion';
+import { getOwnerIngestionControl,repairStalledIngestion,runBoundedIngestionCycle,setCoverageMarketEnabled,setGlobalIngestionPaused,setIngestionSourceEnabled,setNationalIngestionPolicy,updateIngestionSourcePolicy,updateCoverageMarketPriority } from '../services/ownerIngestion';
 import { usePlatformTheme } from '../services/theme';
 
 type Row=Record<string,unknown>;
@@ -89,6 +89,12 @@ export default function IngestionControl(){
       <SectionHeader title="Current data sources" body="Only current ingestion authorities are shown. Retired versioned channels remain implementation history, not Owner controls."/>
       {currentSources.map(row=>{const key=txt(row.source_key),enabled=bool(row.enabled),actionKey=`source:${key}`;return <View key={key} style={card}>
         <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10}}><View style={{flex:1,gap:3}}><Text style={{fontSize:16,fontWeight:'900',color:theme.ink}}>{SOURCE_LABELS[key]??key}</Text><Text style={{color:theme.muted}}>Priority {num(row.priority)} · {txt(row.quota_mode)||'managed'} · max {num(row.max_requests_per_cycle)||1}/cycle</Text></View><StatusPill label={enabled?'ON':'OFF'} tone={enabled?'good':'neutral'}/></View>
+        <View style={{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'}}>
+          <Action label="Priority −" disabled={Boolean(busy)||num(row.priority)<=1} onPress={()=>void act(actionKey,()=>updateIngestionSourcePolicy(key,{priority:Math.max(1,num(row.priority)-10)}))}/>
+          <Action label="Priority +" disabled={Boolean(busy)} onPress={()=>void act(actionKey,()=>updateIngestionSourcePolicy(key,{priority:num(row.priority)+10}))}/>
+          <Action label="Jobs/cycle −" disabled={Boolean(busy)||num(row.max_requests_per_cycle)<=1} onPress={()=>void act(actionKey,()=>updateIngestionSourcePolicy(key,{max_requests_per_cycle:Math.max(1,num(row.max_requests_per_cycle)-1)}))}/>
+          <Action label="Jobs/cycle +" disabled={Boolean(busy)} onPress={()=>void act(actionKey,()=>updateIngestionSourcePolicy(key,{max_requests_per_cycle:Math.min(8,num(row.max_requests_per_cycle)+1)}))}/>
+        </View>
         <Action label={busy===actionKey?'Working…':enabled?'Pause source':'Enable source'} danger={enabled} disabled={Boolean(busy)} onPress={()=>void act(actionKey,()=>setIngestionSourceEnabled(key,!enabled))}/>
       </View>})}
     </View>
@@ -97,6 +103,10 @@ export default function IngestionControl(){
       <SectionHeader title="Coverage priorities" body="Top incomplete markets. Completed markets and old source-channel details stay out of the daily view."/>
       {visibleMarkets.length?visibleMarkets.map(row=>{const id=txt(row.id),name=txt(row.name)||txt(row.market_key),state=txt(row.state_code),stateText=txt(row.status)||'pending',enabled=stateText!=='blocked',priority=Math.max(1,num(row.priority)||100),actionKey=`market:${id}`;return <View key={id} style={card}>
         <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10}}><View style={{flex:1,gap:3}}><Text style={{fontSize:16,fontWeight:'900',color:theme.ink}}>{name}{state?`, ${state}`:''}</Text><Text style={{color:theme.muted}}>Priority {priority} · {stateText}{row.current_source?` · ${txt(row.current_source)}`:''}</Text></View><StatusPill label={enabled?stateText.toUpperCase():'PAUSED'} tone={stateText==='failed'?'danger':stateText==='running'?'good':enabled?'neutral':'warning'}/></View>
+        <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+          <Action label="Priority −" disabled={Boolean(busy)||priority<=1} onPress={()=>void act(actionKey,()=>updateCoverageMarketPriority({marketId:id,priority:Math.max(1,priority-10)}))}/>
+          <Action label="Priority +" disabled={Boolean(busy)} onPress={()=>void act(actionKey,()=>updateCoverageMarketPriority({marketId:id,priority:priority+10}))}/>
+        </View>
         <Pressable accessibilityRole="button" disabled={Boolean(busy)||stateText==='running'} onPress={()=>void act(actionKey,()=>setCoverageMarketEnabled({marketId:id,priority,enabled:!enabled,name}))} style={{alignSelf:'flex-start',paddingVertical:8,paddingHorizontal:11,borderRadius:10,borderWidth:1,borderColor:theme.line,opacity:busy||stateText==='running'?0.5:1}}><Text style={{fontWeight:'900',color:theme.accent}}>{busy===actionKey?'Working…':enabled?'Pause priority':'Resume priority'}</Text></Pressable>
       </View>}):<View style={card}><Text style={{color:theme.muted}}>No incomplete coverage priorities are waiting.</Text></View>}
     </View>
