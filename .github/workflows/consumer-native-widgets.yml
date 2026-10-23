@@ -1,0 +1,81 @@
+name: Consumer Native Widgets Verification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/consumer-mobile/**'
+      - 'package-lock.json'
+      - 'scripts/consumer-native-widget-audit.mjs'
+      - 'scripts/consumer-generated-native-widget-audit.mjs'
+      - '.github/workflows/consumer-native-widgets.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/consumer-mobile/plugins/**'
+      - 'apps/consumer-mobile/widgets/**'
+      - 'apps/consumer-mobile/services/consumerWidgets*'
+      - 'apps/consumer-mobile/app.config.ts'
+      - 'scripts/consumer-native-widget-audit.mjs'
+      - '.github/workflows/consumer-native-widgets.yml'
+permissions:
+  contents: read
+concurrency:
+  group: consumer-native-widgets-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-widget:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    env:
+      KLEENEST_STANDALONE_ANDROID: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify preinstalled Android NDK
+        run: |
+          test -s "${ANDROID_NDK_HOME}/source.properties"
+          echo "Using ${ANDROID_NDK_HOME}"
+      - run: npm ci --no-audit --no-fund
+      - name: Verify widget source and dependency lock
+        run: node scripts/consumer-native-widget-audit.mjs
+      - name: Consumer TypeScript
+        run: npm run typecheck --workspace @kleenest/consumer-mobile
+      - name: Prebuild real Android widgets
+        working-directory: apps/consumer-mobile
+        run: npx expo prebuild --platform android --clean --no-install
+      - name: Verify generated providers, receiver registration and layouts
+        run: node scripts/consumer-generated-native-widget-audit.mjs
+      - name: Compile Android widget Kotlin and app resources
+        working-directory: apps/consumer-mobile/android
+        run: ./gradlew :app:compileDebugKotlin --no-daemon --stacktrace
+
+  ios-widget:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Generate iOS home-screen widget extension
+        working-directory: apps/consumer-mobile
+        run: npx expo prebuild --platform ios --clean --no-install
+      - name: Verify SwiftUI widget extension output
+        working-directory: apps/consumer-mobile
+        run: |
+          test -d ios
+          find ios -type f \( -name '*.swift' -o -name 'project.pbxproj' \) | grep -q .
+          grep -R -q 'KleenestNearby' ios
