@@ -53,6 +53,7 @@ assertContains('apps/platform-mobile/app/guest-insights.tsx',[
 assertContains('apps/consumer-mobile/services/acquisitionAttribution.ts',[
   'safeGuestJourneyContext(context)','getKleenestGuestSessionId()',
   "p_visitor_key:visitorKey",'linkGuestJourneyRegistration',
+  "'search_kind','area_cell'",'input.filters','input.radiusMeters',
 ]);
 assertContains('apps/consumer-mobile/services/consumerTelemetry.ts',[
   'captureGuestJourneyEvent(eventName,id||null,metadata)',
@@ -83,5 +84,15 @@ assertContains('apps/platform-mobile/app/guest-insights.tsx',[
   "owner_guest_discovery_funnel",'Guest → Discovery funnel',
   'intentional_discovery_sessions','discovery_rate_percent',
   'guest_entry_discovery_visitor_ids','non_discovery_sessions',
+  'Approximate search area · ~5 km grid','Filters:','Results shown:',
+]);
+assertContains('supabase/migrations/20261022220000_guest_search_area_context.sql',[
+  "'area_cell',v_area", "'search_kind'", "'radius_meters'", "'filter_count'",
+  "'privacy','2026-10-22'", "p.privacy_version='2026-10-22'",
+  "'2026-09-01','2026-09-01','2026-10-22'",
+]);
+assertContains('apps/consumer-mobile/app/legal.tsx',[
+  'amenity filters, result counts, and approximate search areas rounded to roughly 5 km cells',
+  'They do not store raw search phrases or precise coordinates',
 ]);
 console.log('Guest Insights data, privacy, searchable owner UI, and lifecycle contracts passed.');
