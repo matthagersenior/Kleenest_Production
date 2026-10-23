@@ -1,0 +1,1 @@
+update kleenest_ai.provider_models set model='gemini-2.5-flash-lite',enabled=true,supports_json=true,allowed_data_class='public',input_usd_per_million=0.10,output_usd_per_million=0.40,priority=1,updated_at=now() where provider='gemini' and model='unconfigured' and enabled=false;

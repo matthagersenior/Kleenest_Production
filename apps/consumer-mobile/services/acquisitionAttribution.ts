@@ -37,16 +37,34 @@ function clean(value:unknown,max=120){
 
 function randomKey(){
   const cryptoObj=(globalThis as any)?.crypto;
-  if(cryptoObj?.randomUUID)return cryptoObj.randomUUID();
-  return 'acq-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12);
+  if(typeof cryptoObj?.randomUUID==='function')return cryptoObj.randomUUID();
+  if(typeof cryptoObj?.getRandomValues==='function'){
+    const bytes=new Uint8Array(16);
+    cryptoObj.getRandomValues(bytes);
+    return 'acq-'+Array.from(bytes,byte=>byte.toString(16).padStart(2,'0')).join('');
+  }
+  // A predictable ID would undermine guest telemetry deduplication and rate limits.
+  // Do not create a new persistent identifier without a secure entropy source.
+  throw new Error('Secure random generator unavailable for guest attribution.');
 }
 
-export async function acquisitionSessionKey(){
-  const existing=await AsyncStorage.getItem(SESSION_KEY);
-  if(existing)return existing;
-  const created=randomKey();
-  await AsyncStorage.setItem(SESSION_KEY,created);
-  return created;
+// Deduplicate concurrent first-open events. Without this, simultaneous landing,
+ // app-open and discovery calls can mint different identifiers for one guest.
+let acquisitionSessionKeyPromise:Promise<string>|null=null;
+export function acquisitionSessionKey():Promise<string>{
+  if(!acquisitionSessionKeyPromise){
+    acquisitionSessionKeyPromise=(async()=>{
+      const existing=await AsyncStorage.getItem(SESSION_KEY);
+      if(existing)return existing;
+      const created=randomKey();
+      await AsyncStorage.setItem(SESSION_KEY,created);
+      return created;
+    })().catch(error=>{
+      acquisitionSessionKeyPromise=null;
+      throw error;
+    });
+  }
+  return acquisitionSessionKeyPromise;
 }
 
 function currentReferrerHost(){
@@ -124,10 +142,12 @@ export async function recordAcquisitionEvent(
 
 function safeGuestJourneyContext(input:Record<string,unknown>){
   const result:Record<string,unknown>={};
-  for(const key of ['surface','source','method','device_kind','browser_kind'] as const){
+  for(const key of ['surface','source','method','device_kind','browser_kind','search_kind','area_cell'] as const){
     if(typeof input[key]==='string')result[key]=String(input[key]).slice(0,50);
   }
   if(Number.isInteger(input.resultCount)&&Number(input.resultCount)>=0)result.resultCount=Math.min(Number(input.resultCount),100000);
+  if(Number.isInteger(input.radiusMeters)&&Number(input.radiusMeters)>=0)result.radiusMeters=Math.min(Number(input.radiusMeters),50000);
+  if(Array.isArray(input.filters))result.filters=input.filters.filter(value=>typeof value==='string').slice(0,12).map(value=>String(value).slice(0,40));
   // Record only whether a search occurred; never transmit or persist the search phrase.
   if(Object.prototype.hasOwnProperty.call(input,'search'))result.search=Boolean(input.search);
   return result;

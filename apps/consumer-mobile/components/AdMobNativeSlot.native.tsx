@@ -2,6 +2,7 @@ import { useEffect,useMemo,useState } from 'react';
 import { Image,Platform,Pressable,StyleSheet,Text,View } from 'react-native';
 import mobileAds,{AdsConsent,NativeAd,NativeAdEventType,NativeAdView,NativeAsset,NativeAssetType,TestIds} from 'react-native-google-mobile-ads';
 import { consumerNetworkAdPlacementEnabled } from '../services/networkAds';
+import { captureGuestMonetizationEvent } from '../services/guestMonetization';
 import { classifyAdMobLoadFailure,recordAdMobTelemetry } from '../services/admobTelemetry';
 import { useConsumerTheme } from '../services/theme';
 import { router } from 'expo-router';
@@ -52,18 +53,23 @@ export function AdMobNativeSlot({keywords=[],contextClass}:{keywords?:string[];c
       const adUnitId=configured||TestIds.NATIVE;
       const placement=contextClass||'network';
       void recordAdMobTelemetry('request',placement,{adUnitId});
+      captureGuestMonetizationEvent('network_request_attempt',placement,null,Platform.OS);
       try{
         const ad=await NativeAd.createForAdRequest(adUnitId,{
           requestNonPersonalizedAdsOnly:true,
           keywords:cleanKeywords.length?cleanKeywords:undefined,
         });
         void recordAdMobTelemetry('fill',placement,{adUnitId,responseId:ad.responseId});
-        ad.addAdEventListener(NativeAdEventType.IMPRESSION,()=>{void recordAdMobTelemetry('impression',placement,{adUnitId,responseId:ad.responseId})});
+        ad.addAdEventListener(NativeAdEventType.IMPRESSION,()=>{
+          void recordAdMobTelemetry('impression',placement,{adUnitId,responseId:ad.responseId});
+          captureGuestMonetizationEvent('network_impression',placement,null,Platform.OS);
+        });
         ad.addAdEventListener(NativeAdEventType.CLICKED,()=>{void recordAdMobTelemetry('click',placement,{adUnitId,responseId:ad.responseId})});
         if(active)setNativeAd(ad);else ad.destroy();
       }catch(error){
         const failure=classifyAdMobLoadFailure(error);
         void recordAdMobTelemetry(failure.eventType,placement,{adUnitId,errorCode:failure.errorCode,errorMessage:failure.errorMessage});
+        if(failure.eventType==='no_fill')captureGuestMonetizationEvent('network_no_fill',placement,null,Platform.OS);
       }
     });
     return()=>{active=false};

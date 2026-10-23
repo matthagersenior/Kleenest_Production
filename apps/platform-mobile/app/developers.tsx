@@ -9,9 +9,9 @@ import {
 } from '../services/developerPartners';
 import { usePlatformTheme } from '../services/theme';
 
-const apiProducts=['nearby','route','place_details','place_match'] as const;
+const apiProducts=['nearby','route','place_details','place_match','smart_devices'] as const;
 const surfaces=['rest','sdk','widget','map','route_sdk','webhooks','mcp'] as const;
-const scopeOptions=['recommendations:read','platform:read'] as const;
+const scopeOptions=['recommendations:read','platform:read','devices:read','devices:write','devices:command','devices:events:write'] as const;
 const roles=['owner','admin','developer'] as const;
 const pretty=(v:unknown)=>String(v??'').replaceAll('_',' ').replaceAll('-',' ');
 
