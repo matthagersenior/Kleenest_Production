@@ -51,6 +51,7 @@ import {
   writeNearbyContinuity,
 } from '../services/nearbyCache';
 import { captureConsumerCoreLoopEvent, captureConsumerDiscovery, captureConsumerRouteIntent } from '../services/consumerTelemetry';
+import { publishConsumerWidgetSnapshot } from '../services/consumerWidgets';
 import { listNearbyProgressionOpportunities } from '../services/discoveryProgression';
 import { getRewardCapabilities } from '../services/rewardRuntime';
 import { attachLocationPresentations } from '../services/locationPresentation';
@@ -1150,6 +1151,9 @@ export default function AdaptiveExploreScreen() {
     });
 
     captureConsumerDiscovery({latitude,longitude,radiusMeters:result.effectiveRadiusMeters,resultCount:displayRows.length,search:originalQuery,amenityCount:activeAmenityNames.length});
+    if(!areaMatch&&!query&&!activeAmenityNames.length&&!requiresRestroom){
+      void publishConsumerWidgetSnapshot(displayRows.filter(hasRestroomSignal));
+    }
     // Keep guest diagnostics useful without retaining the guest's exact search phrase
     // or precise location. The area is a roughly 5 km grid cell, not a GPS coordinate.
     const areaCell=`${(Math.round(latitude*20)/20).toFixed(2)},${(Math.round(longitude*20)/20).toFixed(2)}`;
@@ -1192,6 +1196,7 @@ export default function AdaptiveExploreScreen() {
         if(cameraInteractionVersionRef.current===cameraInteractionVersion&&!preservedId)applyDensityAwareCamera(enriched,nextOrigin);
         if(!areaMatch&&!query&&!activeAmenityNames.length&&!requiresRestroom&&enriched.length){
           void writeNearbyCache(enriched,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
+          void publishConsumerWidgetSnapshot(enriched.filter(hasRestroomSignal));
         }
       }catch{}
     })();
