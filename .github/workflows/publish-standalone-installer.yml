@@ -8,7 +8,7 @@ on:
         required: false
         type: string
   workflow_run:
-    workflows: ["Validate Kleenest Consumer Web Preview"]
+    workflows: ["Validate Kleenest Consumer Web Preview", "Build Kleenest App Family Android APKs"]
     types: [completed]
 
 permissions:
