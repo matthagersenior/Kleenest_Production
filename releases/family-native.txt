@@ -10,3 +10,4 @@ consumer-native-startup-fix-2026-09-13
 2026-10-09 canonical KleenestOS com.kleenest.platform native rebuild with full Email Center parity and one Android publisher
 2026-10-09 support source and delivery state parity in final canonical KleenestOS Android package
 2026-10-23 Consumer AppWidgetProvider native rebuild after PR #506; publish testable Android widget APK
+2026-10-23 rebuild Android family with system Quickstep ANR-safe smoke and Consumer widget manifest assertions
