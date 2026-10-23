@@ -62,7 +62,8 @@
     "platform.owner-email-inbox",
     "platform.sponsored-ad-crud",
     "platform.creator-missions",
-    "platform.theme-entitlements"
+    "platform.theme-entitlements",
+    "platform.ai-recommendation-actions"
   ],
   "grandfatheredUnverified": [
     "consumer.discovery",
@@ -1051,6 +1052,22 @@
       "kind": "user",
       "status": "wired",
       "gap": "Three native Android launcher providers, fresh canonical-result bridge and iOS WidgetKit implementation are wired in source. Native candidate compilation, device launcher verification, signed App Store/Play rollout and production usage instrumentation are required before certifying live."
+    },
+    {
+      "id": "platform.ingestion-controls",
+      "product": "platform",
+      "capability": "ingestion-controls",
+      "kind": "user",
+      "status": "wired",
+      "gap": "Owner-authorized buttons for adjusting existing source priority, bounded jobs per cycle, and market priority are wired to audit-logged RPCs. Create/delete job CRUD and independent on-demand dispatch remain unavailable, and production UI verification has not been completed."
+    },
+    {
+      "id": "platform.ai-recommendation-actions",
+      "product": "platform",
+      "capability": "ai-recommendation-actions",
+      "kind": "user",
+      "status": "wired",
+      "gap": "KleenestOS can route recommendations to existing controls and run an explicitly confirmed bounded ingestion cycle. Persistent accept/dismiss/schedule controls and end-to-end action verification are not yet complete."
     }
   ]
 }

@@ -67,3 +67,11 @@ export const setNationalIngestionPolicy=(patch:{national_ingestion_enabled?:bool
   p_patch:patch,
   p_reason:'Updated national ingestion priorities from KleenestOS Ingestion Control',
 });
+
+// Owner-authorized, audited policy updates. The database validates and bounds every field.
+export const updateIngestionSourcePolicy=(sourceKey:string,patch:{priority?:number;max_requests_per_cycle?:number;quota_mode?:'fixed'|'adaptive'|'unlimited'})=>rpc('owner_update_ingestion_source_policy',{
+  p_source_key:sourceKey,p_patch:patch,p_reason:'Edited source policy in KleenestOS Ingestion Control',
+});
+export const updateCoverageMarketPriority=(input:{marketId:string;priority:number})=>rpc('owner_update_ingestion_market',{
+  p_market_id:input.marketId,p_priority:input.priority,p_reason:'Edited coverage market priority in KleenestOS Ingestion Control',
+});
