@@ -26,7 +26,7 @@ on:
       - scripts/consumer-real-world-browser-stress.spec.ts
       - .github/workflows/pages.yml
   workflow_run:
-    workflows: ["Production CI"]
+    workflows: ["Production CI", "Build Kleenest App Family Android APKs"]
     types: [completed]
 
 permissions:
