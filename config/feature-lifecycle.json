@@ -1043,6 +1043,14 @@
       "kind": "user",
       "status": "wired",
       "gap": "Guest journey ingestion, owner-only RPCs, searchable KleenestOS workspace, privacy-safe instrumentation and initial database smoke tests exist. This feature remains wired pending green main CI, consumer/Owner OTA publishing, live guest event and session inspection, and production-equivalent verification."
+    },
+    {
+      "id": "consumer.native-launcher-widgets",
+      "product": "consumer",
+      "capability": "native-launcher-widgets",
+      "kind": "user",
+      "status": "wired",
+      "gap": "Three native Android launcher providers, fresh canonical-result bridge and iOS WidgetKit implementation are wired in source. Native candidate compilation, device launcher verification, signed App Store/Play rollout and production usage instrumentation are required before certifying live."
     }
   ]
 }
