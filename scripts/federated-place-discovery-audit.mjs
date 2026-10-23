@@ -62,8 +62,8 @@ for(const token of [
   'KLEENEST_PROD_SERVICE_ROLE_KEY',
   'pip install duckdb',
   'scripts/overture-places-ingest.py',
-  "default: '4'",
-  '${INPUT_MAX_JOBS:-4}',
+  "default: '8'",
+  '${INPUT_MAX_JOBS:-8}',
 ])need(workflow,token,'Overture ingestion workflow');
 
 for(const token of [

@@ -106,8 +106,8 @@ for (const token of [
 
 const overtureWorkflow = requireFile('.github/workflows/overture-places-ingest.yml');
 requireText(overtureWorkflow, "cron: '*/10 * * * *'", 'Overture worker cadence must remain ten minutes.');
-requireText(overtureWorkflow, "default: '4'", 'Overture worker default must allow four policy-governed jobs per cycle.');
-requireText(overtureWorkflow, '${INPUT_MAX_JOBS:-4}', 'Overture scheduled runtime fallback must remain bounded to four queued requests.');
+requireText(overtureWorkflow, "default: '8'", 'Overture worker default must allow eight policy-governed jobs per cycle.');
+requireText(overtureWorkflow, '${INPUT_MAX_JOBS:-8}', 'Overture scheduled runtime fallback must remain bounded to eight queued requests.');
 
 const brandRepair = requireFile('supabase/migrations/20261002212000_target_brand_identity_repair.sql');
 for (const token of [
