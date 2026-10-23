@@ -41,7 +41,6 @@ fs.cpSync(marketingSource,path.join(dist,'marketing'),{recursive:true});
 let html=fs.readFileSync(indexPath,'utf8');
 const headMarker='<!-- kleenest-consumer-pwa-head -->';
 const bodyMarker='<!-- kleenest-consumer-pwa-worker -->';
-const adsenseMarker='<!-- kleenest-consumer-adsense-head -->';
 const adsenseClient=String(process.env.EXPO_PUBLIC_ADSENSE_CLIENT_ID||'ca-pub-6958734306376288').trim();
 
 if(!html.includes(headMarker)){
