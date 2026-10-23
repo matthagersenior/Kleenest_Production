@@ -57,19 +57,19 @@ if(!html.includes(headMarker)){
   html=html.replace('</head>',`${pwaHead}\n</head>`);
 }
 
-if(adsenseClient&&!/^ca-pub-\\d+$/.test(adsenseClient)){
+if(adsenseClient&&!/^ca-pub-\d+$/.test(adsenseClient)){
   throw new Error('EXPO_PUBLIC_ADSENSE_CLIENT_ID must use the ca-pub-######## format.');
 }
 
 function addAdsenseLoader(file){
   let page=fs.readFileSync(file,'utf8');
-  page=page.replace(/<!-- kleenest-consumer-adsense-head -->[\\s\\S]*?<!-- kleenest-consumer-adsense-head:end -->\\s*/g,'');
-  page=page.replace(/<script\\b(?=[^>]*src=[\"'][^\"']*adsbygoogle\\.js[^\"']*[\"'])[^>]*>\\s*<\\/script>\\s*/gi,'');
+  page=page.replace(/<!-- kleenest-consumer-adsense-head -->[\s\S]*?<!-- kleenest-consumer-adsense-head:end -->\s*/g,'');
+  page=page.replace(/<script\b(?=[^>]*src=[\"'][^\"']*adsbygoogle\.js[^\"']*[\"'])[^>]*>\s*<\/script>\s*/gi,'');
   if(!page.includes('</head>'))throw new Error('Consumer HTML export is missing </head>: '+file);
-  const adsenseHead='<!-- kleenest-consumer-adsense-head -->\\n'+
-    '<script async src=\"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+adsenseClient+'\" crossorigin=\"anonymous\"></script>\\n'+
+  const adsenseHead='<!-- kleenest-consumer-adsense-head -->\n'+
+    '<script async src=\"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+adsenseClient+'\" crossorigin=\"anonymous\"></script>\n'+
     '<!-- kleenest-consumer-adsense-head:end -->';
-  page=page.replace('</head>',adsenseHead+'\\n</head>');
+  page=page.replace('</head>',adsenseHead+'\n</head>');
   fs.writeFileSync(file,page);
 }
 
