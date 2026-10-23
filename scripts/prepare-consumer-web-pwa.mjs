@@ -41,7 +41,6 @@ fs.cpSync(marketingSource,path.join(dist,'marketing'),{recursive:true});
 let html=fs.readFileSync(indexPath,'utf8');
 const headMarker='<!-- kleenest-consumer-pwa-head -->';
 const bodyMarker='<!-- kleenest-consumer-pwa-worker -->';
-const adsenseMarker='<!-- kleenest-consumer-adsense-head -->';
 const adsenseClient=String(process.env.EXPO_PUBLIC_ADSENSE_CLIENT_ID||'ca-pub-6958734306376288').trim();
 
 if(!html.includes(headMarker)){
@@ -57,12 +56,28 @@ if(!html.includes(headMarker)){
   html=html.replace('</head>',`${pwaHead}\n</head>`);
 }
 
-if(adsenseClient&&!html.includes(adsenseMarker)){
-  if(!/^ca-pub-\d+$/.test(adsenseClient))throw new Error('EXPO_PUBLIC_ADSENSE_CLIENT_ID must use the ca-pub-######## format.');
-  const adsenseHead=`${adsenseMarker}
-<script id="kleenest-adsense-loader" async crossorigin="anonymous" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}"></script>`;
-  if(!html.includes('</head>'))throw new Error('Consumer web export is missing </head>.');
-  html=html.replace('</head>',`${adsenseHead}\n</head>`);
+if(adsenseClient&&!/^ca-pub-\d+$/.test(adsenseClient)){
+  throw new Error('EXPO_PUBLIC_ADSENSE_CLIENT_ID must use the ca-pub-######## format.');
+}
+
+function addAdsenseLoader(file){
+  let page=fs.readFileSync(file,'utf8');
+  page=page.replace(/<!-- kleenest-consumer-adsense-head -->[\s\S]*?<!-- kleenest-consumer-adsense-head:end -->\s*/g,'');
+  page=page.replace(/<script\b(?=[^>]*src=[\"'][^\"']*adsbygoogle\.js[^\"']*[\"'])[^>]*>\s*<\/script>\s*/gi,'');
+  if(!page.includes('</head>'))throw new Error('Consumer HTML export is missing </head>: '+file);
+  const adsenseHead='<!-- kleenest-consumer-adsense-head -->\n'+
+    '<script async src=\"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+adsenseClient+'\" crossorigin=\"anonymous\"></script>\n'+
+    '<!-- kleenest-consumer-adsense-head:end -->';
+  page=page.replace('</head>',adsenseHead+'\n</head>');
+  fs.writeFileSync(file,page);
+}
+
+function addAdsenseToHtmlPages(directory){
+  for(const entry of fs.readdirSync(directory,{withFileTypes:true})){
+    const file=path.join(directory,entry.name);
+    if(entry.isDirectory())addAdsenseToHtmlPages(file);
+    else if(entry.isFile()&&entry.name.toLowerCase().endsWith('.html'))addAdsenseLoader(file);
+  }
 }
 
 if(!html.includes(bodyMarker)){
@@ -84,5 +99,6 @@ fs.writeFileSync(indexPath,html);
 const authCallbackDir=path.join(dist,'profile');
 fs.mkdirSync(authCallbackDir,{recursive:true});
 fs.writeFileSync(path.join(authCallbackDir,'index.html'),html);
+addAdsenseToHtmlPages(dist);
 
-console.log('Prepared installable Kleenest Consumer Web PWA with a direct /profile/ auth callback.');
+console.log('Prepared installable Kleenest Consumer Web PWA with AdSense on every exported HTML page and a direct /profile/ auth callback.');
