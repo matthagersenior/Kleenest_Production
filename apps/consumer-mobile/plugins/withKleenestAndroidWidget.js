@@ -26,6 +26,18 @@ module.exports = function withKleenestAndroidWidget(config) {
       if (index >= 0) app.receiver[index] = declaration;
       else app.receiver.push(declaration);
     }
+    app.activity = app.activity || [];
+    const activityName = 'com.kleenest.app.widgets.KleenestWidgetConfigurationActivity';
+    const activity = {
+      $: {
+        'android:name': activityName,
+        'android:exported': 'true',
+        'android:label': 'Choose Kleenest widget location',
+      }
+    };
+    const activityIndex = app.activity.findIndex(a => a.$?.['android:name'] === activityName);
+    if (activityIndex >= 0) app.activity[activityIndex] = activity;
+    else app.activity.push(activity);
     return config;
   });
   return withDangerousMod(config, ['android', async config => {
@@ -35,6 +47,7 @@ module.exports = function withKleenestAndroidWidget(config) {
     const assets = [
       ['KleenestWidgetProvider.kt', 'java/com/kleenest/app/widgets/KleenestWidgetProvider.kt'],
       ['KleenestWidgetBridge.kt', 'java/com/kleenest/app/widgets/KleenestWidgetBridge.kt'],
+      ['KleenestWidgetConfigurationActivity.kt', 'java/com/kleenest/app/widgets/KleenestWidgetConfigurationActivity.kt'],
       ['kleenest_widget_background.xml', 'res/drawable/kleenest_widget_background.xml'],
       ['kleenest_widget_fallback.xml', 'res/layout/kleenest_widget_fallback.xml'],
       ...['small', 'medium', 'large'].map(size => ['kleenest_widget_'+size+'.xml','res/layout/kleenest_widget_'+size+'.xml']),
