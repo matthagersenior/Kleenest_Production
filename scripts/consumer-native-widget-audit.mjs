@@ -9,6 +9,9 @@ const explore=read('apps/consumer-mobile/features/AdaptiveExploreScreen.tsx');
 const android=read('apps/consumer-mobile/plugins/withKleenestAndroidWidget.js');
 const provider=read('apps/consumer-mobile/plugins/android-widget/KleenestWidgetProvider.kt');
 const bridge=read('apps/consumer-mobile/plugins/android-widget/KleenestWidgetBridge.kt');
+const setup=read('apps/consumer-mobile/plugins/android-widget/KleenestWidgetConfigurationActivity.kt');
+const locationScreen=read('apps/consumer-mobile/app/widget-location.tsx');
+
 const ios=read('apps/consumer-mobile/widgets/KleenestNearby.tsx');
 const iosPublisher=read('apps/consumer-mobile/services/consumerWidgets.ios.ts');
 const androidPublisher=read('apps/consumer-mobile/services/consumerWidgets.android.ts');
@@ -29,6 +32,32 @@ for(const entry of ['KleenestWidgetBridge','KleenestWidgetPackage','publishSnaps
 assert.match(android,/withAndroidManifest/);
 assert.match(android,/withDangerousMod/);
 assert.match(android,/android:exported': 'false'/);
+assert.match(android,/KleenestWidgetConfigurationActivity/);
+assert.match(android,/android:exported': 'true'/);
+assert.match(setup,/EXTRA_APPWIDGET_ID/);
+assert.match(setup,/Use my current location/);
+assert.match(setup,/Choose a city or address/);
+assert.match(setup,/mode_\$widgetId/);
+for(const action of ['configureWidget','publishCustomSnapshot','custom_snapshot_','isOwnWidget']){
+  assert.ok(bridge.includes(action),'native bridge missing '+action);
+}
+assert.match(provider,/custom_snapshot_\$id/);
+assert.match(provider,/widget-location\?widgetId=\$id/);
+assert.match(androidPublisher,/chooseConsumerWidgetCurrentArea/);
+assert.match(androidPublisher,/chooseConsumerWidgetNamedArea/);
+assert.match(locationScreen,/requestForegroundPermissionsAsync/);
+assert.match(locationScreen,/resolveConsumerSearchLocation/);
+assert.match(locationScreen,/findAdaptiveNearbyRestrooms/);
+assert.match(locationScreen,/chooseConsumerWidgetNamedArea/);
+const layout=read('apps/consumer-mobile/app/_layout.tsx');
+assert.match(layout,/name="widget-location"/);
+for(const family of ['small','medium','large']){
+  const xml=read('apps/consumer-mobile/plugins/android-widget/kleenest_widget_'+family+'_info.xml');
+  assert.match(xml,/android:configure="com\.kleenest\.app\.widgets\.KleenestWidgetConfigurationActivity"/);
+  const layout=read('apps/consumer-mobile/plugins/android-widget/kleenest_widget_'+family+'.xml');
+  assert.match(layout,/android:contentDescription="Change Kleenest widget search location"/);
+}
+
 assert.match(provider,/MAX_FRESH_MS = 60L \* 60L \* 1000L/);
 for(const destination of ['explore','route','qr','location/'])assert.ok(provider.includes(destination));
 assert.match(explore,/publishConsumerWidgetSnapshot\(displayRows\.filter\(hasRestroomSignal\)\)/);
