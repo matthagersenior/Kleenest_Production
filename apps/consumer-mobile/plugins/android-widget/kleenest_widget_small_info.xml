@@ -4,6 +4,7 @@
     android:targetCellWidth="1" android:targetCellHeight="1"
     android:minResizeWidth="55dp" android:minResizeHeight="55dp"
     android:initialLayout="@layout/kleenest_widget_small"
+    android:previewLayout="@layout/kleenest_widget_small"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:updatePeriodMillis="1800000"
