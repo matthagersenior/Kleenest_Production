@@ -1,29 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
  android:layout_width="match_parent" android:layout_height="match_parent"
- android:padding="12dp" android:background="@drawable/kleenest_widget_background"
- android:orientation="vertical">
+ android:background="@drawable/kleenest_widget_background" android:orientation="vertical"
+ android:padding="4dp">
  <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-  android:text="KLEENEST" android:textSize="16sp" android:textStyle="bold" android:textColor="#72F1AF"/>
+  android:text="Kleenest · Nearby" android:textSize="10sp"
+  android:textStyle="bold" android:textColor="#72F1AF" android:singleLine="true"/>
  <TextView android:id="@+id/kleenest_widget_status" android:layout_width="match_parent"
-  android:layout_height="wrap_content" android:text="Open app to refresh nearby results"
-  android:textColor="#FFFFFF" android:textSize="11sp" android:maxLines="2" />
- <TextView android:id="@+id/kleenest_widget_place_1" android:layout_width="match_parent"
-  android:layout_height="wrap_content" android:paddingTop="7dp" android:paddingBottom="6dp"
-  android:text="Tap to search nearby" android:textColor="#FFFFFF" android:textSize="13sp"
+  android:layout_height="wrap_content" android:text="Open app to refresh"
+  android:textColor="#FFFFFF" android:textSize="8sp" android:singleLine="true"
+  android:ellipsize="end"/>
+ <TextView android:id="@+id/kleenest_widget_place_1"
+  android:layout_width="match_parent" android:layout_height="wrap_content"
+  android:text="Search nearby" android:textColor="#FFFFFF" android:textSize="10sp"
   android:singleLine="true" android:ellipsize="end" android:clickable="true"/>
- <TextView android:id="@+id/kleenest_widget_place_2" android:layout_width="match_parent"
-  android:layout_height="wrap_content" android:paddingTop="7dp" android:paddingBottom="6dp"
-  android:text="Tap to search nearby" android:textColor="#FFFFFF" android:textSize="13sp"
-  android:singleLine="true" android:ellipsize="end" android:clickable="true"/>
- <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
- <TextView android:id="@+id/kleenest_widget_find" android:layout_width="wrap_content"
-  android:layout_height="wrap_content" android:padding="8dp"
-  android:text="Explore" android:textColor="#061C14" android:textStyle="bold"
-  android:textSize="12sp" android:background="#75EAB2" android:clickable="true"/>
- <Space android:layout_width="8dp" android:layout_height="1dp"/> <TextView android:id="@+id/kleenest_widget_route" android:layout_width="wrap_content"
-  android:layout_height="wrap_content" android:padding="8dp"
-  android:text="Routes" android:textColor="#061C14" android:textStyle="bold"
-  android:textSize="12sp" android:background="#75EAB2" android:clickable="true"/>
+ <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+  android:layout_weight="1" android:orientation="horizontal" android:gravity="center_vertical">
+  <TextView android:id="@+id/kleenest_widget_find" android:layout_width="0dp"
+   android:layout_weight="1" android:layout_height="match_parent"
+   android:gravity="center" android:text="Map" android:textColor="#061C14"
+   android:textStyle="bold" android:textSize="10sp" android:background="#75EAB2"
+   android:clickable="true" android:contentDescription="Open restroom map"/>
+  <TextView android:id="@+id/kleenest_widget_route" android:layout_width="0dp"
+   android:layout_weight="1" android:layout_height="match_parent"
+   android:layout_marginStart="4dp" android:gravity="center" android:text="Route"
+   android:textColor="#061C14" android:textStyle="bold" android:textSize="10sp"
+   android:background="#75EAB2" android:clickable="true"
+   android:contentDescription="Open restroom routes"/>
  </LinearLayout>
 </LinearLayout>
