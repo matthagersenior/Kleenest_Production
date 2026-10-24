@@ -21,3 +21,11 @@ test('v3 preserves unmodified coordinate, radius, search and amenity validation'
     assert.ok(v3.includes(token),token);
   }
 });
+
+test('failed restroom evidence queries keep nearby places available as unverified candidates',()=>{
+  const core=fs.readFileSync('packages/mobile-core/src/adaptiveDiscovery.ts','utf8');
+  assert.match(core,/listNearbyRestroomsV3\([\s\S]*?\.catch\(\(\)=>\{/);
+  assert.match(core,/return \[\] as any\[\];/);
+  assert.match(core,/return mergeNearbyDiscoveryRows\(restroomRows,candidateRows,limit\)/);
+  assert.match(core,/restroom_candidate_status:'needs_verification'/);
+});
