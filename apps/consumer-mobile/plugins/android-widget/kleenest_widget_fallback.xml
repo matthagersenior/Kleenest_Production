@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+ android:layout_width="match_parent" android:layout_height="match_parent"
+ android:orientation="vertical" android:gravity="center" android:padding="6dp"
+ android:background="@drawable/kleenest_widget_background">
+ <TextView android:id="@+id/kleenest_widget_status"
+  android:layout_width="match_parent" android:layout_height="wrap_content"
+  android:gravity="center" android:text="Kleenest" android:textColor="#72F1AF"
+  android:textSize="11sp" android:singleLine="true"/>
+ <TextView android:id="@+id/kleenest_widget_find"
+  android:layout_width="match_parent" android:layout_height="wrap_content"
+  android:gravity="center" android:padding="8dp" android:text="Open app"
+  android:textColor="#061C14" android:textStyle="bold" android:textSize="11sp"
+  android:background="#75EAB2" android:clickable="true"/>
+</LinearLayout>

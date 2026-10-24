@@ -12,6 +12,7 @@ for(const name of ['Small','Medium','Large']){
   assert.ok(fs.existsSync(prefix+'/res/xml/kleenest_widget_'+id+'_info.xml'));
   assert.ok(fs.existsSync(prefix+'/res/layout/kleenest_widget_'+id+'.xml'));
 }
+assert.ok(fs.existsSync(prefix+'/res/layout/kleenest_widget_fallback.xml'));
 assert.ok(fs.existsSync(prefix+'/java/com/kleenest/app/widgets/KleenestWidgetProvider.kt'));
 assert.ok(fs.existsSync(prefix+'/java/com/kleenest/app/widgets/KleenestWidgetBridge.kt'));
 console.log('Generated Android Manifest, providers, React package and widget resources passed.');

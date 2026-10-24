@@ -45,4 +45,42 @@ for(const dependency of ['@expo/ui','expo-widgets']){
   assert.ok(lock.packages['node_modules/'+dependency],dependency+' must have a reproducible lock entry');
   assert.equal(lock.packages['apps/consumer-mobile'].dependencies[dependency],packageJson.dependencies[dependency]);
 }
+
+assert.match(provider,/views\.apply\(context, null\)/);
+assert.match(provider,/R\.layout\.kleenest_widget_fallback/);
+assert.match(android,/kleenest_widget_fallback\.xml/);
+
+// Launcher-hosted RemoteViews inflation accepts a strict Android view allowlist.
+// Space compiles as an app resource but cannot be inflated by the launcher.
+const allowedWidgetViewTags=new Set([
+  'LinearLayout','FrameLayout','RelativeLayout','GridLayout','TextView','Button',
+  'ImageView','ImageButton','ProgressBar','Chronometer','TextClock',
+]);
+const fallbackLayout=read('apps/consumer-mobile/plugins/android-widget/kleenest_widget_fallback.xml');
+assert.match(fallbackLayout,/<LinearLayout\b/);
+assert.match(fallbackLayout,/kleenest_widget_find/);
+assert.doesNotMatch(fallbackLayout,/<Space\b/);
+const expectedCompactCells={small:[1,1],medium:[2,1],large:[3,2]};
+for(const [size,cells] of Object.entries(expectedCompactCells)){
+  const resource='apps/consumer-mobile/plugins/android-widget/kleenest_widget_'+size;
+  const layout=read(resource+'.xml');
+  const tags=[...layout.matchAll(/<([A-Za-z][\w.]*)\b/g)].map(match=>match[1]);
+  assert.ok(tags.length>0,size+' widget must have a root view');
+  for(const tag of tags) assert.ok(allowedWidgetViewTags.has(tag),
+    size+' widget contains unsupported RemoteViews class '+tag);
+  const info=read(resource+'_info.xml');
+  assert.match(info,new RegExp('android:targetCellWidth="'+cells[0]+'"'),
+    size+' widget must use the compact launcher width');
+  assert.match(info,new RegExp('android:targetCellHeight="'+cells[1]+'"'),
+    size+' widget must use the compact launcher height');
+  assert.match(info,/android:initialLayout="@layout\/kleenest_widget_fallback"/,
+    size+' widget must display the safe fallback until the first provider update');
+  assert.match(info,new RegExp('android:previewLayout="@layout/kleenest_widget_'+size+'"'),
+    size+' widget picker must preview the same valid layout');
+  const controls=size==='small'?['status','find']:size==='medium'?
+    ['status','find','route','place_1']:['status','find','route','qr','place_1','place_2','place_3'];
+  for(const name of controls)assert.ok(layout.includes('@+id/kleenest_widget_'+name),
+    size+' widget missing interactive or status view '+name);
+}
+
 console.log('Kleenest consumer Android/iOS widget source, freshness, access, and dependency contracts passed.');
