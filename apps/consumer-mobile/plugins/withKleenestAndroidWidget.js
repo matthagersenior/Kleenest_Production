@@ -33,7 +33,10 @@ module.exports = function withKleenestAndroidWidget(config) {
         'android:name': activityName,
         'android:exported': 'true',
         'android:label': 'Choose Kleenest widget location',
-      }
+      },
+      'intent-filter': [{
+        action: [{ $: { 'android:name': 'android.appwidget.action.APPWIDGET_CONFIGURE' } }]
+      }]
     };
     const activityIndex = app.activity.findIndex(a => a.$?.['android:name'] === activityName);
     if (activityIndex >= 0) app.activity[activityIndex] = activity;
