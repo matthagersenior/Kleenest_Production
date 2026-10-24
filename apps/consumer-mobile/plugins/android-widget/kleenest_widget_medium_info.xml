@@ -6,6 +6,8 @@
     android:initialLayout="@layout/kleenest_widget_fallback"
     android:previewLayout="@layout/kleenest_widget_medium"
     android:resizeMode="horizontal|vertical"
+    android:configure="com.kleenest.app.widgets.KleenestWidgetConfigurationActivity"
+    android:widgetFeatures="reconfigurable"
     android:widgetCategory="home_screen"
     android:updatePeriodMillis="1800000"
     android:description="@string/app_name"/>

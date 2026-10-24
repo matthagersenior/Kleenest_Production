@@ -64,24 +64,36 @@ internal object KleenestWidgetRenderer {
       else -> R.layout.kleenest_widget_small
     }
     val views = RemoteViews(context.packageName, layout)
-    val stored = context.getSharedPreferences("kleenest_consumer_widget", 0)
-      .getString("snapshot", "{}") ?: "{}"
+    val prefs = context.getSharedPreferences("kleenest_consumer_widget", 0)
+    // Each widget keeps its own mode. A pinned search cannot be replaced by an
+    // unrelated Explore search or mistaken for the phone's current location.
+    val mode = prefs.getString("mode_$id", "current") ?: "current"
+    val stored = prefs.getString(
+      if (mode == "custom") "custom_snapshot_$id" else "snapshot", "{}"
+    ) ?: "{}"
     val snapshot = try { JSONObject(stored) } catch (_: Exception) { JSONObject() }
+    val savedArea = if (mode == "custom") snapshot.optString("label", "").trim() else ""
+    val area = if (mode == "custom") savedArea.ifEmpty { "Chosen area" }.take(45)
+      else "Current area"
     val at = snapshot.optLong("at", 0L)
     val age = System.currentTimeMillis() - at
     val fresh = at > 0L && age >= 0L && age <= MAX_FRESH_MS
     val places = if (fresh) snapshot.optJSONArray("places") else null
     val count = places?.length() ?: 0
     val updated = if (fresh) when (kind) {
-      "small" -> "Find restrooms"
-      "medium" -> "Updated ${age / 60_000L}m ago"
-      else -> "Updated ${age / 60_000L} min ago"
+      "small" -> "Find · change area"
+      else -> "$area · ${age / 60_000L}m old · change"
     } else when (kind) {
-      "small" -> "Open app"
-      "medium" -> "Open to refresh"
-      else -> "Open app to refresh nearby"
+      "small" -> "Set area / refresh"
+      else -> "$area · tap to refresh / change"
     }
     views.setTextViewText(R.id.kleenest_widget_status, updated)
+    // Status text is also a tappable location-setting control on every size.
+    val areaParam = if (savedArea.isNotEmpty()) "&area=${Uri.encode(savedArea)}" else ""
+    views.setOnClickPendingIntent(
+      R.id.kleenest_widget_status,
+      open(context, id, 9, "widget-location?widgetId=$id&source=consumer_widget$areaParam")
+    )
     views.setOnClickPendingIntent(R.id.kleenest_widget_find, open(context,id,1,"explore?source=consumer_widget"))
     if (kind != "small") {
       if (kind == "medium") {
@@ -108,7 +120,8 @@ internal object KleenestWidgetRenderer {
         val name = place?.optString("name")?.trim().orEmpty()
         val distance = place?.optString("distance")?.trim().orEmpty()
         val placeId = place?.optString("id")?.trim().orEmpty()
-        views.setTextViewText(viewId, if (name.isEmpty()) "Tap to search nearby" else
+        views.setTextViewText(viewId, if (name.isEmpty())
+          if (mode == "custom") "Tap above to choose an area" else "Tap to search nearby" else
           if (distance.isEmpty()) name else "$name · $distance")
         val target = if (name.isEmpty() || placeId.isEmpty()) "explore?source=consumer_widget"
           else "location/${Uri.encode(placeId)}?source=consumer_widget"
