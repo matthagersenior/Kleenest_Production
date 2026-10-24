@@ -46,12 +46,20 @@ for(const dependency of ['@expo/ui','expo-widgets']){
   assert.equal(lock.packages['apps/consumer-mobile'].dependencies[dependency],packageJson.dependencies[dependency]);
 }
 
+assert.match(provider,/views\.apply\(context, null\)/);
+assert.match(provider,/R\.layout\.kleenest_widget_fallback/);
+assert.match(android,/kleenest_widget_fallback\.xml/);
+
 // Launcher-hosted RemoteViews inflation accepts a strict Android view allowlist.
 // Space compiles as an app resource but cannot be inflated by the launcher.
 const allowedWidgetViewTags=new Set([
   'LinearLayout','FrameLayout','RelativeLayout','GridLayout','TextView','Button',
   'ImageView','ImageButton','ProgressBar','Chronometer','TextClock',
 ]);
+const fallbackLayout=read('apps/consumer-mobile/plugins/android-widget/kleenest_widget_fallback.xml');
+assert.match(fallbackLayout,/<LinearLayout\b/);
+assert.match(fallbackLayout,/kleenest_widget_find/);
+assert.doesNotMatch(fallbackLayout,/<Space\b/);
 const expectedCompactCells={small:[1,1],medium:[2,1],large:[3,2]};
 for(const [size,cells] of Object.entries(expectedCompactCells)){
   const resource='apps/consumer-mobile/plugins/android-widget/kleenest_widget_'+size;
