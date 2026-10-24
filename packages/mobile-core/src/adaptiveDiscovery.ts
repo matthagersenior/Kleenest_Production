@@ -324,7 +324,12 @@ export async function findAdaptiveNearbyRestrooms(input:{latitude:number;longitu
     attemptedRadiiMeters.push(radiusMeters);
     effectiveRadiusMeters=radiusMeters;
     const loadCanonical=async()=>{
-      const verifiedPromise=listNearbyRestroomsV3({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,amenityNames,amenityMatch,limit});
+      const verifiedPromise=listNearbyRestroomsV3({latitude:input.latitude,longitude:input.longitude,radiusMeters,search:input.search,amenityNames,amenityMatch,limit}).catch(()=>{
+        // A failing restroom-evidence RPC must not take down the independent nearby-place map.
+        // Unknown bathroom access remains unverified in mergeNearbyDiscoveryRows.
+        console.warn('[discovery] restroom evidence unavailable; using local place candidates');
+        return [] as any[];
+      });
       if(amenityNames.length){
         const [restroomRows,candidateRows]=await Promise.all([
           verifiedPromise,
