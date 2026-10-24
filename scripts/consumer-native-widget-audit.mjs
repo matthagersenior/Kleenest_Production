@@ -65,6 +65,8 @@ for(const [size,cells] of Object.entries(expectedCompactCells)){
     size+' widget must use the compact launcher width');
   assert.match(info,new RegExp('android:targetCellHeight="'+cells[1]+'"'),
     size+' widget must use the compact launcher height');
+  assert.match(info,new RegExp('android:previewLayout="@layout/kleenest_widget_'+size+'"'),
+    size+' widget picker must preview the same valid layout');
   const controls=size==='small'?['status','find']:size==='medium'?
     ['status','find','route','place_1']:['status','find','route','qr','place_1','place_2','place_3'];
   for(const name of controls)assert.ok(layout.includes('@+id/kleenest_widget_'+name),
