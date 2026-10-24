@@ -58,7 +58,8 @@ internal object KleenestWidgetRenderer {
       if (mode == "custom") "custom_snapshot_$id" else "snapshot", "{}"
     ) ?: "{}"
     val snapshot = try { JSONObject(stored) } catch (_: Exception) { JSONObject() }
-    val area = if (mode == "custom") snapshot.optString("label", "Chosen area").take(45)
+    val savedArea = if (mode == "custom") snapshot.optString("label", "").trim() else ""
+    val area = if (mode == "custom") savedArea.ifEmpty { "Chosen area" }.take(45)
       else "Current area"
     val at = snapshot.optLong("at", 0L)
     val age = System.currentTimeMillis() - at
@@ -74,9 +75,10 @@ internal object KleenestWidgetRenderer {
     }
     views.setTextViewText(R.id.kleenest_widget_status, updated)
     // Status text is also a tappable location-setting control on every size.
+    val areaParam = if (savedArea.isNotEmpty()) "&area=${Uri.encode(savedArea)}" else ""
     views.setOnClickPendingIntent(
       R.id.kleenest_widget_status,
-      open(context, id, 9, "widget-location?widgetId=$id&source=consumer_widget")
+      open(context, id, 9, "widget-location?widgetId=$id&source=consumer_widget$areaParam")
     )
     views.setOnClickPendingIntent(R.id.kleenest_widget_find, open(context,id,1,"explore?source=consumer_widget"))
     if (kind != "small") {
