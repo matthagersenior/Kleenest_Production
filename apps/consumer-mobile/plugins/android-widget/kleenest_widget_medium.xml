@@ -9,7 +9,7 @@
  <TextView android:id="@+id/kleenest_widget_status" android:layout_width="match_parent"
   android:layout_height="wrap_content" android:text="Open app to refresh"
   android:textColor="#FFFFFF" android:textSize="8sp" android:singleLine="true"
-  android:ellipsize="end"/>
+  android:ellipsize="end" android:clickable="true" android:contentDescription="Change Kleenest widget search location"/>
  <TextView android:id="@+id/kleenest_widget_place_1"
   android:layout_width="match_parent" android:layout_height="wrap_content"
   android:text="Search nearby" android:textColor="#FFFFFF" android:textSize="10sp"
