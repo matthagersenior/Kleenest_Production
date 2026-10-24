@@ -62,7 +62,7 @@ assert.match(provider,/MAX_FRESH_MS = 60L \* 60L \* 1000L/);
 for(const destination of ['explore','route','qr','location/'])assert.ok(provider.includes(destination));
 assert.match(explore,/publishConsumerWidgetSnapshot\(displayRows\.filter\(hasRestroomSignal\)\)/);
 assert.match(explore,/publishConsumerWidgetSnapshot\(enriched\.filter\(hasRestroomSignal\)\)/);
-assert.match(androidPublisher,/publishSnapshot\(JSON\.stringify/);
+assert.match(androidPublisher,/publishSnapshot\(payloadFor\(rows\)\)/);
 assert.doesNotMatch(androidPublisher + iosPublisher, /service_role|SUPABASE_SERVICE_ROLE_KEY/i);
 assert.match(ios,/['"]widget['"];/);
 for(const method of ['createWidget','Link','systemSmall','systemLarge'])assert.ok(ios.includes(method));
