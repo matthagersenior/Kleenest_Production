@@ -26,3 +26,10 @@ export async function publishConsumerWidgetSnapshot(rows:unknown[]):Promise<void
     // Ignore widget-extension unavailability: never block a restroom search.
   }
 }
+
+export async function chooseConsumerWidgetCurrentArea(_widgetId:number,_rows:unknown[]):Promise<void>{
+  throw new Error('Location selection is only supported by Android native widgets.');
+}
+export async function chooseConsumerWidgetNamedArea(_widgetId:number,_label:string,_rows:unknown[]):Promise<void>{
+  throw new Error('Location selection is only supported by Android native widgets.');
+}
