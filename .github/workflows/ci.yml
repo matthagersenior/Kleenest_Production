@@ -48,6 +48,8 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 10
         run: npm ci --no-audit --no-fund --prefer-offline
+      - name: US restroom discovery query contract
+        run: node --test scripts/us-restroom-discovery-contract.test.mjs
       - name: Duplicate location review recommendations
         run: node --test scripts/location-duplicate-review.test.mjs
       - name: Verified canonical consolidation safeguards
