@@ -28,7 +28,8 @@ export async function publishConsumerWidgetSnapshot(rows:unknown[]):Promise<void
     const name=String(row.name||row.business_name||'').trim();
     if(!/^[a-f0-9-]{36}$/i.test(id)||!name||unique.has(id))continue;
     unique.add(id);
-    const meters=Number(row.distance_meters);
+    const rawDistance=row.distance_meters;
+    const meters=rawDistance==null||rawDistance===''?NaN:Number(rawDistance);
     const rawLat=row.latitude,rawLon=row.longitude;
     const latitude=rawLat!=null&&rawLat!==''?Number(rawLat):NaN;
     const longitude=rawLon!=null&&rawLon!==''?Number(rawLon):NaN;
