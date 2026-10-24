@@ -32,6 +32,13 @@ class KleenestWidgetBridge(private val context: ReactApplicationContext) : React
       val place = results.optJSONObject(i)
       if (place == null || place.optString("name").length > 120 ||
           place.optString("id").length > 80) return false
+      val hasLat = place.has("latitude")
+      val hasLon = place.has("longitude")
+      val latitude = place.optDouble("latitude", Double.NaN)
+      val longitude = place.optDouble("longitude", Double.NaN)
+      if (hasLat != hasLon || (hasLat && (!latitude.isFinite() || !longitude.isFinite() ||
+            latitude < -90.0 || latitude > 90.0 || longitude < -180.0 || longitude > 180.0 ||
+            (latitude == 0.0 && longitude == 0.0)))) return false
     }
     return true
   }

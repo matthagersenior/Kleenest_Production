@@ -30,6 +30,20 @@ internal object KleenestWidgetRenderer {
     )
   }
 
+  /** Open directions in the user's chosen map app without background location. */
+  private fun directions(context: Context, widgetId: Int, slot: Int, latitude: Double, longitude: Double): PendingIntent {
+    val url = "https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude&travelmode=driving"
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+      addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    return PendingIntent.getActivity(
+      context,
+      widgetId * 10 + slot,
+      intent,
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+  }
+
   fun updateAll(context: Context) {
     val manager = AppWidgetManager.getInstance(context)
     val kinds = listOf(
@@ -67,7 +81,7 @@ internal object KleenestWidgetRenderer {
     val places = if (fresh) snapshot.optJSONArray("places") else null
     val count = places?.length() ?: 0
     val updated = if (fresh) when (kind) {
-      "small" -> if (count == 1) "1 nearby · change" else "$count nearby · change"
+      "small" -> "Find · change area"
       else -> "$area · ${age / 60_000L}m old · change"
     } else when (kind) {
       "small" -> "Set area / refresh"
@@ -82,7 +96,22 @@ internal object KleenestWidgetRenderer {
     )
     views.setOnClickPendingIntent(R.id.kleenest_widget_find, open(context,id,1,"explore?source=consumer_widget"))
     if (kind != "small") {
-      views.setOnClickPendingIntent(R.id.kleenest_widget_route, open(context,id,2,"route?source=consumer_widget"))
+      if (kind == "medium") {
+        // Nearest is a last-search result, not an independent background search.
+        // If cached coordinates are absent or stale, open Kleenest to refresh.
+        val nearest = if (count > 0) places?.optJSONObject(0) else null
+        val latitude = nearest?.optDouble("latitude", Double.NaN) ?: Double.NaN
+        val longitude = nearest?.optDouble("longitude", Double.NaN) ?: Double.NaN
+        val canNavigate = fresh && latitude.isFinite() && longitude.isFinite() &&
+          latitude in -90.0..90.0 && longitude in -180.0..180.0 &&
+          !(latitude == 0.0 && longitude == 0.0)
+        views.setTextViewText(R.id.kleenest_widget_route, if (canNavigate) "Directions" else "Refresh")
+        views.setOnClickPendingIntent(R.id.kleenest_widget_route,
+          if (canNavigate) directions(context,id,2,latitude,longitude)
+          else open(context,id,2,"explore?source=consumer_widget"))
+      } else {
+        views.setOnClickPendingIntent(R.id.kleenest_widget_route, open(context,id,2,"route?source=consumer_widget"))
+      }
       val slots = if (kind == "large") listOf(
         R.id.kleenest_widget_place_1, R.id.kleenest_widget_place_2, R.id.kleenest_widget_place_3
       ) else listOf(R.id.kleenest_widget_place_1)

@@ -112,4 +112,15 @@ for(const [size,cells] of Object.entries(expectedCompactCells)){
     size+' widget missing interactive or status view '+name);
 }
 
+
+  // Existing quick-find, direct nearest directions and multi-place Explore promises.
+assert.match(androidPublisher, /\.sort\(/, 'Nearby must sort eligible discoveries by distance');
+assert.match(androidPublisher, /latitude:/, 'Nearby directions require a validated destination latitude');
+assert.match(androidPublisher, /longitude:/, 'Nearby directions require a validated destination longitude');
+assert.match(provider, /www\.google\.com\/maps\/dir\//, 'Nearby must have direct, actionable directions');
+assert.match(provider, /kind == "medium"/, 'Nearby directions must be specific to the Nearby widget');
+assert.doesNotMatch(provider, /"\$count nearby"/, 'Quick Find must not overstate a cache as full results');
+assert.match(bridge, /optDouble\("latitude"/, 'Widget bridge must validate latitude');
+assert.match(bridge, /optDouble\("longitude"/, 'Widget bridge must validate longitude');
+
 console.log('Kleenest consumer Android/iOS widget source, freshness, access, and dependency contracts passed.');
