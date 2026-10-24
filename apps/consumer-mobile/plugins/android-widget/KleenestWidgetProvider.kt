@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.widget.RemoteViews
 import com.kleenest.app.R
 import org.json.JSONObject
@@ -88,7 +89,19 @@ internal object KleenestWidgetRenderer {
     if (kind == "large") {
       views.setOnClickPendingIntent(R.id.kleenest_widget_qr, open(context,id,7,"qr?source=consumer_widget"))
     }
-    manager.updateAppWidget(id, views)
+    // Validate with Android's own RemoteViews inflater before publishing.
+    // If a future layout slips past source audits, retain a working app shortcut.
+    try {
+      views.apply(context, null)
+      manager.updateAppWidget(id, views)
+    } catch (error: RuntimeException) {
+      Log.e("KleenestWidget", "Unable to inflate $kind widget; showing safe shortcut", error)
+      val fallback = RemoteViews(context.packageName, R.layout.kleenest_widget_fallback)
+      fallback.setOnClickPendingIntent(
+        R.id.kleenest_widget_find, open(context, id, 1, "explore?source=consumer_widget")
+      )
+      manager.updateAppWidget(id, fallback)
+    }
   }
 }
 
