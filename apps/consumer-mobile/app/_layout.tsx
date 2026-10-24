@@ -145,6 +145,7 @@ export default function RootLayout() {
     <Tabs.Screen name="intelligence" options={{ href:null,title:'Kleenest Intelligence' }}/>
     <Tabs.Screen name="social" options={{ href:null,title:'Community',headerShown:false }}/>
     <Tabs.Screen name="search" options={{ href:null,title:'Search',headerShown:false }}/>
+    <Tabs.Screen name="widget-location" options={{ href:null,title:'Widget location' }}/>
     <Tabs.Screen name="signup" options={{ href:null,title:'Join Kleenest' }}/>
     <Tabs.Screen name="install" options={{ href:null,title:'Install Kleenest' }}/>
     <Tabs.Screen name="creator" options={{ href:null,title:'Creator mission',headerShown:false }}/>
