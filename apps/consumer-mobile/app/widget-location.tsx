@@ -65,7 +65,7 @@ export default function WidgetLocationScreen(){
   }
 
   if(Platform.OS!=='android')return <View style={styles.page}><Text style={styles.title}>Android widget location</Text><Text style={styles.help}>This location picker is available in the Kleenest Android app.</Text></View>;
-  return <KeyboardAvoidingView style={styles.page} behavior={Platform.OS==='ios'?'padding':undefined}>
+  return <KeyboardAvoidingView style={styles.page} behavior="height">
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>Widget location</Text>
       <Text style={styles.help}>Decide where this home-screen widget searches. The selected area and recent results will be visible on your home screen.</Text>
