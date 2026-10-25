@@ -43,19 +43,23 @@ class KleenestWidgetConfigurationActivity : Activity() {
       setTextColor(Color.WHITE)
       setPadding(0, 0, 0, (18 * density).toInt())
     }
-    column.addView(label("Where should Kleenest search?", 23f))
+    column.addView(label("KLEENEST · Restroom Finder", 23f))
     column.addView(label(
-      "Choose how this widget finds bathrooms. You can change it later by tapping the location line on the widget.", 15f
+      "Choose where to find restrooms. Tap the area line on the widget to change it later.", 15f
     ))
     val current = Button(this).apply {
       text = "Use my current location"
       isAllCaps = false
+      backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(100, 228, 187))
+      setTextColor(Color.rgb(7, 48, 40))
       contentDescription = "Use phone location when Kleenest refreshes"
       setOnClickListener { finishSetup("current", "explore?source=consumer_widget") }
     }
     val chosen = Button(this).apply {
       text = "Choose a city or address"
       isAllCaps = false
+      backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(100, 228, 187))
+      setTextColor(Color.rgb(7, 48, 40))
       contentDescription = "Search and pin an area for this widget"
       setOnClickListener { finishSetup(
         "custom", "widget-location?widgetId=$widgetId&source=consumer_widget"
