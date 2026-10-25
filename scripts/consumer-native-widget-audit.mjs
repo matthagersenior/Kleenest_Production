@@ -89,7 +89,7 @@ const fallbackLayout=read('apps/consumer-mobile/plugins/android-widget/kleenest_
 assert.match(fallbackLayout,/<LinearLayout\b/);
 assert.match(fallbackLayout,/kleenest_widget_find/);
 assert.doesNotMatch(fallbackLayout,/<Space\b/);
-const expectedCompactCells={small:[1,1],medium:[2,2],large:[3,2]};
+const expectedCompactCells={small:[1,1],medium:[2,2],large:[3,3]};
 for(const [size,cells] of Object.entries(expectedCompactCells)){
   const resource='apps/consumer-mobile/plugins/android-widget/kleenest_widget_'+size;
   const layout=read(resource+'.xml');
