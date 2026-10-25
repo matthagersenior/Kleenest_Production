@@ -58,7 +58,17 @@ export default function Layout(){
         // Registration is self-healing and non-blocking; Messaging shows repair state when needed.
       }finally{syncing=false}
     };
-    void sync();
+    const initialize=async()=>{
+      if(!active||syncing)return;
+      syncing=true;
+      try{
+        const{initializeRolePushAtLaunch}=await import('../services/push');
+        await initializeRolePushAtLaunch();
+      }catch{
+        // Push setup remains non-blocking; Messaging exposes any repair state.
+      }finally{syncing=false}
+    };
+    void initialize();
     const subscription=AppState.addEventListener('change',state=>{if(state==='active')void sync()});
     return()=>{active=false;subscription.remove()};
   },[ready,signedIn]);
