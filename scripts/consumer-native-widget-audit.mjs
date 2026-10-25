@@ -89,7 +89,7 @@ const fallbackLayout=read('apps/consumer-mobile/plugins/android-widget/kleenest_
 assert.match(fallbackLayout,/<LinearLayout\b/);
 assert.match(fallbackLayout,/kleenest_widget_find/);
 assert.doesNotMatch(fallbackLayout,/<Space\b/);
-const expectedCompactCells={small:[1,1],medium:[2,1],large:[3,2]};
+const expectedCompactCells={small:[1,1],medium:[2,2],large:[3,2]};
 for(const [size,cells] of Object.entries(expectedCompactCells)){
   const resource='apps/consumer-mobile/plugins/android-widget/kleenest_widget_'+size;
   const layout=read(resource+'.xml');
@@ -123,4 +123,17 @@ assert.doesNotMatch(provider, /"\$count nearby"/, 'Quick Find must not overstate
 assert.match(bridge, /optDouble\("latitude"/, 'Widget bridge must validate latitude');
 assert.match(bridge, /optDouble\("longitude"/, 'Widget bridge must validate longitude');
 
+// Branding and compact layout regression protection.
+for (const size of ['small','medium','large']) {
+ const xml=read('apps/consumer-mobile/plugins/android-widget/kleenest_widget_'+size+'.xml');
+ assert.match(xml, /@mipmap\\/ic_launcher/, size+' must show Kleenest app icon');
+ assert.match(xml, /restroom/i, size+' must explain that it finds restrooms');
+ assert.match(xml, /kleenest_widget_primary/, size+' needs branded CTA');
+}
+for (const drawable of ['kleenest_widget_primary.xml','kleenest_widget_secondary.xml']) {
+ assert.match(read('apps/consumer-mobile/plugins/android-widget/'+drawable), /<corners/);
+ assert.ok(android.includes(drawable),'Prebuild must copy '+drawable);
+}
+assert.match(provider, /Last app search/, 'Do not describe cached searches as live GPS');
+assert.match(provider, /!fresh \\|\\| name.isEmpty\\(\\)/, 'Do not show expired results');
 console.log('Kleenest consumer Android/iOS widget source, freshness, access, and dependency contracts passed.');

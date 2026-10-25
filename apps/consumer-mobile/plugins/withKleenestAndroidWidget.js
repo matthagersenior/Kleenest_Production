@@ -52,6 +52,8 @@ module.exports = function withKleenestAndroidWidget(config) {
       ['KleenestWidgetBridge.kt', 'java/com/kleenest/app/widgets/KleenestWidgetBridge.kt'],
       ['KleenestWidgetConfigurationActivity.kt', 'java/com/kleenest/app/widgets/KleenestWidgetConfigurationActivity.kt'],
       ['kleenest_widget_background.xml', 'res/drawable/kleenest_widget_background.xml'],
+      ['kleenest_widget_primary.xml', 'res/drawable/kleenest_widget_primary.xml'],
+      ['kleenest_widget_secondary.xml', 'res/drawable/kleenest_widget_secondary.xml'],
       ['kleenest_widget_fallback.xml', 'res/layout/kleenest_widget_fallback.xml'],
       ...['small', 'medium', 'large'].map(size => ['kleenest_widget_'+size+'.xml','res/layout/kleenest_widget_'+size+'.xml']),
       ...['small','medium','large'].map(size => ['kleenest_widget_'+size+'_info.xml','res/xml/kleenest_widget_'+size+'_info.xml'])
