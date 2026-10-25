@@ -4,9 +4,28 @@ import { Platform } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 
 const PUSH_INTENT_KEY='kleenestos:push-enabled:v1';
+const PUSH_LAUNCH_PROMPTED_KEY='kleenestos:push-launch-prompted:v1';
 const nativePushConfigured=Constants.expoConfig?.extra?.nativePushConfigured===true;
 export type RolePushStatus='registered'|'disabled'|'available'|'needs_permission'|'blocked'|'unsupported'|'unconfigured'|'needs_repair';
 export type RolePushState={status:RolePushStatus;message:string;token?:string};
+
+let launchRegistration:Promise<RolePushState>|null=null;
+
+/** Request notification permission once after the first authenticated native launch. */
+export async function initializeRolePushAtLaunch():Promise<RolePushState>{
+  if(Platform.OS==='web')return{status:'unsupported',message:'Push requires the installed KleenestOS app on a physical device.'};
+  if(Platform.OS==='android'&&!nativePushConfigured)return getRolePushStatus();
+  if(launchRegistration)return launchRegistration;
+
+  launchRegistration=(async()=>{
+    if(await readPushIntent())return syncRolePushRegistration();
+    const prompted=await SecureStore.getItemAsync(PUSH_LAUNCH_PROMPTED_KEY).catch(()=>null);
+    if(prompted==='true')return getRolePushStatus();
+    await SecureStore.setItemAsync(PUSH_LAUNCH_PROMPTED_KEY,'true').catch(()=>undefined);
+    return registerRolePush();
+  })();
+  try{return await launchRegistration;}finally{launchRegistration=null;}
+}
 
 async function readPushIntent(){
   if(Platform.OS==='web')return false;
