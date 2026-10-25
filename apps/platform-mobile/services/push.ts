@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 
 const PUSH_INTENT_KEY='kleenestos:push-enabled:v1';
+const PUSH_LAUNCH_PROMPTED_KEY='kleenestos:push-launch-prompted:v1';
 const nativePushConfigured=Constants.expoConfig?.extra?.nativePushConfigured===true;
 export type RolePushStatus='registered'|'disabled'|'available'|'needs_permission'|'blocked'|'unsupported'|'unconfigured'|'needs_repair';
 export type RolePushState={status:RolePushStatus;message:string;token?:string};
