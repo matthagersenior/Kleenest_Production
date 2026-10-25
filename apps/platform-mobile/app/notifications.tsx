@@ -2,7 +2,7 @@ import { OSSwitch } from '../components/KleenestOS';
 import { usePlatformTheme } from '../services/theme';
 import type { ErrorBoundaryProps } from 'expo-router';
 import { useEffect,useMemo,useState } from 'react';
-import { Alert,Linking,Modal,Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
+import { Alert,AppState,Linking,Modal,Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { deleteNotificationRule,getNotificationControlSnapshot,publishNotificationRule,saveNotificationRule,type NotificationRule } from '../services/controlPlane';
 
 type Draft=Partial<NotificationRule>&Record<string,any>;
@@ -41,7 +41,7 @@ export default function NotificationStudio(){
  const[data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[editing,setEditing]=useState(false),[draft,setDraft]=useState<Draft>(blank),[pushState,setPushState]=useState<RolePushState>({status:'disabled',message:'Checking push registration…',readiness:{configuration:'unknown',permission:'unknown',registration:'unverified'}});
  async function refreshPush(){try{const{getRolePushStatus}=await import('../services/push');setPushState(await getRolePushStatus())}catch(e:any){setPushState({status:'needs_repair',message:e?.message||'Push registration status could not be verified.',readiness:{configuration:'unknown',permission:'unknown',registration:'unverified'}})}}
  async function load(){setBusy(true);try{const[next]=await Promise.all([getNotificationControlSnapshot(),refreshPush()]);setData(object(next));setMessage('')}catch(e:any){setData(null);setMessage(e?.message||'Control plane could not be loaded.')}finally{setBusy(false)}}
- useEffect(()=>{void load()},[]);
+ useEffect(()=>{void load();const subscription=AppState.addEventListener('change',state=>{if(state==='active')void refreshPush()});return()=>subscription.remove()},[]);
  const rules=useMemo(()=>listRows(data?.rules).map(normalizeRule),[data?.rules]);
  const runs=useMemo(()=>listRows(data?.recent_runs),[data?.recent_runs]);
  const outcomes=object(data?.outcomes);
