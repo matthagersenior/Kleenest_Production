@@ -15,3 +15,4 @@ consumer-native-startup-fix-2026-09-13
 2026-10-23 Moto G native home-screen widget launch fix: remove unsupported RemoteViews Space and ship 1x1, 2x1, 3x2 compact sizes
 2026-10-23 rebuild Consumer APK: Quick Find, closest cached Nearby directions, and multi-place Explore are distinct actions with coordinate validation
 2026-10-23 rebuild Consumer APK with explicit widget current-location or city/address configuration and per-widget search areas
+2026-10-25 KleenestOS first-launch notification opt-in and Firebase-configured native rebuild
