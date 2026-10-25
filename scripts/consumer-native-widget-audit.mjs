@@ -126,7 +126,7 @@ assert.match(bridge, /optDouble\("longitude"/, 'Widget bridge must validate long
 // Branding and compact layout regression protection.
 for (const size of ['small','medium','large']) {
  const xml=read('apps/consumer-mobile/plugins/android-widget/kleenest_widget_'+size+'.xml');
- assert.match(xml, /@mipmap\\/ic_launcher/, size+' must show Kleenest app icon');
+ assert.ok(xml.includes('@mipmap/ic_launcher'), size+' must show Kleenest app icon');
  assert.match(xml, /restroom/i, size+' must explain that it finds restrooms');
  assert.match(xml, /kleenest_widget_primary/, size+' needs branded CTA');
 }
@@ -135,5 +135,5 @@ for (const drawable of ['kleenest_widget_primary.xml','kleenest_widget_secondary
  assert.ok(android.includes(drawable),'Prebuild must copy '+drawable);
 }
 assert.match(provider, /Last app search/, 'Do not describe cached searches as live GPS');
-assert.match(provider, /!fresh \\|\\| name.isEmpty\\(\\)/, 'Do not show expired results');
+assert.ok(provider.includes('!fresh || name.isEmpty()'), 'Do not show expired results');
 console.log('Kleenest consumer Android/iOS widget source, freshness, access, and dependency contracts passed.');
