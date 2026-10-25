@@ -23,7 +23,7 @@ let launchRegistration:Promise<RolePushState>|null=null;
 
 /** Request notification permission once after the first authenticated native launch. */
 export async function initializeRolePushAtLaunch():Promise<RolePushState>{
-  if(Platform.OS==='web')return{status:'unsupported',message:'Push requires the installed KleenestOS app on a physical device.'};
+  if(Platform.OS==='web')return{status:'unsupported',message:'Push requires the installed KleenestOS app on a physical device.',readiness:{configuration:'unsupported',permission:'unavailable',registration:'unavailable'}};
   if(Platform.OS==='android'&&!nativePushConfigured)return getRolePushStatus();
   if(launchRegistration)return launchRegistration;
 
