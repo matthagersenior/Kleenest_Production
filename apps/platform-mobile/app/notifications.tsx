@@ -38,7 +38,7 @@ export function ErrorBoundary({error,retry}:ErrorBoundaryProps){
 
 export default function NotificationStudio(){
   const theme=usePlatformTheme();
- const[data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[editing,setEditing]=useState(false),[draft,setDraft]=useState<Draft>(blank),[pushState,setPushState]=useState<RolePushState>({status:'disabled',message:'Checking push registration…',readiness:{configuration:'unknown',permission:'unknown',registration:'unverified'}});
+ const[data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('Loading Live Network messaging…'),[editing,setEditing]=useState(false),[draft,setDraft]=useState<Draft>(blank),[pushState,setPushState]=useState<RolePushState>({status:'disabled',message:'Checking push registration…',readiness:{configuration:'unknown',permission:'unknown',registration:'unverified'}});
  async function refreshPush(){try{const{getRolePushStatus}=await import('../services/push');setPushState(await getRolePushStatus())}catch(e:any){setPushState({status:'needs_repair',message:e?.message||'Push registration status could not be verified.',readiness:{configuration:'unknown',permission:'unknown',registration:'unverified'}})}}
  async function load(){setBusy(true);try{const[next]=await Promise.all([getNotificationControlSnapshot(),refreshPush()]);setData(object(next));setMessage('')}catch(e:any){setData(null);setMessage(e?.message||'Control plane could not be loaded.')}finally{setBusy(false)}}
  useEffect(()=>{void load();const subscription=AppState.addEventListener('change',state=>{if(state==='active')void refreshPush()});return()=>subscription.remove()},[]);
