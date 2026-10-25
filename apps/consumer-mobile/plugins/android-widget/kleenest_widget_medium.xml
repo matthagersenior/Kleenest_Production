@@ -1,31 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
  android:layout_width="match_parent" android:layout_height="match_parent"
- android:background="@drawable/kleenest_widget_background" android:orientation="vertical"
- android:padding="4dp">
- <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-  android:text="Nearest from last search" android:textSize="10sp"
-  android:textStyle="bold" android:textColor="#72F1AF" android:singleLine="true"/>
- <TextView android:id="@+id/kleenest_widget_status" android:layout_width="match_parent"
-  android:layout_height="wrap_content" android:text="Open app to refresh"
-  android:textColor="#FFFFFF" android:textSize="8sp" android:singleLine="true"
-  android:ellipsize="end" android:clickable="true" android:contentDescription="Change Kleenest widget search location"/>
- <TextView android:id="@+id/kleenest_widget_place_1"
-  android:layout_width="match_parent" android:layout_height="wrap_content"
-  android:text="Search nearby" android:textColor="#FFFFFF" android:textSize="10sp"
-  android:singleLine="true" android:ellipsize="end" android:clickable="true"/>
- <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
-  android:layout_weight="1" android:orientation="horizontal" android:gravity="center_vertical">
-  <TextView android:id="@+id/kleenest_widget_find" android:layout_width="0dp"
-   android:layout_weight="1" android:layout_height="match_parent"
-   android:gravity="center" android:text="Explore" android:textColor="#061C14"
-   android:textStyle="bold" android:textSize="10sp" android:background="#75EAB2"
-   android:clickable="true" android:contentDescription="Open restroom map"/>
-  <TextView android:id="@+id/kleenest_widget_route" android:layout_width="0dp"
-   android:layout_weight="1" android:layout_height="match_parent"
-   android:layout_marginStart="4dp" android:gravity="center" android:text="Refresh"
-   android:textColor="#061C14" android:textStyle="bold" android:textSize="10sp"
-   android:background="#75EAB2" android:clickable="true"
-   android:contentDescription="Get directions to nearest restroom or refresh"/>
- </LinearLayout>
-</LinearLayout>
+ android:background="@drawable/kleenest_widget_background"
+ android:orientation="vertical" android:padding="9dp">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+ android:orientation="horizontal" android:gravity="center_vertical">
+ <ImageView android:layout_width="25dp" android:layout_height="25dp" android:layout_marginEnd="5dp"
+  android:src="@mipmap/ic_launcher" android:contentDescription="Kleenest logo"/>
+ <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+   android:text="KLEENEST" android:textColor="#91F1CF" android:textStyle="bold" android:textSize="12sp" android:singleLine="true"/>
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+   android:text="NEAREST RESTROOM" android:textColor="#E0F4EA" android:textSize="9sp" android:singleLine="true" android:ellipsize="end"/>
+ </LinearLayout></LinearLayout>
+<TextView android:id="@+id/kleenest_widget_status"
+ android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp"
+ android:layout_marginBottom="3dp" android:text="Change search area" android:textColor="#E0F4EA"
+ android:textSize="9sp" android:maxLines="2" android:ellipsize="end"
+ android:clickable="true" android:contentDescription="Change Kleenest widget search location"/>
+<TextView android:id="@+id/kleenest_widget_place_1"
+ android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+ android:gravity="center_vertical" android:text="Open Kleenest to find restrooms"
+ android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="12sp"
+ android:maxLines="3" android:ellipsize="end" android:clickable="true"
+ android:contentDescription="Open nearest saved restroom details"/>
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+ android:orientation="horizontal" android:layout_marginTop="4dp">
+ <TextView android:id="@+id/kleenest_widget_find"
+ android:layout_width="0dp" android:layout_weight="1" android:layout_height="34dp" android:gravity="center"
+ android:paddingStart="2dp" android:paddingEnd="2dp" android:text="Restroom map" android:textSize="10sp" android:textStyle="bold"
+ android:textColor="#073028" android:background="@drawable/kleenest_widget_primary"
+ android:clickable="true" android:contentDescription="Open Kleenest restroom map"/>
+ <TextView android:id="@+id/kleenest_widget_route" android:layout_width="0dp" android:layout_weight="1"
+  android:layout_height="34dp" android:layout_marginStart="5dp" android:gravity="center"
+  android:text="Directions" android:textSize="10sp" android:textStyle="bold" android:textColor="#E9FAF2"
+  android:background="@drawable/kleenest_widget_secondary" android:clickable="true"
+  android:contentDescription="Directions to nearest saved restroom or refresh search"/>
+</LinearLayout></LinearLayout>

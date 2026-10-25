@@ -73,19 +73,17 @@ internal object KleenestWidgetRenderer {
     ) ?: "{}"
     val snapshot = try { JSONObject(stored) } catch (_: Exception) { JSONObject() }
     val savedArea = if (mode == "custom") snapshot.optString("label", "").trim() else ""
-    val area = if (mode == "custom") savedArea.ifEmpty { "Chosen area" }.take(45)
-      else "Current area"
     val at = snapshot.optLong("at", 0L)
     val age = System.currentTimeMillis() - at
     val fresh = at > 0L && age >= 0L && age <= MAX_FRESH_MS
     val places = if (fresh) snapshot.optJSONArray("places") else null
     val count = places?.length() ?: 0
-    val updated = if (fresh) when (kind) {
-      "small" -> "Find · change area"
-      else -> "$area · ${age / 60_000L}m old · change"
-    } else when (kind) {
-      "small" -> "Set area / refresh"
-      else -> "$area · tap to refresh / change"
+    val updated = when {
+      kind == "small" -> "Change area"
+      !fresh && mode == "custom" -> "Pinned: ${savedArea.take(22)} · Open to refresh"
+      !fresh -> "No recent search · Tap to set area"
+      mode == "custom" -> "Pinned: ${savedArea.take(22)} · ${age / 60_000L}m ago · Change"
+      else -> "Last app search · ${age / 60_000L}m ago · Change area"
     }
     views.setTextViewText(R.id.kleenest_widget_status, updated)
     // Status text is also a tappable location-setting control on every size.
@@ -105,7 +103,7 @@ internal object KleenestWidgetRenderer {
         val canNavigate = fresh && latitude.isFinite() && longitude.isFinite() &&
           latitude in -90.0..90.0 && longitude in -180.0..180.0 &&
           !(latitude == 0.0 && longitude == 0.0)
-        views.setTextViewText(R.id.kleenest_widget_route, if (canNavigate) "Directions" else "Refresh")
+        views.setTextViewText(R.id.kleenest_widget_route, if (canNavigate) "Directions" else "Refresh search")
         views.setOnClickPendingIntent(R.id.kleenest_widget_route,
           if (canNavigate) directions(context,id,2,latitude,longitude)
           else open(context,id,2,"explore?source=consumer_widget"))
@@ -120,9 +118,10 @@ internal object KleenestWidgetRenderer {
         val name = place?.optString("name")?.trim().orEmpty()
         val distance = place?.optString("distance")?.trim().orEmpty()
         val placeId = place?.optString("id")?.trim().orEmpty()
-        views.setTextViewText(viewId, if (name.isEmpty())
-          if (mode == "custom") "Tap above to choose an area" else "Tap to search nearby" else
-          if (distance.isEmpty()) name else "$name · $distance")
+        views.setTextViewText(viewId, if (!fresh || name.isEmpty())
+          "Open Kleenest to find restrooms" else
+          if (distance.isEmpty()) name else
+          if (kind == "medium") "$name\n$distance from search" else "$name · $distance")
         val target = if (name.isEmpty() || placeId.isEmpty()) "explore?source=consumer_widget"
           else "location/${Uri.encode(placeId)}?source=consumer_widget"
         views.setOnClickPendingIntent(viewId, open(context,id,3+position,target))

@@ -2,47 +2,58 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
  android:layout_width="match_parent" android:layout_height="match_parent"
  android:background="@drawable/kleenest_widget_background"
- android:padding="7dp" android:orientation="vertical">
- <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-  android:text="Kleenest · Explore" android:textSize="12sp"
-  android:textStyle="bold" android:textColor="#72F1AF" android:singleLine="true"/>
- <TextView android:id="@+id/kleenest_widget_status" android:layout_width="match_parent"
-  android:layout_height="wrap_content" android:text="Open app to refresh"
-  android:textColor="#FFFFFF" android:textSize="9sp" android:singleLine="true"
-  android:ellipsize="end" android:clickable="true" android:contentDescription="Change Kleenest widget search location"/>
+ android:orientation="vertical" android:padding="10dp">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+ android:orientation="horizontal" android:gravity="center_vertical">
+ <ImageView android:layout_width="25dp" android:layout_height="25dp" android:layout_marginEnd="5dp"
+  android:src="@mipmap/ic_launcher" android:contentDescription="Kleenest logo"/>
+ <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+   android:text="KLEENEST" android:textColor="#91F1CF" android:textStyle="bold" android:textSize="12sp" android:singleLine="true"/>
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+   android:text="FIND CLEAN RESTROOMS" android:textColor="#E0F4EA" android:textSize="9sp" android:singleLine="true" android:ellipsize="end"/>
+ </LinearLayout></LinearLayout>
+<TextView android:id="@+id/kleenest_widget_status"
+ android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp"
+ android:layout_marginBottom="3dp" android:text="Change search area" android:textColor="#E0F4EA"
+ android:textSize="9sp" android:maxLines="2" android:ellipsize="end"
+ android:clickable="true" android:contentDescription="Change Kleenest widget search location"/>
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+ android:layout_marginTop="3dp" android:layout_marginBottom="3dp"
+ android:text="NEAR YOUR LAST SEARCH" android:textColor="#91F1CF" android:textStyle="bold"
+ android:textSize="9sp" android:singleLine="true"/>
+<LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
  <TextView android:id="@+id/kleenest_widget_place_1"
-  android:layout_width="match_parent" android:layout_height="wrap_content"
-  android:paddingTop="2dp" android:paddingBottom="2dp" android:text="Search nearby"
-  android:textColor="#FFFFFF" android:textSize="10sp" android:singleLine="true"
-  android:ellipsize="end" android:clickable="true"/>
- <TextView android:id="@+id/kleenest_widget_place_2"
-  android:layout_width="match_parent" android:layout_height="wrap_content"
-  android:paddingTop="2dp" android:paddingBottom="2dp" android:text="Search nearby"
-  android:textColor="#FFFFFF" android:textSize="10sp" android:singleLine="true"
-  android:ellipsize="end" android:clickable="true"/>
- <TextView android:id="@+id/kleenest_widget_place_3"
-  android:layout_width="match_parent" android:layout_height="wrap_content"
-  android:paddingTop="2dp" android:paddingBottom="2dp" android:text="Search nearby"
-  android:textColor="#FFFFFF" android:textSize="10sp" android:singleLine="true"
-  android:ellipsize="end" android:clickable="true"/>
- <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
-  android:layout_weight="1" android:orientation="horizontal" android:gravity="bottom">
-  <TextView android:id="@+id/kleenest_widget_find" android:layout_width="0dp"
-   android:layout_weight="1" android:layout_height="30dp" android:gravity="center"
-   android:text="Map" android:textColor="#061C14" android:textStyle="bold"
-   android:textSize="11sp" android:background="#75EAB2" android:clickable="true"
-   android:contentDescription="Open restroom map"/>
-  <TextView android:id="@+id/kleenest_widget_route" android:layout_width="0dp"
-   android:layout_weight="1" android:layout_height="30dp"
-   android:layout_marginStart="4dp" android:gravity="center" android:text="Routes"
-   android:textColor="#061C14" android:textStyle="bold" android:textSize="11sp"
-   android:background="#75EAB2" android:clickable="true"
-   android:contentDescription="Open restroom routes"/>
-  <TextView android:id="@+id/kleenest_widget_qr" android:layout_width="0dp"
-   android:layout_weight="1" android:layout_height="30dp"
-   android:layout_marginStart="4dp" android:gravity="center" android:text="QR"
-   android:textColor="#061C14" android:textStyle="bold" android:textSize="11sp"
-   android:background="#75EAB2" android:clickable="true"
-   android:contentDescription="Open QR scanner"/>
- </LinearLayout>
+  android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="20dp"
+  android:text="Open Kleenest to find restrooms" android:textColor="#FFFFFF"
+  android:textStyle="bold" android:textSize="11sp"
+  android:maxLines="2" android:ellipsize="end" android:clickable="true"/>
+<TextView android:id="@+id/kleenest_widget_place_2"
+  android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="20dp"
+  android:text="Open Kleenest to find restrooms" android:textColor="#D9EAE3"
+  android:textStyle="normal" android:textSize="10sp"
+  android:maxLines="2" android:ellipsize="end" android:clickable="true"/>
+<TextView android:id="@+id/kleenest_widget_place_3"
+  android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="20dp"
+  android:text="Open Kleenest to find restrooms" android:textColor="#D9EAE3"
+  android:textStyle="normal" android:textSize="10sp"
+  android:maxLines="2" android:ellipsize="end" android:clickable="true"/>
 </LinearLayout>
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+ android:orientation="horizontal" android:layout_marginTop="5dp">
+ <TextView android:id="@+id/kleenest_widget_find"
+ android:layout_width="0dp" android:layout_weight="1" android:layout_height="34dp" android:gravity="center"
+ android:paddingStart="2dp" android:paddingEnd="2dp" android:text="Restroom map" android:textSize="10sp" android:textStyle="bold"
+ android:textColor="#073028" android:background="@drawable/kleenest_widget_primary"
+ android:clickable="true" android:contentDescription="Open Kleenest restroom map"/>
+ <TextView android:id="@+id/kleenest_widget_route" android:layout_width="0dp" android:layout_weight="1"
+  android:layout_height="34dp" android:layout_marginStart="5dp" android:gravity="center"
+  android:text="Plan route" android:textSize="10sp" android:textStyle="bold" android:textColor="#E9FAF2"
+  android:background="@drawable/kleenest_widget_secondary" android:clickable="true"
+  android:contentDescription="Open restroom route planner"/>
+ <TextView android:id="@+id/kleenest_widget_qr" android:layout_width="0dp" android:layout_weight="0.6"
+  android:layout_height="34dp" android:layout_marginStart="5dp" android:gravity="center"
+  android:text="Scan QR" android:textSize="9sp" android:textStyle="bold" android:textColor="#E9FAF2"
+  android:background="@drawable/kleenest_widget_secondary" android:clickable="true"
+  android:contentDescription="Open restroom QR scanner"/>
+</LinearLayout></LinearLayout>
