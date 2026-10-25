@@ -28,7 +28,7 @@ function Field({label,value,onChange,keyboardType='default',multiline=false}:{la
   const theme=usePlatformTheme();return <View style={s.field}><Text style={[s.label,{color:theme.muted},{color:theme.muted}]}>{label}</Text><TextInput accessibilityLabel={label} style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink},{backgroundColor:theme.surfaceRaised,borderColor:theme.line},multiline&&s.multiline]} value={text(value)} onChangeText={onChange} keyboardType={keyboardType} multiline={multiline}/></View>}
 function PushReadinessRow({label,value}:{label:string;value:string}){
  const theme=usePlatformTheme();
- return <View style={[s.readinessRow,{borderColor:theme.line,backgroundColor:theme.surfaceRaised}]}><Text style={[s.readinessLabel,{color:theme.muted}]}>{label}</Text><Text style={[s.readinessValue,{color:theme.ink}]}>{value}</Text></View>
+ return <View style={[s.readinessRow,{borderColor:theme.line,backgroundColor:theme.surfaceRaised}]}><Text style={[s.readinessLabel,{color:theme.muted}]}>{label}</Text><Text accessibilityLiveRegion="polite" style={[s.readinessValue,{color:theme.ink}]}>{value}</Text></View>
 }
 function ToggleRow({label,detail,value,onChange}:{label:string;detail:string;value:boolean;onChange:(v:boolean)=>void}){
   const theme=usePlatformTheme();return <View style={[s.toggleRow,{backgroundColor:theme.surface,borderColor:theme.line}]}><View style={{flex:1}}><Text style={[s.rowTitle,{color:theme.ink},{color:theme.ink}]}>{label}</Text><Text style={[s.meta,{color:theme.muted},{color:theme.muted}]}>{detail}</Text></View><OSSwitch accessibilityLabel={label} value={value} onValueChange={onChange}/></View>}
