@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import android.view.View
 import android.widget.RemoteViews
 import com.kleenest.app.R
 import org.json.JSONObject
@@ -81,7 +82,8 @@ internal object KleenestWidgetRenderer {
     val updated = when {
       kind == "small" -> "Change area"
       !fresh && mode == "custom" -> "Pinned: ${savedArea.take(22)} · Open to refresh"
-      !fresh -> "No recent search · Tap to set area"
+      !fresh -> "Choose area · Tap here to search"
+      count == 0 -> "No nearby results saved · Tap to search"
       mode == "custom" -> "Pinned: ${savedArea.take(22)} · ${age / 60_000L}m ago · Change"
       else -> "Last app search · ${age / 60_000L}m ago · Change area"
     }
@@ -118,11 +120,13 @@ internal object KleenestWidgetRenderer {
         val name = place?.optString("name")?.trim().orEmpty()
         val distance = place?.optString("distance")?.trim().orEmpty()
         val placeId = place?.optString("id")?.trim().orEmpty()
-        views.setTextViewText(viewId, if (!fresh || name.isEmpty())
-          "Open Kleenest to find restrooms" else
+        val hasPlace = fresh && name.isNotEmpty()
+        views.setViewVisibility(viewId, if (hasPlace || position == 0) View.VISIBLE else View.GONE)
+        views.setTextViewText(viewId, if (!hasPlace)
+          "No saved results yet · Tap to search" else
           if (distance.isEmpty()) name else
           if (kind == "medium") "$name\n$distance from search" else "$name · $distance")
-        val target = if (name.isEmpty() || placeId.isEmpty()) "explore?source=consumer_widget"
+        val target = if (!fresh || name.isEmpty() || placeId.isEmpty()) "explore?source=consumer_widget"
           else "location/${Uri.encode(placeId)}?source=consumer_widget"
         views.setOnClickPendingIntent(viewId, open(context,id,3+position,target))
       }
