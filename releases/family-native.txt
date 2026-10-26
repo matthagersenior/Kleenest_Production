@@ -21,3 +21,4 @@ consumer-native-startup-fix-2026-09-13
 2026-10-26 native Consumer widget placement fix from merged PR #526 (main 6d73c302); rebuild signed standalone APK
 2026-10-26 rebuild signed Consumer standalone APK after launcher placement fix PR #528 (main a178f2f)
 2026-10-26 Consumer native widget empty-state and stale-link fixes merged PR #530 (main 8f80d9ff); rebuild Kleenest-Consumer-Standalone-APK
+2026-10-26 Consumer Explore launcher footprint and uniform single-line widget actions; native rebuild after PR merge
