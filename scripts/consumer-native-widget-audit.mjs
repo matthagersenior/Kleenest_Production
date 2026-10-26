@@ -136,6 +136,8 @@ for (const drawable of ['kleenest_widget_primary.xml','kleenest_widget_secondary
 }
 assert.match(provider, /Last app search/, 'Do not describe cached searches as live GPS');
 assert.ok(provider.includes('fresh && name.isNotEmpty()'), 'Do not show expired results');
+assert.doesNotMatch(provider, /Choose area · Tap here to search/, 'Area text must describe its configuration action, not imply a live search');
+assert.match(provider, /Tap to find restrooms/, 'Widget empty state must offer a clear next action');
 
 
 // Regression: a large widget must not be stretchable into a near-full-screen
