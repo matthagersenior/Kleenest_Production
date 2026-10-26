@@ -4,7 +4,6 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.graphics.Color
-import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup
@@ -45,7 +44,7 @@ class KleenestWidgetConfigurationActivity : Activity() {
     }
     column.addView(label("KLEENEST · Restroom Finder", 23f))
     column.addView(label(
-      "Choose where to find restrooms. Tap the area line on the widget to change it later.", 15f
+      "Choose a search mode. After the widget appears, tap its area line to select or change a city or address.", 15f
     ))
     val current = Button(this).apply {
       text = "Use my current location"
@@ -53,7 +52,7 @@ class KleenestWidgetConfigurationActivity : Activity() {
       backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(100, 228, 187))
       setTextColor(Color.rgb(7, 48, 40))
       contentDescription = "Use phone location when Kleenest refreshes"
-      setOnClickListener { finishSetup("current", "explore?source=consumer_widget") }
+      setOnClickListener { finishSetup("current") }
     }
     val chosen = Button(this).apply {
       text = "Choose a city or address"
@@ -61,9 +60,7 @@ class KleenestWidgetConfigurationActivity : Activity() {
       backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(100, 228, 187))
       setTextColor(Color.rgb(7, 48, 40))
       contentDescription = "Search and pin an area for this widget"
-      setOnClickListener { finishSetup(
-        "custom", "widget-location?widgetId=$widgetId&source=consumer_widget"
-      ) }
+      setOnClickListener { finishSetup("custom") }
     }
     column.addView(current, LinearLayout.LayoutParams(
       ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
@@ -76,7 +73,7 @@ class KleenestWidgetConfigurationActivity : Activity() {
     setContentView(column)
   }
 
-  private fun finishSetup(mode: String, destination: String) {
+  private fun finishSetup(mode: String) {
     getSharedPreferences("kleenest_consumer_widget", MODE_PRIVATE)
       .edit().putString("mode_$widgetId", mode).apply()
     val manager = AppWidgetManager.getInstance(this)
