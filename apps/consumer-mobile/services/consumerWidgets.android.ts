@@ -56,8 +56,9 @@ export async function publishConsumerWidgetSnapshot(rows:unknown[]):Promise<void
   if(Platform.OS!=='android'||!bridge?.publishSnapshot)return;
   try{
     await bridge.publishSnapshot(payloadFor(rows));
-  }catch{
-    // Never block Explore if the launcher or native module is unavailable.
+  }catch(error){
+    // Keep Explore usable, but surface native bridge failures for diagnostics.
+    console.warn('[KleenestWidget] Unable to publish foreground restroom results', error);
   }
 }
 
