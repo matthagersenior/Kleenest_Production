@@ -86,7 +86,13 @@ class KleenestWidgetConfigurationActivity : Activity() {
       providerName.endsWith("KleenestMediumWidget") -> "medium"
       else -> "small"
     }
-    KleenestWidgetRenderer.update(this, manager, widgetId, kind)
+    try {
+      KleenestWidgetRenderer.update(this, manager, widgetId, kind)
+    } catch (error: RuntimeException) {
+      // The launcher should still complete placement if the initial render fails.
+      // The provider can retry via its normal onUpdate callback.
+      android.util.Log.e("KleenestWidget", "Initial widget render failed", error)
+    }
 
     val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
     setResult(RESULT_OK, result)
