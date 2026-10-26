@@ -83,6 +83,7 @@ internal object KleenestWidgetRenderer {
       kind == "small" -> "Change area"
       !fresh && mode == "custom" -> "Pinned: ${savedArea.take(22)} · Open to refresh"
       !fresh -> "Choose area · Tap here to search"
+      count == 0 -> "No nearby results saved · Tap to search"
       mode == "custom" -> "Pinned: ${savedArea.take(22)} · ${age / 60_000L}m ago · Change"
       else -> "Last app search · ${age / 60_000L}m ago · Change area"
     }
