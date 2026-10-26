@@ -96,18 +96,8 @@ class KleenestWidgetConfigurationActivity : Activity() {
 
     val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
     setResult(RESULT_OK, result)
-    // Open the proper in-app picker. The custom area is not marked ready until
-    // its search succeeds; canceling the picker leaves a visible setup prompt.
-    val action = Intent(Intent.ACTION_VIEW, Uri.parse("kleenest://$destination")).apply {
-      setPackage(packageName)
-      addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-    }
-    try {
-      startActivity(action)
-    } catch (error: android.content.ActivityNotFoundException) {
-      android.util.Log.w("KleenestWidget", "Unable to open location picker", error)
-    } finally {
-      finish()
-    }
+    // Do not start the app while the launcher is completing widget placement.
+    // The widget's area line opens the location picker after placement.
+    finish()
   }
 }
