@@ -135,5 +135,5 @@ for (const drawable of ['kleenest_widget_primary.xml','kleenest_widget_secondary
  assert.ok(android.includes(drawable),'Prebuild must copy '+drawable);
 }
 assert.match(provider, /Last app search/, 'Do not describe cached searches as live GPS');
-assert.ok(provider.includes('!fresh || name.isEmpty()'), 'Do not show expired results');
+assert.ok(provider.includes('fresh && name.isNotEmpty()'), 'Do not show expired results');
 console.log('Kleenest consumer Android/iOS widget source, freshness, access, and dependency contracts passed.');
