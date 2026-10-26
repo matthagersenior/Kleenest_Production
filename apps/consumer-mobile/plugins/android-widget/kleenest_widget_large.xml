@@ -40,20 +40,20 @@
   android:maxLines="2" android:ellipsize="end" android:clickable="true"/>
 </LinearLayout>
 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
- android:orientation="horizontal" android:layout_marginTop="12dp">
+ android:orientation="horizontal" android:layout_marginTop="8dp">
  <TextView android:id="@+id/kleenest_widget_find"
- android:layout_width="0dp" android:layout_weight="1" android:layout_height="42dp" android:gravity="center"
- android:paddingStart="2dp" android:paddingEnd="2dp" android:text="Restroom map" android:textSize="10sp" android:textStyle="bold"
+ android:layout_width="0dp" android:layout_weight="1" android:layout_height="38dp" android:gravity="center"
+ android:paddingStart="2dp" android:paddingEnd="2dp" android:text="Restrooms" android:textSize="10sp" android:singleLine="true" android:ellipsize="end" android:textStyle="bold"
  android:textColor="#073028" android:background="@drawable/kleenest_widget_primary"
  android:clickable="true" android:contentDescription="Open Kleenest restroom map"/>
  <TextView android:id="@+id/kleenest_widget_route" android:layout_width="0dp" android:layout_weight="1"
-  android:layout_height="42dp" android:layout_marginStart="5dp" android:gravity="center"
-  android:text="Plan route" android:textSize="10sp" android:textStyle="bold" android:textColor="#E9FAF2"
+  android:layout_height="38dp" android:layout_marginStart="5dp" android:gravity="center"
+  android:text="Plan route" android:textSize="10sp" android:singleLine="true" android:ellipsize="end" android:textStyle="bold" android:textColor="#E9FAF2"
   android:background="@drawable/kleenest_widget_secondary" android:clickable="true"
   android:contentDescription="Open restroom route planner"/>
- <TextView android:id="@+id/kleenest_widget_qr" android:layout_width="0dp" android:layout_weight="0.6"
-  android:layout_height="34dp" android:layout_marginStart="5dp" android:gravity="center"
-  android:text="Scan QR" android:textSize="9sp" android:textStyle="bold" android:textColor="#E9FAF2"
+ <TextView android:id="@+id/kleenest_widget_qr" android:layout_width="0dp" android:layout_weight="1"
+  android:layout_height="38dp" android:layout_marginStart="5dp" android:gravity="center"
+  android:text="Scan QR" android:textSize="10sp" android:singleLine="true" android:ellipsize="end" android:textStyle="bold" android:textColor="#E9FAF2"
   android:background="@drawable/kleenest_widget_secondary" android:clickable="true"
   android:contentDescription="Open restroom QR scanner"/>
 </LinearLayout></LinearLayout>

@@ -82,7 +82,7 @@ internal object KleenestWidgetRenderer {
     val updated = when {
       kind == "small" -> "Change area"
       !fresh && mode == "custom" -> "Pinned: ${savedArea.take(22)} · Open to refresh"
-      !fresh -> "Choose area · Tap here to search"
+      !fresh -> "Choose location · Tap to set up"
       count == 0 -> "No nearby results saved · Tap to search"
       mode == "custom" -> "Pinned: ${savedArea.take(22)} · ${age / 60_000L}m ago · Change"
       else -> "Last app search · ${age / 60_000L}m ago · Change area"
@@ -123,7 +123,7 @@ internal object KleenestWidgetRenderer {
         val hasPlace = fresh && name.isNotEmpty()
         views.setViewVisibility(viewId, if (hasPlace || position == 0) View.VISIBLE else View.GONE)
         views.setTextViewText(viewId, if (!hasPlace)
-          "No saved results yet · Tap to search" else
+          "Tap to find restrooms" else
           if (distance.isEmpty()) name else
           if (kind == "medium") "$name\n$distance from search" else "$name · $distance")
         val target = if (!fresh || name.isEmpty() || placeId.isEmpty()) "explore?source=consumer_widget"

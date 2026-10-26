@@ -136,4 +136,23 @@ for (const drawable of ['kleenest_widget_primary.xml','kleenest_widget_secondary
 }
 assert.match(provider, /Last app search/, 'Do not describe cached searches as live GPS');
 assert.ok(provider.includes('fresh && name.isNotEmpty()'), 'Do not show expired results');
+assert.doesNotMatch(provider, /Choose area · Tap here to search/, 'Area text must describe its configuration action, not imply a live search');
+assert.match(provider, /Tap to find restrooms/, 'Widget empty state must offer a clear next action');
+
+
+// Regression: a large widget must not be stretchable into a near-full-screen
+// blank panel; Android controls the outer launcher-cell allocation.
+const largeInfo=read('apps/consumer-mobile/plugins/android-widget/kleenest_widget_large_info.xml');
+assert.match(largeInfo,/android:targetCellHeight="3"/);
+assert.match(largeInfo,/android:resizeMode="horizontal"/,
+  'Large Explore must keep a predictable three-row launcher footprint');
+const largeLayout=read('apps/consumer-mobile/plugins/android-widget/kleenest_widget_large.xml');
+for(const name of ['find','route','qr']){
+  const match=largeLayout.match(new RegExp('<TextView android:id="@\\+id/kleenest_widget_'+name+'"([\\s\\S]*?)/>'));
+  assert.ok(match,'Missing large widget '+name+' action');
+  assert.match(match[1],/android:layout_height="38dp"/,name+' needs equal height');
+  assert.match(match[1],/android:singleLine="true"/,name+' must never wrap or clip text');
+  assert.match(match[1],/android:ellipsize="end"/,name+' should degrade gracefully at large font scale');
+}
+
 console.log('Kleenest consumer Android/iOS widget source, freshness, access, and dependency contracts passed.');
