@@ -198,6 +198,19 @@ jobs:
                   'main-lineage-guard.yml',
                   'supabase-production-migrations.yml',
                 ];
+                // Bot merges use GITHUB_TOKEN, which suppresses push workflows.
+                // Preserve explicit release control: only a merged PR that changes
+                // the native family release marker may dispatch Android APK builds.
+                const mergedFiles = await github.paginate(github.rest.pulls.listFiles, {
+                  owner,
+                  repo,
+                  pull_number: pr.number,
+                  per_page: 100,
+                });
+                if (mergedFiles.some((file) => file.filename === 'releases/family-native.txt')) {
+                  postMergeWorkflows.push('android-family.yml');
+                  core.info('  approved native family release marker detected');
+                }
                 const dispatchFailures = [];
                 for (const workflow_id of postMergeWorkflows) {
                   try {
