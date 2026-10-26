@@ -20,9 +20,9 @@
  android:clickable="true" android:contentDescription="Change Kleenest widget search location"/>
 <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
  android:layout_marginTop="3dp" android:layout_marginBottom="3dp"
- android:text="NEAR YOUR LAST SEARCH" android:textColor="#91F1CF" android:textStyle="bold"
+ android:text="NEARBY RESTROOMS" android:textColor="#91F1CF" android:textStyle="bold"
  android:textSize="9sp" android:singleLine="true"/>
-<LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
  <TextView android:id="@+id/kleenest_widget_place_1"
   android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="20dp"
   android:text="Open Kleenest to find restrooms" android:textColor="#FFFFFF"
@@ -40,14 +40,14 @@
   android:maxLines="2" android:ellipsize="end" android:clickable="true"/>
 </LinearLayout>
 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
- android:orientation="horizontal" android:layout_marginTop="5dp">
+ android:orientation="horizontal" android:layout_marginTop="12dp">
  <TextView android:id="@+id/kleenest_widget_find"
- android:layout_width="0dp" android:layout_weight="1" android:layout_height="34dp" android:gravity="center"
+ android:layout_width="0dp" android:layout_weight="1" android:layout_height="42dp" android:gravity="center"
  android:paddingStart="2dp" android:paddingEnd="2dp" android:text="Restroom map" android:textSize="10sp" android:textStyle="bold"
  android:textColor="#073028" android:background="@drawable/kleenest_widget_primary"
  android:clickable="true" android:contentDescription="Open Kleenest restroom map"/>
  <TextView android:id="@+id/kleenest_widget_route" android:layout_width="0dp" android:layout_weight="1"
-  android:layout_height="34dp" android:layout_marginStart="5dp" android:gravity="center"
+  android:layout_height="42dp" android:layout_marginStart="5dp" android:gravity="center"
   android:text="Plan route" android:textSize="10sp" android:textStyle="bold" android:textColor="#E9FAF2"
   android:background="@drawable/kleenest_widget_secondary" android:clickable="true"
   android:contentDescription="Open restroom route planner"/>
