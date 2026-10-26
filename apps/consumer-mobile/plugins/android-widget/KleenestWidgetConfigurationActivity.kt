@@ -79,18 +79,35 @@ class KleenestWidgetConfigurationActivity : Activity() {
   private fun finishSetup(mode: String, destination: String) {
     getSharedPreferences("kleenest_consumer_widget", MODE_PRIVATE)
       .edit().putString("mode_$widgetId", mode).apply()
-    KleenestWidgetRenderer.updateAll(this)
+    val manager = AppWidgetManager.getInstance(this)
+    val providerName = manager.getAppWidgetInfo(widgetId)?.provider?.className.orEmpty()
+    val kind = when {
+      providerName.endsWith("KleenestLargeWidget") -> "large"
+      providerName.endsWith("KleenestMediumWidget") -> "medium"
+      else -> "small"
+    }
+    try {
+      KleenestWidgetRenderer.update(this, manager, widgetId, kind)
+    } catch (error: RuntimeException) {
+      // The launcher should still complete placement if the initial render fails.
+      // The provider can retry via its normal onUpdate callback.
+      android.util.Log.e("KleenestWidget", "Initial widget render failed", error)
+    }
 
     val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
     setResult(RESULT_OK, result)
-    finish()
-
     // Open the proper in-app picker. The custom area is not marked ready until
     // its search succeeds; canceling the picker leaves a visible setup prompt.
     val action = Intent(Intent.ACTION_VIEW, Uri.parse("kleenest://$destination")).apply {
       setPackage(packageName)
       addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
     }
-    startActivity(action)
+    try {
+      startActivity(action)
+    } catch (error: android.content.ActivityNotFoundException) {
+      android.util.Log.w("KleenestWidget", "Unable to open location picker", error)
+    } finally {
+      finish()
+    }
   }
 }
