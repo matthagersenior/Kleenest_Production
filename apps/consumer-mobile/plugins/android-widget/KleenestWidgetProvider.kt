@@ -126,7 +126,7 @@ internal object KleenestWidgetRenderer {
           "No saved results yet · Tap to search" else
           if (distance.isEmpty()) name else
           if (kind == "medium") "$name\n$distance from search" else "$name · $distance")
-        val target = if (name.isEmpty() || placeId.isEmpty()) "explore?source=consumer_widget"
+        val target = if (!fresh || name.isEmpty() || placeId.isEmpty()) "explore?source=consumer_widget"
           else "location/${Uri.encode(placeId)}?source=consumer_widget"
         views.setOnClickPendingIntent(viewId, open(context,id,3+position,target))
       }
