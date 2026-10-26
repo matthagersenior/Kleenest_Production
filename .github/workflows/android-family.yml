@@ -2,6 +2,12 @@ name: Build Kleenest App Family Android APKs
 
 on:
   workflow_dispatch:
+  # The PR completion guard merges with GITHUB_TOKEN, so GitHub suppresses
+  # push-triggered workflows. The trusted post-merge lineage check provides
+  # an allowed workflow_run event without requiring a human to click Run.
+  workflow_run:
+    workflows: ["Main Lineage Guard"]
+    types: [completed]
   push:
     branches: [main]
     paths:
@@ -19,6 +25,10 @@ concurrency:
 
 jobs:
   plan-family:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -43,23 +53,23 @@ jobs:
           BASELINE_SHA: ${{ steps.baseline.outputs.source_sha }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" != "schedule" ]; then
+          if [ "${{ github.event_name }}" != "schedule" ] && [ "${{ github.event_name }}" != "workflow_run" ]; then
             echo "should_build=true" >> "$GITHUB_OUTPUT"
             echo "Explicit native family build requested."
             exit 0
           fi
           if [ -z "${BASELINE_SHA:-}" ]; then
             echo "should_build=true" >> "$GITHUB_OUTPUT"
-            echo "No complete family baseline exists; scheduled native family build is required."
+            echo "No complete family baseline exists; a native family build is required."
             exit 0
           fi
           node scripts/app-family-release-plan.mjs --baseline "$BASELINE_SHA" --json-out "$RUNNER_TEMP/family-release-plan.json"
           SHOULD_BUILD="$(node -e "const p=require(process.env.RUNNER_TEMP+'/family-release-plan.json');process.stdout.write(String(Boolean(p.nativeRebuildRequired)))")"
           echo "should_build=$SHOULD_BUILD" >> "$GITHUB_OUTPUT"
           if [ "$SHOULD_BUILD" = "true" ]; then
-            echo "Native drift exists; scheduled low-traffic family rebuild will proceed."
+            echo "Native drift exists; automated native family rebuild will proceed."
           else
-            echo "Family is OTA-compatible; scheduled native build skipped."
+            echo "Family is OTA-compatible; native build skipped."
           fi
 
   verify-family:
