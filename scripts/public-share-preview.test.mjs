@@ -63,7 +63,18 @@ test('every public Kleenest page shares the actual PNG app icon on X and Open Gr
       assert.match(html,/<link rel="canonical" href="https:\/\/kleenest\.us\//);
     }
     assert.ok(fs.existsSync(path.join(dist,'sitemap.xml')));
+    assert.match(fs.readFileSync(path.join(dist,'sitemap.xml'),'utf8'),/<loc>https:\/\/kleenest\.us\/about\/<\/loc>/);
     assert.ok(fs.existsSync(path.join(dist,'robots.txt')));
+    const about=fs.readFileSync(path.join(dist,'about/index.html'),'utf8');
+    assert.match(about,/<link rel="canonical" href="https:\/\/kleenest\.us\/about\/" \/>/);
+    const schema=about.match(/<script type="application\/ld\+json">([^<]+)<\/script>/);
+    assert.ok(schema,'About page must render JSON-LD');
+    const graph=JSON.parse(schema[1])['@graph'];
+    const founder=graph.find(row=>row['@type']==='Person');
+    const organization=graph.find(row=>row['@type']==='Organization');
+    assert.equal(founder?.name,'Matthew Hager');
+    assert.equal(founder?.url,'https://kleenest.us/about/');
+    assert.equal(organization?.founder?.['@id'],founder?.['@id']);
   }finally{
     fs.rmSync(tmp,{recursive:true,force:true});
   }
