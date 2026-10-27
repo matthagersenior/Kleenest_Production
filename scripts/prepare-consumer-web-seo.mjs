@@ -7,6 +7,7 @@ const SHARE_IMAGE_URL=`${ORIGIN}/app-icon.png`;
 
 const pages=[
   {route:'/',file:'index.html',title:'Kleenest | Clean Restroom Finder You Can Trust',description:'Find clean, accessible restrooms with fresh community evidence, trusted amenities, routing, and verified location details from Kleenest.'},
+  {route:'/about/',file:'about/index.html',title:'About Kleenest | Matthew Hager, Founder',description:'Meet Matthew Hager, founder of Kleenest, a St. Louis-area restroom discovery project built around a basic public need.'},
   {route:'/for-you/',file:'for-you/index.html',title:'Kleenest for You | Find Clean Restrooms Nearby',description:'Use Kleenest to find clean restrooms nearby, compare freshness and amenities, build routes, and make restroom stops with more confidence.'},
   {route:'/for-business/',file:'for-business/index.html',title:'Kleenest for Business | Restroom Trust and Visibility',description:'Help customers understand restroom access, amenities, freshness, and trust signals with Kleenest business tools.'},
   {route:'/trust/',file:'trust/index.html',title:'Kleenest Trust + Freshness | Better Restroom Information',description:'Learn how Kleenest combines freshness, verification, community evidence, and amenity details to make restroom information more useful.'},
@@ -38,8 +39,17 @@ function seoBlock(page){
         '@id':`${ORIGIN}/#organization`,
         name:'Kleenest',
         url:`${ORIGIN}/`,
+        founder:{'@id':`${ORIGIN}/about/#founder`},
         contactPoint:{'@type':'ContactPoint',url:`${ORIGIN}/contact/`,email:'support@kleenest.us',contactType:'customer support'},
         description:'Kleenest helps people find clean restrooms with freshness, trust, amenity, routing, and community evidence.'
+      },
+      {
+        '@type':'Person',
+        '@id':`${ORIGIN}/about/#founder`,
+        name:'Matthew Hager',
+        jobTitle:'Founder',
+        worksFor:{'@id':`${ORIGIN}/#organization`},
+        url:`${ORIGIN}/about/`
       },
       {
         '@type':'WebSite',

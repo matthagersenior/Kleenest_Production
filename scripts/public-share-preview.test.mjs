@@ -10,6 +10,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const seoScript=path.join(root,'scripts/prepare-consumer-web-seo.mjs');
 const files=[
   'index.html',
+  'about/index.html',
   'for-you/index.html',
   'for-business/index.html',
   'trust/index.html',
@@ -62,8 +63,36 @@ test('every public Kleenest page shares the actual PNG app icon on X and Open Gr
       assert.match(html,/<link rel="canonical" href="https:\/\/kleenest\.us\//);
     }
     assert.ok(fs.existsSync(path.join(dist,'sitemap.xml')));
+    assert.match(fs.readFileSync(path.join(dist,'sitemap.xml'),'utf8'),/<loc>https:\/\/kleenest\.us\/about\/<\/loc>/);
     assert.ok(fs.existsSync(path.join(dist,'robots.txt')));
+    const about=fs.readFileSync(path.join(dist,'about/index.html'),'utf8');
+    assert.match(about,/<link rel="canonical" href="https:\/\/kleenest\.us\/about\/" \/>/);
+    const schema=about.match(/<script type="application\/ld\+json">([^<]+)<\/script>/);
+    assert.ok(schema,'About page must render JSON-LD');
+    const graph=JSON.parse(schema[1])['@graph'];
+    const founder=graph.find(row=>row['@type']==='Person');
+    const organization=graph.find(row=>row['@type']==='Organization');
+    assert.equal(founder?.name,'Matthew Hager');
+    assert.equal(founder?.url,'https://kleenest.us/about/');
+    assert.equal(organization?.founder?.['@id'],founder?.['@id']);
   }finally{
     fs.rmSync(tmp,{recursive:true,force:true});
   }
+});
+
+
+test('public marketing identifies the founder without exposing their precise hometown',()=>{
+  const marketing=fs.readFileSync(path.join(root,'apps/consumer-mobile/components/MarketingSitePro.tsx'),'utf8');
+  const entry=fs.readFileSync(path.join(root,'apps/consumer-mobile/components/MarketingSite.tsx'),'utf8');
+  const page=fs.readFileSync(path.join(root,'apps/consumer-mobile/app/about.tsx'),'utf8');
+  const publisher=fs.readFileSync(path.join(root,'.github/workflows/publish-standalone-installer.yml'),'utf8');
+  assert.match(marketing,/export function MarketingAboutPage\(\)/);
+  assert.match(marketing,/MEET THE FOUNDER/);
+  assert.match(marketing,/Matthew Hager/);
+  assert.match(marketing,/St\. Louis-area/);
+  assert.doesNotMatch(marketing,/Sparta,? Illinois/i);
+  assert.match(marketing,/go\('\/about'\)/);
+  assert.match(entry,/MarketingAboutPage/);
+  assert.match(page,/MarketingAboutPage/);
+  assert.match(publisher,/public_routes="[^"]*\babout\b/);
 });
