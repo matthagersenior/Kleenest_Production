@@ -22,6 +22,7 @@ export function GuestInstallUpsell() {
     router.push('/install');
   }
   function createAccount() {
+    captureGuestMonetizationEvent('upgrade_intent',null,null,'explore_results');
     captureAcquisitionEvent('signup_intent',{metadata:{source:'explore_results',method:'free_account_cta'}});
     router.push('/signup?mode=signup&returnTo=%2Fexplore' as any);
   }
