@@ -73,17 +73,39 @@ function useMarketingMeta(title: string, description: string) {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const doc = (globalThis as any).document;
-    if (!doc) return;
+    const location = (globalThis as any).location;
+    if (!doc || !location) return;
     doc.title = title;
-    let meta = doc.querySelector?.('meta[name="description"]');
-    if (!meta) {
-      meta = doc.createElement?.('meta');
-      if (meta) {
-        meta.setAttribute('name', 'description');
-        doc.head?.appendChild(meta);
+
+    const pathname = String(location.pathname || '/');
+    const normalizedPath = pathname === '/' ? '/' : `/${pathname.replace(/^\\/+|\\/+$/g, '')}/`;
+    const canonicalUrl = `${location.origin || 'https://kleenest.us'}${normalizedPath}`;
+    const setMeta = (selector: string, attribute: string, key: string, value: string) => {
+      let meta = doc.querySelector?.(selector);
+      if (!meta) {
+        meta = doc.createElement?.('meta');
+        if (meta) {
+          meta.setAttribute(attribute, key);
+          doc.head?.appendChild(meta);
+        }
+      }
+      meta?.setAttribute('content', value);
+    };
+    setMeta('meta[name="description"]', 'name', 'description', description);
+    setMeta('meta[property="og:title"]', 'property', 'og:title', title);
+    setMeta('meta[property="og:description"]', 'property', 'og:description', description);
+    setMeta('meta[property="og:url"]', 'property', 'og:url', canonicalUrl);
+    setMeta('meta[name="twitter:title"]', 'name', 'twitter:title', title);
+    setMeta('meta[name="twitter:description"]', 'name', 'twitter:description', description);
+    let canonical = doc.querySelector?.('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = doc.createElement?.('link');
+      if (canonical) {
+        canonical.setAttribute('rel', 'canonical');
+        doc.head?.appendChild(canonical);
       }
     }
-    meta?.setAttribute('content', description);
+    canonical?.setAttribute('href', canonicalUrl);
   }, [description, title]);
 }
 
