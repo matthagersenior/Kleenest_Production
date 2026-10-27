@@ -92,6 +92,14 @@ test('public marketing identifies the founder without exposing their precise hom
   assert.match(marketing,/St\. Louis-area/);
   assert.doesNotMatch(marketing,/Sparta,? Illinois/i);
   assert.match(marketing,/go\('\/about'\)/);
+  assert.match(marketing,/location\.pathname/);
+  assert.match(marketing,/meta\[property="og:url"\]/);
+  assert.match(marketing,/meta\[name="twitter:description"\]/);
+  assert.match(marketing,/meta\[property="og:title"\]/);
+  assert.match(marketing,/meta\[property="og:description"\]/);
+  assert.match(marketing,/meta\[name="twitter:title"\]/);
+  assert.match(marketing,/meta\[name="twitter:description"\]/);
+  assert.match(marketing,/canonical\?\.setAttribute\('href', canonicalUrl\)/);
   assert.match(entry,/MarketingAboutPage/);
   assert.match(page,/MarketingAboutPage/);
   assert.match(publisher,/public_routes="[^"]*\babout\b/);
