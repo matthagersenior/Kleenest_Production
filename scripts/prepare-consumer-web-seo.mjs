@@ -108,6 +108,13 @@ function applySeo(file,page){
   else html=html.replace(/<head([^>]*)>/i,`<head$1><title>${escapeAttr(page.title)}</title>`);
   if(!/<\/head>/i.test(html))throw new Error(`SEO target lacks </head>: ${file}`);
   html=html.replace(/<\/head>/i,`${seoBlock(page)}\n</head>`);
+  // DailyLaunch checks the original HTML, not content injected by client-side JavaScript.
+  if(page.route==='/'){
+    const badge='<footer id="dailylaunch-badge" style="background:#0A291C;padding:20px;text-align:center"><a href="https://dailylaunch.io/" target="_blank" rel="noopener"><img src="https://dailylaunch.io/badge/light.svg?v=a6cc2b9b" alt="Featured on DailyLaunch" width="200" height="54" loading="lazy" /></a></footer>';
+    html=html.replace(/<footer id="dailylaunch-badge"[\\s\\S]*?<\\/footer>/g,'');
+    if(!/<\\/body>/i.test(html))throw new Error('DailyLaunch badge target lacks </body>');
+    html=html.replace(/<\\/body>/i,`${badge}\\n</body>`);
+  }
   fs.writeFileSync(file,html);
 }
 
