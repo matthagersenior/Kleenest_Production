@@ -627,7 +627,7 @@ export function MarketingAboutPage() {
         primary="EXPLORE KLEENEST"
         secondary="CONTACT US"
         primaryAction={go('/?app=1')}
-        secondaryAction={go('/contact')}
+        secondaryAction={go('/support')}
       />
       <View style={s.detailSection}>
         <Eyebrow>FOUNDER + LEADERSHIP</Eyebrow>
@@ -652,7 +652,7 @@ export function MarketingAboutPage() {
         <Text style={s.pageCtaTitle}>Have a question about Kleenest?</Text>
         <Text style={s.pageCtaBody}>We welcome questions from users, community partners, businesses and journalists. Explore Kleenest or reach us through our public contact page.</Text>
         <View style={s.heroButtonRow}>
-          <Pressable style={s.heroButtonLight} onPress={go('/contact')}><Text style={s.heroButtonLightText}>CONTACT KLEENEST</Text></Pressable>
+          <Pressable style={s.heroButtonLight} onPress={go('/support')}><Text style={s.heroButtonLightText}>CONTACT KLEENEST</Text></Pressable>
           <Pressable style={s.heroButtonOutline} onPress={go('/?app=1')}><Text style={s.heroButtonOutlineText}>EXPLORE NOW</Text></Pressable>
         </View>
       </View>
