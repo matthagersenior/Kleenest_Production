@@ -94,6 +94,7 @@ test('public marketing identifies the founder without exposing their precise hom
   assert.match(marketing,/go\('\/about'\)/);
   assert.match(marketing,/location\.pathname/);
   assert.match(marketing,/meta\[property="og:url"\]/);
+  assert.match(marketing,/meta\[name="twitter:description"\]/);
   assert.match(marketing,/meta\[property="og:title"\]/);
   assert.match(marketing,/meta\[property="og:description"\]/);
   assert.match(marketing,/meta\[name="twitter:title"\]/);
