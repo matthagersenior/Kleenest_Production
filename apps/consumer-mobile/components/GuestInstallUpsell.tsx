@@ -10,9 +10,9 @@ import { useConsumerWebExperience } from '../services/webExperience';
 export function GuestInstallUpsell() {
   const theme = useConsumerTheme();
   const { ready, signedIn } = useConsumerWebExperience();
-  const visible = Platform.OS === 'web' && ready && !signedIn;
+  const visible = ready && !signedIn;
   useEffect(() => {
-    if (visible) captureGuestMonetizationEvent('install_upsell_view',null,null,'explore_results');
+    if (visible && Platform.OS === 'web') captureGuestMonetizationEvent('install_upsell_view',null,null,'explore_results');
   }, [visible]);
   if (!visible) return null;
 
@@ -21,22 +21,22 @@ export function GuestInstallUpsell() {
     captureAcquisitionEvent('install_intent',{metadata:{source:'explore_results',method:'install_cta'}});
     router.push('/install');
   }
-  function upgrade() {
-    captureGuestMonetizationEvent('upgrade_intent',null,null,'explore_results');
-    router.push('/membership');
+  function createAccount() {
+    captureAcquisitionEvent('signup_intent',{metadata:{source:'explore_results',method:'free_account_cta'}});
+    router.push('/signup?mode=signup&returnTo=%2Fexplore' as any);
   }
   return <View style={[styles.card,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
-    <Text style={[styles.title,{color:theme.ink}]}>Keep Kleenest one tap away</Text>
-    <Text style={[styles.body,{color:theme.muted}]}>Add Kleenest to your Home Screen. You can continue as a guest. Create a free account when you want saved places and routes.</Text>
+    <Text style={[styles.title,{color:theme.ink}]}>Found a bathroom worth remembering?</Text>
+    <Text style={[styles.body,{color:theme.muted}]}>A free account keeps your saved bathrooms, routes, and community rewards across visits. You can keep exploring without signing up.</Text>
     <View style={styles.actions}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest" onPress={install} style={[styles.primary,{backgroundColor:theme.accent}]}>
-        <Text style={[styles.primaryText,{color:theme.accentText}]}>Install app →</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="Create a free Kleenest account" onPress={createAccount} style={[styles.primary,{backgroundColor:theme.accent}]}>
+        <Text style={[styles.primaryText,{color:theme.accentText}]}>Create free account →</Text>
       </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel="Learn about five-dollar Remove Ads upgrade" onPress={upgrade} style={[styles.secondary,{borderColor:theme.line}]}>
-        <Text style={[styles.secondaryText,{color:theme.accent}]}>Remove network ads · $5</Text>
-      </Pressable>
+      {Platform.OS === 'web' ? <Pressable accessibilityRole="button" accessibilityLabel="Add Kleenest to Home Screen" onPress={install} style={[styles.secondary,{borderColor:theme.line}]}>
+        <Text style={[styles.secondaryText,{color:theme.accent}]}>Add to Home Screen</Text>
+      </Pressable> : null}
     </View>
-    <Text style={[styles.note,{color:theme.muted}]}>One-time Remove Ads is purchased through the supported native app after sign-in. Kleenest Sponsored placements remain.</Text>
+    <Text style={[styles.note,{color:theme.muted}]}>No account required to find a bathroom.</Text>
   </View>;
 }
 const styles = StyleSheet.create({
