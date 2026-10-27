@@ -234,7 +234,7 @@ jobs:
           test -s apps/consumer-mobile/dist/Kleenest-release-state.json
           grep -q "Kleenest Developer Portal" apps/consumer-mobile/dist/developer/index.html
           grep -q "Browser token" apps/consumer-mobile/dist/developer/index.html
-          public_routes="install for-you for-business trust support privacy terms community-guidelines account-deletion"
+          public_routes="install for-you for-business trust about support privacy terms community-guidelines account-deletion"
           for route in $public_routes; do
             mkdir -p "apps/consumer-mobile/dist/$route"
             cp apps/consumer-mobile/dist/index.html "apps/consumer-mobile/dist/$route/index.html"
