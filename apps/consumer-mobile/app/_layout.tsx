@@ -152,6 +152,8 @@ export default function RootLayout() {
     <Tabs.Screen name="for-you" options={{ href:null,title:'Kleenest for You' }}/>
     <Tabs.Screen name="for-business" options={{ href:null,title:'Kleenest for Business' }}/>
     <Tabs.Screen name="trust" options={{ href:null,title:'Trust + Freshness' }}/>
+    {/* Keep public About navigation routable without adding it to the bottom tab bar. This reuses the founder-about feature registration. */}
+    <Tabs.Screen name="about" options={{ href:null,title:'About Kleenest' }}/>
     <Tabs.Screen name="play" options={{ href:null,title:'Legacy progression + play' }}/>
     <Tabs.Screen name="discover" options={{ href:null,title:'Discover a place' }}/>
     <Tabs.Screen name="knowledge" options={{ href:null,title:'Share prior knowledge' }}/>
