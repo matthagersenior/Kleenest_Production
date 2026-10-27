@@ -202,9 +202,9 @@ export default function LocationDetailScreen(){
   async function save(){
     if(!locationId||savedLocation)return;
     try{
-      const {data,error}=await getKleenestSupabaseClient().auth.getUser();
+      const {data,error}=await getKleenestSupabaseClient().auth.getSession();
       if(error)throw error;
-      if(!data.user||data.user.is_anonymous){
+      if(!data.session?.user||data.session.user.is_anonymous){
         captureAcquisitionEvent('signup_intent',{metadata:{source:'location_save',method:'save_restroom'}});
         router.push({pathname:'/signup',params:{mode:'signup',returnTo:`/location/${encodeURIComponent(locationId)}?saveAfterJoin=1`}} as any);
         return;
