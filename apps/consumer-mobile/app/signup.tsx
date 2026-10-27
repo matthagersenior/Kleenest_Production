@@ -40,6 +40,7 @@ export default function SignupScreen(){
  const[needsConfirmation,setNeedsConfirmation]=useState(false);
  const client=getKleenestSupabaseClient();
  const returnTo=safeAuthReturnPath(params.returnTo);
+ const saveIntent=/^\/location\/[^/?]+\?saveAfterJoin=1(?:&|$)/.test(returnTo);
  const redirectTo=authRedirect(returnTo);
 
  async function handleAuthUrl(url:string|null){
@@ -156,14 +157,14 @@ export default function SignupScreen(){
  return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
   <View style={s.header}>
    <Text style={[s.eyebrow,{color:theme.accent}]}>KLEENEST</Text>
-   <Text style={[s.title,{color:theme.ink}]}>Get in quickly.</Text>
-   <Text style={[s.copy,{color:theme.muted}]}>Find a bathroom now. Create an account only when you want saved places, trust history, progression and community to follow you.</Text>
+   <Text style={[s.title,{color:theme.ink}]}>{saveIntent?"Keep this restroom for next time.":"Get in quickly."}</Text>
+   <Text style={[s.copy,{color:theme.muted}]}>{saveIntent?"Create a free account and this restroom will be saved automatically once you sign in. Find it again from any device in your Saved bathrooms.":"Find a bathroom now. Create an account only when you want saved places, trust history, progression and community to follow you."}</Text>
   </View>
 
-  <Pressable accessibilityRole="button" onPress={continueGuest} style={[s.guest,{backgroundColor:theme.accent}]}>
+  {!saveIntent?<Pressable accessibilityRole="button" onPress={continueGuest} style={[s.guest,{backgroundColor:theme.accent}]}>
    <Text style={[s.guestTitle,{color:theme.accentText}]}>CONTINUE AS GUEST</Text>
    <Text style={[s.guestBody,{color:theme.accentText}]}>Open the map now · no account required</Text>
-  </Pressable>
+  </Pressable>:null}
 
   <Pressable disabled={busy} accessibilityRole="button" onPress={googleSignIn} style={[s.google,{backgroundColor:theme.surface,borderColor:theme.line},busy&&s.disabled]}>
    <Text style={[s.googleTitle,{color:theme.ink}]}>Continue with Google</Text>
@@ -191,7 +192,7 @@ export default function SignupScreen(){
     <Pressable accessibilityRole="button" accessibilityLabel={showPassword?'Hide password':'Show password'} onPress={()=>setShowPassword(v=>!v)} style={[s.show,{backgroundColor:theme.accentSoft}]}><Text style={[s.showText,{color:theme.accent}]}>{showPassword?'HIDE':'SHOW'}</Text></Pressable>
    </View>
 
-   <Pressable accessibilityRole="button" accessibilityLabel={mode==='signin'?'Sign in':'Create account'} accessibilityState={{disabled:busy}} disabled={busy} onPress={mode==='signin'?signIn:signUp} style={[s.primary,{backgroundColor:theme.accent},busy&&s.disabled]}><Text style={[s.primaryText,{color:theme.accentText}]}>{busy?'PLEASE WAIT…':mode==='signin'?'SIGN IN':'CREATE ACCOUNT'}</Text></Pressable>
+   <Pressable accessibilityRole="button" accessibilityLabel={mode==='signin'?'Sign in':'Create account'} accessibilityState={{disabled:busy}} disabled={busy} onPress={mode==='signin'?signIn:signUp} style={[s.primary,{backgroundColor:theme.accent},busy&&s.disabled]}><Text style={[s.primaryText,{color:theme.accentText}]}>{busy?'PLEASE WAIT…':mode==='signin'?'SIGN IN':saveIntent?'CREATE ACCOUNT & SAVE':'CREATE ACCOUNT'}</Text></Pressable>
 
    {mode==='signin'?<Pressable accessibilityRole="button" accessibilityLabel="Forgot password" accessibilityState={{disabled:busy||!email.trim()}} disabled={busy||!email.trim()} onPress={requestPasswordReset} style={[s.resend,{backgroundColor:theme.accentSoft,borderColor:theme.line},(busy||!email.trim())&&s.disabled]}><Text style={[s.resendText,{color:theme.accent}]}>FORGOT PASSWORD?</Text></Pressable>:null}
 
@@ -199,6 +200,7 @@ export default function SignupScreen(){
    {message?<Text accessibilityLiveRegion="polite" style={[s.message,{color:theme.muted}]}>{message}</Text>:null}
   </View>
 
+  {saveIntent?<Pressable accessibilityRole="button" onPress={continueGuest} style={[s.guest,{backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}]}><Text style={[s.guestTitle,{color:theme.ink}]}>NOT NOW — KEEP EXPLORING</Text><Text style={[s.guestBody,{color:theme.muted}]}>You can still find bathrooms and get directions without an account</Text></Pressable>:null}
   <Text style={[s.guestNote,{color:theme.muted}]}>Guest access stays useful: discovery, map browsing and restroom details remain available. Kleenest asks you to join only when an action needs an identity, sync, trust attribution or rewards.</Text>
   <Pressable accessibilityRole="link" accessibilityLabel="Terms, privacy and community guidelines" onPress={()=>router.push('/legal')}><Text style={[s.legal,{color:theme.accent}]}>Terms · Privacy · Community Guidelines</Text></Pressable>
  </ScrollView></SafeAreaView>
