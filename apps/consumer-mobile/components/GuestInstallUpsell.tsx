@@ -29,7 +29,7 @@ export function GuestInstallUpsell() {
     <Text style={[styles.title,{color:theme.ink}]}>Found a bathroom worth remembering?</Text>
     <Text style={[styles.body,{color:theme.muted}]}>A free account keeps your saved bathrooms, routes, and community rewards across visits. You can keep exploring without signing up.</Text>
     <View style={styles.actions}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Create a free Kleenest account" onPress={createAccount} style={[styles.primary,{backgroundColor:theme.accent}]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Create a free Kleenest account" accessibilityHint="Keep saved restrooms and routes across future visits" onPress={createAccount} style={[styles.primary,{backgroundColor:theme.accent}]}>
         <Text style={[styles.primaryText,{color:theme.accentText}]}>Create free account →</Text>
       </Pressable>
       {Platform.OS === 'web' ? <Pressable accessibilityRole="button" accessibilityLabel="Add Kleenest to Home Screen" onPress={install} style={[styles.secondary,{borderColor:theme.line}]}>
@@ -42,11 +42,11 @@ export function GuestInstallUpsell() {
 const styles = StyleSheet.create({
   card:{borderRadius:16,borderWidth:1,padding:13,gap:7,marginVertical:8},
   title:{fontSize:15,fontWeight:'900'},
-  body:{fontSize:12,lineHeight:17},
+  body:{fontSize:13,lineHeight:19},
   actions:{flexDirection:'row',flexWrap:'wrap',gap:8},
-  primary:{borderRadius:10,minHeight:42,paddingHorizontal:13,paddingVertical:10,justifyContent:'center'},
-  primaryText:{fontSize:12,fontWeight:'900'},
-  secondary:{borderWidth:1,borderRadius:10,minHeight:42,paddingHorizontal:12,paddingVertical:10,justifyContent:'center'},
+  primary:{borderRadius:10,minHeight:48,paddingHorizontal:13,paddingVertical:10,justifyContent:'center'},
+  primaryText:{fontSize:14,fontWeight:'900'},
+  secondary:{borderWidth:1,borderRadius:10,minHeight:48,paddingHorizontal:12,paddingVertical:10,justifyContent:'center'},
   secondaryText:{fontSize:11,fontWeight:'800'},
   note:{fontSize:10,lineHeight:15}
 });
