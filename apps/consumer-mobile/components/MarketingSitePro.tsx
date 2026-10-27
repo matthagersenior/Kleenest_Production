@@ -119,6 +119,7 @@ function Header() {
               <Pressable onPress={go('/for-you')}><Text style={s.navText}>For You</Text></Pressable>
               <Pressable onPress={go('/for-business')}><Text style={s.navText}>For Business</Text></Pressable>
               <Pressable onPress={go('/trust')}><Text style={s.navText}>Trust</Text></Pressable>
+              <Pressable onPress={go('/about')}><Text style={s.navText}>About</Text></Pressable>
             </>
           )}
           <Pressable accessibilityRole="button" accessibilityLabel="Open Kleenest sign in" style={[s.openButton,compact&&{paddingHorizontal:9}]} onPress={go('/profile')}>
@@ -142,7 +143,8 @@ function Header() {
             ['Enterprise','/business/enterprise/'],
             ['Developer','/developer/'],
             ['Partner','/business/partners/'],
-          ].map(([label,path])=><Pressable key={label} accessibilityRole="link" onPress={openPortal(path)} style={{backgroundColor:brand.mintSoft,borderColor:brand.line,borderWidth:1,borderRadius:999,paddingHorizontal:13,paddingVertical:10}}>
+            ['About Kleenest','/about'],
+          ].map(([label,path])=><Pressable key={label} accessibilityRole="link" onPress={label==='About Kleenest'?go('/about'):openPortal(path)} style={{backgroundColor:brand.mintSoft,borderColor:brand.line,borderWidth:1,borderRadius:999,paddingHorizontal:13,paddingVertical:10}}>
             <Text style={{color:brand.forest,fontSize:11,fontWeight:'900'}}>{label} →</Text>
           </Pressable>)}
         </View>
@@ -180,6 +182,7 @@ function Footer() {
         <Pressable onPress={go('/for-you')}><Text style={s.footerLink}>For You</Text></Pressable>
         <Pressable onPress={go('/for-business')}><Text style={s.footerLink}>For Business</Text></Pressable>
         <Pressable onPress={go('/trust')}><Text style={s.footerLink}>Trust + Freshness</Text></Pressable>
+        <Pressable onPress={go('/about')}><Text style={s.footerLink}>About + Founder</Text></Pressable>
         <Pressable onPress={go('/install')}><Text style={s.footerLink}>Install</Text></Pressable>
         <Pressable onPress={go('/support')}><Text style={s.footerLink}>Support</Text></Pressable>
       </View>
@@ -585,6 +588,17 @@ export function MarketingHome() {
         </View>
       </View>
 
+      <View style={s.section}>
+        <Eyebrow>MEET THE FOUNDER</Eyebrow>
+        <Text style={s.sectionTitle}>A public need. A real person behind the project.</Text>
+        <Text style={s.sectionLead}>
+          Kleenest is a St. Louis-area-based project founded by Matthew Hager. Our goal is to make finding useful restroom information easier for people on everyday trips, family outings and longer journeys.
+        </Text>
+        <Pressable accessibilityRole="link" accessibilityLabel="Meet Matthew Hager, the founder of Kleenest" onPress={go('/about')} style={s.textLinkButton}>
+          <Text style={s.textLink}>MEET MATTHEW + READ OUR STORY →</Text>
+        </Pressable>
+      </View>
+
       <View style={s.finalCta}>
         <Text style={s.finalCtaKicker}>READY WHEN YOU NEED IT</Text>
         <Text style={s.finalCtaTitle}>Put Kleenest one tap away.</Text>
@@ -592,6 +606,54 @@ export function MarketingHome() {
         <View style={s.finalCtaActions}>
           <Pressable style={s.finalCtaPrimary} onPress={go('/install')}><Text style={s.finalCtaPrimaryText}>INSTALL NOW</Text></Pressable>
           <Pressable style={s.finalCtaSecondary} onPress={go('/?app=1')}><Text style={s.finalCtaSecondaryText}>OPEN WEB APP</Text></Pressable>
+        </View>
+      </View>
+    </Shell>
+  );
+}
+
+export function MarketingAboutPage() {
+  useMarketingMeta(
+    'About Kleenest | Matthew Hager, Founder',
+    'Meet Matthew Hager, founder of Kleenest, a St. Louis-area project working to make restroom discovery easier and more trustworthy.'
+  );
+
+  return (
+    <Shell>
+      <PurposeHero
+        eyebrow="OUR STORY"
+        title="A basic need deserves better information."
+        body="Finding a usable restroom shouldn't be a guessing game. Kleenest is being built to help people discover nearby options and understand the access, amenities and recent evidence behind them."
+        primary="EXPLORE KLEENEST"
+        secondary="CONTACT US"
+        primaryAction={go('/?app=1')}
+        secondaryAction={go('/contact')}
+      />
+      <View style={s.detailSection}>
+        <Eyebrow>FOUNDER + LEADERSHIP</Eyebrow>
+        <Text style={s.detailSectionTitle}>Matthew Hager</Text>
+        <Text style={s.detailSectionLead}>
+          Matthew Hager is the solo founder of Kleenest, a St. Louis-area-based restroom discovery project being developed under Ignorant Genius, LLC, a Missouri company.
+        </Text>
+        <Text style={s.detailSectionLead}>
+          The idea began with a simple challenge: people shouldn't have to guess where they can find a restroom that meets their needs. Kleenest aims to make that decision clearer through location discovery, practical details and current community feedback.
+        </Text>
+      </View>
+      <View style={s.detailSection}>
+        <Eyebrow>WHAT WE'RE BUILDING</Eyebrow>
+        <Text style={s.detailSectionTitle}>A public-service approach, starting with useful discovery.</Text>
+        <View style={s.groupGrid}>
+          <GroupCard number="01" title="Find" body="Discover restroom options along daily trips and travel routes." items={['Nearby options', 'Route-aware discovery', 'Practical access and amenity details']} />
+          <GroupCard number="02" title="Understand" body="Make information more useful with recent, clearly attributed evidence." items={['Reviews and photos', 'Freshness and trust signals', 'Feedback that can be corrected']} />
+          <GroupCard number="03" title="Improve" body="Let community contributions and responsible business participation improve the experience over time." items={['User observations', 'Business updates', 'Continuous data-quality work']} />
+        </View>
+      </View>
+      <View style={s.pageCta}>
+        <Text style={s.pageCtaTitle}>Have a question about Kleenest?</Text>
+        <Text style={s.pageCtaBody}>We welcome questions from users, community partners, businesses and journalists. Explore Kleenest or reach us through our public contact page.</Text>
+        <View style={s.heroButtonRow}>
+          <Pressable style={s.heroButtonLight} onPress={go('/contact')}><Text style={s.heroButtonLightText}>CONTACT KLEENEST</Text></Pressable>
+          <Pressable style={s.heroButtonOutline} onPress={go('/?app=1')}><Text style={s.heroButtonOutlineText}>EXPLORE NOW</Text></Pressable>
         </View>
       </View>
     </Shell>
