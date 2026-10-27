@@ -1068,6 +1068,14 @@
       "kind": "user",
       "status": "wired",
       "gap": "KleenestOS can route recommendations to existing controls and run an explicitly confirmed bounded ingestion cycle. Persistent accept/dismiss/schedule controls and end-to-end action verification are not yet complete."
+    },
+    {
+      "id": "consumer.founder-about",
+      "product": "consumer",
+      "capability": "founder-about",
+      "kind": "user",
+      "status": "wired",
+      "gap": "Founder identity, public About screen, navigation and canonical metadata are source-controlled. Green PR/main checks, Pages deployment and live mobile/browser verification are still needed before certifying it live."
     }
   ]
 }
