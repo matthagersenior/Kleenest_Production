@@ -78,7 +78,7 @@ function useMarketingMeta(title: string, description: string) {
     doc.title = title;
 
     const pathname = String(location.pathname || '/');
-    const normalizedPath = pathname === '/' ? '/' : `/${pathname.replace(/^\\/+|\\/+$/g, '')}/`;
+    const normalizedPath = pathname === '/' ? '/' : \`/\${pathname.replace(/^\/+|\/+$/g, '')}/\`;
     const canonicalUrl = `${location.origin || 'https://kleenest.us'}${normalizedPath}`;
     const setMeta = (selector: string, attribute: string, key: string, value: string) => {
       let meta = doc.querySelector?.(selector);
