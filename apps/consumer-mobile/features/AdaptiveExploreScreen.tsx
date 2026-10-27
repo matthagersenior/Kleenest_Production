@@ -15,6 +15,9 @@ import {
   listNearbyRestrooms,
   listPlacesAlongRoute,
   mobileCheckIn,
+  getKleenestSupabaseClient,
+  listMobileFavoriteLocations,
+  toggleMobileFavorite,
   BATHROOM_FIT_OPTIONS,
   getBathroomFitPreferences,
   type AmenityMatchRule,
@@ -51,6 +54,7 @@ import {
   writeNearbyContinuity,
 } from '../services/nearbyCache';
 import { captureConsumerCoreLoopEvent, captureConsumerDiscovery, captureConsumerRouteIntent } from '../services/consumerTelemetry';
+import { captureAcquisitionEvent } from '../services/acquisitionAttribution';
 import { publishConsumerWidgetSnapshot } from '../services/consumerWidgets';
 import { listNearbyProgressionOpportunities } from '../services/discoveryProgression';
 import { getRewardCapabilities } from '../services/rewardRuntime';
@@ -1418,6 +1422,27 @@ export default function AdaptiveExploreScreen() {
     });
   }
 
+  async function saveForLater(row:any){
+    const id=idOf(row);
+    if(!id)return;
+    try{
+      const {data,error}=await getKleenestSupabaseClient().auth.getSession();
+      if(error)throw error;
+      if(!data.session?.user||data.session.user.is_anonymous){
+        await preserveExploreReturnState();
+        captureAcquisitionEvent('signup_intent',{metadata:{source:'explore_save',method:'save_restroom'}});
+        router.push({pathname:'/signup',params:{mode:'signup',returnTo:`/location/${encodeURIComponent(id)}?saveAfterJoin=1`}} as any);
+        return;
+      }
+      const favorites=await listMobileFavoriteLocations();
+      const alreadySaved=favorites.some((item:any)=>String(item?.location_id||item?.place_id||item?.id||'')===id);
+      if(!alreadySaved)await toggleMobileFavorite(id);
+      setMessage(alreadySaved?'This restroom is already in your saved list.':`${discoveryPlaceName(row)} saved for next time. Find it under Saved bathrooms.`);
+    }catch{
+      setMessage('Kleenest could not save this restroom right now. Try again.');
+    }
+  }
+
   function contributeKnowledge(row: any) {
     const id = idOf(row);
     if (!id) return;
@@ -2218,8 +2243,8 @@ export default function AdaptiveExploreScreen() {
                     <Pressable accessibilityRole="button" accessibilityLabel="Open full selected location details" style={[s.secondarySmall,s.selectedSheetAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>openLocationDetails(selected)}>
                       <Text style={[s.secondaryText,{color:theme.accent}]}>Full details</Text>
                     </Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel="View the Kleenest location QR" style={[s.secondarySmall,s.selectedSheetAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>openLocationQr(selected)}>
-                      <Text style={[s.secondaryText,{color:theme.accent}]}>▦ QR</Text>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Save selected restroom for next time" style={[s.secondarySmall,s.selectedSheetAction,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]} onPress={()=>void saveForLater(selected)}>
+                      <Text style={[s.secondaryText,{color:theme.accent}]}>♡ Save</Text>
                     </Pressable>
                   </View>
                   {resultsSheetExpanded?(
