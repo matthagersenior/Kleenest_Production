@@ -1,7 +1,7 @@
 import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
-import { createMobileReview, getKleenestSupabaseClient, getMobileLocation, getMobileProgressionDashboard, listMobileActiveQuests, listMobileLocationReviews, mobileCheckIn, toggleMobileFavorite } from '@kleenest/mobile-core';
+import { createMobileReview, getKleenestSupabaseClient, getMobileLocation, getMobileProgressionDashboard, listMobileActiveQuests, listMobileLocationReviews, mobileCheckIn, listMobileFavoriteLocations, toggleMobileFavorite } from '@kleenest/mobile-core';
 import LocationAmenityInventory from '../../components/LocationAmenityInventory';
 import ReviewPhotoStrip from '../../components/ReviewPhotoStrip';
 import PhotoTrustActions from '../../components/PhotoTrustActions';
@@ -22,6 +22,7 @@ import { useConsumerTheme } from '../../services/theme';
 import { cachedAgeLabel,readNearbyCache } from '../../services/nearbyCache';
 import { captureBetaError,friendlyConsumerError,recordBetaBreadcrumb } from '../../services/betaReporting';
 import { captureConsumerCoreLoopEvent } from '../../services/consumerTelemetry';
+import { captureAcquisitionEvent } from '../../services/acquisitionAttribution';
 import { getProgressionOverviewV2, getProgressionWorld } from '../../services/discoveryProgression';
 import { submitPriorKnowledgePhotos, type PriorKnowledgeRecency } from '../../services/priorKnowledge';
 import { getRewardCapabilities } from '../../services/rewardRuntime';
@@ -51,7 +52,7 @@ const rich=StyleSheet.create({locationFacts:{backgroundColor:'#fff',padding:17,b
 
 export default function LocationDetailScreen(){
  const theme=useConsumerTheme();
-  const {id,contribute,mission,review,photos,photoFirst,preview,previewName,previewAddress,previewCity,previewState,previewPostalCode,previewLat,previewLng,previewBusinessName,previewPlaceType,previewRating,previewCleanliness,previewAccessible,previewRestroomVerified}=useLocalSearchParams<{id:string;contribute?:string;mission?:string;review?:string;photos?:string;photoFirst?:string;preview?:string;previewName?:string;previewAddress?:string;previewCity?:string;previewState?:string;previewPostalCode?:string;previewLat?:string;previewLng?:string;previewBusinessName?:string;previewPlaceType?:string;previewRating?:string;previewCleanliness?:string;previewAccessible?:string;previewRestroomVerified?:string}>();
+  const {id,contribute,mission,review,photos,photoFirst,preview,previewName,previewAddress,previewCity,previewState,previewPostalCode,previewLat,previewLng,previewBusinessName,previewPlaceType,previewRating,previewCleanliness,previewAccessible,previewRestroomVerified,saveAfterJoin}=useLocalSearchParams<{id:string;contribute?:string;mission?:string;review?:string;photos?:string;photoFirst?:string;preview?:string;previewName?:string;previewAddress?:string;previewCity?:string;previewState?:string;previewPostalCode?:string;previewLat?:string;previewLng?:string;previewBusinessName?:string;previewPlaceType?:string;previewRating?:string;previewCleanliness?:string;previewAccessible?:string;previewRestroomVerified?:string;saveAfterJoin?:string}>();
   const locationId=String(id||''),missionMode=String(contribute||mission||'')==='1',reviewMode=String(review||'')==='1',photoReviewId=String(photos||''),photoFirstMode=String(photoFirst||'')==='1';
   const previewPlace=String(preview||'')==='1'&&Number.isFinite(Number(previewLat))&&Number.isFinite(Number(previewLng))?{
     id:locationId,name:String(previewName||'Location'),address:String(previewAddress||''),city:String(previewCity||''),state:String(previewState||''),postal_code:String(previewPostalCode||''),
@@ -62,6 +63,8 @@ export default function LocationDetailScreen(){
   const [showEvidence,setShowEvidence]=useState(false),[submittedReviewId,setSubmittedReviewId]=useState<string|null>(null),[showMoreActions,setShowMoreActions]=useState(false),[showPlaceDetails,setShowPlaceDetails]=useState(false),[showAmenities,setShowAmenities]=useState(false),[showContribution,setShowContribution]=useState(reviewMode||missionMode),[showAllReviews,setShowAllReviews]=useState(false);
   const [facilities,setFacilities]=useState<RestroomFacility[]>([]),[selectedFacilityId,setSelectedFacilityId]=useState('');
   const [phraseBusy,setPhraseBusy]=useState(false);
+  const [savedLocation,setSavedLocation]=useState(false);
+  const autoSaveAttemptedRef=useRef('');
   const [rewardCapabilities,setRewardCapabilities]=useState<any>({});
   const [placeBrief,setPlaceBrief]=useState('');
   const reviewListRef=useRef<FlatList<any>>(null),reviewScrollDone=useRef(false);
@@ -133,7 +136,18 @@ export default function LocationDetailScreen(){
   useEffect(()=>{refresh();refreshMission();getRewardCapabilities().then(setRewardCapabilities).catch(()=>setRewardCapabilities({}))},[locationId]);
   useEffect(()=>{if(reviewMode)captureConsumerCoreLoopEvent('review_started',locationId,{source:'location_detail'})},[reviewMode,locationId]);
   useEffect(()=>{if(reviewMode||missionMode||checkInId)setShowContribution(true)},[reviewMode,missionMode,checkInId]);
-  useEffect(()=>{let active=true;getKleenestSupabaseClient().auth.getUser().then(({data})=>{if(active)setCurrentUserId(String(data?.user?.id||''))}).catch(()=>{});return()=>{active=false}},[]);
+  useEffect(()=>{let active=true;getKleenestSupabaseClient().auth.getUser().then(({data})=>{if(active)setCurrentUserId(data?.user&&!data.user.is_anonymous?String(data.user.id):'')}).catch(()=>{});return()=>{active=false}},[]);
+  useEffect(()=>{autoSaveAttemptedRef.current='';setSavedLocation(false)},[locationId]);
+  useEffect(()=>{
+    if(saveAfterJoin!=='1'||!locationId||!currentUserId||autoSaveAttemptedRef.current===locationId)return;
+    autoSaveAttemptedRef.current=locationId;
+    void ensureLocationSaved('Saved to your Kleenest account! Find it under Saved bathrooms.').then(()=>{
+      router.setParams({saveAfterJoin:undefined} as any);
+    }).catch(error=>{
+      setMessage(friendlyActionError(error,'Could not save this restroom. Use Save to retry.'));
+      autoSaveAttemptedRef.current='';
+    });
+  },[saveAfterJoin,locationId,currentUserId]);
   useEffect(()=>{listAmenityCatalog().then(setAmenities).catch(error=>setMessage(friendlyActionError(error,'Amenity catalog could not be loaded.')))},[]);
   useEffect(()=>{let active=true;reviewScrollDone.current=false;setDraftHydrated(false);setStars('');setCleanliness('');setComment('');setAmenityDraft({});setReviewPhotos([]);setShowEvidence(false);setSubmittedReviewId(null);readContributionDraft(locationId).then(draft=>{if(!active||!draft)return;setStars(draft.stars);setCleanliness(draft.cleanliness);setComment(draft.comment);setAmenityDraft(draft.amenityDraft);setReviewPhotos(draft.reviewPhotos);if(Object.values(draft.amenityDraft||{}).some((item:any)=>item?.selected))setShowEvidence(true);setMessage('Restored your unfinished verified contribution draft.')}).finally(()=>{if(active)setDraftHydrated(true)});return()=>{active=false}},[locationId]);
   useEffect(()=>{if(!draftHydrated||!locationId||submitting)return;const timer=setTimeout(()=>{void writeContributionDraft({locationId,stars,cleanliness,comment,amenityDraft,reviewPhotos})},300);return()=>clearTimeout(timer)},[locationId,draftHydrated,stars,cleanliness,comment,amenityDraft,reviewPhotos,submitting]);
@@ -178,7 +192,26 @@ export default function LocationDetailScreen(){
   },[photoReviewId,reviews,currentUserId]);
   function updateAmenity(id:string,patch:Partial<AmenityDraft>){setAmenityDraft(current=>({...current,[id]:{selected:current[id]?.selected||false,quantity:current[id]?.quantity||'',sentiment:current[id]?.sentiment||'good',...patch}}));}
   async function navigate(){if(!place)return;captureConsumerCoreLoopEvent('navigation_started',locationId,{source:'location_detail'});try{await Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${place.latitude},${place.longitude}`)}&travelmode=driving`)}catch{setMessage('Directions could not be opened. This restroom is still here when you return.')}}
-  async function save(){try{await toggleMobileFavorite(locationId);setMessage('Saved state updated.')}catch(error:any){setMessage(friendlyActionError(error,'Saved state could not be changed.'))}}
+  async function ensureLocationSaved(successMessage='Saved! Find this restroom under Saved bathrooms.'){
+    const favorites=await listMobileFavoriteLocations();
+    const alreadySaved=favorites.some((item:any)=>String(item?.location_id||item?.place_id||item?.id||'')===locationId);
+    if(!alreadySaved)await toggleMobileFavorite(locationId);
+    setSavedLocation(true);
+    setMessage(alreadySaved?'This restroom is already in Saved bathrooms.':successMessage);
+  }
+  async function save(){
+    if(!locationId||savedLocation)return;
+    try{
+      const {data,error}=await getKleenestSupabaseClient().auth.getUser();
+      if(error)throw error;
+      if(!data.user||data.user.is_anonymous){
+        captureAcquisitionEvent('signup_intent',{metadata:{source:'location_save',method:'save_restroom'}});
+        router.push({pathname:'/signup',params:{mode:'signup',returnTo:`/location/${encodeURIComponent(locationId)}?saveAfterJoin=1`}} as any);
+        return;
+      }
+      await ensureLocationSaved();
+    }catch(error:any){setMessage(friendlyActionError(error,'This restroom could not be saved. Try again.'))}
+  }
   async function helpful(reviewId:string){try{const liked=await toggleHelpfulReview(reviewId);await refresh();setMessage(liked?'Marked helpful. Useful reviews can earn contributor badges.':'Helpful vote removed.')}catch(error:any){setMessage(friendlyActionError(error,'Helpful vote could not be updated.'))}}
   async function identifyFacility(facilityType:RestroomFacilityType){
     try{
@@ -306,7 +339,7 @@ export default function LocationDetailScreen(){
       <View style={[s.primaryJourney,{backgroundColor:theme.accent}]}><Pressable accessibilityRole="button" accessibilityLabel={`Start directions to ${place.name||'this location'}`} style={[s.directionAction,{backgroundColor:theme.surface,borderColor:theme.line}]} onPress={navigate}><Text style={s.actionKicker}>GO NOW</Text><Text style={[s.directionTitle,{color:theme.ink}]}>Start directions →</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={checkInId?'Visit verified':visitAvailable?'Verify visit now':'Check in here'} accessibilityState={{disabled:Boolean(checkInId)}} style={[s.verifyAction,{backgroundColor:checkInId?theme.accentSoft:theme.surface,borderColor:theme.line,borderWidth:1},checkInId&&{borderColor:theme.accent}]} disabled={Boolean(checkInId)} onPress={checkIn}><Text style={[s.actionKickerDark,{color:theme.muted}]}>{checkInId?'VISIT VERIFIED':visitAvailable?'VISIT DETECTED':'CHECK IN HERE'}</Text><Text style={[s.verifyTitle,{color:theme.ink}]}>{checkInId?'Checked in ✓':visitAvailable?(visitInside?'Verify visit now':`Verify within ${visitExpiry||'time window'}`):'Check in now'}</Text></Pressable></View>
       {checkInId&&checkInAnimation?<View style={{borderWidth:1,borderColor:checkInAnimation==='guardian-lock'?'#e7c45d':theme.accent,backgroundColor:theme.surfaceRaised,borderRadius:14,padding:10,marginTop:8}}><Text style={{color:checkInAnimation==='guardian-lock'?'#e7c45d':theme.accent,fontSize:9,fontWeight:'900',letterSpacing:1}}>{checkInAnimation==='guardian-lock'?'◆ GUARDIAN LOCK':'◌ SIGNAL RIPPLE'}</Text><Text style={{color:theme.ink,fontSize:12,fontWeight:'800',marginTop:3}}>{checkInAnimation==='guardian-lock'?'Your verified check-in is marked with your Guardian verification effect.':'Your verified check-in carries your earned Signal Ripple effect.'}</Text></View>:null}
       <View style={s.utilityActions}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Save location" style={[s.utility,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={save}><Text style={[s.utilityText,{color:theme.accent}]}>♡ Save</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={savedLocation?"Restroom saved":"Save this restroom for a future visit"} accessibilityState={{disabled:savedLocation}} disabled={savedLocation} style={[s.utility,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={save}><Text style={[s.utilityText,{color:theme.accent}]}>{savedLocation?"✓ Saved":"♡ Save for next time"}</Text></Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel={showMoreActions?'Hide more location actions':'Show more location actions'} style={[s.utility,{backgroundColor:theme.accentSoft,borderColor:theme.line}]} onPress={()=>setShowMoreActions(value=>!value)}><Text style={[s.utilityText,{color:theme.accent}]}>{showMoreActions?'− Fewer actions':'••• More'}</Text></Pressable>
       </View>
       {showMoreActions?<View style={s.utilityActions}>
