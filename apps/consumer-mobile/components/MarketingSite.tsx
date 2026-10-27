@@ -1,1 +1,1 @@
-export { MarketingHome, ForYouMarketingPage, ForBusinessMarketingPage, TrustMarketingPage } from './MarketingSitePro';
+export { MarketingHome, MarketingAboutPage, ForYouMarketingPage, ForBusinessMarketingPage, TrustMarketingPage } from './MarketingSitePro';
