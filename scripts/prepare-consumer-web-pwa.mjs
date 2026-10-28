@@ -5,6 +5,7 @@ const dist=path.resolve('apps/consumer-mobile/dist');
 const indexPath=path.resolve('apps/consumer-mobile/dist/index.html');
 const manifestSource=path.resolve('public/manifest.webmanifest');
 const workerSource=path.resolve('public/sw.js');
+const consentSource=path.resolve('public/kleenest-ad-consent.js');
 const iconSource=path.resolve('apps/consumer-mobile/assets/app-icon.png');
 const icon512Source=path.resolve('public/app-icon-512.svg');
 const marketingSource=path.resolve('public/marketing');
@@ -19,7 +20,7 @@ const pagesBasePath=normalizePagesBasePath(process.env.EXPO_PUBLIC_PAGES_BASE_PA
 const pagesScope=`${pagesBasePath}/`||'/';
 const pagesAsset=name=>`${pagesBasePath}/${name}`;
 
-for(const required of [indexPath,manifestSource,workerSource,iconSource,icon512Source,marketingSource]){
+for(const required of [indexPath,manifestSource,workerSource,consentSource,iconSource,icon512Source,marketingSource]){
   if(!fs.existsSync(required))throw new Error(`Consumer PWA input missing: ${required}`);
 }
 
@@ -34,6 +35,7 @@ manifest.shortcuts=(manifest.shortcuts||[]).map(shortcut=>{
 });
 fs.writeFileSync(path.join(dist,'manifest.webmanifest'),JSON.stringify(manifest,null,2)+'\n');
 fs.copyFileSync(workerSource,path.join(dist,'sw.js'));
+fs.copyFileSync(consentSource,path.join(dist,'kleenest-ad-consent.js'));
 fs.copyFileSync(iconSource,path.join(dist,'app-icon.png'));
 fs.copyFileSync(icon512Source,path.join(dist,'app-icon-512.svg'));
 fs.cpSync(marketingSource,path.join(dist,'marketing'),{recursive:true});
@@ -65,8 +67,9 @@ function addAdsenseLoader(file){
   page=page.replace(/<!-- kleenest-consumer-adsense-head -->[\s\S]*?<!-- kleenest-consumer-adsense-head:end -->\s*/g,'');
   page=page.replace(/<script\b(?=[^>]*src=[\"'][^\"']*adsbygoogle\.js[^\"']*[\"'])[^>]*>\s*<\/script>\s*/gi,'');
   if(!page.includes('</head>'))throw new Error('Consumer HTML export is missing </head>: '+file);
-  const adsenseHead='<!-- kleenest-consumer-adsense-head -->\n'+
-    '<script async src=\"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+adsenseClient+'\" crossorigin=\"anonymous\"></script>\n'+
+  // Do not request Google's ad code until the visitor opts in.
+  const adsenseHead='<!-- kleenest-consumer-adsense-head -->\\n'+
+    '<script defer src="'+pagesAsset('kleenest-ad-consent.js')+'" data-adsense-client="'+adsenseClient+'"></script>\\n'+
     '<!-- kleenest-consumer-adsense-head:end -->';
   page=page.replace('</head>',adsenseHead+'\n</head>');
   fs.writeFileSync(file,page);
