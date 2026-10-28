@@ -108,6 +108,23 @@ function applySeo(file,page){
   else html=html.replace(/<head([^>]*)>/i,`<head$1><title>${escapeAttr(page.title)}</title>`);
   if(!/<\/head>/i.test(html))throw new Error(`SEO target lacks </head>: ${file}`);
   html=html.replace(/<\/head>/i,`${seoBlock(page)}\n</head>`);
+  // Export semantic headings in initial HTML so crawlers and assistive technology
+  // have a meaningful document outline before Expo hydration.
+  const marketingHeadings={
+    '/':'Find Clean Restrooms Near You',
+    '/about/':'About Kleenest and Its Founder',
+    '/for-you/':'Find Restrooms With Kleenest',
+    '/for-business/':'Kleenest for Businesses',
+    '/trust/':'How Kleenest Trust and Freshness Work',
+    '/install/':'Install Kleenest',
+    '/contact/':'Contact Kleenest',
+    '/support/':'Kleenest Support'
+  };
+  html=html.replace(/<header id="kleenest-seo-heading"[\\s\\S]*?<\\/header>\\s*/g,'');
+  if(marketingHeadings[page.route]&&!/<h1\\b/i.test(html)){
+    const heading='<header id="kleenest-seo-heading" style="background:#f3f8f4;color:#173d2b;padding:12px 20px;text-align:center"><h1 style="font-size:1.25rem;line-height:1.4;margin:0">'+escapeAttr(marketingHeadings[page.route])+'</h1></header>';
+    html=html.replace(/<body([^>]*)>/i,'<body$1>'+heading);
+  }
   // DailyLaunch checks the original HTML, not content injected by client-side JavaScript.
   if(page.route==='/'){
     const badge='<footer id="dailylaunch-badge" style="background:#0A291C;padding:20px;text-align:center"><a href="https://dailylaunch.io/" target="_blank" rel="noopener"><img src="https://dailylaunch.io/badge/light.svg?v=a6cc2b9b" alt="Featured on DailyLaunch" width="200" height="54" loading="lazy" /></a></footer>';
