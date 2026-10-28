@@ -87,7 +87,7 @@ const metroOnlyBracesLineage=
 const deepmergeVersion=String(lock.packages['node_modules/deepmerge']?.version||'');
 const reverseDeepmergeDependents=Object.entries(lock.packages)
   .filter(([,meta])=>meta&&typeof meta==='object'&&meta.dependencies&&Object.prototype.hasOwnProperty.call(meta.dependencies,'deepmerge'))
-  .map(([path])=>path.replace(/^node_modules\\//,''));
+  .map(([path])=>path.startsWith('node_modules/')?path.slice('node_modules/'.length):path);
 const expoOnlyDeepmergeLineage=deepmergeVersion==='4.3.1' &&
   reverseDeepmergeDependents.length===1 &&
   reverseDeepmergeDependents[0]==='@expo/config' &&
