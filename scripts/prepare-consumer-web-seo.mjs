@@ -120,8 +120,8 @@ function applySeo(file,page){
     '/contact/':'Contact Kleenest',
     '/support/':'Kleenest Support'
   };
-  html=html.replace(/<header id="kleenest-seo-heading"[\\s\\S]*?<\\/header>\\s*/g,'');
-  if(marketingHeadings[page.route]&&!/<h1\\b/i.test(html)){
+  html=html.replace(/<header id="kleenest-seo-heading".*?<\/header> */g,'');
+  if(marketingHeadings[page.route]&&!/<h1(?:\s|>)/i.test(html)){
     const heading='<header id="kleenest-seo-heading" style="background:#f3f8f4;color:#173d2b;padding:12px 20px;text-align:center"><h1 style="font-size:1.25rem;line-height:1.4;margin:0">'+escapeAttr(marketingHeadings[page.route])+'</h1></header>';
     html=html.replace(/<body([^>]*)>/i,'<body$1>'+heading);
   }
