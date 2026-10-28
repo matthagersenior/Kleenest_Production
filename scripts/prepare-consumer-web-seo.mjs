@@ -115,6 +115,13 @@ function applySeo(file,page){
     if(!/<\/body>/i.test(html))throw new Error('DailyLaunch badge target lacks </body>');
     html=html.replace(/<\/body>/i,`${badge}\n</body>`);
   }
+  if(page.route==='/'){
+    // HTML-visible navigation for crawlers that do not execute the Expo client.
+    const links=[['/about/','About Kleenest'],['/for-you/','Find restrooms'],['/for-business/','For businesses'],['/trust/','How trust works'],['/install/','Install Kleenest'],['/contact/','Contact Kleenest']];
+    const nav='<nav aria-label="Kleenest public pages" id="kleenest-public-links" style="padding:20px;background:#f3f8f4;text-align:center">'+links.map(([href,label])=>'<a style="display:inline-block;margin:6px;color:#174b35" href="'+href+'">'+label+'</a>').join('')+'</nav>';
+    html=html.replace(/<nav aria-label="Kleenest public pages" id="kleenest-public-links"[\\s\\S]*?<\\/nav>/g,'');
+    html=html.replace(/<\\/body>/i,nav+'\\n</body>');
+  }
   fs.writeFileSync(file,html);
 }
 
@@ -124,6 +131,33 @@ if(!fs.existsSync(shareImageFile)||fs.statSync(shareImageFile).size<100){
 }
 
 for(const page of pages)applySeo(path.join(dist,page.file),page);
+
+// Expo exports can omit HTML files for client-side routes. Materialize known
+// public app routes so direct navigation does not return HTTP 404.
+const appRoutes=['explore','qr','home','games'];
+const appShell=fs.readFileSync(path.join(dist,'index.html'),'utf8');
+for(const route of appRoutes){
+  const target=path.join(dist,route,'index.html');
+  if(!fs.existsSync(target)){
+    fs.mkdirSync(path.dirname(target),{recursive:true});
+    fs.writeFileSync(target,appShell);
+  }
+}
+
+// Cloudflare Pages reads _headers from the deployed output. Avoid a restrictive
+// CSP until map, auth, and advertising integrations have been audited.
+fs.writeFileSync(path.join(dist,'_headers'),`/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(self)
+  Strict-Transport-Security: max-age=31536000
+/_expo/static/*
+  Cache-Control: public, max-age=31536000, immutable
+/app-icon.png
+  Cache-Control: public, max-age=86400
+`);
+
 
 const sitemap=`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
