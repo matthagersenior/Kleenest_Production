@@ -82,6 +82,16 @@ const metroOnlyBracesLineage=
     name==='metro-file-map' ||
     name==='metro-config/node_modules/metro-file-map'
   );
+// Narrow, fail-closed exception for an Expo CLI-only dependency with no
+// published fix. Any version, lineage, or advisory change fails the gate.
+const deepmergeVersion=String(lock.packages['node_modules/deepmerge']?.version||'');
+const reverseDeepmergeDependents=Object.entries(lock.packages)
+  .filter(([,meta])=>meta&&typeof meta==='object'&&meta.dependencies&&Object.prototype.hasOwnProperty.call(meta.dependencies,'deepmerge'))
+  .map(([path])=>path.replace(/^node_modules\\//,''));
+const expoOnlyDeepmergeLineage=deepmergeVersion==='4.3.1' &&
+  reverseDeepmergeDependents.length===1 &&
+  reverseDeepmergeDependents[0]==='@expo/config' &&
+  !Object.values(lock.packages).some(meta=>meta?.name && !String(meta.name).startsWith('@expo/') && meta.dependencies?.deepmerge);
 const temporaryAdvisoryWaiver=finding=>(
   finding?.name==='node-forge' &&
   String(finding?.url||'').includes('GHSA-86w9-cpqp-85rv') &&
@@ -90,6 +100,10 @@ const temporaryAdvisoryWaiver=finding=>(
   finding?.name==='braces' &&
   String(finding?.url||'').includes('GHSA-vfj7-8cjw-p6xm') &&
   metroOnlyBracesLineage
+) || (
+  finding?.name==='deepmerge' &&
+  String(finding?.url||'').includes('GHSA-gcqx-w48m-w2h4') &&
+  expoOnlyDeepmergeLineage
 );
 if(result===null){
   console.warn(`npm bulk advisory endpoint unavailable after retries (${lastError}); falling back to OSV.`);
@@ -154,6 +168,9 @@ if(temporarilyWaivedFindings.length){
   }
   if(temporarilyWaivedFindings.some(finding=>finding.name==='braces')){
     console.warn('Temporary security exception: GHSA-vfj7-8cjw-p6xm currently has no patched braces npm release. The locked copy is accepted only while it remains braces@3.0.3 and is reachable exclusively through Metro/Expo file-map build tooling.');
+  }
+  if(temporarilyWaivedFindings.some(finding=>finding.name==='deepmerge')){
+    console.warn('Temporary security exception: GHSA-gcqx-w48m-w2h4 has no patched deepmerge release. Only locked deepmerge@4.3.1 required solely by Expo configuration tooling is accepted; any other dependency lineage or advisory remains blocked.');
   }
   for(const finding of temporarilyWaivedFindings)console.warn(`- [${finding.severity}] ${finding.name}: ${finding.title}${finding.url?` — ${finding.url}`:''}`);
 }
