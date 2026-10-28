@@ -139,9 +139,12 @@ const appRoutes=['explore','qr','home','games'];
 const appShell=fs.readFileSync(path.join(dist,'index.html'),'utf8');
 for(const route of appRoutes){
   const target=path.join(dist,route,'index.html');
-  if(!fs.existsSync(target)){
-    fs.mkdirSync(path.dirname(target),{recursive:true});
-    fs.writeFileSync(target,appShell);
+  fs.mkdirSync(path.dirname(target),{recursive:true});
+  // Exclusive creation avoids a check-then-write race and preserves Expo exports.
+  try{
+    fs.writeFileSync(target,appShell,{flag:'wx'});
+  }catch(error){
+    if(error?.code!=='EEXIST')throw error;
   }
 }
 
