@@ -119,8 +119,8 @@ function applySeo(file,page){
     // HTML-visible navigation for crawlers that do not execute the Expo client.
     const links=[['/about/','About Kleenest'],['/for-you/','Find restrooms'],['/for-business/','For businesses'],['/trust/','How trust works'],['/install/','Install Kleenest'],['/contact/','Contact Kleenest']];
     const nav='<nav aria-label="Kleenest public pages" id="kleenest-public-links" style="padding:20px;background:#f3f8f4;text-align:center">'+links.map(([href,label])=>'<a style="display:inline-block;margin:6px;color:#174b35" href="'+href+'">'+label+'</a>').join('')+'</nav>';
-    html=html.replace(/<nav aria-label="Kleenest public pages" id="kleenest-public-links"[\\s\\S]*?<\\/nav>/g,'');
-    html=html.replace(/<\\/body>/i,nav+'\\n</body>');
+    html=html.replace(/<nav aria-label="Kleenest public pages" id="kleenest-public-links"[\s\S]*?<\/nav>/g,'');
+    html=html.replace(/<\/body>/i,nav+'\n</body>');
   }
   fs.writeFileSync(file,html);
 }
