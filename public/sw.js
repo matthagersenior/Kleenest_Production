@@ -1,4 +1,4 @@
-const CACHE='kleenest-shell-v4';
+const CACHE='kleenest-shell-v5';
 const SCOPE=new URL(self.registration.scope).pathname.replace(/\/?$/, '/');
 const SHELL=[SCOPE,`${SCOPE}manifest.webmanifest`,`${SCOPE}app-icon.png`,`${SCOPE}app-icon-512.svg`];
 
@@ -17,6 +17,15 @@ self.addEventListener('activate',event=>{
 const isVersionedAsset=url =>
   /\.(?:js|css|wasm|map)(?:$|\?)/i.test(url.pathname+url.search) ||
   url.pathname.includes('/_expo/static/');
+
+async function cacheFirstVersioned(request){
+  const cache=await caches.open(CACHE);
+  const cached=await cache.match(request);
+  if(cached)return cached;
+  const response=await fetch(request);
+  if(response.ok)await cache.put(request,response.clone());
+  return response;
+}
 
 async function networkFirst(request){
   const cache=await caches.open(CACHE);
@@ -44,7 +53,7 @@ self.addEventListener('fetch',event=>{
   }
 
   if(isVersionedAsset(url)){
-    event.respondWith(networkFirst(event.request));
+    event.respondWith(cacheFirstVersioned(event.request));
     return;
   }
 
