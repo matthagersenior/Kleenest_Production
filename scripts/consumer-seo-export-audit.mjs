@@ -16,6 +16,9 @@ for(const route of ['about','for-you','for-business','trust','install','contact'
   if(!home.includes('href="/'+route+'/"'))throw new Error('Missing crawlable homepage link: '+route);
   if(!read(route+'/index.html').includes('https://kleenest.us/'+route+'/'))throw new Error('Missing canonical metadata: '+route);
 }
+requireFile('kleenest-ad-consent.js');
+if(!home.includes('kleenest-ad-consent.js'))throw new Error('Consent controller not loaded on homepage');
+if(home.includes('pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'))throw new Error('AdSense must not load before visitor choice');
 const sitemap=read('sitemap.xml');
 for(const route of ['about','for-you','for-business','trust','install','contact']){
   if(!sitemap.includes('<loc>https://kleenest.us/'+route+'/</loc>'))throw new Error('Missing sitemap URL: '+route);
