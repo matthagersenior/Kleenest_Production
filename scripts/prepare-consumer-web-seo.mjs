@@ -117,8 +117,9 @@ function applySeo(file,page){
   }
   if(page.route==='/'){
     // HTML-visible navigation for crawlers that do not execute the Expo client.
-    const links=[['/about/','About Kleenest'],['/for-you/','Find restrooms'],['/for-business/','For businesses'],['/trust/','How trust works'],['/install/','Install Kleenest'],['/contact/','Contact Kleenest']];
-    const nav='<nav aria-label="Kleenest public pages" id="kleenest-public-links" style="padding:20px;background:#f3f8f4;text-align:center">'+links.map(([href,label])=>'<a style="display:inline-block;margin:6px;color:#174b35" href="'+href+'">'+label+'</a>').join('')+'</nav>';
+    const nav=`<nav aria-label="Kleenest public pages" id="kleenest-public-links" style="padding:20px;background:#f3f8f4;text-align:center">
+<a href="/about/">About Kleenest</a> · <a href="/for-you/">Find restrooms</a> · <a href="/for-business/">For businesses</a> · <a href="/trust/">How trust works</a> · <a href="/install/">Install Kleenest</a> · <a href="/contact/">Contact Kleenest</a>
+</nav>`;
     html=html.replace(/<nav aria-label="Kleenest public pages" id="kleenest-public-links"[\s\S]*?<\/nav>/g,'');
     html=html.replace(/<\/body>/i,nav+'\n</body>');
   }
