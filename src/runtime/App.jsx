@@ -1,9 +1,9 @@
 import { lazy, Suspense } from 'react';
 import { NavLink, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
-import ExplorePage from './ExplorePage.jsx';
-import ProfilePage from './ProfilePage.jsx';
-import RoutePage from './RoutePage.jsx';
 
+const ExplorePage=lazy(()=>import('./ExplorePage.jsx'));
+const ProfilePage=lazy(()=>import('./ProfilePage.jsx'));
+const RoutePage=lazy(()=>import('./RoutePage.jsx'));
 const CreatorStudioPage=lazy(()=>import('./CreatorStudioPage.jsx'));
 const CreatorMissionPage=lazy(()=>import('./CreatorStudioPage.jsx').then(module=>({default:module.CreatorMissionPage})));
 const ActivityPage=lazy(()=>import('./ActivityPage.jsx'));
