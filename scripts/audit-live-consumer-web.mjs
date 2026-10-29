@@ -40,7 +40,7 @@ for(const route of ['/','/about/','/for-you/','/for-business/','/trust/','/insta
       record('Live crawlable navigation',hasPublicLinks?'present':'MISSING');
       if(!hasSeoMarker||!hasPublicLinks)failed=true;
     }
-    const hrefs=[...html.matchAll(/\\bhref\\s*=\\s*["']([^"']+)["']/gi)].map(match=>match[1]);
+    const hrefs=[...html.matchAll(/\bhref\s*=\s*["']([^"']+)["']/gi)].map(match=>match[1]);
     for(const href of hrefs){
       let target;
       try{target=new URL(href,origin+route);}catch{continue;}
