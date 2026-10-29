@@ -33,6 +33,13 @@ for(const route of ['/','/about/','/for-you/','/for-business/','/trust/','/insta
     const response=await fetch(origin+route,{signal:AbortSignal.timeout(20000)});
     if(!response.ok){record('Public route '+route,'HTTP '+response.status);failed=true;continue;}
     const html=await response.text();
+    if(route==='/'){
+      const hasSeoMarker=html.includes('kleenest-public-seo:start');
+      const hasPublicLinks=html.includes('id="kleenest-public-links"');
+      record('Live SEO export marker',hasSeoMarker?'present':'MISSING');
+      record('Live crawlable navigation',hasPublicLinks?'present':'MISSING');
+      if(!hasSeoMarker||!hasPublicLinks)failed=true;
+    }
     const hrefs=[...html.matchAll(/\\bhref\\s*=\\s*["']([^"']+)["']/gi)].map(match=>match[1]);
     for(const href of hrefs){
       let target;
@@ -53,6 +60,7 @@ for(const route of ['/','/about/','/for-you/','/for-business/','/trust/','/insta
   }catch(error){record('Public link crawl '+route,'ERROR '+error.message);failed=true;}
 }
 record('Public internal links checked',checked.size);
+if(checked.size===0){record('Link crawl integrity','FAIL: no links discovered');failed=true;}
 record('Broken public internal links',linkFailures.length);
 for(const item of linkFailures.slice(0,30))record('Broken link '+item.from+' → '+item.to,item.status);
 if(linkFailures.length)failed=true;
