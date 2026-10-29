@@ -118,11 +118,16 @@ function applySeo(file,page){
     '/trust/':'How Kleenest Trust and Freshness Work',
     '/install/':'Install Kleenest',
     '/contact/':'Contact Kleenest',
-    '/support/':'Kleenest Support'
+    '/support/':'Kleenest Support',
+    '/privacy/':'Kleenest Privacy Policy',
+    '/terms/':'Kleenest Terms of Use',
+    '/community-guidelines/':'Kleenest Community Guidelines',
+    '/account-deletion/':'Delete Your Kleenest Account',
+    '/developer/':'Kleenest Developer Platform'
   };
   html=html.replace(/<header id="kleenest-seo-heading".*?<\/header> */g,'');
   if(marketingHeadings[page.route]&&!/<h1(?:\s|>)/i.test(html)){
-    const heading='<header id="kleenest-seo-heading" style="background:#f3f8f4;color:#173d2b;padding:12px 20px;text-align:center"><h1 style="font-size:1.25rem;line-height:1.4;margin:0">'+escapeAttr(marketingHeadings[page.route])+'</h1></header>';
+    const heading='<header id="kleenest-seo-heading" style="background:#f3f8f4;color:#173d2b;padding:12px 20px;text-align:center"><h1 style="font-size:1.25rem;line-height:1.4;margin:0">'+escapeAttr(marketingHeadings[page.route])+'</h1><p style="max-width:780px;margin:8px auto 0;font-size:0.95rem;line-height:1.5">'+escapeAttr(page.description)+'</p></header>';
     html=html.replace(/<body([^>]*)>/i,'<body$1>'+heading);
   }
   // DailyLaunch checks the original HTML, not content injected by client-side JavaScript.
@@ -135,7 +140,7 @@ function applySeo(file,page){
   if(page.route==='/'){
     // HTML-visible navigation for crawlers that do not execute the Expo client.
     const nav=`<nav aria-label="Kleenest public pages" id="kleenest-public-links" style="padding:20px;background:#f3f8f4;text-align:center">
-<a href="/about/">About Kleenest</a> · <a href="/for-you/">Find restrooms</a> · <a href="/for-business/">For businesses</a> · <a href="/trust/">How trust works</a> · <a href="/install/">Install Kleenest</a> · <a href="/contact/">Contact Kleenest</a>
+<a href="/about/">About Kleenest</a> · <a href="/for-you/">Find restrooms</a> · <a href="/for-business/">For businesses</a> · <a href="/trust/">How trust works</a> · <a href="/install/">Install Kleenest</a> · <a href="/contact/">Contact Kleenest</a> · <a href="/support/">Support</a> · <a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · <a href="/community-guidelines/">Community guidelines</a> · <a href="/account-deletion/">Account deletion</a> · <a href="/developer/">Developer</a>
 </nav>`;
     html=html.replace(/<nav aria-label="Kleenest public pages" id="kleenest-public-links"[\s\S]*?<\/nav>/g,'');
     html=html.replace(/<\/body>/i,nav+'\n</body>');
