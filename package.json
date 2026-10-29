@@ -37,7 +37,7 @@
   "overrides": {
     "brace-expansion": "5.0.12",
     "query-string": {
-      "decode-uri-component": "0.5.0"
+      "decode-uri-component": "0.5.1"
     },
     "react": "19.2.3",
     "react-dom": "19.2.3",
