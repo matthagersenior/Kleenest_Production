@@ -6,6 +6,8 @@ const BASE_PATH=new URL(BASE).pathname.replace(/\/$/,'');
 const routePath=(route='')=>`${BASE_PATH}/${route}`.replace(/\/+/g,'/');
 
 test('Installation Center click-through and release assets',async({page,request,browser})=>{
+  // This is an end-to-end live-site journey plus multiple asset checks, not a 30-second unit test.
+  test.setTimeout(120_000);
   await page.goto(BASE,{waitUntil:'domcontentloaded'});
   await expect(page.getByText('Find clean bathrooms you can actually trust.')).toBeVisible({timeout:30000});
   await expect(page.getByText('FOR YOU',{exact:true})).toBeVisible();
@@ -106,7 +108,7 @@ test('Installation Center click-through and release assets',async({page,request,
   await expect(page.locator('body')).toContainText(/Find a place you can count on|Nearby options|Address, school, workplace, city or brand|Search this area/i,{timeout:30000});
 
   for(const route of ['install/','for-you/','for-business/','trust/','business/','fleet/']){
-    const direct=await request.get(BASE+route,{failOnStatusCode:false});
+    const direct=await request.get(BASE+route,{failOnStatusCode:false,timeout:15000});
     expect(direct.status()).toBe(200);
   }
 
