@@ -180,6 +180,10 @@ fs.writeFileSync(path.join(dist,'_headers'),`/*
   Strict-Transport-Security: max-age=31536000
 /_expo/static/*
   Cache-Control: public, max-age=31536000, immutable
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+/static/*
+  Cache-Control: public, max-age=31536000, immutable
 /app-icon.png
   Cache-Control: public, max-age=86400
 `);

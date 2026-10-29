@@ -12,7 +12,9 @@ for(const route of ['/','/explore/','/qr/','/home/','/games/']){
     if(!response.ok)failed=true;
     if(route==='/'){
       for(const header of ['strict-transport-security','content-security-policy','x-frame-options','x-content-type-options','referrer-policy','permissions-policy']){
-        record('Header '+header,response.headers.get(header)||'MISSING');
+        const value=response.headers.get(header);
+        record('Header '+header,value||'MISSING');
+        if(!value&&header!=='content-security-policy')failed=true;
       }
       record('HTML cache-control',response.headers.get('cache-control')||'MISSING');
       record('Content encoding',response.headers.get('content-encoding')||'not indicated');
@@ -29,7 +31,7 @@ const checked=new Map();
 for(const route of ['/','/about/','/for-you/','/for-business/','/trust/','/install/','/contact/']){
   try{
     const response=await fetch(origin+route,{signal:AbortSignal.timeout(20000)});
-    if(!response.ok){record('Public route '+route,'HTTP '+response.status);if(response.status===404)failed=true;continue;}
+    if(!response.ok){record('Public route '+route,'HTTP '+response.status);failed=true;continue;}
     const html=await response.text();
     const hrefs=[...html.matchAll(/\\bhref\\s*=\\s*["']([^"']+)["']/gi)].map(match=>match[1]);
     for(const href of hrefs){
@@ -48,7 +50,7 @@ for(const route of ['/','/about/','/for-you/','/for-business/','/trust/','/insta
       const status=checked.get(key);
       if(status===404||status===410||typeof status==='number'&&status>=500)linkFailures.push({from:route,to:target.pathname,status});
     }
-  }catch(error){record('Public link crawl '+route,'ERROR '+error.message);}
+  }catch(error){record('Public link crawl '+route,'ERROR '+error.message);failed=true;}
 }
 record('Public internal links checked',checked.size);
 record('Broken public internal links',linkFailures.length);
