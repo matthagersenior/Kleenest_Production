@@ -22,6 +22,39 @@ for(const route of ['/','/explore/','/qr/','/home/','/games/']){
     failed=true;
   }
 }
+// Check links actually rendered in the initial public HTML. Keep a precise
+// source-to-destination ledger so third-party SEO reports can be reproduced.
+const linkFailures=[];
+const checked=new Map();
+for(const route of ['/','/about/','/for-you/','/for-business/','/trust/','/install/','/contact/']){
+  try{
+    const response=await fetch(origin+route,{signal:AbortSignal.timeout(20000)});
+    if(!response.ok){record('Public route '+route,'HTTP '+response.status);if(response.status===404)failed=true;continue;}
+    const html=await response.text();
+    const hrefs=[...html.matchAll(/\\bhref\\s*=\\s*["']([^"']+)["']/gi)].map(match=>match[1]);
+    for(const href of hrefs){
+      let target;
+      try{target=new URL(href,origin+route);}catch{continue;}
+      if(target.origin!==origin||!['http:','https:'].includes(target.protocol))continue;
+      if(target.pathname.startsWith('/_expo/')||target.pathname.startsWith('/assets/'))continue;
+      target.hash='';
+      const key=target.toString();
+      if(!checked.has(key)){
+        try{
+          const res=await fetch(key,{method:'GET',redirect:'follow',signal:AbortSignal.timeout(12000)});
+          checked.set(key,res.status);
+        }catch(error){checked.set(key,'ERROR '+error.message);}
+      }
+      const status=checked.get(key);
+      if(status===404||status===410||typeof status==='number'&&status>=500)linkFailures.push({from:route,to:target.pathname,status});
+    }
+  }catch(error){record('Public link crawl '+route,'ERROR '+error.message);}
+}
+record('Public internal links checked',checked.size);
+record('Broken public internal links',linkFailures.length);
+for(const item of linkFailures.slice(0,30))record('Broken link '+item.from+' → '+item.to,item.status);
+if(linkFailures.length)failed=true;
+
 try{
   const url='https://www.googleapis.com/pagespeedonline/v5/runPagespeed?strategy=mobile&category=performance&url='+encodeURIComponent(origin+'/');
   const response=await fetch(url,{signal:AbortSignal.timeout(90000)});
