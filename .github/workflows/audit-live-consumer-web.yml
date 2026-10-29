@@ -1,5 +1,12 @@
 name: Audit live Kleenest security and mobile performance
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - 'scripts/prepare-consumer-web-seo.mjs'
+      - 'scripts/audit-live-consumer-web.mjs'
+      - '.github/workflows/audit-live-consumer-web.yml'
   workflow_dispatch:
   schedule:
     - cron: '17 12 * * 1'
