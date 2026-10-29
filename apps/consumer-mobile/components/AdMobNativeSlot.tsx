@@ -5,6 +5,7 @@ import { consumerNetworkAdPlacementEnabled } from '../services/networkAds';
 import { captureGuestMonetizationEvent } from '../services/guestMonetization';
 import { useConsumerTheme } from '../services/theme';
 
+// AdSense display unit created for Kleenest Consumer Web.
 const ADSENSE_CLIENT=String(process.env.EXPO_PUBLIC_ADSENSE_CLIENT_ID||'ca-pub-6958734306376288').trim();
 const ADSENSE_WEB_DISPLAY_SLOT=String(process.env.EXPO_PUBLIC_ADSENSE_WEB_DISPLAY_SLOT||'3028523908').trim();
 
