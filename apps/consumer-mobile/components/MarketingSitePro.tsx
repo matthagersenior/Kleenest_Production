@@ -425,13 +425,13 @@ export function MarketingHome() {
             Discover better stops using fresh reviews, trust scores, real check-ins, photos, amenities and recent community evidence. Then make discovery useful and fun with quests, missions, journeys, challenges, contests, XP and rewards.
           </Text>
           <View style={s.heroButtonRow}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest" style={s.heroPrimary} onPress={go('/install')}><Text style={s.heroPrimaryText}>INSTALL KLEENEST</Text></Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Explore Kleenest now" style={s.heroSecondary} onPress={go('/?app=1')}><Text style={s.heroSecondaryText}>EXPLORE NOW</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Create your free Kleenest account" style={s.heroPrimary} onPress={go('/signup')}><Text style={s.heroPrimaryText}>CREATE FREE ACCOUNT</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Try Kleenest without signing up" style={s.heroSecondary} onPress={go('/explore?app=1')}><Text style={s.heroSecondaryText}>TRY AS GUEST</Text></Pressable>
           </View>
-          <Text style={s.heroGuestNote}>Search any address, find nearby options, understand why Kleenest trusts the evidence, navigate there, then help make the next person’s decision better.</Text>
+          <Text style={s.heroGuestNote}>Free to join, no payment required. Keep saved restrooms, check-ins and XP across devices. Or explore nearby restrooms immediately without registering.</Text>
           <View style={s.heroAuthRow}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Continue as guest" style={s.heroAuthButton} onPress={go('/explore?app=1')}><Text style={s.heroAuthText}>CONTINUE AS GUEST</Text></Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Join Kleenest" style={s.heroAuthButton} onPress={go('/signup')}><Text style={s.heroAuthText}>JOIN KLEENEST</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="See Kleenest install options" style={s.heroAuthButton} onPress={go('/install')}><Text style={s.heroAuthText}>INSTALL APP</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Learn why joining Kleenest is useful" style={s.heroAuthButton} onPress={go('/for-you')}><Text style={s.heroAuthText}>WHY JOIN?</Text></Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel="Sign in to Kleenest" style={s.heroAuthButton} onPress={go('/profile')}><Text style={s.heroAuthText}>SIGN IN</Text></Pressable>
           </View>
           <View style={s.heroTrustRow}>
@@ -623,11 +623,11 @@ export function MarketingHome() {
 
       <View style={s.finalCta}>
         <Text style={s.finalCtaKicker}>READY WHEN YOU NEED IT</Text>
-        <Text style={s.finalCtaTitle}>Put Kleenest one tap away.</Text>
-        <Text style={s.finalCtaBody}>Install the web app on your phone, tablet or computer, or open Kleenest in your browser right now.</Text>
+        <Text style={s.finalCtaTitle}>Save your next great stop.</Text>
+        <Text style={s.finalCtaBody}>Create a free account to keep your favorite restrooms and rewards, or try the map without signing in. Installation is optional.</Text>
         <View style={s.finalCtaActions}>
-          <Pressable style={s.finalCtaPrimary} onPress={go('/install')}><Text style={s.finalCtaPrimaryText}>INSTALL NOW</Text></Pressable>
-          <Pressable style={s.finalCtaSecondary} onPress={go('/?app=1')}><Text style={s.finalCtaSecondaryText}>OPEN WEB APP</Text></Pressable>
+          <Pressable style={s.finalCtaPrimary} onPress={go('/signup')}><Text style={s.finalCtaPrimaryText}>JOIN FREE</Text></Pressable>
+          <Pressable style={s.finalCtaSecondary} onPress={go('/explore?app=1')}><Text style={s.finalCtaSecondaryText}>TRY WITHOUT ACCOUNT</Text></Pressable>
         </View>
       </View>
     </Shell>
