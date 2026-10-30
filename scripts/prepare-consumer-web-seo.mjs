@@ -148,11 +148,11 @@ function applySeo(file,page){
   fs.writeFileSync(file,html);
 }
 
-// Publish MapLibre's worker at the URL expected by its web runtime.
+// Publish MapLibre GL JS 6's module worker at the URL expected by its web runtime.
 // Copy the worker beside the exported web assets, including GitHub Pages' repo base path.
 const workerCandidates=[
-  path.resolve('apps/consumer-mobile/node_modules/maplibre-gl/dist/maplibre-gl-csp-worker.js'),
-  path.resolve('node_modules/maplibre-gl/dist/maplibre-gl-csp-worker.js'),
+  path.resolve('apps/consumer-mobile/node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs'),
+  path.resolve('node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs'),
 ];
 const workerSource=workerCandidates.find(candidate=>fs.existsSync(candidate));
 if(workerSource){
@@ -163,7 +163,7 @@ if(workerSource){
   }
 }else if(fs.existsSync(path.join(dist,'_expo/static/js/web'))){
   // A real Expo export must include the worker; synthetic SEO fixture builds need not.
-  throw new Error('MapLibre CSP worker missing from installed dependencies');
+  throw new Error('MapLibre module worker missing from installed dependencies');
 }
 
 const shareImageFile=path.join(dist,'app-icon.png');
@@ -171,18 +171,16 @@ if(!fs.existsSync(shareImageFile)||fs.statSync(shareImageFile).size<100){
   throw new Error('Public Kleenest share image is missing or empty: app-icon.png');
 }
 
+// Snapshot the untouched Expo shell before adding crawler-only homepage markup.
+// Reusing the SEO-enriched homepage shell for /explore also copies marketing
+// navigation and footers into the app viewport, pushing its own tabs off-screen.
+const appShell=fs.readFileSync(path.join(dist,'index.html'),'utf8');
+
 for(const page of pages)applySeo(path.join(dist,page.file),page);
 
 // Expo exports can omit HTML files for client-side routes. Materialize known
 // public app routes so direct navigation does not return HTTP 404.
 const appRoutes=['explore','qr','home','games'];
-const appShell=fs.readFileSync(path.join(dist,'index.html'),'utf8')
-  // The homepage SEO heading belongs to the marketing landing page only.
-  // Copying it into Explore makes the map scroll beneath a permanent banner.
-  .replace(/<header id="kleenest-seo-heading"[\s\S]*?<\/header>/g,'')
-  // Never surface serialized newline escapes before the Expo app root.
-  .replace(/(?:\\\\n)+(?=\\s*<)/g,'')
-  .replace(/(<body[^>]*>)(?:\\\\n|\\n)+/i,'$1');
 for(const route of appRoutes){
   const target=path.join(dist,route,'index.html');
   fs.mkdirSync(path.dirname(target),{recursive:true});
