@@ -135,7 +135,10 @@ test('Consumer production-equivalent real-world stress test',async({browser})=>{
 
   // 4. Select a visible result from the unified results sheet, then inspect details.
   const expandResults=launch.page.getByRole('button',{name:'Expand results'}).first();
-  if(await expandResults.isVisible().catch(()=>false))await expandResults.click();
+  if(await expandResults.isVisible().catch(()=>false)){
+    try{await expandResults.click({timeout:8000});}
+    catch(error){failures.push(`Expand results control was not clickable: ${String(error)}`);}
+  }
   const resultName=launch.page.getByText('Pizza Hut',{exact:true}).first();
   const selectableResult=resultName.locator('xpath=ancestor::*[@role="button"][1]');
   if(await resultName.isVisible().catch(()=>false)&&await selectableResult.count()){
