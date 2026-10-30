@@ -149,9 +149,15 @@ function applySeo(file,page){
 }
 
 // Publish MapLibre's worker at the URL expected by its web runtime.
-const workerSource=path.resolve('node_modules/maplibre-gl/dist/maplibre-gl-csp-worker.js');
-const workerTarget=path.join(dist,'_expo/static/js/web/maplibre-gl-worker.mjs');
-if(fs.existsSync(workerSource)){
+// Copy the worker beside the exported web assets, including GitHub Pages' repo base path.
+const workerCandidates=[
+  path.resolve('apps/consumer-mobile/node_modules/maplibre-gl/dist/maplibre-gl-csp-worker.js'),
+  path.resolve('node_modules/maplibre-gl/dist/maplibre-gl-csp-worker.js'),
+];
+const workerSource=workerCandidates.find(candidate=>fs.existsSync(candidate));
+if(!workerSource)throw new Error('MapLibre CSP worker missing from installed dependencies');
+for(const workerRelativePath of ['_expo/static/js/web/maplibre-gl-worker.mjs','Kleenest_Production/_expo/static/js/web/maplibre-gl-worker.mjs']){
+  const workerTarget=path.join(dist,workerRelativePath);
   fs.mkdirSync(path.dirname(workerTarget),{recursive:true});
   fs.copyFileSync(workerSource,workerTarget);
 }
