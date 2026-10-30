@@ -11,7 +11,7 @@ type MonetizationSnapshot = {
   guest:{sessions:number;visitor_keys:number;install_intents:number;install_successes:number};
   guest_ad_diagnostics:{
     network_request_attempts:number;network_impressions:number;web_missing_config:number;network_no_fills:number;
-    sponsored_impressions:number;sponsored_clicks:number;install_upsell_views:number;
+    sponsored_impressions:number;sponsored_clicks:number;install_upsell_views:number;install_upsell_viewer_ids?:number;
     install_upsell_clicks:number;upgrade_intents:number;sessions_with_signals:number;
   };
   native_admob:{requests:number;fills:number;impressions:number;paid_callbacks:number;last_event_at:string|null};
@@ -284,11 +284,14 @@ export default function GuestInsights(){
           <MetricCard title="Web ad slot missing" value={monetization.guest_ad_diagnostics.web_missing_config} detail="AdSense slot configuration missing when placement was eligible"/>
           <MetricCard title="Guest sponsored exposures" value={monetization.guest_ad_diagnostics.sponsored_impressions} detail="Unverified anonymous impressions; not billable"/>
           <MetricCard title="Guest sponsor clicks" value={monetization.guest_ad_diagnostics.sponsored_clicks} detail="Unverified anonymous click signals"/>
-          <MetricCard title="Install CTA views" value={monetization.guest_ad_diagnostics.install_upsell_views} detail="Guest install prompts shown after discovery"/>
-          <MetricCard title="Install CTA clicks" value={monetization.guest_ad_diagnostics.install_upsell_clicks} detail="Guests choosing the installation path"/>
+          <MetricCard title="Install CTA view signals" value={monetization.guest_ad_diagnostics.install_upsell_views} detail="Older releases counted card mounts, even off screen. New release counts viewable cards once per 30 minutes per browser."/>
+          <MetricCard title="CTA visitor IDs" value={monetization.guest_ad_diagnostics.install_upsell_viewer_ids} detail="Distinct first-party IDs associated with view signals; not verified people."/>
+          <MetricCard title="Install Center intents" value={monetization.guest.install_intents} detail="Install actions captured in the separate guest journey, not Explore CTA clicks."/>
+          <MetricCard title="Install CTA clicks" value={monetization.guest_ad_diagnostics.install_upsell_clicks} detail="Taps on the Explore install button, not all Installation Center actions."/>
           <MetricCard title="Remove Ads intent" value={monetization.guest_ad_diagnostics.upgrade_intents} detail="Guest entry into $5 membership path"/>
-          <MetricCard title="Install success events" value={monetization.guest.install_successes} detail="Observed browser/native confirmation events"/>
+          <MetricCard title="Install success events" value={monetization.guest.install_successes} detail="Browser installation event or standalone launch; accepted prompt and APK download are not verified installs."/>
         </View>
+        <Text style={{color:theme.muted,fontSize:12,lineHeight:18}}>These are different event streams, not one cohort conversion rate. Older view events include off-screen mounts and cannot be corrected retroactively.</Text>
         <Text style={{color:theme.ink,fontWeight:'900'}}>Separate authenticated / platform signals</Text>
         <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
           <MetricCard title="Native AdMob fills" value={monetization.native_admob.fills} detail={`${format(monetization.native_admob.requests)} requests; Android/iOS only`}/>
