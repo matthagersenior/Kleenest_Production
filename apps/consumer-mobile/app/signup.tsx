@@ -2,11 +2,12 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { palette } from '../components/ConsumerUI';
 import { useConsumerTheme } from '../services/theme';
 import { markConsumerAppSession } from '../services/webExperience';
+import { captureAcquisitionEvent } from '../services/acquisitionAttribution';
 
 type SignupIntent='individual'|'family';
 type AccessMode='signin'|'signup';
@@ -43,6 +44,11 @@ export default function SignupScreen(){
  const saveIntent=/^\/location\/[^/?]+\?saveAfterJoin=1(?:&|$)/.test(returnTo);
  const redirectTo=authRedirect(returnTo);
 
+ // Track funnel outcomes without capturing credentials or addresses.
+ useEffect(()=>{
+  captureAcquisitionEvent(mode==='signup'?'signup_intent':'signin_intent',{metadata:{surface:'consumer_auth',stage:'view'}});
+ },[mode]);
+
  async function handleAuthUrl(url:string|null){
   if(!url)return false;
   const parsed=Linking.parse(url);
@@ -58,6 +64,7 @@ export default function SignupScreen(){
  }
 
  function continueGuest(){
+  captureAcquisitionEvent('continue_guest',{metadata:{surface:'consumer_auth',stage:'choice'}});
   markConsumerAppSession();
   router.replace('/explore' as any);
  }
@@ -66,6 +73,7 @@ export default function SignupScreen(){
   if(busy)return;
   setBusy(true);setMessage('');
   try{
+   captureAcquisitionEvent(mode==='signup'?'signup_intent':'signin_intent',{metadata:{surface:'consumer_auth',stage:'google_started'}});
    const{data,error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo,skipBrowserRedirect:Platform.OS!=='web'}});
    if(error)throw error;
    if(!data.url)throw new Error('Google sign-in could not be started.');
@@ -77,7 +85,7 @@ export default function SignupScreen(){
      if(!accepted)throw new Error('Google sign-in returned without a usable Kleenest session.');
     }else if(authResult.type==='cancel'||authResult.type==='dismiss')setMessage('Google sign-in was cancelled.');
    }
-  }catch(error:any){setMessage(error?.message||'Google sign-in could not be started.')}finally{setBusy(false)}
+  }catch(error:any){captureAcquisitionEvent(mode==='signup'?'signup_intent':'signin_intent',{metadata:{surface:'consumer_auth',stage:'google_failed'}});setMessage(error?.message||'Google sign-in could not be started.')}finally{setBusy(false)}
  }
 
  async function signIn(){
@@ -109,19 +117,24 @@ export default function SignupScreen(){
    const normalized=email.trim().toLowerCase();
    if(!normalized||!normalized.includes('@'))throw new Error('Enter a valid email address.');
    if(password.length<8)throw new Error('Use a password with at least 8 characters.');
+   captureAcquisitionEvent('signup_intent',{metadata:{surface:'consumer_auth',stage:'submitted',intent}});
    const signup_intent=intent==='family'?'family':'individual';
    const{data,error}=await client.auth.signUp({email:normalized,password,options:{emailRedirectTo:redirectTo,data:{signup_intent}}});
    if(error)throw error;
    if(data.session){
+    captureAcquisitionEvent('signup_intent',{metadata:{surface:'consumer_auth',stage:'confirmed_session',intent}});
     markConsumerAppSession();
     const destination=params.returnTo?returnTo:(intent==='family'?'/family':returnTo);
     router.replace(destination as any);
     return;
    }
+   captureAcquisitionEvent('signup_intent',{metadata:{surface:'consumer_auth',stage:'confirmation_required',intent}});
    setNeedsConfirmation(true);
    setMessage('Almost done — check your email to confirm the account. You can keep using Kleenest as a guest while you do that.');
   }catch(error:any){
    const text=String(error?.message||'Account could not be created.');
+   const reason=/already.*registered|already.*exists|user.*exists/i.test(text)?'existing_account':/rate.limit|too many|429/i.test(text)?'rate_limit':/network|fetch|timeout/i.test(text)?'network':'other';
+   captureAcquisitionEvent('signup_intent',{metadata:{surface:'consumer_auth',stage:'failed',reason}});
    if(/already.*registered|already.*exists|user.*exists/i.test(text)){
     setMode('signin');
     setMessage('You already have a Kleenest account. Sign in below instead.');
@@ -157,11 +170,11 @@ export default function SignupScreen(){
  return <SafeAreaView style={[s.safe,{backgroundColor:theme.canvas}]}><ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
   <View style={s.header}>
    <Text style={[s.eyebrow,{color:theme.accent}]}>KLEENEST</Text>
-   <Text style={[s.title,{color:theme.ink}]}>{saveIntent?"Keep this restroom for next time.":"Get in quickly."}</Text>
-   <Text style={[s.copy,{color:theme.muted}]}>{saveIntent?"Create a free account and this restroom will be saved automatically once you sign in. Find it again from any device in your Saved bathrooms.":"Find a bathroom now. Create an account only when you want saved places, trust history, progression and community to follow you."}</Text>
+   <Text style={[s.title,{color:theme.ink}]}>{saveIntent?"Keep this restroom for next time.":mode==='signup'?"Join free. Keep your best stops.":"Welcome back."}</Text>
+   <Text style={[s.copy,{color:theme.muted}]}>{saveIntent?"Create a free account and this restroom will be saved automatically once you sign in. Find it again from any device in your Saved bathrooms.":mode==='signup'?"Your free Kleenest account keeps saved restrooms, trust history, check-ins, XP and rewards with you across devices. No payment required.":"Sign in to pick up your saved places, progress and community activity. You can also explore without an account."}</Text>
   </View>
 
-  {!saveIntent?<Pressable accessibilityRole="button" onPress={continueGuest} style={[s.guest,{backgroundColor:theme.accent}]}>
+  {!saveIntent&&mode==='signin'?<Pressable accessibilityRole="button" onPress={continueGuest} style={[s.guest,{backgroundColor:theme.accent}]}>
    <Text style={[s.guestTitle,{color:theme.accentText}]}>CONTINUE AS GUEST</Text>
    <Text style={[s.guestBody,{color:theme.accentText}]}>Open the map now · no account required</Text>
   </Pressable>:null}
@@ -192,7 +205,7 @@ export default function SignupScreen(){
     <Pressable accessibilityRole="button" accessibilityLabel={showPassword?'Hide password':'Show password'} onPress={()=>setShowPassword(v=>!v)} style={[s.show,{backgroundColor:theme.accentSoft}]}><Text style={[s.showText,{color:theme.accent}]}>{showPassword?'HIDE':'SHOW'}</Text></Pressable>
    </View>
 
-   <Pressable accessibilityRole="button" accessibilityLabel={mode==='signin'?'Sign in':'Create account'} accessibilityState={{disabled:busy}} disabled={busy} onPress={mode==='signin'?signIn:signUp} style={[s.primary,{backgroundColor:theme.accent},busy&&s.disabled]}><Text style={[s.primaryText,{color:theme.accentText}]}>{busy?'PLEASE WAIT…':mode==='signin'?'SIGN IN':saveIntent?'CREATE ACCOUNT & SAVE':'CREATE ACCOUNT'}</Text></Pressable>
+   <Pressable accessibilityRole="button" accessibilityLabel={mode==='signin'?'Sign in':'Create account'} accessibilityState={{disabled:busy}} disabled={busy} onPress={mode==='signin'?signIn:signUp} style={[s.primary,{backgroundColor:theme.accent},busy&&s.disabled]}><Text style={[s.primaryText,{color:theme.accentText}]}>{busy?'PLEASE WAIT…':mode==='signin'?'SIGN IN':saveIntent?'CREATE ACCOUNT & SAVE':'CREATE FREE ACCOUNT'}</Text></Pressable>
 
    {mode==='signin'?<Pressable accessibilityRole="button" accessibilityLabel="Forgot password" accessibilityState={{disabled:busy||!email.trim()}} disabled={busy||!email.trim()} onPress={requestPasswordReset} style={[s.resend,{backgroundColor:theme.accentSoft,borderColor:theme.line},(busy||!email.trim())&&s.disabled]}><Text style={[s.resendText,{color:theme.accent}]}>FORGOT PASSWORD?</Text></Pressable>:null}
 
@@ -200,7 +213,7 @@ export default function SignupScreen(){
    {message?<Text accessibilityLiveRegion="polite" style={[s.message,{color:theme.muted}]}>{message}</Text>:null}
   </View>
 
-  {saveIntent?<Pressable accessibilityRole="button" onPress={continueGuest} style={[s.guest,{backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}]}><Text style={[s.guestTitle,{color:theme.ink}]}>NOT NOW — KEEP EXPLORING</Text><Text style={[s.guestBody,{color:theme.muted}]}>You can still find bathrooms and get directions without an account</Text></Pressable>:null}
+  {(saveIntent||mode==='signup')?<Pressable accessibilityRole="button" onPress={continueGuest} style={[s.guest,{backgroundColor:theme.surfaceRaised,borderWidth:1,borderColor:theme.line}]}><Text style={[s.guestTitle,{color:theme.ink}]}>NOT NOW — KEEP EXPLORING</Text><Text style={[s.guestBody,{color:theme.muted}]}>You can still find bathrooms and get directions without an account</Text></Pressable>:null}
   <Text style={[s.guestNote,{color:theme.muted}]}>Guest access stays useful: discovery, map browsing and restroom details remain available. Kleenest asks you to join only when an action needs an identity, sync, trust attribution or rewards.</Text>
   <Pressable accessibilityRole="link" accessibilityLabel="Terms, privacy and community guidelines" onPress={()=>router.push('/legal')}><Text style={[s.legal,{color:theme.accent}]}>Terms · Privacy · Community Guidelines</Text></Pressable>
  </ScrollView></SafeAreaView>
