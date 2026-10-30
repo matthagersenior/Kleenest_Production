@@ -678,7 +678,12 @@ export default function AdaptiveExploreScreen() {
   useEffect(()=>{
     let active=true;
     if(!amenities.length){setPreferenceAmenityNames([]);return()=>{active=false};}
-    getBathroomFitPreferences().then(preferences=>{
+    // Guest discovery must not require a user-scoped preference RPC.
+    const preferencesClient=getKleenestSupabaseClient();
+    preferencesClient.auth.getSession().then(({data})=>{
+      if(!data.session?.user || data.session.user.is_anonymous)return null;
+      return getBathroomFitPreferences();
+    }).then(preferences=>{
       if(!active)return;
       const wanted=BATHROOM_FIT_OPTIONS.filter(([key])=>Boolean(preferences?.[key])).map(([,label])=>String(label));
       const normalized=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
@@ -1882,6 +1887,16 @@ export default function AdaptiveExploreScreen() {
 
       </View>
 
+      {!origin&&!searchAreaOrigin? (
+        <View accessibilityLabel="Map starting point" style={[s.initialMapPrompt,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+          <Text style={[s.initialMapPromptTitle,{color:theme.ink}]}>Start your restroom search</Text>
+          <Text style={[s.initialMapPromptBody,{color:theme.muted}]}>Search an address, city, or place above. Or use your location to see nearby options.</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Use my location to find nearby restrooms" accessibilityHint="Your browser may ask you to allow location access." disabled={loading} style={[s.initialMapPromptButton,{backgroundColor:theme.accent},loading&&s.disabled]} onPress={()=>{setSearch('');void load({clearQuery:true,recenterOnLiveLocation:true});}}>
+            <Text style={[s.primaryText,{color:theme.accentText}]}>{loading?'Finding your location…':'Use my location'}</Text>
+          </Pressable>
+        </View>
+      ):null}
+
       {(origin||searchAreaOrigin) ? (
         <View style={s.mapSection}>
           <View style={[s.mapFrame,{minHeight:exploreMapHeight,height:exploreMapHeight}]} accessibilityLabel="Explore map and results">
@@ -2163,7 +2178,7 @@ export default function AdaptiveExploreScreen() {
                       ? Math.min(Math.max(272,Math.round(exploreMapHeight*0.22)),330)
                       : destinationCardOpen
                         ? 220
-                        : Math.min(Math.max(228,Math.round(exploreMapHeight*0.24)),286),
+                        : Math.min(112,Math.max(86,Math.round(exploreMapHeight*0.12))),
                   backgroundColor:theme.surface,
                   borderColor:theme.line,
                 },
@@ -2266,14 +2281,14 @@ export default function AdaptiveExploreScreen() {
                 </View>
               ) : (
                 <View style={s.resultsSheetBody}>
-                  {(message||cached)?(
+                  {(resultsSheetExpanded&&(message||cached))?(
                     <View style={s.sheetStatusRow}>
                       <Text numberOfLines={2} accessibilityLiveRegion="polite" style={[s.sheetStatusText,{color:theme.muted}]}>{message||'Showing cached nearby places.'}</Text>
                       {!loading?<Pressable accessibilityRole="button" accessibilityLabel="Refresh live nearby results" onPress={()=>void load({preserveCacheOnEmpty:true,recenterOnLiveLocation:mode==='nearby'&&!searchAreaOrigin})}><Text style={[s.sheetRefresh,{color:theme.accent}]}>Refresh</Text></Pressable>:null}
                     </View>
                   ):null}
-                  <ScrollView style={s.resultsSheetList} contentContainerStyle={s.resultsSheetListContent} showsVerticalScrollIndicator={false} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                    {visibleRows.length?visibleRows.map((item,index)=>(
+                  <ScrollView style={s.resultsSheetList} scrollEnabled={resultsSheetExpanded} contentContainerStyle={s.resultsSheetListContent} showsVerticalScrollIndicator={false} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                    {!resultsSheetExpanded?null:visibleRows.length?visibleRows.map((item,index)=>(
                       <View key={idOf(item)||String(index)}>
                         <Pressable
                           accessibilityRole="button"
@@ -2298,7 +2313,7 @@ export default function AdaptiveExploreScreen() {
                         </Pressable>
                         {index===3?<AdMobNativeSlot contextClass="maps_network_after_results_4" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>:null}
                         {index===13?<AdMobNativeSlot contextClass="maps_network_after_results_14" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>:null}
-                        {index===Math.min(1,visibleRows.length-1)?<GuestInstallUpsell/>:null}
+                        {resultsSheetExpanded&&index===Math.min(1,visibleRows.length-1)?<GuestInstallUpsell/>:null}
                       </View>
                     )):(
                       <View style={[s.sheetEmpty,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
@@ -2496,6 +2511,10 @@ const s = StyleSheet.create({
   discoveryStatus:{display:'none',paddingHorizontal:12,paddingVertical:8,gap:4},
   help: { fontSize: 10, lineHeight: 15, color: '#5f7468' },
   mapSection:{minWidth:0,width:'100%',maxWidth:'100%',paddingHorizontal:0,gap:0,position:'relative',marginTop:0,overflow:'hidden'},
+  initialMapPrompt:{position:'absolute',top:156,left:18,right:18,zIndex:20,elevation:8,alignItems:'flex-start',gap:8,padding:16,borderWidth:1,borderRadius:16,shadowColor:'#000',shadowOpacity:.08,shadowRadius:12,shadowOffset:{width:0,height:4}},
+  initialMapPromptTitle:{fontSize:16,lineHeight:20,fontWeight:'900'},
+  initialMapPromptBody:{fontSize:13,lineHeight:19,fontWeight:'600'},
+  initialMapPromptButton:{minHeight:40,borderRadius:10,paddingHorizontal:14,justifyContent:'center',marginTop:2},
   mapFrame: {
     minWidth: 0,
     width: '100%',

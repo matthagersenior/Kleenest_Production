@@ -90,6 +90,13 @@ async function newConsumerPage(context:BrowserContext){
   const response=await page.goto(new URL('?app=1',BASE).toString(),{waitUntil:'domcontentloaded',timeout:30000});
   expect(response?.status()).toBe(200);
   await page.getByPlaceholder('Address, school, workplace, city or brand').waitFor({state:'visible',timeout:20000});
+  // Choose the privacy-preserving option before the browser stress test clicks through the app.
+  // The optional-ads consent panel intentionally blocks app controls until the visitor decides.
+  const adPreferences=page.locator('#kleenest-ad-preferences');
+  if(await adPreferences.isVisible().catch(()=>false)){
+    await adPreferences.getByRole('button',{name:'Decline optional ads',exact:true}).click();
+    await adPreferences.waitFor({state:'detached',timeout:5000});
+  }
   await readySearch(page,45000);
   return{page,network};
 }
@@ -115,6 +122,8 @@ test('Consumer production-equivalent real-world stress test',async({browser})=>{
   }));
   await launch.page.screenshot({path:path.join(OUTPUT,'01-sparta-guest-launch.png'),fullPage:false});
   if(launch.network.errors.length)failures.push(`Guest launch raised page errors: ${launch.network.errors.join(' | ')}`);
+  const workerFailures=[...launch.network.failed,...launch.network.bad].filter(value=>/maplibre-gl-worker/i.test(value));
+  if(workerFailures.length)failures.push(`MapLibre module worker failed to load: ${workerFailures.join(' | ')}`);
 
   // 2. A non-business street address becomes the discovery origin.
   await search(launch.page,RESIDENTIAL_ADDRESS);
@@ -135,7 +144,10 @@ test('Consumer production-equivalent real-world stress test',async({browser})=>{
 
   // 4. Select a visible result from the unified results sheet, then inspect details.
   const expandResults=launch.page.getByRole('button',{name:'Expand results'}).first();
-  if(await expandResults.isVisible().catch(()=>false))await expandResults.click();
+  if(await expandResults.isVisible().catch(()=>false)){
+    try{await expandResults.click({timeout:8000});}
+    catch(error){failures.push(`Expand results control was not clickable: ${String(error)}`);}
+  }
   const resultName=launch.page.getByText('Pizza Hut',{exact:true}).first();
   const selectableResult=resultName.locator('xpath=ancestor::*[@role="button"][1]');
   if(await resultName.isVisible().catch(()=>false)&&await selectableResult.count()){

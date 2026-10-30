@@ -131,9 +131,10 @@ export default function RootLayout() {
     return () => {active=false;subscription.remove();appState.remove()};
   }, []);
   if(operatorOAuthRelaying)return null;
+  const guestExploreWeb=Platform.OS==='web'&&pathname==='/explore';
   const tabs=<Tabs initialRouteName={Platform.OS==='web'?'index':'explore'} screenOptions={{
     headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{fontWeight:'900',color:theme.ink},
-    tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarStyle:publicWeb?({display:'none'} as any):{height:74,paddingTop:7,paddingBottom:9,backgroundColor:theme.surfaceRaised,borderTopWidth:1,borderTopColor:theme.line,elevation:12,shadowColor:'#000',shadowOpacity:.12,shadowRadius:10,shadowOffset:{width:0,height:-3}},tabBarItemStyle:{minWidth:0,paddingHorizontal:0,paddingVertical:1},tabBarLabelStyle:{fontWeight:'900',fontSize:9.5},
+    tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarStyle:publicWeb&&!guestExploreWeb?({display:'none'} as any):{height:74,paddingTop:7,paddingBottom:9,backgroundColor:theme.surfaceRaised,borderTopWidth:1,borderTopColor:theme.line,elevation:12,shadowColor:'#000',shadowOpacity:.12,shadowRadius:10,shadowOffset:{width:0,height:-3}},tabBarItemStyle:{minWidth:0,paddingHorizontal:0,paddingVertical:1},tabBarLabelStyle:{fontWeight:'900',fontSize:9.5},
   }}>
     <Tabs.Screen name="index" options={{ href:null,title:'Launch',headerShown:false }}/>
     <Tabs.Screen name="explore" options={{ title:'Explore',headerShown:false,tabBarIcon:tabIcon('explore',theme.accentSoft),tabBarLabel:tabLabel('Explore') }}/>

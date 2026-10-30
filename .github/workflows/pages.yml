@@ -20,6 +20,7 @@ on:
       - public/sw.js
       - scripts/prepare-consumer-web-pwa.mjs
       - scripts/prepare-consumer-web-seo.mjs
+      - scripts/prepare-maplibre-web-worker.mjs
       - scripts/public-share-preview.test.mjs
       - scripts/pages-deployment-convergence-audit.mjs
       - scripts/business-web-browser-smoke.spec.ts
@@ -134,6 +135,10 @@ jobs:
           test -s apps/consumer-mobile/dist/app-icon-512.svg
           test -s apps/consumer-mobile/dist/marketing/home-progress.svg
           test -s apps/consumer-mobile/dist/profile/index.html
+      - name: Publish MapLibre module worker for Consumer Web preview
+        run: |
+          node scripts/prepare-maplibre-web-worker.mjs
+          test -s apps/consumer-mobile/dist/_expo/static/js/web/maplibre-gl-worker.mjs
       - name: Browser-stress Kleenest Consumer Web
         env:
           CONSUMER_WEB_BASE: http://127.0.0.1:4174/Kleenest_Production/

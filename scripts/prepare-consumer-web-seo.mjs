@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { prepareMapLibreWebWorker } from './prepare-maplibre-web-worker.mjs';
 
 const dist=path.resolve('apps/consumer-mobile/dist');
 const ORIGIN='https://kleenest.us';
@@ -148,26 +149,33 @@ function applySeo(file,page){
   fs.writeFileSync(file,html);
 }
 
+// Publish MapLibre GL JS 6's module worker at the URL expected by its web runtime.
+prepareMapLibreWebWorker(dist);
+
 const shareImageFile=path.join(dist,'app-icon.png');
 if(!fs.existsSync(shareImageFile)||fs.statSync(shareImageFile).size<100){
   throw new Error('Public Kleenest share image is missing or empty: app-icon.png');
 }
+
+// Snapshot the untouched Expo shell before adding crawler-only homepage markup.
+// Reusing the SEO-enriched homepage shell for /explore also copies marketing
+// navigation and footers into the app viewport, pushing its own tabs off-screen.
+const appShell=fs.readFileSync(path.join(dist,'index.html'),'utf8')
+  // Expo/Pages builds can serialize escaped line breaks before the app root.
+  .replace(/(?:\\\\n)+(?=\s*<)/g,'')
+  .replace(/(<body[^>]*>)(?:\\\\n|\\n)+/i,'$1');
 
 for(const page of pages)applySeo(path.join(dist,page.file),page);
 
 // Expo exports can omit HTML files for client-side routes. Materialize known
 // public app routes so direct navigation does not return HTTP 404.
 const appRoutes=['explore','qr','home','games'];
-const appShell=fs.readFileSync(path.join(dist,'index.html'),'utf8');
 for(const route of appRoutes){
   const target=path.join(dist,route,'index.html');
   fs.mkdirSync(path.dirname(target),{recursive:true});
-  // Exclusive creation avoids a check-then-write race and preserves Expo exports.
-  try{
-    fs.writeFileSync(target,appShell,{flag:'wx'});
-  }catch(error){
-    if(error?.code!=='EEXIST')throw error;
-  }
+  // Always replace generated route shells. Expo may already export this route,
+  // and preserving that older shell also preserves the unwanted SEO header.
+  fs.writeFileSync(target,appShell);
 }
 
 // Cloudflare Pages reads _headers from the deployed output. Avoid a restrictive
