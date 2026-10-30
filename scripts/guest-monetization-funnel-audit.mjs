@@ -8,6 +8,9 @@ const required={
   web:'apps/consumer-mobile/components/AdMobNativeSlot.tsx',
   native:'apps/consumer-mobile/components/AdMobNativeSlot.native.tsx',
   install:'apps/consumer-mobile/components/GuestInstallUpsell.tsx',
+  prompt:'apps/consumer-mobile/services/consumerInstallPrompt.ts',
+  installPage:'apps/consumer-mobile/app/install.tsx',
+  installMigration:'supabase/migrations/20261030030000_guest_install_viewability_funnel_snapshot.sql',
   explore:'apps/consumer-mobile/features/AdaptiveExploreScreen.tsx',
   membership:'apps/consumer-mobile/app/membership.tsx',
   webCheckout:'apps/consumer-mobile/components/StorePurchaseControls.tsx',
@@ -27,11 +30,16 @@ needs('event','getKleenestGuestSessionId','acquisitionSessionKey','record_guest_
 needs('sponsor','captureGuestMonetizationEvent','data.session.user.is_anonymous','record_sponsored_event');
 needs('web','network_slot_missing_config','network_request_attempt','ADSENSE_WEB_DISPLAY_SLOT');
 needs('native','network_request_attempt','network_impression','network_no_fill');
-needs('install','install_upsell_view','install_upsell_click','upgrade_intent','router.push(\'/install\')');
+needs('install','install_upsell_view','install_upsell_click','requestConsumerInstallPrompt','IntersectionObserver','intersectionRatio >= 0.5','nativeID={CARD_ID}','signup_intent');
+needs('prompt','beforeinstallprompt','event.preventDefault()','appinstalled','requestConsumerInstallPrompt','subscribeConsumerInstallPrompt');
+needs('installPage','subscribeConsumerInstallPrompt','requestConsumerInstallPrompt');
+needs('installMigration','install_upsell_viewer_ids','count(distinct e.visitor_key)');
+if(contents.install.includes("captureGuestMonetizationEvent('upgrade_intent'"))failures.push('Free registration must not be counted as Remove Ads intent');
+if(contents.install.includes("if (visible && Platform.OS === 'web') captureGuestMonetizationEvent('install_upsell_view'"))failures.push('Component mounts are not CTA views');
 needs('explore','<GuestInstallUpsell/>');
 needs('membership','getMobileAccountSummary().catch(()=>null)');
 needs('webCheckout','router.push(\'/install\')','Web browsers and installed PWAs cannot complete this native store purchase');
-needs('owner','owner_guest_monetization_snapshot','Guest → Ads → Install → Upgrade','Ad revenue: not connected');
+needs('owner','owner_guest_monetization_snapshot','Guest → Ads → Install → Upgrade','Ad revenue: not connected','CTA visitor IDs','Install Center intents');
 if(/paid|billing/.test(contents.event))failures.push('Guest event service must not claim billable ads');
 if(failures.length){console.error('Guest monetization contract audit failed');for(const f of failures)console.error(' - '+f);process.exit(1)}
 console.log('Guest monetization funnel contract audit passed.');
