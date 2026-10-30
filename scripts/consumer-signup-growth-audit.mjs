@@ -9,7 +9,7 @@ const guestInvite = read('apps/consumer-mobile/components/GuestInstallUpsell.tsx
 const webProfile = read('src/runtime/ProfilePage.jsx');
 const webIdentity = read('src/services/identity.js');
 const ownerTally = read('apps/platform-mobile/components/UserTallyPanel.tsx');
-const funnelMigration = read('supabase/migrations/20261030030000_owner_consumer_signup_funnel.sql');
+const funnelMigration = read('supabase/migrations/20261030030655_owner_consumer_signup_funnel.sql');
 
 test('landing prioritizes free account with guest and install access intact', () => {
   const home = marketing.split('export function MarketingHome()')[1].split('export function MarketingAboutPage()')[0];
