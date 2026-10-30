@@ -6,7 +6,8 @@ const normalizePath = (value) => `/${String(value || '/').replace(/^\/+/, '')}`;
 function redirectUrl(path) {
   const configured = normalizeBase(import.meta.env.VITE_PUBLIC_APP_URL);
   if (configured) return `${configured}${normalizePath(path)}`;
-  return new URL(normalizePath(path), window.location.origin).toString();
+  const base = String(import.meta.env.BASE_URL || '/').replace(/\/?$/, '/');
+  return new URL(`${base}${normalizePath(path).slice(1)}`, window.location.origin).toString();
 }
 
 export const identity = Object.freeze({
@@ -25,8 +26,11 @@ export const identity = Object.freeze({
     return getSupabase().auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName }, emailRedirectTo: redirectUrl('/') },
+      options: { data: { full_name: fullName }, emailRedirectTo: redirectUrl('/profile') },
     });
+  },
+  resendSignUpConfirmation(email) {
+    return getSupabase().auth.resend({ type: 'signup', email, options: { emailRedirectTo: redirectUrl('/profile') } });
   },
   signInWithMagicLink(email) {
     return getSupabase().auth.signInWithOtp({

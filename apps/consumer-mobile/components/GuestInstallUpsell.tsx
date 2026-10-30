@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { useEffect } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { captureAcquisitionEvent } from '../services/acquisitionAttribution';
 import { captureGuestMonetizationEvent } from '../services/guestMonetization';
 import { useConsumerTheme } from '../services/theme';
@@ -11,6 +11,7 @@ export function GuestInstallUpsell() {
   const theme = useConsumerTheme();
   const { ready, signedIn } = useConsumerWebExperience();
   const visible = ready && !signedIn;
+  const [shareMessage,setShareMessage]=useState('');
   useEffect(() => {
     if (visible && Platform.OS === 'web') captureGuestMonetizationEvent('install_upsell_view',null,null,'explore_results');
   }, [visible]);
@@ -27,6 +28,22 @@ export function GuestInstallUpsell() {
     captureAcquisitionEvent('signup_intent',{metadata:{source:'explore_results',method:'free_account_cta'}});
     router.push('/signup?mode=signup&returnTo=%2Fexplore' as any);
   }
+  async function inviteFriend() {
+    const url='https://kleenest.us/?utm_source=guest_referral&utm_medium=share&utm_campaign=word_of_mouth';
+    const message='Found a handy way to find nearby restrooms. You can try Kleenest free without signing up.';
+    try {
+      if(Platform.OS!=='web'){
+        const result=await Share.share({message:`${message} ${url}`,url,title:'Try Kleenest'});
+        if(result.action===Share.dismissedAction)return;
+      }else if(typeof navigator!=='undefined'&&typeof navigator.share==='function'){
+        await navigator.share({title:'Try Kleenest',text:message,url});
+      }else if(typeof navigator!=='undefined'&&navigator.clipboard?.writeText){
+        await navigator.clipboard.writeText(url);
+        setShareMessage('Referral link copied. Share it with someone who could use Kleenest.');
+      }else {setShareMessage(url);return;}
+      captureAcquisitionEvent('share',{metadata:{kind:'guest_referral',source:'explore_results'}});
+    }catch {setShareMessage('Sharing was cancelled. You can try again.');}
+  }
   return <View style={[styles.card,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
     <Text style={[styles.title,{color:theme.ink}]}>Found a bathroom worth remembering?</Text>
     <Text style={[styles.body,{color:theme.muted}]}>A free account keeps your saved bathrooms, routes, and community rewards across visits. You can keep exploring without signing up.</Text>
@@ -37,7 +54,11 @@ export function GuestInstallUpsell() {
       {Platform.OS === 'web' ? <Pressable accessibilityRole="button" accessibilityLabel="Add Kleenest to Home Screen" onPress={install} style={[styles.secondary,{borderColor:theme.line}]}>
         <Text style={[styles.secondaryText,{color:theme.accent}]}>Add to Home Screen</Text>
       </Pressable> : null}
+      <Pressable accessibilityRole="button" accessibilityLabel="Share Kleenest with a friend" onPress={()=>void inviteFriend()} style={[styles.secondary,{borderColor:theme.line}]}>
+        <Text style={[styles.secondaryText,{color:theme.accent}]}>Share Kleenest</Text>
+      </Pressable>
     </View>
+    {shareMessage?<Text accessibilityLiveRegion="polite" style={[styles.note,{color:theme.muted}]}>{shareMessage}</Text>:null}
     <Text style={[styles.note,{color:theme.muted}]}>No account required to find a bathroom.</Text>
   </View>;
 }
