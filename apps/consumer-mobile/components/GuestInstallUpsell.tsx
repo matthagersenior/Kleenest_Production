@@ -78,8 +78,10 @@ export function GuestInstallUpsell() {
     router.push('/signup?mode=signup&returnTo=%2Fexplore' as any);
   }
   return <View nativeID={CARD_ID} style={[styles.card, { backgroundColor: theme.surfaceRaised, borderColor: theme.line }]}>
-    <Text style={[styles.title, { color: theme.ink }]}>Find your next restroom faster.</Text>
-    <Text style={[styles.body, { color: theme.muted }]}>Install Kleenest free for one-tap Home Screen access. No account required.</Text>
+    <Text style={[styles.title, { color: theme.ink }]}>{Platform.OS === 'web' ? 'Find your next restroom faster.' : 'Remember the places you trust.'}</Text>
+    <Text style={[styles.body, { color: theme.muted }]}>{Platform.OS === 'web'
+      ? 'Install Kleenest free for one-tap Home Screen access. No account required.'
+      : 'Create a free account to keep saved places and routes across visits.'}</Text>
     <View style={styles.actions}>
       {Platform.OS === 'web' ? <Pressable accessibilityRole="button" accessibilityLabel="Install Kleenest free" accessibilityHint="Installs directly when the browser supports it, or opens device-specific instructions" onPress={install} style={[styles.primary, { backgroundColor: theme.accent }]}>
         <Text style={[styles.primaryText, { color: theme.accentText }]}>Install Kleenest free</Text>
