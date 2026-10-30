@@ -122,6 +122,8 @@ test('Consumer production-equivalent real-world stress test',async({browser})=>{
   }));
   await launch.page.screenshot({path:path.join(OUTPUT,'01-sparta-guest-launch.png'),fullPage:false});
   if(launch.network.errors.length)failures.push(`Guest launch raised page errors: ${launch.network.errors.join(' | ')}`);
+  const workerFailures=[...launch.network.failed,...launch.network.bad].filter(value=>/maplibre-gl-worker/i.test(value));
+  if(workerFailures.length)failures.push(`MapLibre module worker failed to load: ${workerFailures.join(' | ')}`);
 
   // 2. A non-business street address becomes the discovery origin.
   await search(launch.page,RESIDENTIAL_ADDRESS);
