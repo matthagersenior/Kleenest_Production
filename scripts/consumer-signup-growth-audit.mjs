@@ -17,7 +17,9 @@ test('landing prioritizes free account with guest and install access intact', ()
   assert.match(home, /go\('\/signup'\)/);
   assert.match(home, /TRY AS GUEST/);
   assert.match(home, /go\('\/explore\?app=1'\)/);
-  assert.match(home, /go\('\/install'\)/);
+  // Installation remains reachable through the shared site header, not the signup-first hero.
+  assert.match(marketing, /accessibilityLabel="Install Kleenest now"/);
+  assert.match(marketing, /go\('\/install'\)/);
   assert.ok(home.indexOf('CREATE FREE ACCOUNT') < home.indexOf('TRY AS GUEST'));
 });
 
