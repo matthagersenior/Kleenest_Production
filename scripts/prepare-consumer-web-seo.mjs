@@ -174,7 +174,10 @@ if(!fs.existsSync(shareImageFile)||fs.statSync(shareImageFile).size<100){
 // Snapshot the untouched Expo shell before adding crawler-only homepage markup.
 // Reusing the SEO-enriched homepage shell for /explore also copies marketing
 // navigation and footers into the app viewport, pushing its own tabs off-screen.
-const appShell=fs.readFileSync(path.join(dist,'index.html'),'utf8');
+const appShell=fs.readFileSync(path.join(dist,'index.html'),'utf8')
+  // Expo/Pages builds can serialize escaped line breaks before the app root.
+  .replace(/(?:\\\\n)+(?=\s*<)/g,'')
+  .replace(/(<body[^>]*>)(?:\\\\n|\\n)+/i,'$1');
 
 for(const page of pages)applySeo(path.join(dist,page.file),page);
 
