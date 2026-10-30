@@ -79,7 +79,7 @@ export default function ProfilePage() {
     if (busy) return;
     setMessage(''); setConfirmationNeeded(false);
     const normalized = email.trim().toLowerCase();
-    if (!/^\\S+@\\S+\\.\\S+$/.test(normalized)) { setMessage('Enter a valid email address.'); return; }
+    if (!/^\S+@\S+\.\S+$/.test(normalized)) { setMessage('Enter a valid email address.'); return; }
     if (password.length < 8) { setMessage('Use a password of at least 8 characters.'); return; }
     setBusy(true);
     try {
