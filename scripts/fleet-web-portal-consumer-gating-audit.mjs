@@ -125,7 +125,7 @@ if(consumerHome.includes("'/install'")||consumerHome.includes('Install Kleenest'
 requireTokens('Install presence persistence',install,[
   'markConsumerAppPresence',
   'appinstalled',
-  "choice.outcome==='accepted'"
+  "outcome==='accepted'"
 ]);
 requireTokens('Consumer no-install fallback',install,[
   'CONTINUE AS GUEST',
