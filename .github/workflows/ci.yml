@@ -48,6 +48,12 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 10
         run: npm ci --no-audit --no-fund --prefer-offline
+      - name: Full repository audit before merge
+        if: github.event_name == 'pull_request'
+        run: npm run audit
+      - name: Fleet and Consumer public-entry parity before merge
+        if: github.event_name == 'pull_request'
+        run: node scripts/fleet-web-portal-consumer-gating-audit.mjs
       - name: US restroom discovery query contract
         run: node --test scripts/us-restroom-discovery-contract.test.mjs
       - name: Duplicate location review recommendations
