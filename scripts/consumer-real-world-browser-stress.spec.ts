@@ -90,6 +90,13 @@ async function newConsumerPage(context:BrowserContext){
   const response=await page.goto(new URL('?app=1',BASE).toString(),{waitUntil:'domcontentloaded',timeout:30000});
   expect(response?.status()).toBe(200);
   await page.getByPlaceholder('Address, school, workplace, city or brand').waitFor({state:'visible',timeout:20000});
+  // Choose the privacy-preserving option before the browser stress test clicks through the app.
+  // The optional-ads consent panel intentionally blocks app controls until the visitor decides.
+  const adPreferences=page.locator('#kleenest-ad-preferences');
+  if(await adPreferences.isVisible().catch(()=>false)){
+    await adPreferences.getByRole('button',{name:'Decline optional ads',exact:true}).click();
+    await adPreferences.waitFor({state:'detached',timeout:5000});
+  }
   await readySearch(page,45000);
   return{page,network};
 }
