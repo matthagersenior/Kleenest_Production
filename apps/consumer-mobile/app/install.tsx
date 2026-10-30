@@ -322,7 +322,16 @@ export default function InstallKleenest(){
   async function trackApkDownload(){captureAcquisitionEvent('apk_download',{metadata:{method:'direct_apk',device_kind:deviceKind,browser_kind:browserKind}});await downloadApk()}
   async function openChecksum(){await Linking.openURL(browserUrl(CHECKSUM_PATH))}
   async function openKleenest(){captureAcquisitionEvent('open_app',{metadata:{from:'install_center',device_kind:deviceKind,browser_kind:browserKind}});await Linking.openURL(browserUrl(APP_PATH))}
-  function continueAsGuest(){captureAcquisitionEvent('continue_guest',{metadata:{from:'install_center',device_kind:deviceKind,browser_kind:browserKind}});router.push('/?app=1' as any)}
+  function continueAsGuest(){
+    captureAcquisitionEvent('continue_guest',{metadata:{from:'install_center',device_kind:deviceKind,browser_kind:browserKind}});
+    if(Platform.OS==='web'&&typeof window!=='undefined'){
+      // A full navigation guarantees ?app=1 is present before the web app/marketing
+      // gate initializes. SPA routing can show a stale public screen after entry.
+      window.location.assign(browserUrl(APP_PATH));
+      return;
+    }
+    router.replace('/explore' as any);
+  }
   function joinKleenest(){captureAcquisitionEvent('signup_intent',{metadata:{from:'install_center',device_kind:deviceKind,browser_kind:browserKind}});router.push('/signup' as any)}
   function signIn(){captureAcquisitionEvent('signin_intent',{metadata:{from:'install_center',device_kind:deviceKind,browser_kind:browserKind}});router.push('/profile' as any)}
 
