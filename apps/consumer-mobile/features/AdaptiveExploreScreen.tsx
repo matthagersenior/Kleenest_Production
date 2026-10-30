@@ -2298,7 +2298,7 @@ export default function AdaptiveExploreScreen() {
                         </Pressable>
                         {index===3?<AdMobNativeSlot contextClass="maps_network_after_results_4" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>:null}
                         {index===13?<AdMobNativeSlot contextClass="maps_network_after_results_14" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>:null}
-                        {index===Math.min(1,visibleRows.length-1)?<GuestInstallUpsell/>:null}
+                        {resultsSheetExpanded&&index===Math.min(1,visibleRows.length-1)?<GuestInstallUpsell/>:null}
                       </View>
                     )):(
                       <View style={[s.sheetEmpty,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
