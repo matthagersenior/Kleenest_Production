@@ -430,8 +430,8 @@ export function MarketingHome() {
           </View>
           <Text style={s.heroGuestNote}>Free to join, no payment required. Keep saved restrooms, check-ins and XP across devices. Or explore nearby restrooms immediately without registering.</Text>
           <View style={s.heroAuthRow}>
-            <Pressable accessibilityRole="button" accessibilityLabel="See Kleenest install options" style={s.heroAuthButton} onPress={go('/install')}><Text style={s.heroAuthText}>INSTALL APP</Text></Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Learn why joining Kleenest is useful" style={s.heroAuthButton} onPress={go('/for-you')}><Text style={s.heroAuthText}>WHY JOIN?</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Continue as guest" style={s.heroAuthButton} onPress={go('/explore?app=1')}><Text style={s.heroAuthText}>CONTINUE AS GUEST</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Join Kleenest" style={s.heroAuthButton} onPress={go('/signup')}><Text style={s.heroAuthText}>JOIN KLEENEST</Text></Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel="Sign in to Kleenest" style={s.heroAuthButton} onPress={go('/profile')}><Text style={s.heroAuthText}>SIGN IN</Text></Pressable>
           </View>
           <View style={s.heroTrustRow}>
