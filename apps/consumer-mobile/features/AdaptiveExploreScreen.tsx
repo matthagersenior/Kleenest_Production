@@ -2163,7 +2163,7 @@ export default function AdaptiveExploreScreen() {
                       ? Math.min(Math.max(272,Math.round(exploreMapHeight*0.22)),330)
                       : destinationCardOpen
                         ? 220
-                        : Math.min(Math.max(228,Math.round(exploreMapHeight*0.24)),286),
+                        : 76,
                   backgroundColor:theme.surface,
                   borderColor:theme.line,
                 },
@@ -2265,7 +2265,7 @@ export default function AdaptiveExploreScreen() {
                   ):null}
                 </View>
               ) : (
-                <View style={s.resultsSheetBody}>
+                {resultsSheetExpanded ? <View style={s.resultsSheetBody}>
                   {(message||cached)?(
                     <View style={s.sheetStatusRow}>
                       <Text numberOfLines={2} accessibilityLiveRegion="polite" style={[s.sheetStatusText,{color:theme.muted}]}>{message||'Showing cached nearby places.'}</Text>
@@ -2318,7 +2318,7 @@ export default function AdaptiveExploreScreen() {
                       <Text style={[s.missingTitle,{color:theme.ink}]}>Add a missing bathroom</Text>
                     </Pressable>:null}
                   </ScrollView>
-                </View>
+                </View> : null}
               )}
             </View>
           </View>
