@@ -158,7 +158,12 @@ for(const page of pages)applySeo(path.join(dist,page.file),page);
 // Expo exports can omit HTML files for client-side routes. Materialize known
 // public app routes so direct navigation does not return HTTP 404.
 const appRoutes=['explore','qr','home','games'];
-const appShell=fs.readFileSync(path.join(dist,'index.html'),'utf8');
+const appShell=fs.readFileSync(path.join(dist,'index.html'),'utf8')
+  // The homepage SEO heading belongs to the marketing landing page only.
+  // Copying it into Explore makes the map scroll beneath a permanent banner.
+  .replace(/<header id="kleenest-seo-heading"[\s\S]*?<\/header>/g,'')
+  // Never surface serialized newline escapes before the Expo app root.
+  .replace(/(<body[^>]*>)\\n(?:\\n)+/i,'$1');
 for(const route of appRoutes){
   const target=path.join(dist,route,'index.html');
   fs.mkdirSync(path.dirname(target),{recursive:true});
