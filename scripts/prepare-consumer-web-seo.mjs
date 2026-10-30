@@ -177,16 +177,14 @@ const appShell=fs.readFileSync(path.join(dist,'index.html'),'utf8')
   // Copying it into Explore makes the map scroll beneath a permanent banner.
   .replace(/<header id="kleenest-seo-heading"[\s\S]*?<\/header>/g,'')
   // Never surface serialized newline escapes before the Expo app root.
-  .replace(/(<body[^>]*>)\\n(?:\\n)+/i,'$1');
+  .replace(/(?:\\\\n)+(?=\\s*<)/g,'')
+  .replace(/(<body[^>]*>)(?:\\\\n|\\n)+/i,'$1');
 for(const route of appRoutes){
   const target=path.join(dist,route,'index.html');
   fs.mkdirSync(path.dirname(target),{recursive:true});
-  // Exclusive creation avoids a check-then-write race and preserves Expo exports.
-  try{
-    fs.writeFileSync(target,appShell,{flag:'wx'});
-  }catch(error){
-    if(error?.code!=='EEXIST')throw error;
-  }
+  // Always replace generated route shells. Expo may already export this route,
+  // and preserving that older shell also preserves the unwanted SEO header.
+  fs.writeFileSync(target,appShell);
 }
 
 // Cloudflare Pages reads _headers from the deployed output. Avoid a restrictive
