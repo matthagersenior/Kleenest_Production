@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { prepareMapLibreWebWorker } from './prepare-maplibre-web-worker.mjs';
 
 const dist=path.resolve('apps/consumer-mobile/dist');
 const ORIGIN='https://kleenest.us';
@@ -149,22 +150,7 @@ function applySeo(file,page){
 }
 
 // Publish MapLibre GL JS 6's module worker at the URL expected by its web runtime.
-// Copy the worker beside the exported web assets, including GitHub Pages' repo base path.
-const workerCandidates=[
-  path.resolve('apps/consumer-mobile/node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs'),
-  path.resolve('node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs'),
-];
-const workerSource=workerCandidates.find(candidate=>fs.existsSync(candidate));
-if(workerSource){
-  for(const workerRelativePath of ['_expo/static/js/web/maplibre-gl-worker.mjs','Kleenest_Production/_expo/static/js/web/maplibre-gl-worker.mjs']){
-    const workerTarget=path.join(dist,workerRelativePath);
-    fs.mkdirSync(path.dirname(workerTarget),{recursive:true});
-    fs.copyFileSync(workerSource,workerTarget);
-  }
-}else if(fs.existsSync(path.join(dist,'_expo/static/js/web'))){
-  // A real Expo export must include the worker; synthetic SEO fixture builds need not.
-  throw new Error('MapLibre module worker missing from installed dependencies');
-}
+prepareMapLibreWebWorker(dist);
 
 const shareImageFile=path.join(dist,'app-icon.png');
 if(!fs.existsSync(shareImageFile)||fs.statSync(shareImageFile).size<100){
