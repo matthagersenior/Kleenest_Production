@@ -2163,7 +2163,7 @@ export default function AdaptiveExploreScreen() {
                       ? Math.min(Math.max(272,Math.round(exploreMapHeight*0.22)),330)
                       : destinationCardOpen
                         ? 220
-                        : Math.min(Math.max(228,Math.round(exploreMapHeight*0.24)),286),
+                        : Math.min(112,Math.max(86,Math.round(exploreMapHeight*0.12))),
                   backgroundColor:theme.surface,
                   borderColor:theme.line,
                 },
@@ -2266,14 +2266,14 @@ export default function AdaptiveExploreScreen() {
                 </View>
               ) : (
                 <View style={s.resultsSheetBody}>
-                  {(message||cached)?(
+                  {(resultsSheetExpanded&&(message||cached))?(
                     <View style={s.sheetStatusRow}>
                       <Text numberOfLines={2} accessibilityLiveRegion="polite" style={[s.sheetStatusText,{color:theme.muted}]}>{message||'Showing cached nearby places.'}</Text>
                       {!loading?<Pressable accessibilityRole="button" accessibilityLabel="Refresh live nearby results" onPress={()=>void load({preserveCacheOnEmpty:true,recenterOnLiveLocation:mode==='nearby'&&!searchAreaOrigin})}><Text style={[s.sheetRefresh,{color:theme.accent}]}>Refresh</Text></Pressable>:null}
                     </View>
                   ):null}
-                  <ScrollView style={s.resultsSheetList} contentContainerStyle={s.resultsSheetListContent} showsVerticalScrollIndicator={false} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                    {visibleRows.length?visibleRows.map((item,index)=>(
+                  <ScrollView style={s.resultsSheetList} scrollEnabled={resultsSheetExpanded} contentContainerStyle={s.resultsSheetListContent} showsVerticalScrollIndicator={false} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                    {!resultsSheetExpanded?null:visibleRows.length?visibleRows.map((item,index)=>(
                       <View key={idOf(item)||String(index)}>
                         <Pressable
                           accessibilityRole="button"
