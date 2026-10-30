@@ -155,11 +155,15 @@ const workerCandidates=[
   path.resolve('node_modules/maplibre-gl/dist/maplibre-gl-csp-worker.js'),
 ];
 const workerSource=workerCandidates.find(candidate=>fs.existsSync(candidate));
-if(!workerSource)throw new Error('MapLibre CSP worker missing from installed dependencies');
-for(const workerRelativePath of ['_expo/static/js/web/maplibre-gl-worker.mjs','Kleenest_Production/_expo/static/js/web/maplibre-gl-worker.mjs']){
-  const workerTarget=path.join(dist,workerRelativePath);
-  fs.mkdirSync(path.dirname(workerTarget),{recursive:true});
-  fs.copyFileSync(workerSource,workerTarget);
+if(workerSource){
+  for(const workerRelativePath of ['_expo/static/js/web/maplibre-gl-worker.mjs','Kleenest_Production/_expo/static/js/web/maplibre-gl-worker.mjs']){
+    const workerTarget=path.join(dist,workerRelativePath);
+    fs.mkdirSync(path.dirname(workerTarget),{recursive:true});
+    fs.copyFileSync(workerSource,workerTarget);
+  }
+}else if(fs.existsSync(path.join(dist,'_expo/static/js/web'))){
+  // A real Expo export must include the worker; synthetic SEO fixture builds need not.
+  throw new Error('MapLibre CSP worker missing from installed dependencies');
 }
 
 const shareImageFile=path.join(dist,'app-icon.png');
