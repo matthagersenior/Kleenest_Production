@@ -6,11 +6,8 @@ import { palette } from '../components/ConsumerUI';
 import { markConsumerAppPresence, markConsumerInstallConfirmed } from '../services/webExperience';
 import { useConsumerTheme } from '../services/theme';
 import { captureAcquisitionEvent, captureInstallCenterLanding } from '../services/acquisitionAttribution';
+import { hasPendingConsumerInstallPrompt, requestConsumerInstallPrompt, subscribeConsumerInstallPrompt } from '../services/consumerInstallPrompt';
 
-type InstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
-};
 type DeviceKind='ios'|'android'|'desktop'|'other';
 type BrowserKind='opera'|'chrome'|'edge'|'samsung'|'firefox'|'safari'|'other';
 type ReleaseState={
@@ -189,7 +186,7 @@ function InstallChoiceGuide({deviceKind}:{deviceKind:DeviceKind}){
 
 export default function InstallKleenest(){
   const theme=useConsumerTheme();
-  const[prompt,setPrompt]=useState<InstallPromptEvent|null>(null);
+  const[promptAvailable,setPromptAvailable]=useState(()=>hasPendingConsumerInstallPrompt());
   const[installed,setInstalled]=useState(false);
   const[message,setMessage]=useState('');
   const[showDetailedWebSteps,setShowDetailedWebSteps]=useState(false);
@@ -229,20 +226,16 @@ export default function InstallKleenest(){
     captureInstallCenterLanding({device_kind:deviceKind,browser_kind:browserKind});
   },[deviceKind,browserKind]);
 
+  useEffect(()=>subscribeConsumerInstallPrompt(setPromptAvailable),[]);
+
   useEffect(()=>{
     if(Platform.OS!=='web'||typeof window==='undefined')return;
     void refreshDiagnostics();
-    const capture=(event:Event)=>{
-      event.preventDefault();
-      setPrompt(event as InstallPromptEvent);
-    };
-    const installedHandler=()=>{markConsumerAppPresence();markConsumerInstallConfirmed();captureAcquisitionEvent('install_success',{metadata:{method:'browser_event',device_kind:deviceKind,browser_kind:browserKind}});setInstalled(true);setPrompt(null);setMessage('Kleenest is installed on this device. Find its icon on your Home Screen.');};
-    window.addEventListener('beforeinstallprompt',capture);
+    const installedHandler=()=>{markConsumerAppPresence();markConsumerInstallConfirmed();captureAcquisitionEvent('install_success',{metadata:{method:'browser_event',device_kind:deviceKind,browser_kind:browserKind}});setInstalled(true);setPromptAvailable(false);setMessage('Kleenest is installed on this device. Find its icon on your Home Screen.');};
     window.addEventListener('appinstalled',installedHandler);
     const timer=window.setTimeout(()=>void refreshDiagnostics(),1200);
     return()=>{
       window.clearTimeout(timer);
-      window.removeEventListener('beforeinstallprompt',capture);
       window.removeEventListener('appinstalled',installedHandler);
     };
   },[browserKind,deviceKind,refreshDiagnostics]);
@@ -275,15 +268,15 @@ export default function InstallKleenest(){
       setMessage('Follow the three Safari steps above. iPhone installation is completed through Share → Add to Home Screen.');
       return;
     }
-    if(prompt){
-      await prompt.prompt();
-      const choice=await prompt.userChoice;
-      captureAcquisitionEvent(choice.outcome==='accepted'?'install_prompt_accepted':'install_prompt_dismissed',{metadata});
-      setMessage(choice.outcome==='accepted'
-        ?'Install request accepted. Find the Kleenest icon on your Home Screen or app launcher; installation will be confirmed when available.'
-        :'The install window was closed. You can try again or use the browser-menu steps above.');
-      if(choice.outcome==='accepted')setPrompt(null);
-      return;
+    if(promptAvailable){
+      const outcome=await requestConsumerInstallPrompt();
+      if(outcome==='accepted'||outcome==='dismissed'){
+        captureAcquisitionEvent(outcome==='accepted'?'install_prompt_accepted':'install_prompt_dismissed',{metadata});
+        setMessage(outcome==='accepted'
+          ?'Install request accepted. Find the Kleenest icon on your Home Screen or app launcher; installation will be confirmed when available.'
+          :'The install window was closed. You can retry or follow the browser-menu steps below.');
+        return;
+      }
     }
     captureAcquisitionEvent('install_guidance_view',{metadata:{...metadata,method:'manual_browser'}});
     setShowDetailedWebSteps(true);
@@ -371,7 +364,7 @@ export default function InstallKleenest(){
       <Pressable accessibilityRole="button" style={[s.primary,{backgroundColor:theme.accent}]} onPress={()=>void installWeb()}><Text style={[s.primaryText,{color:theme.accentText}]}>{installed?'WEB APP INSTALLED':'INSTALL WEB APP'}</Text></Pressable>
       <Text style={[s.cardBody,{color:theme.ink,fontWeight:'800'}]}>If no install window appears, follow these steps:</Text>
       <QuickInstallSteps deviceKind={deviceKind} browserKind={browserKind}/>
-      {!installed?<Text style={[s.help,{color:theme.muted}]}>{prompt?'Your browser is ready for a one-tap install.':browserHelp}</Text>:null}
+      {!installed?<Text style={[s.help,{color:theme.muted}]}>{promptAvailable?'Your browser is ready for a one-tap install.':browserHelp}</Text>:null}
       {showDetailedWebSteps?<WebInstallSteps deviceKind={deviceKind} browserKind={browserKind}/>:null}
       <Pressable accessibilityRole="button" onPress={toggleDetailedWebSteps} style={[s.secondary,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}><Text style={[s.secondaryText,{color:theme.accent}]}>{showDetailedWebSteps?'HIDE EXTRA HELP':'SHOW DETAILED INSTALL HELP'}</Text></Pressable>
     </View>:null}
@@ -461,7 +454,7 @@ export default function InstallKleenest(){
       <View style={s.healthGrid}>
         <View style={[s.healthItem,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.healthLabel,{color:theme.accent}]}>SECURE WEB</Text><Text style={[s.healthValue,{color:theme.ink}]}>{secureContext?'READY':'CHECK BROWSER'}</Text></View>
         <View style={[s.healthItem,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.healthLabel,{color:theme.accent}]}>PWA SHELL</Text><Text style={[s.healthValue,{color:theme.ink}]}>{serviceWorkerReady?'READY':'LOADING'}</Text></View>
-        <View style={[s.healthItem,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.healthLabel,{color:theme.accent}]}>INSTALL MODE</Text><Text style={[s.healthValue,{color:theme.ink}]}>{installed?'INSTALLED':prompt?'ONE TAP':'MANUAL READY'}</Text></View>
+        <View style={[s.healthItem,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.healthLabel,{color:theme.accent}]}>INSTALL MODE</Text><Text style={[s.healthValue,{color:theme.ink}]}>{installed?'INSTALLED':promptAvailable?'ONE TAP':'MANUAL READY'}</Text></View>
         <View style={[s.healthItem,{backgroundColor:theme.surface,borderColor:theme.line}]}><Text style={[s.healthLabel,{color:theme.accent}]}>APK BASELINE</Text><Text style={[s.healthValue,{color:theme.ink}]}>{releaseState?.baselineSha?.slice(0,8)||'CHECKING'}</Text></View>
       </View>
       <Text style={[s.help,{color:theme.muted}]}>{releaseGood?'Web, OTA and the verified APK baseline are compatible.':'Kleenest checks release alignment here so a web/OTA update cannot silently outrun required native changes.'}</Text>

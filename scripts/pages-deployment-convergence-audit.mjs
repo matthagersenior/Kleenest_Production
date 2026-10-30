@@ -64,7 +64,10 @@ for(const token of ['node scripts/prepare-consumer-web-seo.mjs','sitemap.xml','r
 
 for(const token of ["output: 'single'","bundler: 'metro'","EXPO_PUBLIC_PAGES_BASE_PATH","pagesBasePath","baseUrl: pagesBasePath || '/'","previewRole: 'non-blocking-web-preview'"])requireToken(appConfig,token,'Expo consumer preview config');
 const consumerInstall=read('apps/consumer-mobile/app/install.tsx');
-for(const token of ['Install Kleenest','beforeinstallprompt','Kleenest-Consumer.apk','INSTALL WEB APP','DOWNLOAD ANDROID APK','iPhone','iPad','Add to Home Screen','Open as Web App','deviceKind','isIOS','isAndroid','Kleenest-release-state.json','INSTALL HEALTH','SHARE INSTALL LINK','OPEN KLEENEST','CHECK INSTALLATION','browserKind','serviceWorkerReady'])requireToken(consumerInstall,token,'Consumer Installation Center');
+for(const token of ['Install Kleenest','Kleenest-Consumer.apk','INSTALL WEB APP','DOWNLOAD ANDROID APK','iPhone','iPad','Add to Home Screen','Open as Web App','deviceKind','isIOS','isAndroid','Kleenest-release-state.json','INSTALL HEALTH','SHARE INSTALL LINK','OPEN KLEENEST','CHECK INSTALLATION','browserKind','serviceWorkerReady'])requireToken(consumerInstall,token,'Consumer Installation Center');
+const consumerInstallPrompt=read('apps/consumer-mobile/services/consumerInstallPrompt.ts');
+for(const token of ['beforeinstallprompt','event.preventDefault()','requestConsumerInstallPrompt','subscribeConsumerInstallPrompt'])requireToken(consumerInstallPrompt,token,'Consumer browser prompt handoff');
+requireToken(consumerInstall,'subscribeConsumerInstallPrompt','Consumer Installation Center');
 const consumerAuth=read('apps/consumer-mobile/app/profile.tsx');
 const consumerHome=read('apps/consumer-mobile/app/index.tsx');
 for(const token of ['Redirect','/explore','MarketingHome','useConsumerWebExperience'])requireToken(consumerHome,token,'Consumer app entry + public marketing split');

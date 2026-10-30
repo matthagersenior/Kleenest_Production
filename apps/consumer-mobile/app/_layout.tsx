@@ -20,6 +20,7 @@ import { linkGuestJourneyRegistration } from '../services/acquisitionAttribution
 import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { getProgressionRewards } from '../services/discoveryProgression';
 import { runConsumerPermissionPreflight } from '../services/permissionPreflight';
+import '../services/consumerInstallPrompt'; // Listen for beforeinstallprompt from initial app load.
 
 const operatorOAuthRelaying=relayOperatorOAuthCallback();
 
