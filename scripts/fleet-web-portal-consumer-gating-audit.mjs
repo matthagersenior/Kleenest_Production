@@ -131,7 +131,8 @@ requireTokens('Consumer no-install fallback',install,[
   'CONTINUE AS GUEST',
   'JOIN KLEENEST',
   'SIGN IN',
-  "router.push('/?app=1'",
+  'window.location.assign(browserUrl(APP_PATH))',
+  "router.replace('/explore'",
   "router.push('/signup'",
   "router.push('/profile'"
 ]);
