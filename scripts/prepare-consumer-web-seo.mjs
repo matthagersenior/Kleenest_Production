@@ -153,12 +153,17 @@ if(!fs.existsSync(shareImageFile)||fs.statSync(shareImageFile).size<100){
   throw new Error('Public Kleenest share image is missing or empty: app-icon.png');
 }
 
+// Keep a pristine SPA shell for client-side app routes. The public home page
+// receives crawler-facing headings and links below; copying that enriched HTML
+// into /explore makes marketing content appear above the app and can push its
+// navigation off-screen.
+const appShell=fs.readFileSync(path.join(dist,'index.html'),'utf8');
+
 for(const page of pages)applySeo(path.join(dist,page.file),page);
 
 // Expo exports can omit HTML files for client-side routes. Materialize known
 // public app routes so direct navigation does not return HTTP 404.
 const appRoutes=['explore','qr','home','games'];
-const appShell=fs.readFileSync(path.join(dist,'index.html'),'utf8');
 for(const route of appRoutes){
   const target=path.join(dist,route,'index.html');
   fs.mkdirSync(path.dirname(target),{recursive:true});
