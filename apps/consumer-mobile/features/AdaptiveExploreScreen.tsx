@@ -678,7 +678,12 @@ export default function AdaptiveExploreScreen() {
   useEffect(()=>{
     let active=true;
     if(!amenities.length){setPreferenceAmenityNames([]);return()=>{active=false};}
-    getBathroomFitPreferences().then(preferences=>{
+    // Guest discovery must not require a user-scoped preference RPC.
+    const preferencesClient=getKleenestSupabaseClient();
+    preferencesClient.auth.getSession().then(({data})=>{
+      if(!data.session?.user || data.session.user.is_anonymous)return null;
+      return getBathroomFitPreferences();
+    }).then(preferences=>{
       if(!active)return;
       const wanted=BATHROOM_FIT_OPTIONS.filter(([key])=>Boolean(preferences?.[key])).map(([,label])=>String(label));
       const normalized=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
