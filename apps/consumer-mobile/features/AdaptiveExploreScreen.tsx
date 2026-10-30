@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 40947)
-Total output lines: 2686
-
 import { Camera, Map, Marker } from '@maplibre/maplibre-react-native';
 import { GeoJSONSource, Layer } from '@maplibre/maplibre-react-native';
 import * as Linking from 'expo-linking';
@@ -1198,7 +1195,711 @@ export default function AdaptiveExploreScreen() {
               limit:2000,
             })
           : discoveryRows;
-        const enrichedBase=await enrich(compl…10947 tokens truncated…ht,height:exploreMapHeight}]} accessibilityLabel="Explore map and results">
+        const enrichedBase=await enrich(completeRows);
+        const enriched=organizeDiscoveryRows(
+          attachPresence(await enrichProgression(enrichedBase,latitude,longitude,result.effectiveRadiusMeters),livePresence),
+          rankingAmenityNames,
+        );
+        if(nearbyEnrichmentRunRef.current!==enrichmentRun)return;
+        setRows(enriched);
+        if(cameraInteractionVersionRef.current===cameraInteractionVersion&&!preservedId)applyDensityAwareCamera(enriched,nextOrigin);
+        if(!areaMatch&&!query&&!activeAmenityNames.length&&!requiresRestroom&&enriched.length){
+          void writeNearbyCache(enriched,{selectedId:preservedId,origin:nextOrigin,radiusMeters:result.effectiveRadiusMeters});
+          void publishConsumerWidgetSnapshot(enriched.filter(hasRestroomSignal));
+        }
+      }catch{}
+    })();
+
+    if(areaMatch){
+      setMessage(displayRows.length
+        ? `Places near ${areaMatch.label} are ready${result.expanded?' after searching farther':''}.`
+        : `No places were found near ${areaMatch.label} through ${radiusLabel(result.effectiveRadiusMeters)}.`);
+    } else if (usedMatureFallback) {
+      setMessage(displayRows.length?`${displayRows.length} nearby place${displayRows.length===1?'':'s'} found using the fallback discovery path while adaptive discovery recovers.`:'No places matched the current nearby search.');
+    } else if (relaxedAmenityFallback) {
+      setMessage(`No exact amenity match was found through your expanded search, so Kleenest kept the page useful with ${displayRows.length} nearby place${displayRows.length===1?'':'s'}. Results are organized by freshness, Kleenest status, amenities, then distance.`);
+    } else if (!query && !activeAmenityNames.length) {
+      setMessage(displayRows.length
+        ? (result.expanded?`Expanded nearby search through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')}.`:'')
+        : 'Live discovery returned no local data, so Kleenest will keep the last useful nearby set when one is available.');
+    } else if (result.expanded) {
+      setMessage(displayRows.length?`Expanded through ${result.attemptedRadiiMeters.map(radiusLabel).join(' → ')} and found ${displayRows.length} qualifying location${displayRows.length===1?'':'s'}.`:`No qualifying locations found after expanding through ${radiusLabel(result.effectiveRadiusMeters)}.`);
+    } else {
+      setMessage(displayRows.length?`${displayRows.length} qualifying place${displayRows.length===1?'':'s'} within ${radiusLabel(result.effectiveRadiusMeters)}.`:`No qualifying places found within ${radiusLabel(result.effectiveRadiusMeters)}.`);
+    }
+  }
+
+  async function loadRoute(options?:{destination?:[number,number];label?:string}) {
+    const current = await currentLocation();
+    const intent=activeIntentRef.current;
+    const activeAmenityNames=activeIntentAmenitiesRef.current??selectedAmenityNames;
+    const originalQuery=search.trim();
+    const rawQuery=intent?intent.placeQuery:originalQuery;
+    const destinationQuery=intent?.destinationText||(!intent&&rawQuery&&looksLikeAddressOrArea(rawQuery)?rawQuery:'');
+    const currentOrigin:[number,number]=[current.coords.longitude,current.coords.latitude];
+    const activeCorridor=intent?.maxDetourMiles?Math.max(402,Math.min(40234,Math.round(intent.maxDetourMiles*1609.344))):corridor;
+    let built:any=null;
+    let routeSearch=rawQuery;
+    let destinationLabel='';
+
+    if(options?.destination||destinationQuery){
+      let destination:[number,number];
+      if(options?.destination){
+        destination=[Number(options.destination[0]),Number(options.destination[1])];
+        destinationLabel=String(options.label||searchAreaLabel||destinationQuery||'Destination');
+      }else{
+        const match=await withTimeout(
+          resolveConsumerSearchLocation(destinationQuery),
+          LIVE_LOOKUP_TIMEOUT_MS,
+          'Destination lookup took too long. Pull down to retry.',
+        );
+        if(!match)throw new Error('Kleenest could not locate “'+destinationQuery+'”. Try the street number plus city/state or ZIP.');
+        destination=[match.longitude,match.latitude];
+        destinationLabel=match.label||destinationQuery;
+      }
+      built=await buildMobileRouteToDestination(currentOrigin,destination,destinationLabel);
+      built={...built,destinationGeofenceRadiusMeters:SEARCH_DESTINATION_GEOFENCE_RADIUS_M};
+      routeSearch='';
+      setSearchAreaOrigin(destination);
+      setSearchAreaLabel(destinationLabel);
+      setPendingMapOrigin(null);
+    }else{
+      setSearchAreaOrigin(null);
+      setSearchAreaLabel('');
+      const raw = await SecureStore.getItemAsync(DRAFT_KEY);
+      const stopIds = parseRouteDraft(raw);
+      if (!stopIds.length) {
+        throw new Error(
+          rawQuery
+            ? 'Enter a street address or destination to find bathrooms along the way, or add bathroom stops to your saved Route.'
+            : 'Enter a destination address above, or open Route and add at least one bathroom stop.',
+        );
+      }
+      built = await buildMobileRoute(currentOrigin, stopIds);
+    }
+
+    if (!built?.geometry) throw new Error('The route could not produce usable route geometry.');
+    const data = await listPlacesAlongRoute({
+      routeGeoJSON: built.geometry,
+      corridorMeters: activeCorridor,
+      search: routeSearch,
+      amenityNames: activeAmenityNames,
+      amenityMatch: matchRule,
+      category: 'all',
+      limit: 200,
+    });
+    const enrichedBase = await enrich(data);
+    const progressionRadius=Math.min(402336,Math.max(activeCorridor,Math.round((Number(built.distanceMiles||0)+10)*1609.344)));
+    const livePresence=await recordConsumerPresenceAt(current.coords.latitude,current.coords.longitude).catch(()=>null);
+    const enriched = attachPresence(
+      await enrichProgression(enrichedBase,current.coords.latitude,current.coords.longitude,progressionRadius),
+      livePresence,
+    );
+    setRows(enriched);
+    setRoute(built);
+    setFitRouteCamera(true);
+    setSelectedId('');
+    setDestinationCardOpen(Boolean(destinationLabel));
+    setCached(false);
+    setAttemptedRadiiMeters([]);
+    setMapCenter(currentOrigin);
+    setCameraNonce((value)=>value+1);
+    const routeName=destinationLabel?` to ${destinationLabel}`:'';
+    setMessage(
+      enriched.length
+        ? `Useful stops along your ${Number(built.distanceMiles || 0).toFixed(0)} mi route${routeName} are ready.`
+        : `No useful stops matched within ${radiusLabel(activeCorridor)} of the route${routeName}.`,
+    );
+  }
+
+  async function load(options: { clearQuery?: boolean; preserveCacheOnEmpty?: boolean; mapOrigin?: [number,number] | null; recenterOnLiveLocation?: boolean } = {}) {
+    if (loading) return;
+    const cameraInteractionVersion=cameraInteractionVersionRef.current;
+    setLoading(true);
+    const originalQuery=options.clearQuery?'':search.trim();
+    let targetMode: 'nearby'|'route'=mode;
+    let intent:DiscoveryIntent|null=null;
+    let intentAmenities:string[]|null=null;
+    try{
+      intent=originalQuery
+        ? await withTimeout(
+            interpretDiscoveryIntent(originalQuery,mode,amenities.map(item=>item.name)),
+            4500,
+            'Search interpretation timed out.',
+          ).catch(()=>null)
+        : null;
+      if(intent){
+        targetMode=intent.mode;
+        intentAmenities=resolveIntentAmenityNames(intent,amenities.map(item=>item.name));
+        activeIntentRef.current=intent;
+        activeIntentAmenitiesRef.current=intentAmenities.length?intentAmenities:selectedAmenityNames;
+        setInterpretedIntent(intent);
+        if(intent.mode!==mode){setMode(intent.mode);setRows([]);setSelectedId('');setRoute(null);}
+        if(intentAmenities.length)setSelectedAmenityNames(intentAmenities);
+        if(intent.minimumStars!=null)setMinimumStars(intent.minimumStars);
+        if(intent.freshnessDays!=null)setFreshnessDays(intent.freshnessDays);
+        if(intent.kleenestOnly)setKleenestOnly(true);
+        if(intent.verifiedOnly&&precisionFilterUnlocked)setVerifiedEvidenceOnly(true);
+        if(intent.maxRadiusMiles!=null){
+          const meters=Math.max(1609,Math.min(402336,Math.round(intent.maxRadiusMiles*1609.344)));
+          setRadius(meters);setMaxRadius(meters);setAutoExpand(false);
+        }
+        if(intent.maxDetourMiles!=null){
+          const meters=Math.max(402,Math.min(40234,Math.round(intent.maxDetourMiles*1609.344)));
+          setCorridor(meters);
+        }
+      }else{
+        activeIntentRef.current=null;
+        activeIntentAmenitiesRef.current=null;
+        setInterpretedIntent(null);
+      }
+      if(options.clearQuery)setInterpretedIntent(null);
+      setMessage(targetMode === 'nearby' ? 'Searching nearby…' : 'Building route and searching its corridor…');
+      if (targetMode === 'nearby') await loadNearby(
+        Boolean(options.clearQuery),
+        Boolean(options.preserveCacheOnEmpty),
+        options.mapOrigin||null,
+        Boolean(options.recenterOnLiveLocation),
+      );
+      else await loadRoute();
+    } catch (error: any) {
+      const canUseGenericCache = !search.trim() && !selectedAmenityNames.length;
+      if (mode === 'nearby' && canUseGenericCache) {
+        const fallback = await readNearbyCache();
+        if (fallback?.rows?.length) {
+          const cachedRows=dedupePhysicalPlaceRows(fallback.rows,2000);
+          const fallbackSelected = selectedId && cachedRows.some((row: any) => idOf(row) === selectedId)
+            ? selectedId
+            : '';
+          const cameraStillOwnedByLoad=cameraInteractionVersionRef.current===cameraInteractionVersion;
+          setRows(cachedRows);
+          setSelectedId((currentSelected)=>{
+            if(!cameraStillOwnedByLoad)return currentSelected&&cachedRows.some((row:any)=>idOf(row)===currentSelected)?currentSelected:'';
+            return fallbackSelected;
+          });
+          if (fallback.origin) {
+            setOrigin(fallback.origin);
+            if(cameraStillOwnedByLoad&&!fallbackSelected)applyDensityAwareCamera(cachedRows,fallback.origin);
+          }
+          if (fallback.radiusMeters) setRadius(fallback.radiusMeters);
+          setCached(true);
+          setMessage(
+            `Live lookup failed. Showing cached nearby places from ${cachedAgeLabel(fallback.savedAt)}; tap Search for a live result or Refresh live to retry.`,
+          );
+          setLoading(false);
+          return;
+        }
+      }
+      if(cameraInteractionVersionRef.current===cameraInteractionVersion){
+        setRows([]);
+        setSelectedId('');
+      }
+      setRoute(null);
+      setMessage(friendlyExploreError(error,targetMode==='route'?'Kleenest could not finish the route search in time. Please try again.':'Kleenest could not finish that search. Please try again.'));
+    } finally {
+      activeIntentRef.current=null;
+      activeIntentAmenitiesRef.current=null;
+      setLoading(false);
+    }
+  }
+
+  function addToRoute(row: any) {
+    const id = idOf(row);
+    if (!id) return;
+    captureConsumerRouteIntent(id);
+    const routeStart=mode==='route'&&Array.isArray(route?.originCoordinates)
+      ? route.originCoordinates
+      : searchAreaOrigin||origin;
+    router.push({
+      pathname: '/route',
+      params: {
+        add: id,
+        addName: String(row?.name || ''),
+        addAddress: String(row?.address || ''),
+        addCity: String(row?.city || ''),
+        addState: String(row?.state || ''),
+        ...(routeStart?{
+          startLng:String(routeStart[0]),
+          startLat:String(routeStart[1]),
+          startLabel:mode==='route'?'Route start':searchAreaLabel||'Selected discovery area',
+        }:{}),
+      },
+    });
+  }
+
+  async function saveForLater(row:any){
+    const id=idOf(row);
+    if(!id)return;
+    try{
+      const {data,error}=await getKleenestSupabaseClient().auth.getSession();
+      if(error)throw error;
+      if(!data.session?.user||data.session.user.is_anonymous){
+        await preserveExploreReturnState();
+        captureAcquisitionEvent('signup_intent',{metadata:{source:'explore_save',method:'save_restroom'}});
+        router.push({pathname:'/signup',params:{mode:'signup',returnTo:`/location/${encodeURIComponent(id)}?saveAfterJoin=1`}} as any);
+        return;
+      }
+      const favorites=await listMobileFavoriteLocations();
+      const alreadySaved=favorites.some((item:any)=>String(item?.location_id||item?.place_id||item?.id||'')===id);
+      if(!alreadySaved)await toggleMobileFavorite(id);
+      setMessage(alreadySaved?'This restroom is already in your saved list.':`${discoveryPlaceName(row)} saved for next time. Find it under Saved bathrooms.`);
+    }catch{
+      setMessage('Kleenest could not save this restroom right now. Try again.');
+    }
+  }
+
+  function contributeKnowledge(row: any) {
+    const id = idOf(row);
+    if (!id) return;
+    router.push({ pathname: '/knowledge', params: { locationId: id, name: String(row?.name || '') } });
+  }
+
+  function openLocationQr(row:any) {
+    const id=idOf(row);
+    if(!id)return;
+    router.push({pathname:'/location-qr',params:{locationId:id,name:String(discoveryPlaceName(row)||row?.name||'')}});
+  }
+
+  function openLocationDetails(row:any) {
+    const id=idOf(row);
+    if(!id)return;
+    router.push({
+      pathname:'/location/[id]',
+      params:{
+        id,
+        preview:'1',
+        previewName:String(discoveryPlaceName(row)||row?.name||'Location'),
+        previewAddress:String(row?.address||''),
+        previewCity:String(row?.city||''),
+        previewState:String(row?.state||''),
+        previewPostalCode:String(row?.postal_code||row?.zip||''),
+        previewLat:String(row?.latitude??row?.lat??''),
+        previewLng:String(row?.longitude??row?.lng??''),
+        previewBusinessName:String(row?.business_name||''),
+        previewPlaceType:String(row?.place_type||row?.category||''),
+        previewRating:row?.rating==null?'':String(row.rating),
+        previewCleanliness:row?.cleanliness_pct==null?'':String(row.cleanliness_pct),
+        previewAccessible:Boolean(row?.accessible)?'1':'0',
+        previewRestroomVerified:Boolean(row?.restroom_verified||row?.has_bathroom||row?.is_verified)?'1':'0',
+      },
+    });
+  }
+
+  async function directions(row: any) {
+    if (!hasCoordinates(row)) return;
+    const id = idOf(row);
+    if (id) {
+      captureConsumerRouteIntent(id);
+      captureConsumerCoreLoopEvent('navigation_started',id,{source:'explore'});
+    }
+    await preserveExploreReturnState();
+    await Linking.openURL(navigateUrl(row,route));
+  }
+
+  async function checkIn(row:any){
+    const id=idOf(row);if(!id)return;
+    if(checkInFeedback[id]?.status==='checking')return;
+    const placeName=String(row?.name||'this restroom');
+    setSelectedId(id);
+    setCheckInFeedback(current=>({...current,[id]:{status:'checking',message:`Checking your location for ${placeName}…`}}));
+    try{
+      const permission=await Location.requestForegroundPermissionsAsync();
+      if(permission.status!=='granted')throw new Error(permission.canAskAgain===false?'Location permission is blocked in system settings.':'Location permission is required to check in.');
+      const current=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.High});
+      const result:any=await mobileCheckIn(id,current.coords.latitude,current.coords.longitude);
+      const distance=result?.distance_meters!=null?` · ${Math.round(Number(result.distance_meters))} m proof`:'';
+      const points=Math.max(0,Number(result?.points_awarded||0));
+      const windowLabel=verificationWindowLabel(result?.verification_expires_at);
+      const rewardLabel=!result?.already_checked_in&&points>0?` · +${points} points`:(!result?.already_checked_in&&result?.progression_cap_reached?' · visit saved; today’s XP cap reached':'');
+      const reviewLabel=result?.review_ready?' · verified review ready':'';
+      const successMessage=result?.already_checked_in
+        ? `Visit already verified at ${placeName}${distance}${reviewLabel}${windowLabel?` · ${windowLabel}`:''}.`
+        : `Checked in at ${placeName}. Exact place + GPS verified${distance}${rewardLabel}${reviewLabel}${windowLabel?` · ${windowLabel}`:''}.`;
+      setRows(currentRows=>currentRows.map(item=>idOf(item)===id?{...item,active_check_in:true,visit_verification_available:true,visit_verification_expires_at:result?.verification_expires_at||null}:item));
+      setMessage(successMessage);
+      setCheckInFeedback(current=>({...current,[id]:{
+        status:'success',
+        message:successMessage,
+        reviewReady:Boolean(result?.review_ready),
+        verificationExpiresAt:result?.verification_expires_at||null,
+        pointsAwarded:points,
+        progressionCapReached:Boolean(result?.progression_cap_reached),
+        alreadyCheckedIn:Boolean(result?.already_checked_in),
+      }}));
+      captureConsumerCoreLoopEvent('arrival_detected',id,{reviewReady:Boolean(result?.review_ready),alreadyCheckedIn:Boolean(result?.already_checked_in)});
+    }catch(error:any){
+      const detail=String(error?.message||'');
+      const failureMessage=detail.includes('OUTSIDE_GEOFENCE')
+        ? `Get closer to ${placeName} to check in. Kleenest only verifies GPS check-ins inside the location geofence.`
+        : detail.includes('LEAVE_REQUIRED_BEFORE_REPEAT_CHECK_IN')
+          ? `You're already checked in at ${placeName} and haven't left its geofence yet.`
+          : detail&&detail.length<120&&!/^[A-Z0-9_: =.-]+$/.test(detail)
+            ? detail
+            : 'Check-in could not be completed. Please try again.';
+      setMessage(failureMessage);
+      setCheckInFeedback(current=>({...current,[id]:{status:'error',message:failureMessage}}));
+    }
+  }
+
+  useEffect(() => {
+    listAmenityCatalog().then(setAmenities).catch(() => {});
+    getRewardCapabilities().then(setRewardCapabilities).catch(()=>setRewardCapabilities({}));
+    let active = true;
+    let restoredExternalReturn=false;
+    Promise.all([readNearbyCache(), readNearbyContinuity(), takeExploreReturnState()])
+      .then(([cache, continuity, externalReturn]) => {
+        if (!active) return;
+        if(externalReturn){
+          restoredExternalReturn=true;
+          setMode(externalReturn.mode);
+          setSearch(externalReturn.search||'');
+          setRows(externalReturn.rows||[]);
+          setOrigin(externalReturn.origin||null);
+          setMapCenter(externalReturn.mapCenter||externalReturn.searchAreaOrigin||externalReturn.origin||null);
+          if(Number.isFinite(externalReturn.mapZoom))setMapZoom(Number(externalReturn.mapZoom));
+          setSelectedId(externalReturn.selectedId||'');
+          setSearchAreaOrigin(externalReturn.searchAreaOrigin||null);
+          setSearchAreaLabel(externalReturn.searchAreaLabel||'');
+          setDestinationCardOpen(Boolean(externalReturn.destinationCardOpen));
+          if(Number.isFinite(externalReturn.radiusMeters))setRadius(Number(externalReturn.radiusMeters));
+          if(Number.isFinite(externalReturn.maxRadiusMeters))setMaxRadius(Number(externalReturn.maxRadiusMeters));
+          if(Number.isFinite(externalReturn.effectiveRadiusMeters))setEffectiveRadiusMeters(Number(externalReturn.effectiveRadiusMeters));
+          setAttemptedRadiiMeters(Array.isArray(externalReturn.attemptedRadiiMeters)?externalReturn.attemptedRadiiMeters:[]);
+          if(Number.isFinite(externalReturn.corridorMeters))setCorridor(Number(externalReturn.corridorMeters));
+          setSelectedAmenityNames(Array.isArray(externalReturn.selectedAmenityNames)?externalReturn.selectedAmenityNames:[]);
+          setMatchRule(externalReturn.matchRule==='any'?'any':'all');
+          setAutoExpand(externalReturn.autoExpand!==false);
+          setRoute(externalReturn.route||null);
+          setCached(false);
+          setMessage('Restored your Explore search after directions.');
+          return;
+        }
+        if (
+          continuity?.radiusMeters &&
+          radiusChoices.some((choice) => choice.meters === continuity.radiusMeters)
+        ) {
+          setRadius(continuity.radiusMeters);
+          setEffectiveRadiusMeters(continuity.radiusMeters);
+        }
+        if (cache?.rows?.length) {
+          setRows(cache.rows);
+          const restoredSelectedId=
+            continuity?.selectedId && cache.rows.some((row:any)=>idOf(row)===continuity.selectedId)
+              ? continuity.selectedId
+              : cache.selectedId && cache.rows.some((row:any)=>idOf(row)===cache.selectedId)
+                ? cache.selectedId
+                : '';
+          if(restoredSelectedId)setSelectedId(restoredSelectedId);
+          if (cache.origin) {
+            setOrigin(cache.origin);
+            const restoredRow=restoredSelectedId?cache.rows.find((row:any)=>idOf(row)===restoredSelectedId):null;
+            setMapCenter(restoredRow&&hasCoordinates(restoredRow)
+              ? [Number(restoredRow.longitude),Number(restoredRow.latitude)]
+              : cache.origin);
+          }
+          setCached(true);
+          setMessage(
+            `Showing your last nearby places from ${cachedAgeLabel(cache.savedAt)} while current results load.`,
+          );
+        }
+      })
+      .finally(() => {
+        if (active&&!restoredExternalReturn) void load({ preserveCacheOnEmpty: true, recenterOnLiveLocation: true });
+      });
+    return () => { active = false; };
+  }, []);
+
+  const cameraViewState: any = exploreCameraViewState(routeBounds,fitRouteCamera,mapCenter || searchAreaOrigin || origin || [0, 0],mapZoom);
+
+  return (
+    <SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.canvas}]}>
+      <FlatList
+        ref={listRef}
+        style={s.pageScroll}
+        data={visibleRows}
+        scrollEnabled={false}
+        nestedScrollEnabled
+        keyExtractor={idOf}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        refreshing={loading}
+        onRefresh={()=>void load({
+          preserveCacheOnEmpty:true,
+          recenterOnLiveLocation:mode==='nearby'&&!searchAreaOrigin,
+        })}
+        ListHeaderComponent={
+          <View style={[s.exploreStage,{minHeight:exploreMapHeight}]}>
+      <View style={[s.floatingSearchPanel,{marginTop:searchPanelTop,backgroundColor:theme.surface,borderColor:theme.line}]}>
+        <View style={s.searchRow}>
+          <TextInput
+            accessibilityLabel={mode==='route'?'Search places along route':'Discover nearby places'}
+            style={[s.input,{backgroundColor:theme.surfaceRaised,borderColor:theme.line,color:theme.ink}]}
+            maxFontSizeMultiplier={1.2}
+            value={search}
+            onChangeText={(value)=>{setSearch(value);setInterpretedIntent(null);}}
+            onSubmitEditing={() => void load()}
+            returnKeyType="search"
+            placeholder={mode==='route'?"Where are you going? Enter an address or place":"Address, school, workplace, city or brand"}
+            placeholderTextColor={theme.muted}
+          />
+          <Pressable
+            accessibilityRole="button"
+            style={[s.searchButton,{backgroundColor:theme.accent}]}
+            disabled={loading}
+            onPress={() => void load()}
+          >
+            <Text maxFontSizeMultiplier={1.15} style={[s.searchButtonText,{color:theme.accentText}]}>{loading ? 'WORKING…' : 'SEARCH'}</Text>
+          </Pressable>
+        </View>
+
+        {interpretedIntent?.summary?<View style={[s.searchAreaChip,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+          <Text style={[s.searchAreaText,{color:theme.ink}]}>Searching for {interpretedIntent.summary}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Clear interpreted search" onPress={()=>{setInterpretedIntent(null);setSearch('');}}><Text style={[s.searchAreaAction,{color:theme.accent}]}>Clear</Text></Pressable>
+        </View>:null}
+
+        {searchAreaLabel?<View style={[s.searchAreaChip,{backgroundColor:theme.accentSoft}]}><Text style={[s.searchAreaText,{color:theme.ink}]}>{mode==='route'?'Destination':'Searching near'} {searchAreaLabel}</Text><Pressable accessibilityRole="button" accessibilityLabel={mode==='route'?'Clear route destination':'Use my location instead'} onPress={()=>{setSearch('');setSearchAreaOrigin(null);setSearchAreaLabel('');setDestinationCardOpen(false);setRoute(null);if(mode==='nearby')void load({clearQuery:true});else{setRows([]);setSelectedId('');setMessage('Enter a destination address above, or use your saved route draft.');}}}><Text style={[s.searchAreaAction,{color:theme.accent}]}>{mode==='route'?'Clear destination':'Use my location'}</Text></Pressable></View>:null}
+
+        <View style={[s.segment,{backgroundColor:theme.surfaceRaised}]} accessibilityRole="tablist">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Nearby search"
+            accessibilityState={{ selected: mode === 'nearby' }}
+            onPress={() => chooseMode('nearby')}
+            style={[s.segmentButton,mode==='nearby'&&{backgroundColor:theme.accent}]}
+          >
+            <Text maxFontSizeMultiplier={1.15} style={[s.segmentText,{color:mode==='nearby'?theme.accentText:theme.ink}]}>Nearby</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Along route search"
+            accessibilityState={{ selected: mode === 'route' }}
+            onPress={() => chooseMode('route')}
+            style={[s.segmentButton,mode==='route'&&{backgroundColor:theme.accent}]}
+          >
+            <Text maxFontSizeMultiplier={1.15} style={[s.segmentText,{color:mode==='route'?theme.accentText:theme.ink}]}>Along route</Text>
+          </Pressable>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Filter places"
+          accessibilityState={{ expanded: showAdvanced }}
+          onPress={() => setShowAdvanced(true)}
+          style={[s.filterLauncher,{backgroundColor:theme.surface,borderColor:theme.line}]}
+        >
+          <View style={s.filterLauncherMain}>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[s.filterLauncherTitle,{color:theme.ink}]}>{activeFilterCount?filterSummary:'Amenities & filters'}</Text>
+          </View>
+          <View style={[s.filterLauncherBadge,{backgroundColor:theme.accentSoft}]}><Text numberOfLines={1} maxFontSizeMultiplier={1.1} style={[s.filterLauncherBadgeText,{color:theme.accent}]}>{activeFilterCount?String(activeFilterCount)+' on':'Optional'} ▾</Text></View>
+        </Pressable>
+        <Modal
+          accessibilityViewIsModal
+          transparent
+          animationType="fade"
+          visible={showAdvanced}
+          onRequestClose={() => setShowAdvanced(false)}
+        >
+          <View style={s.modalBackdrop}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close place filters"
+              style={StyleSheet.absoluteFill}
+              onPress={() => setShowAdvanced(false)}
+            />
+            <View style={[s.advancedModalCard,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+              <View style={s.advancedModalHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.advancedModalTitle,{color:theme.ink}]}>Filter places</Text>
+                  <Text style={[s.help,{color:theme.muted}]}>Default is Everything. Narrow the map only when you want a specific kind of stop.</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Close place filters"
+                  style={[s.modalClose,{backgroundColor:theme.accentSoft}]}
+                  onPress={() => setShowAdvanced(false)}
+                >
+                  <Text style={[s.modalCloseText,{color:theme.accent}]}>×</Text>
+                </Pressable>
+              </View>
+              <ScrollView
+                style={s.advancedModalScroll}
+                contentContainerStyle={s.advancedModalContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={s.filterSection}>
+                  <View style={s.rowHeading}>
+                    <Text style={[s.filterSectionTitle,{color:theme.ink}]}>High-value filters</Text>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Reset filters to everything" onPress={resetFilters}><Text style={[s.clear,{color:theme.accent}]}>Reset to Everything</Text></Pressable>
+                  </View>
+                  <View style={s.quickFilterGrid}>
+                    <Pressable accessibilityRole="checkbox" accessibilityState={{checked:kleenestOnly}} style={[s.quickFilterCard,{backgroundColor:kleenestOnly?theme.accent:theme.surfaceRaised,borderColor:kleenestOnly?theme.accent:theme.line}]} onPress={()=>setKleenestOnly(value=>!value)}>
+                      <Text style={[s.quickFilterTitle,{color:kleenestOnly?theme.accentText:theme.ink}]}>Kleenest partners</Text>
+                      <Text style={[s.quickFilterBody,{color:kleenestOnly?theme.accentText:theme.muted}]}>Businesses that actively keep their Kleenest information current</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="checkbox" accessibilityState={{checked:progressionOnly}} style={[s.quickFilterCard,{backgroundColor:progressionOnly?theme.accent:theme.surfaceRaised,borderColor:progressionOnly?theme.accent:theme.line}]} onPress={()=>setProgressionOnly(value=>!value)}>
+                      <Text style={[s.quickFilterTitle,{color:progressionOnly?theme.accentText:theme.ink}]}>Earn rewards</Text>
+                      <Text style={[s.quickFilterBody,{color:progressionOnly?theme.accentText:theme.muted}]}>Places where your visit can help confirm details and earn rewards</Text>
+                    </Pressable>
+                    {precisionFilterUnlocked?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:verifiedEvidenceOnly}} style={[s.quickFilterCard,{backgroundColor:verifiedEvidenceOnly?theme.accent:theme.surfaceRaised,borderColor:verifiedEvidenceOnly?theme.accent:theme.line}]} onPress={()=>setVerifiedEvidenceOnly(value=>!value)}>
+                      <Text style={[s.quickFilterTitle,{color:verifiedEvidenceOnly?theme.accentText:theme.ink}]}>Recently confirmed</Text>
+                      <Text style={[s.quickFilterBody,{color:verifiedEvidenceOnly?theme.accentText:theme.muted}]}>Places with recent community or business confirmation</Text>
+                    </Pressable>:null}
+                    {(precisionFilterUnlocked||evidenceGapRadar)?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:evidenceGapOnly}} style={[s.quickFilterCard,{backgroundColor:evidenceGapOnly?theme.accent:theme.surfaceRaised,borderColor:evidenceGapOnly?theme.accent:theme.line}]} onPress={()=>setEvidenceGapOnly(value=>!value)}>
+                      <Text style={[s.quickFilterTitle,{color:evidenceGapOnly?theme.accentText:theme.ink}]}>Needs an update</Text>
+                      <Text style={[s.quickFilterBody,{color:evidenceGapOnly?theme.accentText:theme.muted}]}>{evidenceGapRadar?'Some useful details are missing or getting old':'Some useful details are missing or getting old'}</Text>
+                    </Pressable>:null}
+                    {progressionFilterUnlocked?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:progressionPriority}} style={[s.quickFilterCard,{backgroundColor:progressionPriority?theme.accent:theme.surfaceRaised,borderColor:progressionPriority?theme.accent:theme.line}]} onPress={()=>setProgressionPriority(value=>!value)}>
+                      <Text style={[s.quickFilterTitle,{color:progressionPriority?theme.accentText:theme.ink}]}>Rewards first</Text>
+                      <Text style={[s.quickFilterBody,{color:progressionPriority?theme.accentText:theme.muted}]}>Show places where your visit can help first</Text>
+                    </Pressable>:null}
+                  </View>
+                </View>
+
+                <View style={s.filterSection}>
+                  <Text style={[s.filterSectionTitle,{color:theme.ink}]}>Stars</Text>
+                  <View style={s.choiceRow}>
+                    {[{label:'Any',value:0},{label:'3★+',value:3},{label:'4★+',value:4},{label:'4.5★+',value:4.5}].map(choice=><Pressable accessibilityRole="radio" accessibilityLabel={'Minimum rating '+choice.label} accessibilityState={{selected:minimumStars===choice.value}} key={choice.label} style={[s.choice,{backgroundColor:minimumStars===choice.value?theme.accent:theme.surfaceRaised,borderColor:minimumStars===choice.value?theme.accent:theme.line}]} onPress={()=>setMinimumStars(choice.value)}><Text style={[s.choiceText,{color:minimumStars===choice.value?theme.accentText:theme.ink}]}>{choice.label}</Text></Pressable>)}
+                  </View>
+                </View>
+
+                <View style={s.filterSection}>
+                  <Text style={[s.filterSectionTitle,{color:theme.ink}]}>How recent?</Text>
+                  <View style={s.choiceRow}>
+                    {[{label:'Any',value:null},{label:'24h',value:1},{label:'7d',value:7},{label:'30d',value:30}].map(choice=><Pressable accessibilityRole="radio" accessibilityLabel={'How recent '+choice.label} accessibilityState={{selected:freshnessDays===choice.value}} key={choice.label} style={[s.choice,{backgroundColor:freshnessDays===choice.value?theme.accent:theme.surfaceRaised,borderColor:freshnessDays===choice.value?theme.accent:theme.line}]} onPress={()=>setFreshnessDays(choice.value)}><Text style={[s.choiceText,{color:freshnessDays===choice.value?theme.accentText:theme.ink}]}>{choice.label}</Text></Pressable>)}
+                  </View>
+                </View>
+
+                {mode === 'nearby' ? (
+                  <View style={s.filterSection}>
+                    <View style={s.rowHeading}><Text style={[s.filterSectionTitle,{color:theme.ink}]}>Starting radius</Text><Text style={[s.autoLabel,{color:theme.muted}]}>Local search</Text></View>
+                    <View accessibilityRole="radiogroup"><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
+                      {radiusChoices.map(choice=><Pressable accessibilityRole="radio" accessibilityState={{ selected: radius === choice.meters }} key={choice.meters} style={[s.choice,{backgroundColor:radius===choice.meters?theme.accent:theme.surfaceRaised,borderColor:radius===choice.meters?theme.accent:theme.line}]} onPress={()=>chooseRadius(choice.meters)}><Text style={[s.choiceText,{color:radius===choice.meters?theme.accentText:theme.ink}]}>{choice.label}</Text></Pressable>)}
+                    </ScrollView></View>
+                  </View>
+                ) : null}
+
+                <View style={s.filterSection}>
+                  <View style={s.amenityHeading}><Text style={[s.filterSectionTitle,{color:theme.ink}]}>What matters on this stop?</Text>{selectedAmenityNames.length?<Pressable accessibilityRole="button" accessibilityLabel="Clear amenity filters" onPress={()=>setSelectedAmenityNames([])}><Text style={[s.clear,{color:theme.accent}]}>Clear amenities</Text></Pressable>:null}</View>
+                  {filterAmenities.length?<View style={s.amenityWrap}>{filterAmenities.map(item=><Pressable accessibilityRole="checkbox" accessibilityState={{checked:selectedAmenityNames.includes(item.name)}} key={item.id} style={[s.amenityPill,{backgroundColor:selectedAmenityNames.includes(item.name)?theme.accent:theme.surfaceRaised,borderColor:selectedAmenityNames.includes(item.name)?theme.accent:theme.line}]} onPress={()=>toggleAmenity(item.name)}><Text style={[s.amenityText,{color:selectedAmenityNames.includes(item.name)?theme.accentText:theme.ink}]}>{item.name}</Text></Pressable>)}</View>:<Text style={[s.help,{color:theme.muted}]}>Amenity catalog is loading.</Text>}
+                </View>
+                {mode === 'nearby' ? (
+                  <>
+                    <View style={s.rowHeading}>
+                      <Text style={[s.filterTitle,{color:theme.ink}]}>Keep looking for what I need</Text>
+                      <View style={s.autoRow}>
+                        <Text style={[s.autoLabel,{color:theme.muted}]}>Search farther when needed</Text>
+                        <Switch
+                          disabled={!selectedAmenityNames.length}
+                          value={selectedAmenityNames.length > 0 && autoExpand}
+                          onValueChange={setAutoExpand}
+                        />
+                      </View>
+                    </View>
+                    {selectedAmenityNames.length > 0 && autoExpand ? (
+                      <View style={[s.inlineBlock,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+                        <Text style={[s.filterTitle,{color:theme.ink}]}>Search up to</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
+                          {maxChoices.map((choice) => {
+                            const enabledValue = Math.max(radius, choice.meters);
+                            return (
+                              <Pressable
+                                accessibilityRole="radio"
+                                accessibilityLabel={'Maximum distance '+choice.label}
+                                accessibilityState={{selected:maxRadius===enabledValue}}
+                                key={choice.meters}
+                                style={[s.choice,{backgroundColor:maxRadius===enabledValue?theme.accent:theme.surfaceRaised,borderColor:maxRadius===enabledValue?theme.accent:theme.line}]}
+                                onPress={() => setMaxRadius(enabledValue)}
+                              >
+                                <Text style={[s.choiceText,{color:maxRadius===enabledValue?theme.accentText:theme.ink}]}>{choice.label}</Text>
+                              </Pressable>
+                            );
+                          })}
+                        </ScrollView>
+                      </View>
+                    ) : null}
+                  </>
+                ) : (
+                  <View style={[s.inlineBlock,{backgroundColor:theme.surfaceRaised,borderColor:theme.line}]}>
+                    <View style={s.rowHeading}>
+                      <Text style={[s.filterTitle,{color:theme.ink}]}>How far off route?</Text>
+                      <Pressable accessibilityRole="button" accessibilityLabel="Open Route planner" onPress={() => { setShowAdvanced(false); router.push('/route'); }}>
+                        <Text style={[s.linkText,{color:theme.accent}]}>Open Route planner</Text>
+                      </Pressable>
+                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.choiceRow}>
+                      {corridorChoices.map((choice) => (
+                        <Pressable
+                          accessibilityRole="radio"
+                          accessibilityLabel={'How far off route '+choice.label}
+                          accessibilityState={{selected:corridor===choice.meters}}
+                          key={choice.meters}
+                          style={[s.choice,{backgroundColor:corridor===choice.meters?theme.accent:theme.surfaceRaised,borderColor:corridor===choice.meters?theme.accent:theme.line}]}
+                          onPress={() => setCorridor(choice.meters)}
+                        >
+                          <Text style={[s.choiceText,{color:corridor===choice.meters?theme.accentText:theme.ink}]}>{choice.label}</Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {selectedAmenityNames.length ? (
+                  <View style={s.ruleRow} accessibilityRole="radiogroup">
+                    <Pressable
+                      accessibilityRole="radio"
+                      accessibilityLabel="Require all selected amenities"
+                      accessibilityState={{selected:matchRule==='all'}}
+                      onPress={() => setMatchRule('all')}
+                      style={[s.rule,{backgroundColor:matchRule === 'all'?theme.accent:theme.surfaceRaised,borderColor:matchRule === 'all'?theme.accent:theme.line}]}
+                    >
+                      <Text style={[s.ruleText,{color:matchRule === 'all'?theme.accentText:theme.ink}]}>Must include all</Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="radio"
+                      accessibilityLabel="Match any selected amenity"
+                      accessibilityState={{selected:matchRule==='any'}}
+                      onPress={() => setMatchRule('any')}
+                      style={[s.rule,{backgroundColor:matchRule === 'any'?theme.accent:theme.surfaceRaised,borderColor:matchRule === 'any'?theme.accent:theme.line}]}
+                    >
+                      <Text style={[s.ruleText,{color:matchRule === 'any'?theme.accentText:theme.ink}]}>Include any</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </ScrollView>
+              <Pressable accessibilityRole="button" accessibilityLabel="Show filtered results" style={[s.modalDone,{backgroundColor:theme.accent}]} onPress={()=>{setShowAdvanced(false);void load();}}>
+                <Text style={[s.primaryText,{color:theme.accentText}]}>Show results</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+        <Modal accessibilityViewIsModal visible={clusterChoices.length>0} transparent onRequestClose={()=>setClusterChoices([])}>
+          <View style={{flex:1,justifyContent:'center',padding:20,backgroundColor:'#0008'}}>
+            <View style={[s.advancedModalCard,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+              <Text style={[s.advancedModalTitle,{color:theme.ink}]}>Places at this point</Text>
+              <Pressable accessibilityRole="button" onPress={()=>setClusterChoices([])}><Text style={{color:theme.accent}}>Close</Text></Pressable>
+              <ScrollView>{clusterChoices.map(row=><Pressable key={idOf(row)} accessibilityRole="button" onPress={()=>{setClusterChoices([]);selectRow(row);}} style={{paddingVertical:12,borderBottomWidth:1,borderColor:theme.line}}>
+                <Text style={{color:theme.ink,fontWeight:'700'}}>{discoveryPlaceName(row)}</Text>
+                <Text style={{color:theme.muted}}>{row.address||discoveryListingReference(row)}</Text>
+              </Pressable>)}</ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+      </View>
+
+      {!origin&&!searchAreaOrigin? (
+        <View accessibilityLabel="Map starting point" style={[s.initialMapPrompt,{backgroundColor:theme.surface,borderColor:theme.line}]}>
+          <Text style={[s.initialMapPromptTitle,{color:theme.ink}]}>Start your restroom search</Text>
+          <Text style={[s.initialMapPromptBody,{color:theme.muted}]}>Search an address, city, or place above. Or use your location to see nearby options.</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Use my location to find nearby restrooms" disabled={loading} style={[s.initialMapPromptButton,{backgroundColor:theme.accent},loading&&s.disabled]} onPress={()=>{setSearch('');void load({clearQuery:true,recenterOnLiveLocation:true});}}>
+            <Text style={[s.primaryText,{color:theme.accentText}]}>{loading?'Finding your location…':'Use my location'}</Text>
+          </Pressable>
+        </View>
+      ):null}
+
+      {(origin||searchAreaOrigin) ? (
+        <View style={s.mapSection}>
+          <View style={[s.mapFrame,{minHeight:exploreMapHeight,height:exploreMapHeight}]} accessibilityLabel="Explore map and results">
             <View
               style={s.mapGestureSurface}
               onStartShouldSetResponderCapture={()=>{beginMapGesture();return false}}
