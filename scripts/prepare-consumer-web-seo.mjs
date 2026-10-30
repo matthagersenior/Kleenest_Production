@@ -148,6 +148,14 @@ function applySeo(file,page){
   fs.writeFileSync(file,html);
 }
 
+// Publish MapLibre's worker at the URL expected by its web runtime.
+const workerSource=path.resolve('node_modules/maplibre-gl/dist/maplibre-gl-csp-worker.js');
+const workerTarget=path.join(dist,'_expo/static/js/web/maplibre-gl-worker.mjs');
+if(fs.existsSync(workerSource)){
+  fs.mkdirSync(path.dirname(workerTarget),{recursive:true});
+  fs.copyFileSync(workerSource,workerTarget);
+}
+
 const shareImageFile=path.join(dist,'app-icon.png');
 if(!fs.existsSync(shareImageFile)||fs.statSync(shareImageFile).size<100){
   throw new Error('Public Kleenest share image is missing or empty: app-icon.png');
