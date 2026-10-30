@@ -1891,7 +1891,7 @@ export default function AdaptiveExploreScreen() {
         <View accessibilityLabel="Map starting point" style={[s.initialMapPrompt,{backgroundColor:theme.surface,borderColor:theme.line}]}>
           <Text style={[s.initialMapPromptTitle,{color:theme.ink}]}>Start your restroom search</Text>
           <Text style={[s.initialMapPromptBody,{color:theme.muted}]}>Search an address, city, or place above. Or use your location to see nearby options.</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Use my location to find nearby restrooms" disabled={loading} style={[s.initialMapPromptButton,{backgroundColor:theme.accent},loading&&s.disabled]} onPress={()=>{setSearch('');void load({clearQuery:true,recenterOnLiveLocation:true});}}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Use my location to find nearby restrooms" accessibilityHint="Your browser may ask you to allow location access." disabled={loading} style={[s.initialMapPromptButton,{backgroundColor:theme.accent},loading&&s.disabled]} onPress={()=>{setSearch('');void load({clearQuery:true,recenterOnLiveLocation:true});}}>
             <Text style={[s.primaryText,{color:theme.accentText}]}>{loading?'Finding your location…':'Use my location'}</Text>
           </Pressable>
         </View>
