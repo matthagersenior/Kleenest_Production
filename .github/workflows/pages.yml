@@ -63,11 +63,6 @@ jobs:
           EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_f1rbczgvWKSQy2g9mTDQZg_K9Wv19bL
           EXPO_PUBLIC_ADSENSE_CLIENT_ID: ${{ vars.EXPO_PUBLIC_ADSENSE_CLIENT_ID }}
           EXPO_PUBLIC_ADSENSE_WEB_DISPLAY_SLOT: ${{ vars.EXPO_PUBLIC_ADSENSE_WEB_DISPLAY_SLOT }}
-      - name: Prepare canonical Kleenest SEO export
-        run: |
-          node scripts/prepare-consumer-web-seo.mjs
-          node scripts/consumer-seo-export-audit.mjs
-          test -s apps/consumer-mobile/dist/_expo/static/js/web/maplibre-gl-worker.mjs
       - name: Export Kleenest Business Web
         run: npm run web:export --workspace @kleenest/business-mobile
         env:
@@ -139,6 +134,11 @@ jobs:
           test -s apps/consumer-mobile/dist/app-icon-512.svg
           test -s apps/consumer-mobile/dist/marketing/home-progress.svg
           test -s apps/consumer-mobile/dist/profile/index.html
+      - name: Prepare canonical Kleenest SEO export
+        run: |
+          node scripts/prepare-consumer-web-seo.mjs
+          node scripts/consumer-seo-export-audit.mjs
+          test -s apps/consumer-mobile/dist/_expo/static/js/web/maplibre-gl-worker.mjs
       - name: Browser-stress Kleenest Consumer Web
         env:
           CONSUMER_WEB_BASE: http://127.0.0.1:4174/Kleenest_Production/
