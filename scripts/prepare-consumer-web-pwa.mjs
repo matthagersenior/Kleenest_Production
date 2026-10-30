@@ -69,7 +69,7 @@ function addAdsenseLoader(file){
   if(!page.includes('</head>'))throw new Error('Consumer HTML export is missing </head>: '+file);
   // Do not request Google's ad code until the visitor opts in.
   const adsenseHead='<!-- kleenest-consumer-adsense-head -->\n'+
-    '<script defer src="'+pagesAsset('kleenest-ad-consent.js')+'" data-adsense-client="'+adsenseClient+'"></script>\\n'+
+    '<script defer src="'+pagesAsset('kleenest-ad-consent.js')+'" data-adsense-client="'+adsenseClient+'"></script>\n'+
     '<!-- kleenest-consumer-adsense-head:end -->';
   page=page.replace('</head>',adsenseHead+'\n</head>');
   fs.writeFileSync(file,page);
