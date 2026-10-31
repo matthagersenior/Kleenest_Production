@@ -2178,7 +2178,7 @@ export default function AdaptiveExploreScreen() {
                       ? Math.min(Math.max(272,Math.round(exploreMapHeight*0.22)),330)
                       : destinationCardOpen
                         ? 220
-                        : Math.min(112,Math.max(86,Math.round(exploreMapHeight*0.12))),
+                        : Math.min(280,Math.max(228,Math.round(exploreMapHeight*0.30))),
                   backgroundColor:theme.surface,
                   borderColor:theme.line,
                 },
@@ -2288,7 +2288,7 @@ export default function AdaptiveExploreScreen() {
                     </View>
                   ):null}
                   <ScrollView style={s.resultsSheetList} scrollEnabled={resultsSheetExpanded} contentContainerStyle={s.resultsSheetListContent} showsVerticalScrollIndicator={false} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                    {!resultsSheetExpanded?null:visibleRows.length?visibleRows.map((item,index)=>(
+                    {visibleRows.length?(resultsSheetExpanded?visibleRows:visibleRows.slice(0,2)).map((item,index)=>(
                       <View key={idOf(item)||String(index)}>
                         <Pressable
                           accessibilityRole="button"

@@ -12,7 +12,7 @@ import { refreshConsumerLiveNetworkRegions } from '../services/liveNetwork';
 import { refreshConsumerPresence } from '../services/presence';
 import PolicyAcceptanceGate from '../components/PolicyAcceptanceGate';
 import { relayOperatorOAuthCallback } from '../services/operatorOAuthRelay';
-import { useConsumerWebExperience } from '../services/webExperience';
+import { isConsumerStandaloneWebApp, isExplicitConsumerAppLaunch, useConsumerWebExperience } from '../services/webExperience';
 import BetaReportButton from '../components/BetaReportButton';
 import { flushQueuedBetaReports,recordBetaBreadcrumb } from '../services/betaReporting';
 import { captureConsumerCoreLoopEvent } from '../services/consumerTelemetry';
@@ -83,7 +83,7 @@ export default function RootLayout() {
   const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
   const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','consumer');
   const {ready:webGateReady,appActive}=useConsumerWebExperience();
-  const publicWeb=Platform.OS==='web'&&!appActive&&webGateReady&&['/','/for-you','/for-business','/trust','/install','/creator','/support','/privacy','/terms','/community-guidelines','/account-deletion'].includes(pathname);
+  const publicWeb=Platform.OS==='web'&&webGateReady&&((pathname==='/'&&!isConsumerStandaloneWebApp()&&!isExplicitConsumerAppLaunch())||!appActive)&&['/','/for-you','/for-business','/trust','/install','/creator','/support','/privacy','/terms','/community-guidelines','/account-deletion'].includes(pathname);
   useAppActivity(Platform.OS !== 'web' || (webGateReady && appActive));
   useEffect(()=>{
     let active=true;

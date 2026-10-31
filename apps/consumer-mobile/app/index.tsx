@@ -4,15 +4,18 @@ import { getKleenestSupabaseClient } from '@kleenest/mobile-core';
 import { Platform, SafeAreaView } from 'react-native';
 import { MarketingHome } from '../components/MarketingSite';
 import { useConsumerTheme } from '../services/theme';
-import { useConsumerWebExperience } from '../services/webExperience';
+import { isConsumerStandaloneWebApp, isExplicitConsumerAppLaunch, useConsumerWebExperience } from '../services/webExperience';
 
 export default function HomeScreen(){
   const theme=useConsumerTheme();
-  const {ready:webGateReady,appActive,signedIn}=useConsumerWebExperience();
+  const {ready:webGateReady,signedIn}=useConsumerWebExperience();
+  // The public domain always opens its homepage in a browser. Only an explicit
+  // app launch or installed standalone window should enter the app directly.
+  const directAppLaunch=Platform.OS!=='web'||isConsumerStandaloneWebApp()||isExplicitConsumerAppLaunch();
   const [landingResolved,setLandingResolved]=useState(false);
 
   useEffect(()=>{
-    if(Platform.OS!=='web'||!webGateReady||!signedIn)return;
+    if(Platform.OS!=='web'||!directAppLaunch||!webGateReady||!signedIn)return;
     let active=true;
     const openLanding=async()=>{
       const client=getKleenestSupabaseClient();
@@ -49,12 +52,12 @@ export default function HomeScreen(){
     };
     void openLanding().catch(()=>{if(active){router.replace('/explore' as any);setLandingResolved(true)}});
     return()=>{active=false};
-  },[webGateReady,signedIn]);
+  },[webGateReady,signedIn,directAppLaunch]);
 
   if(Platform.OS==='web'&&!webGateReady){
     return <SafeAreaView style={{flex:1,backgroundColor:theme.canvas}}/>;
   }
-  if(Platform.OS==='web'&&!appActive){
+  if(Platform.OS==='web'&&!directAppLaunch){
     return <MarketingHome/>;
   }
   if(Platform.OS==='web'&&signedIn&&!landingResolved){
