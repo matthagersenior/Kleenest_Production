@@ -20,6 +20,7 @@ const businessAuth=read('apps/business-mobile/app/auth.tsx');
 const fleetAuth=read('apps/fleet-mobile/app/auth.tsx');
 const webExperience=read('apps/consumer-mobile/services/webExperience.ts');
 const consumerHome=read('apps/consumer-mobile/app/index.tsx');
+const consumerLayout=read('apps/consumer-mobile/app/_layout.tsx');
 const install=read('apps/consumer-mobile/app/install.tsx');
 const marketing=read('apps/consumer-mobile/components/MarketingSitePro.tsx');
 const pages=read('.github/workflows/pages.yml');
@@ -126,6 +127,8 @@ requireTokens('Consumer app entry install suppression',consumerHome,[
 if(consumerHome.includes("'/install'")||consumerHome.includes('Install Kleenest'))failures.push('Installed/signed-in Consumer app entry must not render an install CTA before Explore.');
 if(!consumerHome.includes('!appActive||!signedIn'))failures.push('Public root still redirects signed-in marketing visitors into Explore.');
 if(webExperience.includes('appActive:native||appSession||signedIn||installed'))failures.push('Authentication or past browser presence still hijacks normal public marketing routes.');
+requireTokens('Consumer public marketing layout',consumerLayout,["const publicWeb=","'/about'","'/contact'"]);
+
 requireTokens('Install presence persistence',install,[
   'markConsumerAppPresence',
   'appinstalled',
