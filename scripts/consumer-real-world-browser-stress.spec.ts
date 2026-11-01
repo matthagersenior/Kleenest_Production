@@ -107,6 +107,11 @@ test('ordinary public root stays public after previous app use',async({browser})
   await context.addInitScript(()=>{
     localStorage.setItem('kleenest.consumer.installed-presence.v2','1');
     sessionStorage.setItem('kleenest.consumer.web-app-session.v1','1');
+    Object.defineProperty(window,'matchMedia',{configurable:true,value:(query:string)=>({
+      matches:query==='(display-mode: standalone)',media:query,onchange:null,
+      addListener(){},removeListener(){},addEventListener(){},removeEventListener(){},
+      dispatchEvent(){return true;}
+    })});
   });
   const page=await context.newPage();
   const homepage=new URL(BASE);
