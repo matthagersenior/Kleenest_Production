@@ -2182,7 +2182,7 @@ export default function AdaptiveExploreScreen() {
                       ? Math.min(Math.max(272,Math.round(exploreMapHeight*0.22)),330)
                       : destinationCardOpen
                         ? 220
-                        : Math.min(112,Math.max(86,Math.round(exploreMapHeight*0.12))),
+                        : Math.min(410,Math.max(360,Math.round(exploreMapHeight*0.58))),
                   backgroundColor:theme.surface,
                   borderColor:theme.line,
                 },
@@ -2291,8 +2291,8 @@ export default function AdaptiveExploreScreen() {
                       {!loading?<Pressable accessibilityRole="button" accessibilityLabel="Refresh live nearby results" onPress={()=>void load({preserveCacheOnEmpty:true,recenterOnLiveLocation:mode==='nearby'&&!searchAreaOrigin})}><Text style={[s.sheetRefresh,{color:theme.accent}]}>Refresh</Text></Pressable>:null}
                     </View>
                   ):null}
-                  <ScrollView style={s.resultsSheetList} scrollEnabled={resultsSheetExpanded} contentContainerStyle={s.resultsSheetListContent} showsVerticalScrollIndicator={false} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                    {!resultsSheetExpanded?null:visibleRows.length?visibleRows.map((item,index)=>(
+                  <ScrollView style={s.resultsSheetList} contentContainerStyle={s.resultsSheetListContent} showsVerticalScrollIndicator={false} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                    {visibleRows.length?(resultsSheetExpanded?visibleRows:visibleRows.slice(0,3)).map((item,index)=>(
                       <View key={idOf(item)||String(index)}>
                         <Pressable
                           accessibilityRole="button"
