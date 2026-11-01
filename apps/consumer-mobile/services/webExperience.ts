@@ -180,6 +180,7 @@ export function useConsumerWebExperience(){
     signedIn,
     installed,
     appSession,
+    // Public routes stay public even in standalone mode; the PWA starts Explore with ?app=1.
     // Route intent, not an old session, decides whether this URL opens the app.
     appActive:native||explicitLaunch||!isPublicMarketingBrowserRoute(),
   };
