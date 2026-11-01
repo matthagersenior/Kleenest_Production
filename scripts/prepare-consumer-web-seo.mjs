@@ -157,8 +157,8 @@ function applySeo(file,page){
 <h4>Is Kleenest only for drivers?</h4><p>No. Restroom information can help people planning errands, family outings, commutes, and longer trips.</p>
 <p>Learn more <a href="/about/">about the project and founder</a>, <a href="/trust/">how trust and freshness work</a>, or <a href="/contact/">contact Kleenest</a>.</p>
 </section>`;
-    html=html.replace(/<section id="kleenest-public-guide"[\\s\\S]*?<\\/section>/g,'');
-    html=html.replace(/<\\/body>/i,publicGuide+'\\n</body>');
+    html=html.replace(/<section id="kleenest-public-guide"[\s\S]*?<\/section>/g,'');
+    html=html.replace(/<\/body>/i,publicGuide+'\n</body>');
   }
   if(page.route==='/'){
     // HTML-visible navigation for crawlers that do not execute the Expo client.
