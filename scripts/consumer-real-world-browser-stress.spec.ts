@@ -107,6 +107,11 @@ test('ordinary public root stays public after previous app use',async({browser})
   await context.addInitScript(()=>{
     localStorage.setItem('kleenest.consumer.installed-presence.v2','1');
     sessionStorage.setItem('kleenest.consumer.web-app-session.v1','1');
+    Object.defineProperty(window,'matchMedia',{configurable:true,value:(query:string)=>({
+      matches:query==='(display-mode: standalone)',media:query,onchange:null,
+      addListener(){},removeListener(){},addEventListener(){},removeEventListener(){},
+      dispatchEvent(){return true;}
+    })});
   });
   const page=await context.newPage();
   const homepage=new URL(BASE);
@@ -118,6 +123,21 @@ test('ordinary public root stays public after previous app use',async({browser})
   await page.goto(new URL('?app=1',homepage).toString(),{waitUntil:'domcontentloaded',timeout:30000});
   await expect(page.getByPlaceholder('Address, school, workplace, city or brand')).toBeVisible({timeout:20000});
   await context.close();
+});
+
+test('searching nearby from an address uses the address only as the origin',async({browser})=>{
+  test.setTimeout(90000);
+  const context=await browser.newContext({viewport:{width:412,height:915},locale:'en-US'});
+  try{
+    const {page}=await newConsumerPage(context);
+    await search(page,'St. Louis, MO',60000);
+    const nearby=page.getByRole('button',{name:'Search nearby this destination'});
+    await nearby.waitFor({state:'visible',timeout:30000});
+    await nearby.click();
+    await expect(page.getByText(/Useful places nearby · [1-9][0-9]*/).first()).toBeVisible({timeout:60000});
+  }finally{
+    await context.close();
+  }
 });
 
 test('Consumer production-equivalent real-world stress test',async({browser})=>{

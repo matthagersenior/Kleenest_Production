@@ -112,7 +112,7 @@ requireTokens('Consumer web experience gate',webExperience,[
   "markConsumerAppPresence",
   'PUBLIC_MARKETING_PATHS',
   'isPublicMarketingBrowserRoute',
-  'appActive:native||explicitLaunch||isConsumerStandaloneWebApp()||!isPublicMarketingBrowserRoute()'
+  'appActive:native||explicitLaunch||!isPublicMarketingBrowserRoute()'
 ]);
 if(!/if\s*\(\s*standalone\s*\)\s*(?:\{\s*)?markConsumerAppPresence\(\)/.test(webExperience))failures.push('Consumer app presence must remain guarded by standalone mode.');
 if(webExperience.includes('if(explicit||standalone)markConsumerAppPresence()')||webExperience.includes('if(explicitLaunch||standalone)markConsumerAppPresence()'))failures.push('Guest web launch is still persisted as installed app presence.');
