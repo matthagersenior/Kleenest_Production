@@ -9,6 +9,20 @@ if(Number(lock.lockfileVersion)<2||!lock.packages||typeof lock.packages!=='objec
   throw new Error('A modern package-lock.json with a packages graph is required.');
 }
 
+// npm ci can succeed even when a hand-edited lockfile omits package metadata.
+// Require every direct root dependency to be represented in the audited graph.
+// Otherwise deletion of vulnerable entries could make the advisory gate pass falsely.
+const manifest=JSON.parse(fs.readFileSync('package.json','utf8'));
+for(const [name,versionSpec] of Object.entries({...manifest.dependencies,...manifest.devDependencies})){
+  const entry=lock.packages[`node_modules/${name}`];
+  if(!entry || !entry.version || !entry.integrity){
+    throw new Error(`Security audit incomplete: missing locked package or integrity for direct dependency ${name}`);
+  }
+  if(['node-forge','glob','minimatch'].includes(name) && String(entry.version)!==String(versionSpec)){
+    throw new Error(`Security-pinned dependency mismatch: ${name} is locked at ${entry.version}, expected ${versionSpec}`);
+  }
+}
+
 const payload={};
 for(const [path,meta] of Object.entries(lock.packages)){
   if(!path.includes('node_modules/')||!meta||typeof meta!=='object')continue;
