@@ -29,6 +29,8 @@ requireToken("style={s.resultsSheetList}",'Expanded results must scroll inside t
 requireToken("style={s.selectedSheetActions}",'Selected-place primary actions must stay outside the scrolling detail body.');
 forbidToken("selectedSheetActions:{flexDirection:'row',gap:6,position:'absolute'",'Selected-place primary actions must not be absolutely pinned where they can be clipped by the sheet or global overlays.');
 requireToken("if(rawQuery&&retainedMapOrigin&&!areaMatch&&!overrideOrigin)setDestinationCardOpen(false);",'A brand/category search from a chosen address must reveal results instead of leaving the destination card open.');
+requireToken("setTimeout(()=>void loadNearby(false,false,null,false,'')",'Nearby discovery from a searched address must clear the address from its place-name filter.');
+requireToken("queryOverride===undefined?(clearQuery?'':search.trim()):queryOverride.trim()",'Nearby discovery must support an explicit empty place-name query while retaining the searched origin.');
 requireToken("renderItem={() => null}",'Legacy below-map result cards must stay disabled after the unified results-sheet revamp.');
 requireToken("<MapLegend />",'The map legend must remain available on the unified Explore canvas.');
 requireToken(">Nearby</Text>",'Nearby discovery mode must remain available.');
