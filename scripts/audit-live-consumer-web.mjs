@@ -11,6 +11,9 @@ for(const route of ['/','/explore/','/qr/','/home/','/games/']){
     record('HTTP '+route,response.status+' '+response.url);
     if(!response.ok)failed=true;
     if(route==='/'){
+      const landingPath=new URL(response.url).pathname;
+      record('Public homepage final path',landingPath);
+      if(landingPath!=='/')failed=true;
       for(const header of ['strict-transport-security','content-security-policy','x-frame-options','x-content-type-options','referrer-policy','permissions-policy']){
         const value=response.headers.get(header);
         record('Header '+header,value||'MISSING');
@@ -36,9 +39,11 @@ for(const route of ['/','/about/','/for-you/','/for-business/','/trust/','/insta
     if(route==='/'){
       const hasSeoMarker=html.includes('kleenest-public-seo:start');
       const hasPublicLinks=html.includes('id="kleenest-public-links"');
+      const hasPublicGuide=html.includes('id="kleenest-public-guide"');
       record('Live SEO export marker',hasSeoMarker?'present':'MISSING');
       record('Live crawlable navigation',hasPublicLinks?'present':'MISSING');
-      if(!hasSeoMarker||!hasPublicLinks)failed=true;
+      record('Live original restroom guide',hasPublicGuide?'present':'MISSING');
+      if(!hasSeoMarker||!hasPublicLinks||!hasPublicGuide)failed=true;
     }
     const hrefs=[...html.matchAll(/\bhref\s*=\s*["']([^"']+)["']/gi)].map(match=>match[1]);
     for(const href of hrefs){
