@@ -50,6 +50,11 @@ jobs:
           EXPO_PUBLIC_ADSENSE_CLIENT_ID: ${{ vars.EXPO_PUBLIC_ADSENSE_CLIENT_ID }}
           EXPO_PUBLIC_ADSENSE_WEB_DISPLAY_SLOT: ${{ vars.EXPO_PUBLIC_ADSENSE_WEB_DISPLAY_SLOT }}
         run: npm run web:export --workspace @kleenest/consumer-mobile
+      - name: Publish MapLibre module worker for Consumer Web
+        run: |
+          node scripts/prepare-maplibre-web-worker.mjs
+          test -s apps/consumer-mobile/dist/_expo/static/js/web/maplibre-gl-worker.mjs
+          test -s apps/consumer-mobile/dist/Kleenest_Production/_expo/static/js/web/maplibre-gl-worker.mjs
       - name: Export Kleenest Business Web
         env:
           EXPO_PUBLIC_PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
