@@ -50,6 +50,8 @@ for(const route of ['/','/about/','/for-you/','/for-business/','/trust/','/insta
       let target;
       try{target=new URL(href,origin+route);}catch{continue;}
       if(target.origin!==origin||!['http:','https:'].includes(target.protocol))continue;
+      // Cloudflare email obfuscation uses internal /cdn-cgi links that are not application routes.
+      if(target.pathname.startsWith('/cdn-cgi/'))continue;
       if(target.pathname.startsWith('/_expo/')||target.pathname.startsWith('/assets/'))continue;
       target.hash='';
       const key=target.toString();
