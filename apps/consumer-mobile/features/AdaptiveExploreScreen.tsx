@@ -803,12 +803,16 @@ export default function AdaptiveExploreScreen() {
 
   function searchNearDestination(){
     if(!searchAreaOrigin)return;
+    activeIntentRef.current=null;
+    activeIntentAmenitiesRef.current=null;
+    setInterpretedIntent(null);
+    setSearch('');
     setMode('nearby');
     setRoute(null);
     setRows([]);
     setSelectedId('');
     setDestinationCardOpen(false);
-    setTimeout(()=>void loadNearby(false,false,null),0);
+    setTimeout(()=>void loadNearby(false,false,null,false,''),0);
   }
 
   function useDestinationForRoute(){
@@ -983,13 +987,13 @@ export default function AdaptiveExploreScreen() {
     return current;
   }
 
-  async function loadNearby(clearQuery = false, preserveCacheOnEmpty = false, overrideOrigin:[number,number]|null=null, forceLiveRecenter=false) {
+  async function loadNearby(clearQuery = false, preserveCacheOnEmpty = false, overrideOrigin:[number,number]|null=null, forceLiveRecenter=false, queryOverride?:string) {
     const enrichmentRun=++nearbyEnrichmentRunRef.current;
     const cameraInteractionVersion=cameraInteractionVersionRef.current;
     const intent=activeIntentRef.current;
     const activeAmenityNames=activeIntentAmenitiesRef.current??selectedAmenityNames;
     const requiresRestroom=Boolean(intent?.restroomRequired)||activeAmenityNames.length>0;
-    const originalQuery=clearQuery?'':search.trim();
+    const originalQuery=queryOverride===undefined?(clearQuery?'':search.trim()):queryOverride.trim();
     const rawQuery=intent?intent.placeQuery:originalQuery;
     const intentRadiusMeters=intent?.maxRadiusMiles?Math.round(intent.maxRadiusMiles*1609.344):null;
     const requestedRadiusMeters=intentRadiusMeters||radius;
