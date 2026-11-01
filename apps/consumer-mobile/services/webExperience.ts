@@ -181,6 +181,6 @@ export function useConsumerWebExperience(){
     installed,
     appSession,
     // Route intent, not an old session, decides whether this URL opens the app.
-    appActive:native||explicitLaunch||isConsumerStandaloneWebApp()||!isPublicMarketingBrowserRoute(),
+    appActive:native||explicitLaunch||!isPublicMarketingBrowserRoute(),
   };
 }
