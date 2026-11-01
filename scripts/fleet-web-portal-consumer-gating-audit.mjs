@@ -20,6 +20,7 @@ const businessAuth=read('apps/business-mobile/app/auth.tsx');
 const fleetAuth=read('apps/fleet-mobile/app/auth.tsx');
 const webExperience=read('apps/consumer-mobile/services/webExperience.ts');
 const consumerHome=read('apps/consumer-mobile/app/index.tsx');
+const consumerLayout=read('apps/consumer-mobile/app/_layout.tsx');
 const install=read('apps/consumer-mobile/app/install.tsx');
 const marketing=read('apps/consumer-mobile/components/MarketingSitePro.tsx');
 const pages=read('.github/workflows/pages.yml');
@@ -109,7 +110,9 @@ requireTokens('Consumer web experience gate',webExperience,[
   'appSession',
   'markConsumerAppSession',
   "markConsumerAppPresence",
-  'appActive:native||appSession||signedIn||installed'
+  'PUBLIC_MARKETING_PATHS',
+  'isPublicMarketingBrowserRoute',
+  'appActive:native||explicitLaunch||isConsumerStandaloneWebApp()||!isPublicMarketingBrowserRoute()'
 ]);
 if(!/if\s*\(\s*standalone\s*\)\s*(?:\{\s*)?markConsumerAppPresence\(\)/.test(webExperience))failures.push('Consumer app presence must remain guarded by standalone mode.');
 if(webExperience.includes('if(explicit||standalone)markConsumerAppPresence()')||webExperience.includes('if(explicitLaunch||standalone)markConsumerAppPresence()'))failures.push('Guest web launch is still persisted as installed app presence.');
@@ -122,6 +125,10 @@ requireTokens('Consumer app entry install suppression',consumerHome,[
   '/explore'
 ]);
 if(consumerHome.includes("'/install'")||consumerHome.includes('Install Kleenest'))failures.push('Installed/signed-in Consumer app entry must not render an install CTA before Explore.');
+if(!consumerHome.includes('!appActive||!signedIn'))failures.push('Public root still redirects signed-in marketing visitors into Explore.');
+if(webExperience.includes('appActive:native||appSession||signedIn||installed'))failures.push('Authentication or past browser presence still hijacks normal public marketing routes.');
+requireTokens('Consumer public marketing layout',consumerLayout,["const publicWeb=","'/about'","'/contact'"]);
+
 requireTokens('Install presence persistence',install,[
   'markConsumerAppPresence',
   'appinstalled',
@@ -177,4 +184,4 @@ if(failures.length){
   for(const failure of failures)console.error('- '+failure);
   process.exit(1);
 }
-console.log('Fleet web portal / Consumer gating audit passed: owners, admins, managers and dispatchers converge on the Fleet web control plane, while signed-in or app-present Consumer users bypass public marketing and install CTAs.');
+console.log('Fleet web portal / Consumer gating audit passed: owners, admins, managers and dispatchers converge on the Fleet web control plane, while ordinary public URLs remain public and explicit app launches enter the app.');

@@ -13,6 +13,22 @@ function browser(){
   return Platform.OS==='web'&&typeof window!=='undefined'?window:null;
 }
 
+const PUBLIC_MARKETING_PATHS=new Set([
+  '/','/about','/for-you','/for-business','/trust','/install','/contact',
+  '/support','/privacy','/terms','/community-guidelines','/account-deletion','/creator',
+]);
+
+function isPublicMarketingBrowserRoute(){
+  const w=browser();
+  if(!w)return false;
+  // Normal public URLs stay public even after login, installation, or guest use.
+  // Only an explicit app=1 launch or a standalone PWA opens the app at '/'.
+  const path=w.location.pathname
+    .replace(/^\/Kleenest_Production(?=\/|$)/,'')
+    .replace(/\/+$/,'')||'/';
+  return PUBLIC_MARKETING_PATHS.has(path);
+}
+
 function standaloneInstallMetadata(){
   const ua=browser()?.navigator.userAgent||'';
   const device_kind=/iPhone|iPad|iPod/.test(ua)?'ios':/Android/.test(ua)?'android':'desktop';
@@ -163,6 +179,8 @@ export function useConsumerWebExperience(){
     ready,
     signedIn,
     installed,
-    appActive:native||appSession||signedIn||installed,
+    appSession,
+    // Route intent, not an old session, decides whether this URL opens the app.
+    appActive:native||explicitLaunch||isConsumerStandaloneWebApp()||!isPublicMarketingBrowserRoute(),
   };
 }

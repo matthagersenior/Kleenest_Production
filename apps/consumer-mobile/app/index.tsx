@@ -12,7 +12,8 @@ export default function HomeScreen(){
   const [landingResolved,setLandingResolved]=useState(false);
 
   useEffect(()=>{
-    if(Platform.OS!=='web'||!webGateReady||!signedIn)return;
+    // Never redirect an ordinary public homepage visitor just because they are signed in.
+    if(Platform.OS!=='web'||!webGateReady||!appActive||!signedIn)return;
     let active=true;
     const openLanding=async()=>{
       const client=getKleenestSupabaseClient();
@@ -49,7 +50,7 @@ export default function HomeScreen(){
     };
     void openLanding().catch(()=>{if(active){router.replace('/explore' as any);setLandingResolved(true)}});
     return()=>{active=false};
-  },[webGateReady,signedIn]);
+  },[webGateReady,appActive,signedIn]);
 
   if(Platform.OS==='web'&&!webGateReady){
     return <SafeAreaView style={{flex:1,backgroundColor:theme.canvas}}/>;

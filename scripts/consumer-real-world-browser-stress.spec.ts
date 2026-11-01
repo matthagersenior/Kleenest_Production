@@ -101,6 +101,25 @@ async function newConsumerPage(context:BrowserContext){
   return{page,network};
 }
 
+test('ordinary public root stays public after previous app use',async({browser})=>{
+  test.setTimeout(60000);
+  const context=await browser.newContext({viewport:{width:412,height:915},locale:'en-US'});
+  await context.addInitScript(()=>{
+    localStorage.setItem('kleenest.consumer.installed-presence.v2','1');
+    sessionStorage.setItem('kleenest.consumer.web-app-session.v1','1');
+  });
+  const page=await context.newPage();
+  const homepage=new URL(BASE);
+  const response=await page.goto(homepage.toString(),{waitUntil:'domcontentloaded',timeout:30000});
+  expect(response?.status()).toBe(200);
+  await expect(page.getByText('CREATE FREE ACCOUNT',{exact:true}).first()).toBeVisible({timeout:20000});
+  await page.waitForTimeout(2000);
+  expect(new URL(page.url()).pathname).toBe(homepage.pathname);
+  await page.goto(new URL('?app=1',homepage).toString(),{waitUntil:'domcontentloaded',timeout:30000});
+  await expect(page.getByPlaceholder('Address, school, workplace, city or brand')).toBeVisible({timeout:20000});
+  await context.close();
+});
+
 test('Consumer production-equivalent real-world stress test',async({browser})=>{
   test.setTimeout(240000);
   fs.mkdirSync(OUTPUT,{recursive:true});
