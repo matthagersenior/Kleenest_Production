@@ -2315,7 +2315,7 @@ export default function AdaptiveExploreScreen() {
                           </Pressable>
                           <Text style={[s.sheetResultChevron,{color:theme.accent}]}>›</Text>
                         </Pressable>
-                        {index===3?<AdMobNativeSlot contextClass="maps_network_after_results_4" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>:null}
+                        {(resultsSheetExpanded?index===3:index===2)?<AdMobNativeSlot contextClass="maps_network_after_results_4" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>:null}
                         {index===13?<AdMobNativeSlot contextClass="maps_network_after_results_14" keywords={[mode,...selectedAmenityNames,'restroom','local travel']}/>:null}
                         {resultsSheetExpanded&&index===Math.min(1,visibleRows.length-1)?<GuestInstallUpsell/>:null}
                       </View>
