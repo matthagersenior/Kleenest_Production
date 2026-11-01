@@ -79,6 +79,34 @@ function worldPoint(lng: number, lat: number, zoom: number) {
   };
 }
 
+function fallbackTileSpecs(viewport:Viewport){
+  if(!viewport.width||!viewport.height)return [];
+  const zoom=Math.max(0,Math.min(19,Math.floor(viewport.zoom)));
+  const zoomScale=2**(viewport.zoom-zoom);
+  const center=worldPoint(viewport.center[0],viewport.center[1],zoom);
+  const halfWidth=viewport.width/2/zoomScale;
+  const halfHeight=viewport.height/2/zoomScale;
+  const firstX=Math.floor((center.x-halfWidth)/TILE_SIZE)-1;
+  const lastX=Math.floor((center.x+halfWidth)/TILE_SIZE)+1;
+  const firstY=Math.max(0,Math.floor((center.y-halfHeight)/TILE_SIZE)-1);
+  const lastY=Math.min(2**zoom-1,Math.floor((center.y+halfHeight)/TILE_SIZE)+1);
+  const tileCount=2**zoom;
+  const specs=[];
+  for(let rawX=firstX;rawX<=lastX;rawX+=1){
+    const tileX=((rawX%tileCount)+tileCount)%tileCount;
+    for(let tileY=firstY;tileY<=lastY;tileY+=1){
+      specs.push({
+        key:`${rawX}/${tileY}`,
+        url:`https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`,
+        left:viewport.width/2+(rawX*TILE_SIZE-center.x)*zoomScale,
+        top:viewport.height/2+(tileY*TILE_SIZE-center.y)*zoomScale,
+        size:TILE_SIZE*zoomScale,
+      });
+    }
+  }
+  return specs;
+}
+
 function panFallbackViewport(viewport:Viewport,dx:number,dy:number):Viewport {
   if(!dx&&!dy)return viewport;
   const point=worldPoint(viewport.center[0],viewport.center[1],viewport.zoom);
@@ -113,11 +141,14 @@ function zoomForBounds(bounds: [number, number, number, number], width: number, 
   return 1;
 }
 
-function FallbackMapNotice() {
+function FallbackMapNotice({tileLoaded=false}: {tileLoaded?:boolean}) {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <View style={styles.fallbackBanner}>
+      {!tileLoaded?<View style={styles.fallbackBanner}>
         <Text style={styles.fallbackText}>Basemap unavailable · pins, drag and search still work</Text>
+      </View>:null}
+      <View style={styles.fallbackAttribution}>
+        <Text style={styles.attributionText}>© OpenStreetMap contributors</Text>
       </View>
     </View>
   );
@@ -127,7 +158,9 @@ export function Map({ children, style, mapStyle, onRegionDidChange }: any) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
   const [fallback, setFallback] = useState(false);
+  const [fallbackTileLoaded,setFallbackTileLoaded]=useState(false);
   const [viewport, setViewport] = useState<Viewport>({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, width: 0, height: 0 });
+  const fallbackTiles=useMemo(()=>fallback?fallbackTileSpecs(viewport):[],[fallback,viewport]);
   const regionCallback=useRef(onRegionDidChange);
   regionCallback.current=onRegionDidChange;
   const dragRef=useRef<{pointerId:number;x:number;y:number;viewport:Viewport;next:Viewport}|null>(null);
@@ -141,6 +174,10 @@ export function Map({ children, style, mapStyle, onRegionDidChange }: any) {
     if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
     if(drag.next!==drag.viewport)regionCallback.current?.({nativeEvent:{center:drag.next.center,zoom:drag.next.zoom,userInteraction:true}});
   }
+  useEffect(()=>{
+    if(fallback)setFallbackTileLoaded(false);
+  },[fallback]);
+
   useEffect(()=>{
     if(!map)return;
     const onMoveEnd=(event:any)=>{
@@ -250,6 +287,9 @@ export function Map({ children, style, mapStyle, onRegionDidChange }: any) {
       }}
     >
       <div ref={hostRef} style={{ position: 'absolute', inset: 0, display: fallback ? 'none' : 'block' }} />
+      {fallback?<div aria-hidden="true" style={{position:'absolute',inset:0,overflow:'hidden',pointerEvents:'none'}}>
+        {fallbackTiles.map(tile=><img key={tile.key} src={tile.url} alt="" draggable={false} onLoad={()=>setFallbackTileLoaded(true)} style={{position:'absolute',left:tile.left,top:tile.top,width:tile.size,height:tile.size,display:'block',maxWidth:'none'}} />)}
+      </div>:null}
       {fallback?<div aria-label="Drag map to explore another area" style={{position:'absolute',inset:0,touchAction:'none',cursor:'grab'}}
         onPointerDown={event=>{if(event.button!==0||dragRef.current)return;event.currentTarget.setPointerCapture(event.pointerId);dragRef.current={pointerId:event.pointerId,x:event.clientX,y:event.clientY,viewport,next:viewport};}}
         onPointerMove={event=>{const drag=dragRef.current;if(!drag||drag.pointerId!==event.pointerId)return;drag.next=panFallbackViewport(drag.viewport,event.clientX-drag.x,event.clientY-drag.y);setViewport(drag.next);}}
@@ -258,7 +298,7 @@ export function Map({ children, style, mapStyle, onRegionDidChange }: any) {
         onLostPointerCapture={finishFallbackGesture}
       />:null}
       <MapContext.Provider value={{ map, fallback, viewport, setViewport, reportRegionChange }}>
-        {fallback ? <FallbackMapNotice /> : null}
+        {fallback ? <FallbackMapNotice tileLoaded={fallbackTileLoaded} /> : null}
         {children}
       </MapContext.Provider>
     </View>
