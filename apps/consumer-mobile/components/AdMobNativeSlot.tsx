@@ -23,14 +23,15 @@ function ensureAdSenseScript(client:string){
   document.head.appendChild(script);
 }
 
-export function AdMobNativeSlot({contextClass}:{keywords?:string[];contextClass?:string}){
+export function AdMobNativeSlot({contextClass,policyContextClass}:{keywords?:string[];contextClass?:string;policyContextClass?:string}){
   const theme=useConsumerTheme();
   const[allowed,setAllowed]=useState(false);
   const pushed=useRef(false);
   const reportedMissingSlot=useRef(false);
   const placement=String(contextClass||'network').trim().toLowerCase();
+  const policyPlacement=String(policyContextClass||placement).trim().toLowerCase();
 
-  useEffect(()=>{let active=true;void consumerNetworkAdPlacementEnabled(placement).then(value=>{if(active)setAllowed(value)});return()=>{active=false}},[placement]);
+  useEffect(()=>{let active=true;void consumerNetworkAdPlacementEnabled(policyPlacement).then(value=>{if(active)setAllowed(value)});return()=>{active=false}},[policyPlacement]);
   useEffect(()=>{
     if(allowed&&(!ADSENSE_CLIENT||!ADSENSE_WEB_DISPLAY_SLOT)&&!reportedMissingSlot.current){
       reportedMissingSlot.current=true;

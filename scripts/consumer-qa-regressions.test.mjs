@@ -434,7 +434,7 @@ test('web map markers stay mounted across touch-state rerenders and keep the lat
 test('collapsed Explore results show the top three before the sponsored slot',()=>{
   const source=fs.readFileSync(screenPath,'utf8');
   assert.ok(source.includes('visibleRows.slice(0,3)'),'collapsed results should show the first three places');
-  assert.ok(source.includes('(resultsSheetExpanded?index===3:index===2)?<AdMobNativeSlot contextClass="maps_network_after_results_4"'),'Google web ad should follow the third collapsed result and remain after the fourth expanded result');
+  assert.ok(source.includes("(resultsSheetExpanded?index===3:index===2)?<AdMobNativeSlot contextClass={resultsSheetExpanded?'maps_network_after_results_4':'maps_network_after_results_3'} policyContextClass=\"maps_network_after_results_4\""),'Google web ad should follow result three when collapsed and show the correct placement label while retaining the existing policy cap');
   assert.ok(source.includes('Math.min(410,Math.max(360,Math.round(exploreMapHeight*0.58)))'),'collapsed sheet should have room for three results and the ad');
   assert.ok(!source.includes('scrollEnabled={resultsSheetExpanded}'),'collapsed results should remain scrollable to the sponsored slot');
   const firstThree=source.indexOf('visibleRows.slice(0,3)');

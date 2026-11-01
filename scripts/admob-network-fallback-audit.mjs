@@ -36,7 +36,7 @@ if(!failures.length){
   if(/fallback\??:|fallback=|ReactNode/.test(sponsored))failures.push('Kleenest Sponsored must own dedicated inventory and may not accept a network-ad fallback.');
   for(const source of [explore,progress,games])if(source.includes('fallback={<AdMobNativeSlot'))failures.push('AdMob and Kleenest Sponsored inventory must never share a fallback slot.');
   for(const [source,sponsoredToken,networkToken] of [
-    [explore,'<SponsoredSlot surface="maps"','contextClass="maps_network_after_results_4"'],
+    [explore,'<SponsoredSlot surface="maps"','policyContextClass="maps_network_after_results_4"'],
     [progress,'<SponsoredSlot surface="progress"','contextClass="progress_network_after_trust"'],
     [games,'<SponsoredSlot surface="games"','contextClass="game_center_network_after_first_group"'],
     [home,'contextClass="home_feed_sponsored_after_updates_2"','contextClass="home_feed_network_after_updates_4"'],
