@@ -19,6 +19,13 @@ for(const route of ['about','for-you','for-business','trust','install','contact'
 requireFile('kleenest-ad-consent.js');
 if(!home.includes('kleenest-ad-consent.js'))throw new Error('Consent controller not loaded on homepage');
 if(home.includes('pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'))throw new Error('AdSense must not load before visitor choice');
+// Ensure the public landing page provides real, crawlable value without JS.
+for(const phrase of ['id="kleenest-public-guide"','How to find a restroom','What cleanliness and freshness signals mean','Do I have to register?','Does Kleenest guarantee restroom access?']){
+  if(!home.includes(phrase))throw new Error('Missing substantive public homepage content: '+phrase);
+}
+for(const route of ['explore','qr','home','games']){
+  if(read(route+'/index.html').includes('kleenest-public-guide'))throw new Error('Public guide leaked into app shell: '+route);
+}
 const sitemap=read('sitemap.xml');
 for(const route of ['about','for-you','for-business','trust','install','contact']){
   if(!sitemap.includes('<loc>https://kleenest.us/'+route+'/</loc>'))throw new Error('Missing sitemap URL: '+route);

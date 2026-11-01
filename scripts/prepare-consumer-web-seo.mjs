@@ -139,6 +139,28 @@ function applySeo(file,page){
     html=html.replace(/<\/body>/i,`${badge}\n</body>`);
   }
   if(page.route==='/'){
+    // Meaningful, original, accessible public information must be available
+    // even when a crawler or visitor cannot run the interactive Expo app.
+    // Keep this outside the app shell and avoid duplicating it on rebuild.
+    const publicGuide=`<section id="kleenest-public-guide" aria-labelledby="kleenest-guide-title" style="max-width:960px;margin:32px auto;padding:20px;font:16px/1.65 system-ui,sans-serif;color:#173d2b">
+<h2 id="kleenest-guide-title">What Kleenest helps you find</h2>
+<p>Finding a restroom should not require guessing which nearby locations offer public access, the amenities you need, or information recent enough to trust. Kleenest brings restroom discovery, community reports, and practical trip planning together. You can explore without creating an account.</p>
+<h3>How to find a restroom</h3>
+<ol><li><a href="/explore/">Open Explore</a> and search an address or choose to use your location.</li><li>Review nearby restroom locations and the available access, amenity, and freshness details. A missing detail is not a guarantee that an amenity exists.</li><li>Select a location to review its details and begin navigation or add a stop to your route.</li></ol>
+<h3>What cleanliness and freshness signals mean</h3>
+<p>Community reviews and check-ins can provide useful context, but conditions can change quickly. Treat older reports as historical observations, not promises about current cleanliness, supplies, accessibility, opening hours, or entry permission. Confirm important access needs directly with the location.</p>
+<h3>Why community participation matters</h3>
+<p>When visitors share accurate observations about restroom conditions and amenities, they help other travelers make better decisions. You can browse as a guest; creating a free account enables account-based participation and continuity across visits. Reviews should reflect firsthand experiences and follow the <a href="/community-guidelines/">community guidelines</a>.</p>
+<h3>Questions people ask</h3>
+<h4>Do I have to register?</h4><p>No. You can begin exploring as a guest. Account registration is optional for browsing.</p>
+<h4>Does Kleenest guarantee restroom access?</h4><p>No. Access, opening hours, and amenities can change. A listing is not a guarantee of availability or permission to enter.</p>
+<h4>Is Kleenest only for drivers?</h4><p>No. Restroom information can help people planning errands, family outings, commutes, and longer trips.</p>
+<p>Learn more <a href="/about/">about the project and founder</a>, <a href="/trust/">how trust and freshness work</a>, or <a href="/contact/">contact Kleenest</a>.</p>
+</section>`;
+    html=html.replace(/<section id="kleenest-public-guide"[\s\S]*?<\/section>/g,'');
+    html=html.replace(/<\/body>/i,publicGuide+'\n</body>');
+  }
+  if(page.route==='/'){
     // HTML-visible navigation for crawlers that do not execute the Expo client.
     const nav=`<nav aria-label="Kleenest public pages" id="kleenest-public-links" style="padding:20px;background:#f3f8f4;text-align:center">
 <a href="/about/">About Kleenest</a> · <a href="/for-you/">Find restrooms</a> · <a href="/for-business/">For businesses</a> · <a href="/trust/">How trust works</a> · <a href="/install/">Install Kleenest</a> · <a href="/contact/">Contact Kleenest</a> · <a href="/support/">Support</a> · <a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · <a href="/community-guidelines/">Community guidelines</a> · <a href="/account-deletion/">Account deletion</a> · <a href="/developer/">Developer</a>
