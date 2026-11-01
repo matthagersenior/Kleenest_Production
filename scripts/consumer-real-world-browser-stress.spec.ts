@@ -125,6 +125,21 @@ test('ordinary public root stays public after previous app use',async({browser})
   await context.close();
 });
 
+test('searching nearby from an address uses the address only as the origin',async({browser})=>{
+  test.setTimeout(90000);
+  const context=await browser.newContext({viewport:{width:412,height:915},locale:'en-US'});
+  try{
+    const {page}=await newConsumerPage(context);
+    await search(page,'St. Louis, MO',60000);
+    const nearby=page.getByRole('button',{name:'Search nearby this destination'});
+    await nearby.waitFor({state:'visible',timeout:30000});
+    await nearby.click();
+    await expect(page.getByText(/Useful places nearby · [1-9][0-9]*/).first()).toBeVisible({timeout:60000});
+  }finally{
+    await context.close();
+  }
+});
+
 test('Consumer production-equivalent real-world stress test',async({browser})=>{
   test.setTimeout(240000);
   fs.mkdirSync(OUTPUT,{recursive:true});
