@@ -429,3 +429,14 @@ test('web map markers stay mounted across touch-state rerenders and keep the lat
   firstMarker.onkeydown({target:firstMarker,key:'Enter',preventDefault(){}});
   assert.equal(clicked,20,'keyboard activation must select the same latest location');
 });
+
+
+test('collapsed Explore results show the top three before the sponsored slot',()=>{
+  const source=fs.readFileSync(screenPath,'utf8');
+  assert.ok(source.includes('visibleRows.slice(0,3)'),'collapsed results should show the first three places');
+  assert.ok(source.includes('Math.min(410,Math.max(360,Math.round(exploreMapHeight*0.58)))'),'collapsed sheet should have room for three results and the ad');
+  assert.ok(!source.includes('scrollEnabled={resultsSheetExpanded}'),'collapsed results should remain scrollable to the sponsored slot');
+  const listEnd=source.indexOf('</ScrollView>',source.indexOf('style={s.resultsSheetList}'));
+  const sponsored=source.indexOf('<SponsoredSlot surface="maps"');
+  assert.ok(listEnd>=0&&sponsored>listEnd,'the sponsored slot should follow the visible results');
+});
