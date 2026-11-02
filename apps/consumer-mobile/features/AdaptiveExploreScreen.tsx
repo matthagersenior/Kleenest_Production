@@ -531,6 +531,8 @@ export default function AdaptiveExploreScreen() {
    const {height:windowHeight}=useWindowDimensions();
   const exploreMapHeight=Math.max(520,Math.round(windowHeight-(Platform.OS==='web'?86:82)));
   const listRef=useRef<any>(null);
+  const resultsSheetScrollRef=useRef<any>(null);
+  const initialResultsRevealRef=useRef(false);
   const cameraRef=useRef<any>(null);
   const mapGestureReleaseRef=useRef<ReturnType<typeof setTimeout>|null>(null);
   const nearbyEnrichmentRunRef=useRef(0);
@@ -642,6 +644,16 @@ export default function AdaptiveExploreScreen() {
     if(progressionPriority&&progressionFilterUnlocked)return [...filtered].sort((a,b)=>Number(Boolean(b?.progression_opportunity))-Number(Boolean(a?.progression_opportunity)));
     return filtered;
   },[rows,kleenestOnly,progressionOnly,minimumStars,freshnessDays,verifiedEvidenceOnly,evidenceGapOnly,progressionPriority,progressionFilterUnlocked]);
+  useEffect(()=>{
+    if(initialResultsRevealRef.current||visibleRows.length===0)return;
+    initialResultsRevealRef.current=true;
+    requestAnimationFrame(()=>resultsSheetScrollRef.current?.scrollTo({x:0,y:0,animated:false}));
+  },[visibleRows.length]);
+  useEffect(()=>{
+    if(resultsSheetExpanded)return;
+    requestAnimationFrame(()=>resultsSheetScrollRef.current?.scrollTo({x:0,y:0,animated:false}));
+  },[resultsSheetExpanded]);
+
   const markerGroups=useMemo(()=>organizeMapMarkers(visibleRows,mapZoom),[visibleRows,mapZoom]);
   const freshNearbyCount=useMemo(()=>visibleRows.filter((row)=>isFreshWithinDays(row,7)).length,[visibleRows]);
   const kleenestNearbyCount=useMemo(()=>visibleRows.filter(isKleenestPlace).length,[visibleRows]);
@@ -2291,7 +2303,7 @@ export default function AdaptiveExploreScreen() {
                       {!loading?<Pressable accessibilityRole="button" accessibilityLabel="Refresh live nearby results" onPress={()=>void load({preserveCacheOnEmpty:true,recenterOnLiveLocation:mode==='nearby'&&!searchAreaOrigin})}><Text style={[s.sheetRefresh,{color:theme.accent}]}>Refresh</Text></Pressable>:null}
                     </View>
                   ):null}
-                  <ScrollView style={s.resultsSheetList} contentContainerStyle={s.resultsSheetListContent} showsVerticalScrollIndicator={false} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                  <ScrollView ref={resultsSheetScrollRef} style={s.resultsSheetList} contentContainerStyle={s.resultsSheetListContent} showsVerticalScrollIndicator={false} nestedScrollEnabled keyboardShouldPersistTaps="handled">
                     {visibleRows.length?(resultsSheetExpanded?visibleRows:visibleRows.slice(0,3)).map((item,index)=>(
                       <View key={idOf(item)||String(index)}>
                         <Pressable
