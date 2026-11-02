@@ -79,12 +79,22 @@ const tabLabel=(label:string)=>(props:{color:ColorValue})=><Text numberOfLines={
 
 export default function RootLayout() {
   const pathname=usePathname();
+  const normalizedPathname=pathname==='/'?'/':pathname.replace(/\\/+$/,'')||'/';
   const systemScheme=useColorScheme();
   const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
   const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','consumer');
   const {ready:webGateReady,appActive}=useConsumerWebExperience();
-  const publicWeb=Platform.OS==='web'&&!appActive&&webGateReady&&['/','/about','/for-you','/for-business','/trust','/install','/contact','/creator','/support','/privacy','/terms','/community-guidelines','/account-deletion'].includes(pathname);
+  const publicWeb=Platform.OS==='web'&&!appActive&&webGateReady&&['/','/about','/for-you','/for-business','/trust','/install','/contact','/creator','/support','/privacy','/terms','/community-guidelines','/account-deletion'].includes(normalizedPathname);
   useAppActivity(Platform.OS !== 'web' || (webGateReady && appActive));
+  useEffect(()=>{
+    if(Platform.OS!=='web'||!webGateReady||!appActive)return;
+    // The static SEO guide is intentionally outside the Expo root so crawlers
+    // can read it before hydration. Remove it after client-side navigation into
+    // the app so it cannot remain above Explore or push the app tabs off-screen.
+    for(const id of ['kleenest-seo-heading','dailylaunch-badge','kleenest-public-guide','kleenest-public-links']){
+      document.getElementById(id)?.remove();
+    }
+  },[webGateReady,appActive,normalizedPathname]);
   useEffect(()=>{
     let active=true;
     async function enforceRewardTheme(mode:KleenestThemeMode){
@@ -131,7 +141,7 @@ export default function RootLayout() {
     return () => {active=false;subscription.remove();appState.remove()};
   }, []);
   if(operatorOAuthRelaying)return null;
-  const guestExploreWeb=Platform.OS==='web'&&pathname==='/explore';
+  const guestExploreWeb=Platform.OS==='web'&&normalizedPathname==='/explore';
   const tabs=<Tabs initialRouteName={Platform.OS==='web'?'index':'explore'} screenOptions={{
     headerStyle:{backgroundColor:theme.canvas},headerShadowVisible:false,headerTitleStyle:{fontWeight:'900',color:theme.ink},
     tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.muted,tabBarStyle:publicWeb&&!guestExploreWeb?({display:'none'} as any):{height:74,paddingTop:7,paddingBottom:9,backgroundColor:theme.surfaceRaised,borderTopWidth:1,borderTopColor:theme.line,elevation:12,shadowColor:'#000',shadowOpacity:.12,shadowRadius:10,shadowOffset:{width:0,height:-3}},tabBarItemStyle:{minWidth:0,paddingHorizontal:0,paddingVertical:1},tabBarLabelStyle:{fontWeight:'900',fontSize:9.5},
