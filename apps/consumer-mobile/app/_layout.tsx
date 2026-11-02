@@ -79,6 +79,7 @@ const tabLabel=(label:string)=>(props:{color:ColorValue})=><Text numberOfLines={
 
 export default function RootLayout() {
   const pathname=usePathname();
+  // Expo web routes may include a trailing slash on direct navigation.
   const normalizedPathname=pathname==='/'?'/':pathname.replace(/\/+$/,'')||'/';
   const systemScheme=useColorScheme();
   const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
