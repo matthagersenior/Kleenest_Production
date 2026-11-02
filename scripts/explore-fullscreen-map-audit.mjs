@@ -15,7 +15,7 @@ requireToken("style={[s.exploreStage,{minHeight:exploreMapHeight}]}",'Explore mu
 requireToken("style={[s.floatingSearchPanel",'Search and discovery controls must float over the map canvas.');
 requireToken("const mapChromeTop=142+(floatingContextRows*38);",'Map controls must start directly below the compact floating control stack.');
 requireToken("? Math.min(Math.max(360,Math.round(exploreMapHeight*0.58)),560)",'Expanded results must prioritize browsing while preserving immediate map context.');
-requireToken(": Math.min(410,Math.max(360,Math.round(exploreMapHeight*0.58)))",'Collapsed guest results must keep the top three rows and sponsored placement visible while preserving map context.');
+requireToken(": Math.min(305,Math.max(290,Math.round(exploreMapHeight*0.42)))",'Collapsed guest results must show the first three results compactly, preserve map visibility, and keep later results scrollable.');
 requireToken("? Math.min(Math.max(272,Math.round(exploreMapHeight*0.22)),330)",'Selected places must get enough collapsed height for summary and primary actions.');
 requireToken(": destinationCardOpen\n                        ? 220",'Searched destinations must keep their primary actions fully visible.');
 requireToken("minHeight: 36",'Nearby / Along route controls must stay compact.');
