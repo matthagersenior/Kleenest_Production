@@ -79,7 +79,7 @@ const tabLabel=(label:string)=>(props:{color:ColorValue})=><Text numberOfLines={
 
 export default function RootLayout() {
   const pathname=usePathname();
-  const normalizedPathname=pathname==='/'?'/':pathname.replace(/\\/+$/,'')||'/';
+  const normalizedPathname=pathname==='/'?'/':pathname.replace(/\/+$/,'')||'/';
   const systemScheme=useColorScheme();
   const[themeMode,setThemeMode]=useState<KleenestThemeMode>('default');
   const theme=resolveKleenestTheme(themeMode,systemScheme==='dark','consumer');
