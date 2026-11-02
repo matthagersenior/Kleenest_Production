@@ -431,13 +431,15 @@ test('web map markers stay mounted across touch-state rerenders and keep the lat
 });
 
 
-test('collapsed Explore results show the top three before the sponsored slot',()=>{
+test('collapsed Explore results show the top three first and keep the full list scrollable',()=>{
   const source=fs.readFileSync(screenPath,'utf8');
-  assert.ok(source.includes('visibleRows.slice(0,3)'),'collapsed results should show the first three places');
+  assert.ok(source.includes('visibleRows.map((item,index)=>('),'collapsed results should render the complete nearby result list');
+  assert.ok(!source.includes('visibleRows.slice(0,3)'),'collapsed results should not discard locations after the first three');
+  assert.ok(source.includes('<ScrollView ref={resultsSheetScrollRef} style={s.resultsSheetList}'),'results should remain inside the bounded scrollable list');
+  assert.ok(source.includes('nestedScrollEnabled keyboardShouldPersistTaps="handled"'),'the collapsed result list should support nested touch scrolling');
   assert.ok(source.includes("(resultsSheetExpanded?index===3:index===2)?<AdMobNativeSlot contextClass={resultsSheetExpanded?'maps_network_after_results_4':'maps_network_after_results_3'} policyContextClass=\"maps_network_after_results_4\""),'Google web ad should follow result three when collapsed and show the correct placement label while retaining the existing policy cap');
-  assert.ok(source.includes('Math.min(410,Math.max(360,Math.round(exploreMapHeight*0.58)))'),'collapsed sheet should have room for three results and the ad');
-  assert.ok(!source.includes('scrollEnabled={resultsSheetExpanded}'),'collapsed results should remain scrollable to the sponsored slot');
-  const firstThree=source.indexOf('visibleRows.slice(0,3)');
+  assert.ok(source.includes('Math.min(410,Math.max(360,Math.round(exploreMapHeight*0.58)))'),'collapsed sheet should keep a bounded height so the results list can scroll');
+  const fullList=source.indexOf('visibleRows.map((item,index)=>(');
   const sponsored=source.indexOf('<SponsoredSlot surface="maps"');
-  assert.ok(firstThree>=0&&sponsored>firstThree,'the sponsored slot should follow the visible results');
+  assert.ok(fullList>=0&&sponsored>fullList,'the sponsored slot should remain after the ordered result list');
 });
