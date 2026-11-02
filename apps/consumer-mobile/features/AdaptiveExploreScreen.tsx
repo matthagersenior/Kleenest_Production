@@ -2304,7 +2304,7 @@ export default function AdaptiveExploreScreen() {
                     </View>
                   ):null}
                   <ScrollView ref={resultsSheetScrollRef} style={s.resultsSheetList} contentContainerStyle={s.resultsSheetListContent} showsVerticalScrollIndicator={false} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                    {visibleRows.length?(resultsSheetExpanded?visibleRows:visibleRows.slice(0,3)).map((item,index)=>(
+                    {visibleRows.length?visibleRows.map((item,index)=>(
                       <View key={idOf(item)||String(index)}>
                         <Pressable
                           accessibilityRole="button"
