@@ -2194,7 +2194,7 @@ export default function AdaptiveExploreScreen() {
                       ? Math.min(Math.max(272,Math.round(exploreMapHeight*0.22)),330)
                       : destinationCardOpen
                         ? 220
-                        : Math.min(410,Math.max(360,Math.round(exploreMapHeight*0.58))),
+                        : Math.min(305,Math.max(290,Math.round(exploreMapHeight*0.42))),
                   backgroundColor:theme.surface,
                   borderColor:theme.line,
                 },
